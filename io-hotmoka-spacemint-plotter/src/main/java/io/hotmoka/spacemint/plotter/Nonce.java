@@ -18,27 +18,25 @@ package io.hotmoka.spacemint.plotter;
 
 import java.math.BigInteger;
 
+import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.spacemint.plotter.internal.NonceImpl;
 
 /**
  * A nonce of a plot file. Each nonce contains 4096 scoops.
- * Each scoop contains a pair of two 32 bytes hashes.
+ * Each scoop contains a pair of two hashes.
  */
 public interface Nonce {
 
 	/**
 	 * Yields the nonce for the given data and with the given number.
 	 * 
-	 * @param data generic data that identifies, for instance, the creator
-	 *             of the nonce. This can be really anything, but cannlot be {@code null}
+	 * @param prolog generic data that identifies, for instance, the creator
+	 *               of the nonce. This can be really anything, but cannlot be {@code null}
 	 * @param progressive the progressive number of the nonce. This must be non-negative
+	 * @param hashing the hashing algorithm to use to create the nonce
 	 * @return the nonce
 	 */
-	static Nonce of(byte[] data, BigInteger progressive) {
-		return new NonceImpl(data, progressive);
-	}
-
-	public static void main(String[] args) {
-		of(new byte[] { 11, 13, 24, 88 }, BigInteger.valueOf(65536));
+	static Nonce of(byte[] prolog, BigInteger progressive, HashingAlgorithm<byte[]> hashing) {
+		return new NonceImpl(prolog, progressive, hashing);
 	}
 }
