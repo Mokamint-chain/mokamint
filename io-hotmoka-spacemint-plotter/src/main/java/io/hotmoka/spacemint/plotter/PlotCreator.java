@@ -16,29 +16,37 @@ limitations under the License.
 
 package io.hotmoka.spacemint.plotter;
 
-import java.math.BigInteger;
+import java.io.File;
+import java.io.IOException;
 
 import io.hotmoka.crypto.HashingAlgorithm;
-import io.hotmoka.spacemint.plotter.internal.PlotImpl;
+import io.hotmoka.spacemint.plotter.internal.PlotCreatorImpl;
 
 /**
+ * The creator of a plot file. A plot file contains sequential nonces.
  */
-public interface Plot {
+public interface PlotCreator {
 
 	/**
-	 * Yields a plot containing sequential nonces for the given data.
+	 * Creates a plot file containing sequential nonces for the given prolog.
 	 * 
+	 * @param where the file where the plot must be dumped
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the nonces. This can be really anything but cannot be {@code null}
 	 * @param start the starting progressive number of the nonces. This must be non-negative
-	 * @param length the length of the sequence of nonces to generate. This must be non-negative
+	 * @param length the number of nonces to generate. This must be non-negative
 	 * @param hashing the hashing algorithm to use to create the nonces
+	 * @throws IOException if the plot file could not be written into {@code where}
 	 */
-	public static Plot of(byte[] prolog, BigInteger start, BigInteger length, HashingAlgorithm<byte[]> hashing) {
-		return new PlotImpl(prolog, start, length, hashing);
+	public static PlotCreator of(File where, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
+		return new PlotCreatorImpl(where, prolog, start, length, hashing);
 	}
 
-	public static void main(String[] args) {
-		of(new byte[] { 11, 13, 24, 88 }, BigInteger.valueOf(65536), BigInteger.ONE, HashingAlgorithm.shabal256((byte[] bytes) -> bytes));
+	public static void main(String[] args) throws IOException {
+		File file = new File("pippo.plot");
+		if (file.exists())
+			file.delete();
+
+		of(file, new byte[] { 11, 13, 24, 88 }, 65536L, 100L, HashingAlgorithm.shabal256((byte[] bytes) -> bytes));
 	}
 }

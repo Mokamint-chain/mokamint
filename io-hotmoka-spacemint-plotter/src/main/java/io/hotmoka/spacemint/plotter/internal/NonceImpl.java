@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.hotmoka.spacemint.plotter.internal;
 
-import java.math.BigInteger;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 
 import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.spacemint.plotter.Nonce;
@@ -31,7 +34,6 @@ public class NonceImpl implements Nonce {
 	private final int hashSize;
 	private final byte[] data;
 	private final static int HASH_CAP = 4096;
-	public final static int scoopsPerNonce = 4096;
 
 	/**
 	 * Creates the nonce for the given data and with the given number.
@@ -41,20 +43,32 @@ public class NonceImpl implements Nonce {
 	 * @param progressive the progressive number of the nonce. This must be non-negative
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 */
-	public NonceImpl(byte[] prolog, BigInteger progressive, HashingAlgorithm<byte[]> hashing) {
-		if (progressive.signum() < 0)
+	public NonceImpl(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
+		if (progressive < 0L)
 			throw new IllegalArgumentException("nonce number cannot be negative");
 
 		this.hashSize = hashing.length();
 		this.data = new Builder(prolog, progressive, hashing).data;
-
-		BigInteger sum = BigInteger.ZERO;
-		for (byte b: data) {
-			System.out.println(b);
-			sum = sum.add(BigInteger.valueOf(b));
-		}
-		System.out.println("sum = " + sum);
 	}
+
+	
+	@Override
+	public void dumpInto(FileChannel where, long offset, long length) throws IOException {
+		int scoopSize = 2 * hashSize;
+
+		// in order to get an optimized file, we put the scoops with the same number together,
+		// inside a "group" of nonces:
+		// the plot file contains groups of scoops: the group of first scoops in the nonces,
+		// the group of the second scoops in the nonces, etc
+		long groupSize = length * scoopSize;
+		for (int scoopNumber = 0; scoopNumber < SCOOPS_PER_NONCE; scoopNumber++)
+			// scoopNumber * scoopSize is the position of scoopNumber inside the data of the nonce
+			try (var source = Channels.newChannel(new ByteArrayInputStream(data, scoopNumber * scoopSize, scoopSize))) {
+				// the scoop goes inside its group, sequentially wrt the offset of the nonce
+				where.transferFrom(source, scoopNumber * groupSize + offset * scoopSize, scoopSize);
+			}
+	}
+
 
 	/**
 	 * The class that builds the nonce.
@@ -83,9 +97,9 @@ public class NonceImpl implements Nonce {
 		 */
 		private final byte[] buffer;
 
-		private Builder(byte[] prolog, BigInteger progressive, HashingAlgorithm<byte[]> hashing) {
+		private Builder(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
 			this.hashing = hashing;
-			this.data = new byte[scoopsPerNonce * 2 * hashSize];
+			this.data = new byte[SCOOPS_PER_NONCE * 2 * hashSize];
 			this.nonceSize = data.length;
 			this.scoopSize = 2 * hashSize;
 			this.buffer = initWithPrologAndProgressive(prolog, progressive);
@@ -102,25 +116,18 @@ public class NonceImpl implements Nonce {
 		 * @param progressive the progressive number of the nonce
 		 * @return the initial seed
 		 */
-		private byte[] initWithPrologAndProgressive(byte[] prolog, BigInteger progressive) {
-			byte[] progressiveAsBytes = progressive.toByteArray();
-			byte[] buffer;
-
-			if (progressiveAsBytes[0] == (byte) 0) {
-				// we do not consider the first byte if it is 0, since it is just the sign bit,
-				// irrelevant for an unsigned progressive
-				buffer = new byte[nonceSize + prolog.length + progressiveAsBytes.length - 1];
-				System.arraycopy(prolog, 0, buffer, nonceSize, prolog.length);
-				System.arraycopy(progressiveAsBytes, 1, buffer, nonceSize + prolog.length, progressiveAsBytes.length - 1);
-			}
-			else {
-				buffer = new byte[nonceSize + prolog.length + progressiveAsBytes.length];
-				System.arraycopy(prolog, 0, buffer, nonceSize, prolog.length);
-				System.arraycopy(progressiveAsBytes, 0, buffer, nonceSize + prolog.length, progressiveAsBytes.length);
-			}
-
+		private byte[] initWithPrologAndProgressive(byte[] prolog, long progressive) {
+			byte[] buffer = new byte[nonceSize + prolog.length + 8];
+			System.arraycopy(prolog, 0, buffer, nonceSize, prolog.length);
+			longToBytesBE(progressive, buffer, nonceSize + prolog.length);
 			return buffer;
 		}
+
+		private void longToBytesBE(long l, byte[] target, int offset) {
+	        offset += 7;
+	        for (int i = 0; i <= 7; i++)
+	            target[offset - i] = (byte)((l>>(8*i)) & 0xFF);
+	    }
 
 		/**
 		 * Fills the {@code buffer} with scoops. Initially, the buffer contains only
