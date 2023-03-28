@@ -55,13 +55,14 @@ public class NonceImpl implements Nonce {
 	 * Dumps this nonce into the give file, as the {@code offset}th nonce inside the file.
 	 * 
 	 * @param where the file channel where the nonce must be dumped
+	 * @param metadataSize the size of the metadata of the plot file, that precedes the nonces
 	 * @param offset the progressive number of the nonce inside the file; for instance,
 	 *               if the file will contains nonces from progressive 100 to progressive 150,
 	 *               then they are placed at offsets from 0 to 50 inside the file, respectively
 	 * @param length the total number of nonces that will be contained in the file
 	 * @throws IOException if the nonce could not be dumped into the file
 	 */
-	void dumpInto(FileChannel where, long offset, long length) throws IOException {
+	void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException {
 		int scoopSize = 2 * hashSize;
 
 		// in order to get an optimized file, we put the scoops with the same number together,
@@ -73,7 +74,7 @@ public class NonceImpl implements Nonce {
 			// scoopNumber * scoopSize is the position of scoopNumber inside the data of the nonce
 			try (var source = Channels.newChannel(new ByteArrayInputStream(data, scoopNumber * scoopSize, scoopSize))) {
 				// the scoop goes inside its group, sequentially wrt the offset of the nonce
-				where.transferFrom(source, scoopNumber * groupSize + offset * scoopSize, scoopSize);
+				where.transferFrom(source, metadataSize + scoopNumber * groupSize + offset * scoopSize, scoopSize);
 			}
 	}
 
