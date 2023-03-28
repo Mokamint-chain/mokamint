@@ -16,14 +16,19 @@ limitations under the License.
 
 package io.hotmoka.spacemint.plotter.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.stream.LongStream;
 
 import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.spacemint.plotter.Nonce;
 import io.hotmoka.spacemint.plotter.Plot;
 
 /**
@@ -74,12 +79,19 @@ public class PlotImpl implements Plot {
 		this.channel = reader.getChannel();
 
 		int prologLength = reader.readInt();
+		if (prologLength > Plot.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + Plot.MAX_PROLOG_SIZE);
 		this.prolog = new byte[prologLength];
 		if (reader.read(prolog) != prologLength)
 			throw new IOException("cannot read the prolog of the plot file");
 
 		this.start = reader.readLong();
+		if (start < 0)
+			throw new IllegalArgumentException("the plot starting number cannot be negative");
+
 		this.length = reader.readLong();
+		if (length < 1)
+			throw new IllegalArgumentException("the plot length must be positive");
 
 		int hashingNameLength = reader.readInt();
 		byte[] hashingNameBytes = new byte[hashingNameLength];
@@ -135,7 +147,97 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public Nonce getNonceWithSmallestDeadline(int scoopNumber, byte[] data) {
+		if (scoopNumber < 0 || scoopNumber >= Nonce.SCOOPS_PER_NONCE)
+			throw new IllegalArgumentException("illegal scoop number: it must be between 0 (inclusive) and " + Nonce.SCOOPS_PER_NONCE + " (exclusive)");
+
+		long start = System.currentTimeMillis();
+		long bestProgressive = new ProgressiveOfNonceWithSmallestDeadline(scoopNumber, data).progressive;
+		System.out.println(System.currentTimeMillis() - start + "ms");
+
+		System.out.println(bestProgressive);
+
+		return null;
+	}
+
+	private static class IndexedHash implements Comparable<IndexedHash> {
+		private final long progressive;
+		private final byte[] hash;
+		
+		private IndexedHash(long progressive, byte[] hash) {
+			this.progressive = progressive;
+			this.hash = hash;
+		}
+
+		@Override
+		public int compareTo(IndexedHash other) {
+			byte[] left = hash, right = other.hash;
+
+			for (int i = 0; i < left.length; i++) {
+				int a = (left[i] & 0xff);
+				int b = (right[i] & 0xff);
+				if (a != b)
+					return a - b;
+			}
+
+			return 0; // hashes with the same algorithm have the same length
+		}
+	}
+
+	private class ProgressiveOfNonceWithSmallestDeadline {
+		private final int scoopNumber;
+		private final long progressive;
+		private final int scoopSize = 2 * hashing.length();
+		private final long groupSize = length * scoopSize;
+		private final int metadataSize = getMetadataSize();
+
+		private ProgressiveOfNonceWithSmallestDeadline(int scoopNumber, byte[] data) { // TODO
+			this.scoopNumber = scoopNumber;
+
+			progressive = LongStream.range(start, start + length)
+				.parallel()
+				.mapToObj(n -> new IndexedHash(n, hashing.hash(concat(extractScoop(n), data))))
+				.min(IndexedHash::compareTo)
+				.get() // OK, since the plot contains at least a nonce
+				.progressive;
+		}
+
+		private byte[] concat(byte[] array1, byte[] array2) {
+			byte[] result = new byte[array1.length + array2.length];
+			System.arraycopy(array1, 0, result, 0, array1.length);
+			System.arraycopy(array2, 0, result, array1.length, array2.length);
+			return result;
+		}
+
+		/**
+		 * @param progressive1
+		 */
+		private byte[] extractScoop(long progressive) {
+			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
+				// the scoop is inside its group, sequentially wrt the offset of the nonce
+				channel.transferTo(metadataSize + scoopNumber * groupSize + progressive * scoopSize, scoopSize, destination);
+				return os.toByteArray();
+			}
+			catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+
+		/**
+		 * Yields the size of the metadata reported before the nonces.
+		 * 
+		 * @return the size of the metadata
+		 */
+		private int getMetadataSize() {
+			return 4 + prolog.length // prolog
+				+ 8 // start
+				+ 8 // length
+				+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
+		}
+	}
+
+	@Override
+	public void close() throws IOException {
 		try {
 			reader.close();
 		}

@@ -26,6 +26,8 @@ import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.spacemint.plotter.internal.PlotImpl;
 
 /**
+ * A plot file, containing sequential nonces. Each nonce contains
+ * scoops. Each scoop contains a pair of hashes.
  */
 public interface Plot extends AutoCloseable {
 
@@ -91,9 +93,26 @@ public interface Plot extends AutoCloseable {
 	 */
 	HashingAlgorithm<byte[]> getHashing();
 
+	@Override
+	public void close() throws IOException;
+
+	/**
+	 * Yields the nonce with the smallest deadline of the given scoop number and data
+	 * in this plot file. This method will select the given scoop
+	 * number in all nonces contained in this plot file. For each, it will hash the scoop data
+	 * and the provided {@code data} and return the nonce with the smallest hash.
+	 * 
+	 * @param scoopNumber the number of the scoop to consider
+	 * @param data the data to hash together with the scoop data
+	 * @return the nonce with the smallest hash
+	 */
+	Nonce getNonceWithSmallestDeadline(int scoopNumber, byte[] data);
+
 	public static void main(String[] args) throws IOException {
 		Path path = Paths.get("pippo.plot");
 		Files.deleteIfExists(path);
-		create(path, new byte[] { 11, 13, 24, 88 }, 65536L, 10000L, HashingAlgorithm.shabal256((byte[] bytes) -> bytes));
+		try (Plot plot = create(path, new byte[] { 11, 13, 24, 88 }, 65536L, 2000L, HashingAlgorithm.shabal256((byte[] bytes) -> bytes))) {
+			plot.getNonceWithSmallestDeadline(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 });
+		}
 	}
 }

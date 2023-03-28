@@ -34,7 +34,7 @@ public interface Nonce {
 	 * Yields the nonce for the given data and with the given number.
 	 * 
 	 * @param prolog generic data that identifies, for instance, the creator
-	 *               of the nonce. This can be really anything, but cannlot be {@code null}
+	 *               of the nonce. This can be really anything, but cannot be {@code null}
 	 * @param progressive the progressive number of the nonce. This must be non-negative
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 * @return the nonce

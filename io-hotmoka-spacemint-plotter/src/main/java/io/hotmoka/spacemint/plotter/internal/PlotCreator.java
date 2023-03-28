@@ -50,7 +50,7 @@ class PlotCreator {
 	 *               of the plot. This can be really anything but cannot be {@code null}
 	 * @param start the starting progressive number of the nonces in the plot.
 	 *              This must be non-negative
-	 * @param length the number of nonces to generate. This must be non-negative
+	 * @param length the number of nonces to generate. This must be positive
 	 * @param hashing the hashing algorithm to use for creating the nonces
 	 * @throws IOException if the plot could not be written into {@code path}
 	 */
@@ -58,11 +58,11 @@ class PlotCreator {
 		if (start < 0)
 			throw new IllegalArgumentException("the plot starting number cannot be negative");
 		
-		if (length < 0)
-			throw new IllegalArgumentException("the plot length cannot be negative");
+		if (length < 1)
+			throw new IllegalArgumentException("the plot length must be positive");
 
 		if (prolog == null)
-			throw new NullPointerException("the prolog cannolt be null");
+			throw new NullPointerException("the prolog cannot be null");
 
 		if (prolog.length > Plot.MAX_PROLOG_SIZE)
 			throw new IllegalArgumentException("the maximal prolog size is " + Plot.MAX_PROLOG_SIZE);
@@ -100,7 +100,7 @@ class PlotCreator {
 		}
 
 		/**
-		 * Yields the size of the metadata reported before the nonces
+		 * Yields the size of the metadata reported before the nonces.
 		 * 
 		 * @return the size of the metadata
 		 */
@@ -125,7 +125,6 @@ class PlotCreator {
 		}
 
 		private void dumpMetadata() throws IOException {
-			
 			ByteBuffer buffer = ByteBuffer.allocate(metadataSize);
 			buffer.putInt(prolog.length);
 			buffer.put(prolog);
