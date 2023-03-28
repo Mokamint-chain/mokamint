@@ -51,9 +51,17 @@ public class NonceImpl implements Nonce {
 		this.data = new Builder(prolog, progressive, hashing).data;
 	}
 
-	
-	@Override
-	public void dumpInto(FileChannel where, long offset, long length) throws IOException {
+	/**
+	 * Dumps this nonce into the give file, as the {@code offset}th nonce inside the file.
+	 * 
+	 * @param where the file channel where the nonce must be dumped
+	 * @param offset the progressive number of the nonce inside the file; for instance,
+	 *               if the file will contains nonces from progressive 100 to progressive 150,
+	 *               then they are placed at offsets from 0 to 50 inside the file, respectively
+	 * @param length the total number of nonces that will be contained in the file
+	 * @throws IOException if the nonce could not be dumped into the file
+	 */
+	void dumpInto(FileChannel where, long offset, long length) throws IOException {
 		int scoopSize = 2 * hashSize;
 
 		// in order to get an optimized file, we put the scoops with the same number together,

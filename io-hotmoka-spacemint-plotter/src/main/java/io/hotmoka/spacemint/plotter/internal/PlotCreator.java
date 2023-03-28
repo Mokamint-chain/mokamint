@@ -16,24 +16,23 @@ limitations under the License.
 
 package io.hotmoka.spacemint.plotter.internal;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
 import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.spacemint.plotter.Nonce;
-import io.hotmoka.spacemint.plotter.PlotCreator;
 
 /**
  * Implementation of the creator of a plot file. A plot file contains sequential nonces.
  */
-public class PlotCreatorImpl implements PlotCreator {
-	private final static Logger logger = Logger.getLogger(PlotCreatorImpl.class.getName());
+class PlotCreator {
+	private final static Logger logger = Logger.getLogger(PlotCreator.class.getName());
 	private final byte[] prolog;
 	private final long start;
 	private final long length;
@@ -42,7 +41,7 @@ public class PlotCreatorImpl implements PlotCreator {
 	/**
 	 * Creates a plot containing sequential nonces for the given data.
 	 * 
-	 * @param where the file where the plot must be dumped
+	 * @param path the path to the file where the plot must be dumped
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the nonces. This can be really anything but cannot be {@code null}
 	 * @param start the starting progressive number of the nonces. This must be non-negative
@@ -50,7 +49,7 @@ public class PlotCreatorImpl implements PlotCreator {
 	 * @param hashing the hashing algorithm to use to create the nonces
 	 * @throws IOException if the plot could not be written into {@code where}
 	 */
-	public PlotCreatorImpl(File where, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
+	PlotCreator(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
 		if (start < 0)
 			throw new IllegalArgumentException("the plot starting number cannot be negative");
 		
@@ -62,7 +61,7 @@ public class PlotCreatorImpl implements PlotCreator {
 		this.length = length;
 		this.hashing = hashing;
 
-		new Dumper(where);
+		new Dumper(path);
 	}
 
 	private class Dumper {
@@ -70,15 +69,15 @@ public class PlotCreatorImpl implements PlotCreator {
 		private final int nonceSize = Nonce.size(hashing);
 		private final long plotSize = length * nonceSize;
 
-		private Dumper(File where) throws IOException {
+		private Dumper(Path where) throws IOException {
 			long startTime = System.currentTimeMillis();
 			logger.info("Starting creating a plot file of " + plotSize + " bytes");
 		
-			try (RandomAccessFile writer = new RandomAccessFile(where, "rw");
+			try (RandomAccessFile writer = new RandomAccessFile(where.toFile(), "rw");
 				 FileChannel channel = this.channel = writer.getChannel()) {
 		
 				sizePlotFile();
-				mkNonces();
+				dumpNonces();
 			}
 			catch (UncheckedIOException e) {
 				throw e.getCause();
@@ -102,13 +101,13 @@ public class PlotCreatorImpl implements PlotCreator {
 			}
 		}
 
-		private void mkNonces() throws UncheckedIOException {
+		private void dumpNonces() throws UncheckedIOException {
 			LongStream.range(start, start + length)
 				.parallel()
-				.forEach(this::mkNonce);
+				.forEach(this::dumpNonce);
 		}
 
-		private void mkNonce(long n) throws UncheckedIOException {
+		private void dumpNonce(long n) throws UncheckedIOException {
 			try {
 				// the hashing algorithm is cloned to avoid thread contention
 				new NonceImpl(prolog, n, hashing.clone())

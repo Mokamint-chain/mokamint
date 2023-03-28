@@ -16,9 +16,6 @@ limitations under the License.
 
 package io.hotmoka.spacemint.plotter;
 
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-
 import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.spacemint.plotter.internal.NonceImpl;
 
@@ -56,16 +53,4 @@ public interface Nonce {
 	public static int size(HashingAlgorithm<byte[]> hashing) {
 		return SCOOPS_PER_NONCE * 2 * hashing.length();
 	}
-
-	/**
-	 * Dumps this nonce into the give file, as the {@code offset}th nonce inside the file.
-	 * 
-	 * @param where the file channel where the nonce must be dumped
-	 * @param offset the progressive number of the nonce inside the file; for instance,
-	 *               if the file will contains nonces from progressive 100 to progressive 150,
-	 *               then they are placed at offsets from 0 to 50 inside the file, respectively
-	 * @param length the total number of nonces that will be contained in the file
-	 * @throws IOException if the nonce could not be dumped into the file
-	 */
-	public void dumpInto(FileChannel where, long offset, long length) throws IOException;
 }
