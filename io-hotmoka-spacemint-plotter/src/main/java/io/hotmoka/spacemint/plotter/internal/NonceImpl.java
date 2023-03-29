@@ -78,6 +78,16 @@ public class NonceImpl implements Nonce {
 			}
 	}
 
+	/**
+	 * Yields the size (number of bytes) of a nonce built with the given
+	 * hashing algorithm.
+	 * 
+	 * @param hashing the hashing algorithm
+	 * @return the size
+	 */
+	static int size(HashingAlgorithm<byte[]> hashing) {
+		return SCOOPS_PER_NONCE * 2 * hashing.length();
+	}
 
 	/**
 	 * The class that builds the nonce.

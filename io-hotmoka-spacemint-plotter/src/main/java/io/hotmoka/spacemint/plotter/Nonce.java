@@ -42,15 +42,4 @@ public interface Nonce {
 	static Nonce of(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
 		return new NonceImpl(prolog, progressive, hashing);
 	}
-
-	/**
-	 * Yields the size (number of bytes) of a nonce built with the given
-	 * hashing algorithm.
-	 * 
-	 * @param hashing the hashing algorithm
-	 * @return the size
-	 */
-	public static int size(HashingAlgorithm<byte[]> hashing) {
-		return SCOOPS_PER_NONCE * 2 * hashing.length();
-	}
 }

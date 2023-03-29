@@ -27,7 +27,7 @@ import io.hotmoka.spacemint.plotter.internal.PlotImpl;
 
 /**
  * A plot file, containing sequential nonces. Each nonce contains
- * scoops. Each scoop contains a pair of hashes.
+ * a sequence of scoops. Each scoop contains a pair of hashes.
  */
 public interface Plot extends AutoCloseable {
 
@@ -96,18 +96,14 @@ public interface Plot extends AutoCloseable {
 	@Override
 	void close() throws IOException;
 
-	interface Deadline extends Comparable<Deadline> {
-		long getProgressive();
-		byte[] getValue();
-	}
-
 	/**
 	 * Yields the smallest deadline for the given scoop number and data
 	 * in this plot file. This method selects the given scoop
 	 * for all nonces contained in this plot file. For each scoop, it computes
 	 * its deadline value by hashing the scoop data and the provided {@code data}.
 	 * It returns the pair (progressive of the nonce, deadline value)
-	 * with the smallest value.
+	 * with the smallest value. It uses the same hashing algorithm used for
+	 * creating this plot file.
 	 * 
 	 * @param scoopNumber the number of the scoop to consider
 	 * @param data the data to hash together with the scoop data
@@ -119,10 +115,8 @@ public interface Plot extends AutoCloseable {
 	public static void main(String[] args) throws IOException {
 		Path path = Paths.get("pippo.plot");
 		Files.deleteIfExists(path);
-		try (Plot plot = create(path, new byte[] { 11, 13, 24, 88 }, 65536L, 2000L, HashingAlgorithm.shabal256((byte[] bytes) -> bytes))) {
-			long start = System.currentTimeMillis();
+		try (Plot plot = create(path, new byte[] { 11, 13, 24, 88 }, 65536L, 10000L, HashingAlgorithm.shabal256((byte[] bytes) -> bytes))) {
 			Deadline deadline = plot.getSmallestDeadline(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 });
-			System.out.println(System.currentTimeMillis() - start + "ms");
 			System.out.println(deadline.getProgressive());
 		}
 	}
