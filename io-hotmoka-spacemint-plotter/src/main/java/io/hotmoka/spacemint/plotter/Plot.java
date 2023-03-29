@@ -62,7 +62,7 @@ public interface Plot extends AutoCloseable {
 	 * @throws IOException if the plot file could not be written into {@code path}
 	 */
 	static Plot create(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
-		return PlotImpl.create(path, prolog, start, length, hashing);
+		return new PlotImpl(path, prolog, start, length, hashing);
 	}
 
 	/**
@@ -94,25 +94,36 @@ public interface Plot extends AutoCloseable {
 	HashingAlgorithm<byte[]> getHashing();
 
 	@Override
-	public void close() throws IOException;
+	void close() throws IOException;
+
+	interface Deadline extends Comparable<Deadline> {
+		long getProgressive();
+		byte[] getValue();
+	}
 
 	/**
-	 * Yields the nonce with the smallest deadline of the given scoop number and data
-	 * in this plot file. This method will select the given scoop
-	 * number in all nonces contained in this plot file. For each, it will hash the scoop data
-	 * and the provided {@code data} and return the nonce with the smallest hash.
+	 * Yields the smallest deadline for the given scoop number and data
+	 * in this plot file. This method selects the given scoop
+	 * for all nonces contained in this plot file. For each scoop, it computes
+	 * its deadline value by hashing the scoop data and the provided {@code data}.
+	 * It returns the pair (progressive of the nonce, deadline value)
+	 * with the smallest value.
 	 * 
 	 * @param scoopNumber the number of the scoop to consider
 	 * @param data the data to hash together with the scoop data
-	 * @return the nonce with the smallest hash
+	 * @return the smallest deadline
+	 * @throws IOException if the plot file cannot be read
 	 */
-	Nonce getNonceWithSmallestDeadline(int scoopNumber, byte[] data);
+	Deadline getSmallestDeadline(int scoopNumber, byte[] data) throws IOException;
 
 	public static void main(String[] args) throws IOException {
 		Path path = Paths.get("pippo.plot");
 		Files.deleteIfExists(path);
 		try (Plot plot = create(path, new byte[] { 11, 13, 24, 88 }, 65536L, 2000L, HashingAlgorithm.shabal256((byte[] bytes) -> bytes))) {
-			plot.getNonceWithSmallestDeadline(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 });
+			long start = System.currentTimeMillis();
+			Deadline deadline = plot.getSmallestDeadline(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 });
+			System.out.println(System.currentTimeMillis() - start + "ms");
+			System.out.println(deadline.getProgressive());
 		}
 	}
 }

@@ -16,15 +16,18 @@ limitations under the License.
 
 package io.hotmoka.spacemint.plotter.internal;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
 import io.hotmoka.crypto.HashingAlgorithm;
@@ -34,7 +37,9 @@ import io.hotmoka.spacemint.plotter.Plot;
 /**
  */
 public class PlotImpl implements Plot {
-	
+
+	private final static Logger logger = Logger.getLogger(PlotImpl.class.getName());
+
 	/**
 	 * The file that backs up this plot.
 	 */
@@ -79,8 +84,8 @@ public class PlotImpl implements Plot {
 		this.channel = reader.getChannel();
 
 		int prologLength = reader.readInt();
-		if (prologLength > Plot.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + Plot.MAX_PROLOG_SIZE);
+		if (prologLength > MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
 		this.prolog = new byte[prologLength];
 		if (reader.read(prolog) != prologLength)
 			throw new IOException("cannot read the prolog of the plot file");
@@ -102,7 +107,7 @@ public class PlotImpl implements Plot {
 	}
 
 	/**
-	 * Creates a plot file containing sequential nonces for the given prolog.
+	 * Creates on the file system a plot file containing sequential nonces for the given prolog.
 	 * 
 	 * @param path the path to the file where the plot must be dumped
 	 * @param prolog generic data that identifies, for instance, the creator
@@ -111,18 +116,111 @@ public class PlotImpl implements Plot {
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be non-negative
 	 * @param hashing the hashing algorithm to use for creating the nonces
-	 * @return the plot that has been created
 	 * @throws IOException if the plot file could not be written into {@code path}
 	 */
-	public static PlotImpl create(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
-		new PlotCreator(path, prolog, start, length, hashing);
+	public PlotImpl(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
+		if (start < 0)
+			throw new IllegalArgumentException("the plot starting number cannot be negative");
+		
+		if (length < 1)
+			throw new IllegalArgumentException("the plot length must be positive");
 
-		try {
-			return new PlotImpl(path);
+		if (prolog == null)
+			throw new NullPointerException("the prolog cannot be null");
+
+		if (prolog.length > MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
+
+		this.prolog = prolog.clone();
+		this.start = start;
+		this.length = length;
+		this.hashing = hashing;
+
+		new Dumper(path);
+
+		this.reader = new RandomAccessFile(path.toFile(), "r");
+		this.channel = reader.getChannel();
+	}
+
+	private class Dumper {
+		private final FileChannel channel;
+		private final int nonceSize = Nonce.size(hashing);
+		private final int metadataSize = getMetadataSize();
+		private final long plotSize = metadataSize + length * nonceSize;
+
+		private Dumper(Path where) throws IOException {
+			long startTime = System.currentTimeMillis();
+			logger.info("Starting creating a plot file of " + plotSize + " bytes");
+		
+			try (RandomAccessFile writer = new RandomAccessFile(where.toFile(), "rw");
+				 FileChannel channel = this.channel = writer.getChannel()) {
+		
+				sizePlotFile();
+				dumpMetadata();
+				dumpNonces();
+			}
+			catch (UncheckedIOException e) {
+				throw e.getCause();
+			}
+		
+			logger.info("Plot file created in " + (System.currentTimeMillis() - startTime) + "ms");
 		}
-		catch (NoSuchAlgorithmException e) {
-			// unexpected: we just created the file with the same algorithm, so it must exist
-			throw new IllegalStateException("unexpcted missing algorithm", e);
+
+		/**
+		 * Yields the size of the metadata reported before the nonces.
+		 * 
+		 * @return the size of the metadata
+		 */
+		private int getMetadataSize() {
+			return 4 + prolog.length // prolog
+				+ 8 // start
+				+ 8 // length
+				+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
+		}
+
+		/**
+		 * Initializes the plot file: it is created at its final size, initially containing random bytes.
+		 * 
+		 * @throws IOException if the file cannot be initialized
+		 */
+		private void sizePlotFile() throws IOException {
+			// by forcing a write to the last byte of the file, we guarantee
+			// that it is fully created (but randomly initialized, for now)
+			channel.position(plotSize - 1);
+			ByteBuffer buffer = ByteBuffer.wrap(new byte[1]);
+			channel.write(buffer);
+		}
+
+		private void dumpMetadata() throws IOException {
+			ByteBuffer buffer = ByteBuffer.allocate(metadataSize);
+			buffer.putInt(prolog.length);
+			buffer.put(prolog);
+			buffer.putLong(start);
+			buffer.putLong(length);
+			byte[] name = hashing.getName().getBytes(Charset.forName("UTF-8"));
+			buffer.putInt(name.length);
+			buffer.put(name);
+
+			try (var source = Channels.newChannel(new ByteArrayInputStream(buffer.array()))) {
+				channel.transferFrom(source, 0L, metadataSize);
+			}
+		}
+
+		private void dumpNonces() throws UncheckedIOException {
+			LongStream.range(start, start + length)
+				.parallel()
+				.forEach(this::dumpNonce);
+		}
+
+		private void dumpNonce(long n) throws UncheckedIOException {
+			try {
+				// the hashing algorithm is cloned to avoid thread contention
+				new NonceImpl(prolog, n, hashing.clone())
+					.dumpInto(channel, metadataSize, n - start, length);
+			}
+			catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 	}
 
@@ -147,59 +245,78 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Nonce getNonceWithSmallestDeadline(int scoopNumber, byte[] data) {
+	public Deadline getSmallestDeadline(int scoopNumber, byte[] data) throws IOException {
 		if (scoopNumber < 0 || scoopNumber >= Nonce.SCOOPS_PER_NONCE)
 			throw new IllegalArgumentException("illegal scoop number: it must be between 0 (inclusive) and " + Nonce.SCOOPS_PER_NONCE + " (exclusive)");
 
-		long start = System.currentTimeMillis();
-		long bestProgressive = new ProgressiveOfNonceWithSmallestDeadline(scoopNumber, data).progressive;
-		System.out.println(System.currentTimeMillis() - start + "ms");
-
-		System.out.println(bestProgressive);
-
-		return null;
+		try {
+			return new SmallestDeadlineFinder(scoopNumber, data).deadline;
+		}
+		catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
 	}
 
-	private static class IndexedHash implements Comparable<IndexedHash> {
+	/**
+	 * Yields the size of the metadata reported before the nonces.
+	 * 
+	 * @return the size of the metadata
+	 */
+	private int getMetadataSize() {
+		return 4 + prolog.length // prolog
+			+ 8 // start
+			+ 8 // length
+			+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
+	}
+
+	private static class DeadlineImpl implements Deadline {
 		private final long progressive;
-		private final byte[] hash;
+		private final byte[] value;
 		
-		private IndexedHash(long progressive, byte[] hash) {
+		private DeadlineImpl(long progressive, byte[] value) {
 			this.progressive = progressive;
-			this.hash = hash;
+			this.value = value;
 		}
 
 		@Override
-		public int compareTo(IndexedHash other) {
-			byte[] left = hash, right = other.hash;
+		public int compareTo(Deadline other) {
+			byte[] left = value, right = other.getValue();
 
 			for (int i = 0; i < left.length; i++) {
-				int a = (left[i] & 0xff);
-				int b = (right[i] & 0xff);
+				int a = left[i] & 0xff;
+				int b = right[i] & 0xff;
 				if (a != b)
 					return a - b;
 			}
 
-			return 0; // hashes with the same algorithm have the same length
+			return 0; // deadlines with the same hashing algorithm have the same length
+		}
+
+		@Override
+		public long getProgressive() {
+			return progressive;
+		}
+
+		@Override
+		public byte[] getValue() {
+			return value.clone();
 		}
 	}
 
-	private class ProgressiveOfNonceWithSmallestDeadline {
+	private class SmallestDeadlineFinder {
 		private final int scoopNumber;
-		private final long progressive;
+		private final Deadline deadline;
 		private final int scoopSize = 2 * hashing.length();
 		private final long groupSize = length * scoopSize;
 		private final int metadataSize = getMetadataSize();
 
-		private ProgressiveOfNonceWithSmallestDeadline(int scoopNumber, byte[] data) { // TODO
+		private SmallestDeadlineFinder(int scoopNumber, byte[] data) {
 			this.scoopNumber = scoopNumber;
-
-			progressive = LongStream.range(start, start + length)
+			this.deadline = LongStream.range(start, start + length)
 				.parallel()
-				.mapToObj(n -> new IndexedHash(n, hashing.hash(concat(extractScoop(n), data))))
-				.min(IndexedHash::compareTo)
-				.get() // OK, since the plot contains at least a nonce
-				.progressive;
+				.mapToObj(n -> new DeadlineImpl(n, hashing.hash(concat(extractScoop(n - start), data))))
+				.min(DeadlineImpl::compareTo)
+				.get(); // OK, since the plot contains at least one nonce
 		}
 
 		private byte[] concat(byte[] array1, byte[] array2) {
@@ -210,7 +327,12 @@ public class PlotImpl implements Plot {
 		}
 
 		/**
-		 * @param progressive1
+		 * Extracts the scoop (two hashes) number {@code scoopNumber} from the nonce
+		 * number {@code progressive} of this plot file.
+		 * 
+		 * @param progressive the progressive number of the nonce whose scoop must be extracted,
+		 *                    between 0 (inclusive) and {@code length} (exclusive)
+		 * @return the scoop data (two hashes)
 		 */
 		private byte[] extractScoop(long progressive) {
 			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
@@ -221,18 +343,6 @@ public class PlotImpl implements Plot {
 			catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-		}
-
-		/**
-		 * Yields the size of the metadata reported before the nonces.
-		 * 
-		 * @return the size of the metadata
-		 */
-		private int getMetadataSize() {
-			return 4 + prolog.length // prolog
-				+ 8 // start
-				+ 8 // length
-				+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
 		}
 	}
 
@@ -248,5 +358,4 @@ public class PlotImpl implements Plot {
 
 		channel.close();
 	}
-
 }
