@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.spacemint.plotter.internal.PlotImpl;
+import io.hotmoka.spacemint.plotter.Plot;
 
 /**
  * A plot file, containing sequential nonces. Each nonce contains
@@ -117,7 +118,7 @@ public interface Plot extends AutoCloseable {
 		Files.deleteIfExists(path);
 		byte[] prolog = new byte[] { 11, 13, 24, 88 };
 		long start = 65536L;
-		long length = 4000L;
+		long length = 1000L;
 		var hashing = HashingAlgorithm.shabal256((byte[] bytes) -> bytes);
 		int scoopNumber = 13;
 		byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };

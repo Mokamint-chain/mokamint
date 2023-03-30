@@ -18,4 +18,5 @@ module io.hotmoka.spacemint.plotter {
 	exports io.hotmoka.spacemint.plotter;
 	requires io.hotmoka.crypto;
 	requires java.logging;
+	requires static org.junit.jupiter.api;
 }

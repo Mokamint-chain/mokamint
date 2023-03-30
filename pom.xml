@@ -168,7 +168,13 @@
                 <excludeArtifactIds>
                   <!-- we exclude all modules built by Maven: their build will put them at the right place -->
                   io-hotmoka-spacemint-node,
+                  io-hotmoka-spacemint-miner,
+                  io-hotmoka-spacemint-plotter,
                   <!-- we exclude all modules that go into the explicit folder -->
+                  bcprov-jdk15on,
+                  io-hotmoka-beans,
+                  io-hotmoka-constants,
+                  io-hotmoka-crypto,
                   <!-- we exclude all modules that go into the automatic folder -->
                   <!-- we exclude all modules that are only used for testing -->
                   junit-jupiter,
@@ -177,6 +183,8 @@
                   junit-jupiter-params,
                   junit-platform-commons,
                   junit-platform-engine,
+                  apiguardian-api,
+                  opentest4j,
                   maven-model,
                   plexus-utils
                 </excludeArtifactIds>
@@ -191,6 +199,7 @@
               <configuration>
                 <outputDirectory>${project.parent.basedir}/modules/automatic</outputDirectory>
                 <includeArtifactIds>
+                  none
                 </includeArtifactIds>
               </configuration>
             </execution>
@@ -203,6 +212,10 @@
               <configuration>
                 <outputDirectory>${project.parent.basedir}/modules/explicit</outputDirectory>
                 <includeArtifactIds>
+                  bcprov-jdk15on,
+                  io-hotmoka-beans,
+                  io-hotmoka-constants,
+                  io-hotmoka-crypto
                 </includeArtifactIds>
               </configuration>
             </execution>
