@@ -152,7 +152,7 @@ public class PlotImpl implements Plot {
 	 */
 	private class Dumper {
 		private final FileChannel channel;
-		private final int nonceSize = NonceImpl.size(hashing);
+		private final int nonceSize = Nonce.SCOOPS_PER_NONCE * 2 * hashing.length();
 		private final int metadataSize = getMetadataSize();
 		private final long plotSize = metadataSize + length * nonceSize;
 
@@ -279,40 +279,6 @@ public class PlotImpl implements Plot {
 			+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
 	}
 
-	private static class DeadlineImpl implements Deadline {
-		private final long progressive;
-		private final byte[] value;
-		
-		private DeadlineImpl(long progressive, byte[] value) {
-			this.progressive = progressive;
-			this.value = value;
-		}
-
-		@Override
-		public int compareTo(Deadline other) {
-			byte[] left = value, right = other.getValue();
-
-			for (int i = 0; i < left.length; i++) {
-				int a = left[i] & 0xff;
-				int b = right[i] & 0xff;
-				if (a != b)
-					return a - b;
-			}
-
-			return 0; // deadlines with the same hashing algorithm have the same length
-		}
-
-		@Override
-		public long getProgressive() {
-			return progressive;
-		}
-
-		@Override
-		public byte[] getValue() {
-			return value.clone();
-		}
-	}
-
 	private class SmallestDeadlineFinder {
 		private final int scoopNumber;
 		private final byte[] data;
@@ -332,27 +298,22 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) {
-			return new DeadlineImpl(n, hashing.hash(concat(extractScoop(n - start), data)));
-		}
-
-		private byte[] concat(byte[] array1, byte[] array2) {
-			byte[] result = new byte[array1.length + array2.length];
-			System.arraycopy(array1, 0, result, 0, array1.length);
-			System.arraycopy(array2, 0, result, array1.length, array2.length);
-			return result;
+			return new DeadlineImpl(n, hashing.hash(extractScoopAndConcat(n - start, data)));
 		}
 
 		/**
 		 * Extracts the scoop (two hashes) number {@code scoopNumber} from the nonce
-		 * number {@code progressive} of this plot file.
+		 * number {@code progressive} of this plot file, and concats the given data at its end.
 		 * 
 		 * @param progressive the progressive number of the nonce whose scoop must be extracted,
 		 *                    between 0 (inclusive) and {@code length} (exclusive)
+		 * @param data the data to concat at the end of the scoop
 		 * @return the scoop data (two hashes)
 		 */
-		private byte[] extractScoop(long progressive) {
+		private byte[] extractScoopAndConcat(long progressive, byte[] data) {
 			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
 				channel.transferTo(metadataSize + scoopNumber * groupSize + progressive * scoopSize, scoopSize, destination);
+				destination.write(ByteBuffer.wrap(data));
 				return os.toByteArray();
 			}
 			catch (IOException e) {

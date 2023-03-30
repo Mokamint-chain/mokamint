@@ -22,6 +22,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
 import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.spacemint.plotter.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
 
 /**
@@ -31,8 +32,20 @@ import io.hotmoka.spacemint.plotter.Nonce;
  * from {@url https://github.com/signum-network/signum-node/blob/main/src/brs/util/MiningPlot.java}.
  */
 public class NonceImpl implements Nonce {
+
+	/**
+	 * The hashing algorithm used for creating this nonce.
+	 */
+	private final HashingAlgorithm<byte[]> hashing;
+
 	private final int hashSize;
 	private final byte[] data;
+
+	/**
+	 * The progressive number of the nonce.
+	 */
+	private final long progressive;
+
 	private final static int HASH_CAP = 4096;
 
 	/**
@@ -47,8 +60,31 @@ public class NonceImpl implements Nonce {
 		if (progressive < 0L)
 			throw new IllegalArgumentException("nonce number cannot be negative");
 
+		this.hashing = hashing;
 		this.hashSize = hashing.length();
+		this.progressive = progressive;
 		this.data = new Builder(prolog, progressive, hashing).data;
+	}
+
+	@Override
+	public Deadline getDeadline(int scoopNumber, byte[] data) {
+		return new DeadlineImpl(progressive, hashing.hash(extractScoopAndConcat(scoopNumber, data)));
+	}
+
+	/**
+	 * Selects the given scoop from this nonce and adds the given data at its end.
+	 * 
+	 * @param scoopNumber the number of the scoop to select, between 0 (inclusice) and
+	 *                    {@link Nonce#SCOOPS_PER_NONCE} (exclusive)
+	 * @param data the data to end after the scoop
+	 * @return the concatenation of the scoop and the data
+	 */
+	private byte[] extractScoopAndConcat(int scoopNumber, byte[] data) {
+		int scoopSize = hashSize * 2;
+		byte[] result = new byte[scoopSize + data.length];
+		System.arraycopy(this.data, scoopNumber * scoopSize, result, 0, scoopSize);
+		System.arraycopy(data, 0, result, scoopSize, data.length);
+		return result;
 	}
 
 	/**
@@ -76,17 +112,6 @@ public class NonceImpl implements Nonce {
 				// the scoop goes inside its group, sequentially wrt the offset of the nonce
 				where.transferFrom(source, metadataSize + scoopNumber * groupSize + offset * scoopSize, scoopSize);
 			}
-	}
-
-	/**
-	 * Yields the size (number of bytes) of a nonce built with the given
-	 * hashing algorithm.
-	 * 
-	 * @param hashing the hashing algorithm
-	 * @return the size
-	 */
-	static int size(HashingAlgorithm<byte[]> hashing) {
-		return SCOOPS_PER_NONCE * 2 * hashing.length();
 	}
 
 	/**
@@ -145,7 +170,7 @@ public class NonceImpl implements Nonce {
 		private void longToBytesBE(long l, byte[] target, int offset) {
 	        offset += 7;
 	        for (int i = 0; i <= 7; i++)
-	            target[offset - i] = (byte)((l>>(8*i)) & 0xFF);
+	            target[offset - i] = (byte) ((l>>(8*i)) & 0xFF);
 	    }
 
 		/**
@@ -165,8 +190,7 @@ public class NonceImpl implements Nonce {
 		private void applyFinalHash() {
 			byte[] finalHash = hashing.hash(buffer);
 			
-			// how much odds hashes should be shifted forward in order to
-			// fulfill the PoC2 representation
+			// how much odd hashes must be shifted forward in order to fulfill the PoC2 representation
 			int shiftForOdds = nonceSize + scoopSize;
 
 			for (int i = 0; i < nonceSize; i++) {

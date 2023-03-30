@@ -115,9 +115,19 @@ public interface Plot extends AutoCloseable {
 	public static void main(String[] args) throws IOException {
 		Path path = Paths.get("pippo.plot");
 		Files.deleteIfExists(path);
-		try (Plot plot = create(path, new byte[] { 11, 13, 24, 88 }, 65536L, 10000L, HashingAlgorithm.shabal256((byte[] bytes) -> bytes))) {
-			Deadline deadline = plot.getSmallestDeadline(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 });
-			System.out.println(deadline.getProgressive());
+		byte[] prolog = new byte[] { 11, 13, 24, 88 };
+		long start = 65536L;
+		long length = 4000L;
+		var hashing = HashingAlgorithm.shabal256((byte[] bytes) -> bytes);
+		int scoopNumber = 13;
+		byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
+		Deadline deadline1;
+		try (Plot plot = create(path, prolog, start, length, hashing)) {
+			deadline1 = plot.getSmallestDeadline(scoopNumber, data);
 		}
+		System.out.println(deadline1);
+		Nonce nonce = Nonce.of(prolog, deadline1.getProgressive(), hashing);
+		Deadline deadline2 = nonce.getDeadline(scoopNumber, data);
+		System.out.println(deadline2);
 	}
 }
