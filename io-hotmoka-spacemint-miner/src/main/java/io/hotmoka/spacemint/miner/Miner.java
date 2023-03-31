@@ -16,10 +16,24 @@ limitations under the License.
 
 package io.hotmoka.spacemint.miner;
 
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
 import io.hotmoka.spacemint.plotter.Deadline;
 
 /**
+ * A miner is an object that finds deadlines on-demand.
  */
 public interface Miner {
-	Deadline getDeadline(int scoopNumber, byte[] data);
+	
+	/**
+	 * Yields a deadline for the given scoop number and data.
+	 * 
+	 * @param scoopNumber the number of the scoop used for finding the deadline
+	 * @param data the data
+	 * @return a deadline
+	 * @throws IOException if some I/O error occurred inside the miner
+	 * @throws TimeoutException if the miner took too long to provide an answer
+	 */
+	Deadline getDeadline(int scoopNumber, byte[] data) throws IOException, TimeoutException;
 }
