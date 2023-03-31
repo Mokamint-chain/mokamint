@@ -34,6 +34,12 @@ import io.hotmoka.spacemint.plotter.Nonce;
 public class NonceImpl implements Nonce {
 
 	/**
+	 * Generic data that identifies, for instance, the creator
+	 * of the nonce. This can be really anything.
+	 */
+	private final byte[] prolog;
+
+	/**
 	 * The hashing algorithm used for creating this nonce.
 	 */
 	private final HashingAlgorithm<byte[]> hashing;
@@ -60,21 +66,22 @@ public class NonceImpl implements Nonce {
 		if (progressive < 0L)
 			throw new IllegalArgumentException("nonce number cannot be negative");
 
+		this.prolog = prolog;
 		this.hashing = hashing;
 		this.hashSize = hashing.length();
 		this.progressive = progressive;
-		this.data = new Builder(prolog, progressive, hashing).data;
+		this.data = new Builder().data;
 	}
 
 	@Override
 	public Deadline getDeadline(int scoopNumber, byte[] data) {
-		return new DeadlineImpl(progressive, hashing.hash(extractScoopAndConcat(scoopNumber, data)));
+		return new DeadlineImpl(prolog, progressive, hashing.hash(extractScoopAndConcat(scoopNumber, data)), hashing);
 	}
 
 	/**
 	 * Selects the given scoop from this nonce and adds the given data at its end.
 	 * 
-	 * @param scoopNumber the number of the scoop to select, between 0 (inclusice) and
+	 * @param scoopNumber the number of the scoop to select, between 0 (inclusive) and
 	 *                    {@link Nonce#SCOOPS_PER_NONCE} (exclusive)
 	 * @param data the data to end after the scoop
 	 * @return the concatenation of the scoop and the data
@@ -118,7 +125,6 @@ public class NonceImpl implements Nonce {
 	 * The class that builds the nonce.
 	 */
 	private class Builder {
-		private final HashingAlgorithm<byte[]> hashing;
 		
 		/**
 		 * The data of the nonce.
@@ -141,12 +147,11 @@ public class NonceImpl implements Nonce {
 		 */
 		private final byte[] buffer;
 
-		private Builder(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
-			this.hashing = hashing;
+		private Builder() {
 			this.data = new byte[SCOOPS_PER_NONCE * 2 * hashSize];
 			this.nonceSize = data.length;
 			this.scoopSize = 2 * hashSize;
-			this.buffer = initWithPrologAndProgressive(prolog, progressive);
+			this.buffer = initWithPrologAndProgressive();
 			fillWithScoops();
 			applyFinalHash();
 		}
@@ -156,11 +161,9 @@ public class NonceImpl implements Nonce {
 		 * This is an array, initially empty, that ends with the pairing of {@code prolog}
 		 * followed by the big-endian representation of the non-negative {@code progressive}.
 		 * 
-		 * @param prolog the prolog of the nonce
-		 * @param progressive the progressive number of the nonce
 		 * @return the initial seed
 		 */
-		private byte[] initWithPrologAndProgressive(byte[] prolog, long progressive) {
+		private byte[] initWithPrologAndProgressive() {
 			byte[] buffer = new byte[nonceSize + prolog.length + 8];
 			System.arraycopy(prolog, 0, buffer, nonceSize, prolog.length);
 			longToBytesBE(progressive, buffer, nonceSize + prolog.length);

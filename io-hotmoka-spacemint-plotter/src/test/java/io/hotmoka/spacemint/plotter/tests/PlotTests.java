@@ -21,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithm;
@@ -31,6 +33,7 @@ import io.hotmoka.spacemint.plotter.Plot;
 public class PlotTests {
 
 	@Test
+	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
 	public void testDeadlineRecomputation() throws IOException {
 		Path path = Paths.get("pippo.plot");
 		Files.deleteIfExists(path);
@@ -46,10 +49,9 @@ public class PlotTests {
 			try (Plot plot = Plot.create(path, prolog, start, length, hashing)) {
 				deadline1 = plot.getSmallestDeadline(scoopNumber, data);
 			}
-			System.out.println(deadline1);
-			Nonce nonce = Nonce.of(prolog, deadline1.getProgressive(), hashing);
+			Nonce nonce = deadline1.toNonce();
 			Deadline deadline2 = nonce.getDeadline(scoopNumber, data);
-			System.out.println(deadline2);
+			Assertions.assertEquals(deadline1, deadline2);
 		}
 		finally {
 			Files.deleteIfExists(path);

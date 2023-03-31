@@ -14,8 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.plotter {
-	exports io.hotmoka.spacemint.plotter;
-	requires io.hotmoka.crypto;
-	requires java.logging;
+/**
+ * @author spoto
+ *
+ */
+module io.hotmoka.spacemint.miner {
+	exports io.hotmoka.spacemint.miner;
+	requires transitive io.hotmoka.spacemint.plotter;
 }

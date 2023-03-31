@@ -184,9 +184,7 @@
                   junit-platform-commons,
                   junit-platform-engine,
                   apiguardian-api,
-                  opentest4j,
-                  maven-model,
-                  plexus-utils
+                  opentest4j
                 </excludeArtifactIds>
               </configuration>
             </execution>

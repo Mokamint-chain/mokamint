@@ -13,6 +13,11 @@
   </parent>
 
   <dependencies>
+    <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-spacemint-plotter</artifactId>
+      <version>${spacemint.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

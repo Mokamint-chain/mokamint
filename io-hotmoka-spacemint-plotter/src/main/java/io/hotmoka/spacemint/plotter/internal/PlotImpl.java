@@ -293,12 +293,12 @@ public class PlotImpl implements Plot {
 			this.deadline = LongStream.range(start, start + length)
 				.parallel()
 				.mapToObj(this::mkDeadline)
-				.min(Deadline::compareTo)
+				.min(Deadline::compareByValue)
 				.get(); // OK, since plots contain at least one nonce
 		}
 
 		private Deadline mkDeadline(long n) {
-			return new DeadlineImpl(n, hashing.hash(extractScoopAndConcat(n - start, data)));
+			return new DeadlineImpl(prolog, n, hashing.hash(extractScoopAndConcat(n - start, data)), hashing);
 		}
 
 		/**

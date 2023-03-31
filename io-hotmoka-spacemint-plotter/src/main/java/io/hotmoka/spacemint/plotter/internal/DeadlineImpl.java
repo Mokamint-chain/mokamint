@@ -1,18 +1,40 @@
 package io.hotmoka.spacemint.plotter.internal;
 
+import java.util.Arrays;
+
+import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.spacemint.plotter.Deadline;
+import io.hotmoka.spacemint.plotter.Nonce;
 
 class DeadlineImpl implements Deadline {
+	private final byte[] prolog;
 	private final long progressive;
 	private final byte[] value;
+	private final HashingAlgorithm<byte[]> hashing;
 
-	DeadlineImpl(long progressive, byte[] value) {
+	DeadlineImpl(byte[] prolog, long progressive, byte[] value, HashingAlgorithm<byte[]> hashing) {
+		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
+		this.hashing = hashing;
 	}
 
 	@Override
-	public int compareTo(Deadline other) {
+	public boolean equals(Object other) {
+		if (other instanceof Deadline) {
+			Deadline otherAsDeadline = (Deadline) other;
+			return progressive == otherAsDeadline.getProgressive() &&
+				Arrays.equals(value, otherAsDeadline.getValue()) &&
+				Arrays.equals(prolog, otherAsDeadline.getProlog()) &&
+				hashing.getName().equals(otherAsDeadline.getHashing().getName());
+		}
+		else
+			return false;
+	}
+
+	@Override
+	public int compareByValue(Deadline other) {
 		byte[] left = value, right = other.getValue();
 
 		for (int i = 0; i < left.length; i++) {
@@ -26,6 +48,11 @@ class DeadlineImpl implements Deadline {
 	}
 
 	@Override
+	public byte[] getProlog() {
+		return prolog.clone();
+	}
+
+	@Override
 	public long getProgressive() {
 		return progressive;
 	}
@@ -36,19 +63,17 @@ class DeadlineImpl implements Deadline {
 	}
 
 	@Override
-	public String toString() {
-		return "nonce: " + progressive + ", deadline: " + bytesToHex(value);
+	public HashingAlgorithm<byte[]> getHashing() {
+		return hashing;
 	}
 
-	private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+	@Override
+	public Nonce toNonce() {
+		return Nonce.of(prolog, progressive, hashing);
+	}
 
-	private static String bytesToHex(byte[] bytes) {
-	    char[] hexChars = new char[bytes.length * 2];
-	    for (int j = 0; j < bytes.length; j++) {
-	        int v = bytes[j] & 0xFF;
-	        hexChars[j * 2] = HEX_ARRAY[v >>> 4];
-	        hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
-	    }
-	    return new String(hexChars);
+	@Override
+	public String toString() {
+		return "nonce: " + progressive + ", deadline: " + Hex.toHexString(value);
 	}
 }

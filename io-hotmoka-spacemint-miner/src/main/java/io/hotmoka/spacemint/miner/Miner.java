@@ -14,8 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.plotter {
-	exports io.hotmoka.spacemint.plotter;
-	requires io.hotmoka.crypto;
-	requires java.logging;
+package io.hotmoka.spacemint.miner;
+
+import io.hotmoka.spacemint.plotter.Deadline;
+
+/**
+ */
+public interface Miner {
+	Deadline getDeadline(int scoopNumber, byte[] data);
 }
