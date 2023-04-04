@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.spacemint.plotter.Deadline;
+import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
 
 class DeadlineImpl implements Deadline {

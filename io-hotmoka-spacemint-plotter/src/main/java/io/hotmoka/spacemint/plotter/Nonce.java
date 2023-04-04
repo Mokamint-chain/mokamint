@@ -23,12 +23,7 @@ import io.hotmoka.spacemint.plotter.internal.NonceImpl;
  * A nonce of a plot file. Each nonce contains scoops.
  * Each scoop contains a pair of hashes.
  */
-public interface Nonce {
-
-	/**
-	 * The number of scoops containted in a nonce.
-	 */
-	public final static int SCOOPS_PER_NONCE = 4096;
+public interface Nonce extends io.hotmoka.spacemint.miner.api.Nonce {
 
 	/**
 	 * Yields the nonce for the given data and with the given number.
@@ -42,13 +37,4 @@ public interface Nonce {
 	static Nonce of(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
 		return new NonceImpl(prolog, progressive, hashing);
 	}
-
-	/**
-	 * Yields the deadline of this nonce, for the given scoop number and data.
-	 * 
-	 * @param scoopNumber the number of the scoop to consider to compute the deadline
-	 * @param data the data used to compute the deadline
-	 * @return the deadline
-	 */
-	Deadline getDeadline(int scoopNumber, byte[] data);
 }

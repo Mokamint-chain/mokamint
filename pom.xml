@@ -27,25 +27,27 @@
 
     <licenses>
       <license>
-	<name>The Apache License, Version 2.0</name>
-	<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+	    <name>The Apache License, Version 2.0</name>
+	    <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
       </license>
     </licenses>
 
     <developers>
       <developer>
-	<name>Fausto Spoto</name>
-	<email>fausto.spoto@hotmoka.io</email>
-	<organization>Hotmoka</organization>
-	<organizationUrl>https://www.hotmoka.io</organizationUrl>
-	<timezone>UTC+01:00</timezone>
+	   <name>Fausto Spoto</name>
+	    <email>fausto.spoto@hotmoka.io</email>
+	    <organization>Hotmoka</organization>
+	    <organizationUrl>https://www.hotmoka.io</organizationUrl>
+	    <timezone>UTC+01:00</timezone>
       </developer>
     </developers>
 
     <modules>
       <module>io-hotmoka-spacemint-node</module>
-      <module>io-hotmoka-spacemint-plotter</module>
       <module>io-hotmoka-spacemint-miner</module>
+      <module>io-hotmoka-spacemint-miner-api</module>
+      <module>io-hotmoka-spacemint-plotter</module>
+      <module>io-hotmoka-spacemint-plotter-api</module>
     </modules>
 
     <profiles>
@@ -123,37 +125,37 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
-	  <version>3.1.0</version>
-	  <configuration>
-	    <failOnError>false</failOnError>
-	    <filesets>
-	      <fileset>
-		<directory>modules</directory>
-		<includes>
-		  <include>**/*</include>
-		</includes>
-		<followSymlinks>false</followSymlinks>
-	      </fileset>
-	      <fileset>
-		<directory>docs</directory>
-		<includes>
-		  <include>**/*</include>
-		</includes>
-		<followSymlinks>false</followSymlinks>
-	      </fileset>
-	    </filesets>
-	  </configuration>
+	      <version>3.1.0</version>
+	      <configuration>
+	        <failOnError>false</failOnError>
+	        <filesets>
+	          <fileset>
+		        <directory>modules</directory>
+		        <includes>
+		          <include>**/*</include>
+		        </includes>
+		        <followSymlinks>false</followSymlinks>
+	          </fileset>
+	          <fileset>
+		        <directory>docs</directory>
+		        <includes>
+		          <include>**/*</include>
+		        </includes>
+		        <followSymlinks>false</followSymlinks>
+	          </fileset>
+	        </filesets>
+	      </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-	  <version>3.8.1</version>
-	  <configuration>
-	    <release>11</release>
-	  </configuration>
+	      <version>3.8.1</version>
+	      <configuration>
+	        <release>11</release>
+	      </configuration>
         </plugin>
         <plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
+	      <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.1.2</version>
           <executions>
@@ -169,7 +171,9 @@
                   <!-- we exclude all modules built by Maven: their build will put them at the right place -->
                   io-hotmoka-spacemint-node,
                   io-hotmoka-spacemint-miner,
+                  io-hotmoka-spacemint-miner-api,
                   io-hotmoka-spacemint-plotter,
+                  io-hotmoka-spacemint-plotter-api,
                   <!-- we exclude all modules that go into the explicit folder -->
                   bcprov-jdk15on,
                   io-hotmoka-beans,
@@ -219,7 +223,7 @@
             </execution>
           </executions>
         </plugin>
-	<plugin>
+	    <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>2.22.0</version>
@@ -245,32 +249,6 @@
             <autoReleaseAfterClose>true</autoReleaseAfterClose>
           </configuration>
         </plugin>
-        <!-- <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.2.0</version>
-          <configuration>
-            <outputDirectory>docs</outputDirectory>
-            <finalName>hotmoka-${hotmoka.version}</finalName>
-            <additionalJOptions>
-		        <additionalJOption>-Xmaxerrs</additionalJOption>
-        		<additionalJOption>65536</additionalJOption>
-        		<additionalJOption>-Xmaxwarns</additionalJOption>
-        		<additionalJOption>65536</additionalJOption>
-      		</additionalJOptions>
-          </configuration>
-          <executions>
-            <execution>
-              <id>aggregate</id>
-              <goals>
-                <goal>aggregate</goal>
-              </goals>
-              <phase>site</phase>
-              <configuration>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin> -->
       </plugins>
     </build>
 </project>

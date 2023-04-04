@@ -23,19 +23,14 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.internal.PlotImpl;
-import io.hotmoka.spacemint.plotter.Plot;
 
 /**
  * A plot file, containing sequential nonces. Each nonce contains
  * a sequence of scoops. Each scoop contains a pair of hashes.
  */
-public interface Plot extends AutoCloseable {
-
-	/**
-	 * The maximal length of the prolog of a plot, in bytes.
-	 */
-	public final int MAX_PROLOG_SIZE = 16777216; // 16 megabytes
+public interface Plot extends io.hotmoka.spacemint.plotter.api.Plot {
 
 	/**
 	 * Loads a plot file.
@@ -65,53 +60,6 @@ public interface Plot extends AutoCloseable {
 	static Plot create(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
 		return new PlotImpl(path, prolog, start, length, hashing);
 	}
-
-	/**
-	 * Yields the prolog of this plot.
-	 * 
-	 * @return the prolog
-	 */
-	byte[] getProlog();
-
-	/**
-	 * Yields the starting progressive number of the nonces inside this plot.
-	 * 
-	 * @return the starting progressive number
-	 */
-	long getStart();
-
-	/**
-	 * Yields the number of nonces in this plot.
-	 * 
-	 * @return the number of nonces
-	 */
-	long getLength();
-
-	/**
-	 * Yields the hashing algorithm used by this plot.
-	 * 
-	 * @return the hashing algorithm
-	 */
-	HashingAlgorithm<byte[]> getHashing();
-
-	@Override
-	void close() throws IOException;
-
-	/**
-	 * Yields the smallest deadline for the given scoop number and data
-	 * in this plot file. This method selects the given scoop
-	 * for all nonces contained in this plot file. For each scoop, it computes
-	 * its deadline value by hashing the scoop data and the provided {@code data}.
-	 * It returns the pair (progressive of the nonce, deadline value)
-	 * with the smallest value. It uses the same hashing algorithm used for
-	 * creating this plot file.
-	 * 
-	 * @param scoopNumber the number of the scoop to consider
-	 * @param data the data to hash together with the scoop data
-	 * @return the smallest deadline
-	 * @throws IOException if the plot file cannot be read
-	 */
-	Deadline getSmallestDeadline(int scoopNumber, byte[] data) throws IOException;
 
 	public static void main(String[] args) throws IOException {
 		Path path = Paths.get("pippo.plot");

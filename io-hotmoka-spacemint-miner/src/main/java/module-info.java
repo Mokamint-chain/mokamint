@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 module io.hotmoka.spacemint.miner {
-	exports io.hotmoka.spacemint.miner;
-	requires transitive io.hotmoka.spacemint.plotter;
+	exports io.hotmoka.spacemint.miner.local;
+	requires transitive io.hotmoka.spacemint.miner.api;
+	requires transitive io.hotmoka.spacemint.plotter.api;
 }

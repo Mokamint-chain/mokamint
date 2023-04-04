@@ -14,25 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.internal;
+package io.hotmoka.spacemint.miner.local.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import io.hotmoka.spacemint.miner.Miner;
-import io.hotmoka.spacemint.plotter.Deadline;
-import io.hotmoka.spacemint.plotter.Plot;
+import io.hotmoka.spacemint.miner.api.Deadline;
+import io.hotmoka.spacemint.miner.local.LocalMiner;
+import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**
- * The implementation of a miner.
+ * The implementation of a local miner.
  * It uses a set of plot files to find deadlines on-demand.
  */
-public class MinerImpl implements Miner {
-
+public class LocalMinerImpl implements LocalMiner {
+	private final Consumer<Deadline> onDeadlineComputed;
 	private final Plot[] plots;
 
-	public MinerImpl(Plot... plots) {
+	public LocalMinerImpl(Consumer<Deadline> onDeadlineComputed, Plot... plots) {
+		this.onDeadlineComputed = onDeadlineComputed;
+
 		if (plots.length < 1)
 			throw new IllegalArgumentException("a miner needs at least a plot file");
 
@@ -40,19 +43,21 @@ public class MinerImpl implements Miner {
 	}
 
 	@Override
-	public Deadline getDeadline(int scoopNumber, byte[] data) throws IOException {
+	public void requestDeadline(int scoopNumber, byte[] data) {
 		try {
-			return Stream.of(plots)
+			Deadline deadline = Stream.of(plots)
 				.map(plot -> getSmallestDeadline(plot, scoopNumber, data))
 				.min(Deadline::compareByValue)
 				.get(); // OK, since there is at least a plot file
+
+			onDeadlineComputed.accept(deadline);
 		}
 		catch (UncheckedIOException e) {
-			throw e.getCause();
+			
 		}
 	}
 
-	private Deadline getSmallestDeadline(Plot plot, int scoopNumber, byte[] data) throws UncheckedIOException {
+	private static Deadline getSmallestDeadline(Plot plot, int scoopNumber, byte[] data) throws UncheckedIOException {
 		try {
 			return plot.getSmallestDeadline(scoopNumber, data);
 		}

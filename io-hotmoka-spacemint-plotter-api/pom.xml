@@ -1,8 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-hotmoka-spacemint-plotter</artifactId>
-  <name>io-hotmoka-spacemint-plotter</name>
+  <artifactId>io-hotmoka-spacemint-plotter-api</artifactId>
+  <name>io-hotmoka-spacemint-plotter-api</name>
   <packaging>jar</packaging>
   <version>${spacemint.version}</version>
 
@@ -18,33 +19,10 @@
        <artifactId>io-hotmoka-crypto</artifactId>
        <version>${hotmoka.version}</version>
     </dependency>
-    <dependency>
+  	<dependency>
        <groupId>io.hotmoka</groupId>
        <artifactId>io-hotmoka-spacemint-miner-api</artifactId>
        <version>${spacemint.version}</version>
-    </dependency>
-        <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-spacemint-plotter-api</artifactId>
-       <version>${spacemint.version}</version>
-    </dependency>
-    <dependency>
-       <groupId>org.junit.jupiter</groupId>
-       <artifactId>junit-jupiter-engine</artifactId>
-       <version>5.4.2</version>
-       <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>5.4.0</version>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.junit.platform</groupId>
-        <artifactId>junit-platform-commons</artifactId>
-        <version>1.5.2</version>
-        <scope>test</scope>
     </dependency>
   </dependencies>
 

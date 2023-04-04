@@ -22,8 +22,9 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
 import io.hotmoka.crypto.HashingAlgorithm;
-import io.hotmoka.spacemint.plotter.Deadline;
+import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
+import io.hotmoka.spacemint.plotter.Plot;
 
 /**
  * A nonce of a plot file. Each nonce contains 4096 scoops.
@@ -66,6 +67,12 @@ public class NonceImpl implements Nonce {
 		if (progressive < 0L)
 			throw new IllegalArgumentException("nonce number cannot be negative");
 
+		if (prolog == null)
+			throw new NullPointerException("the prolog cannot be null");
+
+		if (prolog.length > Plot.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + Plot.MAX_PROLOG_SIZE);
+			
 		this.prolog = prolog;
 		this.hashing = hashing;
 		this.hashSize = hashing.length();

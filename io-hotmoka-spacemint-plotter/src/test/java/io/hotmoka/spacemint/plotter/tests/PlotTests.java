@@ -26,8 +26,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithm;
-import io.hotmoka.spacemint.plotter.Deadline;
-import io.hotmoka.spacemint.plotter.Nonce;
+import io.hotmoka.spacemint.miner.api.Deadline;
+import io.hotmoka.spacemint.miner.api.Nonce;
 import io.hotmoka.spacemint.plotter.Plot;
 
 public class PlotTests {
