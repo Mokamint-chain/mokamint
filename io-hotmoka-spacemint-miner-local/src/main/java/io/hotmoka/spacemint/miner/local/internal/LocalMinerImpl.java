@@ -19,6 +19,8 @@ package io.hotmoka.spacemint.miner.local.internal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.spacemint.miner.api.Deadline;
@@ -30,6 +32,7 @@ import io.hotmoka.spacemint.plotter.api.Plot;
  * It uses a set of plot files to find deadlines on-demand.
  */
 public class LocalMinerImpl implements LocalMiner {
+	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
 	private final Consumer<Deadline> onDeadlineComputed;
 	private final Plot[] plots;
 
@@ -53,7 +56,7 @@ public class LocalMinerImpl implements LocalMiner {
 			onDeadlineComputed.accept(deadline);
 		}
 		catch (UncheckedIOException e) {
-			
+			LOGGER.log(Level.SEVERE, "couldn't compute the deadline from the plot files", e.getCause());
 		}
 	}
 

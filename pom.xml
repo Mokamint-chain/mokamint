@@ -44,8 +44,9 @@
 
     <modules>
       <module>io-hotmoka-spacemint-node</module>
-      <module>io-hotmoka-spacemint-miner</module>
       <module>io-hotmoka-spacemint-miner-api</module>
+      <module>io-hotmoka-spacemint-miner-local</module>
+      <module>io-hotmoka-spacemint-miner-remote</module>
       <module>io-hotmoka-spacemint-plotter</module>
       <module>io-hotmoka-spacemint-plotter-api</module>
     </modules>
@@ -170,8 +171,9 @@
                 <excludeArtifactIds>
                   <!-- we exclude all modules built by Maven: their build will put them at the right place -->
                   io-hotmoka-spacemint-node,
-                  io-hotmoka-spacemint-miner,
                   io-hotmoka-spacemint-miner-api,
+                  io-hotmoka-spacemint-miner-local,
+                  io-hotmoka-spacemint-miner-remote,
                   io-hotmoka-spacemint-plotter,
                   io-hotmoka-spacemint-plotter-api,
                   <!-- we exclude all modules that go into the explicit folder -->
