@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.hotmoka.spacemint.miner.api;
 
-import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 
 /**
  * A deadline inside a plot file. It is a reference to a nonce

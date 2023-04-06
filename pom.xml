@@ -181,6 +181,7 @@
                   io-hotmoka-beans,
                   io-hotmoka-constants,
                   io-hotmoka-crypto,
+                  io-hotmoka-crypto-api,
                   <!-- we exclude all modules that go into the automatic folder -->
                   <!-- we exclude all modules that are only used for testing -->
                   junit-jupiter,
@@ -219,7 +220,8 @@
                   bcprov-jdk15on,
                   io-hotmoka-beans,
                   io-hotmoka-constants,
-                  io-hotmoka-crypto
+                  io-hotmoka-crypto,
+                  io-hotmoka-crypto-api
                 </includeArtifactIds>
               </configuration>
             </execution>

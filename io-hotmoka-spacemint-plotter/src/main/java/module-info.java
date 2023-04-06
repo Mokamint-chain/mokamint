@@ -16,8 +16,9 @@ limitations under the License.
 
 module io.hotmoka.spacemint.plotter {
 	exports io.hotmoka.spacemint.plotter;
-	requires transitive io.hotmoka.spacemint.miner.api;
+	requires io.hotmoka.spacemint.miner.api;
 	requires io.hotmoka.spacemint.plotter.api;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.crypto.api;
 	requires java.logging;
 }

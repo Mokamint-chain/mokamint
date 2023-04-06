@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.hotmoka.spacemint.plotter;
 
-import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.plotter.internal.NonceImpl;
 
 /**

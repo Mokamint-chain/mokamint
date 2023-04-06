@@ -2,8 +2,8 @@ package io.hotmoka.spacemint.plotter.internal;
 
 import java.util.Arrays;
 
-import io.hotmoka.crypto.HashingAlgorithm;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
 

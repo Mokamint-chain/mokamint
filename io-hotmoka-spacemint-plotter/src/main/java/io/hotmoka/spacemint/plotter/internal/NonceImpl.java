@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
-import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
 import io.hotmoka.spacemint.plotter.Plot;
@@ -216,21 +216,5 @@ public class NonceImpl implements Nonce {
 					data[i + shiftForOdds] = (byte) (buffer[i] ^ finalHash[i % hashSize]);
 			}
 		}
-
-		/**
-		 * Moves hashes in order to reach the PoC2 format of a nonce.
-		 */
-		/*private void rearrangeInPoC2Format() {
-			byte[] hashBuffer = new byte[hashSize];
-			int halfSize = nonceSize / 2;
-
-			// left starts at the second hash in the first scoop and moves rightwards
-			// right starts at the second hash in the last scoop and moves leftwards
-			for (int left = hashSize, right = nonceSize - hashSize; left < halfSize; left += scoopSize, right -= scoopSize) {
-				System.arraycopy(data, left, hashBuffer, 0, hashSize); // copy low scoop second hash to buffer
-				System.arraycopy(data, right, data, left, hashSize); // copy high scoop second hash to low scoop second hash
-				System.arraycopy(hashBuffer, 0, data, right, hashSize); // copy buffer to high scoop second hash
-			}
-		}*/
 	}
 }

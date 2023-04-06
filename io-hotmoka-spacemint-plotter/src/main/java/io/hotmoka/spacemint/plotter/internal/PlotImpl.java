@@ -30,7 +30,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
-import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
 import io.hotmoka.spacemint.plotter.Plot;
@@ -106,7 +106,7 @@ public class PlotImpl implements Plot {
 		if (reader.read(hashingNameBytes) != hashingNameLength)
 			throw new IOException("cannot read the name of the hashing algorithm used for the plot file");
 		String hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
-		this.hashing = HashingAlgorithm.mk(hashingName, (byte[] bytes) -> bytes);
+		this.hashing = io.hotmoka.crypto.HashingAlgorithm.mk(hashingName, (byte[] bytes) -> bytes);
 	}
 
 	/**

@@ -18,7 +18,7 @@ package io.hotmoka.spacemint.plotter.api;
 
 import java.io.IOException;
 
-import io.hotmoka.crypto.HashingAlgorithm;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.miner.api.Deadline;
 
 /**
