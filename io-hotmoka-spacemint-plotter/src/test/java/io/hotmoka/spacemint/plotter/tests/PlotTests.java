@@ -26,8 +26,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.spacemint.miner.api.Deadline;
-import io.hotmoka.spacemint.miner.api.Nonce;
+import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.hotmoka.spacemint.nonce.api.Nonce;
 import io.hotmoka.spacemint.plotter.Plots;
 import io.hotmoka.spacemint.plotter.api.Plot;
 
@@ -42,16 +42,16 @@ public class PlotTests {
 		long start = 65536L;
 		long length = 100L;
 		var hashing = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
-		int scoopNumber = 13;
-		byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
 
 		try {
 			Deadline deadline1;
 			try (Plot plot = Plots.create(path, prolog, start, length, hashing)) {
+				int scoopNumber = 13;
+				byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
 				deadline1 = plot.getSmallestDeadline(scoopNumber, data);
 			}
 			Nonce nonce = deadline1.toNonce();
-			Deadline deadline2 = nonce.getDeadline(scoopNumber, data);
+			Deadline deadline2 = nonce.getDeadline(deadline1.getScoopNumber(), deadline1.getData());
 			Assertions.assertEquals(deadline1, deadline2);
 		}
 		finally {

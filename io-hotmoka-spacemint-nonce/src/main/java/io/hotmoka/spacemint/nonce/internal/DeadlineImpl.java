@@ -1,22 +1,22 @@
-package io.hotmoka.spacemint.plotter.internal;
+package io.hotmoka.spacemint.nonce.internal;
 
 import java.util.Arrays;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.miner.api.Deadline;
-import io.hotmoka.spacemint.plotter.Nonce;
+import io.hotmoka.spacemint.nonce.Nonces;
+import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.hotmoka.spacemint.nonce.api.Nonce;
 
-class DeadlineImpl implements Deadline {
+public class DeadlineImpl implements Deadline {
 	private final byte[] prolog;
 	private final long progressive;
 	private final byte[] value;
 	private final int scoopNumber;
 	private final byte[] data;
-
 	private final HashingAlgorithm<byte[]> hashing;
 
-	DeadlineImpl(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+	public DeadlineImpl(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
@@ -91,7 +91,7 @@ class DeadlineImpl implements Deadline {
 
 	@Override
 	public Nonce toNonce() {
-		return Nonce.of(prolog, progressive, hashing);
+		return Nonces.of(prolog, progressive, hashing);
 	}
 
 	@Override

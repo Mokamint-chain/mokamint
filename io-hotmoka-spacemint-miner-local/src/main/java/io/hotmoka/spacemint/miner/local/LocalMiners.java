@@ -18,9 +18,9 @@ package io.hotmoka.spacemint.miner.local;
 
 import java.util.function.Consumer;
 
-import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.miner.local.internal.LocalMinerImpl;
+import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**

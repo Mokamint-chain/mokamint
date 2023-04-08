@@ -49,6 +49,8 @@
       <module>io-hotmoka-spacemint-miner-remote</module>
       <module>io-hotmoka-spacemint-plotter</module>
       <module>io-hotmoka-spacemint-plotter-api</module>
+      <module>io-hotmoka-spacemint-nonce-api</module>
+      <module>io-hotmoka-spacemint-nonce</module>
     </modules>
 
     <profiles>
@@ -176,6 +178,8 @@
                   io-hotmoka-spacemint-miner-remote,
                   io-hotmoka-spacemint-plotter,
                   io-hotmoka-spacemint-plotter-api,
+                  io-hotmoka-spacemint-nonce,
+                  io-hotmoka-spacemint-nonce-api,
                   <!-- we exclude all modules that go into the explicit folder -->
                   bcprov-jdk15on,
                   io-hotmoka-beans,

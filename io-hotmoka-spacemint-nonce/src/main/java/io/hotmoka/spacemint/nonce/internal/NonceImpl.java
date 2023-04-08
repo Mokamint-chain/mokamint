@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
  */
 
-package io.hotmoka.spacemint.plotter.internal;
+package io.hotmoka.spacemint.nonce.internal;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -22,9 +22,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.miner.api.Deadline;
-import io.hotmoka.spacemint.plotter.Nonce;
-import io.hotmoka.spacemint.plotter.api.Plot;
+import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.hotmoka.spacemint.nonce.api.Nonce;
 
 /**
  * A nonce of a plot file. Each nonce contains 4096 scoops.
@@ -70,8 +69,8 @@ public class NonceImpl implements Nonce {
 		if (prolog == null)
 			throw new NullPointerException("the prolog cannot be null");
 
-		if (prolog.length > Plot.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + Plot.MAX_PROLOG_SIZE);
+		if (prolog.length > MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
 			
 		this.prolog = prolog;
 		this.hashing = hashing;
@@ -113,7 +112,7 @@ public class NonceImpl implements Nonce {
 	 * @param length the total number of nonces that will be contained in the file
 	 * @throws IOException if the nonce could not be dumped into the file
 	 */
-	void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException {
+	public void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException {
 		int scoopSize = 2 * hashSize;
 
 		// in order to get an optimized file, we put the scoops with the same number together,

@@ -19,7 +19,8 @@ package io.hotmoka.spacemint.plotter.api;
 import java.io.IOException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.miner.api.Deadline;
+import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.hotmoka.spacemint.nonce.api.Nonce;
 
 /**
  * A plot file, containing sequential nonces. Each nonce contains
@@ -30,7 +31,7 @@ public interface Plot extends AutoCloseable {
 	/**
 	 * The maximal length of the prolog of a plot, in bytes.
 	 */
-	public final int MAX_PROLOG_SIZE = 16777216; // 16 megabytes
+	public final int MAX_PROLOG_SIZE = Nonce.MAX_PROLOG_SIZE; // 16 megabytes
 
 	/**
 	 * Yields the prolog of this plot.

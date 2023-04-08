@@ -22,5 +22,6 @@ module io.hotmoka.spacemint.miner.remote {
 	exports io.hotmoka.spacemint.miner.remote;
 
 	requires transitive io.hotmoka.spacemint.miner.api;
+	requires transitive io.hotmoka.spacemint.nonce.api;
 	requires java.logging;
 }

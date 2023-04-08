@@ -19,9 +19,9 @@
        <artifactId>io-hotmoka-crypto-api</artifactId>
        <version>${hotmoka.version}</version>
     </dependency>
-  	<dependency>
+   	<dependency>
        <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-spacemint-miner-api</artifactId>
+       <artifactId>io-hotmoka-spacemint-nonce-api</artifactId>
        <version>${spacemint.version}</version>
     </dependency>
   </dependencies>

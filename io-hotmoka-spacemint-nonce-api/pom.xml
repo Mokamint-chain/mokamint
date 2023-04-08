@@ -1,7 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>io-hotmoka-spacemint-miner-remote</artifactId>
-  <name>io-hotmoka-spacemint-miner-remote</name>
+
+  <artifactId>io-hotmoka-spacemint-nonce-api</artifactId>
+  <name>io-hotmoka-spacemint-nonce-api</name>
   <packaging>jar</packaging>
   <version>${spacemint.version}</version>
 
@@ -12,15 +13,10 @@
   </parent>
 
   <dependencies>
-    <dependency>
-      <groupId>io.hotmoka</groupId>
-      <artifactId>io-hotmoka-spacemint-miner-api</artifactId>
-      <version>${spacemint.version}</version>
-    </dependency>
-    <dependency>
+  	<dependency>
        <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-spacemint-nonce-api</artifactId>
-       <version>${spacemint.version}</version>
+       <artifactId>io-hotmoka-crypto-api</artifactId>
+       <version>${hotmoka.version}</version>
     </dependency>
   </dependencies>
 

@@ -19,9 +19,9 @@ package io.hotmoka.spacemint.miner.remote;
 import java.net.URI;
 import java.util.function.Consumer;
 
-import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.miner.remote.internal.RemoteMinerImpl;
+import io.hotmoka.spacemint.nonce.api.Deadline;
 
 /**
  * Provider of a miner that connects to a remote mining service.

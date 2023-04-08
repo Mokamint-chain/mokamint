@@ -24,7 +24,9 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.miner.api.Deadline;
+import io.hotmoka.spacemint.nonce.Nonces;
+import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.hotmoka.spacemint.nonce.api.Nonce;
 import io.hotmoka.spacemint.plotter.api.Plot;
 import io.hotmoka.spacemint.plotter.internal.PlotImpl;
 
@@ -69,15 +71,15 @@ public interface Plots {
 		long start = 65536L;
 		long length = 1000L;
 		var hashing = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
-		int scoopNumber = 13;
-		byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
 		Deadline deadline1;
 		try (Plot plot = create(path, prolog, start, length, hashing)) {
+			int scoopNumber = 13;
+			byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
 			deadline1 = plot.getSmallestDeadline(scoopNumber, data);
 		}
 		System.out.println(deadline1);
-		Nonce nonce = Nonce.of(prolog, deadline1.getProgressive(), hashing);
-		Deadline deadline2 = nonce.getDeadline(scoopNumber, data);
+		Nonce nonce = Nonces.of(prolog, deadline1.getProgressive(), hashing);
+		Deadline deadline2 = nonce.getDeadline(deadline1.getScoopNumber(), deadline1.getData());
 		System.out.println(deadline2);
 	}
 }

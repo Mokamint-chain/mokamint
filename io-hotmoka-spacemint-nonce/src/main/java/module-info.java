@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.plotter.api {
-	exports io.hotmoka.spacemint.plotter.api;
+module io.hotmoka.spacemint.nonce {
+	exports io.hotmoka.spacemint.nonce;
 
+	requires io.hotmoka.crypto;
 	requires io.hotmoka.crypto.api;
 	requires transitive io.hotmoka.spacemint.nonce.api;
 }

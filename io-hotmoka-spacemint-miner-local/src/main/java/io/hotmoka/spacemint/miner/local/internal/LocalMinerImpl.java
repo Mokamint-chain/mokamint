@@ -23,8 +23,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.miner.api.Miner;
+import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**

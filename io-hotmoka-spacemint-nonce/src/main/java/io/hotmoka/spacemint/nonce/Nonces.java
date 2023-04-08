@@ -14,19 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.plotter;
+package io.hotmoka.spacemint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.plotter.internal.NonceImpl;
+import io.hotmoka.spacemint.nonce.api.Nonce;
+import io.hotmoka.spacemint.nonce.internal.NonceImpl;
 
 /**
- * A nonce of a plot file. Each nonce contains scoops.
- * Each scoop contains a pair of hashes.
+ * A provider of nonces.
  */
-public interface Nonce extends io.hotmoka.spacemint.miner.api.Nonce {
+public interface Nonces {
 
 	/**
-	 * Yields the nonce for the given data and with the given number.
+	 * Yields the nonce for the given data and with the given number, usingthe given
+	 * hashing algorithm.
 	 * 
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the nonce. This can be really anything, but cannot be {@code null}

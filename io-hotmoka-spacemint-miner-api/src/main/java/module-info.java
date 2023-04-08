@@ -16,5 +16,4 @@ limitations under the License.
 
 module io.hotmoka.spacemint.miner.api {
 	exports io.hotmoka.spacemint.miner.api;
-	requires io.hotmoka.crypto.api;
 }

@@ -32,8 +32,10 @@ import java.util.stream.LongStream;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.miner.api.Deadline;
-import io.hotmoka.spacemint.plotter.Nonce;
+import io.hotmoka.spacemint.nonce.Deadlines;
+import io.hotmoka.spacemint.nonce.Nonces;
+import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.hotmoka.spacemint.nonce.api.Nonce;
 import io.hotmoka.spacemint.plotter.Plots;
 import io.hotmoka.spacemint.plotter.api.Plot;
 
@@ -222,7 +224,7 @@ public class PlotImpl implements Plot {
 		private void dumpNonce(long n) throws UncheckedIOException {
 			try {
 				// the hashing algorithm is cloned to avoid thread contention
-				new NonceImpl(prolog, n, hashing.clone())
+				Nonces.of(prolog, n, hashing.clone())
 					.dumpInto(channel, metadataSize, n - start, length);
 			}
 			catch (IOException e) {
@@ -300,7 +302,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) {
-			return new DeadlineImpl(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
+			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
 		}
 
 		/**

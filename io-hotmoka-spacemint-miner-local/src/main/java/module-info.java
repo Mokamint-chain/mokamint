@@ -18,5 +18,6 @@ module io.hotmoka.spacemint.miner {
 	exports io.hotmoka.spacemint.miner.local;
 	requires transitive io.hotmoka.spacemint.miner.api;
 	requires transitive io.hotmoka.spacemint.plotter.api;
+	requires transitive io.hotmoka.spacemint.nonce.api;
 	requires java.logging;
 }

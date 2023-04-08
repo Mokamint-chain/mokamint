@@ -14,25 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.api;
+module io.hotmoka.spacemint.nonce.api {
+	exports io.hotmoka.spacemint.nonce.api;
 
-/**
- * A nonce. Each nonce contains scoops.
- * Each scoop contains a pair of hashes.
- */
-public interface Nonce {
-
-	/**
-	 * The number of scoops contained in a nonce.
-	 */
-	final static int SCOOPS_PER_NONCE = 4096;
-
-	/**
-	 * Yields the deadline of this nonce, for the given scoop number and data.
-	 * 
-	 * @param scoopNumber the number of the scoop to consider to compute the deadline
-	 * @param data the data used to compute the deadline
-	 * @return the deadline
-	 */
-	Deadline getDeadline(int scoopNumber, byte[] data);
+	requires io.hotmoka.crypto.api;
 }
