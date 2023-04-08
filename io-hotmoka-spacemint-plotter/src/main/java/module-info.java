@@ -19,8 +19,6 @@ module io.hotmoka.spacemint.plotter {
 
 	requires transitive io.hotmoka.spacemint.plotter.api;
 	requires io.hotmoka.crypto;
-	requires io.hotmoka.crypto.api;
 	requires java.logging;
-	requires io.hotmoka.spacemint.nonce.api;
 	requires io.hotmoka.spacemint.nonce;
 }

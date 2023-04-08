@@ -24,7 +24,7 @@ import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**
- * Provider of a miner that works on the local machine.
+ * A provider of miners that work on the local machine.
  */
 public interface LocalMiners {
 
