@@ -16,6 +16,10 @@ limitations under the License.
 
 package io.hotmoka.spacemint.miner.api;
 
+import java.util.function.Consumer;
+
+import io.hotmoka.spacemint.nonce.api.Deadline;
+
 /**
  * A miner in an object that computes deadlines on request.
  * Implementations specify what happens when a deadline has been found:
@@ -30,6 +34,9 @@ public interface Miner {
 	 * 
 	 * @param scoopNumber the number of the scoop used for finding the deadline
 	 * @param data the data
+	 * @param onDeadlineComputed the callback executed when a deadline has been found.
+	 *                           Miners can call this once, many times or even never.
+	 *                           It's up to the user of the miner to be ready for all these situations
 	 */
-	void requestDeadline(int scoopNumber, byte[] data);
+	void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed);
 }

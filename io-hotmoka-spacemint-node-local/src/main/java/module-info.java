@@ -14,10 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.miner.local {
-	exports io.hotmoka.spacemint.miner.local;
+/**
+ * @author spoto
+ *
+ */
+module io.hotmoka.spacemint.node.local {
+	exports io.hotmoka.spacemint.node.local;
+
+	requires transitive io.hotmoka.spacemint.node.api;
+	requires transitive io.hotmoka.spacemint.application.api;
 	requires transitive io.hotmoka.spacemint.miner.api;
-	requires transitive io.hotmoka.spacemint.plotter.api;
-	requires transitive io.hotmoka.spacemint.nonce.api;
-	requires java.logging;
+	requires io.hotmoka.spacemint.miner.local; // TODO: used online for main: remove at the end (also in pom.xml)
+	requires io.hotmoka.spacemint.plotter; // TODO: used online for main: remove at the end (also in pom.xml)
+	requires io.hotmoka.crypto; // TODO: used online for main: remove at the end (also in pom.xml)
 }

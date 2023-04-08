@@ -14,10 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.miner.local {
-	exports io.hotmoka.spacemint.miner.local;
-	requires transitive io.hotmoka.spacemint.miner.api;
-	requires transitive io.hotmoka.spacemint.plotter.api;
-	requires transitive io.hotmoka.spacemint.nonce.api;
-	requires java.logging;
+package io.hotmoka.spacemint.node.api;
+
+/**
+ * A node of a Spacemint blockchain.
+ */
+public interface Node extends AutoCloseable {
+
+	@Override
+	void close();
 }

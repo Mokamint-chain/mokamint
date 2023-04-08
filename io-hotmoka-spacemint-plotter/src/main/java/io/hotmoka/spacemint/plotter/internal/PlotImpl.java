@@ -255,16 +255,11 @@ public class PlotImpl implements Plot {
 
 	@Override
 	public Deadline getSmallestDeadline(int scoopNumber, byte[] data) throws IOException {
-		long startTime = System.currentTimeMillis();
-		logger.info("Starting computing the smallest deadline");
-
 		if (scoopNumber < 0 || scoopNumber >= Nonce.SCOOPS_PER_NONCE)
 			throw new IllegalArgumentException("illegal scoop number: it must be between 0 (inclusive) and " + Nonce.SCOOPS_PER_NONCE + " (exclusive)");
 
 		try {
-			Deadline deadline = new SmallestDeadlineFinder(scoopNumber, data).deadline;
-			logger.info("Smallest deadline computed in " + (System.currentTimeMillis() - startTime) + "ms");
-			return deadline;
+			return new SmallestDeadlineFinder(scoopNumber, data).deadline;
 		}
 		catch (UncheckedIOException e) {
 			throw e.getCause();

@@ -17,11 +17,9 @@ limitations under the License.
 package io.hotmoka.spacemint.miner.remote;
 
 import java.net.URI;
-import java.util.function.Consumer;
 
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.miner.remote.internal.RemoteMinerImpl;
-import io.hotmoka.spacemint.nonce.api.Deadline;
 
 /**
  * Provider of a miner that connects to a remote mining service.
@@ -29,13 +27,12 @@ import io.hotmoka.spacemint.nonce.api.Deadline;
 public interface RemoteMiners {
 
 	/**
-	 * Yields a new local miner. Whenever it computes a deadline,
-	 * it will call the callback provided.
+	 * Yields a new remote miner.
 	 * 
-	 * @param onDeadlineComputed the callback
+	 * @param uri the URI where the kining service must be published
 	 * @return the new local miner
 	 */
-	static Miner of(Consumer<Deadline> onDeadlineComputed, URI uri) {
-		return new RemoteMinerImpl(onDeadlineComputed, uri);
+	static Miner of(URI uri) {
+		return new RemoteMinerImpl(uri);
 	}
 }

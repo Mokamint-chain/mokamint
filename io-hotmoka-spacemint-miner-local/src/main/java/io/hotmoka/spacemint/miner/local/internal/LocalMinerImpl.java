@@ -33,12 +33,9 @@ import io.hotmoka.spacemint.plotter.api.Plot;
  */
 public class LocalMinerImpl implements Miner {
 	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
-	private final Consumer<Deadline> onDeadlineComputed;
 	private final Plot[] plots;
 
-	public LocalMinerImpl(Consumer<Deadline> onDeadlineComputed, Plot... plots) {
-		this.onDeadlineComputed = onDeadlineComputed;
-
+	public LocalMinerImpl(Plot... plots) {
 		if (plots.length < 1)
 			throw new IllegalArgumentException("a miner needs at least a plot file");
 
@@ -46,7 +43,7 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(int scoopNumber, byte[] data) {
+	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) {
 		try {
 			Deadline deadline = Stream.of(plots)
 				.map(plot -> getSmallestDeadline(plot, scoopNumber, data))

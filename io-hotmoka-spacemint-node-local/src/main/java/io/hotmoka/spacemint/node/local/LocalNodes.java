@@ -14,27 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.remote.internal;
+package io.hotmoka.spacemint.node.local;
 
-import java.net.URI;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-
+import io.hotmoka.spacemint.application.api.Application;
 import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.hotmoka.spacemint.node.api.Node;
+import io.hotmoka.spacemint.node.local.internal.LocalNodeImpl;
 
 /**
- * The implementation of a local miner.
- * It uses a set of plot files to find deadlines on-demand.
+ * A provider of local nodes.
  */
-public class RemoteMinerImpl implements Miner {
-	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
+public interface LocalNodes {
 
-	public RemoteMinerImpl(URI uri) {
-	}
-
-	@Override
-	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) {
-		
+	/**
+	 * Yields a local node of a Spacemint blockchain, for the given application.
+	 * 
+	 * @param app the application
+	 * @param miners the miners
+	 * @return the local node
+	 */
+	static Node of(Application app, Miner... miners) {
+		return new LocalNodeImpl(app, miners);
 	}
 }

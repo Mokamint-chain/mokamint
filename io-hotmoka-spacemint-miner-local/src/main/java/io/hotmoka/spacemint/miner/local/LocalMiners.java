@@ -16,11 +16,8 @@ limitations under the License.
 
 package io.hotmoka.spacemint.miner.local;
 
-import java.util.function.Consumer;
-
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.miner.local.internal.LocalMinerImpl;
-import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**
@@ -29,13 +26,12 @@ import io.hotmoka.spacemint.plotter.api.Plot;
 public interface LocalMiners {
 
 	/**
-	 * Yields a new local miner. Whenever it computes a deadline,
-	 * it will call the callback provided.
+	 * Yields a new local miner.
 	 * 
-	 * @param onDeadlineComputed the callback
+	 * @param plots the plot files used for mining
 	 * @return the new local miner
 	 */
-	static Miner of(Consumer<Deadline> onDeadlineComputed, Plot... plots) {
-		return new LocalMinerImpl(onDeadlineComputed, plots);
+	static Miner of(Plot... plots) {
+		return new LocalMinerImpl(plots);
 	}
 }
