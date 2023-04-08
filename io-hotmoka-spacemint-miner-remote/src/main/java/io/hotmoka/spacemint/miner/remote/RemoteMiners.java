@@ -14,19 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.local;
+package io.hotmoka.spacemint.miner.remote;
 
+import java.net.URI;
 import java.util.function.Consumer;
 
 import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.miner.local.internal.LocalMinerImpl;
-import io.hotmoka.spacemint.plotter.api.Plot;
+import io.hotmoka.spacemint.miner.remote.internal.RemoteMinerImpl;
 
 /**
- * An implementation of a miner that works on the local machine.
+ * Provider of a miner that connects to a remote mining service.
  */
-public interface LocalMiner extends Miner {
+public interface RemoteMiners {
 
 	/**
 	 * Yields a new local miner. Whenever it computes a deadline,
@@ -35,7 +35,7 @@ public interface LocalMiner extends Miner {
 	 * @param onDeadlineComputed the callback
 	 * @return the new local miner
 	 */
-	static LocalMiner of(Consumer<Deadline> onDeadlineComputed, Plot... plots) {
-		return new LocalMinerImpl(onDeadlineComputed, plots);
+	static Miner of(Consumer<Deadline> onDeadlineComputed, URI uri) {
+		return new RemoteMinerImpl(onDeadlineComputed, uri);
 	}
 }

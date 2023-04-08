@@ -21,13 +21,13 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import io.hotmoka.spacemint.miner.api.Deadline;
-import io.hotmoka.spacemint.miner.remote.RemoteMiner;
+import io.hotmoka.spacemint.miner.api.Miner;
 
 /**
  * The implementation of a local miner.
  * It uses a set of plot files to find deadlines on-demand.
  */
-public class RemoteMinerImpl implements RemoteMiner {
+public class RemoteMinerImpl implements Miner {
 	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
 	private final Consumer<Deadline> onDeadlineComputed;
 

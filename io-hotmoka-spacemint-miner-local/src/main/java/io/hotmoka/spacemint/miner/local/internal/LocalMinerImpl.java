@@ -24,14 +24,14 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.spacemint.miner.api.Deadline;
-import io.hotmoka.spacemint.miner.local.LocalMiner;
+import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**
  * The implementation of a local miner.
  * It uses a set of plot files to find deadlines on-demand.
  */
-public class LocalMinerImpl implements LocalMiner {
+public class LocalMinerImpl implements Miner {
 	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
 	private final Consumer<Deadline> onDeadlineComputed;
 	private final Plot[] plots;

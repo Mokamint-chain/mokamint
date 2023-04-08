@@ -22,15 +22,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.miner.api.Deadline;
+import io.hotmoka.spacemint.plotter.api.Plot;
 import io.hotmoka.spacemint.plotter.internal.PlotImpl;
 
 /**
- * A plot file, containing sequential nonces. Each nonce contains
- * a sequence of scoops. Each scoop contains a pair of hashes.
+ * Provider of a plot file.
  */
-public interface Plot extends io.hotmoka.spacemint.plotter.api.Plot {
+public interface Plots {
 
 	/**
 	 * Loads a plot file.
@@ -67,7 +68,7 @@ public interface Plot extends io.hotmoka.spacemint.plotter.api.Plot {
 		byte[] prolog = new byte[] { 11, 13, 24, 88 };
 		long start = 65536L;
 		long length = 1000L;
-		var hashing = io.hotmoka.crypto.HashingAlgorithm.shabal256((byte[] bytes) -> bytes);
+		var hashing = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
 		int scoopNumber = 13;
 		byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
 		Deadline deadline1;

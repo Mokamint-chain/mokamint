@@ -30,10 +30,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
-import io.hotmoka.spacemint.plotter.Plot;
+import io.hotmoka.spacemint.plotter.Plots;
+import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**
  * An implementation of a plot file. There are two ways of creating this implementation:
@@ -55,7 +57,7 @@ public class PlotImpl implements Plot {
 
 	/**
 	 * Generic data that identifies, for instance, the creator of the plot.
-	 * This can be really anything by is limited to {@link Plot#MAX_PROLOG_SIZE} bytes.
+	 * This can be really anything by is limited to {@link Plots#MAX_PROLOG_SIZE} bytes.
 	 */
 	private final byte[] prolog;
 
@@ -106,7 +108,7 @@ public class PlotImpl implements Plot {
 		if (reader.read(hashingNameBytes) != hashingNameLength)
 			throw new IOException("cannot read the name of the hashing algorithm used for the plot file");
 		String hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
-		this.hashing = io.hotmoka.crypto.HashingAlgorithm.mk(hashingName, (byte[] bytes) -> bytes);
+		this.hashing = HashingAlgorithms.mk(hashingName, (byte[] bytes) -> bytes);
 	}
 
 	/**
@@ -116,7 +118,7 @@ public class PlotImpl implements Plot {
 	 * @param path the path to the file where the plot must be dumped
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the plot. This can be really anything but cannot be {@code null}
-	 *               nor longer than {@link Plot#MAX_PROLOG_SIZE} bytes
+	 *               nor longer than {@link Plots#MAX_PROLOG_SIZE} bytes
 	 * @param start the starting progressive number of the nonces to generate in the plot.
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be positive
@@ -298,19 +300,18 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) {
-			return new DeadlineImpl(prolog, n, hashing.hash(extractScoopAndConcat(n - start, data)), hashing);
+			return new DeadlineImpl(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
 		}
 
 		/**
 		 * Extracts the scoop (two hashes) number {@code scoopNumber} from the nonce
-		 * number {@code progressive} of this plot file, and concats the given data at its end.
+		 * number {@code progressive} of this plot file, and concats the {@code data} at its end.
 		 * 
 		 * @param progressive the progressive number of the nonce whose scoop must be extracted,
 		 *                    between 0 (inclusive) and {@code length} (exclusive)
-		 * @param data the data to concat at the end of the scoop
 		 * @return the scoop data (two hashes)
 		 */
-		private byte[] extractScoopAndConcat(long progressive, byte[] data) {
+		private byte[] extractScoopAndConcatData(long progressive) {
 			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
 				channel.transferTo(metadataSize + scoopNumber * groupSize + progressive * scoopSize, scoopSize, destination);
 				destination.write(ByteBuffer.wrap(data));

@@ -11,12 +11,17 @@ class DeadlineImpl implements Deadline {
 	private final byte[] prolog;
 	private final long progressive;
 	private final byte[] value;
+	private final int scoopNumber;
+	private final byte[] data;
+
 	private final HashingAlgorithm<byte[]> hashing;
 
-	DeadlineImpl(byte[] prolog, long progressive, byte[] value, HashingAlgorithm<byte[]> hashing) {
+	DeadlineImpl(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
+		this.scoopNumber = scoopNumber;
+		this.data = data;
 		this.hashing = hashing;
 	}
 
@@ -25,12 +30,19 @@ class DeadlineImpl implements Deadline {
 		if (other instanceof Deadline) {
 			Deadline otherAsDeadline = (Deadline) other;
 			return progressive == otherAsDeadline.getProgressive() &&
+				scoopNumber == otherAsDeadline.getScoopNumber() &&
 				Arrays.equals(value, otherAsDeadline.getValue()) &&
 				Arrays.equals(prolog, otherAsDeadline.getProlog()) &&
+				Arrays.equals(data, otherAsDeadline.getData()) &&
 				hashing.getName().equals(otherAsDeadline.getHashing().getName());
 		}
 		else
 			return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return ((int) progressive) ^ scoopNumber ^ Arrays.hashCode(value); 
 	}
 
 	@Override
@@ -60,6 +72,16 @@ class DeadlineImpl implements Deadline {
 	@Override
 	public byte[] getValue() {
 		return value.clone();
+	}
+
+	@Override
+	public int getScoopNumber() {
+		return scoopNumber;
+	}
+
+	@Override
+	public byte[] getData() {
+		return data.clone();
 	}
 
 	@Override

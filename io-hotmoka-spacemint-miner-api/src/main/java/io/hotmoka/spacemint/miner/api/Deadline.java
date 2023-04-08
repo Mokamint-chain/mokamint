@@ -46,6 +46,20 @@ public interface Deadline {
 	byte[] getValue();
 
 	/**
+	 * Yields the number of the scoop considered to compute tre deadline.
+	 * 
+	 * @return the number of the scoop
+	 */
+	int getScoopNumber();
+
+	/**
+	 * Yields the data used to compute the deadline.
+	 * 
+	 * @return the data
+	 */
+	byte[] getData();
+
+	/**
 	 * The hashing algorithm used for the plot file from which
 	 * this deadline has been generated.
 	 */

@@ -24,7 +24,7 @@ import java.nio.channels.FileChannel;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.miner.api.Deadline;
 import io.hotmoka.spacemint.plotter.Nonce;
-import io.hotmoka.spacemint.plotter.Plot;
+import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**
  * A nonce of a plot file. Each nonce contains 4096 scoops.
@@ -82,7 +82,8 @@ public class NonceImpl implements Nonce {
 
 	@Override
 	public Deadline getDeadline(int scoopNumber, byte[] data) {
-		return new DeadlineImpl(prolog, progressive, hashing.hash(extractScoopAndConcat(scoopNumber, data)), hashing);
+		return new DeadlineImpl(prolog, progressive,
+			hashing.hash(extractScoopAndConcat(scoopNumber, data)), scoopNumber, data, hashing);
 	}
 
 	/**
