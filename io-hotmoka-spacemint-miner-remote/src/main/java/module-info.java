@@ -14,10 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * @author spoto
- *
- */
 module io.hotmoka.spacemint.miner.remote {
 	exports io.hotmoka.spacemint.miner.remote;
 

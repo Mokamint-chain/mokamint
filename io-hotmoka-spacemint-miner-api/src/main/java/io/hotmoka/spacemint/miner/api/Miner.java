@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.hotmoka.spacemint.miner.api;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 
 import io.hotmoka.spacemint.nonce.api.Deadline;
@@ -26,7 +27,7 @@ import io.hotmoka.spacemint.nonce.api.Deadline;
  * typically, the construction method requires a consumer of the deadline
  * to be specified.
  */
-public interface Miner {
+public interface Miner extends AutoCloseable {
 	
 	/**
 	 * Request to the miner the computation of a deadline
@@ -37,6 +38,10 @@ public interface Miner {
 	 * @param onDeadlineComputed the callback executed when a deadline has been found.
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
+	 * @throws RejectedExecutionException if the miner cannot take care of the request at the moment
 	 */
-	void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed);
+	void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) throws RejectedExecutionException;
+
+	@Override
+	void close();
 }

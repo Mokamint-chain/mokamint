@@ -26,5 +26,6 @@ module io.hotmoka.spacemint.node.local {
 	requires transitive io.hotmoka.spacemint.miner.api;
 	requires io.hotmoka.spacemint.miner.local; // TODO: used online for main: remove at the end (also in pom.xml)
 	requires io.hotmoka.spacemint.plotter; // TODO: used online for main: remove at the end (also in pom.xml)
-	requires io.hotmoka.crypto; // TODO: used online for main: remove at the end (also in pom.xml)
+	requires io.hotmoka.crypto; // TODO: used online for main: remove at the end (also in pom.xml) 
+	requires java.logging;
 }

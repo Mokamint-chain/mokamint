@@ -37,4 +37,8 @@ public class RemoteMinerImpl implements Miner {
 	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) {
 		
 	}
+
+	@Override
+	public void close() {
+	}
 }

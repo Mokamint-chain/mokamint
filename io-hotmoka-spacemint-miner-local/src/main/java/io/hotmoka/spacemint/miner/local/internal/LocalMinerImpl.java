@@ -18,11 +18,16 @@ package io.hotmoka.spacemint.miner.local.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.plotter.api.Plot;
@@ -33,8 +38,22 @@ import io.hotmoka.spacemint.plotter.api.Plot;
  */
 public class LocalMinerImpl implements Miner {
 	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
+
+	/**
+	 * The plot files used by the miner.
+	 */
 	private final Plot[] plots;
 
+	/**
+	 * Executors that take care of executing the requests for computing deadlines.
+	 */
+	private final ExecutorService executors = Executors.newFixedThreadPool(4);
+
+	/**
+	 * Builds a local miner.
+	 * 
+	 * @param plots the plot files used for mining. This cannot be empty
+	 */
 	public LocalMinerImpl(Plot... plots) {
 		if (plots.length < 1)
 			throw new IllegalArgumentException("a miner needs at least a plot file");
@@ -43,17 +62,34 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) {
-		try {
-			Deadline deadline = Stream.of(plots)
-				.map(plot -> getSmallestDeadline(plot, scoopNumber, data))
-				.min(Deadline::compareByValue)
-				.get(); // OK, since there is at least a plot file
+	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) throws RejectedExecutionException {
+		LOGGER.info("received deadline request with scoop number: " + scoopNumber + " and data: " + Hex.toHexString(data));
 
-			onDeadlineComputed.accept(deadline);
+		executors.submit(() -> {
+			LOGGER.info("processing deadline request with scoop number: " + scoopNumber + " and data: " + Hex.toHexString(data));
+
+			try {
+				Deadline deadline = Stream.of(plots)
+					.map(plot -> getSmallestDeadline(plot, scoopNumber, data))
+					.min(Deadline::compareByValue)
+					.get(); // OK, since there is at least a plot file
+
+				onDeadlineComputed.accept(deadline);
+			}
+			catch (UncheckedIOException e) {
+				LOGGER.log(Level.SEVERE, "couldn't compute the deadline", e.getCause());
+			}
+		});
+	}
+
+	@Override
+	public void close() {
+		executors.shutdown();
+		try {
+			executors.awaitTermination(20, TimeUnit.SECONDS);
 		}
-		catch (UncheckedIOException e) {
-			LOGGER.log(Level.SEVERE, "couldn't compute the deadline from the plot files", e.getCause());
+		catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

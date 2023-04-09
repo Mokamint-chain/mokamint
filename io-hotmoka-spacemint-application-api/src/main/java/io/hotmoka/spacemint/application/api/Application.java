@@ -21,4 +21,13 @@ package io.hotmoka.spacemint.application.api;
  */
 public interface Application {
 
+	/**
+	 * Called whenever a node receives a new deadline from one of its miners.
+	 * The application has to change to accept oe reject the deadline, on the
+	 * basis of its prolog.
+	 * 
+	 * @param prolog the prolog of the deadline
+	 * @return true if and only if the {@code prolog} is valid according to this application
+	 */
+	boolean prologIsValid(byte[] prolog);
 }

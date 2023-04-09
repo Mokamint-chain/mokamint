@@ -96,6 +96,6 @@ public class DeadlineImpl implements Deadline {
 
 	@Override
 	public String toString() {
-		return "nonce: " + progressive + ", deadline: " + Hex.toHexString(value);
+		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", nonce: " + progressive + ", value: " + Hex.toHexString(value);
 	}
 }

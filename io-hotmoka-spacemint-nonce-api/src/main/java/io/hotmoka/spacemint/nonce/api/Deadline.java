@@ -90,4 +90,11 @@ public interface Deadline {
 	 *         if larger than the value of the other deadline; 0 if the value are equal
 	 */
 	int compareByValue(Deadline other);
+
+	/**
+	 * Yields a string representation of this deadline.
+	 * 
+	 * @return the string representation
+	 */
+	String toString();
 }

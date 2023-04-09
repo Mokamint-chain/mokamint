@@ -16,10 +16,9 @@ limitations under the License.
 
 package io.hotmoka.spacemint.node.local.internal;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Arrays;
+import java.util.logging.Logger;
 
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.spacemint.application.api.Application;
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.node.api.Node;
@@ -40,7 +39,22 @@ public class LocalNodeImpl implements Node {
 	 */
 	private final Miner[] miners;
 
-	private final ExecutorService executors;
+	/**
+	 * The scoop number of the deadline this node is waiting.
+	 */
+	private volatile int scoopNumber;
+
+	/**
+	 * The data of the deadline this node is waiting.
+	 */
+	private volatile byte[] data;
+
+	/**
+	 * The best deadline computed so far. This might be {@code null}.
+	 */
+	private volatile Deadline bestDeadline;
+	
+	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
 	 * Creates a local node of a Spacemint blockchain, for the given application,
@@ -52,19 +66,42 @@ public class LocalNodeImpl implements Node {
 	public LocalNodeImpl(Application app, Miner... miners) {
 		this.app = app;
 		this.miners = miners;
-		this.executors = Executors.newFixedThreadPool(miners.length + 1);
 
+		this.scoopNumber = 13;
+		this.data = new byte[] { 18, 34, 80, 11 };
+		this.bestDeadline = null;
+
+		waitForDeadline();
+	}
+
+	private void waitForDeadline() {
 		for (var miner: miners) {
-			miner.requestDeadline(13, new byte[] { 18, 34, 80, 11 }, this::onDeadlineComputed);
+			miner.requestDeadline(scoopNumber, data, this::onDeadlineComputed);
 		}
 	}
 
+	/**
+	 * This call-back might be executed on a different thread.
+	 * 
+	 * @param deadline the deadline that has just been computed by some of the miners of this node
+	 */
 	private void onDeadlineComputed(Deadline deadline) {
-		System.out.println("received deadline " + Hex.toHexString(deadline.getValue()));
+		LOGGER.info("received deadline " + deadline);
+		if (deadline.getScoopNumber() == scoopNumber
+				&& Arrays.equals(deadline.getData(), data)
+				&& app.prologIsValid(deadline.getProlog())) {
+
+			LOGGER.info("accepted deadline " + deadline);
+			if (bestDeadline == null || deadline.compareByValue(bestDeadline) < 0) {
+				bestDeadline = deadline;
+				LOGGER.info("improved deadline " + bestDeadline);
+			}
+		}
+		else
+			LOGGER.info("discarding deadline " + deadline);
 	}
 
 	@Override
 	public void close() {
-		executors.shutdown();
 	}
 }

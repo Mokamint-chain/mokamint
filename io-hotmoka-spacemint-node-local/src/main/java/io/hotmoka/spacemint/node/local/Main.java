@@ -18,15 +18,12 @@ package io.hotmoka.spacemint.node.local;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.spacemint.application.api.Application;
 import io.hotmoka.spacemint.miner.local.LocalMiners;
-import io.hotmoka.spacemint.node.api.Node;
 import io.hotmoka.spacemint.plotter.Plots;
-import io.hotmoka.spacemint.plotter.api.Plot;
 
 /**
  * A temporary main test.
@@ -40,19 +37,25 @@ public class Main {
 		Files.deleteIfExists(path2);
 		var path3 = Paths.get("pippo3.plot");
 		Files.deleteIfExists(path3);
-		byte[] prolog = new byte[] { 11, 13, 24, 88 };
+		var prolog = new byte[] { 11, 13, 24, 88 };
 		var hashing = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
 
-		try (Plot plot1 = Plots.create(path1, prolog, 65536L, 100L, hashing);
-			 Plot plot2 = Plots.create(path2, prolog, 1024L, 10L, hashing);
-	         Plot plot3 = Plots.create(path3, prolog, 2000L, 20L, hashing);
-			 Node node = LocalNodes.of(new TestApplication(), LocalMiners.of(plot1, plot2), LocalMiners.of(plot3)))
+		try (var plot1 = Plots.create(path1, prolog, 65536L, 100L, hashing);
+			 var plot2 = Plots.create(path2, prolog, 1024L, 10L, hashing);
+	         var plot3 = Plots.create(path3, prolog, 2000L, 20L, hashing);
+			 var miner1 = LocalMiners.of(plot1, plot2);
+			 var miner2 = LocalMiners.of(plot3);
+			 var node = LocalNodes.of(new TestApplication(), miner1, miner2))
 		{
 			
 		}
 	}
 
 	private static class TestApplication implements Application {
-		
+
+		@Override
+		public boolean prologIsValid(byte[] prolog) {
+			return true;
+		}
 	}
 }

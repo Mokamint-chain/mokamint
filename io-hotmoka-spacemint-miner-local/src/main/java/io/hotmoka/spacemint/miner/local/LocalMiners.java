@@ -28,7 +28,7 @@ public interface LocalMiners {
 	/**
 	 * Yields a new local miner.
 	 * 
-	 * @param plots the plot files used for mining
+	 * @param plots the plot files used for mining. This cannot be empty
 	 * @return the new local miner
 	 */
 	static Miner of(Plot... plots) {
