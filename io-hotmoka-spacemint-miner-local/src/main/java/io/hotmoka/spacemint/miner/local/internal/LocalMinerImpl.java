@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.nonce.api.Deadline;
-import io.hotmoka.spacemint.plotter.api.Plot;
+import io.mokamint.plotter.api.Plot;
 
 /**
  * The implementation of a local miner.

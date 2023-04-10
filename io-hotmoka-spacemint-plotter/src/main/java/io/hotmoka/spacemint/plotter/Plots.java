@@ -27,8 +27,8 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.nonce.Nonces;
 import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.nonce.api.Nonce;
-import io.hotmoka.spacemint.plotter.api.Plot;
 import io.hotmoka.spacemint.plotter.internal.PlotImpl;
+import io.mokamint.plotter.api.Plot;
 
 /**
  * Provider of a plot file.

@@ -29,7 +29,7 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.nonce.api.Nonce;
 import io.hotmoka.spacemint.plotter.Plots;
-import io.hotmoka.spacemint.plotter.api.Plot;
+import io.mokamint.plotter.api.Plot;
 
 public class PlotTests {
 

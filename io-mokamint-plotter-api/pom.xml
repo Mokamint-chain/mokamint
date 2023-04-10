@@ -2,8 +2,8 @@
   
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-hotmoka-spacemint-plotter-api</artifactId>
-  <name>io-hotmoka-spacemint-plotter-api</name>
+  <artifactId>io-mokamint-plotter-api</artifactId>
+  <name>io-mokamint-plotter-api</name>
   <packaging>jar</packaging>
   <version>${spacemint.version}</version>
 

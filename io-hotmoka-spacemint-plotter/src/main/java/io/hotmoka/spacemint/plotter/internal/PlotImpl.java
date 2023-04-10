@@ -37,7 +37,7 @@ import io.hotmoka.spacemint.nonce.Nonces;
 import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.nonce.api.Nonce;
 import io.hotmoka.spacemint.plotter.Plots;
-import io.hotmoka.spacemint.plotter.api.Plot;
+import io.mokamint.plotter.api.Plot;
 
 /**
  * An implementation of a plot file. There are two ways of creating this implementation:

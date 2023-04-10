@@ -18,7 +18,7 @@ package io.hotmoka.spacemint.miner.local;
 
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.miner.local.internal.LocalMinerImpl;
-import io.hotmoka.spacemint.plotter.api.Plot;
+import io.mokamint.plotter.api.Plot;
 
 /**
  * A provider of miners that work on the local machine.
