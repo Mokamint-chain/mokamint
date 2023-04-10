@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.Nonces;
+import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
 import io.mokamint.plotter.api.Plot;

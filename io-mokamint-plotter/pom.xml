@@ -20,7 +20,7 @@
     </dependency>
     <dependency>
        <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-spacemint-nonce</artifactId>
+       <artifactId>io-mokamint-nonce</artifactId>
        <version>${spacemint.version}</version>
     </dependency>
     <dependency>

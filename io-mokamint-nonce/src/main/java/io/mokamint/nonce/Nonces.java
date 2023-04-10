@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.nonce;
+package io.mokamint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.internal.NonceImpl;
 import io.mokamint.nonce.api.Nonce;
+import io.mokamint.nonce.internal.NonceImpl;
 
 /**
  * A provider of nonces.

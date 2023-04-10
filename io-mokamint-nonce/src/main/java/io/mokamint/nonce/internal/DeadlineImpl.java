@@ -1,10 +1,10 @@
-package io.hotmoka.spacemint.nonce.internal;
+package io.mokamint.nonce.internal;
 
 import java.util.Arrays;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.Nonces;
+import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
 

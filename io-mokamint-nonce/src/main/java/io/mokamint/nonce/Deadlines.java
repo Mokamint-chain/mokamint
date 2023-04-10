@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.nonce;
+package io.mokamint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.internal.DeadlineImpl;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.internal.DeadlineImpl;
 
 /**
  * A provider of deadlines.
