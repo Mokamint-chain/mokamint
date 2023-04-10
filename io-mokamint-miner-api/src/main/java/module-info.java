@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.miner.api {
-	exports io.hotmoka.spacemint.miner.api;
+module io.mokamint.miner.api {
+	exports io.mokamint.miner.api;
 	requires transitive io.mokamint.nonce.api;
 }

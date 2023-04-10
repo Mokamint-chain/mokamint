@@ -19,8 +19,8 @@ package io.mokamint.node.local.internal;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import io.hotmoka.spacemint.miner.api.Miner;
 import io.mokamint.application.api.Application;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
 import io.mokamint.nonce.api.Deadline;
 

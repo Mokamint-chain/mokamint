@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.api;
+package io.mokamint.miner.api;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;

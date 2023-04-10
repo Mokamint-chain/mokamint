@@ -20,7 +20,7 @@ import java.net.URI;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import io.hotmoka.spacemint.miner.api.Miner;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
 
 /**

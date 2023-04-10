@@ -18,7 +18,7 @@ package io.mokamint.miner.remote;
 
 import java.net.URI;
 
-import io.hotmoka.spacemint.miner.api.Miner;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.internal.RemoteMinerImpl;
 
 /**

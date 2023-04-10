@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.spacemint.miner.api.Miner;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.api.Plot;
 

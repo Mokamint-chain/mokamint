@@ -15,13 +15,13 @@
     <artifactId>spacemint</artifactId>
     <packaging>pom</packaging>
     <version>1.0.0</version>
-    <name>Spacemint</name>
+    <name>Mokamint</name>
     <description>A generic proof-of-space blockchain engine.</description>
 	<url>https://github.com/Hotmoka/spacemint</url>
 
     <organization>
-      <url>https://www.hotmoka.io</url>
-      <name>Hotmoka</name>
+      <url>https://www.mokamint.io</url>
+      <name>Mokamint</name>
     </organization>
     <inceptionYear>2023</inceptionYear>
 
@@ -45,7 +45,7 @@
     <modules>
       <module>io-mokamint-node-local</module>
       <module>io-mokamint-node-api</module>
-      <module>io-hotmoka-spacemint-miner-api</module>
+      <module>io-mokamint-miner-api</module>
       <module>io-hotmoka-spacemint-miner-local</module>
       <module>io-mokamint-miner-remote</module>
       <module>io-mokamint-plotter</module>
@@ -176,7 +176,7 @@
                   <!-- we exclude all modules built by Maven: their build will put them at the right place -->
                   io-mokamint-node-local,
                   io-mokamint-node-api,
-                  io-hotmoka-spacemint-miner-api,
+                  io-mokamint-miner-api,
                   io-hotmoka-spacemint-miner-local,
                   io-mokamint-miner-remote,
                   io-mokamint-plotter,

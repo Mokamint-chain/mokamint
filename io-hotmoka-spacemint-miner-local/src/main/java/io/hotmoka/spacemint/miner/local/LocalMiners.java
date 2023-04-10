@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.hotmoka.spacemint.miner.local;
 
-import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.miner.local.internal.LocalMinerImpl;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.plotter.api.Plot;
 
 /**
