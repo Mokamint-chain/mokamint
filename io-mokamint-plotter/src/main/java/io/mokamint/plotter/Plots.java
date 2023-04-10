@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.plotter;
+package io.mokamint.plotter;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,8 +27,8 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.spacemint.nonce.Nonces;
 import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.nonce.api.Nonce;
-import io.hotmoka.spacemint.plotter.internal.PlotImpl;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.internal.PlotImpl;
 
 /**
  * Provider of a plot file.

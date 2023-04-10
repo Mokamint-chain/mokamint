@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.plotter {
-	exports io.hotmoka.spacemint.plotter;
+module io.mokamint.plotter {
+	exports io.mokamint.plotter;
 
 	requires transitive io.mokamint.plotter.api;
 	requires io.hotmoka.crypto;

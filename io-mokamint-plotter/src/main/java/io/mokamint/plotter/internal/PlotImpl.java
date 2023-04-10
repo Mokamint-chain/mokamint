@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.plotter.internal;
+package io.mokamint.plotter.internal;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,7 +36,7 @@ import io.hotmoka.spacemint.nonce.Deadlines;
 import io.hotmoka.spacemint.nonce.Nonces;
 import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.nonce.api.Nonce;
-import io.hotmoka.spacemint.plotter.Plots;
+import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
 /**

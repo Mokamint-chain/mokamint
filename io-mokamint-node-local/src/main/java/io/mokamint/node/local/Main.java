@@ -22,8 +22,8 @@ import java.nio.file.Paths;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.spacemint.miner.local.LocalMiners;
-import io.hotmoka.spacemint.plotter.Plots;
 import io.mokamint.application.api.Application;
+import io.mokamint.plotter.Plots;
 
 /**
  * A temporary main test.

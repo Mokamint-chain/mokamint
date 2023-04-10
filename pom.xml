@@ -48,7 +48,7 @@
       <module>io-hotmoka-spacemint-miner-api</module>
       <module>io-hotmoka-spacemint-miner-local</module>
       <module>io-mokamint-miner-remote</module>
-      <module>io-hotmoka-spacemint-plotter</module>
+      <module>io-mokamint-plotter</module>
       <module>io-mokamint-plotter-api</module>
       <module>io-hotmoka-spacemint-nonce-api</module>
       <module>io-hotmoka-spacemint-nonce</module>
@@ -179,7 +179,7 @@
                   io-hotmoka-spacemint-miner-api,
                   io-hotmoka-spacemint-miner-local,
                   io-mokamint-miner-remote,
-                  io-hotmoka-spacemint-plotter,
+                  io-mokamint-plotter,
                   io-mokamint-plotter-api,
                   io-hotmoka-spacemint-nonce,
                   io-hotmoka-spacemint-nonce-api,
