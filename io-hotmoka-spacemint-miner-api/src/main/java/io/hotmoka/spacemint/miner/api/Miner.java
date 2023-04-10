@@ -19,7 +19,7 @@ package io.hotmoka.spacemint.miner.api;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 
-import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * A miner in an object that computes deadlines on request.

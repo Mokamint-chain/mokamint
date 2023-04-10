@@ -22,8 +22,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.api.Deadline;
-import io.hotmoka.spacemint.nonce.api.Nonce;
+import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Nonce;
 
 /**
  * A nonce of a plot file. Each nonce contains 4096 scoops.

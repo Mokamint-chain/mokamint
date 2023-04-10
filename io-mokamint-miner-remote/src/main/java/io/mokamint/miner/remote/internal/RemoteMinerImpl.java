@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * The implementation of a local miner.

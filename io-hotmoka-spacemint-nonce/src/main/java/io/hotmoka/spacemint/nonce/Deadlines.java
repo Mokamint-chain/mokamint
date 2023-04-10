@@ -17,8 +17,8 @@ limitations under the License.
 package io.hotmoka.spacemint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.api.Deadline;
 import io.hotmoka.spacemint.nonce.internal.DeadlineImpl;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * A provider of deadlines.

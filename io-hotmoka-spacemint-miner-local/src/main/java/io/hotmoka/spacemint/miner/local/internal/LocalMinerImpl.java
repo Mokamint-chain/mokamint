@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.api.Plot;
 
 /**

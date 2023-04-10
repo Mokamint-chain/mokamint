@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.nonce.api;
+package io.mokamint.nonce.api;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 

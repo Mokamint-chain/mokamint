@@ -18,5 +18,5 @@ module io.mokamint.plotter.api {
 	exports io.mokamint.plotter.api;
 
 	requires io.hotmoka.crypto.api;
-	requires transitive io.hotmoka.spacemint.nonce.api;
+	requires transitive io.mokamint.nonce.api;
 }

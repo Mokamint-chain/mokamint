@@ -17,6 +17,6 @@ limitations under the License.
 module io.hotmoka.spacemint.nonce {
 	exports io.hotmoka.spacemint.nonce;
 
-	requires transitive io.hotmoka.spacemint.nonce.api;
+	requires transitive io.mokamint.nonce.api;
 	requires io.hotmoka.crypto;
 }

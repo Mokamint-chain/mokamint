@@ -17,8 +17,8 @@ limitations under the License.
 package io.hotmoka.spacemint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.api.Nonce;
 import io.hotmoka.spacemint.nonce.internal.NonceImpl;
+import io.mokamint.nonce.api.Nonce;
 
 /**
  * A provider of nonces.

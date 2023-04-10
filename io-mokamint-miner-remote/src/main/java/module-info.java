@@ -18,6 +18,6 @@ module io.mokamint.miner.remote {
 	exports io.mokamint.miner.remote;
 
 	requires transitive io.hotmoka.spacemint.miner.api;
-	requires transitive io.hotmoka.spacemint.nonce.api;
+	requires transitive io.mokamint.nonce.api;
 	requires java.logging;
 }

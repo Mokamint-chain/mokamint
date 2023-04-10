@@ -50,7 +50,7 @@
       <module>io-mokamint-miner-remote</module>
       <module>io-mokamint-plotter</module>
       <module>io-mokamint-plotter-api</module>
-      <module>io-hotmoka-spacemint-nonce-api</module>
+      <module>io-mokamint-nonce-api</module>
       <module>io-hotmoka-spacemint-nonce</module>
       <module>io-mokamint-application-api</module>
     </modules>
@@ -182,7 +182,7 @@
                   io-mokamint-plotter,
                   io-mokamint-plotter-api,
                   io-hotmoka-spacemint-nonce,
-                  io-hotmoka-spacemint-nonce-api,
+                  io-mokamint-nonce-api,
                   io-mokamint-application-api,
                   <!-- we exclude all modules that go into the explicit folder -->
                   bcprov-jdk15on,

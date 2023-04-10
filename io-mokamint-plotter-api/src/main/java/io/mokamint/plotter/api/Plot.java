@@ -19,8 +19,8 @@ package io.mokamint.plotter.api;
 import java.io.IOException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.spacemint.nonce.api.Deadline;
-import io.hotmoka.spacemint.nonce.api.Nonce;
+import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Nonce;
 
 /**
  * A plot file, containing sequential nonces. Each nonce contains
