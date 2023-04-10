@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.application.api {
-	exports io.hotmoka.spacemint.application.api;
+module io.mokamint.application.api {
+	exports io.mokamint.application.api;
 }

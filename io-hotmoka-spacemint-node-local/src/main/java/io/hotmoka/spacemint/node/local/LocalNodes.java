@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.hotmoka.spacemint.node.local;
 
-import io.hotmoka.spacemint.application.api.Application;
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.node.api.Node;
 import io.hotmoka.spacemint.node.local.internal.LocalNodeImpl;
+import io.mokamint.application.api.Application;
 
 /**
  * A provider of local nodes.

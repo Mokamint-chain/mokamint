@@ -19,10 +19,10 @@ package io.hotmoka.spacemint.node.local.internal;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import io.hotmoka.spacemint.application.api.Application;
 import io.hotmoka.spacemint.miner.api.Miner;
 import io.hotmoka.spacemint.node.api.Node;
 import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.mokamint.application.api.Application;
 
 /**
  * A local node of a Spacemint blockchain.
