@@ -17,9 +17,9 @@ limitations under the License.
 package io.hotmoka.spacemint.node.local;
 
 import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.node.api.Node;
 import io.hotmoka.spacemint.node.local.internal.LocalNodeImpl;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.api.Node;
 
 /**
  * A provider of local nodes.
@@ -27,7 +27,7 @@ import io.mokamint.application.api.Application;
 public interface LocalNodes {
 
 	/**
-	 * Yields a local node of a Spacemint blockchain, for the given application.
+	 * Yields a local node of a Mokamint blockchain, for the given application.
 	 * 
 	 * @param app the application
 	 * @param miners the miners

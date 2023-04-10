@@ -15,7 +15,7 @@
   <dependencies>
   	<dependency>
        <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-spacemint-node-api</artifactId>
+       <artifactId>io-mokamint-node-api</artifactId>
        <version>${spacemint.version}</version>
     </dependency>
   	<dependency>

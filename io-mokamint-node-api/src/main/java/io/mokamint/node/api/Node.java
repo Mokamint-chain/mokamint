@@ -14,6 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.node.api {
-	exports io.hotmoka.spacemint.node.api;
+package io.mokamint.node.api;
+
+/**
+ * A node of a Spacemint blockchain.
+ */
+public interface Node extends AutoCloseable {
+
+	@Override
+	void close();
 }
