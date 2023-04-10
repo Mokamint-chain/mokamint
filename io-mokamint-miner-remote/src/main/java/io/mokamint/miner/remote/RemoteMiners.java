@@ -14,31 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.remote.internal;
+package io.mokamint.miner.remote;
 
 import java.net.URI;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.nonce.api.Deadline;
+import io.mokamint.miner.remote.internal.RemoteMinerImpl;
 
 /**
- * The implementation of a local miner.
- * It uses a set of plot files to find deadlines on-demand.
+ * Provider of a miner that connects to a remote mining service.
  */
-public class RemoteMinerImpl implements Miner {
-	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
+public interface RemoteMiners {
 
-	public RemoteMinerImpl(URI uri) {
-	}
-
-	@Override
-	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) {
-		
-	}
-
-	@Override
-	public void close() {
+	/**
+	 * Yields a new remote miner.
+	 * 
+	 * @param uri the URI where the kining service must be published
+	 * @return the new local miner
+	 */
+	static Miner of(URI uri) {
+		return new RemoteMinerImpl(uri);
 	}
 }

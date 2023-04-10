@@ -14,25 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.remote;
+module io.mokamint.miner.remote {
+	exports io.mokamint.miner.remote;
 
-import java.net.URI;
-
-import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.miner.remote.internal.RemoteMinerImpl;
-
-/**
- * Provider of a miner that connects to a remote mining service.
- */
-public interface RemoteMiners {
-
-	/**
-	 * Yields a new remote miner.
-	 * 
-	 * @param uri the URI where the kining service must be published
-	 * @return the new local miner
-	 */
-	static Miner of(URI uri) {
-		return new RemoteMinerImpl(uri);
-	}
+	requires transitive io.hotmoka.spacemint.miner.api;
+	requires transitive io.hotmoka.spacemint.nonce.api;
+	requires java.logging;
 }
