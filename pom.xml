@@ -17,7 +17,7 @@
     <version>1.0.0</version>
     <name>Mokamint</name>
     <description>A generic proof-of-space blockchain engine.</description>
-	<url>https://github.com/Hotmoka/spacemint</url>
+	<url>https://github.com/Mokamint-chain/mokamint</url>
 
     <organization>
       <url>https://www.mokamint.io</url>
@@ -35,7 +35,7 @@
     <developers>
       <developer>
 	   <name>Fausto Spoto</name>
-	    <email>fausto.spoto@hotmoka.io</email>
+	    <email>fausto.spoto@gmail.com</email>
 	    <organization>Mokamint</organization>
 	    <organizationUrl>https://www.mokamint.io</organizationUrl>
 	    <timezone>UTC+01:00</timezone>
@@ -119,9 +119,9 @@
     </distributionManagement>
 
     <scm>
-      <connection>scm:git:git://github.com/Hotmoka/spacemint.git</connection>
-      <developerConnection>scm:git:git@github.com:Hotmoka/spacemint.git</developerConnection>
-      <url>https://github.com/Hotmoka/spacemint</url>
+      <connection>scm:git:git://github.com/Mokamint-chain/mokamint.git</connection>
+      <developerConnection>scm:git:git@github.com:Mokamint-chain/mokamint.git</developerConnection>
+      <url>https://github.com/Mokamint-chain/mokamint</url>
       <tag>HEAD</tag>
     </scm>
 
@@ -259,4 +259,5 @@
         </plugin>
       </plugins>
     </build>
+
 </project>
