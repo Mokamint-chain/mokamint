@@ -43,7 +43,7 @@
     </developers>
 
     <modules>
-      <module>io-hotmoka-spacemint-node-local</module>
+      <module>io-mokamint-node-local</module>
       <module>io-mokamint-node-api</module>
       <module>io-hotmoka-spacemint-miner-api</module>
       <module>io-hotmoka-spacemint-miner-local</module>
@@ -174,7 +174,7 @@
                 <outputDirectory>${project.parent.basedir}/modules/unnamed</outputDirectory>
                 <excludeArtifactIds>
                   <!-- we exclude all modules built by Maven: their build will put them at the right place -->
-                  io-hotmoka-spacemint-node-local,
+                  io-mokamint-node-local,
                   io-mokamint-node-api,
                   io-hotmoka-spacemint-miner-api,
                   io-hotmoka-spacemint-miner-local,

@@ -14,12 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * @author spoto
- *
- */
-module io.hotmoka.spacemint.node.local {
-	exports io.hotmoka.spacemint.node.local;
+module io.mokamint.node.local {
+	exports io.mokamint.node.local;
 
 	requires transitive io.mokamint.node.api;
 	requires transitive io.mokamint.application.api;

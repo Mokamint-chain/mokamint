@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.node.local;
+package io.mokamint.node.local;
 
 import io.hotmoka.spacemint.miner.api.Miner;
-import io.hotmoka.spacemint.node.local.internal.LocalNodeImpl;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Node;
+import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
  * A provider of local nodes.
