@@ -4,11 +4,11 @@
   <artifactId>io-mokamint-nonce-api</artifactId>
   <name>io-mokamint-nonce-api</name>
   <packaging>jar</packaging>
-  <version>${spacemint.version}</version>
+  <version>${mokamint.version}</version>
 
   <parent>
-    <groupId>io.hotmoka</groupId>
-    <artifactId>spacemint</artifactId>
+    <groupId>io.mokamint</groupId>
+    <artifactId>mokamint</artifactId>
     <version>1.0.0</version>
   </parent>
 

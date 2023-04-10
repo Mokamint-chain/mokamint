@@ -4,29 +4,29 @@
   <artifactId>io-mokamint-miner-local</artifactId>
   <name>io-mokamint-miner-local</name>
   <packaging>jar</packaging>
-  <version>${spacemint.version}</version>
+  <version>${mokamint.version}</version>
 
   <parent>
-    <groupId>io.hotmoka</groupId>
-    <artifactId>spacemint</artifactId>
+    <groupId>io.mokamint</groupId>
+    <artifactId>mokamint</artifactId>
     <version>1.0.0</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>io.hotmoka</groupId>
+      <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-miner-api</artifactId>
-      <version>${spacemint.version}</version>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
+       <groupId>io.mokamint</groupId>
        <artifactId>io-mokamint-plotter-api</artifactId>
-       <version>${spacemint.version}</version>
+       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
+       <groupId>io.mokamint</groupId>
        <artifactId>io-mokamint-nonce-api</artifactId>
-       <version>${spacemint.version}</version>
+       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka</groupId>
