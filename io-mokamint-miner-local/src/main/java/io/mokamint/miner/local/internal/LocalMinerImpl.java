@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.hotmoka.spacemint.miner.local.internal;
+package io.mokamint.miner.local.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

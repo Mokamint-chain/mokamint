@@ -30,7 +30,7 @@
     </dependency>
   	<dependency>
        <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-spacemint-miner-local</artifactId> <!-- remove at the end -->
+       <artifactId>io-mokamint-miner-local</artifactId> <!-- remove at the end -->
        <version>${spacemint.version}</version>
     </dependency>
   	<dependency>

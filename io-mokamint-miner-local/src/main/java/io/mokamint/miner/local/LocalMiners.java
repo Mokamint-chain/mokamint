@@ -14,12 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.hotmoka.spacemint.miner.local {
-	exports io.hotmoka.spacemint.miner.local;
+package io.mokamint.miner.local;
 
-	requires transitive io.mokamint.miner.api;
-	requires transitive io.mokamint.plotter.api;
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
-	requires java.logging;
+import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.local.internal.LocalMinerImpl;
+import io.mokamint.plotter.api.Plot;
+
+/**
+ * A provider of miners that work on the local machine.
+ */
+public interface LocalMiners {
+
+	/**
+	 * Yields a new local miner.
+	 * 
+	 * @param plots the plot files used for mining. This cannot be empty
+	 * @return the new local miner
+	 */
+	static Miner of(Plot... plots) {
+		return new LocalMinerImpl(plots);
+	}
 }

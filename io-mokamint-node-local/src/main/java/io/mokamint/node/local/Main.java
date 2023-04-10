@@ -21,8 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.spacemint.miner.local.LocalMiners;
 import io.mokamint.application.api.Application;
+import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.plotter.Plots;
 
 /**
