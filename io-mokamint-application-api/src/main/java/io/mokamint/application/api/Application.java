@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.application.api;
 
 /**
- * An application for the Spacemint blockchain.
+ * An application for the Mokamint blockchain.
  */
 public interface Application {
 

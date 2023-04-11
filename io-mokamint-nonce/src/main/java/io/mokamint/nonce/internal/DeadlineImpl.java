@@ -95,6 +95,11 @@ public class DeadlineImpl implements Deadline {
 	}
 
 	@Override
+	public boolean isValid() {
+		return this.equals(toNonce().getDeadline(scoopNumber, data));
+	}
+
+	@Override
 	public String toString() {
 		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", nonce: " + progressive + ", value: " + Hex.toHexString(value);
 	}

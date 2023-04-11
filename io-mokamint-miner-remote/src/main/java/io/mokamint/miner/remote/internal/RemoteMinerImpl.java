@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.net.URI;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
 import io.mokamint.miner.api.Miner;
@@ -34,7 +34,7 @@ public class RemoteMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) {
+	public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 		
 	}
 

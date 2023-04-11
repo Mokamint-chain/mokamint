@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -62,7 +62,7 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) throws RejectedExecutionException {
+	public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException {
 		LOGGER.info("received deadline request with scoop number: " + scoopNumber + " and data: " + Hex.toHexString(data));
 
 		executors.submit(() -> {
@@ -74,7 +74,7 @@ public class LocalMinerImpl implements Miner {
 					.min(Deadline::compareByValue)
 					.get(); // OK, since there is at least a plot file
 
-				onDeadlineComputed.accept(deadline);
+				onDeadlineComputed.accept(deadline, this);
 			}
 			catch (UncheckedIOException e) {
 				LOGGER.log(Level.SEVERE, "couldn't compute the deadline", e.getCause());

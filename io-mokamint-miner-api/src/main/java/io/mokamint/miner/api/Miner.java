@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.miner.api;
 
 import java.util.concurrent.RejectedExecutionException;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import io.mokamint.nonce.api.Deadline;
 
@@ -36,11 +36,12 @@ public interface Miner extends AutoCloseable {
 	 * @param scoopNumber the number of the scoop used for finding the deadline
 	 * @param data the data
 	 * @param onDeadlineComputed the callback executed when a deadline has been found.
+	 *                           It is called with the deadline computed and with miner itself.
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
 	 * @throws RejectedExecutionException if the miner cannot take care of the request at the moment
 	 */
-	void requestDeadline(int scoopNumber, byte[] data, Consumer<Deadline> onDeadlineComputed) throws RejectedExecutionException;
+	void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException;
 
 	@Override
 	void close();

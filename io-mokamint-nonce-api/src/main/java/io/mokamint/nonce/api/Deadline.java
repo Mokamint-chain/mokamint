@@ -73,6 +73,14 @@ public interface Deadline {
 	Nonce toNonce();
 
 	/**
+	 * Determines if this deadline is valid, that is, if it coincides with the deadline
+	 * computed from the result of {@link #toNonce()}.
+	 * 
+	 * @return true if and only if this deadline is valid
+	 */
+	boolean isValid();
+
+	/**
 	 * Checks if this deadline is equal to another object (same progressive, same value).
 	 * 
 	 * @param other the other object
