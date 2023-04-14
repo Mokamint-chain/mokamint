@@ -17,17 +17,23 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
+import io.mokamint.node.local.internal.blockchain.Block;
+import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
 
@@ -46,25 +52,22 @@ public class LocalNodeImpl implements Node {
 	 */
 	private final Set<Miner> miners;
 
+	private final HashingAlgorithm<byte[]> sha256;
+
+	private volatile Block head;
+
 	/**
 	 * The target block creation time that will be aimed, in milliseconds.
 	 */
-	private final static BigInteger targetBlockCreationTime = BigInteger.valueOf(4L * 60 * 1000); // 4 minutes
-
-	private BigInteger weightedWaitingTime = targetBlockCreationTime;
-	
-	private BigInteger totalWaitingTime = BigInteger.ZERO;
-
-	private long blockNumber = 0L;
-
-	/**
-	 * A value used to divide the deadline to derive the time needed to wait for them.
-	 * The higher, the shorter the time. This value changes dynamically to cope with
-	 * varying mining power in the network. It is the inverse of Bitcoin's difficulty.
-	 */
-	private BigInteger acceleration = BigInteger.valueOf(100000000000L);
+	private final static BigInteger TARGET_BLOCK_CREATION_TIME = BigInteger.valueOf(5 * 1000); // 5 seconds
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
+
+	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
+	private final static BigInteger _100 = BigInteger.valueOf(100L);
+	private final static BigInteger _20 = BigInteger.valueOf(20L);
+
+	private BigInteger totalWaitingTime = BigInteger.ZERO; // TODO: remove at the end
 
 	/**
 	 * Creates a local node of a Mokamint blockchain, for the given application,
@@ -72,55 +75,18 @@ public class LocalNodeImpl implements Node {
 	 *
 	 * @param app the application
 	 * @param miners the miners
+	 * @throws NoSuchAlgorithmException if the sha256 hashing is not available
 	 */
-	public LocalNodeImpl(Application app, Miner... miners) {
+	public LocalNodeImpl(Application app, Miner... miners) throws NoSuchAlgorithmException {
 		this.app = app;
 		this.miners = Stream.of(miners).collect(Collectors.toSet());
+		this.sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
+		this.head = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 
 		while (true) {
-			var creator = new NextBlockCreator();
-			var waitingTime = millisecondsToWaitFor(creator.bestDeadline);
-			System.out.println("I wait " + asSeconds(waitingTime) + " seconds");
-
-			weightedWaitingTime = (weightedWaitingTime.multiply(BigInteger.valueOf(98)).add(waitingTime.multiply(BigInteger.valueOf(2))))
-				.divide(BigInteger.valueOf(100));
-
-			blockNumber++;
-
-			totalWaitingTime = totalWaitingTime.add(waitingTime);
-
-			System.out.println("average waiting time is " + asSeconds(totalWaitingTime.divide(BigInteger.valueOf(blockNumber))) + " seconds");
-
-			// update the acceleration in order to get closer to the target creation time
-			BigInteger delta = acceleration.multiply(weightedWaitingTime).divide(targetBlockCreationTime).subtract(acceleration);
-			acceleration = acceleration.add(delta.multiply(BigInteger.valueOf(20L)).divide(BigInteger.valueOf(100L)));
-			if (acceleration.signum() == 0)
-				acceleration = BigInteger.ONE;
+			var creator = new NextBlockCreator(head);
+			head = creator.block;
 		}
-	}
-
-	private BigInteger millisecondsToWaitFor(Deadline deadline) {
-		byte[] valueAsBytes = deadline.getValue();
-		BigInteger value = new BigInteger(1, valueAsBytes);
-		value = value.divide(acceleration);
-		byte[] newValueAsBytes = value.toByteArray();
-		// we recreate an array of the same length as at the beginning
-		byte[] dividedValueAsBytes = new byte[valueAsBytes.length];
-		System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
-			dividedValueAsBytes.length - newValueAsBytes.length,
-			newValueAsBytes.length);
-		// we take the first 8 bytes of the divided value
-		byte[] firstEightBytes = new byte[] {
-			dividedValueAsBytes[0],
-			dividedValueAsBytes[1],
-			dividedValueAsBytes[2],
-			dividedValueAsBytes[3],
-			dividedValueAsBytes[4],
-			dividedValueAsBytes[5],
-			dividedValueAsBytes[6],
-			dividedValueAsBytes[7]
-		};
-		return new BigInteger(1, firstEightBytes);
 	}
 
 	private String asSeconds(BigInteger milliseconds) {
@@ -136,42 +102,66 @@ public class LocalNodeImpl implements Node {
 		private final int scoopNumber;
 
 		/**
-		 * The data of the deadline for the creation of the next block.
+		 * The generation signature for the creation of the next block.
 		 */
-		private final byte[] data = new byte[14];
+		private final byte[] generationSignature;
 
 		/**
 		 * The best deadline computed so far. This might be {@code null}.
 		 */
 		private volatile Deadline bestDeadline;
 
-		private NextBlockCreator() {
-			var random = new Random();
-			this.scoopNumber = random.nextInt(Nonce.SCOOPS_PER_NONCE);
-			random.nextBytes(data);
-			
-			System.out.println("\nBlock " + blockNumber + ", acceleration is now " + acceleration);
+		/**
+		 * The block computed by this block creator.
+		 */
+		private final Block block;
+		
+		private NextBlockCreator(Block previous) {
+			System.out.println("\nBlock " + previous.getNumber());
 
-			LOGGER.info("starting new block for scoop number: " + scoopNumber + " and data: " + Hex.toHexString(data));
+			if (previous instanceof NonGenesisBlock) {
+				Deadline previousDeadline = ((NonGenesisBlock) previous).getDeadline();
+				byte[] previousGenerationSignature = previousDeadline.getData();
+				byte[] previousProlog = previousDeadline.getProlog();
+				byte[] merge = concat(previousGenerationSignature, previousProlog);
+				this.generationSignature = sha256.hash(merge);
+			}
+			else
+				this.generationSignature = new byte[] { 13, 1, 19, 73 };
+
+			byte[] blockHeight = longToBytesBE(Long.valueOf(previous.getNumber() + 1));
+			byte[] generationHash = sha256.hash(concat(generationSignature, blockHeight));
+
+			this.scoopNumber = new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
+
+			LOGGER.info("starting working at new block for scoop number: " + scoopNumber + " and generationSignature: " + Hex.toHexString(generationSignature));
 
 			requestDeadlineToEveryMiner();
-			waitUntilDeadlineExpiresOrBlockArrivesFromPeers();
+			waitUntilDeadlineExpires();
+			this.block = createNewBlock();
 
-			LOGGER.info("finished new block for scoop number: " + scoopNumber + " and data: " + Hex.toHexString(data));
+			LOGGER.info("finished new block for scoop number: " + scoopNumber + " and generationSignature: " + Hex.toHexString(generationSignature));
 		}
 
-		private void waitUntilDeadlineExpiresOrBlockArrivesFromPeers() {
-			try {
-				Thread.sleep(600);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+		private byte[] concat(byte[] array1, byte[] array2) {
+			byte[] merge = new byte[array1.length + array2.length];
+			System.arraycopy(array1, 0, merge, 0, array1.length);
+			System.arraycopy(array2, 0, merge, array1.length, array2.length);
+			return merge;
+		}
+		
+		private byte[] longToBytesBE(long l) {
+			byte[] target = new byte[8];
+
+	        for (int i = 0; i <= 7; i++)
+	            target[7 - i] = (byte) ((l>>(8*i)) & 0xFF);
+
+	        return target;
 		}
 
 		private void requestDeadlineToEveryMiner() {
 			for (var miner: miners)
-				miner.requestDeadline(scoopNumber, data, this::onDeadlineComputed);
+				miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
 		}
 
 		/**
@@ -181,7 +171,7 @@ public class LocalNodeImpl implements Node {
 		 */
 		private void onDeadlineComputed(Deadline deadline, Miner miner) {
 			LOGGER.info("received deadline " + deadline);
-
+		
 			if (!miners.contains(miner))
 				LOGGER.info("discarding deadline " + deadline + " since its miner is unknown");
 			else if (improvesCurrent(deadline)) {
@@ -202,11 +192,71 @@ public class LocalNodeImpl implements Node {
 				LOGGER.info("discarding deadline " + deadline + " since it's larger than the current deadline");
 		}
 
+		private void waitUntilDeadlineExpires() {
+			try {
+				Thread.sleep(600);
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
+		private Block createNewBlock() {
+			var waitingTime = millisecondsToWaitFor();
+			System.out.println("I wait " + asSeconds(waitingTime) + " seconds");
+		
+			BigInteger weightedWaitingTime = (head.getWeightedWaitingTime().multiply(BigInteger.valueOf(95))
+				.add(waitingTime.multiply(BigInteger.valueOf(5))))
+				.divide(_100);
+		
+			long blockNumber = head.getNumber() + 1;
+		
+			totalWaitingTime = totalWaitingTime.add(waitingTime);
+		
+			System.out.println("average waiting time is " + asSeconds(totalWaitingTime.divide(BigInteger.valueOf(blockNumber))) + " seconds");
+		
+			// update the acceleration in order to get closer to the target creation time
+			BigInteger delta = head.getAcceleration()
+				.multiply(weightedWaitingTime)
+				.divide(TARGET_BLOCK_CREATION_TIME)
+				.subtract(head.getAcceleration());
+
+			BigInteger acceleration = head.getAcceleration().add(delta.multiply(_20).divide(_100));
+			if (acceleration.signum() == 0)
+				acceleration = BigInteger.ONE;
+
+			return Block.of(blockNumber, weightedWaitingTime, acceleration, bestDeadline);
+		}
+
+		private BigInteger millisecondsToWaitFor() {
+			byte[] valueAsBytes = bestDeadline.getValue();
+			BigInteger value = new BigInteger(1, valueAsBytes);
+			value = value.divide(head.getAcceleration());
+			byte[] newValueAsBytes = value.toByteArray();
+			// we recreate an array of the same length as at the beginning
+			byte[] dividedValueAsBytes = new byte[valueAsBytes.length];
+			System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
+				dividedValueAsBytes.length - newValueAsBytes.length,
+				newValueAsBytes.length);
+			// we take the first 8 bytes of the divided value
+			byte[] firstEightBytes = new byte[] {
+				dividedValueAsBytes[0],
+				dividedValueAsBytes[1],
+				dividedValueAsBytes[2],
+				dividedValueAsBytes[3],
+				dividedValueAsBytes[4],
+				dividedValueAsBytes[5],
+				dividedValueAsBytes[6],
+				dividedValueAsBytes[7]
+			};
+			return new BigInteger(1, firstEightBytes);
+		}
+
 		/**
 		 * @param deadline
 		 */
 		private void wakeUpBlockCreatorOrSetWaker(Deadline deadline) {
-			BigInteger millisecondsToWait = millisecondsToWaitFor(deadline);
+			//BigInteger millisecondsToWait = millisecondsToWaitFor(deadline);
 			//System.out.println("Should wait " + asSeconds(millisecondsToWait) + " seconds");
 		}
 
@@ -221,7 +271,7 @@ public class LocalNodeImpl implements Node {
 
 		/**
 		 * Determines if a deadline can be accepted, that is,
-		 * it is actually a deadline for this scoop number and data, it is valid
+		 * it is actually a deadline for this scoop number and generationSignature, it is valid
 		 * and its prolog is valid for the application. All these conditions should always
 		 * hold, if the miner behaves correctly.
 		 * 
@@ -230,7 +280,7 @@ public class LocalNodeImpl implements Node {
 		 */
 		private boolean isLegal(Deadline deadline) {
 			return deadline.getScoopNumber() == scoopNumber
-					&& Arrays.equals(deadline.getData(), data)
+					&& Arrays.equals(deadline.getData(), generationSignature)
 					&& deadline.isValid()
 					&& app.prologIsValid(deadline.getProlog());
 		}
