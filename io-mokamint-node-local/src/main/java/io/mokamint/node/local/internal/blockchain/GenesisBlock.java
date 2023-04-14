@@ -35,6 +35,11 @@ public class GenesisBlock implements Block {
 	}
 
 	@Override
+	public BigInteger getTotalWaitingTime() {
+		return BigInteger.ZERO; // just started
+	}
+
+	@Override
 	public BigInteger getWeightedWaitingTime() {
 		return BigInteger.ZERO; // just started
 	}

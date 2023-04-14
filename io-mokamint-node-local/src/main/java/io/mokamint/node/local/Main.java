@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -58,7 +60,9 @@ public class Main {
 			 var miner2 = LocalMiners.of(plot3);
 			 var node = LocalNodes.of(new TestApplication(), miner1, miner2))
 		{
-			
+			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+			System.out.println("Please press a key to stop the node.");
+			reader.readLine();
 		}
 	}
 

@@ -26,13 +26,15 @@ import io.mokamint.nonce.api.Deadline;
  */
 public interface Block {
 
-	static NonGenesisBlock of(long blockNumber, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
-		return new NonGenesisBlock(blockNumber, weightedWaitingTime, acceleration, deadline);
+	static NonGenesisBlock of(long blockNumber, BigInteger totalWaitingTime, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
+		return new NonGenesisBlock(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline);
 	}
 
 	static GenesisBlock genesis(LocalDateTime startDateTimeUTC) {
 		return new GenesisBlock(startDateTimeUTC);
 	}
+
+	BigInteger getTotalWaitingTime();
 
 	BigInteger getWeightedWaitingTime();
 

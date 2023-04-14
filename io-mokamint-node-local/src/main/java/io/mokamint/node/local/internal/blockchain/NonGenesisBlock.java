@@ -26,6 +26,12 @@ import io.mokamint.nonce.api.Deadline;
 public class NonGenesisBlock implements Block {
 
 	/**
+	 * The total waiting time for the construction of the blockchain, from
+	 * the genesis block to this block, excluded.
+	 */
+	private final BigInteger totalWaitingTime;
+
+	/**
 	 * The weighted waiting time for the construction of the blockchain until
 	 * this block (excluded).
 	 */
@@ -48,11 +54,17 @@ public class NonGenesisBlock implements Block {
 	 */
 	private final Deadline deadline;
 
-	NonGenesisBlock(long number, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
+	NonGenesisBlock(long number, BigInteger totalWaitingTime, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
 		this.number = number;
+		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
 		this.acceleration = acceleration;
 		this.deadline = deadline;
+	}
+
+	@Override
+	public BigInteger getTotalWaitingTime() {
+		return totalWaitingTime;
 	}
 
 	@Override
