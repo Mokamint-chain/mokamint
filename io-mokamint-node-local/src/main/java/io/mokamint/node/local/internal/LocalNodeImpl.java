@@ -39,6 +39,7 @@ import io.mokamint.node.api.Node;
 import io.mokamint.node.local.internal.blockchain.Block;
 import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
+import io.mokamint.node.local.internal.tasks.UncheckedInterruptedException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -93,15 +94,15 @@ public class LocalNodeImpl implements Node {
 
 	@Override
 	public void close() {
-		events.shutdown();
-		tasks.shutdown();
+		events.shutdownNow();
+		tasks.shutdownNow();
 		
 		try {
 			events.awaitTermination(10, TimeUnit.SECONDS);
 			tasks.awaitTermination(10, TimeUnit.SECONDS);
 		}
 		catch (InterruptedException e) {
-			throw new RuntimeException(e);
+			throw new UncheckedInterruptedException(e);
 		}
 	}
 
@@ -110,7 +111,6 @@ public class LocalNodeImpl implements Node {
 	 * 
 	 * @return the application
 	 */
-	@OnThread("any")
 	public Application getApplication() {
 		return app;
 	}
@@ -121,7 +121,6 @@ public class LocalNodeImpl implements Node {
 	 * @param miner the miner
 	 * @return true if and only if that condition holds
 	 */
-	@OnThread("any")
 	public boolean hasMiner(Miner miner) {
 		synchronized (miners) {
 			return miners.contains(miner);
@@ -133,7 +132,6 @@ public class LocalNodeImpl implements Node {
 	 * 
 	 * @return true if and only if there is at least a miner
 	 */
-	@OnThread("any")
 	public boolean hasMiners() {
 		synchronized (miners) {
 			return !miners.isEmpty();
@@ -147,7 +145,6 @@ public class LocalNodeImpl implements Node {
 	 * 
 	 * @param what the code to execute for each miner
 	 */
-	@OnThread("any")
 	public void forEachMiner(Consumer<Miner> what) {
 		// it's OK to be weakly consistent
 		Set<Miner> copy;
@@ -161,8 +158,7 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * The type of the events processed on the event thread.
 	 */
-	private interface Event extends Runnable {
-	}
+	private interface Event extends Runnable {}
 
 	/**
 	 * Signals that an event occurred. This is typically called from task,

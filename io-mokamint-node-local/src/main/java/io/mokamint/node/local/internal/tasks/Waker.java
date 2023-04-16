@@ -87,7 +87,10 @@ public class Waker {
 		}
 	}
 
+	/**
+	 * Shuts down the internal executor of this object.
+	 */
 	public void shutdownNow() {
-		executor.shutdown();
+		executor.shutdownNow();
 	}
 }

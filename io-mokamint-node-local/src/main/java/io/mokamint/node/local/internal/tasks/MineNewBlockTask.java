@@ -127,9 +127,9 @@ public class MineNewBlockTask extends Task {
 
 		/**
 		 * The best deadline computed so far. This is empty until a first deadline is found. Since more miners
-		 * might work for a node, this best deadline might be set more than once, to increasingly better deadlines.
+		 * might work for a node, this deadline might change more than once, to increasingly better deadlines.
 		 */
-		private final ImprovableDeadline bestDeadline = new ImprovableDeadline();
+		private final ImprovableDeadline currentDeadline = new ImprovableDeadline();
 
 		/**
 		 * The waker used to wait for a deadline to expire.
@@ -148,6 +148,7 @@ public class MineNewBlockTask extends Task {
 				this.generationSignature = computeGenerationSignature();
 				this.scoopNumber = computeScoopNumber();
 				requestDeadlineToEveryMiner();
+				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
 				this.block = createNewBlock();
 				informNodeAboutNewBlock();
@@ -155,6 +156,10 @@ public class MineNewBlockTask extends Task {
 			finally {
 				turnWakerOff();
 			}
+		}
+
+		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
+			currentDeadline.await(1000, TimeUnit.MILLISECONDS);
 		}
 
 		private byte[] computeGenerationSignature() {
@@ -195,11 +200,27 @@ public class MineNewBlockTask extends Task {
 			return target;
 		}
 
-		private void requestDeadlineToEveryMiner() {
+		private void requestDeadlineToEveryMiner() throws InterruptedException {
 			LOGGER.info("for new block at height " + heightOfNewBlock +
 					", asking to the miners a deadline with scoop number: " + scoopNumber +
 					" and data: " + Hex.toHexString(generationSignature));
-			getNode().forEachMiner(miner -> miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed));
+
+			try {
+				getNode().forEachMiner(miner -> {
+					try {
+						miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
+					}
+					catch (TimeoutException e) {
+						getNode().signal(getNode().new MinerMisbehaviorEvent(miner));
+					}
+					catch (InterruptedException e) {
+						throw new UncheckedInterruptedException(e);
+					}
+				});
+			}
+			catch (UncheckedInterruptedException e) {
+				throw e.getCause();
+			}
 		}
 
 		/**
@@ -214,9 +235,9 @@ public class MineNewBlockTask extends Task {
 
 			if (!getNode().hasMiner(miner))
 				LOGGER.info("discarding deadline " + deadline + " since its miner is unknown");
-			else if (bestDeadline.isWorseThan(deadline)) {
+			else if (currentDeadline.isWorseThan(deadline)) {
 				if (isLegal(deadline)) {
-					if (bestDeadline.updateIfWorseThan(deadline)) {
+					if (currentDeadline.updateIfWorseThan(deadline)) {
 						LOGGER.info("improved deadline to " + deadline);
 						setWaker(deadline);
 					}
@@ -233,11 +254,11 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void waitUntilDeadlineExpires() throws InterruptedException, TimeoutException {
-			waker.await(); //(10000, TimeUnit.MILLISECONDS);
+			waker.await();
 		}
 
 		private Block createNewBlock() {
-			var deadline = bestDeadline.get().get(); // here, we know that a deadline has been computed
+			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);

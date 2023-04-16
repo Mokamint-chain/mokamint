@@ -17,6 +17,9 @@ limitations under the License.
 package io.mokamint.node.local.internal.tasks;
 
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
@@ -32,7 +35,12 @@ public class ImprovableDeadline {
 	private Deadline deadline;
 
 	private final Object lock = new Object();
-	
+
+	/**
+	 * The latch used to wait for the first deadline to arrive.
+	 */
+	private final CountDownLatch latch = new CountDownLatch(1);
+
 	/**
 	 * Determines if the given deadline is better than this.
 	 * 
@@ -46,6 +54,28 @@ public class ImprovableDeadline {
 	}
 
 	/**
+	 * Waits until the first deadline arrives.
+	 *
+	 * @throws InterruptedException if the thread is interrupted while waiting
+	 */
+	public void await() throws InterruptedException {
+		latch.await();
+	}
+
+	/**
+	 * Wait until the first deadline arrive, or the timeout expires.
+	 * 
+	 * @param timeout the timeout
+	 * @param unit the time unit of {@code timeout}
+	 * @throws InterruptedException if the thread is interrupted while waiting
+	 * @throws TimeoutException if the timeout expired and no deadline arrived before
+	 */
+	public void await(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+		if (!latch.await(timeout, unit))
+			throw new TimeoutException();
+	}
+
+	/**
 	 * Updates this deadline if the given deadline is better.
 	 * 
 	 * @param other the given deadline
@@ -55,6 +85,7 @@ public class ImprovableDeadline {
 		synchronized (lock) {
 			if (isWorseThan(other)) {
 				deadline = other;
+				latch.countDown();
 				return true;
 			}
 			else
