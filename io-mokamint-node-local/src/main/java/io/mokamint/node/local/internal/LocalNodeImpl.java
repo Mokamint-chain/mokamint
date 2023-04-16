@@ -129,6 +129,18 @@ public class LocalNodeImpl implements Node {
 	}
 
 	/**
+	 * Checks is there is at least a miner.
+	 * 
+	 * @return true if and only if there is at least a miner
+	 */
+	@OnThread("any")
+	public boolean hasMiners() {
+		synchronized (miners) {
+			return !miners.isEmpty();
+		}
+	}
+
+	/**
 	 * Runs some code on each miner connected to this node. This is weakly consistent,
 	 * in the sense that the set of miners can be modified in the meanwhile and there is
 	 * no guarantee that the code will be run for such newly added miners.

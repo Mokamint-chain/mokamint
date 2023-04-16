@@ -22,11 +22,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
@@ -89,10 +86,17 @@ public class MineNewBlockTask extends Task {
 	@Override
 	public void run() {
 		try {
-			new Run();
+			if (getNode().hasMiners())
+				new Run();
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
+		}
+		catch (InterruptedException e) {
+			LOGGER.info(MineNewBlockTask.class.getName() + " interrupted");
+		}
+		catch (TimeoutException e) {
+			getNode().forEachMiner(miner -> getNode().new MinerMisbehaviorEvent(miner));
 		}
 	}
 
@@ -105,18 +109,6 @@ public class MineNewBlockTask extends Task {
 		 * The hashing algorithm used to compute the next generation signature and scoop number.
 		 */
 		private final HashingAlgorithm<byte[]> sha256;
-
-		/**
-		 * A service used to schedule a waker at the end of a deadline.
-		 */
-		private final ScheduledExecutorService wakers = Executors.newSingleThreadScheduledExecutor();
-
-		/**
-		 * The current waker, if any.
-		 */
-		private ScheduledFuture<?> waker;
-
-		private final Object lock = new Object();
 
 		/**
 		 * The height of the new block that is being mined.
@@ -140,25 +132,29 @@ public class MineNewBlockTask extends Task {
 		private final ImprovableDeadline bestDeadline = new ImprovableDeadline();
 
 		/**
-		 * The semaphore used to wait for a deadline.
+		 * The waker used to wait for a deadline to expire.
 		 */
-		private final Semaphore semaphore = new Semaphore(0);
+		private final Waker waker = new Waker();
 
 		/**
 		 * The new block that will be mined at the end.
 		 */
 		private final Block block;
 
-		private Run() throws NoSuchAlgorithmException {
-			LOGGER.info("starting mining new block at height " + heightOfNewBlock);
-			this.sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
-			this.generationSignature = computeGenerationSignature();
-			this.scoopNumber = computeScoopNumber();
-			requestDeadlineToEveryMiner();
-			waitUntilDeadlineExpires();
-			this.block = createNewBlock();
-			informNodeAboutNewBlock();
-			turnWakerOff();
+		private Run() throws NoSuchAlgorithmException, InterruptedException, TimeoutException {
+			try {
+				LOGGER.info("starting mining new block at height " + heightOfNewBlock);
+				this.sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
+				this.generationSignature = computeGenerationSignature();
+				this.scoopNumber = computeScoopNumber();
+				requestDeadlineToEveryMiner();
+				waitUntilDeadlineExpires();
+				this.block = createNewBlock();
+				informNodeAboutNewBlock();
+			}
+			finally {
+				turnWakerOff();
+			}
 		}
 
 		private byte[] computeGenerationSignature() {
@@ -236,14 +232,8 @@ public class MineNewBlockTask extends Task {
 				LOGGER.info("discarding deadline " + deadline + " since it's worse than the current deadline");
 		}
 
-		private void waitUntilDeadlineExpires() {
-			try {
-				semaphore.acquire();
-			}
-			catch (InterruptedException e) {
-				// TODO
-				e.printStackTrace();
-			}
+		private void waitUntilDeadlineExpires() throws InterruptedException, TimeoutException {
+			waker.await(); //(10000, TimeUnit.MILLISECONDS);
 		}
 
 		private Block createNewBlock() {
@@ -251,7 +241,6 @@ public class MineNewBlockTask extends Task {
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
-			System.out.println("Block #" + heightOfNewBlock + " average waiting time = " + asSeconds(totalWaitingTimeForNewBlock / heightOfNewBlock) + " seconds");
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
 
 			return Block.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline);
@@ -287,10 +276,6 @@ public class MineNewBlockTask extends Task {
 			return acceleration;
 		}
 
-		private String asSeconds(long milliseconds) {
-			return String.format("%.2f", milliseconds / 1000.0);
-		}
-
 		private long millisecondsToWaitFor(Deadline deadline) {
 			byte[] valueAsBytes = deadline.getValue();
 			var value = new BigInteger(1, valueAsBytes);
@@ -317,14 +302,7 @@ public class MineNewBlockTask extends Task {
 			long millisecondsToWait = millisecondsToWaitFor(deadline);
 			long millisecondsAlreadyPassed = Duration.between(startTime, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
 			long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
-
-			synchronized (lock) {
-				if (waker != null)
-					waker.cancel(true);
-
-				this.waker = wakers.schedule((Runnable) semaphore::release, stillToWait, TimeUnit.MILLISECONDS);
-			}
-
+			waker.set(stillToWait);
 			LOGGER.info("set up a waker in " + stillToWait + " ms");
 		}
 
@@ -345,7 +323,7 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void turnWakerOff() {
-			wakers.shutdown();
+			waker.shutdownNow();
 		}
 	}
 }
