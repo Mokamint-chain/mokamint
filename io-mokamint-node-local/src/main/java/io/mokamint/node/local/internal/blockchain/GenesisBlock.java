@@ -50,7 +50,7 @@ public class GenesisBlock implements Block {
 	}
 
 	@Override
-	public long getNumber() {
+	public long getHeight() {
 		return 0L;
 	}
 }

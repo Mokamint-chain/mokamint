@@ -38,9 +38,9 @@ public class NonGenesisBlock implements Block {
 	private final BigInteger weightedWaitingTime;
 
 	/**
-	 * The block number, non-negative, counting from 0, which is the genesis block.
+	 * The block height, non-negative, counting from 0, which is the genesis block.
 	 */
-	private final long number;
+	private final long height;
 
 	/**
 	 * A value used to divide the deadline to derive the time needed to wait for it.
@@ -54,8 +54,8 @@ public class NonGenesisBlock implements Block {
 	 */
 	private final Deadline deadline;
 
-	NonGenesisBlock(long number, BigInteger totalWaitingTime, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
-		this.number = number;
+	NonGenesisBlock(long height, BigInteger totalWaitingTime, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
+		this.height = height;
 		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
 		this.acceleration = acceleration;
@@ -78,8 +78,8 @@ public class NonGenesisBlock implements Block {
 	}
 
 	@Override
-	public long getNumber() {
-		return number;
+	public long getHeight() {
+		return height;
 	}
 
 	public Deadline getDeadline() {

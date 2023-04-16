@@ -32,8 +32,13 @@ import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
 
-public class DiscoverNewBlockTask extends Task {
-	private final static Logger LOGGER = Logger.getLogger(DiscoverNewBlockTask.class.getName());
+/**
+ * A task that mines a new block, follower of a previous block.
+ * It requests a deadline to the miners of the node and waits for the best deadline to expire.
+ * Once expired, it builds the block and signals a new block discovery to the node.
+ */
+public class NewBlockMinerTask extends Task {
+	private final static Logger LOGGER = Logger.getLogger(NewBlockMinerTask.class.getName());
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 	private final static BigInteger _20 = BigInteger.valueOf(20L);
@@ -43,9 +48,23 @@ public class DiscoverNewBlockTask extends Task {
 	 */
 	private final static BigInteger TARGET_BLOCK_CREATION_TIME = BigInteger.valueOf(5 * 1000); // 5 seconds
 
+	/**
+	 * The generation signature for the block on top of the genesis block. This is arbitrary.
+	 */
+	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
+
+	/**
+	 * The block for which a subsequent block is being mined.
+	 */
 	private final Block previous;
 
-	public DiscoverNewBlockTask(LocalNodeImpl node, Block previous) {
+	/**
+	 * Creates a task that mines a new block.
+	 * 
+	 * @param node the node for which this task is working
+	 * @param previous the node for which a subsequent node is being built
+	 */
+	public NewBlockMinerTask(LocalNodeImpl node, Block previous) {
 		node.super();
 
 		this.previous = previous;
@@ -53,13 +72,31 @@ public class DiscoverNewBlockTask extends Task {
 
 	@Override
 	public void run() {
-		new Run();
+		try {
+			new Run();
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
+	/**
+	 * Run environment.
+	 */
 	private class Run {
 
 		/**
-		 * The scoop number of the deadline for the creation of next block.
+		 * The hashing algorithm used to compute the next generation signature and scoop number.
+		 */
+		private final HashingAlgorithm<byte[]> sha256;
+
+		/**
+		 * The height of the new block that is being mined.
+		 */
+		private final long heightOfNewBlock = previous.getHeight() + 1;
+
+		/**
+		 * The scoop number of the deadline for the creation of the next block.
 		 */
 		private final int scoopNumber;
 
@@ -68,47 +105,54 @@ public class DiscoverNewBlockTask extends Task {
 		 */
 		private final byte[] generationSignature;
 
-		private final HashingAlgorithm<byte[]> sha256;
-
 		/**
-		 * The best deadline computed so far. This might be {@code null}.
+		 * The best deadline computed so far. This is initially {@code null}, until a first deadline is found.
+		 * Since more miners might work for a node, this best deadline might be set more than once, to increasingly
+		 * better deadlines.
 		 */
 		private volatile Deadline bestDeadline;
 
-		private Run() {
-			System.out.println("\nBlock " + previous.getNumber());
+		/**
+		 * The new block that will be mined at the end.
+		 */
+		private final Block block;
 
-			try {
-				this.sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
-			}
-			catch (NoSuchAlgorithmException e) {
-				throw new RuntimeException(e);
-			}
+		private Run() throws NoSuchAlgorithmException {
+			LOGGER.info("starting mining a new block at height " + heightOfNewBlock);
+			this.sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
+			this.generationSignature = computeGenerationSignature();
+			this.scoopNumber = computeScoopNumber();
+			requestDeadlineToEveryMiner();
+			waitUntilDeadlineExpires();
+			this.block = createNewBlock();
+			informNodeAboutTheNewBlock();
+		}
 
+		/**
+		 */
+		private byte[] computeGenerationSignature() {
 			if (previous instanceof NonGenesisBlock) {
 				Deadline previousDeadline = ((NonGenesisBlock) previous).getDeadline();
 				byte[] previousGenerationSignature = previousDeadline.getData();
 				byte[] previousProlog = previousDeadline.getProlog();
 				byte[] merge = concat(previousGenerationSignature, previousProlog);
-				this.generationSignature = sha256.hash(merge);
+				return sha256.hash(merge);
 			}
 			else
-				this.generationSignature = new byte[] { 13, 1, 19, 73 };
+				return BLOCK_1_GENERATION_SIGNATURE;
+		}
 
-			byte[] blockHeight = longToBytesBE(Long.valueOf(previous.getNumber() + 1));
-			byte[] generationHash = sha256.hash(concat(generationSignature, blockHeight));
+		/**
+		 * @return 
+		 */
+		private int computeScoopNumber() {
+			byte[] generationHash = sha256.hash(concat(generationSignature, longToBytesBE(heightOfNewBlock)));
+			return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
+		}
 
-			this.scoopNumber = new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
-
-			LOGGER.info("starting working at new block for scoop number: " + scoopNumber + " and generationSignature: " + Hex.toHexString(generationSignature));
-
-			requestDeadlineToEveryMiner();
-			waitUntilDeadlineExpires();
-			Block block = createNewBlock();
-
-			LOGGER.info("finished new block for scoop number: " + scoopNumber + " and generationSignature: " + Hex.toHexString(generationSignature));
-
-			getNode().signal(getNode().new BlockDiscoveredEvent(block));
+		private void informNodeAboutTheNewBlock() {
+			LOGGER.info("ended mining a new block at height " + heightOfNewBlock + ": informing the node");
+			getNode().signal(getNode().new BlockDiscoveryEvent(block));
 		}
 
 		private byte[] concat(byte[] array1, byte[] array2) {
@@ -128,6 +172,9 @@ public class DiscoverNewBlockTask extends Task {
 		}
 
 		private void requestDeadlineToEveryMiner() {
+			LOGGER.info("for a new block at height " + heightOfNewBlock +
+					", asking to the miners a deadline with scoop number: " + scoopNumber +
+					" and generationSignature: " + Hex.toHexString(generationSignature));
 			getNode().forEachMiner(miner -> miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed));
 		}
 
@@ -176,7 +223,7 @@ public class DiscoverNewBlockTask extends Task {
 					.add(waitingTime.multiply(BigInteger.valueOf(5))))
 					.divide(_100);
 
-			long blockNumber = previous.getNumber() + 1;
+			long blockNumber = previous.getHeight() + 1;
 
 			BigInteger totalWaitingTime = previous.getTotalWaitingTime().add(waitingTime);
 

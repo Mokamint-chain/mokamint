@@ -46,5 +46,5 @@ public interface Block {
 	 */
 	BigInteger getAcceleration();
 
-	long getNumber();
+	long getHeight();
 }

@@ -23,5 +23,6 @@ module io.mokamint.node.local {
 	requires io.mokamint.miner.local; // TODO: used online for main: remove at the end (also in pom.xml)
 	requires io.mokamint.plotter; // TODO: used online for main: remove at the end (also in pom.xml)
 	requires io.hotmoka.crypto; // TODO: used online for main: remove at the end (also in pom.xml) 
+	requires io.hotmoka.annotations;
 	requires java.logging;
 }

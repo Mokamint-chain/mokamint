@@ -29,15 +29,19 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.GuardedBy;
+import io.hotmoka.annotations.OnThread;
+import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
 import io.mokamint.node.local.internal.blockchain.Block;
-import io.mokamint.node.local.internal.tasks.DiscoverNewBlockTask;
+import io.mokamint.node.local.internal.tasks.NewBlockMinerTask;
 
 /**
  * A local node of a Mokamint blockchain.
  */
+@ThreadSafe
 public class LocalNodeImpl implements Node {
 
 	/**
@@ -48,7 +52,7 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * The miners connected to the node.
 	 */
-	//@GuardeBy(itself)
+	@GuardedBy("itself")
 	private final Set<Miner> miners;
 
 	/**
@@ -76,7 +80,7 @@ public class LocalNodeImpl implements Node {
 		this.miners = Stream.of(miners).collect(Collectors.toSet());
 
 		// for now, everything starts with the discovery of the genesis block
-		signal(new BlockDiscoveredEvent(Block.genesis(LocalDateTime.now(ZoneId.of("UTC")))));
+		signal(new BlockDiscoveryEvent(Block.genesis(LocalDateTime.now(ZoneId.of("UTC")))));
 	}
 
 	@Override
@@ -190,21 +194,21 @@ public class LocalNodeImpl implements Node {
 	 * from the node itself, if it finds a deadline and a new block by using its own miners,
 	 * but also from a peer, that fund a block and whispers it to us.
 	 */
-	public class BlockDiscoveredEvent implements Event {
+	public class BlockDiscoveryEvent implements Event {
 		private final Block block;
 
-		public BlockDiscoveredEvent(Block block) {
+		public BlockDiscoveryEvent(Block block) {
 			this.block = block;
 		}
 
 		@Override
 		public String toString() {
-			return "block discovery event for block number " + block.getNumber();
+			return "block discovery event for block number " + block.getHeight();
 		}
 
-		@Override
+		@Override @OnThread("events")
 		public void run() {
-			execute(new DiscoverNewBlockTask(LocalNodeImpl.this, block));
+			execute(new NewBlockMinerTask(LocalNodeImpl.this, block));
 		}
 	}
 
@@ -223,7 +227,7 @@ public class LocalNodeImpl implements Node {
 			return "miner misbehavior event for miner " + miner.toString();
 		}
 
-		@Override
+		@Override @OnThread("events")
 		public void run() {
 			synchronized (miners) {
 				miners.remove(miner);
