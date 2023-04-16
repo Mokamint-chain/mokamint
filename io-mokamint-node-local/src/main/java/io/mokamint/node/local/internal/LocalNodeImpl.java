@@ -19,18 +19,13 @@ package io.mokamint.node.local.internal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
@@ -55,8 +50,7 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * The miners connected to the node.
 	 */
-	@GuardedBy("itself")
-	private final Set<Miner> miners;
+	private final Miners miners;
 
 	/**
 	 * The genesis block of the blockchain.
@@ -85,7 +79,7 @@ public class LocalNodeImpl implements Node {
 	 */
 	public LocalNodeImpl(Application app, Miner... miners) {
 		this.app = app;
-		this.miners = Stream.of(miners).collect(Collectors.toSet());
+		this.miners = new Miners(Stream.of(miners));
 		this.genesis = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 
 		// for now, everything starts with the discovery of the genesis block
@@ -116,43 +110,12 @@ public class LocalNodeImpl implements Node {
 	}
 
 	/**
-	 * Checks if the given miner is among those of this node.
+	 * Yields miners of this node.
 	 * 
-	 * @param miner the miner
-	 * @return true if and only if that condition holds
+	 * @return the miners
 	 */
-	public boolean hasMiner(Miner miner) {
-		synchronized (miners) {
-			return miners.contains(miner);
-		}
-	}
-
-	/**
-	 * Checks is there is at least a miner.
-	 * 
-	 * @return true if and only if there is at least a miner
-	 */
-	public boolean hasMiners() {
-		synchronized (miners) {
-			return !miners.isEmpty();
-		}
-	}
-
-	/**
-	 * Runs some code on each miner connected to this node. This is weakly consistent,
-	 * in the sense that the set of miners can be modified in the meanwhile and there is
-	 * no guarantee that the code will be run for such newly added miners.
-	 * 
-	 * @param what the code to execute for each miner
-	 */
-	public void forEachMiner(Consumer<Miner> what) {
-		// it's OK to be weakly consistent
-		Set<Miner> copy;
-		synchronized (miners) {
-			copy = new HashSet<>(miners);
-		}
-
-		copy.forEach(what);
+	public Miners getMiners() {
+		return miners;
 	}
 
 	/**
@@ -189,7 +152,7 @@ public class LocalNodeImpl implements Node {
 		 * 
 		 * @return the node running this task
 		 */
-		protected LocalNodeImpl getNode() {
+		protected final LocalNodeImpl getNode() {
 			return LocalNodeImpl.this;
 		}
 	}

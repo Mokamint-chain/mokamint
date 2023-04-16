@@ -86,7 +86,7 @@ public class MineNewBlockTask extends Task {
 	@Override
 	public void run() {
 		try {
-			if (getNode().hasMiners())
+			if (!getNode().getMiners().isEmpty())
 				new Run();
 		}
 		catch (NoSuchAlgorithmException e) {
@@ -96,7 +96,7 @@ public class MineNewBlockTask extends Task {
 			LOGGER.info(MineNewBlockTask.class.getName() + " interrupted");
 		}
 		catch (TimeoutException e) {
-			getNode().forEachMiner(miner -> getNode().new MinerMisbehaviorEvent(miner));
+			getNode().getMiners().stream().forEach(miner -> getNode().new MinerMisbehaviorEvent(miner));
 		}
 	}
 
@@ -206,7 +206,7 @@ public class MineNewBlockTask extends Task {
 					" and data: " + Hex.toHexString(generationSignature));
 
 			try {
-				getNode().forEachMiner(miner -> {
+				getNode().getMiners().stream().parallel().forEach(miner -> {
 					try {
 						miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
 					}
@@ -233,7 +233,7 @@ public class MineNewBlockTask extends Task {
 		private void onDeadlineComputed(Deadline deadline, Miner miner) {
 			LOGGER.info("received deadline " + deadline);
 
-			if (!getNode().hasMiner(miner))
+			if (!getNode().getMiners().contains(miner))
 				LOGGER.info("discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
 				if (isLegal(deadline)) {
