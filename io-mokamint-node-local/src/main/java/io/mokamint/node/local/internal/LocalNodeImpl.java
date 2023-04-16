@@ -33,6 +33,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
 import io.mokamint.node.local.internal.blockchain.Block;
+import io.mokamint.node.local.internal.tasks.DiscoverNewBlockTask;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -47,10 +48,8 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * The miners connected to the node.
 	 */
-	//@GuardeBy(this.miners)
+	//@GuardeBy(itself)
 	private final Set<Miner> miners;
-
-	//private final Queue<Object> events = new LinkedBlockingQueue<>();
 
 	private final ExecutorService events = Executors.newSingleThreadExecutor();
 
@@ -87,17 +86,17 @@ public class LocalNodeImpl implements Node {
 		}
 	}
 
-	Application getApplication() {
+	public Application getApplication() {
 		return app;
 	}
 
-	boolean hasMiner(Miner miner) {
+	public boolean hasMiner(Miner miner) {
 		synchronized (miners) {
 			return miners.contains(miner);
 		}
 	}
 
-	void forEachMiner(Consumer<Miner> what) {
+	public void forEachMiner(Consumer<Miner> what) {
 		// it's OK to be weakly consistent
 		Set<Miner> copy;
 		synchronized (miners) {
@@ -107,7 +106,7 @@ public class LocalNodeImpl implements Node {
 		copy.forEach(what);
 	}
 
-	void signal(Event event) {
+	public void signal(Event event) {
 		try {
 			LOGGER.info("received " + event);
 			events.execute(event);
@@ -117,7 +116,7 @@ public class LocalNodeImpl implements Node {
 		}
 	}
 
-	private void execute(Runnable task) {
+	private void execute(Task task) {
 		try {
 			workers.execute(task);
 		}
@@ -140,7 +139,7 @@ public class LocalNodeImpl implements Node {
 
 		@Override
 		public void run() {
-			execute(() -> new NextBlockCreator(LocalNodeImpl.this, block));
+			execute(new DiscoverNewBlockTask(LocalNodeImpl.this, block));
 		}
 	}
 
@@ -161,6 +160,15 @@ public class LocalNodeImpl implements Node {
 			synchronized (miners) {
 				miners.remove(miner);
 			}
+		}
+	}
+
+	private interface Event extends Runnable {
+	}
+
+	public abstract class Task implements Runnable {
+		protected LocalNodeImpl getNode() {
+			return LocalNodeImpl.this;
 		}
 	}
 }
