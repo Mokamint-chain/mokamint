@@ -26,7 +26,7 @@ import io.mokamint.nonce.api.Deadline;
  */
 public interface Block {
 
-	static NonGenesisBlock of(long blockNumber, BigInteger totalWaitingTime, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
+	static NonGenesisBlock of(long blockNumber, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
 		return new NonGenesisBlock(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline);
 	}
 
@@ -34,9 +34,9 @@ public interface Block {
 		return new GenesisBlock(startDateTimeUTC);
 	}
 
-	BigInteger getTotalWaitingTime();
+	long getTotalWaitingTime();
 
-	BigInteger getWeightedWaitingTime();
+	long getWeightedWaitingTime();
 
 	/**
 	 * Yields the acceleration used for the creation of this block, that is,

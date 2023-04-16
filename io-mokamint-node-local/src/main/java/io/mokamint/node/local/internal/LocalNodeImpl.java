@@ -18,6 +18,7 @@ package io.mokamint.node.local.internal;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +37,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
 import io.mokamint.node.local.internal.blockchain.Block;
+import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 
 /**
@@ -54,6 +56,11 @@ public class LocalNodeImpl implements Node {
 	 */
 	@GuardedBy("itself")
 	private final Set<Miner> miners;
+
+	/**
+	 * The genesis block of the blockchain.
+	 */
+	private final GenesisBlock genesis;
 
 	/**
 	 * The single executor of the events. Events get queued into this queue and run in order
@@ -78,9 +85,10 @@ public class LocalNodeImpl implements Node {
 	public LocalNodeImpl(Application app, Miner... miners) {
 		this.app = app;
 		this.miners = Stream.of(miners).collect(Collectors.toSet());
+		this.genesis = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 
 		// for now, everything starts with the discovery of the genesis block
-		signal(new BlockDiscoveryEvent(Block.genesis(LocalDateTime.now(ZoneId.of("UTC")))));
+		signal(new BlockDiscoveryEvent(genesis));
 	}
 
 	@Override
@@ -211,7 +219,8 @@ public class LocalNodeImpl implements Node {
 
 		@Override @OnThread("events")
 		public void run() {
-			execute(new MineNewBlockTask(LocalNodeImpl.this, block));
+			LocalDateTime startTime = genesis.getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			execute(new MineNewBlockTask(LocalNodeImpl.this, block, startTime));
 		}
 	}
 

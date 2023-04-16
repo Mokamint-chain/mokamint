@@ -18,7 +18,15 @@ package io.mokamint.node.local.internal.tasks;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
@@ -41,9 +49,7 @@ import io.mokamint.nonce.api.Nonce;
 public class MineNewBlockTask extends Task {
 	private final static Logger LOGGER = Logger.getLogger(MineNewBlockTask.class.getName());
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
-	private final static BigInteger _5 = BigInteger.valueOf(5L);
 	private final static BigInteger _20 = BigInteger.valueOf(20L);
-	private final static BigInteger _95 = BigInteger.valueOf(95L);
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
 	/**
@@ -62,15 +68,22 @@ public class MineNewBlockTask extends Task {
 	private final Block previous;
 
 	/**
+	 * The moment when the previous block has been mined. From that moment we
+	 * count the time to wait for the deadline.
+	 */
+	private final LocalDateTime startTime;
+
+	/**
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node for which this task is working
 	 * @param previous the node for which a subsequent node is being built
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Block previous) {
+	public MineNewBlockTask(LocalNodeImpl node, Block previous, LocalDateTime startTime) {
 		node.super();
 
 		this.previous = previous;
+		this.startTime = startTime;
 	}
 
 	@Override
@@ -94,6 +107,18 @@ public class MineNewBlockTask extends Task {
 		private final HashingAlgorithm<byte[]> sha256;
 
 		/**
+		 * A service used to schedule a waker at the end of a deadline.
+		 */
+		private final ScheduledExecutorService wakers = Executors.newSingleThreadScheduledExecutor();
+
+		/**
+		 * The current waker, if any.
+		 */
+		private ScheduledFuture<?> waker;
+
+		private final Object lock = new Object();
+
+		/**
 		 * The height of the new block that is being mined.
 		 */
 		private final long heightOfNewBlock = previous.getHeight() + 1;
@@ -115,6 +140,11 @@ public class MineNewBlockTask extends Task {
 		private final ImprovableDeadline bestDeadline = new ImprovableDeadline();
 
 		/**
+		 * The semaphore used to wait for a deadline.
+		 */
+		private final Semaphore semaphore = new Semaphore(0);
+
+		/**
 		 * The new block that will be mined at the end.
 		 */
 		private final Block block;
@@ -128,6 +158,7 @@ public class MineNewBlockTask extends Task {
 			waitUntilDeadlineExpires();
 			this.block = createNewBlock();
 			informNodeAboutNewBlock();
+			turnWakerOff();
 		}
 
 		private byte[] computeGenerationSignature() {
@@ -191,7 +222,7 @@ public class MineNewBlockTask extends Task {
 				if (isLegal(deadline)) {
 					if (bestDeadline.updateIfWorseThan(deadline)) {
 						LOGGER.info("improved deadline to " + deadline);
-						wakeUpBlockCreatorOrSetWaker(deadline);
+						setWaker(deadline);
 					}
 					else
 						LOGGER.info("discarding deadline " + deadline + " since it's worse than the current deadline");
@@ -207,9 +238,10 @@ public class MineNewBlockTask extends Task {
 
 		private void waitUntilDeadlineExpires() {
 			try {
-				Thread.sleep(600);
+				semaphore.acquire();
 			}
 			catch (InterruptedException e) {
+				// TODO
 				e.printStackTrace();
 			}
 		}
@@ -217,13 +249,22 @@ public class MineNewBlockTask extends Task {
 		private Block createNewBlock() {
 			var deadline = bestDeadline.get().get(); // here, we know that a deadline has been computed
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
-			System.out.print("I wait " + asSeconds(waitingTimeForNewBlock) + " seconds. ");
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
-			System.out.println("Average waiting time is " + asSeconds(totalWaitingTimeForNewBlock.divide(BigInteger.valueOf(heightOfNewBlock))) + " seconds");
+			System.out.println("Block #" + heightOfNewBlock + " average waiting time = " + asSeconds(totalWaitingTimeForNewBlock / heightOfNewBlock) + " seconds");
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
 
 			return Block.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline);
+		}
+
+		private long computeTotalWaitingTime(long waitingTime) {
+			return previous.getTotalWaitingTime() + waitingTime;
+		}
+
+		private long computeWeightedWaitingTime(long waitingTime) {
+			var previousWeightedWaitingTime_95 = previous.getWeightedWaitingTime() * 95L;
+			var waitingTime_5 = waitingTime * 5L;
+			return (previousWeightedWaitingTime_95 + waitingTime_5) / 100L;
 		}
 
 		/**
@@ -232,60 +273,59 @@ public class MineNewBlockTask extends Task {
 		 * @param weightedWaitingTimeForNewBlock the weighted waiting time for the new block
 		 * @return the acceleration for the new block
 		 */
-		private BigInteger computeAcceleration(BigInteger weightedWaitingTimeForNewBlock) {
-			BigInteger oldAcceleration = previous.getAcceleration();
-			BigInteger delta = oldAcceleration
-					.multiply(weightedWaitingTimeForNewBlock)
+		private BigInteger computeAcceleration(long weightedWaitingTimeForNewBlock) {
+			var oldAcceleration = previous.getAcceleration();
+			var delta = oldAcceleration
+					.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
 					.divide(TARGET_BLOCK_CREATION_TIME)
 					.subtract(oldAcceleration);
 
-			BigInteger acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
+			var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
 			if (acceleration.signum() == 0)
 				acceleration = BigInteger.ONE; // acceleration must be strictly positive
 
 			return acceleration;
 		}
 
-		private BigInteger computeTotalWaitingTime(BigInteger waitingTime) {
-			return previous.getTotalWaitingTime().add(waitingTime);
+		private String asSeconds(long milliseconds) {
+			return String.format("%.2f", milliseconds / 1000.0);
 		}
 
-		private BigInteger computeWeightedWaitingTime(BigInteger waitingTime) {
-			BigInteger previousWeightedWaitingTime_95 = previous.getWeightedWaitingTime().multiply(_95);
-			BigInteger waitingTime_5 = waitingTime.multiply(_5);
-			BigInteger weightedWaitingTime = previousWeightedWaitingTime_95.add(waitingTime_5).divide(_100);
-			return weightedWaitingTime;
-		}
-
-		private String asSeconds(BigInteger milliseconds) {
-			BigInteger[] inSeconds = milliseconds.divideAndRemainder(BigInteger.valueOf(1000L));
-			return inSeconds[0] + "." + (inSeconds[1].intValue() / 10);
-		}
-
-		private BigInteger millisecondsToWaitFor(Deadline deadline) {
+		private long millisecondsToWaitFor(Deadline deadline) {
 			byte[] valueAsBytes = deadline.getValue();
-			BigInteger value = new BigInteger(1, valueAsBytes);
+			var value = new BigInteger(1, valueAsBytes);
 			value = value.divide(previous.getAcceleration());
 			byte[] newValueAsBytes = value.toByteArray();
 			// we recreate an array of the same length as at the beginning
-			byte[] dividedValueAsBytes = new byte[valueAsBytes.length];
+			var dividedValueAsBytes = new byte[valueAsBytes.length];
 			System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
 					dividedValueAsBytes.length - newValueAsBytes.length,
 					newValueAsBytes.length);
 			// we take the first 8 bytes of the divided value
-			byte[] firstEightBytes = new byte[] {
+			var firstEightBytes = new byte[] {
 					dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],
 					dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
 			};
-			return new BigInteger(1, firstEightBytes);
+			// TODO: theoretically, there might be an overflow when converting into long
+			return new BigInteger(1, firstEightBytes).longValue();
 		}
 
 		/**
 		 * @param deadline
 		 */
-		private void wakeUpBlockCreatorOrSetWaker(Deadline deadline) {
-			//BigInteger millisecondsToWait = millisecondsToWaitFor(deadline);
-			//System.out.println("Should wait " + asSeconds(millisecondsToWait) + " seconds");
+		private void setWaker(Deadline deadline) {
+			long millisecondsToWait = millisecondsToWaitFor(deadline);
+			long millisecondsAlreadyPassed = Duration.between(startTime, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
+			long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
+
+			synchronized (lock) {
+				if (waker != null)
+					waker.cancel(true);
+
+				this.waker = wakers.schedule((Runnable) semaphore::release, stillToWait, TimeUnit.MILLISECONDS);
+			}
+
+			LOGGER.info("set up a waker in " + stillToWait + " ms");
 		}
 
 		/**
@@ -302,6 +342,10 @@ public class MineNewBlockTask extends Task {
 					&& Arrays.equals(deadline.getData(), generationSignature)
 					&& deadline.isValid()
 					&& getNode().getApplication().prologIsValid(deadline.getProlog());
+		}
+
+		private void turnWakerOff() {
+			wakers.shutdown();
 		}
 	}
 }

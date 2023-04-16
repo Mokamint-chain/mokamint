@@ -29,13 +29,13 @@ public class NonGenesisBlock implements Block {
 	 * The total waiting time for the construction of the blockchain, from
 	 * the genesis block to this block, excluded.
 	 */
-	private final BigInteger totalWaitingTime;
+	private final long totalWaitingTime;
 
 	/**
 	 * The weighted waiting time for the construction of the blockchain until
 	 * this block (excluded).
 	 */
-	private final BigInteger weightedWaitingTime;
+	private final long weightedWaitingTime;
 
 	/**
 	 * The block height, non-negative, counting from 0, which is the genesis block.
@@ -54,7 +54,7 @@ public class NonGenesisBlock implements Block {
 	 */
 	private final Deadline deadline;
 
-	NonGenesisBlock(long height, BigInteger totalWaitingTime, BigInteger weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
+	NonGenesisBlock(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
 		this.height = height;
 		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
@@ -63,12 +63,12 @@ public class NonGenesisBlock implements Block {
 	}
 
 	@Override
-	public BigInteger getTotalWaitingTime() {
+	public long getTotalWaitingTime() {
 		return totalWaitingTime;
 	}
 
 	@Override
-	public BigInteger getWeightedWaitingTime() {
+	public long getWeightedWaitingTime() {
 		return weightedWaitingTime;
 	}
 
