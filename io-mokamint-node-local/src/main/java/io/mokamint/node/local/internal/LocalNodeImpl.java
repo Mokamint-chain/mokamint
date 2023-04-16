@@ -36,7 +36,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
 import io.mokamint.node.local.internal.blockchain.Block;
-import io.mokamint.node.local.internal.tasks.NewBlockMinerTask;
+import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -102,6 +102,7 @@ public class LocalNodeImpl implements Node {
 	 * 
 	 * @return the application
 	 */
+	@OnThread("any")
 	public Application getApplication() {
 		return app;
 	}
@@ -112,6 +113,7 @@ public class LocalNodeImpl implements Node {
 	 * @param miner the miner
 	 * @return true if and only if that condition holds
 	 */
+	@OnThread("any")
 	public boolean hasMiner(Miner miner) {
 		synchronized (miners) {
 			return miners.contains(miner);
@@ -125,6 +127,7 @@ public class LocalNodeImpl implements Node {
 	 * 
 	 * @param what the code to execute for each miner
 	 */
+	@OnThread("any")
 	public void forEachMiner(Consumer<Miner> what) {
 		// it's OK to be weakly consistent
 		Set<Miner> copy;
@@ -203,12 +206,12 @@ public class LocalNodeImpl implements Node {
 
 		@Override
 		public String toString() {
-			return "block discovery event for block number " + block.getHeight();
+			return "block discovery event for block at height " + block.getHeight();
 		}
 
 		@Override @OnThread("events")
 		public void run() {
-			execute(new NewBlockMinerTask(LocalNodeImpl.this, block));
+			execute(new MineNewBlockTask(LocalNodeImpl.this, block));
 		}
 	}
 
