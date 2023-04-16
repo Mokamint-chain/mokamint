@@ -51,9 +51,16 @@ public class LocalNodeImpl implements Node {
 	//@GuardeBy(itself)
 	private final Set<Miner> miners;
 
+	/**
+	 * The single executor of the events. Events get queued into this queue and run in order
+	 * on that executor, called the event thread.
+	 */
 	private final ExecutorService events = Executors.newSingleThreadExecutor();
 
-	private final ExecutorService workers = Executors.newCachedThreadPool();
+	/**
+	 * The executors of tasks. There might be more tasks in execution at the same time.
+	 */
+	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -68,34 +75,52 @@ public class LocalNodeImpl implements Node {
 		this.app = app;
 		this.miners = Stream.of(miners).collect(Collectors.toSet());
 
-		Block head = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		signal(new BlockDiscoveredEvent(head));
+		// for now, everything starts with the discovery of the genesis block
+		signal(new BlockDiscoveredEvent(Block.genesis(LocalDateTime.now(ZoneId.of("UTC")))));
 	}
 
 	@Override
 	public void close() {
 		events.shutdown();
-		workers.shutdown();
+		tasks.shutdown();
 		
 		try {
 			events.awaitTermination(10, TimeUnit.SECONDS);
-			workers.awaitTermination(10, TimeUnit.SECONDS);
+			tasks.awaitTermination(10, TimeUnit.SECONDS);
 		}
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
+	/**
+	 * Yields the application this blockchain is running.
+	 * 
+	 * @return the application
+	 */
 	public Application getApplication() {
 		return app;
 	}
 
+	/**
+	 * Checks if the given miner is among those of this node.
+	 * 
+	 * @param miner the miner
+	 * @return true if and only if that condition holds
+	 */
 	public boolean hasMiner(Miner miner) {
 		synchronized (miners) {
 			return miners.contains(miner);
 		}
 	}
 
+	/**
+	 * Runs some code on each miner connected to this node. This is weakly consistent,
+	 * in the sense that the set of miners can be modified in the meanwhile and there is
+	 * no guarantee that the code will be run for such newly added miners.
+	 * 
+	 * @param what the code to execute for each miner
+	 */
 	public void forEachMiner(Consumer<Miner> what) {
 		// it's OK to be weakly consistent
 		Set<Miner> copy;
@@ -106,25 +131,65 @@ public class LocalNodeImpl implements Node {
 		copy.forEach(what);
 	}
 
+	/**
+	 * The type of the events processed on the event thread.
+	 */
+	private interface Event extends Runnable {
+	}
+
+	/**
+	 * Signals that an event occurred. This is typically called from task,
+	 * to signal that something occurred and that the node must react accordingly.
+	 * Events get queued into the {@link #events} queue and eventually executed
+	 * on its only thread, in order.
+	 * 
+	 * @param event the event that occurred
+	 */
 	public void signal(Event event) {
 		try {
 			LOGGER.info("received " + event);
 			events.execute(event);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.info(event + " rejected because the node is shutting down");
+			LOGGER.info(event + " rejected, probably because the node is shutting down");
 		}
 	}
 
+	/**
+	 * A task is a complex activity that can be run in its own thread. Once it completes,
+	 * it typically fires some events to signal something to the node.
+	 */
+	public abstract class Task implements Runnable {
+	
+		/**
+		 * The node running this task.
+		 * 
+		 * @return the node running this task
+		 */
+		protected LocalNodeImpl getNode() {
+			return LocalNodeImpl.this;
+		}
+	}
+
+	/**
+	 * Runs the given task in one thread from the {@link #tasks} executors.
+	 * 
+	 * @param task the task to run
+	 */
 	private void execute(Task task) {
 		try {
-			workers.execute(task);
+			tasks.execute(task);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.info("task rejected because the node is shutting down");
+			LOGGER.info("task rejected, probably because the node is shutting down");
 		}
 	}
 
+	/**
+	 * An event fired to signal that a block has been discovered. This might come
+	 * from the node itself, if it finds a deadline and a new block by using its own miners,
+	 * but also from a peer, that fund a block and whispers it to us.
+	 */
 	public class BlockDiscoveredEvent implements Event {
 		private final Block block;
 
@@ -143,6 +208,9 @@ public class LocalNodeImpl implements Node {
 		}
 	}
 
+	/**
+	 * An event fired to signal that a miner misbehaved.
+	 */
 	public class MinerMisbehaviorEvent implements Event {
 		private final Miner miner;
 
@@ -160,15 +228,6 @@ public class LocalNodeImpl implements Node {
 			synchronized (miners) {
 				miners.remove(miner);
 			}
-		}
-	}
-
-	private interface Event extends Runnable {
-	}
-
-	public abstract class Task implements Runnable {
-		protected LocalNodeImpl getNode() {
-			return LocalNodeImpl.this;
 		}
 	}
 }
