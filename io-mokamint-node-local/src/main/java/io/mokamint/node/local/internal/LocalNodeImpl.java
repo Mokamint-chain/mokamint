@@ -199,20 +199,95 @@ public class LocalNodeImpl implements Node {
 	 * An event fired to signal that a miner misbehaved.
 	 */
 	public class MinerMisbehaviorEvent implements Event {
-		private final Miner miner;
+		protected final Miner miner;
+		protected final int points;
 
-		public MinerMisbehaviorEvent(Miner miner) {
+		/**
+		 * Creates an event that expresses a miner's misbehavior.
+		 * 
+		 * @param miner the miner that misbehaved
+		 * @param points how many points should be removed for this misbehavior
+		 */
+		public MinerMisbehaviorEvent(Miner miner, int points) {
 			this.miner = miner;
+			this.points = points;
 		}
 
 		@Override
 		public String toString() {
-			return "miner misbehavior event for miner " + miner.toString();
+			return "miner misbehavior event [-" + points + " points] for miner " + miner.toString();
 		}
 
 		@Override @OnThread("events")
 		public void run() {
-			miners.remove(miner);
+			miners.punish(miner, points);
+		}
+	}
+
+	/**
+	 * An event fired to signal that the connection to a miner timed-out.
+	 */
+	public class MinerTimeoutEvent extends MinerMisbehaviorEvent {
+
+		public MinerTimeoutEvent(Miner miner) {
+			super(miner, Miners.MINER_PUNISHMENT_FOR_TIMEOUT);
+		}
+
+		@Override
+		public String toString() {
+			return "miner timeout event [-" + points + " points] for miner " + miner.toString();
+		}
+	}
+
+	/**
+	 * An event fired to signal that the connection to a miner timed-out.
+	 */
+	public class MinerComputedIllegalDeadlineEvent extends MinerMisbehaviorEvent {
+
+		public MinerComputedIllegalDeadlineEvent(Miner miner) {
+			super(miner, Miners.MINER_PUNISHMENT_FOR_ILLEGAL_DEADLINE);
+		}
+
+		@Override
+		public String toString() {
+			return "miner computed illegal deadline event [-" + points + " points] for miner " + miner.toString();
+		}
+	}
+
+	/**
+	 * An event fired when a new block task timed-out without finding a single deadline,
+	 * despite having at least a miner available.
+	 */
+	public class NoDeadlineFoundEvent implements Event {
+
+		public NoDeadlineFoundEvent() {}
+
+		@Override
+		public String toString() {
+			return "no deadline found event";
+		}
+
+		@Override @OnThread("events")
+		public void run() {
+			// it behaves as like all miners timed-out
+			miners.forEach(miner -> miners.punish(miner, Miners.MINER_PUNISHMENT_FOR_TIMEOUT));
+		}
+	}
+
+	/**
+	 * An event fired when a new block task failed because there are no miners.
+	 */
+	public class NoMinersAvailableEvent implements Event {
+
+		public NoMinersAvailableEvent() {}
+
+		@Override
+		public String toString() {
+			return "no miners available event";
+		}
+
+		@Override @OnThread("events")
+		public void run() {
 		}
 	}
 }

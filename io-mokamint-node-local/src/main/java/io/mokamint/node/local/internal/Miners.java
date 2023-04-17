@@ -16,13 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
 
@@ -32,17 +31,23 @@ import io.mokamint.miner.api.Miner;
 @ThreadSafe
 public class Miners {
 
+	public final static int MINER_INITIAL_POINTS = 1000;
+	public final static int MINER_PUNISHMENT_FOR_TIMEOUT = 1;
+	public final static int MINER_PUNISHMENT_FOR_ILLEGAL_DEADLINE = 500;
+
 	/**
-	 * The containers of the miners.
+	 * The container of the miners. Each miner is mapped to its points.
+	 * When a miner misbehaves, its points are reduced, until they reach 0 and the
+	 * miner is discarded.
 	 */
-	@GuardedBy("itself")
-	private final Set<Miner> miners;
+	private final Map<Miner, Integer> miners;
 
 	/**
 	 * 
 	 */
 	public Miners(Stream<Miner> miners) {
-		this.miners = miners.collect(Collectors.toCollection(HashSet::new));
+		this.miners = miners.collect(Collectors.toMap
+			(miner -> miner, miner -> MINER_INITIAL_POINTS, (i1, i2) -> MINER_INITIAL_POINTS, HashMap::new));
 	}
 
 	/**
@@ -53,7 +58,7 @@ public class Miners {
 	 */
 	public boolean contains(Miner miner) {
 		synchronized (miners) {
-			return miners.contains(miner);
+			return miners.containsKey(miner);
 		}
 	}
 
@@ -69,14 +74,16 @@ public class Miners {
 	}
 
 	/**
-	 * Removes the given miner from this container, if it is in this container.
-	 * Otherwise, nothing is removed.
+	 * Punishes a miner, by reducing its points. If the miner reaches 0 points,
+	 * it gets removed from this set of miners.
 	 * 
-	 * @param miner the miner to remove
+	 * @param miner the miner to punish
+	 * @param points how many points get removed
 	 */
-	void remove(Miner miner) {
+	void punish(Miner miner, int points) {
 		synchronized (miners) {
-			miners.remove(miner);
+			if (miners.computeIfPresent(miner, (__, oldPoints) -> Math.max(0, oldPoints - points)) == 0)
+				miners.remove(miner);
 		}
 	}
 
@@ -88,40 +95,24 @@ public class Miners {
 	 */
 	void add(Miner miner) {
 		synchronized (miners) {
-			miners.add(miner);
+			miners.put(miner, MINER_INITIAL_POINTS);
 		}
 	}
 
 	/**
-	 * Yields the miners in this container. This is weakly consistent,
-	 * in the sense that the set of miners can be modified in the meanwhile and there is
-	 * no guarantee that the code will be run for any newly added miner.
-	 * 
-	 * @return the miners
-	 */
-	public Stream<Miner> stream() {
-		Set<Miner> copy;
-		synchronized (miners) {
-			copy = new HashSet<>(miners);
-		}
-
-		return copy.stream();
-	}
-
-	/**
-	 * Runs some code on each miner connected to this node. This is weakly consistent,
+	 * Runs some code on each miner. This is weakly consistent,
 	 * in the sense that the set of miners can be modified in the meanwhile and there is
 	 * no guarantee that the code will be run for such newly added miners.
 	 * 
 	 * @param what the code to execute for each miner
 	 */
-	public void forEachMiner(Consumer<Miner> what) {
-		// it's OK to be weakly consistent
-		Set<Miner> copy;
+	public void forEach(Consumer<Miner> what) {
+		Map<Miner, Integer> copy;
+
 		synchronized (miners) {
-			copy = new HashSet<>(miners);
+			copy = new HashMap<>(miners);
 		}
 
-		copy.forEach(what);
+		copy.forEach((miner, _points) -> what.accept(miner));
 	}
 }

@@ -76,8 +76,12 @@ public class MineNewBlockTask extends Task {
 
 	@Override
 	public void run() {
+		var node = getNode();
+
 		try {
-			if (!getNode().getMiners().isEmpty())
+			if (node.getMiners().isEmpty())
+				node.signal(node.new NoMinersAvailableEvent());
+			else
 				new Run();
 		}
 		catch (NoSuchAlgorithmException e) {
@@ -87,7 +91,7 @@ public class MineNewBlockTask extends Task {
 			LOGGER.info(MineNewBlockTask.class.getName() + " interrupted");
 		}
 		catch (TimeoutException e) {
-			getNode().getMiners().stream().forEach(miner -> getNode().new MinerMisbehaviorEvent(miner));
+			node.signal(node.new NoDeadlineFoundEvent());
 		}
 	}
 
@@ -159,12 +163,12 @@ public class MineNewBlockTask extends Task {
 					" and data: " + Hex.toHexString(generationSignature));
 
 			try {
-				getNode().getMiners().stream().forEach(miner -> {
+				getNode().getMiners().forEach(miner -> {
 					try {
 						miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
 					}
 					catch (TimeoutException e) {
-						getNode().signal(getNode().new MinerMisbehaviorEvent(miner));
+						getNode().signal(getNode().new MinerTimeoutEvent(miner));
 					}
 					catch (InterruptedException e) {
 						throw new UncheckedInterruptedException(e);
@@ -199,7 +203,7 @@ public class MineNewBlockTask extends Task {
 				}
 				else {
 					LOGGER.info("discarding deadline " + deadline + " since it's illegal");
-					getNode().signal(getNode().new MinerMisbehaviorEvent(miner));
+					getNode().signal(getNode().new MinerComputedIllegalDeadlineEvent(miner));
 				}
 			}
 			else
@@ -258,12 +262,12 @@ public class MineNewBlockTask extends Task {
 			// we recreate an array of the same length as at the beginning
 			var dividedValueAsBytes = new byte[valueAsBytes.length];
 			System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
-					dividedValueAsBytes.length - newValueAsBytes.length,
-					newValueAsBytes.length);
+				dividedValueAsBytes.length - newValueAsBytes.length,
+				newValueAsBytes.length);
 			// we take the first 8 bytes of the divided value
 			var firstEightBytes = new byte[] {
-					dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],
-					dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
+				dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],
+				dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
 			};
 			// TODO: theoretically, there might be an overflow when converting into long
 			return new BigInteger(1, firstEightBytes).longValue();
