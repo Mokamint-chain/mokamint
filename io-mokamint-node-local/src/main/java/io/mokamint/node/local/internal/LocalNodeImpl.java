@@ -121,7 +121,7 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * The type of the events processed on the event thread.
 	 */
-	private interface Event extends Runnable {}
+	public interface Event extends Runnable {}
 
 	/**
 	 * Signals that an event occurred. This is typically called from task,
@@ -199,8 +199,8 @@ public class LocalNodeImpl implements Node {
 	 * An event fired to signal that a miner misbehaved.
 	 */
 	public class MinerMisbehaviorEvent implements Event {
-		protected final Miner miner;
-		protected final int points;
+		public final Miner miner;
+		public final int points;
 
 		/**
 		 * Creates an event that expresses a miner's misbehavior.
