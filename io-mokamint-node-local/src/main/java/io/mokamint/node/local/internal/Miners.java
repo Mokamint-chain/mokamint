@@ -74,7 +74,7 @@ public class Miners {
 	 * 
 	 * @param miner the miner to remove
 	 */
-	public void remove(Miner miner) {
+	void remove(Miner miner) {
 		synchronized (miners) {
 			miners.remove(miner);
 		}
@@ -86,7 +86,7 @@ public class Miners {
 	 * 
 	 * @param miner the miner to add
 	 */
-	public void add(Miner miner) {
+	void add(Miner miner) {
 		synchronized (miners) {
 			miners.add(miner);
 		}

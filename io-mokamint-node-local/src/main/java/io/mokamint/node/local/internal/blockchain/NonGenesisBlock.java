@@ -18,12 +18,13 @@ package io.mokamint.node.local.internal.blockchain;
 
 import java.math.BigInteger;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * A non-genesis block of the Mokamint blockchain.
  */
-public class NonGenesisBlock implements Block {
+public class NonGenesisBlock extends AbstractBlock {
 
 	/**
 	 * The total waiting time for the construction of the blockchain, from
@@ -84,5 +85,13 @@ public class NonGenesisBlock implements Block {
 
 	public Deadline getDeadline() {
 		return deadline;
+	}
+
+	@Override
+	public byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing) {
+		byte[] previousGenerationSignature = deadline.getData();
+		byte[] previousProlog = deadline.getProlog();
+		byte[] merge = concat(previousGenerationSignature, previousProlog);
+		return hashing.hash(merge);
 	}
 }

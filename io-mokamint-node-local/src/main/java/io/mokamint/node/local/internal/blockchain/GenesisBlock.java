@@ -19,12 +19,19 @@ package io.mokamint.node.local.internal.blockchain;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
+
 /**
  * The genesis block of a Mokamint blockchain.
  */
-public class GenesisBlock implements Block {
+public class GenesisBlock extends AbstractBlock {
 
 	private final LocalDateTime startDateTimeUTC;
+
+	/**
+	 * The generation signature for the block on top of the genesis block. This is arbitrary.
+	 */
+	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
 	GenesisBlock(LocalDateTime startDateTimeUTC) {
 		this.startDateTimeUTC = startDateTimeUTC;
@@ -52,5 +59,10 @@ public class GenesisBlock implements Block {
 	@Override
 	public long getHeight() {
 		return 0L;
+	}
+
+	@Override
+	public byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing) {
+		return BLOCK_1_GENERATION_SIGNATURE.clone();
 	}
 }

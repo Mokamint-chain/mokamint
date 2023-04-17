@@ -29,14 +29,11 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.blockchain.Block;
-import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.Nonce;
 
 /**
  * A task that mines a new block, follower of a previous block.
@@ -45,7 +42,6 @@ import io.mokamint.nonce.api.Nonce;
  */
 public class MineNewBlockTask extends Task {
 	private final static Logger LOGGER = Logger.getLogger(MineNewBlockTask.class.getName());
-	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
 	private final static BigInteger _20 = BigInteger.valueOf(20L);
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
@@ -53,11 +49,6 @@ public class MineNewBlockTask extends Task {
 	 * The target block creation time that will be aimed, in milliseconds.
 	 */
 	private final static BigInteger TARGET_BLOCK_CREATION_TIME = BigInteger.valueOf(5 * 1000); // 5 seconds
-
-	/**
-	 * The generation signature for the block on top of the genesis block. This is arbitrary.
-	 */
-	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
 	/**
 	 * The block for which a subsequent block is being mined.
@@ -106,11 +97,6 @@ public class MineNewBlockTask extends Task {
 	private class Run {
 
 		/**
-		 * The hashing algorithm used to compute the next generation signature and scoop number.
-		 */
-		private final HashingAlgorithm<byte[]> sha256;
-
-		/**
 		 * The height of the new block that is being mined.
 		 */
 		private final long heightOfNewBlock = previous.getHeight() + 1;
@@ -144,9 +130,9 @@ public class MineNewBlockTask extends Task {
 		private Run() throws NoSuchAlgorithmException, InterruptedException, TimeoutException {
 			try {
 				LOGGER.info("starting mining new block at height " + heightOfNewBlock);
-				this.sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
-				this.generationSignature = computeGenerationSignature();
-				this.scoopNumber = computeScoopNumber();
+				var sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
+				this.generationSignature = previous.getNewGenerationSignature(sha256);
+				this.scoopNumber = previous.getNewScoopNumber(sha256);
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
@@ -162,42 +148,9 @@ public class MineNewBlockTask extends Task {
 			currentDeadline.await(1000, TimeUnit.MILLISECONDS);
 		}
 
-		private byte[] computeGenerationSignature() {
-			if (previous instanceof NonGenesisBlock) {
-				Deadline previousDeadline = ((NonGenesisBlock) previous).getDeadline();
-				byte[] previousGenerationSignature = previousDeadline.getData();
-				byte[] previousProlog = previousDeadline.getProlog();
-				byte[] merge = concat(previousGenerationSignature, previousProlog);
-				return sha256.hash(merge);
-			}
-			else
-				return BLOCK_1_GENERATION_SIGNATURE;
-		}
-
-		private int computeScoopNumber() {
-			byte[] generationHash = sha256.hash(concat(generationSignature, longToBytesBE(heightOfNewBlock)));
-			return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
-		}
-
 		private void informNodeAboutNewBlock() {
 			LOGGER.info("ended mining new block at height " + heightOfNewBlock + ": informing the node");
 			getNode().signal(getNode().new BlockDiscoveryEvent(block));
-		}
-
-		private byte[] concat(byte[] array1, byte[] array2) {
-			byte[] merge = new byte[array1.length + array2.length];
-			System.arraycopy(array1, 0, merge, 0, array1.length);
-			System.arraycopy(array2, 0, merge, array1.length, array2.length);
-			return merge;
-		}
-
-		private byte[] longToBytesBE(long l) {
-			byte[] target = new byte[8];
-
-			for (int i = 0; i <= 7; i++)
-				target[7 - i] = (byte) ((l>>(8*i)) & 0xFF);
-
-			return target;
 		}
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
@@ -206,7 +159,7 @@ public class MineNewBlockTask extends Task {
 					" and data: " + Hex.toHexString(generationSignature));
 
 			try {
-				getNode().getMiners().stream().parallel().forEach(miner -> {
+				getNode().getMiners().stream().forEach(miner -> {
 					try {
 						miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
 					}

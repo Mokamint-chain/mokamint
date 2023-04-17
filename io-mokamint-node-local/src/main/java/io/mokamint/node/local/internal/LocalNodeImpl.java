@@ -212,9 +212,7 @@ public class LocalNodeImpl implements Node {
 
 		@Override @OnThread("events")
 		public void run() {
-			synchronized (miners) {
-				miners.remove(miner);
-			}
+			miners.remove(miner);
 		}
 	}
 }

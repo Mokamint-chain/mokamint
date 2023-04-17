@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal.blockchain;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -46,5 +47,20 @@ public interface Block {
 	 */
 	BigInteger getAcceleration();
 
+	/**
+	 * Yields the height of the node, counting from 0 for the genesis block.
+	 * 
+	 * @return the height of the node
+	 */
 	long getHeight();
+
+	/**
+	 * Yields the generation signature of the next block.
+	 * 
+	 * @param hashing
+	 * @return
+	 */
+	byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing);
+
+	int getNewScoopNumber(HashingAlgorithm<byte[]> hashing);
 }

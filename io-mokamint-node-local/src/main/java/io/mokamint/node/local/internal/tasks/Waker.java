@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A synchronization primitive that allows to await a waker.
- * The waker can be set many times. Each new waker set replaces the
+ * The waker can be set many times. Setting a new waker replaces the
  * previous one, that gets discarded.
  */
 public class Waker {
