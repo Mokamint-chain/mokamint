@@ -149,7 +149,7 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
-			currentDeadline.await(1000, TimeUnit.MILLISECONDS);
+			currentDeadline.await(1000, TimeUnit.MILLISECONDS); // TODO
 		}
 
 		private void informNodeAboutNewBlock() {
@@ -203,7 +203,7 @@ public class MineNewBlockTask extends Task {
 				}
 				else {
 					LOGGER.info("discarding deadline " + deadline + " since it's illegal");
-					getNode().signal(getNode().new MinerComputedIllegalDeadlineEvent(miner));
+					getNode().signal(getNode().new IllegalDeadlineEvent(miner));
 				}
 			}
 			else

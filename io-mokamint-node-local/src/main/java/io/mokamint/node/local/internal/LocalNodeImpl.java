@@ -177,7 +177,7 @@ public class LocalNodeImpl implements Node {
 	 * but also from a peer, that fund a block and whispers it to us.
 	 */
 	public class BlockDiscoveryEvent implements Event {
-		private final Block block;
+		public final Block block;
 
 		public BlockDiscoveryEvent(Block block) {
 			this.block = block;
@@ -242,9 +242,9 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * An event fired to signal that the connection to a miner timed-out.
 	 */
-	public class MinerComputedIllegalDeadlineEvent extends MinerMisbehaviorEvent {
+	public class IllegalDeadlineEvent extends MinerMisbehaviorEvent {
 
-		public MinerComputedIllegalDeadlineEvent(Miner miner) {
+		public IllegalDeadlineEvent(Miner miner) {
 			super(miner, Miners.MINER_PUNISHMENT_FOR_ILLEGAL_DEADLINE);
 		}
 
@@ -259,8 +259,6 @@ public class LocalNodeImpl implements Node {
 	 * despite having at least a miner available.
 	 */
 	public class NoDeadlineFoundEvent implements Event {
-
-		public NoDeadlineFoundEvent() {}
 
 		@Override
 		public String toString() {
@@ -278,8 +276,6 @@ public class LocalNodeImpl implements Node {
 	 * An event fired when a new block task failed because there are no miners.
 	 */
 	public class NoMinersAvailableEvent implements Event {
-
-		public NoMinersAvailableEvent() {}
 
 		@Override
 		public String toString() {

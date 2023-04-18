@@ -16,8 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.tests;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -31,25 +39,100 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.local.Main;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 import io.mokamint.nonce.api.Deadline;
 
-/**
- * Tests for local nodes.
- */
 public class LocalNodeTests {
 
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = Main.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try {
-					LogManager.getLogManager().readConfiguration(resource.openStream());
+	@Test
+	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
+	@Timeout(1)
+	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException {
+		var semaphore = new Semaphore(0);
+		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+
+		var myMiner = new Miner() {
+
+			@Override
+			public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+				Deadline deadline = mock(Deadline.class);
+				when(deadline.isValid()).thenReturn(true);
+				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
+				when(deadline.getData()).thenReturn(data);
+				when(deadline.getValue()).thenReturn(deadlineValue);
+				onDeadlineComputed.accept(deadline, this);
+			}
+
+			@Override
+			public void close() {}
+		};
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() {
+				super(getTestApplication(), myMiner);
+			}
+
+			@Override
+			public void signal(Event event) {
+				if (event instanceof BlockDiscoveryEvent) {
+					var block = ((BlockDiscoveryEvent) event).block;
+					if (block instanceof NonGenesisBlock && Arrays.equals(((NonGenesisBlock) block).getDeadline().getValue(), deadlineValue)) {
+						semaphore.release();
+					}
 				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
+					
+				super.signal(event);
+			}
+		}
+
+		try (var node = new MyLocalNode()) {
+			semaphore.acquire();
+		}
+	}
+
+	@Test
+	@DisplayName("if a deadline is requested and a miner produces a invalid deadline, the misbahavior is signalled to the node")
+	@Timeout(1)
+	public void signalIfInvalidDeadline() throws InterruptedException {
+		var semaphore = new Semaphore(0);
+		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+	
+		var myMiner = new Miner() {
+	
+			@Override
+			public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+				Deadline deadline = mock(Deadline.class);
+				when(deadline.isValid()).thenReturn(false); // <--
+				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
+				when(deadline.getData()).thenReturn(data);
+				when(deadline.getValue()).thenReturn(deadlineValue);
+				onDeadlineComputed.accept(deadline, this);
+			}
+	
+			@Override
+			public void close() {}
+		};
+	
+		class MyLocalNode extends LocalNodeImpl {
+	
+			private MyLocalNode() {
+				super(getTestApplication(), myMiner);
+			}
+	
+			@Override
+			public void signal(Event event) {
+				if (event instanceof IllegalDeadlineEvent) {
+					if (((IllegalDeadlineEvent) event).miner == myMiner)
+						semaphore.release();
 				}
+					
+				super.signal(event);
+			}
+		}
+	
+		try (var node = new MyLocalNode()) {
+			semaphore.acquire();
 		}
 	}
 
@@ -62,12 +145,12 @@ public class LocalNodeTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			public MyLocalNode() {
-				super(new TestApplication(), new Miner[0]);
+				super(getTestApplication(), new Miner[0]);
 			}
 
 			@Override
 			public void signal(Event event) {
-				if (event instanceof LocalNodeImpl.NoMinersAvailableEvent)
+				if (event instanceof NoMinersAvailableEvent)
 					semaphore.release();
 					
 				super.signal(event);
@@ -82,30 +165,21 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a miner timeouts, an event is signalled")
 	@Timeout(1)
-	public void signalIfMinerTimeouts() throws InterruptedException {
+	public void signalIfMinerTimeouts() throws InterruptedException, RejectedExecutionException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		var myMiner = new Miner() {
-
-			@Override
-			public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) throws TimeoutException {
-				throw new TimeoutException();
-			}
-
-			@Override
-			public void close() {
-			}
-		};
+		var myMiner = mock(Miner.class);
+		doThrow(TimeoutException.class).when(myMiner).requestDeadline(anyInt(), any(), any());
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() {
-				super(new TestApplication(), myMiner);
+			private MyLocalNode() {
+				super(getTestApplication(), myMiner);
 			}
 
 			@Override
 			public void signal(Event event) {
-				if (event instanceof LocalNodeImpl.MinerTimeoutEvent && ((LocalNodeImpl.MinerTimeoutEvent) event).miner == myMiner)
+				if (event instanceof MinerTimeoutEvent && ((MinerTimeoutEvent) event).miner == myMiner)
 					semaphore.release();
 					
 				super.signal(event);
@@ -117,11 +191,51 @@ public class LocalNodeTests {
 		}
 	}
 
-	private static class TestApplication implements Application {
+	@Test
+	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
+	@Timeout(2) // TODO
+	public void signalIfNoDeadlineArrives() throws InterruptedException {
+		var semaphore = new Semaphore(0);
+		var myMiner = mock(Miner.class);
 
-		@Override
-		public boolean prologIsValid(byte[] prolog) {
-			return true;
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() {
+				super(getTestApplication(), myMiner);
+			}
+
+			@Override
+			public void signal(Event event) {
+				if (event instanceof NoDeadlineFoundEvent)
+					semaphore.release();
+					
+				super.signal(event);
+			}
+		}
+
+		try (var node = new MyLocalNode()) {
+			semaphore.acquire();
+		}
+	}
+
+	private Application getTestApplication() {
+		Application app = mock(Application.class);
+		when(app.prologIsValid(any())).thenReturn(true);
+		return app;
+	}
+
+	static {
+		String current = System.getProperty("java.util.logging.config.file");
+		if (current == null) {
+			// if the property is not set, we provide a default (if it exists)
+			URL resource = Main.class.getClassLoader().getResource("logging.properties");
+			if (resource != null)
+				try {
+					LogManager.getLogManager().readConfiguration(resource.openStream());
+				}
+				catch (SecurityException | IOException e) {
+					throw new RuntimeException("Cannot load logging.properties file", e);
+				}
 		}
 	}
 }
