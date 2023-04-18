@@ -17,16 +17,11 @@ limitations under the License.
 package io.mokamint.plotter;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.function.IntConsumer;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.nonce.Nonces;
-import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.Nonce;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.internal.PlotImpl;
 
@@ -57,29 +52,11 @@ public interface Plots {
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be non-negative
 	 * @param hashing the hashing algorithm to use for creating the nonces
+	 * @param onNewPercent a handler called with the percent of work already done, for feedback
 	 * @return the plot that has been created
 	 * @throws IOException if the plot file could not be written into {@code path}
 	 */
-	static Plot create(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
-		return new PlotImpl(path, prolog, start, length, hashing);
-	}
-
-	public static void main(String[] args) throws IOException {
-		Path path = Paths.get("pippo.plot");
-		Files.deleteIfExists(path);
-		byte[] prolog = new byte[] { 11, 13, 24, 88 };
-		long start = 65536L;
-		long length = 1000L;
-		var hashing = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
-		Deadline deadline1;
-		try (Plot plot = create(path, prolog, start, length, hashing)) {
-			int scoopNumber = 13;
-			byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
-			deadline1 = plot.getSmallestDeadline(scoopNumber, data);
-		}
-		System.out.println(deadline1);
-		Nonce nonce = Nonces.of(prolog, deadline1.getProgressive(), hashing);
-		Deadline deadline2 = nonce.getDeadline(deadline1.getScoopNumber(), deadline1.getData());
-		System.out.println(deadline2);
+	static Plot create(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
+		return new PlotImpl(path, prolog, start, length, hashing, onNewPercent);
 	}
 }

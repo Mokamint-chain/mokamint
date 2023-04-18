@@ -47,7 +47,7 @@ public class PlotTests {
 
 		try {
 			Deadline deadline1;
-			try (Plot plot = Plots.create(path, prolog, start, length, hashing)) {
+			try (Plot plot = Plots.create(path, prolog, start, length, hashing, __ -> {})) {
 				int scoopNumber = 13;
 				byte[] data = new byte[] { 1, 90, (byte) 180, (byte) 255, 11 };
 				deadline1 = plot.getSmallestDeadline(scoopNumber, data);

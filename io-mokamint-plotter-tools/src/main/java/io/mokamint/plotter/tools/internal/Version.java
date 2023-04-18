@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.plotter.tools.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import io.mokamint.node.tools.MokamintNode;
+import io.mokamint.plotter.tools.MokamintPlot;
 import picocli.CommandLine.Command;
 
 @Command(name = "version",
@@ -30,7 +30,7 @@ public class Version extends AbstractCommand {
 
 	@Override
 	protected void execute() throws IOException {
-		try (InputStream is = MokamintNode.class.getClassLoader().getResourceAsStream("maven.properties")) {
+		try (InputStream is = MokamintPlot.class.getClassLoader().getResourceAsStream("maven.properties")) {
 			var mavenProperties = new Properties();
 			mavenProperties.load(is);
 			System.out.println(mavenProperties.getProperty("mokamint.version"));

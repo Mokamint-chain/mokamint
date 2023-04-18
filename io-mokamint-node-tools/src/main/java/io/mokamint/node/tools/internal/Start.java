@@ -36,7 +36,7 @@ import picocli.CommandLine.Option;
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
-	@Option(names = "-plot", split=",", description = { "Specify a comma-separated list", "of paths to plot files for local mining." } )
+	@Option(names = "-plot", split=",", description = { "a comma-separated list of paths", "to plot files for local mining" } )
 	private Path[] plots;
 
 	@Override

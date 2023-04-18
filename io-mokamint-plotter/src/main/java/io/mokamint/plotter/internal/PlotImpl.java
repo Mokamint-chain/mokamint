@@ -27,6 +27,8 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
@@ -125,9 +127,10 @@ public class PlotImpl implements Plot {
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be positive
 	 * @param hashing the hashing algorithm to use for creating the nonces
+	 * @param onNewPercent a handler called with the percent of work already alreadyDone, for feedback
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
-	public PlotImpl(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing) throws IOException {
+	public PlotImpl(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
 		if (start < 0)
 			throw new IllegalArgumentException("the plot starting number cannot be negative");
 		
@@ -145,7 +148,7 @@ public class PlotImpl implements Plot {
 		this.length = length;
 		this.hashing = hashing;
 
-		new Dumper(path);
+		new Dumper(path, onNewPercent);
 
 		this.reader = new RandomAccessFile(path.toFile(), "r");
 		this.channel = reader.getChannel();
@@ -159,10 +162,14 @@ public class PlotImpl implements Plot {
 		private final int nonceSize = Nonce.SCOOPS_PER_NONCE * 2 * hashing.length();
 		private final int metadataSize = getMetadataSize();
 		private final long plotSize = metadataSize + length * nonceSize;
+		private final IntConsumer onNewPercent;
+		private final AtomicInteger alreadyDone = new AtomicInteger();
 
-		private Dumper(Path where) throws IOException {
+		private Dumper(Path where, IntConsumer onNewPercent) throws IOException {
 			long startTime = System.currentTimeMillis();
 			logger.info("Starting creating a plot file of " + plotSize + " bytes");
+
+			this.onNewPercent = onNewPercent;
 		
 			try (RandomAccessFile writer = new RandomAccessFile(where.toFile(), "rw");
 				 FileChannel channel = this.channel = writer.getChannel()) {
@@ -230,6 +237,12 @@ public class PlotImpl implements Plot {
 			catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
+
+			int counter = alreadyDone.getAndIncrement();
+			long percent = (counter + 1) * 100L / length;
+			if (percent > counter * 100L / length)
+				onNewPercent.accept((int) percent);
+				
 		}
 	}
 

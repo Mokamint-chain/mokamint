@@ -16,13 +16,11 @@ limitations under the License.
 
 module io.mokamint.plotter.tools {
 	exports io.mokamint.plotter.tools;
+	opens io.mokamint.plotter.tools to info.picocli; // for injecting CLI options
+    opens io.mokamint.plotter.tools.internal to info.picocli; // for injecting CLI options
 
-	requires transitive io.mokamint.node.api;
-	requires transitive io.mokamint.application.api;
-	requires transitive io.mokamint.miner.api;
-	requires io.mokamint.miner.local; // TODO: used online for main: remove at the end (also in pom.xml)
-	requires io.mokamint.plotter; // TODO: used online for main: remove at the end (also in pom.xml)
-	requires io.hotmoka.crypto; // TODO: used online for main: remove at the end (also in pom.xml) 
-	requires io.hotmoka.annotations;
+	requires io.mokamint.plotter;
+	requires io.hotmoka.crypto;
+	requires info.picocli;
 	requires java.logging;
 }

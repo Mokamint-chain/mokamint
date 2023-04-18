@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2021 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.plotter.tools.internal;
 
-public abstract class AbstractCommand implements Runnable {
+import java.util.Objects;
 
-	@Override
-	public final void run() {
-		try {
-			execute();
-		}
-		catch (CommandException e) {
-			throw e;
-		}
-		catch (Exception t) {
-			throw new CommandException(t);
-		}
+/**
+ * An exception thrown during the execution of a CLI command.
+ */
+public class CommandException extends RuntimeException {
+
+	private static final long serialVersionUID = 3026861370427646020L;
+
+	CommandException(Throwable wrapped) {
+		super(wrapped);
+
+		Objects.requireNonNull(wrapped);
 	}
 
-	protected abstract void execute() throws Exception;
+	CommandException(String message) {
+		super(message);
+	}
 }
