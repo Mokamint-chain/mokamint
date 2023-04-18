@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-node-local</artifactId>
-  <name>io-mokamint-node-local</name>
+  <artifactId>io-mokamint-node-tools</artifactId>
+  <name>io-mokamint-node-tools</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
 
@@ -15,7 +15,7 @@
   <dependencies>
   	<dependency>
        <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-node-api</artifactId>
+       <artifactId>io-mokamint-node-local</artifactId>
        <version>${mokamint.version}</version>
     </dependency>
   	<dependency>
@@ -28,6 +28,16 @@
        <artifactId>io-mokamint-miner-api</artifactId>
        <version>${mokamint.version}</version>
     </dependency>
+  	<dependency>
+       <groupId>io.mokamint</groupId>
+       <artifactId>io-mokamint-miner-local</artifactId> <!-- remove at the end -->
+       <version>${mokamint.version}</version>
+    </dependency>
+  	<dependency>
+       <groupId>io.mokamint</groupId>
+       <artifactId>io-mokamint-plotter</artifactId> <!-- remove at the end -->
+       <version>${mokamint.version}</version>
+    </dependency>
     <dependency>
        <groupId>io.hotmoka</groupId>
        <artifactId>io-hotmoka-annotations</artifactId>
@@ -35,7 +45,7 @@
     </dependency>
     <dependency>
        <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-crypto</artifactId>
+       <artifactId>io-hotmoka-crypto</artifactId> <!-- remove at the end -->
        <version>${hotmoka.version}</version>
     </dependency>
   </dependencies>

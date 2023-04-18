@@ -17,9 +17,11 @@ limitations under the License.
 package io.mokamint.plotter.tests;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -56,6 +58,21 @@ public class PlotTests {
 		}
 		finally {
 			Files.deleteIfExists(path);
+		}
+	}
+
+	static {
+		String current = System.getProperty("java.util.logging.config.file");
+		if (current == null) {
+			// if the property is not set, we provide a default (if it exists)
+			URL resource = PlotTests.class.getClassLoader().getResource("logging.properties");
+			if (resource != null)
+				try {
+					LogManager.getLogManager().readConfiguration(resource.openStream());
+				}
+				catch (SecurityException | IOException e) {
+					throw new RuntimeException("Cannot load logging.properties file", e);
+				}
 		}
 	}
 }

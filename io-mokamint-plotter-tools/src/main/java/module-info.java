@@ -14,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.node.local {
-	exports io.mokamint.node.local;
+module io.mokamint.plotter.tools {
+	exports io.mokamint.plotter.tools;
 
 	requires transitive io.mokamint.node.api;
 	requires transitive io.mokamint.application.api;
 	requires transitive io.mokamint.miner.api;
-	requires io.hotmoka.crypto;
+	requires io.mokamint.miner.local; // TODO: used online for main: remove at the end (also in pom.xml)
+	requires io.mokamint.plotter; // TODO: used online for main: remove at the end (also in pom.xml)
+	requires io.hotmoka.crypto; // TODO: used online for main: remove at the end (also in pom.xml) 
 	requires io.hotmoka.annotations;
 	requires java.logging;
 }

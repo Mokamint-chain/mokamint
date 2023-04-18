@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Timeout;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.node.local.Main;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 import io.mokamint.nonce.api.Deadline;
@@ -228,7 +227,7 @@ public class LocalNodeTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = Main.class.getClassLoader().getResource("logging.properties");
+			URL resource = LocalNodeTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try {
 					LogManager.getLogManager().readConfiguration(resource.openStream());

@@ -1,0 +1,1 @@
+java --module-path modules/explicit --module io.mokamint.plotter.tools/io.mokamint.plotter.tools.MokamintPlot

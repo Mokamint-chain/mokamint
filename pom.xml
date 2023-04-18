@@ -45,6 +45,7 @@
     <modules>
       <module>io-mokamint-node-local</module>
       <module>io-mokamint-node-api</module>
+      <module>io-mokamint-node-tools</module>
       <module>io-mokamint-miner-api</module>
       <module>io-mokamint-miner-local</module>
       <module>io-mokamint-miner-remote</module>
@@ -53,6 +54,7 @@
       <module>io-mokamint-nonce-api</module>
       <module>io-mokamint-nonce</module>
       <module>io-mokamint-application-api</module>
+      <module>io-mokamint-plotter-tools</module>
     </modules>
 
     <dependencies>
@@ -197,6 +199,7 @@
                   <!-- we exclude all modules built by Maven: their build will put them at the right place -->
                   io-mokamint-node-local,
                   io-mokamint-node-api,
+                  io-mokamint-node-tools,
                   io-mokamint-miner-api,
                   io-mokamint-miner-local,
                   io-mokamint-miner-remote,
@@ -219,7 +222,11 @@
                   junit-platform-commons,
                   junit-platform-engine,
                   apiguardian-api,
-                  opentest4j
+                  opentest4j,
+                  byte-buddy,
+                  byte-buddy-agent,
+                  mockito-core,
+                  objenesis
                 </excludeArtifactIds>
               </configuration>
             </execution>
