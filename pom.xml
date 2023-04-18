@@ -210,6 +210,7 @@
                   io-mokamint-application-api,
                   <!-- we exclude all modules that go into the explicit folder -->
                   bcprov-jdk15on,
+                  picocli,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
@@ -253,6 +254,7 @@
                 <outputDirectory>${project.parent.basedir}/modules/explicit</outputDirectory>
                 <includeArtifactIds>
                   bcprov-jdk15on,
+                  picocli,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api

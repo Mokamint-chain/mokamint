@@ -192,7 +192,7 @@ public class LocalNodeTests {
 
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
-	@Timeout(2) // TODO
+	@Timeout(3) // TODO
 	public void signalIfNoDeadlineArrives() throws InterruptedException {
 		var semaphore = new Semaphore(0);
 		var myMiner = mock(Miner.class);

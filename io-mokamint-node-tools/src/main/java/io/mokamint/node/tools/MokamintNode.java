@@ -16,23 +16,46 @@ limitations under the License.
 
 package io.mokamint.node.tools;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.util.logging.LogManager;
 
-import io.mokamint.application.api.Application;
-import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.local.LocalNodes;
-import io.mokamint.plotter.Plots;
+import io.mokamint.node.tools.internal.PrintExceptionMessageHandler;
+import io.mokamint.node.tools.internal.Start;
+import io.mokamint.node.tools.internal.Version;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.HelpCommand;
 
 /**
- * A temporary main test.
+ * A command-line interface for controlling Mokamint nodes.
+ * 
+ * This class is meant to be run from the parent directory, after building the project, with this command-line:
+ * 
+ * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.node.tools/io.mokamint.node.tools.MokamintNode
  */
+@Command(name = "mokamint-node",
+	subcommands = {
+		HelpCommand.class,
+		Start.class,
+		Version.class
+	},
+	description = "This is the command-line tool for controlling Mokamint nodes.",
+	showDefaultValues = true
+)
 public class MokamintNode {
+
+	public static void main(String[] args) throws IOException {
+		int exit = new CommandLine(new MokamintNode())
+			.setExecutionExceptionHandler(new PrintExceptionMessageHandler())
+			.execute(args);
+
+		System.exit(exit);
+	}
+
+	public static void run(String command) {
+		new CommandLine(new MokamintNode()).setExecutionExceptionHandler(new PrintExceptionMessageHandler()).execute(command.split(" "));
+	}
 
 	static {
 		String current = System.getProperty("java.util.logging.config.file");
@@ -40,38 +63,12 @@ public class MokamintNode {
 			// if the property is not set, we provide a default (if it exists)
 			URL resource = MokamintNode.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
-				try {
-					LogManager.getLogManager().readConfiguration(resource.openStream());
+				try (var is = resource.openStream()) {
+					LogManager.getLogManager().readConfiguration(is);
 				}
 				catch (SecurityException | IOException e) {
 					throw new RuntimeException("Cannot load logging.properties file", e);
 				}
-		}
-	}
-
-	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
-		var path1 = Paths.get("pippo1.plot");
-		var path2 = Paths.get("pippo2.plot");
-		var path3 = Paths.get("pippo3.plot");
-
-		try (var plot1 = Plots.load(path1);
-			 var plot2 = Plots.load(path2);
-	         var plot3 = Plots.load(path3);
-			 var miner1 = LocalMiners.of(plot1, plot2);
-			 var miner2 = LocalMiners.of(plot3);
-			 var node = LocalNodes.of(new TestApplication(), miner1, miner2))
-		{
-			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-			System.out.println("Please press a key to stop the node.");
-			reader.readLine();
-		}
-	}
-
-	private static class TestApplication implements Application {
-
-		@Override
-		public boolean prologIsValid(byte[] prolog) {
-			return true;
 		}
 	}
 }

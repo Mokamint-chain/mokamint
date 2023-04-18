@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2021 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.node.tools {
-	exports io.mokamint.node.tools;
-	opens io.mokamint.node.tools to info.picocli; // for injecting CLI options
-    opens io.mokamint.node.tools.internal to info.picocli; // for injecting CLI options
+package io.mokamint.node.tools.internal;
 
-	requires io.mokamint.node.local;
-	requires io.mokamint.application.api;
-	requires io.mokamint.miner.local;
-	requires io.mokamint.plotter;
-	requires java.logging;
-	requires info.picocli;
+import java.util.Objects;
+
+/**
+ * An exception thrown during the execution of a CLI command.
+ */
+public class CommandException extends RuntimeException {
+
+	private static final long serialVersionUID = 3026861370427646020L;
+
+	CommandException(Throwable wrapped) {
+		super(wrapped);
+
+		Objects.requireNonNull(wrapped);
+	}
+
+	CommandException(String message) {
+		super(message);
+	}
 }
