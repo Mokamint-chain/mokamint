@@ -33,7 +33,6 @@ public class ImprovableDeadline {
 
 	@GuardedBy("lock")
 	private Deadline deadline;
-
 	private final Object lock = new Object();
 
 	/**

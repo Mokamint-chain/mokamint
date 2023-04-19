@@ -15,4 +15,4 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 DIR=$DIR"/.."
 
-java --module-path $DIR/modules/explicit:$DIR/modules/automatic --class-path $DIR"/modules/unnamed/*" --module io.mokamint.node.tools/io.mokamint.node.tools.MokamintNode "$@"
+java --add-modules com.google.gson --module-path $DIR/modules/explicit:$DIR/modules/automatic --class-path $DIR"/modules/unnamed/*" --module io.mokamint.node.tools/io.mokamint.node.tools.MokamintNode "$@"

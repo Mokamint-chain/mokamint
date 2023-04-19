@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.plotter.Plots;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -40,7 +41,7 @@ public class Create extends AbstractCommand {
 	@Parameters(index = "2", description = "the amount of nonces")
 	private long length;
 
-	@Option(names = "-hashing", description = "the name of the hashing algorithm", defaultValue = "shabal256")
+	@Option(names = "--hashing", description = "the name of the hashing algorithm", defaultValue = "shabal256")
 	private String hashing;
 
 	@Override
@@ -48,7 +49,9 @@ public class Create extends AbstractCommand {
 		Files.deleteIfExists(path);
 
 		var prolog = new byte[] { 11, 13, 24, 88 };
-		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes), this::onNewPercent)) {
+		HashingAlgorithm<byte[]> algorithm = HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes);
+
+		try (var plot = Plots.create(path, prolog, start, length, algorithm, this::onNewPercent)) {
 		}
 
 		System.out.println();

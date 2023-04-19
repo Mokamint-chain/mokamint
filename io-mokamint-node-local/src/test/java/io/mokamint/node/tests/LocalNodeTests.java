@@ -31,18 +31,40 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.logging.LogManager;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 import io.mokamint.nonce.api.Deadline;
 
 public class LocalNodeTests {
 
+	/**
+	 * The configuration of the node used for testing.
+	 */
+	private static Config config;
+
+	/**
+	 * The application of the node used for testing.
+	 */
+	private static Application app;
+
+	@BeforeAll
+	public static void beforeAll() {
+		config = Config.Builder.defaults()
+			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
+			.build();
+
+		app = mock(Application.class);
+		when(app.prologIsValid(any())).thenReturn(true);
+	}
+	
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
@@ -69,7 +91,7 @@ public class LocalNodeTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() {
-				super(getTestApplication(), myMiner);
+				super(config, app, myMiner);
 			}
 
 			@Override
@@ -91,7 +113,7 @@ public class LocalNodeTests {
 	}
 
 	@Test
-	@DisplayName("if a deadline is requested and a miner produces a invalid deadline, the misbahavior is signalled to the node")
+	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
 	@Timeout(1)
 	public void signalIfInvalidDeadline() throws InterruptedException {
 		var semaphore = new Semaphore(0);
@@ -116,7 +138,7 @@ public class LocalNodeTests {
 		class MyLocalNode extends LocalNodeImpl {
 	
 			private MyLocalNode() {
-				super(getTestApplication(), myMiner);
+				super(config, app, myMiner);
 			}
 	
 			@Override
@@ -144,7 +166,7 @@ public class LocalNodeTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			public MyLocalNode() {
-				super(getTestApplication(), new Miner[0]);
+				super(config, app, new Miner[0]);
 			}
 
 			@Override
@@ -173,7 +195,7 @@ public class LocalNodeTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() {
-				super(getTestApplication(), myMiner);
+				super(config, app, myMiner);
 			}
 
 			@Override
@@ -192,7 +214,7 @@ public class LocalNodeTests {
 
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
-	@Timeout(3) // TODO
+	@Timeout(3) // three times config.deadlineWaitTimeout
 	public void signalIfNoDeadlineArrives() throws InterruptedException {
 		var semaphore = new Semaphore(0);
 		var myMiner = mock(Miner.class);
@@ -200,7 +222,7 @@ public class LocalNodeTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() {
-				super(getTestApplication(), myMiner);
+				super(config, app, myMiner);
 			}
 
 			@Override
@@ -217,20 +239,14 @@ public class LocalNodeTests {
 		}
 	}
 
-	private Application getTestApplication() {
-		Application app = mock(Application.class);
-		when(app.prologIsValid(any())).thenReturn(true);
-		return app;
-	}
-
 	static {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
 			URL resource = LocalNodeTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
-				try {
-					LogManager.getLogManager().readConfiguration(resource.openStream());
+				try (var is = resource.openStream()) {
+					LogManager.getLogManager().readConfiguration(is);
 				}
 				catch (SecurityException | IOException e) {
 					throw new RuntimeException("Cannot load logging.properties file", e);

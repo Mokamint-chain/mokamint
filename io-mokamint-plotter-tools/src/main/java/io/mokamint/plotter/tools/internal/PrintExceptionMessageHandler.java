@@ -23,22 +23,22 @@ import picocli.CommandLine.ParseResult;
 public class PrintExceptionMessageHandler implements IExecutionExceptionHandler {
 
 	@Override
-	public int handleExecutionException(Exception ex, CommandLine cmd, ParseResult parseResult) throws Exception {
-		if (ex instanceof CommandException) {
-			Throwable tex = ex;
-			if (tex.getCause() != null)
-				tex = tex.getCause();
+	public int handleExecutionException(Exception e, CommandLine cmd, ParseResult parseResult) throws Exception {
+		if (e instanceof CommandException) {
+			Throwable cause = e;
+			if (cause.getCause() != null)
+				cause = cause.getCause();
 
-			if (tex instanceof CommandException)
-				cmd.getErr().println(cmd.getColorScheme().errorText(tex.getMessage()));
+			if (cause instanceof CommandException)
+				cmd.getErr().println(cmd.getColorScheme().errorText(cause.getMessage()));
 			else
-				cmd.getErr().println(cmd.getColorScheme().errorText(tex.getClass().getName() + ": " + tex.getMessage()));
+				cmd.getErr().println(cmd.getColorScheme().errorText(cause.getClass().getName() + ": " + cause.getMessage()));
 
 			return cmd.getExitCodeExceptionMapper() != null
-					? cmd.getExitCodeExceptionMapper().getExitCode(tex)
+					? cmd.getExitCodeExceptionMapper().getExitCode(cause)
 							: cmd.getCommandSpec().exitCodeOnExecutionException();
 		}
 		else
-			throw ex;
+			throw e;
     }
 }

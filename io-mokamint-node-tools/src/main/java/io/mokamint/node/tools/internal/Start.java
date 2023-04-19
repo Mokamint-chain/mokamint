@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools.internal;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -24,25 +25,31 @@ import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(name = "start",
 	description = "Start a new node.",
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
-	@Option(names = "-plot", split=",", description = { "a comma-separated list of paths", "to plot files for local mining" } )
+	//@Option(names = "-plot", arity = "1..*", split=",", description = { "a comma-separated list of paths", "to plot files for local mining" } )
+	@Parameters(description = { "plot files that will be used for local mining" })
 	private Path[] plots;
+
+	@Option(names = "--config", description = { "the toml config file of the node;", "if missing, defaults are used"})
+	private Path config;
 
 	@Override
 	protected void execute() throws Exception {
-		if (plots == null || plots.length == 0)
-			throw new CommandException("Exiting since no plot file has been specified.");
+		if (plots == null)
+			plots = new Path[0];
 
 		startNode(plots, 0, new Plot[plots.length]);
 	}
@@ -63,14 +70,45 @@ public class Start extends AbstractCommand {
 				startNode(paths, pos + 1, plots);
 			}
 		}
-		else {
+		else if (paths.length > 0) {
 			try (var miner = LocalMiners.of(plots);
-				 var node = LocalNodes.of(new TestApplication(), miner);
-				 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
+				 var node = LocalNodes.of(getConfig(), new TestApplication(), miner);
+				 var reader = new BufferedReader(new InputStreamReader(System.in))) {
 
 				System.out.println(Ansi.AUTO.string("@|red Press any key to stop the node.|@"));
 				reader.readLine();
 			}
+		}
+		else {
+			// if there are no plot files, we start the node without any miner
+			try (var node = LocalNodes.of(getConfig(), new TestApplication());
+				 var reader = new BufferedReader(new InputStreamReader(System.in))) {
+
+				System.out.println(Ansi.AUTO.string("@|red Press any key to stop the node.|@"));
+				reader.readLine();
+			}
+		}
+	}
+
+	private Config getConfig() throws FileNotFoundException {
+		var config = getConfig2();
+		System.out.println(config);
+		return config;
+	}
+
+	private Config getConfig2() throws FileNotFoundException {
+		if (config == null)
+			return Config.Builder.defaults().build();
+		else try {
+			return Config.Builder.load(config).build();
+		}
+		catch (RuntimeException e) {
+			// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
+			Throwable cause = e.getCause();
+			if (cause instanceof FileNotFoundException)
+				throw (FileNotFoundException) cause;
+			else
+				throw e;
 		}
 	}
 

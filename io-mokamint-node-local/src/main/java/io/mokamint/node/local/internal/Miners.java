@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.local.Config;
 
 /**
  * A set of miners.
@@ -31,23 +32,29 @@ import io.mokamint.miner.api.Miner;
 @ThreadSafe
 public class Miners {
 
-	public final static int MINER_INITIAL_POINTS = 1000;
-	public final static int MINER_PUNISHMENT_FOR_TIMEOUT = 1;
-	public final static int MINER_PUNISHMENT_FOR_ILLEGAL_DEADLINE = 500;
+	/**
+	 * The configuration of the node having this set of miners.
+	 */
+	private final Config config;
 
 	/**
 	 * The container of the miners. Each miner is mapped to its points.
 	 * When a miner misbehaves, its points are reduced, until they reach 0 and the
 	 * miner is discarded.
 	 */
-	private final Map<Miner, Integer> miners;
-
+	private final Map<Miner, Long> miners;
 	/**
+	 * Creates a new set of miners.
 	 * 
+	 * @param config the configuration of the node having this set of miners
+	 * @param miners the miners contained in the set
 	 */
-	public Miners(Stream<Miner> miners) {
+	public Miners(Config config, Stream<Miner> miners) {
+		this.config = config;
+
+		long minerInitialPoints = config.minerInitialPoints;
 		this.miners = miners.collect(Collectors.toMap
-			(miner -> miner, miner -> MINER_INITIAL_POINTS, (i1, i2) -> MINER_INITIAL_POINTS, HashMap::new));
+			(miner -> miner, miner -> minerInitialPoints, (i1, i2) -> minerInitialPoints, HashMap::new));
 	}
 
 	/**
@@ -80,9 +87,9 @@ public class Miners {
 	 * @param miner the miner to punish
 	 * @param points how many points get removed
 	 */
-	void punish(Miner miner, int points) {
+	void punish(Miner miner, long points) {
 		synchronized (miners) {
-			if (miners.computeIfPresent(miner, (__, oldPoints) -> Math.max(0, oldPoints - points)) == 0)
+			if (miners.computeIfPresent(miner, (__, oldPoints) -> Math.max(0L, oldPoints - points)) == 0)
 				miners.remove(miner);
 		}
 	}
@@ -95,7 +102,7 @@ public class Miners {
 	 */
 	void add(Miner miner) {
 		synchronized (miners) {
-			miners.put(miner, MINER_INITIAL_POINTS);
+			miners.put(miner, config.minerInitialPoints);
 		}
 	}
 
@@ -107,7 +114,7 @@ public class Miners {
 	 * @param what the code to execute for each miner
 	 */
 	public void forEach(Consumer<Miner> what) {
-		Map<Miner, Integer> copy;
+		Map<Miner, Long> copy;
 
 		synchronized (miners) {
 			copy = new HashMap<>(miners);

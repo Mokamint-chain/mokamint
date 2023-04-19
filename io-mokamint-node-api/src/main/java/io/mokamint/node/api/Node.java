@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 /**
- * A node of a Nodemint blockchain.
+ * A node of a Mokamint blockchain.
  */
 public interface Node extends AutoCloseable {
 

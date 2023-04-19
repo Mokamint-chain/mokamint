@@ -22,5 +22,6 @@ module io.mokamint.node.local {
 	requires transitive io.mokamint.miner.api;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.annotations;
+	requires io.hotmoka.toml;
 	requires java.logging;
 }

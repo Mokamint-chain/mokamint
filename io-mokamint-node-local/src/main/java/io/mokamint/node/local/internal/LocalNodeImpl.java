@@ -31,6 +31,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
+import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.blockchain.Block;
 import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
@@ -41,6 +42,11 @@ import io.mokamint.node.local.internal.tasks.UncheckedInterruptedException;
  */
 @ThreadSafe
 public class LocalNodeImpl implements Node {
+
+	/**
+	 * The configuration of the node.
+	 */
+	private final Config config;
 
 	/**
 	 * The application executed by the blockchain.
@@ -73,13 +79,15 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * Creates a local node of a Mokamint blockchain, for the given application,
 	 * using the given miners.
-	 *
+	 * 
+	 * @param config the configuration of the node
 	 * @param app the application
 	 * @param miners the miners
 	 */
-	public LocalNodeImpl(Application app, Miner... miners) {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) {
+		this.config = config;
 		this.app = app;
-		this.miners = new Miners(Stream.of(miners));
+		this.miners = new Miners(config, Stream.of(miners));
 		this.genesis = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 
 		// for now, everything starts with the discovery of the genesis block
@@ -98,6 +106,15 @@ public class LocalNodeImpl implements Node {
 		catch (InterruptedException e) {
 			throw new UncheckedInterruptedException(e);
 		}
+	}
+
+	/**
+	 * Yields the configuration of this node.
+	 * 
+	 * @return the configuration of this node
+	 */
+	public Config getConfig() {
+		return config;
 	}
 
 	/**
@@ -146,15 +163,11 @@ public class LocalNodeImpl implements Node {
 	 * it typically fires some events to signal something to the node.
 	 */
 	public abstract class Task implements Runnable {
-	
+
 		/**
 		 * The node running this task.
-		 * 
-		 * @return the node running this task
 		 */
-		protected final LocalNodeImpl getNode() {
-			return LocalNodeImpl.this;
-		}
+		protected final LocalNodeImpl node = LocalNodeImpl.this;
 	}
 
 	/**
@@ -200,7 +213,7 @@ public class LocalNodeImpl implements Node {
 	 */
 	public class MinerMisbehaviorEvent implements Event {
 		public final Miner miner;
-		public final int points;
+		public final long points;
 
 		/**
 		 * Creates an event that expresses a miner's misbehavior.
@@ -208,7 +221,7 @@ public class LocalNodeImpl implements Node {
 		 * @param miner the miner that misbehaved
 		 * @param points how many points should be removed for this misbehavior
 		 */
-		public MinerMisbehaviorEvent(Miner miner, int points) {
+		public MinerMisbehaviorEvent(Miner miner, long points) {
 			this.miner = miner;
 			this.points = points;
 		}
@@ -230,7 +243,7 @@ public class LocalNodeImpl implements Node {
 	public class MinerTimeoutEvent extends MinerMisbehaviorEvent {
 
 		public MinerTimeoutEvent(Miner miner) {
-			super(miner, Miners.MINER_PUNISHMENT_FOR_TIMEOUT);
+			super(miner, config.minerPunishmentForTimeout);
 		}
 
 		@Override
@@ -245,7 +258,7 @@ public class LocalNodeImpl implements Node {
 	public class IllegalDeadlineEvent extends MinerMisbehaviorEvent {
 
 		public IllegalDeadlineEvent(Miner miner) {
-			super(miner, Miners.MINER_PUNISHMENT_FOR_ILLEGAL_DEADLINE);
+			super(miner, config.minerPunishmentForIllegalDeadline);
 		}
 
 		@Override
@@ -267,8 +280,8 @@ public class LocalNodeImpl implements Node {
 
 		@Override @OnThread("events")
 		public void run() {
-			// it behaves as like all miners timed-out
-			miners.forEach(miner -> miners.punish(miner, Miners.MINER_PUNISHMENT_FOR_TIMEOUT));
+			// it behaves as if all miners timed-out
+			miners.forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 		}
 	}
 
@@ -283,7 +296,6 @@ public class LocalNodeImpl implements Node {
 		}
 
 		@Override @OnThread("events")
-		public void run() {
-		}
+		public void run() {}
 	}
 }

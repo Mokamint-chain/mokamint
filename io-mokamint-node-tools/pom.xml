@@ -14,44 +14,29 @@
 
   <dependencies>
   	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-node-local</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-local</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-application-api</artifactId>
-       <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-miner-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-miner-local</artifactId> <!-- remove at the end -->
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-local</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-plotter</artifactId> <!-- remove at the end -->
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-plotter</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-annotations</artifactId>
-       <version>${hotmoka.version}</version>
-    </dependency>
-    <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-crypto</artifactId> <!-- remove at the end -->
-       <version>${hotmoka.version}</version>
-    </dependency>
-    <dependency>
-    	<groupId>info.picocli</groupId>
-    	<artifactId>picocli</artifactId>
-    	<version>4.7.2</version>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.7.2</version>
 	</dependency>
   </dependencies>
 

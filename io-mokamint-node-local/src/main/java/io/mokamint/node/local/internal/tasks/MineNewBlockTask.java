@@ -48,7 +48,7 @@ public class MineNewBlockTask extends Task {
 	/**
 	 * The target block creation time that will be aimed, in milliseconds.
 	 */
-	private final static BigInteger TARGET_BLOCK_CREATION_TIME = BigInteger.valueOf(5 * 1000); // 5 seconds
+	private final BigInteger targetBlockCreationTime;
 
 	/**
 	 * The block for which a subsequent block is being mined.
@@ -72,12 +72,11 @@ public class MineNewBlockTask extends Task {
 
 		this.previous = previous;
 		this.startTime = startTime;
+		this.targetBlockCreationTime = BigInteger.valueOf(node.getConfig().targetBlockCreationTime);
 	}
 
 	@Override
 	public void run() {
-		var node = getNode();
-
 		try {
 			if (node.getMiners().isEmpty())
 				node.signal(node.new NoMinersAvailableEvent());
@@ -149,12 +148,12 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
-			currentDeadline.await(1000, TimeUnit.MILLISECONDS); // TODO
+			currentDeadline.await(node.getConfig().deadlineWaitTimeout, TimeUnit.MILLISECONDS);
 		}
 
 		private void informNodeAboutNewBlock() {
 			LOGGER.info("ended mining new block at height " + heightOfNewBlock + ": informing the node");
-			getNode().signal(getNode().new BlockDiscoveryEvent(block));
+			node.signal(node.new BlockDiscoveryEvent(block));
 		}
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
@@ -163,12 +162,12 @@ public class MineNewBlockTask extends Task {
 					" and data: " + Hex.toHexString(generationSignature));
 
 			try {
-				getNode().getMiners().forEach(miner -> {
+				node.getMiners().forEach(miner -> {
 					try {
 						miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
 					}
 					catch (TimeoutException e) {
-						getNode().signal(getNode().new MinerTimeoutEvent(miner));
+						node.signal(node.new MinerTimeoutEvent(miner));
 					}
 					catch (InterruptedException e) {
 						throw new UncheckedInterruptedException(e);
@@ -190,7 +189,7 @@ public class MineNewBlockTask extends Task {
 		private void onDeadlineComputed(Deadline deadline, Miner miner) {
 			LOGGER.info("received deadline " + deadline);
 
-			if (!getNode().getMiners().contains(miner))
+			if (!node.getMiners().contains(miner))
 				LOGGER.info("discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
 				if (isLegal(deadline)) {
@@ -203,7 +202,7 @@ public class MineNewBlockTask extends Task {
 				}
 				else {
 					LOGGER.info("discarding deadline " + deadline + " since it's illegal");
-					getNode().signal(getNode().new IllegalDeadlineEvent(miner));
+					node.signal(node.new IllegalDeadlineEvent(miner));
 				}
 			}
 			else
@@ -244,7 +243,7 @@ public class MineNewBlockTask extends Task {
 			var oldAcceleration = previous.getAcceleration();
 			var delta = oldAcceleration
 					.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
-					.divide(TARGET_BLOCK_CREATION_TIME)
+					.divide(targetBlockCreationTime)
 					.subtract(oldAcceleration);
 
 			var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
@@ -274,7 +273,9 @@ public class MineNewBlockTask extends Task {
 		}
 
 		/**
-		 * @param deadline
+		 * Sets a waker at the expiration of the given deadline.
+		 * 
+		 * @param deadline the deadline
 		 */
 		private void setWaker(Deadline deadline) {
 			long millisecondsToWait = millisecondsToWaitFor(deadline);
@@ -297,7 +298,7 @@ public class MineNewBlockTask extends Task {
 			return deadline.getScoopNumber() == scoopNumber
 					&& Arrays.equals(deadline.getData(), generationSignature)
 					&& deadline.isValid()
-					&& getNode().getApplication().prologIsValid(deadline.getProlog());
+					&& node.getApplication().prologIsValid(deadline.getProlog());
 		}
 
 		private void turnWakerOff() {

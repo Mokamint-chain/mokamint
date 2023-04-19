@@ -31,12 +31,13 @@ public interface LocalNodes {
 	/**
 	 * Yields a local node of a Mokamint blockchain, for the given application.
 	 * 
+	 * @param config the configuration of the node
 	 * @param app the application
 	 * @param miners the miners
 	 * @return the local node
 	 * @throws NoSuchAlgorithmException if some hashing algorithm cannot be found
 	 */
-	static Node of(Application app, Miner... miners) throws NoSuchAlgorithmException {
-		return new LocalNodeImpl(app, miners);
+	static Node of(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
+		return new LocalNodeImpl(config, app, miners);
 	}
 }

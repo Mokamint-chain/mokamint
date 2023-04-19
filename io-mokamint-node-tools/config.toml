@@ -1,0 +1,27 @@
+# This is a TOML config file for Mokamint nodes.
+# For more information about TOML, see https://github.com/toml-lang/toml
+# For more information about Mokamint, see https://www.mokamint.io
+
+# NOTE: Any path below can be absolute or relative to the directory
+# where the mokamint-node command is run.
+
+## Main options
+
+# the path where the node's data will be persisted
+dir = "chain"
+
+# time, in milliseconds, aimed between the creation of a block and the creation of a next block
+target_block_creation_time = 240000
+
+# maximal milliseconds to wait between deadline request to the miners and first deadline reception
+deadline_wait_timeout = 20000
+
+# the initial points of a miner, freshly connected to a node
+miner_initial_points = 1000
+
+# the points that a miner loses as punishment for a timeout at a request for a deadline
+miner_punishment_for_timeout = 1
+
+# the points that a miner loses as punishment for providing an illegal deadline
+miner_punishment_for_illegal_deadline = 500
+

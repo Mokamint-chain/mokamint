@@ -18,7 +18,6 @@ package io.mokamint.miner.remote.internal;
 
 import java.net.URI;
 import java.util.function.BiConsumer;
-import java.util.logging.Logger;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
@@ -28,7 +27,7 @@ import io.mokamint.nonce.api.Deadline;
  * It uses a set of plot files to find deadlines on-demand.
  */
 public class RemoteMinerImpl implements Miner {
-	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
+	//private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
 
 	public RemoteMinerImpl(URI uri) {
 	}

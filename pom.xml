@@ -211,10 +211,12 @@
                   <!-- we exclude all modules that go into the explicit folder -->
                   bcprov-jdk15on,
                   picocli,
+                  gson,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
                   <!-- we exclude all modules that go into the automatic folder -->
+                  io-hotmoka-toml,
                   <!-- we exclude all modules that are only used for testing -->
                   junit-jupiter,
                   junit-jupiter-api,
@@ -240,7 +242,7 @@
               <configuration>
                 <outputDirectory>${project.parent.basedir}/modules/automatic</outputDirectory>
                 <includeArtifactIds>
-                  none
+                  io-hotmoka-toml
                 </includeArtifactIds>
               </configuration>
             </execution>
@@ -255,6 +257,7 @@
                 <includeArtifactIds>
                   bcprov-jdk15on,
                   picocli,
+                  gson,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api
