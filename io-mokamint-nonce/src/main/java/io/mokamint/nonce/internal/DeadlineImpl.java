@@ -16,10 +16,16 @@ limitations under the License.
 
 package io.mokamint.nonce.internal;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
@@ -29,7 +35,7 @@ import io.mokamint.nonce.api.Nonce;
  * and a value computed for that nonce. Deadlines are ordered
  * by the lexicographical ordering of their values.
  */
-public class DeadlineImpl implements Deadline {
+public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final byte[] prolog;
 	private final long progressive;
 	private final byte[] value;
@@ -44,6 +50,26 @@ public class DeadlineImpl implements Deadline {
 		this.scoopNumber = scoopNumber;
 		this.data = data;
 		this.hashing = hashing;
+	}
+
+	/**
+	 * Unmarshals a deadline from the given context.
+	 * 
+	 * @param context the unmarshalling context
+	 * @throws IOException if the request could not be unmarshalled
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
+	 */
+	public DeadlineImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		int prologLength = context.readCompactInt();
+		this.prolog = context.readBytes(prologLength, "mismatch in deadline's prolog length");
+		this.progressive = context.readLong();
+		int valueLength = context.readCompactInt();
+		this.value = context.readBytes(valueLength, "mismatch in deadline's value length");
+		this.scoopNumber = context.readInt();
+		int dataLength = context.readCompactInt();
+		this.data = context.readBytes(dataLength, "mismatch in deadline's data length");
+		String hashing = context.readUTF();
+		this.hashing = HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes);
 	}
 
 	@Override
@@ -123,5 +149,18 @@ public class DeadlineImpl implements Deadline {
 	@Override
 	public String toString() {
 		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", nonce: " + progressive + ", value: " + Hex.toHexString(value);
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		context.writeCompactInt(prolog.length);
+		context.write(prolog);
+		context.writeLong(progressive);
+		context.writeCompactInt(value.length);
+		context.write(value);
+		context.writeCompactInt(scoopNumber);
+		context.writeCompactInt(data.length);
+		context.write(data);
+		context.writeUTF(hashing.getName());
 	}
 }

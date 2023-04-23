@@ -19,4 +19,5 @@ module io.mokamint.nonce {
 
 	requires transitive io.mokamint.nonce.api;
 	requires io.hotmoka.crypto;
+	requires transitive io.hotmoka.marshalling;
 }

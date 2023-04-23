@@ -19,9 +19,11 @@ package io.mokamint.node.local.internal.blockchain;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 
 /**
  * The genesis block of a Mokamint blockchain.
@@ -37,6 +39,19 @@ public class GenesisBlock extends AbstractBlock {
 
 	GenesisBlock(LocalDateTime startDateTimeUTC) {
 		this.startDateTimeUTC = startDateTimeUTC;
+	}
+
+	/**
+	 * Unmarshals a genesis block from the given context.
+	 * The height of the block has been already read.
+	 * 
+	 * @param context the context
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
+	 */
+	GenesisBlock(UnmarshallingContext context) throws IOException {
+		String startDateTimeUTC = context.readUTF();
+		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 	}
 
 	public LocalDateTime getStartDateTimeUTC() {
@@ -70,6 +85,10 @@ public class GenesisBlock extends AbstractBlock {
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		// TODO Auto-generated method stub
+		// we write the height of the block anyway, so that, by reading the first long,
+		// it is possible to distinguish between a genesis block (height == 0)
+		// and a non-genesis block (height > 0)
+		context.writeLong(0L);
+		context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 	}
 }

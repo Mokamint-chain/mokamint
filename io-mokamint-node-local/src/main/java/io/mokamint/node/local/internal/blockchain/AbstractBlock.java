@@ -16,10 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Nonce;
 
 /**
@@ -28,6 +31,25 @@ import io.mokamint.nonce.api.Nonce;
 abstract class AbstractBlock extends AbstractMarshallable implements Block {
 
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
+
+	/**
+	 * Unmarshals a block from the given context.
+	 * 
+	 * @param context the context
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
+	 */
+	static AbstractBlock from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		// by reading the height, we can determine if it's a genesis block or not
+		long height = context.readLong();
+		if (height == 0L)
+			return new GenesisBlock(context);
+		else if (height > 0L)
+			return new NonGenesisBlock(height, context);
+		else
+			throw new IOException("negative block height");
+	}
 
 	@Override
 	public int getNewScoopNumber(HashingAlgorithm<byte[]> hashing) {

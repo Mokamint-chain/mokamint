@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.nonce;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.internal.DeadlineImpl;
 
@@ -38,5 +42,17 @@ public interface Deadlines {
 	 */
 	static Deadline of(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		return new DeadlineImpl(prolog, progressive, value, scoopNumber, data, hashing);
+	}
+
+	/**
+	 * Factory method that unmarshals a deadline from the given context.
+	 * 
+	 * @param context the unmarshalling context
+	 * @return the request
+	 * @throws IOException if the request could not be unmarshalled
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
+	 */
+	static Deadline from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		return new DeadlineImpl(context);
 	}
 }

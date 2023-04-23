@@ -17,13 +17,14 @@ limitations under the License.
 package io.mokamint.nonce.api;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * A deadline inside a plot file. It is a reference to a nonce
  * and a value computed for that nonce. Deadlines are ordered
  * by the lexicographical ordering of their values.
  */
-public interface Deadline {
+public interface Deadline extends Marshallable {
 
 	/**
 	 * The prolog that was used to create the plot file from which

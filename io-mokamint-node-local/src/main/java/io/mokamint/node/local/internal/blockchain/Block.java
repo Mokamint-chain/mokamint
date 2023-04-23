@@ -16,11 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -34,6 +37,18 @@ public interface Block extends Marshallable {
 
 	static GenesisBlock genesis(LocalDateTime startDateTimeUTC) {
 		return new GenesisBlock(startDateTimeUTC);
+	}
+
+	/**
+	 * Unmarshals a block from the given context.
+	 * 
+	 * @param context the context
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
+	 */
+	static Block from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		return AbstractBlock.from(context);
 	}
 
 	long getTotalWaitingTime();

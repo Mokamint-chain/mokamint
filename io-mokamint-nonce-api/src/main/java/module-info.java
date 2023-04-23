@@ -18,4 +18,5 @@ module io.mokamint.nonce.api {
 	exports io.mokamint.nonce.api;
 
 	requires io.hotmoka.crypto.api;
+	requires io.hotmoka.marshalling.api;
 }

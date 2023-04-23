@@ -18,15 +18,23 @@ package io.mokamint.node.local.internal.blockchain;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * A non-genesis block of the Mokamint blockchain.
  */
 public class NonGenesisBlock extends AbstractBlock {
+
+	/**
+	 * The block height, non-negative, counting from 0, which is the genesis block.
+	 */
+	private final long height;
 
 	/**
 	 * The total waiting time for the construction of the blockchain, from
@@ -39,11 +47,6 @@ public class NonGenesisBlock extends AbstractBlock {
 	 * this block (excluded).
 	 */
 	private final long weightedWaitingTime;
-
-	/**
-	 * The block height, non-negative, counting from 0, which is the genesis block.
-	 */
-	private final long height;
 
 	/**
 	 * A value used to divide the deadline to derive the time needed to wait for it.
@@ -63,6 +66,23 @@ public class NonGenesisBlock extends AbstractBlock {
 		this.weightedWaitingTime = weightedWaitingTime;
 		this.acceleration = acceleration;
 		this.deadline = deadline;
+	}
+
+	/**
+	 * Unmarshals a non-genesis block from the given context.
+	 * The height of the block has been already read.
+	 * 
+	 * @param height the height of the block
+	 * @param context the conte
+	 * @throws IOException if the block cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
+	 */
+	NonGenesisBlock(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		this.height = height;
+		this.totalWaitingTime = context.readLong();
+		this.weightedWaitingTime = context.readLong();
+		this.acceleration = context.readBigInteger();
+		this.deadline = Deadlines.from(context);
 	}
 
 	@Override
@@ -99,6 +119,13 @@ public class NonGenesisBlock extends AbstractBlock {
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		// TODO Auto-generated method stub
+		// we write the height of the block first, so that, by reading the first long,
+		// it is possible to distinguish between a genesis block (height == 0)
+		// and a non-genesis block (height > 0)
+		context.writeLong(height);
+		context.writeLong(totalWaitingTime);
+		context.writeLong(weightedWaitingTime);
+		context.writeBigInteger(acceleration);
+		deadline.into(context);
 	}
 }
