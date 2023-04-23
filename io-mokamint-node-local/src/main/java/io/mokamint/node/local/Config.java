@@ -18,8 +18,10 @@ package io.mokamint.node.local;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.toml.Toml;
 
 /**
@@ -33,6 +35,19 @@ public class Config {
 	 * It defaults to {@code chain} in the current directory.
 	 */
 	public final Path dir;
+
+	/**
+	 * The name of the hashing algorithm used for computing the deadlines, hence
+	 * also in the plot files used by the miners. It defaults to <code>shabal256</code>.
+	 */
+	public final String hashingForDeadlines;
+
+	/**
+	 * The name of the hashing algorithm used for computing the next generation
+	 * signature and the new scoop number from the previous block. It defaults to
+	 * <code>sha256</code>.
+	 */
+	public final String hashingForGenerations;
 
 	/**
 	 * The target time interval, in milliseconds, between the creation of a block
@@ -67,8 +82,13 @@ public class Config {
 	/**
 	 * Full constructor for the builder pattern.
 	 */
-	private Config(Path dir, long targetBlockCreationTime, long deadlineWaitTimeout, long minerInitialPoints, long minerPunishmentForTimeout, long minerPunishmentForIllegalDeadline) {
+	private Config(Path dir, String hashingForDeadlines, String hashingForGenerations,
+			long targetBlockCreationTime, long deadlineWaitTimeout, long minerInitialPoints,
+			long minerPunishmentForTimeout, long minerPunishmentForIllegalDeadline) {
+
 		this.dir = dir;
+		this.hashingForDeadlines = hashingForDeadlines;
+		this.hashingForGenerations = hashingForGenerations;
 		this.targetBlockCreationTime = targetBlockCreationTime;
 		this.deadlineWaitTimeout = deadlineWaitTimeout;
 		this.minerInitialPoints = minerInitialPoints;
@@ -101,6 +121,12 @@ public class Config {
 		sb.append("# the path where the node's data will be persisted\n");
 		sb.append("dir = \"" + dir + "\"\n");
 		sb.append("\n");
+		sb.append("# the hashing algorithm used for the deadlines and hence for the plot files of the miners\n");
+		sb.append("hashing_for_deadlines = \"" + hashingForDeadlines + "\"\n");
+		sb.append("\n");
+		sb.append("# the hashing algorithm used for the computation of the new generation and scoop number from the previous block\n");
+		sb.append("hashing_for_generations = \"" + hashingForGenerations + "\"\n");
+		sb.append("\n");
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
 		sb.append("\n");
@@ -124,6 +150,8 @@ public class Config {
 	 */
 	public static class Builder {
 		private Path dir = Paths.get("chain");
+		private String hashingForDeadlines = "shabal256";
+		private String hashingForGenerations = "sha256";
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
@@ -156,6 +184,14 @@ public class Config {
 			var dir = toml.getString("dir");
 			if (dir != null)
 				builder.setDir(Paths.get(dir));
+
+			var hashingForDeadlines = toml.getString("hashing_for_deadlines");
+			if (hashingForDeadlines != null)
+				builder.setHashingForDeadlines(hashingForDeadlines);
+
+			var hashingForGenerations = toml.getString("hashing_for_generations");
+			if (hashingForGenerations != null)
+				builder.setHashingForGenerations(hashingForGenerations);
 
 			var targetBlockCreationTime = toml.getLong("target_block_creation_time");
 			if (targetBlockCreationTime != null)
@@ -190,6 +226,45 @@ public class Config {
 		public Builder setDir(Path dir) {
 			this.dir = dir;
 			return this;
+		}
+
+		/**
+		 * Sets the hashing algorithm for computing the deadlines and hence also the
+		 * plot files used by the miners.
+		 * 
+		 * @param hashingForDeadlines the name of the hashing algorithm
+		 * @return this builder
+		 * @throws IllegalArgumentException if no algorithm exists with that name
+		 */
+		public Builder setHashingForDeadlines(String hashingForDeadlines) {
+			if (!hashingAlgorithmExists(hashingForDeadlines))
+				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForDeadlines);
+
+			this.hashingForDeadlines = hashingForDeadlines;
+			return this;
+		}
+
+		/**
+		 * Sets the hashing algorithm for computing the new generation and the new scoop
+		 * number from the previous block.
+		 * 
+		 * @param hashingForGenerations the name of the hashing algorithm
+		 * @return this builder
+		 * @throws IllegalArgumentException if no algorithm exists with that name
+		 */
+		public Builder setHashingForGenerations(String hashingForGenerations) {
+			if (!hashingAlgorithmExists(hashingForGenerations))
+				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForGenerations);
+
+			this.hashingForGenerations = hashingForGenerations;
+			return this;
+		}
+
+		private boolean hashingAlgorithmExists(String hashingForDeadlines) {
+			return Stream.of(HashingAlgorithms.TYPES.values())
+					.map(Enum::name)
+					.map(String::toLowerCase)
+					.anyMatch(hashingForDeadlines::equals);
 		}
 
 		/**
@@ -261,7 +336,9 @@ public class Config {
 		 * @return the configuration
 		 */
 		public Config build() {
-			return new Config(dir, targetBlockCreationTime, deadlineWaitTimeout, minerInitialPoints, minerPunishmentForTimeout, minerPunishmentForIllegalDeadline);
+			return new Config(dir, hashingForDeadlines, hashingForGenerations,
+				targetBlockCreationTime, deadlineWaitTimeout, minerInitialPoints,
+				minerPunishmentForTimeout, minerPunishmentForIllegalDeadline);
 		}
 	}
 }

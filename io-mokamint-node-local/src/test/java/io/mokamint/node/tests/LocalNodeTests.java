@@ -24,18 +24,21 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.logging.LogManager;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.local.Config;
@@ -68,9 +71,10 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
-	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+		var hashing = HashingAlgorithms.mk(config.hashingForDeadlines, (byte[] bytes) -> bytes);
 
 		var myMiner = new Miner() {
 
@@ -81,6 +85,8 @@ public class LocalNodeTests {
 				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
 				when(deadline.getData()).thenReturn(data);
 				when(deadline.getValue()).thenReturn(deadlineValue);
+				when(deadline.getHashing()).thenReturn(hashing);
+
 				onDeadlineComputed.accept(deadline, this);
 			}
 
@@ -115,9 +121,10 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
 	@Timeout(1)
-	public void signalIfInvalidDeadline() throws InterruptedException {
+	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+		var hashing = HashingAlgorithms.mk(config.hashingForDeadlines, (byte[] bytes) -> bytes);
 	
 		var myMiner = new Miner() {
 	
@@ -128,6 +135,8 @@ public class LocalNodeTests {
 				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
 				when(deadline.getData()).thenReturn(data);
 				when(deadline.getValue()).thenReturn(deadlineValue);
+				when(deadline.getHashing()).thenReturn(hashing);
+
 				onDeadlineComputed.accept(deadline, this);
 			}
 	
@@ -230,6 +239,60 @@ public class LocalNodeTests {
 				if (event instanceof NoDeadlineFoundEvent)
 					semaphore.release();
 					
+				super.signal(event);
+			}
+		}
+
+		try (var node = new MyLocalNode()) {
+			semaphore.acquire();
+		}
+	}
+
+	@Test
+	@DisplayName("if a miner provides deadlines for the wrong hashing algorithm, an event is signalled to the node")
+	@Timeout(1)
+	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException {
+		var semaphore = new Semaphore(0);
+		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+
+		// we look for a hashing algorithm different from that expected by the node
+		String algo = Stream.of(HashingAlgorithms.TYPES.values())
+			.map(Enum::name)
+			.map(String::toLowerCase)
+			.filter(name -> !name.equals(config.hashingForDeadlines))
+			.findAny()
+			.get();
+		var hashing = HashingAlgorithms.mk(algo, (byte[] bytes) -> bytes);
+
+		var myMiner = new Miner() {
+
+			@Override
+			public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+				Deadline deadline = mock(Deadline.class);
+				when(deadline.isValid()).thenReturn(true);
+				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
+				when(deadline.getData()).thenReturn(data);
+				when(deadline.getValue()).thenReturn(deadlineValue);
+				when(deadline.getHashing()).thenReturn(hashing);
+
+				onDeadlineComputed.accept(deadline, this);
+			}
+
+			@Override
+			public void close() {}
+		};
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() {
+				super(config, app, myMiner);
+			}
+
+			@Override
+			public void signal(Event event) {
+				if (event instanceof IllegalDeadlineEvent)
+					semaphore.release();
+
 				super.signal(event);
 			}
 		}

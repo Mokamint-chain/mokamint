@@ -16,9 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
+import java.io.IOException;
 import java.math.BigInteger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.MarshallingContext;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -93,5 +95,10 @@ public class NonGenesisBlock extends AbstractBlock {
 		byte[] previousProlog = deadline.getProlog();
 		byte[] merge = concat(previousGenerationSignature, previousProlog);
 		return hashing.hash(merge);
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		// TODO Auto-generated method stub
 	}
 }

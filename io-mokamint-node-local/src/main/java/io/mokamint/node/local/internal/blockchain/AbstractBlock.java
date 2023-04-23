@@ -19,12 +19,13 @@ package io.mokamint.node.local.internal.blockchain;
 import java.math.BigInteger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.AbstractMarshallable;
 import io.mokamint.nonce.api.Nonce;
 
 /**
  * Shared code of blocks.
  */
-public abstract class AbstractBlock implements Block {
+abstract class AbstractBlock extends AbstractMarshallable implements Block {
 
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import picocli.CommandLine.Parameters;
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
-	//@Option(names = "-plot", arity = "1..*", split=",", description = { "a comma-separated list of paths", "to plot files for local mining" } )
 	@Parameters(description = { "plot files that will be used for local mining" })
 	private Path[] plots;
 

@@ -133,9 +133,9 @@ public class MineNewBlockTask extends Task {
 		private Run() throws NoSuchAlgorithmException, InterruptedException, TimeoutException {
 			try {
 				LOGGER.info("starting mining new block at height " + heightOfNewBlock);
-				var sha256 = HashingAlgorithms.sha256((byte[] bytes) -> bytes);
-				this.generationSignature = previous.getNewGenerationSignature(sha256);
-				this.scoopNumber = previous.getNewScoopNumber(sha256);
+				var hashing = HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes);
+				this.generationSignature = previous.getNewGenerationSignature(hashing);
+				this.scoopNumber = previous.getNewScoopNumber(hashing);
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
@@ -288,6 +288,7 @@ public class MineNewBlockTask extends Task {
 		/**
 		 * Determines if a deadline is legal, that is,
 		 * it is actually a deadline for the expected scoop number and generationSignature,
+		 * it uses the hashing algorithm required in the configuration of the node,
 		 * it is valid and its prolog is valid for the application. All these conditions
 		 * should always hold, if the miner behaves correctly.
 		 * 
@@ -297,6 +298,7 @@ public class MineNewBlockTask extends Task {
 		private boolean isLegal(Deadline deadline) {
 			return deadline.getScoopNumber() == scoopNumber
 					&& Arrays.equals(deadline.getData(), generationSignature)
+					&& deadline.getHashing().getName().equals(node.getConfig().hashingForDeadlines)
 					&& deadline.isValid()
 					&& node.getApplication().prologIsValid(deadline.getProlog());
 		}

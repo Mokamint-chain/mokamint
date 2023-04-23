@@ -10,6 +10,12 @@
 # the path where the node's data will be persisted
 dir = "chain"
 
+# the hashing algorithm used for the deadlines and hence for the plot files of the miners
+hashing_for_deadlines = "shabal256"
+
+# the hashing algorithm used for the computation of the new generation and scoop number from the previous block
+hashing_for_generations = "sha256"
+
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
 target_block_creation_time = 240000
 
@@ -24,4 +30,3 @@ miner_punishment_for_timeout = 1
 
 # the points that a miner loses as punishment for providing an illegal deadline
 miner_punishment_for_illegal_deadline = 500
-

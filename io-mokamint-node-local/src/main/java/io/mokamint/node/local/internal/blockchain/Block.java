@@ -20,12 +20,13 @@ import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.Marshallable;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * A block of the Mokamint blockchain.
  */
-public interface Block {
+public interface Block extends Marshallable {
 
 	static NonGenesisBlock of(long blockNumber, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
 		return new NonGenesisBlock(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline);
@@ -55,12 +56,18 @@ public interface Block {
 	long getHeight();
 
 	/**
-	 * Yields the generation signature of the next block.
+	 * Yields the generation signature for the deadline of the next block.
 	 * 
-	 * @param hashing
-	 * @return
+	 * @param hashing the hashing algorithm to use to compute the generation signature
+	 * @return the generation signature
 	 */
 	byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing);
 
+	/**
+	 * Yields the scoop number for the deadline of the next block.
+	 * 
+	 * @param hashing the hashing algorithm to use to compute the scoop number
+	 * @return the scoop number
+	 */
 	int getNewScoopNumber(HashingAlgorithm<byte[]> hashing);
 }

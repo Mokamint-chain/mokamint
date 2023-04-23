@@ -215,6 +215,8 @@
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
+                  io-hotmoka-marshalling,
+                  io-hotmoka-marshalling-api,
                   <!-- we exclude all modules that go into the automatic folder -->
                   io-hotmoka-toml,
                   <!-- we exclude all modules that are only used for testing -->
@@ -260,7 +262,9 @@
                   gson,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
-                  io-hotmoka-crypto-api
+                  io-hotmoka-crypto-api,
+                  io-hotmoka-marshalling,
+                  io-hotmoka-marshalling-api
                 </includeArtifactIds>
               </configuration>
             </execution>

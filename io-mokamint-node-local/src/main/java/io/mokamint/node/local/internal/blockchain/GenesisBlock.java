@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.MarshallingContext;
 
 /**
  * The genesis block of a Mokamint blockchain.
@@ -64,5 +66,10 @@ public class GenesisBlock extends AbstractBlock {
 	@Override
 	public byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing) {
 		return BLOCK_1_GENERATION_SIGNATURE.clone();
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		// TODO Auto-generated method stub
 	}
 }
