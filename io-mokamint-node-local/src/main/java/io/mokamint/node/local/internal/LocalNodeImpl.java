@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -23,16 +24,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.xodus.ExodusException;
-import io.hotmoka.xodus.env.Environment;
-import io.hotmoka.xodus.env.Store;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
@@ -64,19 +60,14 @@ public class LocalNodeImpl implements Node {
 	private final Miners miners;
 
 	/**
-	 * The Xodus environment that holds the blocks database.
-	 */
-	private final Environment environmentOfBlocks;
-
-	/**
-	 * The Xodus store holding the blocks of the chain.
-	 */
-	private final Store storeOfBlocks;
-
-	/**
 	 * The genesis block of the blockchain.
 	 */
 	private final GenesisBlock genesis;
+
+	/**
+	 * The database containing the blockchain.
+	 */
+	private final Database db;
 
 	/**
 	 * The single executor of the events. Events get queued into this queue and run in order
@@ -98,48 +89,17 @@ public class LocalNodeImpl implements Node {
 	 * @param config the configuration of the node
 	 * @param app the application
 	 * @param miners the miners
+	 * @throws NoSuchAlgorithmException if the hashing algorithm for the nodes is nolt available
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
 		this.config = config;
 		this.app = app;
 		this.miners = new Miners(config, Stream.of(miners));
-		this.environmentOfBlocks = createBlockchainEnvironment(config);
-		this.storeOfBlocks = openStoreOfBlocks();
+		this.db = new Database(config);
 		this.genesis = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 
 		// for now, everything starts with the discovery of the genesis block
 		signal(new BlockDiscoveryEvent(genesis));
-	}
-
-	/**
-	 * @param config
-	 * @return
-	 */
-	private Environment createBlockchainEnvironment(Config config) {
-		var env = new Environment(config.dir + "/blockchain");
-		LOGGER.info("opened the blockchain environment");
-		return env;
-	}
-
-	private void closeBlockchainEnvironment() {
-		try {
-			environmentOfBlocks.close();
-			LOGGER.info("closed the blockchain environment");
-		}
-		catch (ExodusException e) {
-			LOGGER.log(Level.WARNING, "failed to close the blocks environment", e);
-		}
-	}
-
-	/**
-	 * 
-	 */
-	private Store openStoreOfBlocks() {
-		var storeOfBlocks = new AtomicReference<Store>();
-		environmentOfBlocks.executeInTransaction(txn -> storeOfBlocks.set(environmentOfBlocks.openStoreWithoutDuplicates("blocks", txn)));
-		var store = storeOfBlocks.get();
-		LOGGER.info("opened the store of blocks inside the blockchain environment");
-		return store;
 	}
 
 	@Override
@@ -155,7 +115,7 @@ public class LocalNodeImpl implements Node {
 			throw new UncheckedInterruptedException(e);
 		}
 		finally {
-			closeBlockchainEnvironment();
+			db.close();
 		}
 	}
 
@@ -254,8 +214,9 @@ public class LocalNodeImpl implements Node {
 
 		@Override @OnThread("events")
 		public void run() {
-			LocalDateTime startTime = genesis.getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			execute(new MineNewBlockTask(LocalNodeImpl.this, block, startTime));
+			db.add(block);
+			LocalDateTime nextBlockStartTime = genesis.getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
 		}
 	}
 

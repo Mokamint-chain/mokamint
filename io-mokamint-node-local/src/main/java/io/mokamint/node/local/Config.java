@@ -164,7 +164,7 @@ public class Config {
 		private String hashingForDeadlines = "shabal256";
 		private String hashingForGenerations = "sha256";
 		private String hashingForBlocks = "sha256";
-		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
+		private long targetBlockCreationTime = 3000; // 4 * 60 * 1000L; // 4 minutes
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
 		private long minerPunishmentForTimeout = 1L;

@@ -96,7 +96,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() {
+			private MyLocalNode() throws NoSuchAlgorithmException {
 				super(config, app, myMiner);
 			}
 
@@ -146,7 +146,7 @@ public class LocalNodeTests {
 	
 		class MyLocalNode extends LocalNodeImpl {
 	
-			private MyLocalNode() {
+			private MyLocalNode() throws NoSuchAlgorithmException {
 				super(config, app, myMiner);
 			}
 	
@@ -169,12 +169,12 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
 	@Timeout(1)
-	public void signalIfNoMiners() throws InterruptedException {
+	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() {
+			public MyLocalNode() throws NoSuchAlgorithmException {
 				super(config, app, new Miner[0]);
 			}
 
@@ -195,7 +195,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a miner timeouts, an event is signalled")
 	@Timeout(1)
-	public void signalIfMinerTimeouts() throws InterruptedException, RejectedExecutionException, TimeoutException {
+	public void signalIfMinerTimeouts() throws InterruptedException, RejectedExecutionException, TimeoutException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = mock(Miner.class);
@@ -203,7 +203,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() {
+			private MyLocalNode() throws NoSuchAlgorithmException {
 				super(config, app, myMiner);
 			}
 
@@ -224,13 +224,13 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
 	@Timeout(3) // three times config.deadlineWaitTimeout
-	public void signalIfNoDeadlineArrives() throws InterruptedException {
+	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var myMiner = mock(Miner.class);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() {
+			private MyLocalNode() throws NoSuchAlgorithmException {
 				super(config, app, myMiner);
 			}
 
@@ -284,7 +284,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() {
+			private MyLocalNode() throws NoSuchAlgorithmException {
 				super(config, app, myMiner);
 			}
 

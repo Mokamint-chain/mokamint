@@ -17,12 +17,14 @@ limitations under the License.
 package io.mokamint.node.tools.internal;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.Comparator;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
@@ -95,9 +97,14 @@ public class Start extends AbstractCommand {
 	private void createEmptyChainDirectory(Path dir) throws IOException {
 		if (Files.exists(dir)) {
 			System.out.print(Ansi.AUTO.string("@|red The path \"" + dir + "\" already exists! Do you want to delete it to start a new blockchain? (yes/no) |@"));
-			String s = System.console().readLine();
-			if (!"yes".equals(s))
+			String answer = System.console().readLine();
+			if (!"yes".equals(answer))
 				throw new IOException("the user rejected the creation of the blockchain directory");
+
+			Files.walk(dir)
+				.sorted(Comparator.reverseOrder())
+				.map(Path::toFile)
+				.forEach(File::delete);
 		}
 
 		Files.createDirectories(dir);

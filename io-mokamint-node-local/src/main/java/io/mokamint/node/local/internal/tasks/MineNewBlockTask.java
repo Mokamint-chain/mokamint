@@ -105,6 +105,11 @@ public class MineNewBlockTask extends Task {
 		private final long heightOfNewBlock = previous.getHeight() + 1;
 
 		/**
+		 * The start of the log messages for this block creation.
+		 */
+		private final String logIntro = "height " + heightOfNewBlock + ": ";
+
+		/**
 		 * The scoop number of the deadline for the creation of the next block.
 		 */
 		private final int scoopNumber;
@@ -132,7 +137,7 @@ public class MineNewBlockTask extends Task {
 
 		private Run() throws NoSuchAlgorithmException, InterruptedException, TimeoutException {
 			try {
-				LOGGER.info("starting mining new block at height " + heightOfNewBlock);
+				LOGGER.info(logIntro + "started mining new block");
 				var hashing = HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes);
 				this.generationSignature = previous.getNewGenerationSignature(hashing);
 				this.scoopNumber = previous.getNewScoopNumber(hashing);
@@ -152,13 +157,12 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void informNodeAboutNewBlock() {
-			LOGGER.info("ended mining new block at height " + heightOfNewBlock + ": informing the node");
+			LOGGER.info(logIntro + "ended mining new block: informing the node");
 			node.signal(node.new BlockDiscoveryEvent(block));
 		}
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
-			LOGGER.info("for new block at height " + heightOfNewBlock +
-					", asking to the miners a deadline with scoop number: " + scoopNumber +
+			LOGGER.info(logIntro + "asking miners a deadline with scoop number: " + scoopNumber +
 					" and data: " + Hex.toHexString(generationSignature));
 
 			try {
@@ -187,26 +191,26 @@ public class MineNewBlockTask extends Task {
 		 */
 		@OnThread("miner")
 		private void onDeadlineComputed(Deadline deadline, Miner miner) {
-			LOGGER.info("received deadline " + deadline);
+			LOGGER.info(logIntro + "received deadline " + deadline);
 
 			if (!node.getMiners().contains(miner))
-				LOGGER.info("discarding deadline " + deadline + " since its miner is unknown");
+				LOGGER.info(logIntro + "discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
 				if (isLegal(deadline)) {
 					if (currentDeadline.updateIfWorseThan(deadline)) {
-						LOGGER.info("improved deadline to " + deadline);
+						LOGGER.info(logIntro + "improved deadline to " + deadline);
 						setWaker(deadline);
 					}
 					else
-						LOGGER.info("discarding deadline " + deadline + " since it's worse than the current deadline");
+						LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's worse than the current deadline");
 				}
 				else {
-					LOGGER.info("discarding deadline " + deadline + " since it's illegal");
+					LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's illegal");
 					node.signal(node.new IllegalDeadlineEvent(miner));
 				}
 			}
 			else
-				LOGGER.info("discarding deadline " + deadline + " since it's worse than the current deadline");
+				LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's worse than the current deadline");
 		}
 
 		private void waitUntilDeadlineExpires() throws InterruptedException, TimeoutException {
@@ -285,7 +289,7 @@ public class MineNewBlockTask extends Task {
 			long millisecondsAlreadyPassed = Duration.between(startTime, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
 			long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
 			waker.set(stillToWait);
-			LOGGER.info("set up a waker in " + stillToWait + " ms");
+			LOGGER.info(logIntro + "set up a waker in " + stillToWait + " ms");
 		}
 
 		/**
