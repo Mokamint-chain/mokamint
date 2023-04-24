@@ -25,5 +25,7 @@ module io.mokamint.node.local {
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.toml;
+	requires io.hotmoka.xodus;
 	requires java.logging;
+	requires jdk.unsupported; // because xodus needs sl4j that needs needs sun.misc.Unsafe
 }

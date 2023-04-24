@@ -219,6 +219,7 @@
                   io-hotmoka-marshalling-api,
                   <!-- we exclude all modules that go into the automatic folder -->
                   io-hotmoka-toml,
+                  io-hotmoka-xodus,
                   <!-- we exclude all modules that are only used for testing -->
                   junit-jupiter,
                   junit-jupiter-api,
@@ -244,7 +245,8 @@
               <configuration>
                 <outputDirectory>${project.parent.basedir}/modules/automatic</outputDirectory>
                 <includeArtifactIds>
-                  io-hotmoka-toml
+                  io-hotmoka-toml,
+                  io-hotmoka-xodus
                 </includeArtifactIds>
               </configuration>
             </execution>

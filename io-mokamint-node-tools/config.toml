@@ -8,7 +8,7 @@
 ## Main options
 
 # the path where the node's data will be persisted
-dir = "chain"
+dir = "mokamint"
 
 # the hashing algorithm used for the deadlines and hence for the plot files of the miners
 hashing_for_deadlines = "shabal256"

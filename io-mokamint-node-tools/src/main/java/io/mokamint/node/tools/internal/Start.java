@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
@@ -64,28 +65,48 @@ public class Start extends AbstractCommand {
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of some plot is not available
 	 */
 	private void startNode(Path[] paths, int pos, Plot[] plots) throws NoSuchAlgorithmException, IOException {
-		if (pos < paths.length) {
+		if (pos < paths.length)
 			try (var plot = plots[pos] = Plots.load(paths[pos])) {
 				startNode(paths, pos + 1, plots);
 			}
-		}
-		else if (paths.length > 0) {
-			try (var miner = LocalMiners.of(plots);
-				 var node = LocalNodes.of(getConfig(), new TestApplication(), miner);
-				 var reader = new BufferedReader(new InputStreamReader(System.in))) {
-
-				System.out.println(Ansi.AUTO.string("@|red Press any key to stop the node.|@"));
-				reader.readLine();
-			}
-		}
 		else {
-			// if there are no plot files, we start the node without any miner
-			try (var node = LocalNodes.of(getConfig(), new TestApplication());
-				 var reader = new BufferedReader(new InputStreamReader(System.in))) {
+			var config = getConfig();
+			createEmptyChainDirectory(config.dir);
 
-				System.out.println(Ansi.AUTO.string("@|red Press any key to stop the node.|@"));
-				reader.readLine();
-			}
+			if (paths.length > 0)
+				try (var miner = LocalMiners.of(plots); var node = LocalNodes.of(config, new TestApplication(), miner)) {
+					waitForKeyPress();
+				}
+			else
+				// if there are no plot files, we start the node without any miner
+				try (var node = LocalNodes.of(config, new TestApplication())) {
+					waitForKeyPress();
+				}
+		}
+	}
+
+	/**
+	 * Creates the given directory for the chain and application databases.
+	 * If the directory exists, it will be erased after asking for confirmation.
+	 * 
+	 * @param dir the directory to create, together with its parent directories, if any
+	 * @throws IOException if the directory could not be created or if the user does not confirm to delete it
+	 */
+	private void createEmptyChainDirectory(Path dir) throws IOException {
+		if (Files.exists(dir)) {
+			System.out.print(Ansi.AUTO.string("@|red The path \"" + dir + "\" already exists! Do you want to delete it to start a new blockchain? (yes/no) |@"));
+			String s = System.console().readLine();
+			if (!"yes".equals(s))
+				throw new IOException("the user rejected the creation of the blockchain directory");
+		}
+
+		Files.createDirectories(dir);
+	}
+
+	private void waitForKeyPress() throws IOException {
+		try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
+			System.out.println(Ansi.AUTO.string("@|red Press any key to stop the node.|@"));
+			reader.readLine();
 		}
 	}
 
@@ -98,17 +119,18 @@ public class Start extends AbstractCommand {
 	private Config getConfig2() throws FileNotFoundException {
 		if (config == null)
 			return Config.Builder.defaults().build();
-		else try {
-			return Config.Builder.load(config).build();
-		}
-		catch (RuntimeException e) {
-			// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
-			Throwable cause = e.getCause();
-			if (cause instanceof FileNotFoundException)
-				throw (FileNotFoundException) cause;
-			else
-				throw e;
-		}
+		else
+			try {
+				return Config.Builder.load(config).build();
+			}
+			catch (RuntimeException e) {
+				// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
+				Throwable cause = e.getCause();
+				if (cause instanceof FileNotFoundException)
+					throw (FileNotFoundException) cause;
+				else
+					throw e;
+			}
 	}
 
 	private static class TestApplication implements Application {
