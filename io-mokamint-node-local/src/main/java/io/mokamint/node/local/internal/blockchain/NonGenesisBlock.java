@@ -116,8 +116,22 @@ public class NonGenesisBlock extends AbstractBlock {
 		return height;
 	}
 
+	/**
+	 * Yields the deadline computed for this block.
+	 * 
+	 * @return the deadline
+	 */
 	public Deadline getDeadline() {
 		return deadline;
+	}
+
+	/**
+	 * Yields the reference to the previous block.
+	 * 
+	 * @return the reference to the previous block
+	 */
+	public byte[] getHashOfPreviousBlock() {
+		return hashOfPreviousBlock;
 	}
 
 	@Override

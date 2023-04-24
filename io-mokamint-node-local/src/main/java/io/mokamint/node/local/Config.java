@@ -32,7 +32,7 @@ public class Config {
 
 	/**
 	 * The path where the node's data will be persisted.
-	 * It defaults to {@code mokamint} in the current directory.
+	 * It defaults to {@code mokamint-chain} in the current directory.
 	 */
 	public final Path dir;
 
@@ -160,11 +160,11 @@ public class Config {
 	 * The builder of a configuration object.
 	 */
 	public static class Builder {
-		private Path dir = Paths.get("mokamint");
+		private Path dir = Paths.get("mokamint-chain");
 		private String hashingForDeadlines = "shabal256";
 		private String hashingForGenerations = "sha256";
 		private String hashingForBlocks = "sha256";
-		private long targetBlockCreationTime = 3000; // 4 * 60 * 1000L; // 4 minutes
+		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
 		private long minerPunishmentForTimeout = 1L;
@@ -234,7 +234,7 @@ public class Config {
 
 		/**
 		 * Sets the directory where the node's data will be persisted.
-		 * It defaults to {@code chain} in the current directory.
+		 * It defaults to {@code mokamint-chain} in the current directory.
 		 * 
 		 * @param dir the directory
 		 * @return this builder
