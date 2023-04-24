@@ -60,12 +60,21 @@ public class NonGenesisBlock extends AbstractBlock {
 	 */
 	private final Deadline deadline;
 
-	NonGenesisBlock(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
+	/**
+	 * The reference to the previous block.
+	 */
+	private final byte[] hashOfPreviousBlock;
+
+	/**
+	 * Creates a new non-genesis block.
+	 */
+	NonGenesisBlock(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
 		this.height = height;
 		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
 		this.acceleration = acceleration;
 		this.deadline = deadline;
+		this.hashOfPreviousBlock = hashOfPreviousBlock;
 	}
 
 	/**
@@ -73,7 +82,7 @@ public class NonGenesisBlock extends AbstractBlock {
 	 * The height of the block has been already read.
 	 * 
 	 * @param height the height of the block
-	 * @param context the conte
+	 * @param context the context
 	 * @throws IOException if the block cannot be unmarshalled
 	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
 	 */
@@ -83,6 +92,8 @@ public class NonGenesisBlock extends AbstractBlock {
 		this.weightedWaitingTime = context.readLong();
 		this.acceleration = context.readBigInteger();
 		this.deadline = Deadlines.from(context);
+		int hashOfPreviousBlockLength = context.readCompactInt();
+		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
 	}
 
 	@Override
@@ -127,5 +138,7 @@ public class NonGenesisBlock extends AbstractBlock {
 		context.writeLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
 		deadline.into(context);
+		context.writeCompactInt(hashOfPreviousBlock.length);
+		context.write(hashOfPreviousBlock);
 	}
 }

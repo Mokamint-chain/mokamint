@@ -31,8 +31,9 @@ import io.mokamint.nonce.api.Deadline;
  */
 public interface Block extends Marshallable {
 
-	static NonGenesisBlock of(long blockNumber, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline) {
-		return new NonGenesisBlock(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline);
+	static NonGenesisBlock of(long blockNumber, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
+			Deadline deadline, byte[] hashOfPreviousBlock) {
+		return new NonGenesisBlock(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
 	}
 
 	static GenesisBlock genesis(LocalDateTime startDateTimeUTC) {

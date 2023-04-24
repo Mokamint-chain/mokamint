@@ -213,14 +213,17 @@ public class MineNewBlockTask extends Task {
 			waker.await();
 		}
 
-		private Block createNewBlock() {
+		private Block createNewBlock() throws NoSuchAlgorithmException {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
+			var hashingForBlocks = HashingAlgorithms.mk(node.getConfig().hashingForBlocks, (byte[] bytes) -> bytes);
+			var hashOfPreviousBlock = hashingForBlocks.hash(previous.toByteArray());
 
-			return Block.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline);
+			return Block.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock, accelerationForNewBlock,
+					        deadline, hashOfPreviousBlock);
 		}
 
 		private long computeTotalWaitingTime(long waitingTime) {

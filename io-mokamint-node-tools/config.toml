@@ -16,6 +16,9 @@ hashing_for_deadlines = "shabal256"
 # the hashing algorithm used for the computation of the new generation and scoop number from the previous block
 hashing_for_generations = "sha256"
 
+# the hashing algorithm used for the blocks of the blockchain
+hashing_for_blocks = "sha256"
+
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
 target_block_creation_time = 240000
 

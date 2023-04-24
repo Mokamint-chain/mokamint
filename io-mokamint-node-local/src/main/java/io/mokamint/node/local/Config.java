@@ -50,6 +50,12 @@ public class Config {
 	public final String hashingForGenerations;
 
 	/**
+	 * The name of the hashing algorithm used for the identifying the blocks of
+	 * the Mokamint blockchain. It defaults to <code>sha256</code>.
+	 */
+	public final String hashingForBlocks;
+
+	/**
 	 * The target time interval, in milliseconds, between the creation of a block
 	 * and the creation of a next block. The network will strive to get close
 	 * to this time. The higher the hashing power of the network, the more precise
@@ -83,12 +89,14 @@ public class Config {
 	 * Full constructor for the builder pattern.
 	 */
 	private Config(Path dir, String hashingForDeadlines, String hashingForGenerations,
+			String hashingForBlocks,
 			long targetBlockCreationTime, long deadlineWaitTimeout, long minerInitialPoints,
 			long minerPunishmentForTimeout, long minerPunishmentForIllegalDeadline) {
 
 		this.dir = dir;
 		this.hashingForDeadlines = hashingForDeadlines;
 		this.hashingForGenerations = hashingForGenerations;
+		this.hashingForBlocks = hashingForBlocks;
 		this.targetBlockCreationTime = targetBlockCreationTime;
 		this.deadlineWaitTimeout = deadlineWaitTimeout;
 		this.minerInitialPoints = minerInitialPoints;
@@ -127,6 +135,9 @@ public class Config {
 		sb.append("# the hashing algorithm used for the computation of the new generation and scoop number from the previous block\n");
 		sb.append("hashing_for_generations = \"" + hashingForGenerations + "\"\n");
 		sb.append("\n");
+		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
+		sb.append("hashing_for_blocks = \"" + hashingForBlocks + "\"\n");
+		sb.append("\n");
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
 		sb.append("\n");
@@ -152,6 +163,7 @@ public class Config {
 		private Path dir = Paths.get("chain");
 		private String hashingForDeadlines = "shabal256";
 		private String hashingForGenerations = "sha256";
+		private String hashingForBlocks = "sha256";
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
@@ -192,6 +204,10 @@ public class Config {
 			var hashingForGenerations = toml.getString("hashing_for_generations");
 			if (hashingForGenerations != null)
 				builder.setHashingForGenerations(hashingForGenerations);
+
+			var hashingForBlocks = toml.getString("hashing_for_blocks");
+			if (hashingForBlocks != null)
+				builder.setHashingForBlocks(hashingForBlocks);
 
 			var targetBlockCreationTime = toml.getLong("target_block_creation_time");
 			if (targetBlockCreationTime != null)
@@ -257,6 +273,21 @@ public class Config {
 				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForGenerations);
 
 			this.hashingForGenerations = hashingForGenerations;
+			return this;
+		}
+
+		/**
+		 * Sets the hashing algorithm for identifying the blocks in the Mokamint blockchain.
+		 * 
+		 * @param hashingForGenerations the name of the hashing algorithm
+		 * @return this builder
+		 * @throws IllegalArgumentException if no algorithm exists with that name
+		 */
+		public Builder setHashingForBlocks(String hashingForBlocks) {
+			if (!hashingAlgorithmExists(hashingForBlocks))
+				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForBlocks);
+
+			this.hashingForBlocks = hashingForBlocks;
 			return this;
 		}
 
@@ -336,7 +367,7 @@ public class Config {
 		 * @return the configuration
 		 */
 		public Config build() {
-			return new Config(dir, hashingForDeadlines, hashingForGenerations,
+			return new Config(dir, hashingForDeadlines, hashingForGenerations, hashingForBlocks,
 				targetBlockCreationTime, deadlineWaitTimeout, minerInitialPoints,
 				minerPunishmentForTimeout, minerPunishmentForIllegalDeadline);
 		}
