@@ -17,13 +17,13 @@ limitations under the License.
 package io.mokamint.node.local.internal.blockchain;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.local.internal.UncheckedIOException;
 import io.mokamint.node.local.internal.UncheckedNoSuchAlgorithmException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
