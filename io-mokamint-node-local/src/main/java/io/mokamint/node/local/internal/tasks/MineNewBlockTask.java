@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local.internal.tasks;
 
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -31,7 +30,9 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.UncheckedInterruptedException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.local.internal.UncheckedNoSuchAlgorithmException;
 import io.mokamint.node.local.internal.blockchain.Block;
 import io.mokamint.nonce.api.Deadline;
 
@@ -84,9 +85,6 @@ public class MineNewBlockTask extends Task {
 			else
 				new Run();
 		}
-		catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
 		catch (InterruptedException e) {
 			LOGGER.info(MineNewBlockTask.class.getName() + " interrupted");
 		}
@@ -136,10 +134,10 @@ public class MineNewBlockTask extends Task {
 		 */
 		private final Block block;
 
-		private Run() throws NoSuchAlgorithmException, InterruptedException, TimeoutException {
+		private Run() throws InterruptedException, TimeoutException {
 			try {
 				LOGGER.info(logIntro + "started mining new block");
-				var hashing = HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes);
+				var hashing = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes));
 				this.generationSignature = previous.getNewGenerationSignature(hashing);
 				this.scoopNumber = previous.getNewScoopNumber(hashing);
 				requestDeadlineToEveryMiner();
@@ -167,17 +165,14 @@ public class MineNewBlockTask extends Task {
 					" and data: " + Hex.toHexString(generationSignature));
 
 			try {
-				node.getMiners().forEach(miner -> {
+				node.getMiners().forEach(miner -> UncheckedInterruptedException.wraps(() -> {
 					try {
 						miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
 					}
 					catch (TimeoutException e) {
 						node.signal(node.new MinerTimeoutEvent(miner));
 					}
-					catch (InterruptedException e) {
-						throw new UncheckedInterruptedException(e);
-					}
-				});
+				}));
 			}
 			catch (UncheckedInterruptedException e) {
 				throw e.getCause();
@@ -218,17 +213,17 @@ public class MineNewBlockTask extends Task {
 			waker.await();
 		}
 
-		private Block createNewBlock() throws NoSuchAlgorithmException {
+		private Block createNewBlock() {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
-			var hashingForBlocks = HashingAlgorithms.mk(node.getConfig().hashingForBlocks, (byte[] bytes) -> bytes);
+			var hashingForBlocks = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForBlocks, (byte[] bytes) -> bytes));
 			var hashOfPreviousBlock = hashingForBlocks.hash(previous.toByteArray());
 
-			return Block.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock, accelerationForNewBlock,
-					        deadline, hashOfPreviousBlock);
+			return Block.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock,
+					accelerationForNewBlock, deadline, hashOfPreviousBlock);
 		}
 
 		private long computeTotalWaitingTime(long waitingTime) {

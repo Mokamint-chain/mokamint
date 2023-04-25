@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal.blockchain;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -40,7 +39,7 @@ abstract class AbstractBlock extends AbstractMarshallable implements Block {
 	 * @throws IOException if the block cannot be unmarshalled
 	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
 	 */
-	static AbstractBlock from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+	static AbstractBlock from(UnmarshallingContext context) throws IOException {
 		// by reading the height, we can determine if it's a genesis block or not
 		long height = context.readLong();
 		if (height == 0L)

@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -39,7 +38,6 @@ import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.blockchain.Block;
 import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
-import io.mokamint.node.local.internal.tasks.UncheckedInterruptedException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -89,7 +87,7 @@ public class LocalNodeImpl implements Node {
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if the hashing algorithm for the nodes is nolt available
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) {
 		this.config = config;
 		this.app = app;
 		this.miners = new Miners(config, Stream.of(miners));

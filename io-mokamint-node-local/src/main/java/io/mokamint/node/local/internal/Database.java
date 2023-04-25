@@ -21,7 +21,6 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -83,10 +82,9 @@ public class Database implements AutoCloseable {
 	 * Creates the database.
 	 * 
 	 * @param config the configuration of the node using this database
-	 * @throws NoSuchAlgorithmException if the hashing algorithm for the blocks cannot be found
 	 */
-	public Database(Config config) throws NoSuchAlgorithmException {
-		this.hashingForBlocks = HashingAlgorithms.mk(config.hashingForBlocks, (byte[] bytes) -> bytes);
+	public Database(Config config) {
+		this.hashingForBlocks = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(config.hashingForBlocks, (byte[] bytes) -> bytes));
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStoreOfBlocks();
 		this.storeOfForwards = openStoreOfForwards();
@@ -97,10 +95,9 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing algorithm in its deadline
 	 * @throws IOException if the database is corrupted
 	 */
-	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException, IOException {
+	public Optional<Block> get(byte[] hash) throws IOException {
 		var bytesOfBlock = environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash)));
 		if (bytesOfBlock == null)
 			return Optional.empty();
@@ -130,18 +127,13 @@ public class Database implements AutoCloseable {
 
 		if (hash.isEmpty())
 			return Optional.empty();
-		else
-			try {
-				Block result = get(hash.get()).orElseThrow(() -> new IOException("the genesis reference is set to a hash not in the database"));
-				if (result instanceof GenesisBlock)
-					return Optional.of((GenesisBlock) result);
-				else
-					throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
-			}
-			catch (NoSuchAlgorithmException e) {
-				// the genesis block does not contain a deadline, hence this exception cannot occur if it is actually a genesis block
-				throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database", e);
-			}
+		else {
+			Block result = get(hash.get()).orElseThrow(() -> new IOException("the genesis reference is set to a hash not in the database"));
+			if (result instanceof GenesisBlock)
+				return Optional.of((GenesisBlock) result);
+			else
+				throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
+		}
 	}
 
 	/**
@@ -157,10 +149,9 @@ public class Database implements AutoCloseable {
 	 * Yields the head block of the blockchain in the database, if it has been se already.
 	 * 
 	 * @return the head block, if any
-	 * @throws NoSuchAlgorithmException if the deadline in the head block uses an unknown hashing algorithm
 	 * @throws IOException if the database is corrupted or the head reference is set to a hash not in the database
 	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException, IOException {
+	public Optional<Block> getHead() throws IOException {
 		var hash = getHeadHash();
 		if (hash.isEmpty())
 			return Optional.empty();
@@ -265,16 +256,14 @@ public class Database implements AutoCloseable {
 	private Store openStoreOfBlocks() {
 		var storeOfBlocks = new AtomicReference<Store>();
 		environment.executeInTransaction(txn -> storeOfBlocks.set(environment.openStoreWithoutDuplicates("blocks", txn)));
-		var store = storeOfBlocks.get();
 		LOGGER.info("opened the store of blocks inside the blockchain database");
-		return store;
+		return storeOfBlocks.get();
 	}
 
 	private Store openStoreOfForwards() {
 		var storeOfForwards = new AtomicReference<Store>();
 		environment.executeInTransaction(txn -> storeOfForwards.set(environment.openStoreWithoutDuplicates("forwards", txn)));
-		var store = storeOfForwards.get();
 		LOGGER.info("opened the store of forwards inside the blockchain database");
-		return store;
+		return storeOfForwards.get();
 	}
 }

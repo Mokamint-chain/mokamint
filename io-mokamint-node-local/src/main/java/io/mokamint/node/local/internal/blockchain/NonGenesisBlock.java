@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.local.internal.UncheckedNoSuchAlgorithmException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
@@ -86,12 +87,17 @@ public class NonGenesisBlock extends AbstractBlock {
 	 * @throws IOException if the block cannot be unmarshalled
 	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
 	 */
-	NonGenesisBlock(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+	NonGenesisBlock(long height, UnmarshallingContext context) throws IOException {
 		this.height = height;
 		this.totalWaitingTime = context.readLong();
 		this.weightedWaitingTime = context.readLong();
 		this.acceleration = context.readBigInteger();
-		this.deadline = Deadlines.from(context);
+		try {
+			this.deadline = Deadlines.from(context);
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new UncheckedNoSuchAlgorithmException(e);
+		}
 		int hashOfPreviousBlockLength = context.readCompactInt();
 		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
 	}

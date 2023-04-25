@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal.blockchain;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -46,9 +45,8 @@ public interface Block extends Marshallable {
 	 * @param context the context
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
-	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
 	 */
-	static Block from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+	static Block from(UnmarshallingContext context) throws IOException {
 		return AbstractBlock.from(context);
 	}
 
