@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.exceptions.UncheckedInterruptedException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;

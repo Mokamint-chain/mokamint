@@ -23,11 +23,21 @@
       <artifactId>io-hotmoka-marshalling</artifactId>
       <version>1.1.0</version>
     </dependency>
+    <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-exceptions</artifactId>
+      <version>1.1.0</version>
+    </dependency>
   	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-nonce-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+  	<dependency>
+  		<groupId>io.hotmoka</groupId>
+  		<artifactId>io-hotmoka-exceptions</artifactId>
+  		<version>1.1.0</version>
+  	</dependency>
   </dependencies>
 
   <build>

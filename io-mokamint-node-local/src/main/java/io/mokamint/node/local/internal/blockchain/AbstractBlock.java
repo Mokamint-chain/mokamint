@@ -16,13 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
-import java.io.IOException;
 import java.math.BigInteger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.local.internal.UncheckedIOException;
 import io.mokamint.nonce.api.Nonce;
 
 /**
@@ -37,22 +36,16 @@ abstract class AbstractBlock extends AbstractMarshallable implements Block {
 	 * 
 	 * @param context the context
 	 * @return the block
-	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	static AbstractBlock from(UnmarshallingContext context) {
 		// by reading the height, we can determine if it's a genesis block or not
-		try {
-			long height = context.readLong();
-			if (height == 0L)
-				return new GenesisBlock(context);
-			else if (height > 0L)
-				return new NonGenesisBlock(height, context);
-			else
-				throw new UncheckedIOException("negative block height");
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		long height = context.readLong();
+		if (height == 0L)
+			return new GenesisBlock(context);
+		else if (height > 0L)
+			return new NonGenesisBlock(height, context);
+		else
+			throw new UncheckedIOException("negative block height");
 	}
 
 	@Override

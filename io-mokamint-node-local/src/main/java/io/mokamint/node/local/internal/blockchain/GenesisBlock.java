@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +23,6 @@ import java.time.format.DateTimeFormatter;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.local.internal.UncheckedIOException;
 
 /**
  * The genesis block of a Mokamint blockchain.
@@ -50,13 +48,8 @@ public class GenesisBlock extends AbstractBlock {
 	 * @return the block
 	 */
 	GenesisBlock(UnmarshallingContext context) {
-		try {
-			String startDateTimeUTC = context.readUTF();
-			this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		String startDateTimeUTC = context.readUTF();
+		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 	}
 
 	public LocalDateTime getStartDateTimeUTC() {
@@ -93,12 +86,7 @@ public class GenesisBlock extends AbstractBlock {
 		// we write the height of the block anyway, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
-		try {
-			context.writeLong(0L);
-			context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		context.writeLong(0L);
+		context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 	}
 }

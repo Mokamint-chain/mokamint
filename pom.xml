@@ -217,6 +217,7 @@
                   io-hotmoka-crypto-api,
                   io-hotmoka-marshalling,
                   io-hotmoka-marshalling-api,
+                  io-hotmoka-exceptions,
                   <!-- we exclude all modules that go into the automatic folder -->
                   io-hotmoka-toml,
                   io-hotmoka-xodus,
@@ -266,7 +267,8 @@
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
                   io-hotmoka-marshalling,
-                  io-hotmoka-marshalling-api
+                  io-hotmoka-marshalling-api,
+                  io-hotmoka-exceptions,
                 </includeArtifactIds>
               </configuration>
             </execution>

@@ -24,6 +24,7 @@ module io.mokamint.node.local {
 	requires io.hotmoka.marshalling;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.annotations;
+	requires io.hotmoka.exceptions;
 	requires io.hotmoka.toml;
 	requires io.hotmoka.xodus;
 	requires java.logging;

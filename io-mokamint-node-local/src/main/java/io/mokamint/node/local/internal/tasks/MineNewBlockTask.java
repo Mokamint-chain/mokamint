@@ -28,11 +28,11 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.exceptions.UncheckedInterruptedException;
+import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.UncheckedInterruptedException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.UncheckedNoSuchAlgorithmException;
 import io.mokamint.node.local.internal.blockchain.Block;
 import io.mokamint.nonce.api.Deadline;
 

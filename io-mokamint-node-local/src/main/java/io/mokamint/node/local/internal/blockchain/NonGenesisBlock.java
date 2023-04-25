@@ -16,15 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
-import java.io.IOException;
+//import java.io.IOException;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.local.internal.UncheckedIOException;
-import io.mokamint.node.local.internal.UncheckedNoSuchAlgorithmException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
@@ -87,21 +84,13 @@ public class NonGenesisBlock extends AbstractBlock {
 	 * @param context the context
 	 */
 	NonGenesisBlock(long height, UnmarshallingContext context) {
-		try {
-			this.height = height;
-			this.totalWaitingTime = context.readLong();
-			this.weightedWaitingTime = context.readLong();
-			this.acceleration = context.readBigInteger();
-			this.deadline = Deadlines.from(context);
-			int hashOfPreviousBlockLength = context.readCompactInt();
-			this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new UncheckedNoSuchAlgorithmException(e);
-		}
+		this.height = height;
+		this.totalWaitingTime = context.readLong();
+		this.weightedWaitingTime = context.readLong();
+		this.acceleration = context.readBigInteger();
+		this.deadline = Deadlines.from(context);
+		int hashOfPreviousBlockLength = context.readCompactInt();
+		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
 	}
 
 	@Override
@@ -155,17 +144,12 @@ public class NonGenesisBlock extends AbstractBlock {
 		// we write the height of the block first, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
-		try {
-			context.writeLong(height);
-			context.writeLong(totalWaitingTime);
-			context.writeLong(weightedWaitingTime);
-			context.writeBigInteger(acceleration);
-			deadline.into(context);
-			context.writeCompactInt(hashOfPreviousBlock.length);
-			context.write(hashOfPreviousBlock);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		context.writeLong(height);
+		context.writeLong(totalWaitingTime);
+		context.writeLong(weightedWaitingTime);
+		context.writeBigInteger(acceleration);
+		deadline.into(context);
+		context.writeCompactInt(hashOfPreviousBlock.length);
+		context.write(hashOfPreviousBlock);
 	}
 }

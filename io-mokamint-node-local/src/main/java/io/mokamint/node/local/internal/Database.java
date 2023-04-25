@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
