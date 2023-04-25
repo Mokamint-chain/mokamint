@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.io.ByteArrayInputStream;
@@ -32,11 +33,13 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.UnmarshallingContexts;
+import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.blockchain.Block;
+import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 
 /**
@@ -58,6 +61,16 @@ public class Database implements AutoCloseable {
 	 * The Xodus store that holds the blocks of the chain.
 	 */
 	private final Store storeOfBlocks;
+
+	/**
+	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.
+	 */
+	private final static ByteIterable genesis = fromByte((byte) 42);
+	
+	/**
+	 * The key mapped in the {@link #storeOfBlocks} to the head block.
+	 */
+	private final static ByteIterable head = fromByte((byte) 19);
 
 	/**
 	 * The Xodus store that maps each block to its immediate successor(s).
@@ -95,6 +108,45 @@ public class Database implements AutoCloseable {
 			try (var bais = new ByteArrayInputStream(bytesOfBlock.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				return Optional.of(Block.from(context));
 			}
+	}
+
+	/**
+	 * Yields the first genesis block that has been added to this database, if any.
+	 * 
+	 * @return the genesis block, if any
+	 * @throws IOException if the database is corrupted
+	 */
+	public Optional<GenesisBlock> getGenesis() throws IOException {
+		AtomicReference<ByteIterable> hashOfGenesis = new AtomicReference<>();
+
+		ByteIterable bytesOfGenesis = environment.computeInReadonlyTransaction(txn -> {
+			hashOfGenesis.set(storeOfBlocks.get(txn, genesis));
+			if (hashOfGenesis.get() == null)
+				return null;
+			else
+				return storeOfBlocks.get(txn, hashOfGenesis.get());
+		});
+
+		if (hashOfGenesis.get() == null)
+			return Optional.empty();
+		else if (bytesOfGenesis == null)
+			throw new IOException("the genesis reference is set but it refers to a block that is not in the database");
+		else {
+			Block result;
+
+			try (var bais = new ByteArrayInputStream(bytesOfGenesis.getBytes()); var context = UnmarshallingContexts.of(bais)) {
+				result = Block.from(context);
+			}
+			catch (NoSuchAlgorithmException e) {
+				// the creation of genesis blocks does not throw this
+				throw new IOException("the genesis reference is set but it refers to a non-genesis block", e);
+			}
+
+			if (result instanceof GenesisBlock)
+				return Optional.of((GenesisBlock) result);
+			else
+				throw new IOException("the genesis reference is set but it refers to a non-genesis block");
+		}
 	}
 
 	/**
@@ -144,9 +196,14 @@ public class Database implements AutoCloseable {
 				var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
 				storeOfForwards.put(txn, previousKey, newForwards);
 			}
+			else if (block instanceof GenesisBlock)
+				if (storeOfBlocks.get(txn, genesis) == null) {
+					storeOfBlocks.put(txn, genesis, fromBytes(hashOfBlock));
+					LOGGER.info("setting block " + Hex.toHexString(hashOfBlock) + " as genesis");
+				}
 		});
 
-		LOGGER.info("height " + block.getHeight() + ": added block " + Hex.toHexString(hashOfBlock) + " to the database");
+		LOGGER.info("height " + block.getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
 	}
 
 	@Override
