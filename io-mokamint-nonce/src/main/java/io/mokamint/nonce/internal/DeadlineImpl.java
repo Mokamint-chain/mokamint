@@ -66,7 +66,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		int valueLength = context.readCompactInt();
 		this.value = context.readBytes(valueLength, "mismatch in deadline's value length");
 		this.scoopNumber = context.readInt();
-		int dataLength = context.readCompactInt();
+		int dataLength = context.readInt();
 		this.data = context.readBytes(dataLength, "mismatch in deadline's data length");
 		String hashing = context.readUTF();
 		this.hashing = HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes);
@@ -158,8 +158,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		context.writeLong(progressive);
 		context.writeCompactInt(value.length);
 		context.write(value);
-		context.writeCompactInt(scoopNumber);
-		context.writeCompactInt(data.length);
+		context.writeInt(scoopNumber);
+		context.writeInt(data.length);
 		context.write(data);
 		context.writeUTF(hashing.getName());
 	}

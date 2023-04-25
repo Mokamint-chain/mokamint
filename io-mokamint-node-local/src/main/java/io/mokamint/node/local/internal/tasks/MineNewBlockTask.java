@@ -66,6 +66,7 @@ public class MineNewBlockTask extends Task {
 	 * 
 	 * @param node the node for which this task is working
 	 * @param previous the node for which a subsequent node is being built
+	 * @param startTime the time when the mining is considered to be started
 	 */
 	public MineNewBlockTask(LocalNodeImpl node, Block previous, LocalDateTime startTime) {
 		node.super();

@@ -111,42 +111,61 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
+	 * Yields the hash of the first genesis block that has been added to this database, if any.
+	 * 
+	 * @return the hash of the genesis block, if any
+	 */
+	public Optional<byte[]> getGenesisHash() {
+		return environment.computeInReadonlyTransaction(txn -> Optional.ofNullable(storeOfBlocks.get(txn, genesis)).map(ByteIterable::getBytes));
+	}
+
+	/**
 	 * Yields the first genesis block that has been added to this database, if any.
 	 * 
 	 * @return the genesis block, if any
 	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<GenesisBlock> getGenesis() throws IOException {
-		AtomicReference<ByteIterable> hashOfGenesis = new AtomicReference<>();
+		var hash = getGenesisHash();
 
-		ByteIterable bytesOfGenesis = environment.computeInReadonlyTransaction(txn -> {
-			hashOfGenesis.set(storeOfBlocks.get(txn, genesis));
-			if (hashOfGenesis.get() == null)
-				return null;
-			else
-				return storeOfBlocks.get(txn, hashOfGenesis.get());
-		});
-
-		if (hashOfGenesis.get() == null)
+		if (hash.isEmpty())
 			return Optional.empty();
-		else if (bytesOfGenesis == null)
-			throw new IOException("the genesis reference is set but it refers to a block that is not in the database");
-		else {
-			Block result;
-
-			try (var bais = new ByteArrayInputStream(bytesOfGenesis.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				result = Block.from(context);
+		else
+			try {
+				Block result = get(hash.get()).orElseThrow(() -> new IOException("the genesis reference is set to a hash not in the database"));
+				if (result instanceof GenesisBlock)
+					return Optional.of((GenesisBlock) result);
+				else
+					throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
 			}
 			catch (NoSuchAlgorithmException e) {
-				// the creation of genesis blocks does not throw this
-				throw new IOException("the genesis reference is set but it refers to a non-genesis block", e);
+				// the genesis block does not contain a deadline, hence this exception cannot occur if it is actually a genesis block
+				throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database", e);
 			}
+	}
 
-			if (result instanceof GenesisBlock)
-				return Optional.of((GenesisBlock) result);
-			else
-				throw new IOException("the genesis reference is set but it refers to a non-genesis block");
-		}
+	/**
+	 * Yields the hash of the head block of the blockchain in the database, if it has been set already.
+	 * 
+	 * @return the hash of the head block, if any
+	 */
+	public Optional<byte[]> getHeadHash() {
+		return environment.computeInReadonlyTransaction(txn -> Optional.ofNullable(storeOfBlocks.get(txn, head)).map(ByteIterable::getBytes));
+	}
+
+	/**
+	 * Yields the head block of the blockchain in the database, if it has been se already.
+	 * 
+	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the deadline in the head block uses an unknown hashing algorithm
+	 * @throws IOException if the database is corrupted or the head reference is set to a hash not in the database
+	 */
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, IOException {
+		var hash = getHeadHash();
+		if (hash.isEmpty())
+			return Optional.empty();
+		else
+			return Optional.of(get(hash.get()).orElseThrow(() -> new IOException("the head reference is set to a hash not in the database")));
 	}
 
 	/**
@@ -156,7 +175,7 @@ public class Database implements AutoCloseable {
 	 * @return the hashes
 	 * @throws IOException if the database is corrupted
 	 */
-	public Stream<byte[]> forwards(byte[] hash) throws IOException {
+	public Stream<byte[]> getForwards(byte[] hash) throws IOException {
 		var forwards = environment.computeInReadonlyTransaction(txn -> storeOfForwards.get(txn, fromBytes(hash)));
 		
 		if (forwards == null)
@@ -181,10 +200,12 @@ public class Database implements AutoCloseable {
 
 	/**
 	 * Adds the given block to the database of blocks.
+	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
+	 * @return the hash of the block
 	 */
-	public void add(Block block) {
+	public byte[] add(Block block) {
 		byte[] bytesOfBlock = block.toByteArray();
 		byte[] hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
@@ -204,6 +225,17 @@ public class Database implements AutoCloseable {
 		});
 
 		LOGGER.info("height " + block.getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
+
+		return hashOfBlock;
+	}
+
+	/**
+	 * Sets the head reference of the chain to the block with the given hash.
+	 * 
+	 * @param hash the hash of the block that becomes the head reference of the blockchain
+	 */
+	public void setHeadHash(byte[] hash) {
+		environment.executeInTransaction(txn -> storeOfBlocks.put(txn, head, fromBytes(hash)));
 	}
 
 	@Override

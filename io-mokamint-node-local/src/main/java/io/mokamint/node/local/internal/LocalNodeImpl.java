@@ -16,10 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -60,11 +63,6 @@ public class LocalNodeImpl implements Node {
 	private final Miners miners;
 
 	/**
-	 * The genesis block of the blockchain.
-	 */
-	private final GenesisBlock genesis;
-
-	/**
 	 * The database containing the blockchain.
 	 */
 	private final Database db;
@@ -96,10 +94,31 @@ public class LocalNodeImpl implements Node {
 		this.app = app;
 		this.miners = new Miners(config, Stream.of(miners));
 		this.db = new Database(config);
-		this.genesis = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 
-		// for now, everything starts with the discovery of the genesis block
-		signal(new BlockDiscoveryEvent(genesis));
+		Optional<Block> head;
+		try {
+			head = db.getHead();
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		if (head.isPresent()) {
+			LocalDateTime nextBlockStartTime;
+
+			try {
+				nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			execute(new MineNewBlockTask(this, head.get(), nextBlockStartTime));
+		}
+		else {
+			GenesisBlock genesis = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+			signal(new BlockDiscoveryEvent(genesis));
+		}
 	}
 
 	@Override
@@ -214,8 +233,17 @@ public class LocalNodeImpl implements Node {
 
 		@Override @OnThread("events")
 		public void run() {
-			db.add(block);
-			LocalDateTime nextBlockStartTime = genesis.getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			db.setHeadHash(db.add(block));
+			LocalDateTime nextBlockStartTime;
+
+			try {
+				nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			}
+			catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+
+			System.out.println(this);
 			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
 		}
 	}

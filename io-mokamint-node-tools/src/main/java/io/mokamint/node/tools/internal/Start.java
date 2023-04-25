@@ -17,14 +17,12 @@ limitations under the License.
 package io.mokamint.node.tools.internal;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.util.Comparator;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
@@ -73,7 +71,7 @@ public class Start extends AbstractCommand {
 			}
 		else {
 			var config = getConfig();
-			createEmptyChainDirectory(config.dir);
+			ensureExists(config.dir);
 
 			if (paths.length > 0)
 				try (var miner = LocalMiners.of(plots); var node = LocalNodes.of(config, new TestApplication(), miner)) {
@@ -88,23 +86,16 @@ public class Start extends AbstractCommand {
 	}
 
 	/**
-	 * Creates the given directory for the chain and application databases.
-	 * If the directory exists, it will be erased after asking for confirmation.
+	 * Creates the given directory for the blockchain.
+	 * If the directory exists, nothing will happen.
 	 * 
 	 * @param dir the directory to create, together with its parent directories, if any
-	 * @throws IOException if the directory could not be created or if the user does not confirm to delete it
+	 * @throws IOException if the directory could not be created
 	 */
-	private void createEmptyChainDirectory(Path dir) throws IOException {
+	private void ensureExists(Path dir) throws IOException {
 		if (Files.exists(dir)) {
-			System.out.print(Ansi.AUTO.string("@|red The path \"" + dir + "\" already exists! Do you want to delete it to start a new blockchain? (yes/no) |@"));
-			String answer = System.console().readLine();
-			if (!"yes".equals(answer))
-				throw new IOException("the user rejected the creation of the blockchain directory");
-
-			Files.walk(dir)
-				.sorted(Comparator.reverseOrder())
-				.map(Path::toFile)
-				.forEach(File::delete);
+			System.out.println(Ansi.AUTO.string("@|red The path \"" + dir + "\" already exists! Will restart the blockchain from the old database.|@"));
+			System.out.println(Ansi.AUTO.string("@|red If you want to start the blockchain from scratch, delete that path and start again this node.|@"));
 		}
 
 		Files.createDirectories(dir);
