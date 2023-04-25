@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
@@ -44,9 +43,8 @@ public interface Block extends Marshallable {
 	 * 
 	 * @param context the context
 	 * @return the block
-	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	static Block from(UnmarshallingContext context) throws IOException {
+	static Block from(UnmarshallingContext context) {
 		return AbstractBlock.from(context);
 	}
 

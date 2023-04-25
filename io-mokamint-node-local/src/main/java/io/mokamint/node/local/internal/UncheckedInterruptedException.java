@@ -19,6 +19,10 @@ package io.mokamint.node.local.internal;
 @SuppressWarnings("serial")
 public class UncheckedInterruptedException extends RuntimeException {
 
+	public UncheckedInterruptedException(String message) {
+		super(new InterruptedException(message));
+	}
+
 	public UncheckedInterruptedException(InterruptedException cause) {
 		super(cause);
 	}

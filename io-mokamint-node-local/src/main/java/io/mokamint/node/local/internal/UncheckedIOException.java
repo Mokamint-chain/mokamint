@@ -16,51 +16,51 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.security.NoSuchAlgorithmException;
+import java.io.IOException;
 
 @SuppressWarnings("serial")
-public class UncheckedNoSuchAlgorithmException extends RuntimeException {
+public class UncheckedIOException extends java.io.UncheckedIOException {
 
-	public UncheckedNoSuchAlgorithmException(String message) {
-		super(new NoSuchAlgorithmException(message));
+	public UncheckedIOException(String message) {
+		super(new IOException(message));
 	}
 
-	public UncheckedNoSuchAlgorithmException(NoSuchAlgorithmException cause) {
+	public UncheckedIOException(IOException cause) {
 		super(cause);
 	}
 
-	public UncheckedNoSuchAlgorithmException(String message, NoSuchAlgorithmException cause) {
+	public UncheckedIOException(String message, IOException cause) {
 		super(message, cause);
 	}
 
 	@Override
-	public UncheckedNoSuchAlgorithmException getCause() {
-		return (UncheckedNoSuchAlgorithmException) super.getCause();
+	public IOException getCause() {
+		return (IOException) super.getCause();
 	}
 
 	public interface SupplierWithException<T> {
-		T get() throws NoSuchAlgorithmException;
+		T get() throws IOException;
 	}
 
 	public static <T> T wraps(SupplierWithException<T> supplier) {
 		try {
 			return supplier.get();
 		}
-		catch (NoSuchAlgorithmException e) {
-			throw new UncheckedNoSuchAlgorithmException(e);
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 
 	public interface CodeWithException {
-		void apply() throws NoSuchAlgorithmException;
+		void apply() throws IOException;
 	}
 
 	public static void wraps(CodeWithException code) {
 		try {
 			code.apply();
 		}
-		catch (NoSuchAlgorithmException e) {
-			throw new UncheckedNoSuchAlgorithmException(e);
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 }

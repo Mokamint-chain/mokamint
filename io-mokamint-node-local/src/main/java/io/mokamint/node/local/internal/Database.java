@@ -21,6 +21,7 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -97,13 +98,16 @@ public class Database implements AutoCloseable {
 	 * @return the block, if any
 	 * @throws IOException if the database is corrupted
 	 */
-	public Optional<Block> get(byte[] hash) throws IOException {
+	public Optional<Block> get(byte[] hash) {
 		var bytesOfBlock = environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash)));
 		if (bytesOfBlock == null)
 			return Optional.empty();
 		else
 			try (var bais = new ByteArrayInputStream(bytesOfBlock.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				return Optional.of(Block.from(context));
+			}
+			catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
 	}
 
@@ -122,17 +126,22 @@ public class Database implements AutoCloseable {
 	 * @return the genesis block, if any
 	 * @throws IOException if the database is corrupted
 	 */
-	public Optional<GenesisBlock> getGenesis() throws IOException {
+	public Optional<GenesisBlock> getGenesis() {
 		var hash = getGenesisHash();
 
 		if (hash.isEmpty())
 			return Optional.empty();
 		else {
-			Block result = get(hash.get()).orElseThrow(() -> new IOException("the genesis reference is set to a hash not in the database"));
-			if (result instanceof GenesisBlock)
-				return Optional.of((GenesisBlock) result);
-			else
-				throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
+			try {
+				Block result = get(hash.get()).orElseThrow(() -> new IOException("the genesis reference is set to a hash not in the database"));
+				if (result instanceof GenesisBlock)
+					return Optional.of((GenesisBlock) result);
+				else
+					throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
+			}
+			catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 	}
 
@@ -151,12 +160,17 @@ public class Database implements AutoCloseable {
 	 * @return the head block, if any
 	 * @throws IOException if the database is corrupted or the head reference is set to a hash not in the database
 	 */
-	public Optional<Block> getHead() throws IOException {
+	public Optional<Block> getHead() {
 		var hash = getHeadHash();
 		if (hash.isEmpty())
 			return Optional.empty();
 		else
-			return Optional.of(get(hash.get()).orElseThrow(() -> new IOException("the head reference is set to a hash not in the database")));
+			try {
+				return Optional.of(get(hash.get()).orElseThrow(() -> new IOException("the head reference is set to a hash not in the database")));
+			}
+			catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 	}
 
 	/**
@@ -166,7 +180,7 @@ public class Database implements AutoCloseable {
 	 * @return the hashes
 	 * @throws IOException if the database is corrupted
 	 */
-	public Stream<byte[]> getForwards(byte[] hash) throws IOException {
+	public Stream<byte[]> getForwards(byte[] hash) {
 		var forwards = environment.computeInReadonlyTransaction(txn -> storeOfForwards.get(txn, fromBytes(hash)));
 		
 		if (forwards == null)
@@ -175,7 +189,12 @@ public class Database implements AutoCloseable {
 			int size = hashingForBlocks.length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
-				throw new IOException("the forward map has been corrupted");
+				try {
+					throw new IOException("the forward map has been corrupted");
+				}
+				catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			else if (hashes.length == size) // frequent case, worth optimizing
 				return Stream.of(hashes);
 			else

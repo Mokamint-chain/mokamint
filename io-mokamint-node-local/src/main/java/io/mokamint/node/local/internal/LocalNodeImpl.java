@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -93,24 +91,9 @@ public class LocalNodeImpl implements Node {
 		this.miners = new Miners(config, Stream.of(miners));
 		this.db = new Database(config);
 
-		Optional<Block> head;
-		try {
-			head = db.getHead();
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
+		Optional<Block> head = db.getHead();
 		if (head.isPresent()) {
-			LocalDateTime nextBlockStartTime;
-
-			try {
-				nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
-			}
-			catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-
+			LocalDateTime nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(this, head.get(), nextBlockStartTime));
 		}
 		else {
@@ -232,16 +215,7 @@ public class LocalNodeImpl implements Node {
 		@Override @OnThread("events")
 		public void run() {
 			db.setHeadHash(db.add(block));
-			LocalDateTime nextBlockStartTime;
-
-			try {
-				nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			}
-			catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-
-			System.out.println(this);
+			LocalDateTime nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
 		}
 	}

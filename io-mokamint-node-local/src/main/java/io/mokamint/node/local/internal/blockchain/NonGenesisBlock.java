@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.internal.blockchain;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 
@@ -84,22 +85,23 @@ public class NonGenesisBlock extends AbstractBlock {
 	 * 
 	 * @param height the height of the block
 	 * @param context the context
-	 * @throws IOException if the block cannot be unmarshalled
-	 * @throws NoSuchAlgorithmException if the deadline of the block uses an unknown hashing algorithm
 	 */
-	NonGenesisBlock(long height, UnmarshallingContext context) throws IOException {
-		this.height = height;
-		this.totalWaitingTime = context.readLong();
-		this.weightedWaitingTime = context.readLong();
-		this.acceleration = context.readBigInteger();
+	NonGenesisBlock(long height, UnmarshallingContext context) {
 		try {
+			this.height = height;
+			this.totalWaitingTime = context.readLong();
+			this.weightedWaitingTime = context.readLong();
+			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context);
+			int hashOfPreviousBlockLength = context.readCompactInt();
+			this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new UncheckedNoSuchAlgorithmException(e);
 		}
-		int hashOfPreviousBlockLength = context.readCompactInt();
-		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
 	}
 
 	@Override
@@ -149,16 +151,21 @@ public class NonGenesisBlock extends AbstractBlock {
 	}
 
 	@Override
-	public void into(MarshallingContext context) throws IOException {
+	public void into(MarshallingContext context) {
 		// we write the height of the block first, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
-		context.writeLong(height);
-		context.writeLong(totalWaitingTime);
-		context.writeLong(weightedWaitingTime);
-		context.writeBigInteger(acceleration);
-		deadline.into(context);
-		context.writeCompactInt(hashOfPreviousBlock.length);
-		context.write(hashOfPreviousBlock);
+		try {
+			context.writeLong(height);
+			context.writeLong(totalWaitingTime);
+			context.writeLong(weightedWaitingTime);
+			context.writeBigInteger(acceleration);
+			deadline.into(context);
+			context.writeCompactInt(hashOfPreviousBlock.length);
+			context.write(hashOfPreviousBlock);
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.internal.blockchain;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -47,11 +48,15 @@ public class GenesisBlock extends AbstractBlock {
 	 * 
 	 * @param context the context
 	 * @return the block
-	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	GenesisBlock(UnmarshallingContext context) throws IOException {
-		String startDateTimeUTC = context.readUTF();
-		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+	GenesisBlock(UnmarshallingContext context) {
+		try {
+			String startDateTimeUTC = context.readUTF();
+			this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	public LocalDateTime getStartDateTimeUTC() {
@@ -84,11 +89,16 @@ public class GenesisBlock extends AbstractBlock {
 	}
 
 	@Override
-	public void into(MarshallingContext context) throws IOException {
+	public void into(MarshallingContext context) {
 		// we write the height of the block anyway, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
-		context.writeLong(0L);
-		context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
+		try {
+			context.writeLong(0L);
+			context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }
