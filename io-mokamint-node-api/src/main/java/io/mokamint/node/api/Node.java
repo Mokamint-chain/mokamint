@@ -16,10 +16,20 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.Optional;
+
 /**
  * A node of a Mokamint blockchain.
  */
 public interface Node extends AutoCloseable {
+
+	/**
+	 * Yields the block with the given hash, if it has been seen by this node.
+	 * 
+	 * @param hash the hash of the block
+	 * @return the block, if any
+	 */
+	Optional<Block> getBlock(byte[] hash);
 
 	@Override
 	void close();

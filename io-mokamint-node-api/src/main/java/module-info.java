@@ -16,4 +16,6 @@ limitations under the License.
 
 module io.mokamint.node.api {
 	exports io.mokamint.node.api;
+	requires transitive io.hotmoka.crypto.api;
+	requires io.hotmoka.marshalling.api;
 }

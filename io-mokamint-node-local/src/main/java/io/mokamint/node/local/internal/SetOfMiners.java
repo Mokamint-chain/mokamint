@@ -30,7 +30,7 @@ import io.mokamint.node.local.Config;
  * A set of miners.
  */
 @ThreadSafe
-public class Miners {
+public class SetOfMiners {
 
 	/**
 	 * The configuration of the node having this set of miners.
@@ -49,7 +49,7 @@ public class Miners {
 	 * @param config the configuration of the node having this set of miners
 	 * @param miners the miners contained in the set
 	 */
-	public Miners(Config config, Stream<Miner> miners) {
+	public SetOfMiners(Config config, Stream<Miner> miners) {
 		this.config = config;
 
 		long minerInitialPoints = config.minerInitialPoints;

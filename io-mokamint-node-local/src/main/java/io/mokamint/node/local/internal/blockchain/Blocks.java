@@ -19,15 +19,14 @@ package io.mokamint.node.local.internal.blockchain;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
-import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.marshalling.api.Marshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.Block;
 import io.mokamint.nonce.api.Deadline;
 
 /**
- * A block of the Mokamint blockchain.
+ * Providers of blocks.
  */
-public interface Block extends Marshallable {
+public interface Blocks {
 
 	static NonGenesisBlock of(long blockNumber, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
 			Deadline deadline, byte[] hashOfPreviousBlock) {
@@ -47,39 +46,4 @@ public interface Block extends Marshallable {
 	static Block from(UnmarshallingContext context) {
 		return AbstractBlock.from(context);
 	}
-
-	long getTotalWaitingTime();
-
-	long getWeightedWaitingTime();
-
-	/**
-	 * Yields the acceleration used for the creation of this block, that is,
-	 * a value used to divide the deadline to derive the time needed to wait for it.
-	 * The higher, the shorter the time. This value changes from block to block in order
-	 * to cope with varying mining power in the network. It is the inverse of Bitcoin's difficulty.
-	 */
-	BigInteger getAcceleration();
-
-	/**
-	 * Yields the height of the node, counting from 0 for the genesis block.
-	 * 
-	 * @return the height of the node
-	 */
-	long getHeight();
-
-	/**
-	 * Yields the generation signature for the deadline of the next block.
-	 * 
-	 * @param hashing the hashing algorithm to use to compute the generation signature
-	 * @return the generation signature
-	 */
-	byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing);
-
-	/**
-	 * Yields the scoop number for the deadline of the next block.
-	 * 
-	 * @param hashing the hashing algorithm to use to compute the scoop number
-	 * @return the scoop number
-	 */
-	int getNewScoopNumber(HashingAlgorithm<byte[]> hashing);
 }

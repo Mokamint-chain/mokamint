@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
-//import java.io.IOException;
 import java.math.BigInteger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -36,14 +35,12 @@ public class NonGenesisBlock extends AbstractBlock {
 	private final long height;
 
 	/**
-	 * The total waiting time for the construction of the blockchain, from
-	 * the genesis block to this block, excluded.
+	 * The total waiting time between the creation of the genesis block and the creation of this block.
 	 */
 	private final long totalWaitingTime;
 
 	/**
-	 * The weighted waiting time for the construction of the blockchain until
-	 * this block (excluded).
+	 * The weighted waiting time between the creation of the genesis block and the creation of this block.
 	 */
 	private final long weightedWaitingTime;
 

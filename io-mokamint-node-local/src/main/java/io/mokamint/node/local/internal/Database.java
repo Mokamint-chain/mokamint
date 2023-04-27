@@ -38,8 +38,9 @@ import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.local.Config;
-import io.mokamint.node.local.internal.blockchain.Block;
+import io.mokamint.node.local.internal.blockchain.Blocks;
 import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 
@@ -105,7 +106,7 @@ public class Database implements AutoCloseable {
 			return Optional.empty();
 		else
 			try (var bais = new ByteArrayInputStream(bytesOfBlock.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return Optional.of(Block.from(context));
+				return Optional.of(Blocks.from(context));
 			}
 			catch (IOException e) {
 				throw new UncheckedIOException(e);

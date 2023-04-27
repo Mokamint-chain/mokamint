@@ -22,6 +22,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.Block;
 import io.mokamint.nonce.api.Nonce;
 
 /**
@@ -49,7 +50,10 @@ abstract class AbstractBlock extends AbstractMarshallable implements Block {
 	}
 
 	@Override
-	public int getNewScoopNumber(HashingAlgorithm<byte[]> hashing) {
+	public abstract byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing);
+
+	@Override
+	public final int getNewScoopNumber(HashingAlgorithm<byte[]> hashing) {
 		byte[] generationHash = hashing.hash(concat(getNewGenerationSignature(hashing), longToBytesBE(getHeight() + 1)));
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
 	}

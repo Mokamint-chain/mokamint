@@ -33,9 +33,10 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedInterruptedException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Node;
 import io.mokamint.node.local.Config;
-import io.mokamint.node.local.internal.blockchain.Block;
+import io.mokamint.node.local.internal.blockchain.Blocks;
 import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 
@@ -58,7 +59,7 @@ public class LocalNodeImpl implements Node {
 	/**
 	 * The miners connected to the node.
 	 */
-	private final Miners miners;
+	private final SetOfMiners miners;
 
 	/**
 	 * The database containing the blockchain.
@@ -90,7 +91,7 @@ public class LocalNodeImpl implements Node {
 	public LocalNodeImpl(Config config, Application app, Miner... miners) {
 		this.config = config;
 		this.app = app;
-		this.miners = new Miners(config, Stream.of(miners));
+		this.miners = new SetOfMiners(config, Stream.of(miners));
 		this.db = new Database(config);
 
 		Optional<Block> head = db.getHead();
@@ -99,9 +100,14 @@ public class LocalNodeImpl implements Node {
 			execute(new MineNewBlockTask(this, head.get(), nextBlockStartTime));
 		}
 		else {
-			GenesisBlock genesis = Block.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+			GenesisBlock genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 			signal(new BlockDiscoveryEvent(genesis));
 		}
+	}
+
+	@Override
+	public Optional<Block> getBlock(byte[] hash) {
+		return db.get(hash);
 	}
 
 	@Override
@@ -144,7 +150,7 @@ public class LocalNodeImpl implements Node {
 	 * 
 	 * @return the miners
 	 */
-	public Miners getMiners() {
+	public SetOfMiners getMiners() {
 		return miners;
 	}
 
