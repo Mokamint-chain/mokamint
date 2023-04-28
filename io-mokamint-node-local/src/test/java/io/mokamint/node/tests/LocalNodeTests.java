@@ -41,9 +41,9 @@ import org.junit.jupiter.api.Timeout;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 import io.mokamint.nonce.api.Deadline;
 
 public class LocalNodeTests {
@@ -104,9 +104,8 @@ public class LocalNodeTests {
 			public void signal(Event event) {
 				if (event instanceof BlockDiscoveryEvent) {
 					var block = ((BlockDiscoveryEvent) event).block;
-					if (block instanceof NonGenesisBlock && Arrays.equals(((NonGenesisBlock) block).getDeadline().getValue(), deadlineValue)) {
+					if (block instanceof NonGenesisBlock && Arrays.equals(((NonGenesisBlock) block).getDeadline().getValue(), deadlineValue))
 						semaphore.release();
-					}
 				}
 					
 				super.signal(event);

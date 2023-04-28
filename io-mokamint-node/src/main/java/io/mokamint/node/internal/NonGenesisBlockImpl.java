@@ -14,20 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.internal;
 
 import java.math.BigInteger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
 /**
- * A non-genesis block of the Mokamint blockchain.
+ * The implementation of a non-genesis block of the Mokamint blockchain.
  */
-public class NonGenesisBlock extends AbstractBlock {
+public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBlock {
 
 	/**
 	 * The block height, non-negative, counting from 0, which is the genesis block.
@@ -64,7 +65,7 @@ public class NonGenesisBlock extends AbstractBlock {
 	/**
 	 * Creates a new non-genesis block.
 	 */
-	NonGenesisBlock(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
+	public NonGenesisBlockImpl(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
 		this.height = height;
 		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
@@ -80,7 +81,7 @@ public class NonGenesisBlock extends AbstractBlock {
 	 * @param height the height of the block
 	 * @param context the context
 	 */
-	NonGenesisBlock(long height, UnmarshallingContext context) {
+	NonGenesisBlockImpl(long height, UnmarshallingContext context) {
 		this.height = height;
 		this.totalWaitingTime = context.readLong();
 		this.weightedWaitingTime = context.readLong();
@@ -110,20 +111,12 @@ public class NonGenesisBlock extends AbstractBlock {
 		return height;
 	}
 
-	/**
-	 * Yields the deadline computed for this block.
-	 * 
-	 * @return the deadline
-	 */
+	@Override
 	public Deadline getDeadline() {
 		return deadline;
 	}
 
-	/**
-	 * Yields the reference to the previous block.
-	 * 
-	 * @return the reference to the previous block
-	 */
+	@Override
 	public byte[] getHashOfPreviousBlock() {
 		return hashOfPreviousBlock;
 	}

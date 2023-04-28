@@ -33,11 +33,11 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedInterruptedException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Node;
 import io.mokamint.node.local.Config;
-import io.mokamint.node.local.internal.blockchain.Blocks;
-import io.mokamint.node.local.internal.blockchain.GenesisBlock;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 
 /**

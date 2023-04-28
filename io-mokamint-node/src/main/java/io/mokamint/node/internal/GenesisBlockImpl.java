@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.internal;
 
 import java.math.BigInteger;
 import java.time.LocalDateTime;
@@ -23,11 +23,12 @@ import java.time.format.DateTimeFormatter;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.GenesisBlock;
 
 /**
- * The genesis block of a Mokamint blockchain.
+ * The implementation of a genesis block of a Mokamint blockchain.
  */
-public class GenesisBlock extends AbstractBlock {
+public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	private final LocalDateTime startDateTimeUTC;
 
@@ -36,7 +37,7 @@ public class GenesisBlock extends AbstractBlock {
 	 */
 	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
-	GenesisBlock(LocalDateTime startDateTimeUTC) {
+	public GenesisBlockImpl(LocalDateTime startDateTimeUTC) {
 		this.startDateTimeUTC = startDateTimeUTC;
 	}
 
@@ -47,11 +48,12 @@ public class GenesisBlock extends AbstractBlock {
 	 * @param context the context
 	 * @return the block
 	 */
-	GenesisBlock(UnmarshallingContext context) {
+	GenesisBlockImpl(UnmarshallingContext context) {
 		String startDateTimeUTC = context.readUTF();
 		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 	}
 
+	@Override
 	public LocalDateTime getStartDateTimeUTC() {
 		return startDateTimeUTC;
 	}

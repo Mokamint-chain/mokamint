@@ -14,19 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.node.local {
-	exports io.mokamint.node.local;
+module io.mokamint.node {
+	exports io.mokamint.node;
 
-	requires transitive io.mokamint.node;
-	requires transitive io.mokamint.application.api;
-	requires transitive io.mokamint.miner.api;
+	requires transitive io.mokamint.node.api;
+	requires transitive io.hotmoka.marshalling.api;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.marshalling;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
-	requires io.hotmoka.toml;
-	requires io.hotmoka.xodus;
-	requires java.logging;
-	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
 }

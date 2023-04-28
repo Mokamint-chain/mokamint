@@ -14,19 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.node.local {
-	exports io.mokamint.node.local;
+package io.mokamint.node.api;
 
-	requires transitive io.mokamint.node;
-	requires transitive io.mokamint.application.api;
-	requires transitive io.mokamint.miner.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.marshalling;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.annotations;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.toml;
-	requires io.hotmoka.xodus;
-	requires java.logging;
-	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
+import io.mokamint.nonce.api.Deadline;
+
+/**
+ * A non-genesis block of the Mokamint blockchain.
+ */
+public interface NonGenesisBlock extends Block {
+
+	/**
+	 * Yields the deadline computed for this block.
+	 * 
+	 * @return the deadline
+	 */
+	Deadline getDeadline();
+
+	/**
+	 * Yields the reference to the previous block.
+	 * 
+	 * @return the reference to the previous block
+	 */
+	byte[] getHashOfPreviousBlock();
 }

@@ -21,7 +21,6 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -32,17 +31,18 @@ import java.util.stream.Stream;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
-import io.mokamint.node.local.internal.blockchain.Blocks;
-import io.mokamint.node.local.internal.blockchain.GenesisBlock;
-import io.mokamint.node.local.internal.blockchain.NonGenesisBlock;
 
 /**
  * The database where the blockchain is persisted.
@@ -98,7 +98,6 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<Block> get(byte[] hash) {
 		var bytesOfBlock = environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash)));
@@ -126,7 +125,6 @@ public class Database implements AutoCloseable {
 	 * Yields the first genesis block that has been added to this database, if any.
 	 * 
 	 * @return the genesis block, if any
-	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<GenesisBlock> getGenesis() {
 		var hash = getGenesisHash();
@@ -134,16 +132,11 @@ public class Database implements AutoCloseable {
 		if (hash.isEmpty())
 			return Optional.empty();
 		else {
-			try {
-				Block result = get(hash.get()).orElseThrow(() -> new IOException("the genesis reference is set to a hash not in the database"));
-				if (result instanceof GenesisBlock)
-					return Optional.of((GenesisBlock) result);
-				else
-					throw new IOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
-			}
-			catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+			Block result = get(hash.get()).orElseThrow(() -> new UncheckedIOException("the genesis reference is set to a hash not in the database"));
+			if (result instanceof GenesisBlock)
+				return Optional.of((GenesisBlock) result);
+			else
+				throw new UncheckedIOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
 		}
 	}
 
@@ -160,19 +153,13 @@ public class Database implements AutoCloseable {
 	 * Yields the head block of the blockchain in the database, if it has been se already.
 	 * 
 	 * @return the head block, if any
-	 * @throws IOException if the database is corrupted or the head reference is set to a hash not in the database
 	 */
 	public Optional<Block> getHead() {
 		var hash = getHeadHash();
 		if (hash.isEmpty())
 			return Optional.empty();
 		else
-			try {
-				return Optional.of(get(hash.get()).orElseThrow(() -> new IOException("the head reference is set to a hash not in the database")));
-			}
-			catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+			return Optional.of(get(hash.get()).orElseThrow(() -> new UncheckedIOException("the head reference is set to a hash not in the database")));
 	}
 
 	/**
@@ -180,7 +167,6 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash of the parent block
 	 * @return the hashes
-	 * @throws IOException if the database is corrupted
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) {
 		var forwards = environment.computeInReadonlyTransaction(txn -> storeOfForwards.get(txn, fromBytes(hash)));
@@ -191,12 +177,7 @@ public class Database implements AutoCloseable {
 			int size = hashingForBlocks.length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
-				try {
-					throw new IOException("the forward map has been corrupted");
-				}
-				catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
+				throw new UncheckedIOException("the forward map has been corrupted");
 			else if (hashes.length == size) // frequent case, worth optimizing
 				return Stream.of(hashes);
 			else

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.internal;
 
 import java.math.BigInteger;
 
@@ -26,9 +26,9 @@ import io.mokamint.node.api.Block;
 import io.mokamint.nonce.api.Nonce;
 
 /**
- * Shared code of blocks.
+ * Shared code of all classes implementing blocks.
  */
-abstract class AbstractBlock extends AbstractMarshallable implements Block {
+public abstract class AbstractBlock extends AbstractMarshallable implements Block {
 
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
 
@@ -38,13 +38,13 @@ abstract class AbstractBlock extends AbstractMarshallable implements Block {
 	 * @param context the context
 	 * @return the block
 	 */
-	static AbstractBlock from(UnmarshallingContext context) {
+	public static AbstractBlock from(UnmarshallingContext context) {
 		// by reading the height, we can determine if it's a genesis block or not
 		long height = context.readLong();
 		if (height == 0L)
-			return new GenesisBlock(context);
+			return new GenesisBlockImpl(context);
 		else if (height > 0L)
-			return new NonGenesisBlock(height, context);
+			return new NonGenesisBlockImpl(height, context);
 		else
 			throw new UncheckedIOException("negative block height");
 	}

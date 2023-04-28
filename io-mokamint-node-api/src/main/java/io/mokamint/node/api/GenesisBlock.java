@@ -14,19 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.node.local {
-	exports io.mokamint.node.local;
+package io.mokamint.node.api;
 
-	requires transitive io.mokamint.node;
-	requires transitive io.mokamint.application.api;
-	requires transitive io.mokamint.miner.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.marshalling;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.annotations;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.toml;
-	requires io.hotmoka.xodus;
-	requires java.logging;
-	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
+import java.time.LocalDateTime;
+
+/**
+ * The genesis block of a Mokamint blockchain.
+ */
+public interface GenesisBlock extends Block {
+
+	/**
+	 * The moment when this block has been mined. This is the moment
+	 * when the blockchain started.
+	 * 
+	 * @return the moment when this block has been mined
+	 */
+	LocalDateTime getStartDateTimeUTC();
 }

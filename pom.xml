@@ -43,8 +43,9 @@
     </developers>
 
     <modules>
-      <module>io-mokamint-node-local</module>
       <module>io-mokamint-node-api</module>
+      <module>io-mokamint-node</module>
+      <module>io-mokamint-node-local</module>
       <module>io-mokamint-node-tools</module>
       <module>io-mokamint-miner-api</module>
       <module>io-mokamint-miner-local</module>
@@ -197,6 +198,7 @@
                 <outputDirectory>${project.parent.basedir}/modules/unnamed</outputDirectory>
                 <excludeArtifactIds>
                   <!-- we exclude all modules built by Maven: their build will put them at the right place -->
+                  io-mokamint-node,
                   io-mokamint-node-local,
                   io-mokamint-node-api,
                   io-mokamint-node-tools,

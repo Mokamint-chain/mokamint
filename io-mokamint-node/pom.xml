@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-node-api</artifactId>
-  <name>io-mokamint-node-api</name>
+  <artifactId>io-mokamint-node</artifactId>
+  <name>io-mokamint-node</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
 
@@ -15,7 +15,12 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-nonce-api</artifactId>
+      <artifactId>io-mokamint-node-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-nonce</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
    	<dependency>
@@ -25,7 +30,7 @@
     </dependency>
    	<dependency>
       <groupId>io.hotmoka</groupId>
-      <artifactId>io-hotmoka-marshalling-api</artifactId>
+      <artifactId>io-hotmoka-marshalling</artifactId>
       <version>${hotmoka.version}</version>
     </dependency>
   </dependencies>

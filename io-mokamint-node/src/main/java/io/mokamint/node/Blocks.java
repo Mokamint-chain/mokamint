@@ -14,13 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node;
 
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.internal.AbstractBlock;
+import io.mokamint.node.internal.GenesisBlockImpl;
+import io.mokamint.node.internal.NonGenesisBlockImpl;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -28,13 +33,30 @@ import io.mokamint.nonce.api.Deadline;
  */
 public interface Blocks {
 
+	/**
+	 * Yields a new non-genesis block.
+	 * 
+	 * @param blockNumber
+	 * @param totalWaitingTime
+	 * @param weightedWaitingTime
+	 * @param acceleration
+	 * @param deadline
+	 * @param hashOfPreviousBlock
+	 * @return the non-genesis block
+	 */
 	static NonGenesisBlock of(long blockNumber, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
 			Deadline deadline, byte[] hashOfPreviousBlock) {
-		return new NonGenesisBlock(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
+		return new NonGenesisBlockImpl(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
 	}
 
+	/**
+	 * Yields a new genesis block.
+	 * 
+	 * @param startDateTimeUTC the moment when the block has been created
+	 * @return the genesis block
+	 */
 	static GenesisBlock genesis(LocalDateTime startDateTimeUTC) {
-		return new GenesisBlock(startDateTimeUTC);
+		return new GenesisBlockImpl(startDateTimeUTC);
 	}
 
 	/**

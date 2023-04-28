@@ -31,10 +31,10 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.UncheckedInterruptedException;
 import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.blockchain.Blocks;
 import io.mokamint.nonce.api.Deadline;
 
 /**
