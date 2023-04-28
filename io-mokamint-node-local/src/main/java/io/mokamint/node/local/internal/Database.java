@@ -19,8 +19,6 @@ package io.mokamint.node.local.internal;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -33,7 +31,6 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
-import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
@@ -100,16 +97,9 @@ public class Database implements AutoCloseable {
 	 * @return the block, if any
 	 */
 	public Optional<Block> get(byte[] hash) {
-		var bytesOfBlock = environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash)));
-		if (bytesOfBlock == null)
-			return Optional.empty();
-		else
-			try (var bais = new ByteArrayInputStream(bytesOfBlock.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return Optional.of(Blocks.from(context));
-			}
-			catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+		return Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
+			.map(ByteIterable::getBytes)
+			.map(Blocks::from);
 	}
 
 	/**
@@ -127,17 +117,13 @@ public class Database implements AutoCloseable {
 	 * @return the genesis block, if any
 	 */
 	public Optional<GenesisBlock> getGenesis() {
-		var hash = getGenesisHash();
+		return getGenesisHash()
+			.map(hash -> get(hash).orElseThrow(() -> new UncheckedIOException("the genesis reference is set to a hash not in the database")))
+			.map(block -> castToGenesis(block).orElseThrow(() -> new UncheckedIOException("the genesis reference is set to a hash that refers to a non-genesis block in the database")));
+	}
 
-		if (hash.isEmpty())
-			return Optional.empty();
-		else {
-			Block result = get(hash.get()).orElseThrow(() -> new UncheckedIOException("the genesis reference is set to a hash not in the database"));
-			if (result instanceof GenesisBlock)
-				return Optional.of((GenesisBlock) result);
-			else
-				throw new UncheckedIOException("the genesis reference is set to a hash that refers to a non-genesis block in the database");
-		}
+	private static Optional<GenesisBlock> castToGenesis(Block block) {
+		return block instanceof GenesisBlock ? Optional.of((GenesisBlock) block) : Optional.empty();
 	}
 
 	/**
@@ -150,16 +136,13 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the head block of the blockchain in the database, if it has been se already.
+	 * Yields the head block of the blockchain in the database, if it has been set already.
 	 * 
 	 * @return the head block, if any
 	 */
 	public Optional<Block> getHead() {
-		var hash = getHeadHash();
-		if (hash.isEmpty())
-			return Optional.empty();
-		else
-			return Optional.of(get(hash.get()).orElseThrow(() -> new UncheckedIOException("the head reference is set to a hash not in the database")));
+		return getHeadHash()
+			.map(hash -> get(hash).orElseThrow(() -> new UncheckedIOException("the head reference is set to a hash not in the database")));
 	}
 
 	/**

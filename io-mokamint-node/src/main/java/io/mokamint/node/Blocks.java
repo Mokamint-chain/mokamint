@@ -16,9 +16,13 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 
+import io.hotmoka.exceptions.UncheckedIOException;
+import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
@@ -67,5 +71,20 @@ public interface Blocks {
 	 */
 	static Block from(UnmarshallingContext context) {
 		return AbstractBlock.from(context);
+	}
+
+	/**
+	 * Unmarshals a block from the given bytes.
+	 * 
+	 * @param bytes the bytes
+	 * @return the block
+	 */
+	static Block from(byte[] bytes) {
+		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
+			return from(context);
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }
