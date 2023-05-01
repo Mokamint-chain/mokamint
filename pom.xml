@@ -15,7 +15,7 @@
     <groupId>io.mokamint</groupId>
     <artifactId>mokamint</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0</version>
+    <version>parent</version>
     <name>Mokamint</name>
     <description>A generic proof-of-space blockchain engine.</description>
 	<url>https://github.com/Mokamint-chain/mokamint</url>
@@ -187,6 +187,16 @@
 	      </configuration>
         </plugin>
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.2.0</version>
+          <configuration>
+            <outputDirectory>
+              ../modules/explicit
+            </outputDirectory>
+          </configuration>
+        </plugin>
+        <plugin>
 	      <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.1.2</version>
@@ -323,6 +333,32 @@
             <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
             <autoReleaseAfterClose>true</autoReleaseAfterClose>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>1.4.1</version>
+          <configuration>
+            <flattenMode>oss</flattenMode>
+          </configuration>
+          <executions>
+            <!-- enable flattening -->
+            <execution>
+              <id>flatten</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>flatten</goal>
+              </goals>
+            </execution>
+            <!-- ensure proper cleanup -->
+            <execution>
+              <id>flatten.clean</id>
+              <phase>clean</phase>
+              <goals>
+                <goal>clean</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </build>

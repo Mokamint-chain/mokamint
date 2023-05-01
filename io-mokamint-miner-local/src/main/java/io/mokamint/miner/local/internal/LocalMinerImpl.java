@@ -18,6 +18,7 @@ package io.mokamint.miner.local.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -27,7 +28,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import io.hotmoka.crypto.Hex;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.api.Plot;
@@ -63,10 +63,10 @@ public class LocalMinerImpl implements Miner {
 
 	@Override
 	public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException {
-		LOGGER.info("received deadline request with scoop number: " + scoopNumber + " and data: " + Hex.toHexString(data));
+		LOGGER.info("received deadline request with scoop number: " + scoopNumber + " and data: " + toHexString(data));
 
 		executors.submit(() -> {
-			LOGGER.info("processing deadline request with scoop number: " + scoopNumber + " and data: " + Hex.toHexString(data));
+			LOGGER.info("processing deadline request with scoop number: " + scoopNumber + " and data: " + toHexString(data));
 
 			try {
 				Deadline deadline = Stream.of(plots)
@@ -80,6 +80,10 @@ public class LocalMinerImpl implements Miner {
 				LOGGER.log(Level.SEVERE, "couldn't compute the deadline", e.getCause());
 			}
 		});
+	}
+
+	private static String toHexString(byte[] bytes) {
+	    return String.format("%0" + (bytes.length << 1) + "x", new BigInteger(1, bytes));
 	}
 
 	@Override
