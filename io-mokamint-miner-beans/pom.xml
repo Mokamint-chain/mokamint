@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>io-mokamint-miner-remote</artifactId>
-  <name>io-mokamint-miner-remote</name>
+  <artifactId>io-mokamint-miner-beans</artifactId>
+  <name>io-mokamint-miner-beans</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
 
@@ -12,30 +12,15 @@
   </parent>
 
   <dependencies>
+	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-beans-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
     <dependency>
      <groupId>io.hotmoka</groupId>
-     <artifactId>io-hotmoka-websockets-server</artifactId>
+     <artifactId>io-hotmoka-websockets-beans</artifactId>
      <version>${io.hotmoka.websockets.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-api</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-nonce</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-beans</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-    	<groupId>io.hotmoka</groupId>
-    	<artifactId>io-hotmoka-exceptions</artifactId>
-    	<version>1.1.0</version>
     </dependency>
   </dependencies>
 

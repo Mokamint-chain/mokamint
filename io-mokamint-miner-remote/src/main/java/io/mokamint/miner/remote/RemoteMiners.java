@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.miner.remote;
 
+import java.io.IOException;
 import java.net.URI;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.internal.RemoteMinerImpl;
+import jakarta.websocket.DeploymentException;
 
 /**
  * Provider of a miner that connects to a remote mining service.
@@ -29,10 +31,12 @@ public interface RemoteMiners {
 	/**
 	 * Yields a new remote miner.
 	 * 
-	 * @param uri the URI where the kining service must be published
-	 * @return the new local miner
+	 * @param uri the URI where the mining service should be published
+	 * @return the new remote miner
+	 * @throws DeploymentException if the remote miner could not be deployed
+	 * @throws IOException 
 	 */
-	static Miner of(URI uri) {
+	static Miner of(URI uri) throws DeploymentException, IOException {
 		return new RemoteMinerImpl(uri);
 	}
 }

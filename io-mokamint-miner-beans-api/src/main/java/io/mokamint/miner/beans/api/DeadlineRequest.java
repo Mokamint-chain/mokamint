@@ -14,13 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.miner.remote {
-	exports io.mokamint.miner.remote;
+package io.mokamint.miner.beans.api;
 
-	requires transitive io.mokamint.miner.api;
-	requires transitive io.mokamint.nonce;
-	requires io.mokamint.miner.beans;
-	requires io.hotmoka.websockets.server;
-	requires io.hotmoka.exceptions;
-	requires java.logging;
+/**
+ * A request to compute a deadline.
+ */
+public interface DeadlineRequest {
+
+	/**
+	 * The scoop number of the deadline to compute.
+	 * 
+	 * @return the scoop number
+	 */
+	int getScoopNumber();
+
+	/**
+	 * The data of the deadline to compute.
+	 * 
+	 * @return the data
+	 */
+	byte[] getData();
 }

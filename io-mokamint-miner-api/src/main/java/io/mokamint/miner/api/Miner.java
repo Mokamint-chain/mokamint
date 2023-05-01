@@ -31,8 +31,7 @@ import io.mokamint.nonce.api.Deadline;
 public interface Miner extends AutoCloseable {
 	
 	/**
-	 * Request to the miner the computation of a deadline
-	 * for the given scoop number and data.
+	 * Request to the miner the computation of a deadline for the given scoop number and data.
 	 * 
 	 * @param scoopNumber the number of the scoop used for finding the deadline
 	 * @param data the data

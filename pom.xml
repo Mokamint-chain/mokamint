@@ -9,6 +9,7 @@
       <failOnMissingWebXml>false</failOnMissingWebXml>
       <hotmoka.version>1.1.0</hotmoka.version>
       <mokamint.version>1.0.0</mokamint.version>
+      <io.hotmoka.websockets.version>1.0.0</io.hotmoka.websockets.version>
     </properties>
 
     <groupId>io.mokamint</groupId>
@@ -50,6 +51,8 @@
       <module>io-mokamint-miner-api</module>
       <module>io-mokamint-miner-local</module>
       <module>io-mokamint-miner-remote</module>
+      <module>io-mokamint-miner-beans-api</module>
+      <module>io-mokamint-miner-beans</module>
       <module>io-mokamint-plotter</module>
       <module>io-mokamint-plotter-api</module>
       <module>io-mokamint-nonce-api</module>
@@ -205,12 +208,24 @@
                   io-mokamint-miner-api,
                   io-mokamint-miner-local,
                   io-mokamint-miner-remote,
+                  io-mokamint-miner-beans-api,
+                  io-mokamint-miner-beans,
                   io-mokamint-plotter,
                   io-mokamint-plotter-api,
                   io-mokamint-nonce,
                   io-mokamint-nonce-api,
                   io-mokamint-application-api,
                   <!-- we exclude all modules that go into the explicit folder -->
+                  jakarta.activation-api,
+                  jakarta.xml.bind-api,
+                  jakarta.websocket-api,
+                  jakarta.websocket-client-api,
+                  tyrus-client,
+                  tyrus-container-grizzly-client,
+                  tyrus-container-grizzly-server,
+                  tyrus-core,
+                  tyrus-server,
+                  tyrus-spi,
                   bcprov-jdk15on,
                   picocli,
                   gson,
@@ -220,9 +235,16 @@
                   io-hotmoka-marshalling,
                   io-hotmoka-marshalling-api,
                   io-hotmoka-exceptions,
+                  io-hotmoka-websockets-beans,
+                  io-hotmoka-websockets-beans-api,
+                  io-hotmoka-websockets-server,
+                  io-hotmoka-websockets-server-api,
                   <!-- we exclude all modules that go into the automatic folder -->
                   io-hotmoka-toml,
                   io-hotmoka-xodus,
+                  grizzly-framework,
+                  grizzly-http,
+                  grizzly-http-server,
                   <!-- we exclude all modules that are only used for testing -->
                   junit-jupiter,
                   junit-jupiter-api,

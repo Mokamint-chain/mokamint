@@ -14,13 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.miner.remote {
-	exports io.mokamint.miner.remote;
-
-	requires transitive io.mokamint.miner.api;
-	requires transitive io.mokamint.nonce;
-	requires io.mokamint.miner.beans;
-	requires io.hotmoka.websockets.server;
-	requires io.hotmoka.exceptions;
-	requires java.logging;
+module io.mokamint.miner.beans.api {
+	exports io.mokamint.miner.beans.api;
 }

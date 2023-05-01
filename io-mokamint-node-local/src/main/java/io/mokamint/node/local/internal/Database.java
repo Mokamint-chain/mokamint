@@ -21,6 +21,7 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -118,12 +119,16 @@ public class Database implements AutoCloseable {
 	 */
 	public Optional<GenesisBlock> getGenesis() {
 		return getGenesisHash()
-			.map(hash -> get(hash).orElseThrow(() -> new UncheckedIOException("the genesis reference is set to a hash not in the database")))
-			.map(block -> castToGenesis(block).orElseThrow(() -> new UncheckedIOException("the genesis reference is set to a hash that refers to a non-genesis block in the database")));
+			.map(hash -> get(hash).orElseThrow(uncheckedIOException("the genesis hash is set but it is not in the database")))
+			.map(block -> castToGenesis(block).orElseThrow(uncheckedIOException("the genesis hash is set but it refers to a non-genesis block in the database")));
 	}
 
 	private static Optional<GenesisBlock> castToGenesis(Block block) {
 		return block instanceof GenesisBlock ? Optional.of((GenesisBlock) block) : Optional.empty();
+	}
+
+	private static Supplier<UncheckedIOException> uncheckedIOException(String message) {
+		return () -> new UncheckedIOException(message);
 	}
 
 	/**
@@ -142,7 +147,7 @@ public class Database implements AutoCloseable {
 	 */
 	public Optional<Block> getHead() {
 		return getHeadHash()
-			.map(hash -> get(hash).orElseThrow(() -> new UncheckedIOException("the head reference is set to a hash not in the database")));
+			.map(hash -> get(hash).orElseThrow(uncheckedIOException("the head hash is set but it is not in the database")));
 	}
 
 	/**
