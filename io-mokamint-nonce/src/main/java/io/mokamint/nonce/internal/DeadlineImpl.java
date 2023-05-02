@@ -157,14 +157,12 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public boolean isValid() {
-		return this.equals(toNonce().getDeadline(scoopNumber, data));
+		return this.equals(toNonce().getDeadline(this));
 	}
 
 	@Override
 	public boolean matches(DeadlineDescription description) {
-		return scoopNumber == description.getScoopNumber() &&
-			Arrays.equals(data, description.getData()) &&
-			hashingName.equals(description.getHashingName());
+		return description.equals(this);
 	}
 
 	@Override

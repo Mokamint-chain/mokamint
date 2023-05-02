@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
  * A miner in an object that computes deadlines on request.
@@ -31,10 +32,9 @@ import io.mokamint.nonce.api.Deadline;
 public interface Miner extends AutoCloseable {
 	
 	/**
-	 * Request to the miner the computation of a deadline for the given scoop number and data.
+	 * Request to the miner the computation of a deadline.
 	 * 
-	 * @param scoopNumber the number of the scoop used for finding the deadline
-	 * @param data the data
+	 * @param description the description of the requested deadline
 	 * @param onDeadlineComputed the callback executed when a deadline has been found.
 	 *                           It is called with the deadline computed and with miner itself.
 	 *                           Miners can call this once, many times or even never.
@@ -43,7 +43,7 @@ public interface Miner extends AutoCloseable {
 	 * @throws InterruptedException if the thread has been interrupted while requesting the deadline
 	 * @throws TimeoutException if the request timed out
 	 */
-	void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException, InterruptedException, TimeoutException;
+	void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException, InterruptedException, TimeoutException;
 
 	@Override
 	void close();

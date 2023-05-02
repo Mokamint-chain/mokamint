@@ -20,14 +20,12 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.UncheckedInterruptedException;
 import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.mokamint.miner.api.Miner;
@@ -36,6 +34,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
  * A task that mines a new block, follower of a previous block.
@@ -110,14 +109,9 @@ public class MineNewBlockTask extends Task {
 		private final String logIntro = "height " + heightOfNewBlock + ": ";
 
 		/**
-		 * The scoop number of the deadline for the creation of the next block.
+		 * The description of the deadline required for the next block.
 		 */
-		private final int scoopNumber;
-
-		/**
-		 * The generation signature for the creation of the next block.
-		 */
-		private final byte[] generationSignature;
+		private final DeadlineDescription deadlineDescription;
 
 		/**
 		 * The best deadline computed so far. This is empty until a first deadline is found. Since more miners
@@ -138,9 +132,8 @@ public class MineNewBlockTask extends Task {
 		private Run() throws InterruptedException, TimeoutException {
 			try {
 				LOGGER.info(logIntro + "started mining new block");
-				var hashing = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes));
-				this.generationSignature = previous.getNewGenerationSignature(hashing);
-				this.scoopNumber = previous.getNewScoopNumber(hashing);
+				var hashingForGenerations = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes));
+				this.deadlineDescription = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().hashingForDeadlines);
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
@@ -162,13 +155,12 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
-			LOGGER.info(logIntro + "asking miners a deadline with scoop number: " + scoopNumber +
-					" and data: " + Hex.toHexString(generationSignature));
+			LOGGER.info(logIntro + "asking miners a deadline: " + deadlineDescription);
 
 			try {
 				node.getMiners().forEach(miner -> UncheckedInterruptedException.wraps(() -> {
 					try {
-						miner.requestDeadline(scoopNumber, generationSignature, this::onDeadlineComputed);
+						miner.requestDeadline(deadlineDescription, this::onDeadlineComputed);
 					}
 					catch (TimeoutException e) {
 						node.signal(node.new MinerTimeoutEvent(miner));
@@ -300,11 +292,9 @@ public class MineNewBlockTask extends Task {
 		 * @return true if and only if the deadline is legal
 		 */
 		private boolean isLegal(Deadline deadline) {
-			return deadline.getScoopNumber() == scoopNumber
-					&& Arrays.equals(deadline.getData(), generationSignature)
-					&& deadline.getHashingName().equals(node.getConfig().hashingForDeadlines)
-					&& deadline.isValid()
-					&& node.getApplication().prologIsValid(deadline.getProlog());
+			return deadline.matches(deadlineDescription)
+				&& deadline.isValid()
+				&& node.getApplication().prologIsValid(deadline.getProlog());
 		}
 
 		private void turnWakerOff() {

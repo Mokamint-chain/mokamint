@@ -20,5 +20,6 @@ module io.mokamint.miner.local {
 	requires transitive io.mokamint.miner.api;
 	requires transitive io.mokamint.plotter.api;
 	requires transitive io.mokamint.nonce.api;
+	requires io.hotmoka.crypto.api;
 	requires java.logging;
 }

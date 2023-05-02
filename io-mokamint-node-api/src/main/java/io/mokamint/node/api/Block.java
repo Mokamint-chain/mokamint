@@ -20,6 +20,7 @@ import java.math.BigInteger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
  * A block of the Mokamint blockchain.
@@ -60,18 +61,11 @@ public interface Block extends Marshallable {
 	long getHeight();
 
 	/**
-	 * Yields the generation signature for the deadline of the next block.
+	 * Yields the description of the deadline that must be computed for the next block.
 	 * 
-	 * @param hashing the hashing algorithm to use to compute the generation signature
-	 * @return the generation signature
+	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature
+	 * @param hashingForDeadlines the name of the hashing algorithm used for the deadlines and the plot files
+	 * @return the description
 	 */
-	byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing);
-
-	/**
-	 * Yields the scoop number for the deadline of the next block.
-	 * 
-	 * @param hashing the hashing algorithm to use to compute the scoop number
-	 * @return the scoop number
-	 */
-	int getNewScoopNumber(HashingAlgorithm<byte[]> hashing);
+	DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, String hashingForDeadlines);
 }

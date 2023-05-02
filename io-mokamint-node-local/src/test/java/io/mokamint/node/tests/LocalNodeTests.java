@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.tests;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -45,6 +44,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 
 public class LocalNodeTests {
 
@@ -78,13 +78,11 @@ public class LocalNodeTests {
 		var myMiner = new Miner() {
 
 			@Override
-			public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true);
-				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
-				when(deadline.getData()).thenReturn(data);
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashingName()).thenReturn(config.hashingForDeadlines);
+				when(deadline.matches(description)).thenReturn(true);
 
 				onDeadlineComputed.accept(deadline, this);
 			}
@@ -126,13 +124,13 @@ public class LocalNodeTests {
 		var myMiner = new Miner() {
 	
 			@Override
-			public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(false); // <--
-				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
-				when(deadline.getData()).thenReturn(data);
+				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
+				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashingName()).thenReturn(config.hashingForDeadlines);
+				when(deadline.getHashingName()).thenReturn(description.getHashingName());
 
 				onDeadlineComputed.accept(deadline, this);
 			}
@@ -196,7 +194,7 @@ public class LocalNodeTests {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = mock(Miner.class);
-		doThrow(TimeoutException.class).when(myMiner).requestDeadline(anyInt(), any(), any());
+		doThrow(TimeoutException.class).when(myMiner).requestDeadline(any(), any());
 
 		class MyLocalNode extends LocalNodeImpl {
 
@@ -263,11 +261,11 @@ public class LocalNodeTests {
 		var myMiner = new Miner() {
 
 			@Override
-			public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true);
-				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
-				when(deadline.getData()).thenReturn(data);
+				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
+				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getValue()).thenReturn(deadlineValue);
 				when(deadline.getHashingName()).thenReturn(algo);
 

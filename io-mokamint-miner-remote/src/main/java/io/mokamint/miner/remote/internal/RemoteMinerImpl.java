@@ -29,6 +29,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.beans.DeadlineRequests;
 import io.mokamint.miner.beans.api.DeadlineRequest;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.RemoteEndpoint.Basic;
@@ -52,8 +53,8 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) {
-		var request = DeadlineRequests.of(scoopNumber, data);
+	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+		var request = DeadlineRequests.of(description.getScoopNumber(), description.getData());
 		LOGGER.info("received request " + request);
 
 		sessions.stream()

@@ -49,11 +49,12 @@ public interface Nonce {
 	void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException;
 
 	/**
-	 * Yields the deadline of this nonce, for the given scoop number and data.
+	 * Yields the deadline of this nonce, with the given description.
 	 * 
-	 * @param scoopNumber the number of the scoop to consider to compute the deadline
-	 * @param data the data used to compute the deadline
+	 * @param description the description of requested deadline
 	 * @return the deadline
+	 * @throws IllegalArgumentException if the hashing algorithm in {@code description}
+	 *                                  does not match that used in plot file for this nonce
 	 */
-	Deadline getDeadline(int scoopNumber, byte[] data);
+	Deadline getDeadline(DeadlineDescription description);
 }

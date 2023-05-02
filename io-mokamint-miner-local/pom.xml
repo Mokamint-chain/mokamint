@@ -19,15 +19,20 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-plotter-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-plotter-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-nonce-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-nonce-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
+    <dependency>
+	  <groupId>io.hotmoka</groupId>
+	  <artifactId>io-hotmoka-crypto-api</artifactId>
+	  <version>${hotmoka.version}</version>
+	</dependency>
   </dependencies>
 
 </project>

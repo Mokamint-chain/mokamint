@@ -23,6 +23,8 @@ import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
+import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Nonce;
 
 /**
@@ -50,13 +52,19 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	}
 
 	@Override
-	public abstract byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing);
+	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, String hashingForDeadlines) {
+		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
 
-	@Override
-	public final int getNewScoopNumber(HashingAlgorithm<byte[]> hashing) {
-		byte[] generationHash = hashing.hash(concat(getNewGenerationSignature(hashing), longToBytesBE(getHeight() + 1)));
+		return DeadlineDescriptions.of
+			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
+	}
+
+	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {
+		byte[] generationHash = hashing.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
 	}
+
+	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashing);
 
 	protected static byte[] concat(byte[] array1, byte[] array2) {
 		byte[] merge = new byte[array1.length + array2.length];

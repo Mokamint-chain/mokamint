@@ -23,6 +23,7 @@ import java.nio.channels.FileChannel;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Nonce;
 
 /**
@@ -80,9 +81,13 @@ public class NonceImpl implements Nonce {
 	}
 
 	@Override
-	public Deadline getDeadline(int scoopNumber, byte[] data) {
+	public Deadline getDeadline(DeadlineDescription description) {
+		if (!description.getHashingName().equals(hashing.getName()))
+			throw new IllegalArgumentException("the hahsing algorithm in the description does not match that used to create the plot file of this nonce");
+
 		return new DeadlineImpl(prolog, progressive,
-			hashing.hash(extractScoopAndConcat(scoopNumber, data)), scoopNumber, data, hashing.getName());
+			hashing.hash(extractScoopAndConcat(description.getScoopNumber(), description.getData())),
+				description.getScoopNumber(), description.getData(), description.getHashingName());
 	}
 
 	/**

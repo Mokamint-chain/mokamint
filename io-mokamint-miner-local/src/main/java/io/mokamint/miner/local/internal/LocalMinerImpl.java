@@ -18,7 +18,6 @@ package io.mokamint.miner.local.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.math.BigInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -30,6 +29,7 @@ import java.util.stream.Stream;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.plotter.api.Plot;
 
 /**
@@ -62,28 +62,23 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(int scoopNumber, byte[] data, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException {
-		LOGGER.info("received deadline request with scoop number: " + scoopNumber + " and data: " + toHexString(data));
+	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException {
+		LOGGER.info("received deadline request: " + description);
 
 		executors.submit(() -> {
-			LOGGER.info("processing deadline request with scoop number: " + scoopNumber + " and data: " + toHexString(data));
+			LOGGER.info("processing deadline request: " + description);
 
 			try {
-				Deadline deadline = Stream.of(plots)
-					.map(plot -> getSmallestDeadline(plot, scoopNumber, data))
+				Stream.of(plots)
+					.filter(plot -> plot.getHashing().getName().equals(description.getHashingName()))
+					.map(plot -> getSmallestDeadline(plot, description))
 					.min(Deadline::compareByValue)
-					.get(); // OK, since there is at least a plot file
-
-				onDeadlineComputed.accept(deadline, this);
+					.ifPresent(deadline -> onDeadlineComputed.accept(deadline, this));
 			}
 			catch (UncheckedIOException e) {
-				LOGGER.log(Level.SEVERE, "couldn't compute the deadline", e.getCause());
+				LOGGER.log(Level.SEVERE, "couldn't compute a deadline", e.getCause());
 			}
 		});
-	}
-
-	private static String toHexString(byte[] bytes) {
-	    return String.format("%0" + (bytes.length << 1) + "x", new BigInteger(1, bytes));
 	}
 
 	@Override
@@ -97,9 +92,9 @@ public class LocalMinerImpl implements Miner {
 		}
 	}
 
-	private static Deadline getSmallestDeadline(Plot plot, int scoopNumber, byte[] data) throws UncheckedIOException {
+	private static Deadline getSmallestDeadline(Plot plot, DeadlineDescription description) {
 		try {
-			return plot.getSmallestDeadline(scoopNumber, data);
+			return plot.getSmallestDeadline(description);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(e);

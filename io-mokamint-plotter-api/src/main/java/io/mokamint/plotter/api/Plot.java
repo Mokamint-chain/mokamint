@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Nonce;
 
 /**
@@ -65,18 +66,18 @@ public interface Plot extends AutoCloseable {
 	void close() throws IOException;
 
 	/**
-	 * Yields the smallest deadline for the given scoop number and data
-	 * in this plot file. This method selects the given scoop
+	 * Yields the smallest deadline in this plot file, matching the given description.
+	 * This method selects the scoop in the description
 	 * for all nonces contained in this plot file. For each scoop, it computes
-	 * its deadline value by hashing the scoop data and the provided {@code data}.
+	 * its deadline value by hashing the scoop data and the provided description's {@code data}.
 	 * It returns the pair (progressive of the nonce, deadline value)
-	 * with the smallest value. It uses the same hashing algorithm used for
-	 * creating this plot file.
+	 * with the smallest value.
 	 * 
-	 * @param scoopNumber the number of the scoop to consider
-	 * @param data the data to hash together with the scoop data
+	 * @param description the description of the requested deadline
 	 * @return the smallest deadline
 	 * @throws IOException if the plot file cannot be read
+	 * @throws IllegalArgumentException if the description is for a deadline using a different
+	 *                                  hashing algorithm than that used to create this plot file
 	 */
-	Deadline getSmallestDeadline(int scoopNumber, byte[] data) throws IOException;
+	Deadline getSmallestDeadline(DeadlineDescription description) throws IOException;
 }

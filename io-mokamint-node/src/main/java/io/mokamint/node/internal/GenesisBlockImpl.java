@@ -79,8 +79,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public byte[] getNewGenerationSignature(HashingAlgorithm<byte[]> hashing) {
-		return BLOCK_1_GENERATION_SIGNATURE.clone();
+	protected byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashing) {
+		return BLOCK_1_GENERATION_SIGNATURE;
 	}
 
 	@Override

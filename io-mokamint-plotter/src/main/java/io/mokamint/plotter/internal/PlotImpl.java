@@ -37,6 +37,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Nonce;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -267,12 +268,12 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(int scoopNumber, byte[] data) throws IOException {
-		if (scoopNumber < 0 || scoopNumber >= Nonce.SCOOPS_PER_NONCE)
-			throw new IllegalArgumentException("illegal scoop number: it must be between 0 (inclusive) and " + Nonce.SCOOPS_PER_NONCE + " (exclusive)");
+	public Deadline getSmallestDeadline(DeadlineDescription description) throws IOException {
+		if (!description.getHashingName().equals(hashing.getName()))
+			throw new IllegalArgumentException("deadline description and plot file use different hashing algorithms");
 
 		try {
-			return new SmallestDeadlineFinder(scoopNumber, data).deadline;
+			return new SmallestDeadlineFinder(description).deadline;
 		}
 		catch (UncheckedIOException e) {
 			throw e.getCause();
@@ -299,9 +300,9 @@ public class PlotImpl implements Plot {
 		private final long groupSize = length * scoopSize;
 		private final int metadataSize = getMetadataSize();
 
-		private SmallestDeadlineFinder(int scoopNumber, byte[] data) {
-			this.scoopNumber = scoopNumber;
-			this.data = data;
+		private SmallestDeadlineFinder(DeadlineDescription description) {
+			this.scoopNumber = description.getScoopNumber();
+			this.data = description.getData();
 			this.deadline = LongStream.range(start, start + length)
 				.parallel()
 				.mapToObj(this::mkDeadline)
