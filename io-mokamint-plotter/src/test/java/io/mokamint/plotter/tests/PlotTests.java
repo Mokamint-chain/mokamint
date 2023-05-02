@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -48,7 +49,7 @@ public class PlotTests {
 
 		try (Plot plot = Plots.create(path, prolog, start, length, hashing, __ -> {})) {
 			Deadline deadline1 = plot.getSmallestDeadline(description);
-			Deadline deadline2 = deadline1.toNonce().getDeadline(description);
+			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description);
 			Assertions.assertEquals(deadline1, deadline2);
 		}
 		finally {

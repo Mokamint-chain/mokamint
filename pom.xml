@@ -297,12 +297,15 @@
                   bcprov-jdk15on,
                   picocli,
                   gson,
+                  jakarta.websocket-client-api,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
                   io-hotmoka-marshalling,
                   io-hotmoka-marshalling-api,
                   io-hotmoka-exceptions,
+                  io-hotmoka-websockets-beans,
+                  io-hotmoka-websockets-beans-api
                 </includeArtifactIds>
               </configuration>
             </execution>

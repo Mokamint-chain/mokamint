@@ -151,13 +151,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public Nonce toNonce() {
-		return Nonces.of(prolog, progressive, UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(hashingName, (byte[] bytes) -> bytes)));
-	}
-
-	@Override
 	public boolean isValid() {
-		return this.equals(toNonce().getDeadline(this));
+		return this.equals(Nonces.from(this).getDeadline(this));
 	}
 
 	@Override

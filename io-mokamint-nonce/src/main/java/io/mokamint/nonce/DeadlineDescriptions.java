@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.nonce;
 
+import io.hotmoka.websockets.beans.AbstractEncoder;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.internal.DeadlineDescriptionDecoder;
 import io.mokamint.nonce.internal.DeadlineDescriptionImpl;
 
 /**
@@ -35,4 +37,14 @@ public interface DeadlineDescriptions {
 	static DeadlineDescription of(int scoopNumber, byte[] data, String hashingName) {
 		return new DeadlineDescriptionImpl(scoopNumber, data, hashingName);
 	}
+
+	/**
+	 * Gson encoder.
+	 */
+	static class Encoder extends AbstractEncoder<DeadlineDescription> {}
+
+	/**
+	 * Gson decoder.
+	 */
+    static class Decoder extends DeadlineDescriptionDecoder {}
 }

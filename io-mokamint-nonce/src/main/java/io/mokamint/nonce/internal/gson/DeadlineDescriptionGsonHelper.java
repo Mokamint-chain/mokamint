@@ -14,15 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.nonce {
-	exports io.mokamint.nonce;
+package io.mokamint.nonce.internal.gson;
 
-	// beans must be encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal.gson to com.google.gson;
+import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.api.DeadlineDescription;
 
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
-	requires transitive io.hotmoka.marshalling;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.websockets.beans;
+/**
+ * An object that can be encoded/decoded with Gson. It corresponds to a
+ * {@link DeadlineDescription}.
+ */
+public class DeadlineDescriptionGsonHelper {
+	private int scoopNumber;
+	private byte[] data;
+	private String hashingName;
+
+	public DeadlineDescription toBean() {
+		return DeadlineDescriptions.of(scoopNumber, data, hashingName);
+    }
 }

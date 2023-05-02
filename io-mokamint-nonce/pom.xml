@@ -33,6 +33,11 @@
       <artifactId>io-mokamint-nonce-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-websockets-beans</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
+    </dependency>
   </dependencies>
 
 </project>

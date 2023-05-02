@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.nonce;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
 import io.mokamint.nonce.internal.NonceImpl;
 
@@ -37,5 +40,17 @@ public interface Nonces {
 	 */
 	static Nonce of(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
 		return new NonceImpl(prolog, progressive, hashing);
+	}
+
+	/**
+	 * Yields the nonce corresponding to the given deadline.
+	 * 
+	 * @param deadline the deadline
+	 * @return the nonce
+	 */
+	static Nonce from(Deadline deadline) {
+		return new NonceImpl(deadline.getProlog(),
+			deadline.getProgressive(),
+			UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(deadline.getHashingName(), (byte[] bytes) -> bytes)));
 	}
 }

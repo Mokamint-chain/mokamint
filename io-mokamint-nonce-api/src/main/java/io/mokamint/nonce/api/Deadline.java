@@ -46,13 +46,6 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	byte[] getValue();
 
 	/**
-	 * Computes the nonce whose deadline is this.
-	 * 
-	 * @return the nonce
-	 */
-	Nonce toNonce();
-
-	/**
 	 * Determines if this deadline is valid, that is, if it coincides with the deadline
 	 * computed from the result of {@link #toNonce()}.
 	 * 
