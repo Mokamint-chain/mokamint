@@ -24,15 +24,15 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
 import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.api.Nonce;
 
 /**
  * Shared code of all classes implementing blocks.
  */
 public abstract class AbstractBlock extends AbstractMarshallable implements Block {
 
-	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Nonce.SCOOPS_PER_NONCE);
+	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
 
 	/**
 	 * Unmarshals a block from the given context.

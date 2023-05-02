@@ -26,6 +26,16 @@ import io.hotmoka.marshalling.api.Marshallable;
 public interface Deadline extends DeadlineDescription, Marshallable {
 
 	/**
+	 * The maximal length of the prolog of a deadline, in bytes (inclusive).
+	 */
+	final int MAX_PROLOG_SIZE = 16777216; // 16 megabytes
+
+	/**
+	 * The maximal scoop number in a deadline (inclusive).
+	 */
+	final static int MAX_SCOOP_NUMBER = 4095;
+
+	/**
 	 * The prolog that was used to create the plot file from which
 	 * this deadline has been generated.
 	 * 
@@ -44,14 +54,6 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * of the plot file.
 	 */
 	byte[] getValue();
-
-	/**
-	 * Determines if this deadline is valid, that is, if it coincides with the deadline
-	 * computed from the result of {@link #toNonce()}.
-	 * 
-	 * @return true if and only if this deadline is valid
-	 */
-	boolean isValid();
 
 	/**
 	 * Checks if this deadline is equal to another object (same progressive, same value).
@@ -79,6 +81,14 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * @return true if and inly if that condition holds
 	 */
 	boolean matches(DeadlineDescription description);
+
+	/**
+	 * Determines if this deadline is valid, that is, its corresponding nonce
+	 * is for the same deadline.
+	 * 
+	 * @return true if and only if this deadline is valid
+	 */
+	boolean isValid();
 
 	/**
 	 * Yields a string representation of this deadline.

@@ -28,11 +28,6 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-beans</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
       <groupId>io.hotmoka</groupId>
       <artifactId>io-hotmoka-exceptions</artifactId>
       <version>${hotmoka.version}</version>

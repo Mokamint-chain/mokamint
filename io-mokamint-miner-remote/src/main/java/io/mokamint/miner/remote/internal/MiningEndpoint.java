@@ -19,7 +19,7 @@ package io.mokamint.miner.remote.internal;
 import java.util.List;
 
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.mokamint.miner.beans.DeadlineRequests;
+import io.mokamint.nonce.DeadlineDescriptions;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -56,8 +56,7 @@ public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
 	static ServerEndpointConfig config(Configurator configurator) {
 		return ServerEndpointConfig.Builder.create(MiningEndpoint.class, "/")
-			.encoders(List.of(DeadlineRequests.Encoder.class))
-			//.decoders(List.of(DeadlineRequests.Decoder.class))
+			.encoders(List.of(DeadlineDescriptions.Encoder.class))
 			.configurator(configurator)
 			.build();
 	}

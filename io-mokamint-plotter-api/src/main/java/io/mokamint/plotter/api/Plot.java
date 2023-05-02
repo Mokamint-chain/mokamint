@@ -21,18 +21,12 @@ import java.io.IOException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.api.Nonce;
 
 /**
  * A plot file, containing sequential nonces. Each nonce contains
  * a sequence of scoops. Each scoop contains a pair of hashes.
  */
 public interface Plot extends AutoCloseable {
-
-	/**
-	 * The maximal length of the prolog of a plot, in bytes.
-	 */
-	public final int MAX_PROLOG_SIZE = Nonce.MAX_PROLOG_SIZE; // 16 megabytes
 
 	/**
 	 * Yields the prolog of this plot.

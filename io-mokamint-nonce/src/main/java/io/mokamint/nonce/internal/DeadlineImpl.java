@@ -27,7 +27,6 @@ import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.api.Nonce;
 
 /**
  * Implementation of a deadline inside a plot file. It is a reference to a nonce
@@ -46,8 +45,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		if (prolog == null)
 			throw new NullPointerException("prolog cannot be null");
 
-		if (prolog.length > Nonce.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + Nonce.MAX_PROLOG_SIZE);
+		if (prolog.length > MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
 
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
@@ -55,8 +54,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		if (value == null)
 			throw new NullPointerException("value cannot be null");
 
-		if (scoopNumber < 0 || scoopNumber >= Nonce.SCOOPS_PER_NONCE)
-			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Nonce.SCOOPS_PER_NONCE);
+		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
+			throw new IllegalArgumentException("scoopNumber must be between 0 and " + MAX_SCOOP_NUMBER);
 
 		if (data == null)
 			throw new NullPointerException("data cannot be null");
@@ -151,13 +150,13 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public boolean isValid() {
-		return this.equals(Nonces.from(this).getDeadline(this));
+	public boolean matches(DeadlineDescription description) {
+		return description.equals(this);
 	}
 
 	@Override
-	public boolean matches(DeadlineDescription description) {
-		return description.equals(this);
+	public boolean isValid() {
+		return equals(Nonces.from(this).getDeadline(this));
 	}
 
 	@Override

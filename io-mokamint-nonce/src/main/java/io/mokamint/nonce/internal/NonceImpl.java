@@ -70,8 +70,8 @@ public class NonceImpl implements Nonce {
 		if (prolog == null)
 			throw new NullPointerException("the prolog cannot be null");
 
-		if (prolog.length > MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
+		if (prolog.length > Deadline.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + Deadline.MAX_PROLOG_SIZE);
 			
 		this.prolog = prolog;
 		this.hashing = hashing;
@@ -83,7 +83,7 @@ public class NonceImpl implements Nonce {
 	@Override
 	public Deadline getDeadline(DeadlineDescription description) {
 		if (!description.getHashingName().equals(hashing.getName()))
-			throw new IllegalArgumentException("the hahsing algorithm in the description does not match that used to create the plot file of this nonce");
+			throw new IllegalArgumentException("the hashing algorithm in the description does not match that used to create the plot file of this nonce");
 
 		return new DeadlineImpl(prolog, progressive,
 			hashing.hash(extractScoopAndConcat(description.getScoopNumber(), description.getData())),
@@ -94,7 +94,7 @@ public class NonceImpl implements Nonce {
 	 * Selects the given scoop from this nonce and adds the given data at its end.
 	 * 
 	 * @param scoopNumber the number of the scoop to select, between 0 (inclusive) and
-	 *                    {@link Nonce#SCOOPS_PER_NONCE} (exclusive)
+	 *                    {@link Deadline#MAX_SCOOP_NUMBER} (inclusive)
 	 * @param data the data to end after the scoop
 	 * @return the concatenation of the scoop and the data
 	 */
@@ -125,7 +125,7 @@ public class NonceImpl implements Nonce {
 		// the plot file contains groups of scoops: the group of first scoops in the nonces,
 		// the group of the second scoops in the nonces, etc
 		long groupSize = length * scoopSize;
-		for (int scoopNumber = 0; scoopNumber < SCOOPS_PER_NONCE; scoopNumber++)
+		for (int scoopNumber = 0; scoopNumber <= Deadline.MAX_SCOOP_NUMBER; scoopNumber++)
 			// scoopNumber * scoopSize is the position of scoopNumber inside the data of the nonce
 			try (var source = Channels.newChannel(new ByteArrayInputStream(data, scoopNumber * scoopSize, scoopSize))) {
 				// the scoop goes inside its group, sequentially wrt the offset of the nonce
@@ -160,7 +160,7 @@ public class NonceImpl implements Nonce {
 		private final byte[] buffer;
 
 		private Builder() {
-			this.data = new byte[SCOOPS_PER_NONCE * 2 * hashSize];
+			this.data = new byte[(Deadline.MAX_SCOOP_NUMBER + 1) * 2 * hashSize];
 			this.nonceSize = data.length;
 			this.scoopSize = 2 * hashSize;
 			this.buffer = initWithPrologAndProgressive();

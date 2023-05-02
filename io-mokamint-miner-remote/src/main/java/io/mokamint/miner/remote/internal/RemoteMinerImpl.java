@@ -26,8 +26,6 @@ import java.util.logging.Logger;
 import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.beans.DeadlineRequests;
-import io.mokamint.miner.beans.api.DeadlineRequest;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
@@ -54,19 +52,18 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	@Override
 	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
-		var request = DeadlineRequests.of(description.getScoopNumber(), description.getData());
-		LOGGER.info("received request " + request);
+		LOGGER.info("received request " + description);
 
 		sessions.stream()
 			.filter(Session::isOpen)
 			.map(Session::getBasicRemote)
-			.forEach(remote -> send(request, remote));
+			.forEach(remote -> send(description, remote));
 	}
 
-	private static void send(DeadlineRequest request, Basic remote) {
+	private static void send(DeadlineDescription description, Basic remote) {
 		try {
 			// TODO: this is blocking....
-			remote.sendObject(request);
+			remote.sendObject(description);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(e);

@@ -38,8 +38,6 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.api.Nonce;
-import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
 /**
@@ -62,7 +60,7 @@ public class PlotImpl implements Plot {
 
 	/**
 	 * Generic data that identifies, for instance, the creator of the plot.
-	 * This can be really anything by is limited to {@link Plots#MAX_PROLOG_SIZE} bytes.
+	 * This can be really anything by is limited to {@link Deadline#MAX_PROLOG_SIZE} bytes.
 	 */
 	private final byte[] prolog;
 
@@ -94,8 +92,8 @@ public class PlotImpl implements Plot {
 		this.channel = reader.getChannel();
 
 		int prologLength = reader.readInt();
-		if (prologLength > MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
+		if (prologLength > Deadline.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + Deadline.MAX_PROLOG_SIZE);
 		this.prolog = new byte[prologLength];
 		if (reader.read(prolog) != prologLength)
 			throw new IOException("cannot read the prolog of the plot file");
@@ -123,7 +121,7 @@ public class PlotImpl implements Plot {
 	 * @param path the path to the file where the plot must be dumped
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the plot. This can be really anything but cannot be {@code null}
-	 *               nor longer than {@link Plots#MAX_PROLOG_SIZE} bytes
+	 *               nor longer than {@link Deadline#MAX_PROLOG_SIZE} bytes
 	 * @param start the starting progressive number of the nonces to generate in the plot.
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be positive
@@ -141,8 +139,8 @@ public class PlotImpl implements Plot {
 		if (prolog == null)
 			throw new NullPointerException("the prolog cannot be null");
 
-		if (prolog.length > MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
+		if (prolog.length > Deadline.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + Deadline.MAX_PROLOG_SIZE);
 
 		this.prolog = prolog.clone();
 		this.start = start;
@@ -160,7 +158,7 @@ public class PlotImpl implements Plot {
 	 */
 	private class Dumper {
 		private final FileChannel channel;
-		private final int nonceSize = Nonce.SCOOPS_PER_NONCE * 2 * hashing.length();
+		private final int nonceSize = (Deadline.MAX_SCOOP_NUMBER + 1) * 2 * hashing.length();
 		private final int metadataSize = getMetadataSize();
 		private final long plotSize = metadataSize + length * nonceSize;
 		private final IntConsumer onNewPercent;

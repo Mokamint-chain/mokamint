@@ -74,6 +74,7 @@ public class LocalNodeTests {
 	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+		var deadlineProlog = new byte[] { 1, 2, 3, 4 };
 
 		var myMiner = new Miner() {
 
@@ -81,7 +82,11 @@ public class LocalNodeTests {
 			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true);
+				when(deadline.getProlog()).thenReturn(deadlineProlog);
+				when(deadline.getData()).thenReturn(description.getData());
+				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getValue()).thenReturn(deadlineValue);
+				when(deadline.getHashingName()).thenReturn(description.getHashingName());
 				when(deadline.matches(description)).thenReturn(true);
 
 				onDeadlineComputed.accept(deadline, this);

@@ -26,16 +26,6 @@ import java.nio.channels.FileChannel;
 public interface Nonce {
 
 	/**
-	 * The maximal length of the prolog of a nonce, in bytes.
-	 */
-	final int MAX_PROLOG_SIZE = 16777216; // 16 megabytes
-
-	/**
-	 * The number of scoops contained in a nonce.
-	 */
-	final static int SCOOPS_PER_NONCE = 4096;
-
-	/**
 	 * Dumps this nonce into the give file, as the {@code offset}th nonce inside the file.
 	 * 
 	 * @param where the file channel where the nonce must be dumped

@@ -206,6 +206,21 @@ public class MineNewBlockTask extends Task {
 			waker.await();
 		}
 
+		/**
+		 * Determines if a deadline is legal, that is,
+		 * it is actually a deadline for the expected description,
+		 * it is valid and its prolog is valid for the application. All these conditions
+		 * should always hold, if miners behave correctly.
+		 * 
+		 * @param deadline the deadline to check
+		 * @return true if and only if the deadline is legal
+		 */
+		private boolean isLegal(Deadline deadline) {
+			return deadline.matches(deadlineDescription)
+				&& deadline.isValid()
+				&& node.getApplication().prologIsValid(deadline.getProlog());
+		}
+
 		private Block createNewBlock() {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
@@ -279,22 +294,6 @@ public class MineNewBlockTask extends Task {
 			long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
 			waker.set(stillToWait);
 			LOGGER.info(logIntro + "set up a waker in " + stillToWait + " ms");
-		}
-
-		/**
-		 * Determines if a deadline is legal, that is,
-		 * it is actually a deadline for the expected scoop number and generationSignature,
-		 * it uses the hashing algorithm required in the configuration of the node,
-		 * it is valid and its prolog is valid for the application. All these conditions
-		 * should always hold, if the miner behaves correctly.
-		 * 
-		 * @param deadline the deadline to check
-		 * @return true if and only if the deadline is legal
-		 */
-		private boolean isLegal(Deadline deadline) {
-			return deadline.matches(deadlineDescription)
-				&& deadline.isValid()
-				&& node.getApplication().prologIsValid(deadline.getProlog());
 		}
 
 		private void turnWakerOff() {
