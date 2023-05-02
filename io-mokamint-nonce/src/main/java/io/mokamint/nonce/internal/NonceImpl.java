@@ -82,7 +82,7 @@ public class NonceImpl implements Nonce {
 	@Override
 	public Deadline getDeadline(int scoopNumber, byte[] data) {
 		return new DeadlineImpl(prolog, progressive,
-			hashing.hash(extractScoopAndConcat(scoopNumber, data)), scoopNumber, data, hashing);
+			hashing.hash(extractScoopAndConcat(scoopNumber, data)), scoopNumber, data, hashing.getName());
 	}
 
 	/**

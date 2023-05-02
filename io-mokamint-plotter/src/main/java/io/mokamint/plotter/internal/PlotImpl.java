@@ -310,7 +310,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) {
-			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
+			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing.getName());
 		}
 
 		/**

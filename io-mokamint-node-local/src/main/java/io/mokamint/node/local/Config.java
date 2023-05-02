@@ -18,7 +18,6 @@ package io.mokamint.node.local;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -253,7 +252,7 @@ public class Config {
 		 * @throws IllegalArgumentException if no algorithm exists with that name
 		 */
 		public Builder setHashingForDeadlines(String hashingForDeadlines) {
-			if (!hashingAlgorithmExists(hashingForDeadlines))
+			if (!HashingAlgorithms.exists(hashingForDeadlines))
 				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForDeadlines);
 
 			this.hashingForDeadlines = hashingForDeadlines;
@@ -269,7 +268,7 @@ public class Config {
 		 * @throws IllegalArgumentException if no algorithm exists with that name
 		 */
 		public Builder setHashingForGenerations(String hashingForGenerations) {
-			if (!hashingAlgorithmExists(hashingForGenerations))
+			if (!HashingAlgorithms.exists(hashingForGenerations))
 				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForGenerations);
 
 			this.hashingForGenerations = hashingForGenerations;
@@ -284,18 +283,11 @@ public class Config {
 		 * @throws IllegalArgumentException if no algorithm exists with that name
 		 */
 		public Builder setHashingForBlocks(String hashingForBlocks) {
-			if (!hashingAlgorithmExists(hashingForBlocks))
+			if (!HashingAlgorithms.exists(hashingForBlocks))
 				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForBlocks);
 
 			this.hashingForBlocks = hashingForBlocks;
 			return this;
-		}
-
-		private boolean hashingAlgorithmExists(String hashingForDeadlines) {
-			return Stream.of(HashingAlgorithms.TYPES.values())
-					.map(Enum::name)
-					.map(String::toLowerCase)
-					.anyMatch(hashingForDeadlines::equals);
 		}
 
 		/**

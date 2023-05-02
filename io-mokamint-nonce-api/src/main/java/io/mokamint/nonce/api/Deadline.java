@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
@@ -24,7 +23,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * and a value computed for that nonce. Deadlines are ordered
  * by the lexicographical ordering of their values.
  */
-public interface Deadline extends Marshallable {
+public interface Deadline extends DeadlineDescription, Marshallable {
 
 	/**
 	 * The prolog that was used to create the plot file from which
@@ -45,26 +44,6 @@ public interface Deadline extends Marshallable {
 	 * of the plot file.
 	 */
 	byte[] getValue();
-
-	/**
-	 * Yields the number of the scoop considered to compute tre deadline.
-	 * 
-	 * @return the number of the scoop
-	 */
-	int getScoopNumber();
-
-	/**
-	 * Yields the data used to compute the deadline.
-	 * 
-	 * @return the data
-	 */
-	byte[] getData();
-
-	/**
-	 * The hashing algorithm used for the plot file from which
-	 * this deadline has been generated.
-	 */
-	HashingAlgorithm<byte[]> getHashing();
 
 	/**
 	 * Computes the nonce whose deadline is this.
@@ -101,9 +80,18 @@ public interface Deadline extends Marshallable {
 	int compareByValue(Deadline other);
 
 	/**
+	 * Determines if this deadline matches the given description: same scoop number,
+	 * same data and same hashing algorithm.
+	 * 
+	 * @return true if and inly if that condition holds
+	 */
+	boolean matches(DeadlineDescription description);
+
+	/**
 	 * Yields a string representation of this deadline.
 	 * 
 	 * @return the string representation
 	 */
+	@Override
 	String toString();
 }

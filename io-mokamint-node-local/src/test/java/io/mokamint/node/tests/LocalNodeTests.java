@@ -74,7 +74,6 @@ public class LocalNodeTests {
 	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
-		var hashing = HashingAlgorithms.mk(config.hashingForDeadlines, (byte[] bytes) -> bytes);
 
 		var myMiner = new Miner() {
 
@@ -85,7 +84,7 @@ public class LocalNodeTests {
 				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
 				when(deadline.getData()).thenReturn(data);
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashing()).thenReturn(hashing);
+				when(deadline.getHashingName()).thenReturn(config.hashingForDeadlines);
 
 				onDeadlineComputed.accept(deadline, this);
 			}
@@ -123,7 +122,6 @@ public class LocalNodeTests {
 	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
-		var hashing = HashingAlgorithms.mk(config.hashingForDeadlines, (byte[] bytes) -> bytes);
 	
 		var myMiner = new Miner() {
 	
@@ -134,7 +132,7 @@ public class LocalNodeTests {
 				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
 				when(deadline.getData()).thenReturn(data);
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashing()).thenReturn(hashing);
+				when(deadline.getHashingName()).thenReturn(config.hashingForDeadlines);
 
 				onDeadlineComputed.accept(deadline, this);
 			}
@@ -261,7 +259,6 @@ public class LocalNodeTests {
 			.filter(name -> !name.equals(config.hashingForDeadlines))
 			.findAny()
 			.get();
-		var hashing = HashingAlgorithms.mk(algo, (byte[] bytes) -> bytes);
 
 		var myMiner = new Miner() {
 
@@ -272,7 +269,7 @@ public class LocalNodeTests {
 				when(deadline.getScoopNumber()).thenReturn(scoopNumber);
 				when(deadline.getData()).thenReturn(data);
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashing()).thenReturn(hashing);
+				when(deadline.getHashingName()).thenReturn(algo);
 
 				onDeadlineComputed.accept(deadline, this);
 			}

@@ -302,7 +302,7 @@ public class MineNewBlockTask extends Task {
 		private boolean isLegal(Deadline deadline) {
 			return deadline.getScoopNumber() == scoopNumber
 					&& Arrays.equals(deadline.getData(), generationSignature)
-					&& deadline.getHashing().getName().equals(node.getConfig().hashingForDeadlines)
+					&& deadline.getHashingName().equals(node.getConfig().hashingForDeadlines)
 					&& deadline.isValid()
 					&& node.getApplication().prologIsValid(deadline.getProlog());
 		}

@@ -13,11 +13,6 @@
   </parent>
 
   <dependencies>
-  	<dependency>
-      <groupId>io.hotmoka</groupId>
-      <artifactId>io-hotmoka-crypto-api</artifactId>
-      <version>${hotmoka.version}</version>
-    </dependency>
     <dependency>
       <groupId>io.hotmoka</groupId>
       <artifactId>io-hotmoka-marshalling-api</artifactId>

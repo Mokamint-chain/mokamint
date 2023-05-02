@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.miner.remote.internal;
 
+import java.util.List;
+
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
+import io.mokamint.miner.beans.DeadlineRequests;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -44,7 +47,6 @@ public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
     @Override
 	public void onClose(Session session, CloseReason closeReason) {
     	getServer().removeSession(session);
-    	//broadcast(Messages.full(getServer().getUsername(session.getId()), "disconnected!"), session);
     }
 
 	@Override
@@ -54,18 +56,11 @@ public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
 	static ServerEndpointConfig config(Configurator configurator) {
 		return ServerEndpointConfig.Builder.create(MiningEndpoint.class, "/")
-			//.encoders(List.of(Messages.Encoder.class))
-			//.decoders(List.of(Messages.Decoder.class))
+			.encoders(List.of(DeadlineRequests.Encoder.class))
+			//.decoders(List.of(DeadlineRequests.Decoder.class))
 			.configurator(configurator)
 			.build();
 	}
-
-	/*private static void broadcast(Message message, Session session) {
-    	session.getOpenSessions().stream()
-    		.filter(Session::isOpen)
-    		.map(Session::getBasicRemote)
-    		.forEach(remote -> send(message, remote));
-    }*/
 
 	@Override
 	protected void setServer(RemoteMinerImpl server) {
