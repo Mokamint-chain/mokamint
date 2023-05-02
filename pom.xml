@@ -277,7 +277,10 @@
                 <outputDirectory>${project.parent.basedir}/modules/automatic</outputDirectory>
                 <includeArtifactIds>
                   io-hotmoka-toml,
-                  io-hotmoka-xodus
+                  io-hotmoka-xodus,
+                  grizzly-framework,
+                  grizzly-http,
+                  grizzly-http-server
                 </includeArtifactIds>
               </configuration>
             </execution>
@@ -290,10 +293,19 @@
               <configuration>
                 <outputDirectory>${project.parent.basedir}/modules/explicit</outputDirectory>
                 <includeArtifactIds>
+			      jakarta.activation-api,
+                  jakarta.xml.bind-api,
+                  jakarta.websocket-api,
+                  jakarta.websocket-client-api,
+                  tyrus-client,
+                  tyrus-container-grizzly-client,
+                  tyrus-container-grizzly-server,
+                  tyrus-core,
+                  tyrus-server,
+                  tyrus-spi,
                   bcprov-jdk15on,
                   picocli,
                   gson,
-                  jakarta.websocket-client-api,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
@@ -301,7 +313,9 @@
                   io-hotmoka-marshalling-api,
                   io-hotmoka-exceptions,
                   io-hotmoka-websockets-beans,
-                  io-hotmoka-websockets-beans-api
+                  io-hotmoka-websockets-beans-api,
+                  io-hotmoka-websockets-server,
+                  io-hotmoka-websockets-server-api
                 </includeArtifactIds>
               </configuration>
             </execution>

@@ -42,6 +42,8 @@ import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 @ThreadSafe
 public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
+	private final int port;
+
 	@GuardedBy("itself")
 	private final Set<Session> sessions = new HashSet<>();
 
@@ -50,10 +52,12 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
 
 	public RemoteMinerImpl(int port) throws DeploymentException, IOException {
+		this.port = port;
 		var configurator = new MyConfigurator();
     	var container = getContainer();
     	container.addEndpoint(MiningEndpoint.config(configurator));
     	container.start("", port);
+    	LOGGER.info("published a remote miner at localhost:" + port);
 	}
 
 	@Override
@@ -93,6 +97,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	@Override
 	public void close() {
 		super.close();
+		LOGGER.info("closed the remote miner at localhost:" + port);
 	}
 
 	void addSession(Session session) {
@@ -108,6 +113,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	void processDeadline(Deadline deadline) {
+		LOGGER.info("notifying deadline: " + deadline);
 		requests.actionsFor(deadline).forEach(onDeadlineComputed -> onDeadlineComputed.accept(deadline, this));
 	}
 

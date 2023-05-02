@@ -19,6 +19,7 @@ module io.mokamint.plotter {
 
 	requires transitive io.mokamint.plotter.api;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.exceptions;
 	requires java.logging;
 	requires io.mokamint.nonce;
 }

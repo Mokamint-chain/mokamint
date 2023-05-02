@@ -26,7 +26,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 import java.util.logging.Logger;
@@ -34,6 +33,7 @@ import java.util.stream.LongStream;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
@@ -84,10 +84,8 @@ public class PlotImpl implements Plot {
 	 * 
 	 * @param path the path to the file that must be loaded
 	 * @throws IOException if the file of the plot cannot be read
-	 * @throws NoSuchAlgorithmException if the plot has been created with
-	 *                                  a hashing algorithm that is not available
 	 */
-	public PlotImpl(Path path) throws IOException, NoSuchAlgorithmException {
+	public PlotImpl(Path path) throws IOException {
 		this.reader = new RandomAccessFile(path.toFile(), "r");
 		this.channel = reader.getChannel();
 
@@ -111,7 +109,7 @@ public class PlotImpl implements Plot {
 		if (reader.read(hashingNameBytes) != hashingNameLength)
 			throw new IOException("cannot read the name of the hashing algorithm used for the plot file");
 		String hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
-		this.hashing = HashingAlgorithms.mk(hashingName, (byte[] bytes) -> bytes);
+		this.hashing = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(hashingName, (byte[] bytes) -> bytes));
 	}
 
 	/**

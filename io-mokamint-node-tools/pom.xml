@@ -28,6 +28,11 @@
       <artifactId>io-mokamint-miner-local</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-remote</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
   	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-plotter</artifactId>

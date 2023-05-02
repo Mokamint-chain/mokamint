@@ -23,13 +23,18 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.mokamint.application.api.Application;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
+import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -46,12 +51,18 @@ public class Start extends AbstractCommand {
 	@Option(names = "--config", description = { "the toml config file of the node;", "if missing, defaults are used"})
 	private Path config;
 
+	@Option(names = "--miner", description = { "the http port where a remote miner", "must be published" })
+	private int[] minerPorts;
+
 	@Override
 	protected void execute() throws Exception {
 		if (plots == null)
 			plots = new Path[0];
 
-		startNode(plots, 0, new Plot[plots.length]);
+		if (minerPorts == null)
+			minerPorts = new int[0];
+
+		loadPlotsPublishRemoteMinersAndStartNode(plots, 0, new Plot[plots.length]);
 	}
 
 	/**
@@ -63,25 +74,41 @@ public class Start extends AbstractCommand {
 	 * @param plots the plots that are being loaded
 	 * @throws IOException if some plot cannot be accessed
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of some plot is not available
+	 * @throws DeploymentException 
 	 */
-	private void startNode(Path[] paths, int pos, Plot[] plots) throws NoSuchAlgorithmException, IOException {
+	private void loadPlotsPublishRemoteMinersAndStartNode(Path[] paths, int pos, Plot[] plots) throws IOException, DeploymentException {
 		if (pos < paths.length)
 			try (var plot = plots[pos] = Plots.load(paths[pos])) {
-				startNode(paths, pos + 1, plots);
+				loadPlotsPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
+			}
+		else
+			publishRemoteMinersAndStartNode(minerPorts, 0, new ArrayList<>(), plots);
+	}
+
+	private void publishRemoteMinersAndStartNode(int[] minerPorts, int pos, List<Miner> miners, Plot[] plots) throws IOException, DeploymentException {
+		if (pos < minerPorts.length)
+			try (var remote = RemoteMiners.of(minerPorts[pos])) {
+				miners.add(remote);
+				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners, plots);
 			}
 		else {
-			var config = getConfig();
-			ensureExists(config.dir);
-
-			if (paths.length > 0)
-				try (var miner = LocalMiners.of(plots); var node = LocalNodes.of(config, new TestApplication(), miner)) {
-					waitForKeyPress();
+			if (plots.length > 0) {
+				try (var miner = LocalMiners.of(plots)) {
+					miners.add(miner);
+					startNode(miners);
 				}
+			}
 			else
-				// if there are no plot files, we start the node without any miner
-				try (var node = LocalNodes.of(config, new TestApplication())) {
-					waitForKeyPress();
-				}
+				startNode(miners);
+		}
+	}
+
+	private void startNode(List<Miner> miners) throws IOException {
+		var config = getConfig();
+		ensureExists(config.dir);
+
+		try (var node = LocalNodes.of(config, new TestApplication(), miners.toArray(Miner[]::new))) {
+			waitForKeyPress();
 		}
 	}
 

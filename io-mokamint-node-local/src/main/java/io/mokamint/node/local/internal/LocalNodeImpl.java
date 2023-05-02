@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -86,7 +85,6 @@ public class LocalNodeImpl implements Node {
 	 * @param config the configuration of the node
 	 * @param app the application
 	 * @param miners the miners
-	 * @throws NoSuchAlgorithmException if the hashing algorithm for the nodes is nolt available
 	 */
 	public LocalNodeImpl(Config config, Application app, Miner... miners) {
 		this.config = config;
