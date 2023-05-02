@@ -17,12 +17,13 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
+import io.hotmoka.annotations.GuardedBy;
+import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.miner.api.Miner;
@@ -35,32 +36,48 @@ import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
 /**
- * The implementation of a local miner.
- * It uses a set of plot files to find deadlines on-demand.
+ * The implementation of a remote miner. It publishes an endpoint at a URL,
+ * where mining services can connect and provide their deadlines.
  */
+@ThreadSafe
 public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
+
+	@GuardedBy("itself")
 	private final Set<Session> sessions = new HashSet<>();
-	private final Object lock = new Object();
+
+	private final ListOfMiningRequests requests = new ListOfMiningRequests(10);
+
 	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
 
-	public RemoteMinerImpl(URI uri) throws DeploymentException, IOException {
+	public RemoteMinerImpl(int port) throws DeploymentException, IOException {
 		var configurator = new MyConfigurator();
     	var container = getContainer();
     	container.addEndpoint(MiningEndpoint.config(configurator));
-    	container.start("/miner", 8025);
+    	container.start("", port);
 	}
 
 	@Override
 	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 		LOGGER.info("received request " + description);
 
-		sessions.stream()
-			.filter(Session::isOpen)
-			.map(Session::getBasicRemote)
-			.forEach(remote -> send(description, remote));
+		requests.add(description, onDeadlineComputed);
+		requestToEverySession(description);
 	}
 
-	private static void send(DeadlineDescription description, Basic remote) {
+	private void requestToEverySession(DeadlineDescription description) {
+		Set<Session> copy;
+		
+		synchronized (sessions) {
+			copy = new HashSet<>(sessions);
+		}
+
+		copy.stream()
+			.filter(Session::isOpen)
+			.map(Session::getBasicRemote)
+			.forEach(remote -> request(description, remote));
+	}
+
+	private static void request(DeadlineDescription description, Basic remote) {
 		try {
 			// TODO: this is blocking....
 			remote.sendObject(description);
@@ -79,15 +96,19 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	void addSession(Session session) {
-		synchronized (lock) {
+		synchronized (sessions) {
 			sessions.add(session);
 		}
 	}
 
 	void removeSession(Session session) {
-		synchronized (lock) {
+		synchronized (sessions) {
 			sessions.remove(session);
 		}
+	}
+
+	void processDeadline(Deadline deadline) {
+		requests.actionsFor(deadline).forEach(onDeadlineComputed -> onDeadlineComputed.accept(deadline, this));
 	}
 
 	private class MyConfigurator extends Configurator {

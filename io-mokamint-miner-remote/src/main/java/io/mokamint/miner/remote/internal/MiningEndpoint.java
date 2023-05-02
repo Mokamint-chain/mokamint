@@ -20,8 +20,11 @@ import java.util.List;
 
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
@@ -31,17 +34,11 @@ public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
     @Override
     public void onOpen(Session session, EndpointConfig config) {
     	getServer().addSession(session);
-    	/*
-    	String username = session.getPathParameters().get("username");
-    	getServer().setUsername(session.getId(), username);
+    	session.addMessageHandler((MessageHandler.Whole<DeadlineDescription>) this::onDeadlineRequest);
+    }
 
-    	session.addMessageHandler((MessageHandler.Whole<PartialMessage>) (message -> {
-    		System.out.println("Received " + message);
-    		broadcast(message.setFrom(username), session); // fill in info about the user
-    	}));
-
-    	broadcast(Messages.full(username, "connected!"), session);
-    	*/
+    private void onDeadlineRequest(DeadlineDescription description) {
+    	System.out.println("Received " + description);
     }
 
     @Override
@@ -57,6 +54,7 @@ public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 	static ServerEndpointConfig config(Configurator configurator) {
 		return ServerEndpointConfig.Builder.create(MiningEndpoint.class, "/")
 			.encoders(List.of(DeadlineDescriptions.Encoder.class))
+			.decoders(List.of(Deadlines.Decoder.class))
 			.configurator(configurator)
 			.build();
 	}
@@ -65,16 +63,4 @@ public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 	protected void setServer(RemoteMinerImpl server) {
 		super.setServer(server);
 	}
-
-	/*private static void send(Message message, Basic remote) {
-		try {
-			remote.sendObject(message);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		catch (EncodeException e) {
-			throw new RuntimeException(e); // unexpected
-		}
-	}*/
 }

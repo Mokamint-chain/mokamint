@@ -13,9 +13,9 @@
 
   <dependencies>
     <dependency>
-     <groupId>io.hotmoka</groupId>
-     <artifactId>io-hotmoka-websockets-server</artifactId>
-     <version>${io.hotmoka.websockets.version}</version>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-websockets-server</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
     </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
@@ -30,6 +30,11 @@
     <dependency>
       <groupId>io.hotmoka</groupId>
       <artifactId>io-hotmoka-exceptions</artifactId>
+      <version>${hotmoka.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-annotations</artifactId>
       <version>${hotmoka.version}</version>
     </dependency>
   </dependencies>

@@ -139,7 +139,7 @@ public class LocalNodeTests {
 
 				onDeadlineComputed.accept(deadline, this);
 			}
-	
+
 			@Override
 			public void close() {}
 		};

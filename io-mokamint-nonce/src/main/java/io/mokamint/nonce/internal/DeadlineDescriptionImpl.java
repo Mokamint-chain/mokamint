@@ -62,7 +62,7 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(data);
+		return scoopNumber ^ Arrays.hashCode(data) ^ hashingName.hashCode();
 	}
 
 	@Override

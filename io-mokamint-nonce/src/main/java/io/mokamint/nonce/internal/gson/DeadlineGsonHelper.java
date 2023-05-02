@@ -14,13 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.miner.remote {
-	exports io.mokamint.miner.remote;
+package io.mokamint.nonce.internal.gson;
 
-	requires transitive io.mokamint.miner.api;
-	requires transitive io.mokamint.nonce;
-	requires io.hotmoka.websockets.server;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.annotations;
-	requires java.logging;
+import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.api.Deadline;
+
+/**
+ * An object that can be encoded/decoded with Gson. It corresponds to a {@link Deadline}.
+ */
+public class DeadlineGsonHelper {
+	private byte[] prolog;
+	private long progressive;
+	private byte[] value;
+	private int scoopNumber;
+	private byte[] data;
+	private String hashingName;
+
+	public Deadline toBean() {
+		return Deadlines.of(prolog, progressive, value, scoopNumber, data, hashingName);
+    }
 }

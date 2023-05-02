@@ -17,26 +17,26 @@ limitations under the License.
 package io.mokamint.nonce.internal;
 
 import io.hotmoka.websockets.beans.AbstractDecoder;
-import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.internal.gson.DeadlineDescriptionGsonHelper;
+import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.internal.gson.DeadlineGsonHelper;
 import jakarta.websocket.DecodeException;
 
 /**
- * A decoder for {@link io.mokamint.nonce.api.DeadlineDescription}.
+ * A decoder for {@link io.mokamint.nonce.api.Deadline}.
  */
-public class DeadlineDescriptionDecoder extends AbstractDecoder<DeadlineDescription> {
+public class DeadlineDecoder extends AbstractDecoder<Deadline> {
 
-	public DeadlineDescriptionDecoder() {
-		super(DeadlineDescription.class);
+	public DeadlineDecoder() {
+		super(Deadline.class);
 	}
 
 	@Override
-	public DeadlineDescription decode(String s) throws DecodeException {
+	public Deadline decode(String s) throws DecodeException {
 		try {
-			return gson.fromJson(s, DeadlineDescriptionGsonHelper.class).toBean();
+			return gson.fromJson(s, DeadlineGsonHelper.class).toBean();
 		}
 		catch (Exception e) {
-			throw new DecodeException(s, "could not decode a DeadlineRequest", e);
+			throw new DecodeException(s, "could not decode a Deadline", e);
 		}
 	}
 }

@@ -111,7 +111,7 @@ public class MineNewBlockTask extends Task {
 		/**
 		 * The description of the deadline required for the next block.
 		 */
-		private final DeadlineDescription deadlineDescription;
+		private final DeadlineDescription description;
 
 		/**
 		 * The best deadline computed so far. This is empty until a first deadline is found. Since more miners
@@ -130,10 +130,11 @@ public class MineNewBlockTask extends Task {
 		private final Block block;
 
 		private Run() throws InterruptedException, TimeoutException {
+			LOGGER.info(logIntro + "started mining new block");
+			var hashingForGenerations = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes));
+			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().hashingForDeadlines);
+
 			try {
-				LOGGER.info(logIntro + "started mining new block");
-				var hashingForGenerations = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes));
-				this.deadlineDescription = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().hashingForDeadlines);
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
@@ -145,22 +146,13 @@ public class MineNewBlockTask extends Task {
 			}
 		}
 
-		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
-			currentDeadline.await(node.getConfig().deadlineWaitTimeout, TimeUnit.MILLISECONDS);
-		}
-
-		private void informNodeAboutNewBlock() {
-			LOGGER.info(logIntro + "ended mining new block: informing the node");
-			node.signal(node.new BlockDiscoveryEvent(block));
-		}
-
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
-			LOGGER.info(logIntro + "asking miners a deadline: " + deadlineDescription);
-
+			LOGGER.info(logIntro + "asking miners a deadline: " + description);
+		
 			try {
 				node.getMiners().forEach(miner -> UncheckedInterruptedException.wraps(() -> {
 					try {
-						miner.requestDeadline(deadlineDescription, this::onDeadlineComputed);
+						miner.requestDeadline(description, this::onDeadlineComputed);
 					}
 					catch (TimeoutException e) {
 						node.signal(node.new MinerTimeoutEvent(miner));
@@ -170,6 +162,15 @@ public class MineNewBlockTask extends Task {
 			catch (UncheckedInterruptedException e) {
 				throw e.getCause();
 			}
+		}
+
+		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
+			currentDeadline.await(node.getConfig().deadlineWaitTimeout, TimeUnit.MILLISECONDS);
+		}
+
+		private void informNodeAboutNewBlock() {
+			LOGGER.info(logIntro + "ended mining new block: informing the node");
+			node.signal(node.new BlockDiscoveryEvent(block));
 		}
 
 		/**
@@ -216,7 +217,7 @@ public class MineNewBlockTask extends Task {
 		 * @return true if and only if the deadline is legal
 		 */
 		private boolean isLegal(Deadline deadline) {
-			return deadline.matches(deadlineDescription)
+			return deadline.matches(description)
 				&& deadline.isValid()
 				&& node.getApplication().prologIsValid(deadline.getProlog());
 		}

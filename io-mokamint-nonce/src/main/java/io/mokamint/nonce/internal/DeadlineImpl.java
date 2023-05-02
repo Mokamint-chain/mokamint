@@ -102,7 +102,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public int hashCode() {
-		return ((int) progressive) ^ scoopNumber ^ Arrays.hashCode(value); 
+		return scoopNumber ^ Arrays.hashCode(data) ^ hashingName.hashCode();
 	}
 
 	@Override
