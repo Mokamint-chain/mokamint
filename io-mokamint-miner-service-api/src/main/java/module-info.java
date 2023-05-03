@@ -14,16 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.nonce {
-	exports io.mokamint.nonce;
-
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal to com.google.gson;
-	opens io.mokamint.nonce.internal.gson to com.google.gson;
-
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
-	requires transitive io.hotmoka.marshalling;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.websockets.beans;
+module io.mokamint.miner.service.api {
+	exports io.mokamint.miner.service.api;
+	requires io.hotmoka.websockets.client.api;
 }

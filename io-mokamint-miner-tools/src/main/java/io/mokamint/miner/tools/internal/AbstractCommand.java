@@ -14,16 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.nonce {
-	exports io.mokamint.nonce;
+package io.mokamint.miner.tools.internal;
 
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal to com.google.gson;
-	opens io.mokamint.nonce.internal.gson to com.google.gson;
+public abstract class AbstractCommand implements Runnable {
 
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
-	requires transitive io.hotmoka.marshalling;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.websockets.beans;
+	@Override
+	public final void run() {
+		try {
+			execute();
+		}
+		catch (CommandException e) {
+			throw e;
+		}
+		catch (Exception t) {
+			throw new CommandException(t);
+		}
+	}
+
+	protected abstract void execute() throws Exception;
 }

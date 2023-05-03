@@ -51,6 +51,9 @@
       <module>io-mokamint-miner-api</module>
       <module>io-mokamint-miner-local</module>
       <module>io-mokamint-miner-remote</module>
+      <module>io-mokamint-miner-service-api</module>
+      <module>io-mokamint-miner-service</module>
+      <module>io-mokamint-miner-tools</module>
       <module>io-mokamint-plotter</module>
       <module>io-mokamint-plotter-api</module>
       <module>io-mokamint-nonce-api</module>
@@ -216,6 +219,9 @@
                   io-mokamint-miner-api,
                   io-mokamint-miner-local,
                   io-mokamint-miner-remote,
+                  io-mokamint-miner-service-api,
+                  io-mokamint-miner-service,
+                  io-mokamint-miner-tools,
                   io-mokamint-plotter,
                   io-mokamint-plotter-api,
                   io-mokamint-nonce,
@@ -243,6 +249,8 @@
                   io-hotmoka-exceptions,
                   io-hotmoka-websockets-beans,
                   io-hotmoka-websockets-beans-api,
+                  io-hotmoka-websockets-client,
+                  io-hotmoka-websockets-cient-api,
                   io-hotmoka-websockets-server,
                   io-hotmoka-websockets-server-api,
                   <!-- we exclude all modules that go into the automatic folder -->
@@ -315,7 +323,9 @@
                   io-hotmoka-websockets-beans,
                   io-hotmoka-websockets-beans-api,
                   io-hotmoka-websockets-server,
-                  io-hotmoka-websockets-server-api
+                  io-hotmoka-websockets-server-api,
+                  io-hotmoka-websockets-client,
+                  io-hotmoka-websockets-client-api
                 </includeArtifactIds>
               </configuration>
             </execution>

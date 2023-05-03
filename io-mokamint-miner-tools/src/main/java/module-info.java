@@ -14,16 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.nonce {
-	exports io.mokamint.nonce;
+module io.mokamint.miner.tools {
+	exports io.mokamint.miner.tools;
+    opens io.mokamint.miner.tools.internal to info.picocli; // for injecting CLI options
 
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal to com.google.gson;
-	opens io.mokamint.nonce.internal.gson to com.google.gson;
-
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
-	requires transitive io.hotmoka.marshalling;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.websockets.beans;
+    requires io.mokamint.miner.local;
+    requires io.mokamint.miner.service;
+    requires io.mokamint.plotter;
+    requires info.picocli;
+	requires java.logging;
 }

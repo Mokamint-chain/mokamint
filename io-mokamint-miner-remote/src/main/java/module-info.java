@@ -16,6 +16,8 @@ limitations under the License.
 
 module io.mokamint.miner.remote {
 	exports io.mokamint.miner.remote;
+	// needed to allow the endpoint to be created by reflection although it is not exported
+	opens io.mokamint.miner.remote.internal to org.glassfish.tyrus.core;
 
 	requires transitive io.mokamint.miner.api;
 	requires transitive io.mokamint.nonce;

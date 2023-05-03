@@ -55,9 +55,9 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		this.port = port;
 		var configurator = new MyConfigurator();
     	var container = getContainer();
-    	container.addEndpoint(MiningEndpoint.config(configurator));
+    	container.addEndpoint(RemoteMinerEndpoint.config(configurator));
     	container.start("", port);
-    	LOGGER.info("published a remote miner at localhost:" + port);
+    	LOGGER.info("published a remote miner at ws://localhost:" + port);
 	}
 
 	@Override
@@ -83,6 +83,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	private static void request(DeadlineDescription description, Basic remote) {
 		try {
+			System.out.println("sending " + description);
 			// TODO: this is blocking....
 			remote.sendObject(description);
 		}
@@ -97,7 +98,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	@Override
 	public void close() {
 		super.close();
-		LOGGER.info("closed the remote miner at localhost:" + port);
+		LOGGER.info("closed the remote miner at ws://localhost:" + port);
 	}
 
 	void addSession(Session session) {
@@ -122,8 +123,8 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
     	@Override
     	public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
             var result = super.getEndpointInstance(endpointClass);
-            if (result instanceof MiningEndpoint)
-            	((MiningEndpoint) result).setServer(RemoteMinerImpl.this); // we inject the server
+            if (result instanceof RemoteMinerEndpoint)
+            	((RemoteMinerEndpoint) result).setServer(RemoteMinerImpl.this); // we inject the server
 
             return result;
         }

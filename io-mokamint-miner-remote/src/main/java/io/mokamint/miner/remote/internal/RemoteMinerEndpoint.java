@@ -21,7 +21,7 @@ import java.util.List;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Deadlines;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
@@ -29,21 +29,25 @@ import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
-public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
+public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
     @Override
     public void onOpen(Session session, EndpointConfig config) {
+    	System.out.print("onOpen ");
     	getServer().addSession(session);
-    	session.addMessageHandler((MessageHandler.Whole<DeadlineDescription>) this::onDeadlineRequest);
+    	session.addMessageHandler((MessageHandler.Whole<Deadline>) this::onDeadlineRequest);
+    	System.out.println("done");
     }
 
-    private void onDeadlineRequest(DeadlineDescription description) {
+    private void onDeadlineRequest(Deadline description) {
     	System.out.println("Received " + description);
     }
 
     @Override
 	public void onClose(Session session, CloseReason closeReason) {
+    	System.out.print("onClose " + closeReason + " ");
     	getServer().removeSession(session);
+    	System.out.println("done");
     }
 
 	@Override
@@ -52,7 +56,7 @@ public class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
     }
 
 	static ServerEndpointConfig config(Configurator configurator) {
-		return ServerEndpointConfig.Builder.create(MiningEndpoint.class, "/")
+		return ServerEndpointConfig.Builder.create(RemoteMinerEndpoint.class, "/")
 			.encoders(List.of(DeadlineDescriptions.Encoder.class))
 			.decoders(List.of(Deadlines.Decoder.class))
 			.configurator(configurator)

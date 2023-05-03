@@ -14,16 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.nonce {
-	exports io.mokamint.nonce;
+package io.mokamint.miner.service.api;
 
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal to com.google.gson;
-	opens io.mokamint.nonce.internal.gson to com.google.gson;
+import io.hotmoka.websockets.client.api.WebSocketClient;
 
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
-	requires transitive io.hotmoka.marshalling;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.websockets.beans;
+/**
+ * A websocket client that connects to a remote miner exported
+ * by some Mokamint node. It is an adapter of a miner into a web service client.
+ */
+public interface MinerService extends WebSocketClient {
+
+	/**
+	 * Waits until the websockets session gets disconnected (for instance
+	 * because the remote miner has been turned off or is not reachable anymore).
+	 */
+	void waitUntilDisconnected() throws InterruptedException;
 }

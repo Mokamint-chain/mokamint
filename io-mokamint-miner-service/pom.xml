@@ -1,0 +1,38 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>io-mokamint-miner-service</artifactId>
+  <name>io-mokamint-miner-service</name>
+  <packaging>jar</packaging>
+  <version>${mokamint.version}</version>
+
+  <parent>
+    <groupId>io.mokamint</groupId>
+    <artifactId>mokamint</artifactId>
+    <version>parent</version>
+  </parent>
+
+  <dependencies>
+    <dependency>
+       <groupId>io.mokamint</groupId>
+       <artifactId>io-mokamint-miner-service-api</artifactId>
+       <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+    	<groupId>io.mokamint</groupId>
+    	<artifactId>io-mokamint-miner-api</artifactId>
+    	<version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+    	<groupId>io.hotmoka</groupId>
+    	<artifactId>io-hotmoka-websockets-client</artifactId>
+    	<version>${io.hotmoka.websockets.version}</version>
+    </dependency>
+    <dependency>
+    	<groupId>io.mokamint</groupId>
+    	<artifactId>io-mokamint-nonce</artifactId>
+    	<version>${mokamint.version}</version>
+    </dependency>
+  </dependencies>
+
+</project>

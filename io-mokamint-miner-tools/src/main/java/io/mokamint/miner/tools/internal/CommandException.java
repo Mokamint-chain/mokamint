@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2021 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module io.mokamint.nonce {
-	exports io.mokamint.nonce;
+package io.mokamint.miner.tools.internal;
 
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal to com.google.gson;
-	opens io.mokamint.nonce.internal.gson to com.google.gson;
+import java.util.Objects;
 
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
-	requires transitive io.hotmoka.marshalling;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.websockets.beans;
+/**
+ * An exception thrown during the execution of a CLI command.
+ */
+public class CommandException extends RuntimeException {
+
+	private static final long serialVersionUID = 3026861370427646020L;
+
+	CommandException(Throwable wrapped) {
+		super(wrapped);
+
+		Objects.requireNonNull(wrapped);
+	}
+
+	CommandException(String message) {
+		super(message);
+	}
 }
