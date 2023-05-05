@@ -33,21 +33,17 @@ public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl>
 
     @Override
     public void onOpen(Session session, EndpointConfig config) {
-    	System.out.print("onOpen ");
     	getServer().addSession(session);
-    	session.addMessageHandler((MessageHandler.Whole<Deadline>) this::onDeadlineRequest);
-    	System.out.println("done");
+    	session.addMessageHandler((MessageHandler.Whole<Deadline>) this::onDeadlineComputed);
     }
 
-    private void onDeadlineRequest(Deadline description) {
-    	System.out.println("Received " + description);
+    private void onDeadlineComputed(Deadline deadline) {
+    	getServer().processDeadline(deadline);
     }
 
     @Override
 	public void onClose(Session session, CloseReason closeReason) {
-    	System.out.print("onClose " + closeReason + " ");
     	getServer().removeSession(session);
-    	System.out.println("done");
     }
 
 	@Override

@@ -77,19 +77,19 @@ public class ListOfMiningRequests {
 	}
 
 	/**
-	 * Yields the actions to perform when a deadline with the given description arrives.
+	 * Yields the actions to perform when a deadline arrives.
 	 * 
-	 * @param description the description of the deadline
+	 * @param deadline the deadline
 	 * @return the actions
 	 */
-	public Stream<BiConsumer<Deadline, Miner>> actionsFor(DeadlineDescription description) {
+	public Stream<BiConsumer<Deadline, Miner>> actionsFor(Deadline deadline) {
 		List<BiConsumer<Deadline, Miner>> filtered = new ArrayList<>();
 
 		synchronized (lock) {
 			Iterator<BiConsumer<Deadline, Miner>> it = actions.iterator();
 			for (var d: descriptions) {
 				BiConsumer<Deadline, Miner> action = it.next();
-				if (description.equals(d))
+				if (d.equals(deadline))
 					filtered.add(action);
 			}
 		}

@@ -19,12 +19,18 @@ package io.mokamint.miner.service.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Logger;
 
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.service.api.MinerService;
+import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EncodeException;
 import jakarta.websocket.Session;
 
 /**
@@ -36,12 +42,16 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 */
 	private final Miner miner;
 
+	private final URI uri;
+
 	/**
 	 * The session connected to the remote miner.
 	 */
 	private final Session session;
 
 	private final Semaphore semaphore = new Semaphore(0);
+
+	private final static Logger LOGGER = Logger.getLogger(MinerServiceImpl.class.getName());
 
 	/**
 	 * Creates an web service by adapting the given miner.
@@ -52,9 +62,10 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * @throws IOException 
 	 * @throws DeploymentException 
 	 */
-	public MinerServiceImpl(Miner miner, URI url) throws DeploymentException, IOException, URISyntaxException {
+	public MinerServiceImpl(Miner miner, URI uri) throws DeploymentException, IOException, URISyntaxException {
 		this.miner = miner;
-		this.session = new MinerServiceEndpoint(this).deployAt(url);
+		this.uri = uri;
+		this.session = new MinerServiceEndpoint(this).deployAt(uri);
 	}
 
 	@Override
@@ -72,5 +83,37 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 */
 	void disconnect() {
 		semaphore.release();
+	}
+
+	/**
+	 * @param description
+	 */
+	void computeDeadline(DeadlineDescription description) {
+		LOGGER.info("received request for " + description + " from " + uri);
+
+		try {
+			miner.requestDeadline(description, this::onDeadlineComputed);
+		} catch (RejectedExecutionException | InterruptedException | TimeoutException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Called by {@link #miner} when it finds a deadline.
+	 * 
+	 * @param deadline the deadline that has just been computed
+	 * @param miner the miner that found the deadline
+	 */
+	private void onDeadlineComputed(Deadline deadline, Miner miner) {
+		LOGGER.info("sending " + deadline + " to " + uri);
+
+		if (session.isOpen())
+			try {
+				session.getBasicRemote().sendObject(deadline);
+			} catch (IOException | EncodeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 	}
 }

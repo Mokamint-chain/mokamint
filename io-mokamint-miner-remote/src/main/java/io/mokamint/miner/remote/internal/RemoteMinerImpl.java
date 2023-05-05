@@ -69,8 +69,9 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	private void requestToEverySession(DeadlineDescription description) {
+		LOGGER.info("requesting " + description + " to all open sessions");
+
 		Set<Session> copy;
-		
 		synchronized (sessions) {
 			copy = new HashSet<>(sessions);
 		}
@@ -83,7 +84,6 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	private static void request(DeadlineDescription description, Basic remote) {
 		try {
-			System.out.println("sending " + description);
 			// TODO: this is blocking....
 			remote.sendObject(description);
 		}
