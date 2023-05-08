@@ -18,6 +18,7 @@ package io.mokamint.plotter;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.util.function.IntConsumer;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -34,8 +35,9 @@ public interface Plots {
 	 * 
 	 * @param path the path to the file that contains the plot
 	 * @throws IOException if the file of the plot cannot be read
+	 * @throws NoSuchAlgorithmException if the plot file uses an unknown hashing algorithm
 	 */
-	static Plot load(Path path) throws IOException {
+	static Plot load(Path path) throws IOException, NoSuchAlgorithmException {
 		return new PlotImpl(path);
 	}
 

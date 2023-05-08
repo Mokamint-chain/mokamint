@@ -18,9 +18,8 @@ package io.mokamint.nonce.internal;
 
 import java.util.Arrays;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
@@ -31,21 +30,21 @@ import io.mokamint.nonce.api.DeadlineDescription;
 public class DeadlineDescriptionImpl implements DeadlineDescription {
 	private final int scoopNumber;
 	private final byte[] data;
-	private final String hashingName;
+	private final HashingAlgorithm<byte[]> hashing;
 
-	public DeadlineDescriptionImpl(int scoopNumber, byte[] data, String hashingName) {
+	public DeadlineDescriptionImpl(int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
 		if (data == null)
 			throw new NullPointerException("data cannot be null");
 
-		if (!HashingAlgorithms.exists(hashingName))
-			throw new UncheckedNoSuchAlgorithmException(hashingName);
+		if (hashing == null)
+			throw new NullPointerException("hashing cannot be null");
 
 		this.scoopNumber = scoopNumber;
 		this.data = data;
-		this.hashingName = hashingName;
+		this.hashing = hashing;
 	}
 
 	@Override
@@ -54,7 +53,7 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 			DeadlineDescription otherAsDeadlineDescription = (DeadlineDescription) other;
 			return scoopNumber == otherAsDeadlineDescription.getScoopNumber() &&
 				Arrays.equals(data, otherAsDeadlineDescription.getData()) &&
-				hashingName.equals(otherAsDeadlineDescription.getHashing());
+				hashing.getName().equals(otherAsDeadlineDescription.getHashing().getName());
 		}
 		else
 			return false;
@@ -62,7 +61,7 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(data) ^ hashingName.hashCode();
+		return scoopNumber ^ Arrays.hashCode(data) ^ hashing.getName().hashCode();
 	}
 
 	@Override
@@ -76,12 +75,12 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 	}
 
 	@Override
-	public String getHashing() {
-		return hashingName;
+	public HashingAlgorithm<byte[]> getHashing() {
+		return hashing;
 	}
 
 	@Override
 	public String toString() {
-		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", hashing: " + hashingName;
+		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", hashing: " + hashing.getName();
 	}
 }

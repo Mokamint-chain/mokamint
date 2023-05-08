@@ -22,8 +22,6 @@ import java.util.Arrays;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.exceptions.UncheckedIOException;
-import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -103,7 +101,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(data) ^ hashingName.hashCode();
+		return scoopNumber ^ Arrays.hashCode(data) ^ hashing.getName().hashCode();
 	}
 
 	@Override
@@ -146,7 +144,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public Hashing<byte[]> getHashing() {
+	public HashingAlgorithm<byte[]> getHashing() {
 		return hashing;
 	}
 
@@ -175,6 +173,6 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		context.writeInt(scoopNumber);
 		context.writeInt(data.length);
 		context.write(data);
-		context.writeUTF(hashingName);
+		context.writeUTF(hashing.getName());
 	}
 }

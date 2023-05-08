@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
+import java.security.NoSuchAlgorithmException;
+
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
@@ -28,9 +31,9 @@ public class DeadlineGsonHelper {
 	private byte[] value;
 	private int scoopNumber;
 	private byte[] data;
-	private String hashingName;
+	private String hashing;
 
-	public Deadline toBean() {
-		return Deadlines.of(prolog, progressive, value, scoopNumber, data, hashingName);
+	public Deadline toBean() throws NoSuchAlgorithmException {
+		return Deadlines.of(prolog, progressive, value, scoopNumber, data, HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes));
     }
 }

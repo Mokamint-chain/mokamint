@@ -16,9 +16,10 @@ limitations under the License.
 
 package io.mokamint.nonce;
 
-import io.hotmoka.websockets.beans.AbstractEncoder;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.internal.DeadlineDescriptionDecoder;
+import io.mokamint.nonce.internal.DeadlineDescriptionEncoder;
 import io.mokamint.nonce.internal.DeadlineDescriptionImpl;
 
 /**
@@ -31,17 +32,17 @@ public interface DeadlineDescriptions {
 	 * 
 	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
 	 * @param data the data used to compute the deadline
-	 * @param hashingName the name of the hashing algorithm used to compute the deadline and the nonce
+	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @return the deadline description
 	 */
-	static DeadlineDescription of(int scoopNumber, byte[] data, String hashingName) {
-		return new DeadlineDescriptionImpl(scoopNumber, data, hashingName);
+	static DeadlineDescription of(int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+		return new DeadlineDescriptionImpl(scoopNumber, data, hashing);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	static class Encoder extends AbstractEncoder<DeadlineDescription> {}
+	static class Encoder extends DeadlineDescriptionEncoder {}
 
 	/**
 	 * Gson decoder.

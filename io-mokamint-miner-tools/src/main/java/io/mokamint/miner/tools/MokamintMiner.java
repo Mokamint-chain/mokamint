@@ -34,7 +34,7 @@ import picocli.CommandLine.HelpCommand;
  * 
  * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.plotter.tools/io.mokamint.plotter.tools.MokamintPlot
  */
-@Command(name = "mokamint-plot",
+@Command(name = "mokamint-miner",
 	subcommands = {
 		HelpCommand.class,
 		Start.class,

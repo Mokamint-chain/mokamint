@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -66,6 +67,11 @@ public class LocalNodeImpl implements Node {
 	private final Database db;
 
 	/**
+	 * The time of creation of the genesis block.
+	 */
+	private final LocalDateTime startDateTime;
+
+	/**
 	 * The single executor of the events. Events get queued into this queue and run in order
 	 * on that executor, called the event thread.
 	 */
@@ -85,8 +91,9 @@ public class LocalNodeImpl implements Node {
 	 * @param config the configuration of the node
 	 * @param app the application
 	 * @param miners the miners
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
 		this.config = config;
 		this.app = app;
 		this.miners = new SetOfMiners(config, Stream.of(miners));
@@ -94,17 +101,19 @@ public class LocalNodeImpl implements Node {
 
 		Optional<Block> head = db.getHead();
 		if (head.isPresent()) {
-			LocalDateTime nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
+			this.startDateTime = db.getGenesis().get().getStartDateTimeUTC();
+			LocalDateTime nextBlockStartTime = startDateTime.plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(this, head.get(), nextBlockStartTime));
 		}
 		else {
-			GenesisBlock genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+			this.startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
+			GenesisBlock genesis = Blocks.genesis(startDateTime);
 			signal(new BlockDiscoveryEvent(genesis));
 		}
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) {
+	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException {
 		return db.get(hash);
 	}
 
@@ -221,7 +230,7 @@ public class LocalNodeImpl implements Node {
 		@Override @OnThread("events")
 		public void run() {
 			db.setHeadHash(db.add(block));
-			LocalDateTime nextBlockStartTime = db.getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
 		}
 	}

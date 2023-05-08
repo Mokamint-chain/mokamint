@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Node;
@@ -33,8 +35,9 @@ public interface LocalNodes {
 	 * @param app the application
 	 * @param miners the miners
 	 * @return the local node
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	static Node of(Config config, Application app, Miner... miners) {
+	static Node of(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
 		return new LocalNodeImpl(config, app, miners);
 	}
 }

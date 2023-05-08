@@ -61,11 +61,11 @@ public class Start extends AbstractCommand {
 	 * @param plots the plots that are being loaded
 	 * @throws IOException if some plot cannot be accessed
 	 * @throws URISyntaxException 
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of some plot is not available
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of some plot file is unknown
 	 * @throws DeploymentException 
 	 * @throws InterruptedException 
 	 */
-	private void loadPlotsAndStartMiningServices(Path[] paths, int pos, Plot[] plots) throws IOException, DeploymentException, URISyntaxException, InterruptedException {
+	private void loadPlotsAndStartMiningServices(Path[] paths, int pos, Plot[] plots) throws IOException, DeploymentException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
 		if (pos < paths.length)
 			try (var plot = plots[pos] = Plots.load(paths[pos])) {
 				loadPlotsAndStartMiningServices(paths, pos + 1, plots);

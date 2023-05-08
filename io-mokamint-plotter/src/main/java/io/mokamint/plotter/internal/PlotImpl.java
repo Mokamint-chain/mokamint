@@ -266,7 +266,7 @@ public class PlotImpl implements Plot {
 
 	@Override
 	public Deadline getSmallestDeadline(DeadlineDescription description) throws IOException {
-		if (!description.getHashing().equals(hashing.getName()))
+		if (!description.getHashing().getName().equals(hashing.getName()))
 			throw new IllegalArgumentException("deadline description and plot file use different hashing algorithms");
 
 		try {
@@ -308,7 +308,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) {
-			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing.getName());
+			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
 		}
 
 		/**

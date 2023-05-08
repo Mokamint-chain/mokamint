@@ -69,12 +69,12 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	private void requestToEverySession(DeadlineDescription description) {
-		LOGGER.info("requesting " + description + " to all open sessions");
-
 		Set<Session> copy;
 		synchronized (sessions) {
 			copy = new HashSet<>(sessions);
 		}
+
+		LOGGER.info("requesting " + description + " to " + copy.size() + " open sessions");
 
 		copy.stream()
 			.filter(Session::isOpen)
@@ -105,17 +105,25 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		synchronized (sessions) {
 			sessions.add(session);
 		}
+
+		LOGGER.info("miner service " + session.getId() + ": bound");
+
+		// we inform the newly arrived about work that it can already start doing
+		var remote = session.getBasicRemote();
+		requests.forAllDescriptions(description -> request(description, remote));
 	}
 
 	void removeSession(Session session) {
 		synchronized (sessions) {
 			sessions.remove(session);
 		}
+
+		LOGGER.info("miner service " + session.getId() + ": unbound");
 	}
 
 	void processDeadline(Deadline deadline) {
 		LOGGER.info("notifying deadline: " + deadline);
-		requests.actionsFor(deadline).forEach(onDeadlineComputed -> onDeadlineComputed.accept(deadline, this));
+		requests.runAllActionsFor(deadline, this);
 	}
 
 	private class MyConfigurator extends Configurator {

@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
 /**
@@ -28,8 +29,9 @@ public interface Node extends AutoCloseable {
 	 * 
 	 * @param hash the hash of the block
 	 * @return the block, if any
+	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
 	 */
-	Optional<Block> getBlock(byte[] hash);
+	Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException;
 
 	@Override
 	void close();

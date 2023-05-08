@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.UncheckedIOException;
@@ -39,8 +40,9 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * 
 	 * @param context the context
 	 * @return the block
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 */
-	public static AbstractBlock from(UnmarshallingContext context) {
+	public static AbstractBlock from(UnmarshallingContext context) throws NoSuchAlgorithmException {
 		// by reading the height, we can determine if it's a genesis block or not
 		long height = context.readLong();
 		if (height == 0L)
@@ -56,7 +58,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
 
 		return DeadlineDescriptions.of
-			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines.getName());
+			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {

@@ -16,12 +16,13 @@ limitations under the License.
 
 package io.mokamint.nonce;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.hotmoka.websockets.beans.AbstractEncoder;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.internal.DeadlineDecoder;
+import io.mokamint.nonce.internal.DeadlineEncoder;
 import io.mokamint.nonce.internal.DeadlineImpl;
 
 /**
@@ -49,16 +50,16 @@ public interface Deadlines {
 	 * 
 	 * @param context the unmarshalling context
 	 * @return the request
-	 * @throws UncheckedNoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
 	 */
-	static Deadline from(UnmarshallingContext context) {
+	static Deadline from(UnmarshallingContext context) throws NoSuchAlgorithmException {
 		return new DeadlineImpl(context);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	static class Encoder extends AbstractEncoder<Deadline> {}
+	static class Encoder extends DeadlineEncoder {}
 
 	/**
 	 * Gson decoder.

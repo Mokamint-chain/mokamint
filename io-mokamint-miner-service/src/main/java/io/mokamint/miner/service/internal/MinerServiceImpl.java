@@ -58,7 +58,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * 
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
-	 * @throws URISyntaxException 
+	 * @throws URISyntaxException if the {@code uri} syntax is wrong
 	 * @throws IOException 
 	 * @throws DeploymentException 
 	 */
@@ -66,6 +66,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		this.miner = miner;
 		this.uri = uri;
 		this.session = new MinerServiceEndpoint(this).deployAt(uri);
+		LOGGER.info("miner service bound to " + uri);
 	}
 
 	@Override

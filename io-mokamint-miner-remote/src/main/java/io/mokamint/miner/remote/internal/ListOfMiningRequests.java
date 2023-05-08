@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
@@ -77,12 +77,12 @@ public class ListOfMiningRequests {
 	}
 
 	/**
-	 * Yields the actions to perform when a deadline arrives.
+	 * Performs all actions when a deadline is found.
 	 * 
 	 * @param deadline the deadline
-	 * @return the actions
+	 * @param miner the miner that found the deadline
 	 */
-	public Stream<BiConsumer<Deadline, Miner>> actionsFor(Deadline deadline) {
+	public void runAllActionsFor(Deadline deadline, Miner miner) {
 		List<BiConsumer<Deadline, Miner>> filtered = new ArrayList<>();
 
 		synchronized (lock) {
@@ -94,6 +94,21 @@ public class ListOfMiningRequests {
 			}
 		}
 
-		return filtered.stream();
+		filtered.forEach(action -> action.accept(deadline, miner));
+	}
+
+	/**
+	 * Runs the given code for the descriptions of the deadline still waiting to be computed.
+	 * 
+	 * @param what the code to run
+	 */
+	public void forAllDescriptions(Consumer<DeadlineDescription> what) {
+		List<DeadlineDescription> copy;
+
+		synchronized (lock) {
+			copy = new ArrayList<>(descriptions);
+		}
+
+		copy.forEach(what);
 	}
 }

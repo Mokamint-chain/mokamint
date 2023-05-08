@@ -16,19 +16,21 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
+import java.security.NoSuchAlgorithmException;
+
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
- * An object that can be encoded/decoded with Gson. It corresponds to a
- * {@link DeadlineDescription}.
+ * An object that can be encoded/decoded with Gson. It corresponds to a {@link DeadlineDescription}.
  */
 public class DeadlineDescriptionGsonHelper {
 	private int scoopNumber;
 	private byte[] data;
-	private String hashingName;
+	private String hashing;
 
-	public DeadlineDescription toBean() {
-		return DeadlineDescriptions.of(scoopNumber, data, hashingName);
+	public DeadlineDescription toBean() throws NoSuchAlgorithmException {
+		return DeadlineDescriptions.of(scoopNumber, data, HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes));
     }
 }

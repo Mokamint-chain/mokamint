@@ -132,13 +132,13 @@ public class Config {
 		sb.append("dir = \"" + dir + "\"\n");
 		sb.append("\n");
 		sb.append("# the hashing algorithm used for the deadlines and hence for the plot files of the miners\n");
-		sb.append("hashing_for_deadlines = \"" + hashingForDeadlines + "\"\n");
+		sb.append("hashing_for_deadlines = \"" + hashingForDeadlines.getName() + "\"\n");
 		sb.append("\n");
 		sb.append("# the hashing algorithm used for the computation of the new generation and scoop number from the previous block\n");
-		sb.append("hashing_for_generations = \"" + hashingForGenerations + "\"\n");
+		sb.append("hashing_for_generations = \"" + hashingForGenerations.getName() + "\"\n");
 		sb.append("\n");
 		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
-		sb.append("hashing_for_blocks = \"" + hashingForBlocks + "\"\n");
+		sb.append("hashing_for_blocks = \"" + hashingForBlocks.getName() + "\"\n");
 		sb.append("\n");
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");

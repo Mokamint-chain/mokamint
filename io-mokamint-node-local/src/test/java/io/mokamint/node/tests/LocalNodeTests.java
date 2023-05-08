@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -256,12 +257,14 @@ public class LocalNodeTests {
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 
 		// we look for a hashing algorithm different from that expected by the node
-		String algo = Stream.of(HashingAlgorithms.TYPES.values())
+		String algoName = Stream.of(HashingAlgorithms.TYPES.values())
 			.map(Enum::name)
 			.map(String::toLowerCase)
-			.filter(name -> !name.equals(config.hashingForDeadlines))
+			.filter(name -> !name.equals(config.hashingForDeadlines.getName()))
 			.findAny()
 			.get();
+
+		HashingAlgorithm<byte[]> algo = HashingAlgorithms.mk(algoName, (byte[] bytes) -> bytes);
 
 		var myMiner = new Miner() {
 

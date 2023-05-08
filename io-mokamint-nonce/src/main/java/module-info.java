@@ -26,4 +26,6 @@ module io.mokamint.nonce {
 	requires transitive io.hotmoka.marshalling;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans;
+	requires java.logging;
+	requires com.google.gson;
 }

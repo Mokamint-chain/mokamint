@@ -16,9 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import static io.hotmoka.exceptions.Check.checkNoSuchAlgorithmException;
+import static io.hotmoka.exceptions.Uncheck.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -94,11 +97,14 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 */
-	public Optional<Block> get(byte[] hash) {
-		return Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
-			.map(ByteIterable::getBytes)
-			.map(Blocks::from);
+	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException {
+		return checkNoSuchAlgorithmException(() ->
+			Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
+				.map(ByteIterable::getBytes)
+				.map(uncheck(Blocks::from))
+		);
 	}
 
 	/**
@@ -114,17 +120,21 @@ public class Database implements AutoCloseable {
 	 * Yields the first genesis block that has been added to this database, if any.
 	 * 
 	 * @return the genesis block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
 	 */
-	public Optional<GenesisBlock> getGenesis() {
-		return getGenesisHash()
-			.map(hash -> get(hash).orElseThrow(uncheckedIOException("the genesis hash is set but it is not in the database")))
-			.map(block -> castToGenesis(block).orElseThrow(uncheckedIOException("the genesis hash is set but it refers to a non-genesis block in the database")));
+	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException {
+		return checkNoSuchAlgorithmException(() ->
+			getGenesisHash()
+				.map(uncheck(hash -> get(hash).orElseThrow(uncheckedIOException("the genesis hash is set but it is not in the database"))))
+				.map(block -> castToGenesis(block).orElseThrow(uncheckedIOException("the genesis hash is set but it refers to a non-genesis block in the database")))
+		);
 	}
 
 	private static Optional<GenesisBlock> castToGenesis(Block block) {
 		return block instanceof GenesisBlock ? Optional.of((GenesisBlock) block) : Optional.empty();
 	}
 
+	// TODO
 	private static Supplier<UncheckedIOException> uncheckedIOException(String message) {
 		return () -> new UncheckedIOException(message);
 	}
@@ -142,10 +152,13 @@ public class Database implements AutoCloseable {
 	 * Yields the head block of the blockchain in the database, if it has been set already.
 	 * 
 	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 */
-	public Optional<Block> getHead() {
-		return getHeadHash()
-			.map(hash -> get(hash).orElseThrow(uncheckedIOException("the head hash is set but it is not in the database")));
+	public Optional<Block> getHead() throws NoSuchAlgorithmException {
+		return checkNoSuchAlgorithmException(() ->
+			getHeadHash()
+				.map(uncheck(hash -> get(hash).orElseThrow(uncheckedIOException("the head hash is set but it is not in the database"))))
+		);
 	}
 
 	/**

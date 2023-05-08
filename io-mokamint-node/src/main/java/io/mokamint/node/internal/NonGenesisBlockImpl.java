@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -80,8 +81,9 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * 
 	 * @param height the height of the block
 	 * @param context the context
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 */
-	NonGenesisBlockImpl(long height, UnmarshallingContext context) {
+	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException {
 		this.height = height;
 		this.totalWaitingTime = context.readLong();
 		this.weightedWaitingTime = context.readLong();

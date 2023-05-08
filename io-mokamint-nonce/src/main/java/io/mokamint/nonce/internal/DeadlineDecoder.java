@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.nonce.internal;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.hotmoka.websockets.beans.AbstractDecoder;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.internal.gson.DeadlineGsonHelper;
@@ -25,6 +28,8 @@ import jakarta.websocket.DecodeException;
  * A decoder for {@link io.mokamint.nonce.api.Deadline}.
  */
 public class DeadlineDecoder extends AbstractDecoder<Deadline> {
+
+	private final static Logger LOGGER = Logger.getLogger(DeadlineDecoder.class.getName());
 
 	public DeadlineDecoder() {
 		super(Deadline.class);
@@ -36,6 +41,7 @@ public class DeadlineDecoder extends AbstractDecoder<Deadline> {
 			return gson.fromJson(s, DeadlineGsonHelper.class).toBean();
 		}
 		catch (Exception e) {
+			LOGGER.log(Level.WARNING, "could not decode a Deadline", e);
 			throw new DecodeException(s, "could not decode a Deadline", e);
 		}
 	}

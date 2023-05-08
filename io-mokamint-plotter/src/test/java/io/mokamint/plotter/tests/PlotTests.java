@@ -45,7 +45,7 @@ public class PlotTests {
 		long start = 65536L;
 		long length = 100L;
 		var hashing = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
-		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing.getName());
+		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
 		try (Plot plot = Plots.create(path, prolog, start, length, hashing, __ -> {})) {
 			Deadline deadline1 = plot.getSmallestDeadline(description);

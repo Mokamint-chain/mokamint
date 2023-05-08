@@ -19,6 +19,7 @@ package io.mokamint.node;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.exceptions.UncheckedIOException;
@@ -68,8 +69,9 @@ public interface Blocks {
 	 * 
 	 * @param context the context
 	 * @return the block
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 */
-	static Block from(UnmarshallingContext context) {
+	static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException {
 		return AbstractBlock.from(context);
 	}
 
@@ -78,8 +80,9 @@ public interface Blocks {
 	 * 
 	 * @param bytes the bytes
 	 * @return the block
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 */
-	static Block from(byte[] bytes) {
+	static Block from(byte[] bytes) throws NoSuchAlgorithmException {
 		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
 			return from(context);
 		}

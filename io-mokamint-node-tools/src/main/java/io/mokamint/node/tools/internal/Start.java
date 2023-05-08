@@ -51,7 +51,7 @@ public class Start extends AbstractCommand {
 	@Option(names = "--config", description = { "the toml config file of the node;", "if missing, defaults are used"})
 	private Path config;
 
-	@Option(names = "--miner", description = { "the http port where a remote miner", "must be published" })
+	@Option(names = "--miner-port", description = { "the http port where a remote miner", "must be published" })
 	private int[] minerPorts;
 
 	@Override
