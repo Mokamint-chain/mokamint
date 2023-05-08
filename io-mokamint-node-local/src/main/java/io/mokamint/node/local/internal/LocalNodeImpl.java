@@ -30,21 +30,20 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.exceptions.UncheckedInterruptedException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
-import io.mokamint.node.api.Node;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 
 /**
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public class LocalNodeImpl implements Node {
+public class LocalNodeImpl implements LocalNode {
 
 	/**
 	 * The configuration of the node.
@@ -118,16 +117,13 @@ public class LocalNodeImpl implements Node {
 	}
 
 	@Override
-	public void close() {
+	public void close() throws InterruptedException {
 		events.shutdownNow();
 		tasks.shutdownNow();
 		
 		try {
 			events.awaitTermination(10, TimeUnit.SECONDS);
 			tasks.awaitTermination(10, TimeUnit.SECONDS);
-		}
-		catch (InterruptedException e) {
-			throw new UncheckedInterruptedException(e);
 		}
 		finally {
 			db.close();

@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.Check.checkNoSuchAlgorithmException;
-import static io.hotmoka.exceptions.Uncheck.uncheck;
+import static io.hotmoka.exceptions.CheckSupplier.checkNoSuchAlgorithmException;
+import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 

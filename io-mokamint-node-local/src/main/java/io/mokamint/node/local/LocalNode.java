@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2021 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node.local;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
+import io.mokamint.node.api.Node;
 
 /**
- * A node of a Mokamint blockchain.
+ * A local node of a Mokamint blockchain.
  */
-public interface Node extends AutoCloseable {
+public interface LocalNode extends Node {
 
 	/**
-	 * Yields the block with the given hash, if it has been seen by this node.
+	 * Closes the node.
 	 * 
-	 * @param hash the hash of the block
-	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
+	 * @throws InterruptedException if the thread was interrupted while waiting
+	 *                              for the executors to shut down
 	 */
-	Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException;
+	@Override
+	void close() throws InterruptedException;
 }

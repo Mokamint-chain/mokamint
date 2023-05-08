@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.tasks;
 
+import static io.hotmoka.exceptions.CheckRunnable.checkInterruptedException;
+import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
+
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -25,7 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
-import io.hotmoka.exceptions.UncheckedInterruptedException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -146,19 +148,15 @@ public class MineNewBlockTask extends Task {
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
 			LOGGER.info(logIntro + "asking miners a deadline: " + description);
-		
+			checkInterruptedException(() -> node.getMiners().forEach(uncheck(this::requestDeadlineOrSignalTimeout)));
+		}
+
+		private void requestDeadlineOrSignalTimeout(Miner miner) throws InterruptedException {
 			try {
-				node.getMiners().forEach(miner -> UncheckedInterruptedException.wraps(() -> {
-					try {
-						miner.requestDeadline(description, this::onDeadlineComputed);
-					}
-					catch (TimeoutException e) {
-						node.signal(node.new MinerTimeoutEvent(miner));
-					}
-				}));
+				miner.requestDeadline(description, this::onDeadlineComputed);
 			}
-			catch (UncheckedInterruptedException e) {
-				throw e.getCause();
+			catch (TimeoutException e) {
+				node.signal(node.new MinerTimeoutEvent(miner));
 			}
 		}
 

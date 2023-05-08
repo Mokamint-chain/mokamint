@@ -75,8 +75,9 @@ public class Start extends AbstractCommand {
 	 * @throws IOException if some plot cannot be accessed
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of some plot is not available
 	 * @throws DeploymentException 
+	 * @throws InterruptedException 
 	 */
-	private void loadPlotsPublishRemoteMinersAndStartNode(Path[] paths, int pos, Plot[] plots) throws IOException, DeploymentException, NoSuchAlgorithmException {
+	private void loadPlotsPublishRemoteMinersAndStartNode(Path[] paths, int pos, Plot[] plots) throws IOException, DeploymentException, NoSuchAlgorithmException, InterruptedException {
 		if (pos < paths.length)
 			try (var plot = plots[pos] = Plots.load(paths[pos])) {
 				loadPlotsPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
@@ -85,7 +86,7 @@ public class Start extends AbstractCommand {
 			publishRemoteMinersAndStartNode(minerPorts, 0, new ArrayList<>(), plots);
 	}
 
-	private void publishRemoteMinersAndStartNode(int[] minerPorts, int pos, List<Miner> miners, Plot[] plots) throws IOException, DeploymentException, NoSuchAlgorithmException {
+	private void publishRemoteMinersAndStartNode(int[] minerPorts, int pos, List<Miner> miners, Plot[] plots) throws IOException, DeploymentException, NoSuchAlgorithmException, InterruptedException {
 		if (pos < minerPorts.length)
 			try (var remote = RemoteMiners.of(minerPorts[pos])) {
 				miners.add(remote);
@@ -103,7 +104,7 @@ public class Start extends AbstractCommand {
 		}
 	}
 
-	private void startNode(List<Miner> miners) throws IOException, NoSuchAlgorithmException {
+	private void startNode(List<Miner> miners) throws IOException, NoSuchAlgorithmException, InterruptedException {
 		var config = getConfig();
 		ensureExists(config.dir);
 

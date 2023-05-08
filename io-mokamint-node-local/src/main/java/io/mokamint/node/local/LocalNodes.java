@@ -20,7 +20,6 @@ import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.node.api.Node;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
@@ -37,7 +36,7 @@ public interface LocalNodes {
 	 * @return the local node
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	static Node of(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
+	static LocalNode of(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
 		return new LocalNodeImpl(config, app, miners);
 	}
 }
