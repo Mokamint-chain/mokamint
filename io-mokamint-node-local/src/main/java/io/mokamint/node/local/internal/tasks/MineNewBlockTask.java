@@ -25,9 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.exceptions.UncheckedInterruptedException;
-import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -131,7 +129,7 @@ public class MineNewBlockTask extends Task {
 
 		private Run() throws InterruptedException, TimeoutException {
 			LOGGER.info(logIntro + "started mining new block");
-			var hashingForGenerations = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForGenerations, (byte[] bytes) -> bytes));
+			var hashingForGenerations = node.getConfig().hashingForGenerations;
 			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().hashingForDeadlines);
 
 			try {
@@ -228,7 +226,7 @@ public class MineNewBlockTask extends Task {
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
-			var hashingForBlocks = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(node.getConfig().hashingForBlocks, (byte[] bytes) -> bytes));
+			var hashingForBlocks = node.getConfig().hashingForBlocks;
 			var hashOfPreviousBlock = hashingForBlocks.hash(previous.toByteArray());
 
 			return Blocks.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock,

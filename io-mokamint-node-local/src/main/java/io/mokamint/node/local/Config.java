@@ -18,9 +18,11 @@ package io.mokamint.node.local;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.toml.Toml;
 
 /**
@@ -36,23 +38,23 @@ public class Config {
 	public final Path dir;
 
 	/**
-	 * The name of the hashing algorithm used for computing the deadlines, hence
+	 * The hashing algorithm used for computing the deadlines, hence
 	 * also in the plot files used by the miners. It defaults to <code>shabal256</code>.
 	 */
-	public final String hashingForDeadlines;
+	public final HashingAlgorithm<byte[]> hashingForDeadlines;
 
 	/**
-	 * The name of the hashing algorithm used for computing the next generation
+	 * The hashing algorithm used for computing the next generation
 	 * signature and the new scoop number from the previous block. It defaults to
 	 * <code>sha256</code>.
 	 */
-	public final String hashingForGenerations;
+	public final HashingAlgorithm<byte[]> hashingForGenerations;
 
 	/**
-	 * The name of the hashing algorithm used for the identifying the blocks of
+	 * The hashing algorithm used for the identifying the blocks of
 	 * the Mokamint blockchain. It defaults to <code>sha256</code>.
 	 */
-	public final String hashingForBlocks;
+	public final HashingAlgorithm<byte[]> hashingForBlocks;
 
 	/**
 	 * The target time interval, in milliseconds, between the creation of a block
@@ -87,8 +89,9 @@ public class Config {
 	/**
 	 * Full constructor for the builder pattern.
 	 */
-	private Config(Path dir, String hashingForDeadlines, String hashingForGenerations,
-			String hashingForBlocks,
+	private Config(Path dir, HashingAlgorithm<byte[]> hashingForDeadlines,
+			HashingAlgorithm<byte[]> hashingForGenerations,
+			HashingAlgorithm<byte[]> hashingForBlocks,
 			long targetBlockCreationTime, long deadlineWaitTimeout, long minerInitialPoints,
 			long minerPunishmentForTimeout, long minerPunishmentForIllegalDeadline) {
 
@@ -160,23 +163,28 @@ public class Config {
 	 */
 	public static class Builder {
 		private Path dir = Paths.get("mokamint-chain");
-		private String hashingForDeadlines = "shabal256";
-		private String hashingForGenerations = "sha256";
-		private String hashingForBlocks = "sha256";
+		private HashingAlgorithm<byte[]> hashingForDeadlines;
+		private HashingAlgorithm<byte[]> hashingForGenerations;
+		private HashingAlgorithm<byte[]> hashingForBlocks;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
 		private long minerPunishmentForTimeout = 1L;
 		private long minerPunishmentForIllegalDeadline = 500L;
 
-		private Builder() {}
+		private Builder() throws NoSuchAlgorithmException {
+			setHashingForDeadlines("shabal256");
+			setHashingForGenerations("sha256");
+			setHashingForBlocks("sha256");
+		}
 
 		/**
 		 * Creates a builder containing default data.
 		 * 
 		 * @return the builder
+		 * @throws NoSuchAlgorithmException 
 		 */
-		public static Builder defaults() {
+		public static Builder defaults() throws NoSuchAlgorithmException {
 			return new Builder();
 		}
 
@@ -187,8 +195,9 @@ public class Config {
 		 * 
 		 * @param path the path to the TOML file
 		 * @return the builder
+		 * @throws NoSuchAlgorithmException 
 		 */
-		public static Builder load(Path path) {
+		public static Builder load(Path path) throws NoSuchAlgorithmException {
 			var toml = new Toml().read(path.toFile());
 			var builder = new Builder();
 
@@ -249,13 +258,10 @@ public class Config {
 		 * 
 		 * @param hashingForDeadlines the name of the hashing algorithm
 		 * @return this builder
-		 * @throws IllegalArgumentException if no algorithm exists with that name
+		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
-		public Builder setHashingForDeadlines(String hashingForDeadlines) {
-			if (!HashingAlgorithms.exists(hashingForDeadlines))
-				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForDeadlines);
-
-			this.hashingForDeadlines = hashingForDeadlines;
+		public Builder setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
+			this.hashingForDeadlines = HashingAlgorithms.mk(hashingForDeadlines, (byte[] bytes) -> bytes);
 			return this;
 		}
 
@@ -265,13 +271,10 @@ public class Config {
 		 * 
 		 * @param hashingForGenerations the name of the hashing algorithm
 		 * @return this builder
-		 * @throws IllegalArgumentException if no algorithm exists with that name
+		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
-		public Builder setHashingForGenerations(String hashingForGenerations) {
-			if (!HashingAlgorithms.exists(hashingForGenerations))
-				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForGenerations);
-
-			this.hashingForGenerations = hashingForGenerations;
+		public Builder setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
+			this.hashingForGenerations = HashingAlgorithms.mk(hashingForGenerations, (byte[] bytes) -> bytes);
 			return this;
 		}
 
@@ -280,13 +283,10 @@ public class Config {
 		 * 
 		 * @param hashingForGenerations the name of the hashing algorithm
 		 * @return this builder
-		 * @throws IllegalArgumentException if no algorithm exists with that name
+		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
-		public Builder setHashingForBlocks(String hashingForBlocks) {
-			if (!HashingAlgorithms.exists(hashingForBlocks))
-				throw new IllegalArgumentException("unknown hashing algorithm " + hashingForBlocks);
-
-			this.hashingForBlocks = hashingForBlocks;
+		public Builder setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
+			this.hashingForBlocks = HashingAlgorithms.mk(hashingForBlocks, (byte[] bytes) -> bytes);
 			return this;
 		}
 

@@ -27,11 +27,9 @@ import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.UncheckedIOException;
-import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
@@ -85,7 +83,7 @@ public class Database implements AutoCloseable {
 	 * @param config the configuration of the node using this database
 	 */
 	public Database(Config config) {
-		this.hashingForBlocks = UncheckedNoSuchAlgorithmException.wraps(() -> HashingAlgorithms.mk(config.hashingForBlocks, (byte[] bytes) -> bytes));
+		this.hashingForBlocks = config.hashingForBlocks;
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStoreOfBlocks();
 		this.storeOfForwards = openStoreOfForwards();

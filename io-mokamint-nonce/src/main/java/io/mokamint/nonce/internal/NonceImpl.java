@@ -82,12 +82,12 @@ public class NonceImpl implements Nonce {
 
 	@Override
 	public Deadline getDeadline(DeadlineDescription description) {
-		if (!description.getHashingName().equals(hashing.getName()))
+		if (!description.getHashing().equals(hashing.getName()))
 			throw new IllegalArgumentException("the hashing algorithm in the description does not match that used to create the plot file of this nonce");
 
 		return new DeadlineImpl(prolog, progressive,
 			hashing.hash(extractScoopAndConcat(description.getScoopNumber(), description.getData())),
-				description.getScoopNumber(), description.getData(), description.getHashingName());
+				description.getScoopNumber(), description.getData(), description.getHashing());
 	}
 
 	/**

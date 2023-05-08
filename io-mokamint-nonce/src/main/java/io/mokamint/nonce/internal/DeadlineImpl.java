@@ -16,10 +16,13 @@ limitations under the License.
 
 package io.mokamint.nonce.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -39,9 +42,9 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final byte[] value;
 	private final int scoopNumber;
 	private final byte[] data;
-	private final String hashingName;
+	private final HashingAlgorithm<byte[]> hashing;
 
-	public DeadlineImpl(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, String hashingName) {
+	public DeadlineImpl(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		if (prolog == null)
 			throw new NullPointerException("prolog cannot be null");
 
@@ -60,29 +63,27 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		if (data == null)
 			throw new NullPointerException("data cannot be null");
 
-		if (!HashingAlgorithms.exists(hashingName))
-			throw new UncheckedNoSuchAlgorithmException(hashingName);
-
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
 		this.scoopNumber = scoopNumber;
 		this.data = data;
-		this.hashingName = hashingName;
+		this.hashing = hashing;
 	}
 
 	/**
 	 * Unmarshals a deadline from the given context.
 	 * 
 	 * @param context the unmarshalling context
+	 * @throws NoSuchAlgorithmException if the deadline uses an unknown hashing algorithm
 	 */
-	public DeadlineImpl(UnmarshallingContext context) {
+	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException {
 		this(context.readBytes(context.readCompactInt(), "mismatch in deadline's prolog length"),
 			context.readLong(),
 			context.readBytes(context.readCompactInt(), "mismatch in deadline's value length"),
 			context.readInt(),
 			context.readBytes(context.readInt(), "mismatch in deadline's data length"),
-			context.readUTF());
+			HashingAlgorithms.mk(context.readUTF(), (byte[] bytes) -> bytes));
 	}
 
 	@Override
@@ -94,7 +95,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 				Arrays.equals(value, otherAsDeadline.getValue()) &&
 				Arrays.equals(prolog, otherAsDeadline.getProlog()) &&
 				Arrays.equals(data, otherAsDeadline.getData()) &&
-				hashingName.equals(otherAsDeadline.getHashingName());
+				hashing.equals(otherAsDeadline.getHashing());
 		}
 		else
 			return false;
@@ -145,8 +146,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public String getHashingName() {
-		return hashingName;
+	public Hashing<byte[]> getHashing() {
+		return hashing;
 	}
 
 	@Override

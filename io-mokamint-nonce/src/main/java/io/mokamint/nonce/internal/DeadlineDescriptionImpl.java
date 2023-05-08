@@ -54,7 +54,7 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 			DeadlineDescription otherAsDeadlineDescription = (DeadlineDescription) other;
 			return scoopNumber == otherAsDeadlineDescription.getScoopNumber() &&
 				Arrays.equals(data, otherAsDeadlineDescription.getData()) &&
-				hashingName.equals(otherAsDeadlineDescription.getHashingName());
+				hashingName.equals(otherAsDeadlineDescription.getHashing());
 		}
 		else
 			return false;
@@ -76,7 +76,7 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 	}
 
 	@Override
-	public String getHashingName() {
+	public String getHashing() {
 		return hashingName;
 	}
 

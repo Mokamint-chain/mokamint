@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
+
 /**
  * The description of a deadline. This can be provided for instance to
  * a miner to describe the properties if the deadline one is looking for.
@@ -37,10 +39,10 @@ public interface DeadlineDescription {
 	byte[] getData();
 
 	/**
-	 * The name of the hashing algorithm used for the plot file from which
+	 * The hashing algorithm used for the plot file from which
 	 * this deadline has been generated.
 	 */
-	String getHashingName();
+	HashingAlgorithm<byte[]> getHashing();
 
 	/**
 	 * Yields a string representation of this deadline description.

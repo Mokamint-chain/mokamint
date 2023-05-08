@@ -64,8 +64,8 @@ public interface Block extends Marshallable {
 	 * Yields the description of the deadline that must be computed for the next block.
 	 * 
 	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature
-	 * @param hashingForDeadlines the name of the hashing algorithm used for the deadlines and the plot files
+	 * @param hashingForDeadlines the hashing algorithm used for the deadlines and the plot files
 	 * @return the description
 	 */
-	DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, String hashingForDeadlines);
+	DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, HashingAlgorithm<byte[]> hashingForDeadlines);
 }

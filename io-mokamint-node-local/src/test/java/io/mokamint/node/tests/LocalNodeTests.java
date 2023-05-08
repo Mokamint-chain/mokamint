@@ -59,7 +59,7 @@ public class LocalNodeTests {
 	private static Application app;
 
 	@BeforeAll
-	public static void beforeAll() {
+	public static void beforeAll() throws NoSuchAlgorithmException {
 		config = Config.Builder.defaults()
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
 			.build();
@@ -86,7 +86,7 @@ public class LocalNodeTests {
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashingName()).thenReturn(description.getHashingName());
+				when(deadline.getHashing()).thenReturn(description.getHashing());
 				when(deadline.matches(description)).thenReturn(true);
 
 				onDeadlineComputed.accept(deadline, this);
@@ -135,7 +135,7 @@ public class LocalNodeTests {
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashingName()).thenReturn(description.getHashingName());
+				when(deadline.getHashing()).thenReturn(description.getHashing());
 
 				onDeadlineComputed.accept(deadline, this);
 			}
@@ -272,7 +272,7 @@ public class LocalNodeTests {
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashingName()).thenReturn(algo);
+				when(deadline.getHashing()).thenReturn(algo);
 
 				onDeadlineComputed.accept(deadline, this);
 			}

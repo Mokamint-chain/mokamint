@@ -70,7 +70,7 @@ public class LocalMinerImpl implements Miner {
 
 			try {
 				Stream.of(plots)
-					.filter(plot -> plot.getHashing().getName().equals(description.getHashingName()))
+					.filter(plot -> plot.getHashing().getName().equals(description.getHashing()))
 					.map(plot -> getSmallestDeadline(plot, description))
 					.min(Deadline::compareByValue)
 					.ifPresent(deadline -> onDeadlineComputed.accept(deadline, this));

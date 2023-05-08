@@ -52,11 +52,11 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	}
 
 	@Override
-	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, String hashingForDeadlines) {
+	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, HashingAlgorithm<byte[]> hashingForDeadlines) {
 		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
 
 		return DeadlineDescriptions.of
-			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
+			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines.getName());
 	}
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {
