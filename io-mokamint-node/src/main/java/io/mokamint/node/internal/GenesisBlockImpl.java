@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -47,8 +48,9 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * 
 	 * @param context the context
 	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	GenesisBlockImpl(UnmarshallingContext context) {
+	GenesisBlockImpl(UnmarshallingContext context) throws IOException {
 		String startDateTimeUTC = context.readUTF();
 		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 	}
@@ -84,7 +86,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public void into(MarshallingContext context) {
+	public void into(MarshallingContext context) throws IOException {
 		// we write the height of the block anyway, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)

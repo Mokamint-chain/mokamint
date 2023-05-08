@@ -94,7 +94,8 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 
 		try {
 			miner.requestDeadline(description, this::onDeadlineComputed);
-		} catch (RejectedExecutionException | InterruptedException | TimeoutException e) {
+		}
+		catch (RejectedExecutionException | InterruptedException | TimeoutException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

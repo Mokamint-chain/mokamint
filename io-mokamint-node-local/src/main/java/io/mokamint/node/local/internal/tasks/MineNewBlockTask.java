@@ -16,15 +16,17 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.tasks;
 
-import static io.hotmoka.exceptions.CheckRunnable.checkInterruptedException;
+import static io.hotmoka.exceptions.CheckRunnable.checkInterruptedExceptionIOException;
 import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
@@ -86,10 +88,13 @@ public class MineNewBlockTask extends Task {
 				new Run();
 		}
 		catch (InterruptedException e) {
-			LOGGER.info(MineNewBlockTask.class.getName() + " interrupted");
+			LOGGER.log(Level.SEVERE, "mining interrupted", e);
 		}
 		catch (TimeoutException e) {
 			node.signal(node.new NoDeadlineFoundEvent());
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "database error", e);
 		}
 	}
 
@@ -129,7 +134,7 @@ public class MineNewBlockTask extends Task {
 		 */
 		private final Block block;
 
-		private Run() throws InterruptedException, TimeoutException {
+		private Run() throws InterruptedException, TimeoutException, IOException {
 			LOGGER.info(logIntro + "started mining new block");
 			var hashingForGenerations = node.getConfig().hashingForGenerations;
 			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().hashingForDeadlines);
@@ -146,12 +151,12 @@ public class MineNewBlockTask extends Task {
 			}
 		}
 
-		private void requestDeadlineToEveryMiner() throws InterruptedException {
+		private void requestDeadlineToEveryMiner() throws InterruptedException, IOException {
 			LOGGER.info(logIntro + "asking miners a deadline: " + description);
-			checkInterruptedException(() -> node.getMiners().forEach(uncheck(this::requestDeadlineOrSignalTimeout)));
+			checkInterruptedExceptionIOException(() -> node.getMiners().forEach(uncheck(this::requestDeadlineOrSignalTimeout)));
 		}
 
-		private void requestDeadlineOrSignalTimeout(Miner miner) throws InterruptedException {
+		private void requestDeadlineOrSignalTimeout(Miner miner) throws InterruptedException, IOException {
 			try {
 				miner.requestDeadline(description, this::onDeadlineComputed);
 			}
@@ -218,7 +223,7 @@ public class MineNewBlockTask extends Task {
 				&& node.getApplication().prologIsValid(deadline.getProlog());
 		}
 
-		private Block createNewBlock() {
+		private Block createNewBlock() throws IOException {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);

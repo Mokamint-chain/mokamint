@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.nonce;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -51,8 +52,9 @@ public interface Deadlines {
 	 * @param context the unmarshalling context
 	 * @return the request
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
+	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	static Deadline from(UnmarshallingContext context) throws NoSuchAlgorithmException {
+	static Deadline from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		return new DeadlineImpl(context);
 	}
 

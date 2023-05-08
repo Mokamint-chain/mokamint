@@ -16,15 +16,18 @@ limitations under the License.
 
 package io.mokamint.miner.remote.internal;
 
+import static io.hotmoka.exceptions.CheckRunnable.checkIOException;
+import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
@@ -61,14 +64,14 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) throws IOException {
 		LOGGER.info("received request " + description);
 
 		requests.add(description, onDeadlineComputed);
 		requestToEverySession(description);
 	}
 
-	private void requestToEverySession(DeadlineDescription description) {
+	private void requestToEverySession(DeadlineDescription description) throws IOException {
 		Set<Session> copy;
 		synchronized (sessions) {
 			copy = new HashSet<>(sessions);
@@ -76,19 +79,16 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 		LOGGER.info("requesting " + description + " to " + copy.size() + " open sessions");
 
-		copy.stream()
+		checkIOException(() -> copy.stream()
 			.filter(Session::isOpen)
 			.map(Session::getBasicRemote)
-			.forEach(remote -> request(description, remote));
+			.forEach(uncheck(remote -> request(description, remote))));
 	}
 
-	private static void request(DeadlineDescription description, Basic remote) {
+	private static void request(DeadlineDescription description, Basic remote) throws IOException {
 		try {
 			// TODO: this is blocking....
 			remote.sendObject(description);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
 		}
 		catch (EncodeException e) {
 			throw new RuntimeException(e); // unexpected
@@ -110,7 +110,13 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 		// we inform the newly arrived about work that it can already start doing
 		var remote = session.getBasicRemote();
-		requests.forAllDescriptions(description -> request(description, remote));
+
+		try {
+			checkIOException(() -> requests.forAllDescriptions(uncheck(description -> request(description, remote))));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "could not send data to the miner service", e);
+		}
 	}
 
 	void removeSession(Session session) {

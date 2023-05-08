@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -91,8 +93,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param app the application
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws IOException if the databse is corrupted
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException {
 		this.config = config;
 		this.app = app;
 		this.miners = new SetOfMiners(config, Stream.of(miners));
@@ -225,9 +228,14 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		public void run() {
-			db.setHeadHash(db.add(block));
-			LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
+			try {
+				db.setHeadHash(db.add(block));
+				LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+				execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, "database error", e);
+			}
 		}
 	}
 

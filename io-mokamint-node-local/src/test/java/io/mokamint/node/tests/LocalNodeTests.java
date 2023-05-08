@@ -72,7 +72,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
-	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException, IOException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 		var deadlineProlog = new byte[] { 1, 2, 3, 4 };
@@ -99,7 +99,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
 				super(config, app, myMiner);
 			}
 
@@ -123,7 +123,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
 	@Timeout(1)
-	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException {
+	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException, IOException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 	
@@ -147,7 +147,7 @@ public class LocalNodeTests {
 	
 		class MyLocalNode extends LocalNodeImpl {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
 				super(config, app, myMiner);
 			}
 	
@@ -170,12 +170,12 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
 	@Timeout(1)
-	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException {
+	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException, IOException {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() throws NoSuchAlgorithmException {
+			public MyLocalNode() throws NoSuchAlgorithmException, IOException {
 				super(config, app, new Miner[0]);
 			}
 
@@ -196,7 +196,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a miner timeouts, an event is signalled")
 	@Timeout(1)
-	public void signalIfMinerTimeouts() throws InterruptedException, RejectedExecutionException, TimeoutException, NoSuchAlgorithmException {
+	public void signalIfMinerTimeouts() throws InterruptedException, RejectedExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = mock(Miner.class);
@@ -204,7 +204,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
 				super(config, app, myMiner);
 			}
 
@@ -225,13 +225,13 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
 	@Timeout(3) // three times config.deadlineWaitTimeout
-	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException {
+	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException, IOException {
 		var semaphore = new Semaphore(0);
 		var myMiner = mock(Miner.class);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
 				super(config, app, myMiner);
 			}
 
@@ -252,7 +252,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a miner provides deadlines for the wrong hashing algorithm, an event is signalled to the node")
 	@Timeout(1)
-	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException {
+	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException, IOException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 
@@ -286,7 +286,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
 				super(config, app, myMiner);
 			}
 

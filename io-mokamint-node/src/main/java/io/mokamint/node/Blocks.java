@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
-import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
@@ -70,8 +69,9 @@ public interface Blocks {
 	 * @param context the context
 	 * @return the block
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException {
+	static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		return AbstractBlock.from(context);
 	}
 
@@ -81,13 +81,11 @@ public interface Blocks {
 	 * @param bytes the bytes
 	 * @return the block
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws IOException if the block could not be unmarshalled
 	 */
-	static Block from(byte[] bytes) throws NoSuchAlgorithmException {
+	static Block from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
 		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
 			return from(context);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
 		}
 	}
 }

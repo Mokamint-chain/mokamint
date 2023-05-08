@@ -17,14 +17,15 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import static io.hotmoka.exceptions.CheckSupplier.checkNoSuchAlgorithmException;
+import static io.hotmoka.exceptions.CheckSupplier.checkNoSuchAlgorithmExceptionIOException;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -32,7 +33,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
@@ -121,22 +121,18 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the genesis block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
+	 * @throws IOException if the databse is corrupted
 	 */
-	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException {
-		return checkNoSuchAlgorithmException(() ->
+	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, IOException {
+		return checkNoSuchAlgorithmExceptionIOException(() ->
 			getGenesisHash()
-				.map(uncheck(hash -> get(hash).orElseThrow(uncheckedIOException("the genesis hash is set but it is not in the database"))))
-				.map(block -> castToGenesis(block).orElseThrow(uncheckedIOException("the genesis hash is set but it refers to a non-genesis block in the database")))
+				.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the genesis hash is set but it is not in the database"))))
+				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new IOException("the genesis hash is set but it refers to a non-genesis block in the database"))))
 		);
 	}
 
 	private static Optional<GenesisBlock> castToGenesis(Block block) {
 		return block instanceof GenesisBlock ? Optional.of((GenesisBlock) block) : Optional.empty();
-	}
-
-	// TODO
-	private static Supplier<UncheckedIOException> uncheckedIOException(String message) {
-		return () -> new UncheckedIOException(message);
 	}
 
 	/**
@@ -153,11 +149,12 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the head block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws IOException if the databse is corrupted
 	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException {
-		return checkNoSuchAlgorithmException(() ->
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, IOException {
+		return checkNoSuchAlgorithmExceptionIOException(() ->
 			getHeadHash()
-				.map(uncheck(hash -> get(hash).orElseThrow(uncheckedIOException("the head hash is set but it is not in the database"))))
+				.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the head hash is set but it is not in the database"))))
 		);
 	}
 
@@ -166,8 +163,9 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash of the parent block
 	 * @return the hashes
+	 * @throws IOException  if the database is corrupted
 	 */
-	public Stream<byte[]> getForwards(byte[] hash) {
+	public Stream<byte[]> getForwards(byte[] hash) throws IOException {
 		var forwards = environment.computeInReadonlyTransaction(txn -> storeOfForwards.get(txn, fromBytes(hash)));
 		
 		if (forwards == null)
@@ -176,7 +174,7 @@ public class Database implements AutoCloseable {
 			int size = hashingForBlocks.length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
-				throw new UncheckedIOException("the forward map has been corrupted");
+				throw new IOException("the forward map has been corrupted");
 			else if (hashes.length == size) // frequent case, worth optimizing
 				return Stream.of(hashes);
 			else
@@ -196,8 +194,9 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param block the block to add
 	 * @return the hash of the block
+	 * @throws IOException if an I/O error occurred in the database
 	 */
-	public byte[] add(Block block) {
+	public byte[] add(Block block) throws IOException {
 		byte[] bytesOfBlock = block.toByteArray();
 		byte[] hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 

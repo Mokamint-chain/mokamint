@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.nonce.internal;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
@@ -74,8 +75,9 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * 
 	 * @param context the unmarshalling context
 	 * @throws NoSuchAlgorithmException if the deadline uses an unknown hashing algorithm
+	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException {
+	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		this(context.readBytes(context.readCompactInt(), "mismatch in deadline's prolog length"),
 			context.readLong(),
 			context.readBytes(context.readCompactInt(), "mismatch in deadline's value length"),
@@ -164,7 +166,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public void into(MarshallingContext context) {
+	public void into(MarshallingContext context) throws IOException {
 		context.writeCompactInt(prolog.length);
 		context.write(prolog);
 		context.writeLong(progressive);

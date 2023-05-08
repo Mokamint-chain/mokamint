@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 
@@ -82,8 +83,9 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * @param height the height of the block
 	 * @param context the context
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws IOException if the block could not be unmarshalled
 	 */
-	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException {
+	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		this.height = height;
 		this.totalWaitingTime = context.readLong();
 		this.weightedWaitingTime = context.readLong();
@@ -131,7 +133,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	public void into(MarshallingContext context) {
+	public void into(MarshallingContext context) throws IOException {
 		// we write the height of the block first, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
