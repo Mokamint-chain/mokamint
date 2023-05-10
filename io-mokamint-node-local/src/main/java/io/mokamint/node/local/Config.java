@@ -20,10 +20,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 
+import com.moandjiezana.toml.Toml;
+
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.toml.Toml;
 
 /**
  * The configuration of a local Mokamint node.

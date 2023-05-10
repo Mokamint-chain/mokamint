@@ -241,6 +241,7 @@
                   bcprov-jdk15on,
                   picocli,
                   gson,
+                  toml4j,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
@@ -250,11 +251,10 @@
                   io-hotmoka-websockets-beans,
                   io-hotmoka-websockets-beans-api,
                   io-hotmoka-websockets-client,
-                  io-hotmoka-websockets-cient-api,
+                  io-hotmoka-websockets-client-api,
                   io-hotmoka-websockets-server,
                   io-hotmoka-websockets-server-api,
                   <!-- we exclude all modules that go into the automatic folder -->
-                  io-hotmoka-toml,
                   io-hotmoka-xodus,
                   grizzly-framework,
                   grizzly-http,
@@ -284,7 +284,6 @@
               <configuration>
                 <outputDirectory>${project.parent.basedir}/modules/automatic</outputDirectory>
                 <includeArtifactIds>
-                  io-hotmoka-toml,
                   io-hotmoka-xodus,
                   grizzly-framework,
                   grizzly-http,
@@ -314,6 +313,7 @@
                   bcprov-jdk15on,
                   picocli,
                   gson,
+                  toml4j,
                   io-hotmoka-annotations,
                   io-hotmoka-crypto,
                   io-hotmoka-crypto-api,
