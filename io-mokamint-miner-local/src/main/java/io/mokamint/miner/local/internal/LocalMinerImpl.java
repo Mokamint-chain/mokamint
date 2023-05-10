@@ -16,12 +16,10 @@ limitations under the License.
 
 package io.mokamint.miner.local.internal;
 
+import static io.hotmoka.exceptions.CheckRunnable.checkIOException;
+import static io.hotmoka.exceptions.UncheckFunction.uncheck;
+
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,11 +43,6 @@ public class LocalMinerImpl implements Miner {
 	private final Plot[] plots;
 
 	/**
-	 * Executors that take care of executing the requests for computing deadlines.
-	 */
-	private final ExecutorService executors = Executors.newFixedThreadPool(4);
-
-	/**
 	 * Builds a local miner.
 	 * 
 	 * @param plots the plot files used for mining. This cannot be empty
@@ -62,42 +55,22 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) throws RejectedExecutionException {
+	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 		LOGGER.info("received deadline request: " + description);
 
-		executors.submit(() -> {
-			LOGGER.info("processing deadline request: " + description);
-
-			try {
-				Stream.of(plots)
-					.filter(plot -> plot.getHashing().getName().equals(description.getHashing().getName()))
-					.map(plot -> getSmallestDeadline(plot, description))
-					.min(Deadline::compareByValue)
-					.ifPresent(deadline -> onDeadlineComputed.accept(deadline, this));
-			}
-			catch (UncheckedIOException e) {
-				LOGGER.log(Level.SEVERE, "couldn't compute a deadline", e.getCause());
-			}
-		});
+		try {
+			checkIOException(() -> Stream.of(plots)
+				.filter(plot -> plot.getHashing().getName().equals(description.getHashing().getName()))
+				.map(uncheck(plot -> plot.getSmallestDeadline(description)))
+				.min(Deadline::compareByValue)
+				.ifPresent(deadline -> onDeadlineComputed.accept(deadline, this)));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "couldn't access a plot file", e.getCause());
+		}
 	}
 
 	@Override
 	public void close() {
-		executors.shutdown();
-		try {
-			executors.awaitTermination(20, TimeUnit.SECONDS);
-		}
-		catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static Deadline getSmallestDeadline(Plot plot, DeadlineDescription description) {
-		try {
-			return plot.getSmallestDeadline(description);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
 	}
 }

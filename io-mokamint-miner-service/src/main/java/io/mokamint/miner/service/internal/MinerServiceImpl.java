@@ -19,9 +19,7 @@ package io.mokamint.miner.service.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
@@ -74,11 +72,6 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		semaphore.acquire();
 	}
 
-	@Override
-	public void close() {
-		super.close();
-	}
-
 	/**
 	 * 
 	 */
@@ -91,14 +84,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 */
 	void computeDeadline(DeadlineDescription description) {
 		LOGGER.info("received request for " + description + " from " + uri);
-
-		try {
-			miner.requestDeadline(description, this::onDeadlineComputed);
-		}
-		catch (RejectedExecutionException | InterruptedException | TimeoutException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		miner.requestDeadline(description, this::onDeadlineComputed);
 	}
 
 	/**

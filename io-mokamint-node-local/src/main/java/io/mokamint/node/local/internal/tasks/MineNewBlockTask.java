@@ -25,7 +25,6 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -168,24 +167,10 @@ public class MineNewBlockTask extends Task {
 			}
 
 			private void request() {
-				try {
-					miner.requestDeadline(description, Run.this::onDeadlineComputed);
-				} catch (RejectedExecutionException | InterruptedException | TimeoutException | IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				miner.requestDeadline(description, Run.this::onDeadlineComputed);
 			}
 
 			private void onTimeout() {
-				node.signal(node.new MinerTimeoutEvent(miner));
-			}
-		}
-
-		private void requestDeadlineOrSignalTimeout(Miner miner) throws InterruptedException, IOException {
-			try {
-				miner.requestDeadline(description, this::onDeadlineComputed);
-			}
-			catch (TimeoutException e) {
 				node.signal(node.new MinerTimeoutEvent(miner));
 			}
 		}

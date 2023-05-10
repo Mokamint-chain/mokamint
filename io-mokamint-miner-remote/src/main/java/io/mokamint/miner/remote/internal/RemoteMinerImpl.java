@@ -64,14 +64,14 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) throws IOException {
+	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 		LOGGER.info("received request " + description);
 
 		requests.add(description, onDeadlineComputed);
 		requestToEverySession(description);
 	}
 
-	private void requestToEverySession(DeadlineDescription description) throws IOException {
+	private void requestToEverySession(DeadlineDescription description) {
 		Set<Session> copy;
 		synchronized (sessions) {
 			copy = new HashSet<>(sessions);
@@ -79,19 +79,22 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 		LOGGER.info("requesting " + description + " to " + copy.size() + " open sessions");
 
-		checkIOException(() -> copy.stream()
+		copy.stream()
 			.filter(Session::isOpen)
 			.map(Session::getBasicRemote)
-			.forEach(uncheck(remote -> request(description, remote))));
+			.forEach(remote -> request(description, remote));
 	}
 
-	private static void request(DeadlineDescription description, Basic remote) throws IOException {
+	private static void request(DeadlineDescription description, Basic remote) {
 		try {
 			// TODO: this is blocking....
 			remote.sendObject(description);
 		}
 		catch (EncodeException e) {
 			throw new RuntimeException(e); // unexpected
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send request to the session", e);
 		}
 	}
 

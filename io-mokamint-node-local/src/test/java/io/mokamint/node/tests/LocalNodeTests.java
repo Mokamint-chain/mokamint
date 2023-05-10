@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.tests;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
