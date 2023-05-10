@@ -16,9 +16,6 @@ limitations under the License.
 
 package io.mokamint.miner.remote.internal;
 
-import static io.hotmoka.exceptions.CheckRunnable.checkIOException;
-import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -66,7 +63,6 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	@Override
 	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
 		LOGGER.info("received request " + description);
-
 		requests.add(description, onDeadlineComputed);
 		requestToEverySession(description);
 	}
@@ -91,10 +87,10 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			remote.sendObject(description);
 		}
 		catch (EncodeException e) {
-			throw new RuntimeException(e); // unexpected
+			LOGGER.log(Level.SEVERE, "cannot encode the deadline description", e);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send request to the session", e);
+			LOGGER.log(Level.SEVERE, "cannot send the request to the session", e);
 		}
 	}
 
@@ -113,13 +109,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 		// we inform the newly arrived about work that it can already start doing
 		var remote = session.getBasicRemote();
-
-		try {
-			checkIOException(() -> requests.forAllDescriptions(uncheck(description -> request(description, remote))));
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "could not send data to the miner service", e);
-		}
+		requests.forAllDescriptions(description -> request(description, remote));
 	}
 
 	void removeSession(Session session) {

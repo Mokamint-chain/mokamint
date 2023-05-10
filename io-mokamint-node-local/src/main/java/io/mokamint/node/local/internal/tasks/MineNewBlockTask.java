@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.tasks;
 
-import static io.hotmoka.exceptions.CheckRunnable.checkInterruptedExceptionIOException;
-import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
@@ -25,7 +23,6 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -152,9 +149,9 @@ public class MineNewBlockTask extends Task {
 			}
 		}
 
-		private void requestDeadlineToEveryMiner() throws InterruptedException, IOException {
+		private void requestDeadlineToEveryMiner() {
 			LOGGER.info(logIntro + "asking miners a deadline: " + description);
-			checkInterruptedExceptionIOException(() -> node.getMiners().forEach(uncheck(DeadlineRequest::new)));
+			node.getMiners().forEach(DeadlineRequest::new);
 		}
 
 		private class DeadlineRequest {
@@ -176,7 +173,7 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
-			currentDeadline.await(node.getConfig().deadlineWaitTimeout, TimeUnit.MILLISECONDS);
+			currentDeadline.await(node.getConfig().deadlineWaitTimeout, MILLISECONDS);
 		}
 
 		private void informNodeAboutNewBlock() {
@@ -203,7 +200,7 @@ public class MineNewBlockTask extends Task {
 						setWaker(deadline);
 					}
 					else
-						LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's worse than the current deadline");
+						LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's not better than the current deadline");
 				}
 				else {
 					LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's illegal");
@@ -211,7 +208,7 @@ public class MineNewBlockTask extends Task {
 				}
 			}
 			else
-				LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's worse than the current deadline");
+				LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's not better than the current deadline");
 		}
 
 		private void waitUntilDeadlineExpires() throws InterruptedException, TimeoutException {
