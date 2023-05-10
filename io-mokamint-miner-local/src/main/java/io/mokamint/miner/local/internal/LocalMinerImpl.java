@@ -16,10 +16,8 @@ limitations under the License.
 
 package io.mokamint.miner.local.internal;
 
-import static io.hotmoka.exceptions.CheckRunnable.checkIOException;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
-
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,15 +56,29 @@ public class LocalMinerImpl implements Miner {
 	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info("received deadline request: " + description);
 
+		Stream.of(plots)
+			.filter(plot -> plot.getHashing().getName().equals(description.getHashing().getName()))
+			.map(plot -> getSmallestDeadline(plot, description))
+			.flatMap(Optional::stream)
+			.min(Deadline::compareByValue)
+			.ifPresent(deadline -> onDeadlineComputed.accept(deadline));
+	}
+
+	/**
+	 * Yields the smallest deadline from the given plot file. If the plot file
+	 * cannot be read, an empty optional is returned.
+	 * 
+	 * @param plot the plot file
+	 * @param description the description of the deadline
+	 * @return the deadline, if any
+	 */
+	private Optional<Deadline> getSmallestDeadline(Plot plot, DeadlineDescription description) {
 		try {
-			checkIOException(() -> Stream.of(plots)
-				.filter(plot -> plot.getHashing().getName().equals(description.getHashing().getName()))
-				.map(uncheck(plot -> plot.getSmallestDeadline(description)))
-				.min(Deadline::compareByValue)
-				.ifPresent(deadline -> onDeadlineComputed.accept(deadline)));
+			return Optional.of(plot.getSmallestDeadline(description));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "couldn't access a plot file", e.getCause());
+			LOGGER.log(Level.SEVERE, "cannot access a plot file", e);
+			return Optional.empty();
 		}
 	}
 

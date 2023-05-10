@@ -48,17 +48,14 @@ class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
 		return ClientManager.createClient().connectToServer(this, config, uri);
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public void onOpen(Session session, EndpointConfig config) {
-		session.addMessageHandler((MessageHandler.Whole<DeadlineDescription>) this::messageHandler);
+		session.addMessageHandler((MessageHandler.Whole<DeadlineDescription>) getClient()::computeDeadline);
 	}
 
 	@Override
 	public void onClose(Session session, CloseReason closeReason) {
 		getClient().disconnect();
-	}
-
-	private void messageHandler(DeadlineDescription description) {
-		getClient().computeDeadline(description);
 	}
 }

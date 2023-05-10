@@ -22,7 +22,6 @@ module io.mokamint.miner.remote {
 	requires transitive io.mokamint.miner.api;
 	requires transitive io.mokamint.nonce;
 	requires transitive io.hotmoka.websockets.server;
-	requires io.hotmoka.exceptions;
 	requires io.hotmoka.annotations;
 	requires java.logging;
 }

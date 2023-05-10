@@ -163,7 +163,7 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash of the parent block
 	 * @return the hashes
-	 * @throws IOException  if the database is corrupted
+	 * @throws IOException if the database is corrupted
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws IOException {
 		var forwards = environment.computeInReadonlyTransaction(txn -> storeOfForwards.get(txn, fromBytes(hash)));
