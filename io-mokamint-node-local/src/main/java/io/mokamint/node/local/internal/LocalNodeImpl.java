@@ -22,10 +22,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -193,6 +195,34 @@ public class LocalNodeImpl implements LocalNode {
 		 * The node running this task.
 		 */
 		protected final LocalNodeImpl node = LocalNodeImpl.this;
+
+		/**
+		 * Runs some code for up to the given timeout.
+		 * 
+		 * @param what the code to run
+		 * @param timeout the timeout
+		 * @param unit the unit of time of the timeout
+		 * @param onTimeout the code to execute if a timeout occurs
+		 */
+		protected void runWithTimeout(Runnable what, long timeout, TimeUnit unit, Runnable onTimeout) {
+			tasks.execute(() -> {
+				var future = tasks.submit(what::run);
+
+				try {
+					future.get(timeout, unit);
+				}
+				catch (TimeoutException e) {
+					onTimeout.run();
+				}
+				catch (InterruptedException e) {
+					LOGGER.log(Level.INFO, "the task has been interrupted", e);
+					future.cancel(true);
+				}
+				catch (ExecutionException e) {
+					LOGGER.log(Level.SEVERE, "the task generated an exception", e);
+				}
+			});			
+		}
 	}
 
 	/**

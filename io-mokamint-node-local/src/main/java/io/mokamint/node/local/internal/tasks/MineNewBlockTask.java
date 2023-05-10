@@ -18,12 +18,14 @@ package io.mokamint.node.local.internal.tasks;
 
 import static io.hotmoka.exceptions.CheckRunnable.checkInterruptedExceptionIOException;
 import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -153,7 +155,30 @@ public class MineNewBlockTask extends Task {
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException, IOException {
 			LOGGER.info(logIntro + "asking miners a deadline: " + description);
-			checkInterruptedExceptionIOException(() -> node.getMiners().forEach(uncheck(this::requestDeadlineOrSignalTimeout)));
+			checkInterruptedExceptionIOException(() -> node.getMiners().forEach(uncheck(DeadlineRequest::new)));
+		}
+
+		private class DeadlineRequest {
+			private final Miner miner;
+
+			private DeadlineRequest(Miner miner) {
+				this.miner = miner;
+
+				runWithTimeout(this::request, node.getConfig().minerRequestTimeout, MILLISECONDS, this::onTimeout);
+			}
+
+			private void request() {
+				try {
+					miner.requestDeadline(description, Run.this::onDeadlineComputed);
+				} catch (RejectedExecutionException | InterruptedException | TimeoutException | IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+			private void onTimeout() {
+				node.signal(node.new MinerTimeoutEvent(miner));
+			}
 		}
 
 		private void requestDeadlineOrSignalTimeout(Miner miner) throws InterruptedException, IOException {
