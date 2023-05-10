@@ -22,6 +22,9 @@ hashing_for_blocks = "sha256"
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
 target_block_creation_time = 240000
 
+# maximal milliseconds to wait for a deadline request to be accepted by a miner
+miner_request_timeout = 10000
+
 # maximal milliseconds to wait between deadline request to the miners and first deadline reception
 deadline_wait_timeout = 20000
 
@@ -33,3 +36,4 @@ miner_punishment_for_timeout = 1
 
 # the points that a miner loses as punishment for providing an illegal deadline
 miner_punishment_for_illegal_deadline = 500
+

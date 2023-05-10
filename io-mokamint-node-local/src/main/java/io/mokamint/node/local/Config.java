@@ -66,45 +66,53 @@ public class Config {
 	public final long targetBlockCreationTime;
 
 	/**
+	 * The time, in milliseconds, that a miner can use at most to accept a request for a deadline.
+	 * After this threshold, a time-out occurs and the miner will get punished.
+	 * Note that the deadline might arrive well beyond this threshold (or maybe never).
+	 * It defaults to 10000.
+	 */
+	public final long minerRequestTimeout;
+
+	/**
 	 * The maximal delay, in milliseconds, between a deadline request to the miners
-	 * and the reception of the first deadline from the miners.
+	 * and the reception of the first deadline from the miners. After this threshold,
+	 * deadlines might well arrive, but might get ignored by the node.
+	 * It defaults to 20000.
 	 */
 	public final long deadlineWaitTimeout;
 
 	/**
 	 * The initial points of a miner, freshly connected to a node.
+	 * It defaults to 1000.
 	 */
 	public final long minerInitialPoints;
 
 	/**
 	 * The points lost for punishment by a miner that timeouts
-	 * at a request for a deadline.
+	 * at a request for a deadline. It defaults to 1.
 	 */
 	public final long minerPunishmentForTimeout;
 
 	/**
 	 * The points lost by a miner that provides an illegal deadline.
+	 * It defaults to 500.
 	 */
 	public final long minerPunishmentForIllegalDeadline;
 
 	/**
 	 * Full constructor for the builder pattern.
 	 */
-	private Config(Path dir, HashingAlgorithm<byte[]> hashingForDeadlines,
-			HashingAlgorithm<byte[]> hashingForGenerations,
-			HashingAlgorithm<byte[]> hashingForBlocks,
-			long targetBlockCreationTime, long deadlineWaitTimeout, long minerInitialPoints,
-			long minerPunishmentForTimeout, long minerPunishmentForIllegalDeadline) {
-
-		this.dir = dir;
-		this.hashingForDeadlines = hashingForDeadlines;
-		this.hashingForGenerations = hashingForGenerations;
-		this.hashingForBlocks = hashingForBlocks;
-		this.targetBlockCreationTime = targetBlockCreationTime;
-		this.deadlineWaitTimeout = deadlineWaitTimeout;
-		this.minerInitialPoints = minerInitialPoints;
-		this.minerPunishmentForTimeout = minerPunishmentForTimeout;
-		this.minerPunishmentForIllegalDeadline = minerPunishmentForIllegalDeadline;
+	private Config(Builder builder) {
+		this.dir = builder.dir;
+		this.hashingForDeadlines = builder.hashingForDeadlines;
+		this.hashingForGenerations = builder.hashingForGenerations;
+		this.hashingForBlocks = builder.hashingForBlocks;
+		this.targetBlockCreationTime = builder.targetBlockCreationTime;
+		this.minerRequestTimeout = builder.minerRequestTimeout;
+		this.deadlineWaitTimeout = builder.deadlineWaitTimeout;
+		this.minerInitialPoints = builder.minerInitialPoints;
+		this.minerPunishmentForTimeout = builder.minerPunishmentForTimeout;
+		this.minerPunishmentForIllegalDeadline = builder.minerPunishmentForIllegalDeadline;
 	}
 
 	@Override
@@ -144,6 +152,9 @@ public class Config {
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
 		sb.append("\n");
+		sb.append("# maximal milliseconds to wait for a deadline request to be accepted by a miner\n");
+		sb.append("miner_request_timeout = " + minerRequestTimeout + "\n");
+		sb.append("\n");
 		sb.append("# maximal milliseconds to wait between deadline request to the miners and first deadline reception\n");
 		sb.append("deadline_wait_timeout = " + deadlineWaitTimeout + "\n");
 		sb.append("\n");
@@ -168,6 +179,7 @@ public class Config {
 		private HashingAlgorithm<byte[]> hashingForGenerations;
 		private HashingAlgorithm<byte[]> hashingForBlocks;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
+		private long minerRequestTimeout = 10000L;
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
 		private long minerPunishmentForTimeout = 1L;
@@ -221,6 +233,10 @@ public class Config {
 			var targetBlockCreationTime = toml.getLong("target_block_creation_time");
 			if (targetBlockCreationTime != null)
 				builder.setTargetBlockCreationTime(targetBlockCreationTime);
+
+			var minerRequestTimeout = toml.getLong("miner_request_timeout");
+			if (minerRequestTimeout != null)
+				builder.setMinerRequestTimeout(minerRequestTimeout);
 
 			var deadlineWaitTimeout = toml.getLong("deadline_wait_timeout");
 			if (deadlineWaitTimeout != null)
@@ -306,8 +322,22 @@ public class Config {
 		}
 
 		/**
+		 * Sets the time, in milliseconds, that a miner can use at most to accept a request for a deadline.
+		 * After this threshold, a time-out occurs and the miner will get punished.
+		 * Note that the deadline might arrive well beyond this threshold (or maybe never).
+		 * It defaults to 10000.
+		 * 
+		 * @param minerRequestTimeout the wait time, in milliseconds
+		 * @return this builder
+		 */
+		public Builder setMinerRequestTimeout(long minerRequestTimeout) {
+			this.minerRequestTimeout = minerRequestTimeout;
+			return this;
+		}
+
+		/**
 		 * Sets the maximal delay, in milliseconds, between the deadline request to the miners
-		 * and the reception of the first deadline from the miners.
+		 * and the reception of the first deadline from the miners. This defaults to 20000.
 		 * 
 		 * @param deadlineWaitTimeout the wait time, in milliseconds
 		 * @return this builder
@@ -360,9 +390,7 @@ public class Config {
 		 * @return the configuration
 		 */
 		public Config build() {
-			return new Config(dir, hashingForDeadlines, hashingForGenerations, hashingForBlocks,
-				targetBlockCreationTime, deadlineWaitTimeout, minerInitialPoints,
-				minerPunishmentForTimeout, minerPunishmentForIllegalDeadline);
+			return new Config(this);
 		}
 	}
 }
