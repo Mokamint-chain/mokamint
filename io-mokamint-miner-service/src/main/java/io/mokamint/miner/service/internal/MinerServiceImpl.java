@@ -91,9 +91,8 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * Called by {@link #miner} when it finds a deadline.
 	 * 
 	 * @param deadline the deadline that has just been computed
-	 * @param miner the miner that found the deadline
 	 */
-	private void onDeadlineComputed(Deadline deadline, Miner miner) {
+	private void onDeadlineComputed(Deadline deadline) {
 		LOGGER.info("sending " + deadline + " to " + uri);
 
 		if (session.isOpen())

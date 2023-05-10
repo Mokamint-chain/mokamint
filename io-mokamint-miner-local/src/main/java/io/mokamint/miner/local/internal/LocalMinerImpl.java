@@ -20,7 +20,7 @@ import static io.hotmoka.exceptions.CheckRunnable.checkIOException;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 
 import java.io.IOException;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -55,7 +55,7 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info("received deadline request: " + description);
 
 		try {
@@ -63,7 +63,7 @@ public class LocalMinerImpl implements Miner {
 				.filter(plot -> plot.getHashing().getName().equals(description.getHashing().getName()))
 				.map(uncheck(plot -> plot.getSmallestDeadline(description)))
 				.min(Deadline::compareByValue)
-				.ifPresent(deadline -> onDeadlineComputed.accept(deadline, this)));
+				.ifPresent(deadline -> onDeadlineComputed.accept(deadline)));
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "couldn't access a plot file", e.getCause());

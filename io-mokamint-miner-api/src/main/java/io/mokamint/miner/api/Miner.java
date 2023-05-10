@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.api;
 
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -34,11 +34,10 @@ public interface Miner extends AutoCloseable {
 	 * 
 	 * @param description the description of the requested deadline
 	 * @param onDeadlineComputed the callback executed when a deadline has been found.
-	 *                           It is called with the deadline computed and with miner itself.
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
 	 */
-	void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed);
+	void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed);
 
 	@Override
 	void close();

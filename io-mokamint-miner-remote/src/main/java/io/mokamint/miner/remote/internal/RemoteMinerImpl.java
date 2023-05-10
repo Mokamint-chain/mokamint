@@ -19,7 +19,7 @@ package io.mokamint.miner.remote.internal;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,7 +61,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info("received request " + description);
 		requests.add(description, onDeadlineComputed);
 		requestToEverySession(description);

@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
@@ -80,7 +80,7 @@ public class LocalNodeTests {
 		var myMiner = new Miner() {
 
 			@Override
-			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true);
 				when(deadline.getProlog()).thenReturn(deadlineProlog);
@@ -90,7 +90,7 @@ public class LocalNodeTests {
 				when(deadline.getHashing()).thenReturn(description.getHashing());
 				when(deadline.matches(description)).thenReturn(true);
 
-				onDeadlineComputed.accept(deadline, this);
+				onDeadlineComputed.accept(deadline);
 			}
 
 			@Override
@@ -130,7 +130,7 @@ public class LocalNodeTests {
 		var myMiner = new Miner() {
 	
 			@Override
-			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(false); // <--
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
@@ -138,7 +138,7 @@ public class LocalNodeTests {
 				when(deadline.getValue()).thenReturn(deadlineValue);
 				when(deadline.getHashing()).thenReturn(description.getHashing());
 
-				onDeadlineComputed.accept(deadline, this);
+				onDeadlineComputed.accept(deadline);
 			}
 
 			@Override
@@ -202,7 +202,7 @@ public class LocalNodeTests {
 		var myMiner = new Miner() {
 
 			@Override
-			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				// we simulate a miner that never accepts the request
 				try {
 					Thread.sleep(10000);
@@ -282,7 +282,7 @@ public class LocalNodeTests {
 		var myMiner = new Miner() {
 
 			@Override
-			public void requestDeadline(DeadlineDescription description, BiConsumer<Deadline, Miner> onDeadlineComputed) {
+			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true);
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
@@ -290,7 +290,7 @@ public class LocalNodeTests {
 				when(deadline.getValue()).thenReturn(deadlineValue);
 				when(deadline.getHashing()).thenReturn(algo);
 
-				onDeadlineComputed.accept(deadline, this);
+				onDeadlineComputed.accept(deadline);
 			}
 
 			@Override

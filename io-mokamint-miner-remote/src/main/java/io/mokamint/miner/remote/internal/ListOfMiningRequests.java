@@ -21,7 +21,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -40,7 +39,7 @@ public class ListOfMiningRequests {
 	private final Deque<DeadlineDescription> descriptions = new LinkedList<>();
 
 	@GuardedBy("lock")
-	private final Deque<BiConsumer<Deadline, Miner>> actions = new LinkedList<>();
+	private final Deque<Consumer<Deadline>> actions = new LinkedList<>();
 
 	private final Object lock = new Object();
 
@@ -64,7 +63,7 @@ public class ListOfMiningRequests {
 	 * @param description the description of the requested deadline
 	 * @param action the action to perform when a corresponding deadline is found
 	 */
-	public void add(DeadlineDescription description, BiConsumer<Deadline, Miner> action) {
+	public void add(DeadlineDescription description, Consumer<Deadline> action) {
 		synchronized (lock) {
 			if (descriptions.size() == max) {
 				descriptions.removeFirst();
@@ -83,18 +82,18 @@ public class ListOfMiningRequests {
 	 * @param miner the miner that found the deadline
 	 */
 	public void runAllActionsFor(Deadline deadline, Miner miner) {
-		List<BiConsumer<Deadline, Miner>> filtered = new ArrayList<>();
+		List<Consumer<Deadline>> filtered = new ArrayList<>();
 
 		synchronized (lock) {
-			Iterator<BiConsumer<Deadline, Miner>> it = actions.iterator();
+			Iterator<Consumer<Deadline>> it = actions.iterator();
 			for (var d: descriptions) {
-				BiConsumer<Deadline, Miner> action = it.next();
+				Consumer<Deadline> action = it.next();
 				if (d.equals(deadline))
 					filtered.add(action);
 			}
 		}
 
-		filtered.forEach(action -> action.accept(deadline, miner));
+		filtered.forEach(action -> action.accept(deadline));
 	}
 
 	/**

@@ -164,11 +164,15 @@ public class MineNewBlockTask extends Task {
 			}
 
 			private void request() {
-				miner.requestDeadline(description, Run.this::onDeadlineComputed);
+				miner.requestDeadline(description, this::onDeadlineComputed);
 			}
 
 			private void onTimeout() {
 				node.signal(node.new MinerTimeoutEvent(miner));
+			}
+
+			private void onDeadlineComputed(Deadline deadline) {
+				Run.this.onDeadlineComputed(deadline, miner);
 			}
 		}
 
