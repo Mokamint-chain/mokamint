@@ -151,29 +151,22 @@ public class MineNewBlockTask extends Task {
 
 		private void requestDeadlineToEveryMiner() {
 			LOGGER.info(logIntro + "asking miners a deadline: " + description);
+
+			class DeadlineRequest {
+				private final Miner miner;
+
+				private DeadlineRequest(Miner miner) {
+					this.miner = miner;
+
+					miner.requestDeadline(description, this::onDeadlineComputed);
+				}
+
+				private void onDeadlineComputed(Deadline deadline) {
+					Run.this.onDeadlineComputed(deadline, miner);
+				}
+			}
+
 			node.getMiners().forEach(DeadlineRequest::new);
-		}
-
-		private class DeadlineRequest {
-			private final Miner miner;
-
-			private DeadlineRequest(Miner miner) {
-				this.miner = miner;
-
-				runWithTimeout(this::request, node.getConfig().minerRequestTimeout, MILLISECONDS, this::onTimeout);
-			}
-
-			private void request() {
-				miner.requestDeadline(description, this::onDeadlineComputed);
-			}
-
-			private void onTimeout() {
-				node.signal(node.new MinerTimeoutEvent(miner));
-			}
-
-			private void onDeadlineComputed(Deadline deadline) {
-				Run.this.onDeadlineComputed(deadline, miner);
-			}
 		}
 
 		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {

@@ -155,12 +155,12 @@ public class Start extends AbstractCommand {
 			config = getConfig();
 		}
 		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red failed since the config file refers to an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "the config file refers to an unknown hashing algorithm", e);
+			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" refers to an unknown hashing algorithm!|@"));
+			LOGGER.log(Level.SEVERE, "the configuration file refers to an unknown hashing algorithm", e);
 			return;
 		}
 		catch (FileNotFoundException e) {
-			System.out.println(Ansi.AUTO.string("@|red the configuration file \"" + this.config + "\" does not exist!|@"));
+			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" does not exist!|@"));
 			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" does not exist", e);
 			return;
 		}

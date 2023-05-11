@@ -24,9 +24,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
@@ -62,7 +60,6 @@ public class LocalNodeTests {
 	public static void beforeAll() throws NoSuchAlgorithmException {
 		config = Config.Builder.defaults()
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
-			.setMinerRequestTimeout(1000) // a short time is OK for testing
 			.build();
 
 		app = mock(Application.class);
@@ -182,48 +179,6 @@ public class LocalNodeTests {
 			@Override
 			public void signal(Event event) {
 				if (event instanceof NoMinersAvailableEvent)
-					semaphore.release();
-					
-				super.signal(event);
-			}
-		}
-
-		try (var node = new MyLocalNode()) {
-			semaphore.acquire();
-		}
-	}
-
-	@Test
-	@DisplayName("if a miner request timeouts, an event is signalled")
-	@Timeout(3) // three times config.minerRequestTimeout
-	public void signalIfMinerTimeouts() throws InterruptedException, RejectedExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
-		var semaphore = new Semaphore(0);
-
-		var myMiner = new Miner() {
-
-			@Override
-			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
-				// we simulate a miner that never accepts the request
-				try {
-					Thread.sleep(10000);
-				}
-				catch (InterruptedException e) {}
-			}
-
-			@Override
-			public void close() {
-			}
-		};
-
-		class MyLocalNode extends LocalNodeImpl {
-
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
-				super(config, app, myMiner);
-			}
-
-			@Override
-			public void signal(Event event) {
-				if (event instanceof MinerTimeoutEvent && ((MinerTimeoutEvent) event).miner == myMiner)
 					semaphore.release();
 					
 				super.signal(event);
