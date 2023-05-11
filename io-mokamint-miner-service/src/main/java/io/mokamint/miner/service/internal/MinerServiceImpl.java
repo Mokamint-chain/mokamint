@@ -31,6 +31,8 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 /**
+ * Implementation of a websocket client that connects to a remote miner exported
+ * by some Mokamint node. It is an adapter of a miner into a web service client.
  */
 public class MinerServiceImpl extends AbstractWebSocketClient implements MinerService {
 
@@ -39,6 +41,9 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 */
 	private final Miner miner;
 
+	/**
+	 * The websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}.
+	 */
 	private final URI uri;
 
 	/**
@@ -93,9 +98,10 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	}
 
 	/**
-	 * Called by {@link #miner} when it finds a deadline.
+	 * Called by {@link #miner} when it finds a deadline. It forwards it
+	 * to the remote miner.
 	 * 
-	 * @param deadline the deadline that has just been computed
+	 * @param deadline the deadline that the miner has just computed
 	 */
 	private void onDeadlineComputed(Deadline deadline) {
 		LOGGER.info("sending " + deadline + " to " + uri);

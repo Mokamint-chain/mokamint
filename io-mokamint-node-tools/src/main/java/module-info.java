@@ -16,7 +16,6 @@ limitations under the License.
 
 module io.mokamint.node.tools {
 	exports io.mokamint.node.tools;
-	opens io.mokamint.node.tools to info.picocli; // for injecting CLI options
     opens io.mokamint.node.tools.internal to info.picocli; // for injecting CLI options
 
 	requires io.mokamint.node.local;
