@@ -65,7 +65,6 @@ class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
 
 	@Override
 	public void onClose(Session session, CloseReason closeReason) {
-		System.out.println(closeReason);
 		getClient().disconnect();
 	}
 }

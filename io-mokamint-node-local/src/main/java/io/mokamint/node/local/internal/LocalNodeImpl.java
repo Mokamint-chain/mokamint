@@ -39,6 +39,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
+import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 
 /**
@@ -93,7 +94,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param app the application
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 * @throws IOException if the databse is corrupted
+	 * @throws IOException if the database is corrupted
 	 */
 	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException {
 		this.config = config;
@@ -296,8 +297,26 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		public void run() {
-			// it behaves as if all miners timed-out
+			// all miners timed-out
 			miners.forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
+
+			Optional<Block> head;
+			try {
+				head = db.getHead();
+			}
+			catch (NoSuchAlgorithmException e) {
+				LOGGER.log(Level.SEVERE, "the database referes to an unknown hashing algorithm", e);
+				return;
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, "the database is corrupted", e);
+				return;
+			}
+
+			if (head.isPresent()) {
+				LocalDateTime nextBlockStartTime = startDateTime.plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
+				execute(new DelayedMineNewBlockTask(LocalNodeImpl.this, head.get(), nextBlockStartTime, config.deadlineWaitTimeout));
+			}
 		}
 	}
 

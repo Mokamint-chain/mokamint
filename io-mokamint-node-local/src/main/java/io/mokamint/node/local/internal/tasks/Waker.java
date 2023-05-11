@@ -74,16 +74,23 @@ public class Waker {
 
 	/**
 	 * Sets a waker at the given time distance from now. If the waker was already set,
-	 * it gets replaced with the new timeout.
+	 * it gets replaced with the new timeout. If this object was already shut down, it does nothing.
 	 * 
 	 * @param millisecondsToWait the timeout to wait for
+	 * @return true if the waker has been set, false otherwise (if this object was already shut down)
 	 */
-	public void set(long millisecondsToWait) {
+	public boolean set(long millisecondsToWait) {
 		synchronized (lock) {
-			if (waker != null)
-				waker.cancel(true);
+			if (!executor.isShutdown()) {
+				if (waker != null)
+					waker.cancel(true);
 
-			waker = executor.schedule(latch::countDown, millisecondsToWait, TimeUnit.MILLISECONDS);
+				waker = executor.schedule(latch::countDown, millisecondsToWait, TimeUnit.MILLISECONDS);
+				
+				return true;
+			}
+			else
+				return false;
 		}
 	}
 
@@ -91,6 +98,8 @@ public class Waker {
 	 * Shuts down the internal executor of this object.
 	 */
 	public void shutdownNow() {
-		executor.shutdownNow();
+		synchronized (lock) {
+			executor.shutdownNow();
+		}
 	}
 }
