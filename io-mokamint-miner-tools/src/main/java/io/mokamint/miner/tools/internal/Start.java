@@ -21,6 +21,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
@@ -34,7 +38,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "start",
-	description = "Start a new mining service.",
+	description = "Start a new miner service.",
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
@@ -44,12 +48,21 @@ public class Start extends AbstractCommand {
 	@Option(names = "--uri", description = { "the address of the remote mining endpoint(s)", "default: ws://localhost:8025" })
 	private URI[] uris;
 
-	@Override
-	protected void execute() throws Exception {
-		if (uris == null || uris.length == 0)
-			uris = new URI[] { new URI("ws://localhost:8025") };
+	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
-		loadPlotsAndStartMiningServices(plots, 0, new Plot[plots.length]);
+	@Override
+	protected void execute() {
+		if (uris == null || uris.length == 0)
+			try {
+				uris = new URI[] { new URI("ws://localhost:8025") };
+			}
+			catch (URISyntaxException e) {
+				// impossible: the syntax of the URI is correct
+				LOGGER.log(Level.SEVERE, "unexpected exception", e);
+				throw new RuntimeException(e);
+			}
+
+		loadPlotsAndStartMiningServices(plots, 0, new ArrayList<>());
 	}
 
 	/**
@@ -59,33 +72,67 @@ public class Start extends AbstractCommand {
 	 * @param paths the paths to the plots to load
 	 * @param pos the index to the next plot to load
 	 * @param plots the plots that are being loaded
-	 * @throws IOException if some plot cannot be accessed
-	 * @throws URISyntaxException 
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of some plot file is unknown
-	 * @throws DeploymentException 
-	 * @throws InterruptedException 
 	 */
-	private void loadPlotsAndStartMiningServices(Path[] paths, int pos, Plot[] plots) throws IOException, DeploymentException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
-		if (pos < paths.length)
-			try (var plot = plots[pos] = Plots.load(paths[pos])) {
+	private void loadPlotsAndStartMiningServices(Path[] paths, int pos, List<Plot> plots) {
+		if (pos < paths.length) {
+			System.out.print(Ansi.AUTO.string("@|blue Loading " + paths[pos] + "... |@"));
+			try (var plot = Plots.load(paths[pos])) {
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				plots.add(plot);
 				loadPlotsAndStartMiningServices(paths, pos + 1, plots);
 			}
-		else try (var miner = LocalMiners.of(plots)) {
-			startMiningServices(uris, 0, miner);
+			catch (IOException e) {
+				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
+				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + paths[pos] + "\"", e);
+				loadPlotsAndStartMiningServices(paths, pos + 1, plots);
+			}
+			catch (NoSuchAlgorithmException e) {
+				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
+				LOGGER.log(Level.SEVERE, "the plot file \"" + paths[pos] + "\" uses an unknown hashing algorithm", e);
+				loadPlotsAndStartMiningServices(paths, pos + 1, plots);
+			}
+		}
+		else if (plots.isEmpty()) {
+			System.out.println(Ansi.AUTO.string("@|red No plot file could be loaded!|@"));
+		}
+		else {
+			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
+				startMiningServices(uris, 0, false, miner);
+			}
 		}
 	}
 
-	private void startMiningServices(URI[] uris, int pos, Miner miner) throws IOException, DeploymentException, URISyntaxException, InterruptedException {
+	private void startMiningServices(URI[] uris, int pos, boolean atLeastOne, Miner miner) {
 		if (pos < uris.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Connecting to " + uris[pos] + "... |@"));
 
 			try (var service = MinerServices.adapt(miner, uris[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-				startMiningServices(uris, pos + 1, miner);
+				startMiningServices(uris, pos + 1, true, miner);
 				service.waitUntilDisconnected();
 			}
+			catch (DeploymentException e) {
+				System.out.println(Ansi.AUTO.string("@|red failed to deploy! Is " + uris[pos] + " up and reachable?|@"));
+				LOGGER.log(Level.SEVERE, "cannot deploy a miner service bound to " + uris[pos], e);
+				startMiningServices(uris, pos + 1, atLeastOne, miner);
+			}
+			catch (IOException e) {
+				System.out.println(Ansi.AUTO.string("@|red I/O failure! Is " + uris[pos] + " up and reachable?|@"));
+				LOGGER.log(Level.SEVERE, "I/O error while deploying a miner service bound to " + uris[pos], e);
+				startMiningServices(uris, pos + 1, atLeastOne, miner);
+			}
+			catch (URISyntaxException e) {
+				System.out.println(Ansi.AUTO.string("@|red wrong URI syntax!|@"));
+				LOGGER.log(Level.SEVERE, "the syntax of this URI is wrong: " + uris[pos], e);
+				startMiningServices(uris, pos + 1, atLeastOne, miner);
+			}
+			catch (InterruptedException e) {
+				// unexpected: who could interrupt this process?
+				System.out.println(Ansi.AUTO.string("@|red The process has been interrupted!|@"));
+				LOGGER.log(Level.SEVERE, "unexpected interruption", e);
+			}
 		}
-		else
-			System.out.println(Ansi.AUTO.string("@|red Press CTRL+C to stop the miner.|@"));
+		else if (atLeastOne)
+			System.out.println(Ansi.AUTO.string("@|green Press CTRL+C to stop the miner.|@"));
 	}
 }

@@ -28,7 +28,6 @@ import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.EncodeException;
 import jakarta.websocket.Session;
 
 /**
@@ -47,6 +46,9 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 */
 	private final Session session;
 
+	/**
+	 * Used to wait until the service gets disconnected.
+	 */
 	private final Semaphore semaphore = new Semaphore(0);
 
 	private final static Logger LOGGER = Logger.getLogger(MinerServiceImpl.class.getName());
@@ -73,17 +75,20 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	}
 
 	/**
-	 * 
+	 * The endpoint calls this when it gets closed, to wake-up who was waiting for disconnection.
 	 */
 	void disconnect() {
 		semaphore.release();
 	}
 
 	/**
-	 * @param description
+	 * The endpoint calls this when a new deadline request arrives.
+	 * It forwards the request to the miner.
+	 * 
+	 * @param description the description of the requested deadline
 	 */
-	void computeDeadline(DeadlineDescription description) {
-		LOGGER.info("received request for " + description + " from " + uri);
+	void requestDeadline(DeadlineDescription description) {
+		LOGGER.info("received deadline request: " + description + " from " + uri);
 		miner.requestDeadline(description, this::onDeadlineComputed);
 	}
 
@@ -96,11 +101,6 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		LOGGER.info("sending " + deadline + " to " + uri);
 
 		if (session.isOpen())
-			try {
-				session.getBasicRemote().sendObject(deadline);
-			} catch (IOException | EncodeException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			session.getAsyncRemote().sendObject(deadline);
 	}
 }

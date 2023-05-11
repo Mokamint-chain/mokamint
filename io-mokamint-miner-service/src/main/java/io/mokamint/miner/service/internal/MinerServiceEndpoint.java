@@ -19,6 +19,8 @@ package io.mokamint.miner.service.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.glassfish.tyrus.client.ClientManager;
 
@@ -34,6 +36,8 @@ import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 
 class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
+
+	private final static Logger LOGGER = Logger.getLogger(MinerServiceEndpoint.class.getName());
 
 	MinerServiceEndpoint(MinerServiceImpl client) {
 		super(client);
@@ -51,11 +55,17 @@ class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
 	@SuppressWarnings("resource")
 	@Override
 	public void onOpen(Session session, EndpointConfig config) {
-		session.addMessageHandler((MessageHandler.Whole<DeadlineDescription>) getClient()::computeDeadline);
+		session.addMessageHandler((MessageHandler.Whole<DeadlineDescription>) getClient()::requestDeadline);
+	}
+
+	@Override
+	public void onError(Session session, Throwable throwable) {
+		LOGGER.log(Level.SEVERE, "websocket error", throwable);
 	}
 
 	@Override
 	public void onClose(Session session, CloseReason closeReason) {
+		System.out.println(closeReason);
 		getClient().disconnect();
 	}
 }

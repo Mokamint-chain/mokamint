@@ -17,6 +17,8 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -31,7 +33,9 @@ import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
 public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
-    @Override
+	private final static Logger LOGGER = Logger.getLogger(RemoteMinerEndpoint.class.getName());
+
+	@Override
     public void onOpen(Session session, EndpointConfig config) {
     	getServer().addSession(session);
     	session.addMessageHandler((MessageHandler.Whole<Deadline>) this::onDeadlineComputed);
@@ -48,7 +52,7 @@ public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl>
 
 	@Override
     public void onError(Session session, Throwable throwable) {
-    	throwable.printStackTrace();
+		LOGGER.log(Level.SEVERE, "websocket error", throwable);
     }
 
 	static ServerEndpointConfig config(Configurator configurator) {

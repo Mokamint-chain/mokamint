@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
@@ -54,15 +56,17 @@ public class Start extends AbstractCommand {
 	@Option(names = "--miner-port", description = { "the http port where a remote miner", "must be published" })
 	private int[] minerPorts;
 
+	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
+
 	@Override
-	protected void execute() throws Exception {
+	protected void execute() {
 		if (plots == null)
 			plots = new Path[0];
 
 		if (minerPorts == null)
 			minerPorts = new int[0];
 
-		loadPlotsPublishRemoteMinersAndStartNode(plots, 0, new Plot[plots.length]);
+		loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(plots, 0, new ArrayList<>());
 	}
 
 	/**
@@ -72,44 +76,119 @@ public class Start extends AbstractCommand {
 	 * @param paths the paths to the plots to load
 	 * @param pos the index to the next plot to load
 	 * @param plots the plots that are being loaded
-	 * @throws IOException if some plot cannot be accessed
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of some plot is not available
-	 * @throws DeploymentException 
-	 * @throws InterruptedException 
 	 */
-	private void loadPlotsPublishRemoteMinersAndStartNode(Path[] paths, int pos, Plot[] plots) throws IOException, DeploymentException, NoSuchAlgorithmException, InterruptedException {
-		if (pos < paths.length)
-			try (var plot = plots[pos] = Plots.load(paths[pos])) {
-				loadPlotsPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
+	private void loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(Path[] paths, int pos, List<Plot> plots) {
+		if (pos < paths.length) {
+			System.out.print(Ansi.AUTO.string("@|blue Loading " + paths[pos] + "... |@"));
+			try (var plot = Plots.load(paths[pos])) {
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				plots.add(plot);
+				loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
 			}
+			catch (IOException e) {
+				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
+				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + paths[pos] + "\"", e);
+				loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
+			}
+			catch (NoSuchAlgorithmException e) {
+				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
+				LOGGER.log(Level.SEVERE, "the plot file \"" + paths[pos] + "\" uses an unknown hashing algorithm", e);
+				loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
+			}
+		}
 		else
-			publishRemoteMinersAndStartNode(minerPorts, 0, new ArrayList<>(), plots);
+			createLocalMinerPublishRemoteMinersAndStartNode(minerPorts, plots);
 	}
 
-	private void publishRemoteMinersAndStartNode(int[] minerPorts, int pos, List<Miner> miners, Plot[] plots) throws IOException, DeploymentException, NoSuchAlgorithmException, InterruptedException {
-		if (pos < minerPorts.length)
-			try (var remote = RemoteMiners.of(minerPorts[pos])) {
-				miners.add(remote);
-				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners, plots);
-			}
+	private void createLocalMinerPublishRemoteMinersAndStartNode(int[] minerPorts, List<Plot> plots) {
+		List<Miner> miners = new ArrayList<>();
+
+		if (plots.isEmpty())
+			publishRemoteMinersAndStartNode(minerPorts, 0, miners);
 		else {
-			if (plots.length > 0) {
-				try (var miner = LocalMiners.of(plots)) {
-					miners.add(miner);
-					startNode(miners);
-				}
-			}
+			if (plots.size() == 1)
+				System.out.print(Ansi.AUTO.string("@|blue Starting a local miner with 1 plot... |@"));
 			else
-				startNode(miners);
+				System.out.print(Ansi.AUTO.string("@|blue Starting a local miner with " + plots.size() + " plots... |@"));
+
+			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				miners.add(miner);
+				publishRemoteMinersAndStartNode(minerPorts, 0, miners);
+			}
 		}
 	}
 
-	private void startNode(List<Miner> miners) throws IOException, NoSuchAlgorithmException, InterruptedException {
-		var config = getConfig();
-		ensureExists(config.dir);
+	private void publishRemoteMinersAndStartNode(int[] minerPorts, int pos, List<Miner> miners) {
+		if (pos < minerPorts.length) {
+			System.out.print(Ansi.AUTO.string("@|blue Starting a remote miner listening at port " + minerPorts[pos] + " of localhost... |@"));
+			try (var remote = RemoteMiners.of(minerPorts[pos])) {
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				miners.add(remote);
+				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+			}
+			catch (IOException e) {
+				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
+				LOGGER.log(Level.SEVERE, "I/O error while creating a remote miner at port " + minerPorts[pos], e);
+				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+			}
+			catch (DeploymentException e) {
+				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
+				LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
+				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+			}
+			catch (IllegalArgumentException e) {
+				// for instance, the port number is illegal
+				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
+				LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
+				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+			}
+		}
+		else
+			startNode(miners);
+	}
+
+	private void startNode(List<Miner> miners) {
+		Config config;
+
+		try {
+			config = getConfig();
+		}
+		catch (NoSuchAlgorithmException e) {
+			System.out.println(Ansi.AUTO.string("@|red failed since the config file refers to an unknown hashing algorithm!|@"));
+			LOGGER.log(Level.SEVERE, "the config file refers to an unknown hashing algorithm", e);
+			return;
+		}
+		catch (FileNotFoundException e) {
+			System.out.println(Ansi.AUTO.string("@|red the configuration file \"" + this.config + "\" does not exist!|@"));
+			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" does not exist", e);
+			return;
+		}
+
+		try {
+			ensureExists(config.dir);
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot create the directory " + config.dir + "|@"));
+			LOGGER.log(Level.SEVERE, "cannot create the directory " + config.dir, e);
+			return;
+		}
 
 		try (var node = LocalNodes.of(config, new TestApplication(), miners.toArray(Miner[]::new))) {
 			waitForKeyPress();
+		}
+		catch (NoSuchAlgorithmException e) {
+			System.out.println(Ansi.AUTO.string("@|red The database refers to an unknown hashing algorithm!|@"));
+			LOGGER.log(Level.SEVERE, "the database refers to an unknown hashing algorithm", e);
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red I/O error in the database!|@"));
+			LOGGER.log(Level.SEVERE, "I/O error in the database", e);
+		}
+		catch (InterruptedException e) {
+			// unexpected: who could interrupt this process?
+			System.out.println(Ansi.AUTO.string("@|red The process has been interrupted!|@"));
+			LOGGER.log(Level.SEVERE, "unexpected interruption", e);
 		}
 	}
 
@@ -122,33 +201,39 @@ public class Start extends AbstractCommand {
 	 */
 	private void ensureExists(Path dir) throws IOException {
 		if (Files.exists(dir)) {
-			System.out.println(Ansi.AUTO.string("@|red The path \"" + dir + "\" already exists! Will restart the blockchain from the old database.|@"));
-			System.out.println(Ansi.AUTO.string("@|red If you want to start the blockchain from scratch, delete that path and start again this node.|@"));
+			System.out.println(Ansi.AUTO.string("@|blue The path \"" + dir + "\" already exists! Will restart the blockchain from the old database.|@"));
+			System.out.println(Ansi.AUTO.string("@|blue If you want to start the blockchain from scratch, delete that path and start again this node.|@"));
 		}
 
 		Files.createDirectories(dir);
 	}
 
-	private void waitForKeyPress() throws IOException {
+	private void waitForKeyPress() {
 		try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-			System.out.println(Ansi.AUTO.string("@|red Press any key to stop the node.|@"));
+			System.out.println(Ansi.AUTO.string("@|green Press any key to stop the node.|@"));
 			reader.readLine();
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
+			LOGGER.log(Level.SEVERE, "cannot access the standard input", e);
 		}
 	}
 
 	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException {
-		var config = getConfig2();
+		/*var config = getConfig2();
 		System.out.println(config);
 		return config;
 	}
 
 	private Config getConfig2() throws FileNotFoundException, NoSuchAlgorithmException {
+	*/
 		if (config == null)
 			return Config.Builder.defaults().build();
 		else
 			try {
 				return Config.Builder.load(config).build();
 			}
+		// TODO
 			catch (RuntimeException e) {
 				// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
 				Throwable cause = e.getCause();
