@@ -4,8 +4,8 @@
 
     <properties>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-      <maven.compiler.source>13</maven.compiler.source>
-      <maven.compiler.target>13</maven.compiler.target>
+      <maven.compiler.source>19</maven.compiler.source>
+      <maven.compiler.target>19</maven.compiler.target>
       <failOnMissingWebXml>false</failOnMissingWebXml>
       <hotmoka.version>1.1.0</hotmoka.version>
       <mokamint.version>1.0.0</mokamint.version>
@@ -186,7 +186,7 @@
           <artifactId>maven-compiler-plugin</artifactId>
 	      <version>3.11.0</version>
 	      <configuration>
-	        <release>13</release>
+	        <release>19</release>
 	      </configuration>
         </plugin>
         <plugin>
