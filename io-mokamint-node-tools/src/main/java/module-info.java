@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements a command-line tool for controlling Mokamint nodes.
+ */
 module io.mokamint.node.tools {
 	exports io.mokamint.node.tools;
     opens io.mokamint.node.tools.internal to info.picocli; // for injecting CLI options
@@ -24,5 +27,6 @@ module io.mokamint.node.tools {
 	requires io.mokamint.miner.remote;
 	requires io.mokamint.plotter;
 	requires io.mokamint.tools;
+	requires info.picocli;
 	requires java.logging;
 }

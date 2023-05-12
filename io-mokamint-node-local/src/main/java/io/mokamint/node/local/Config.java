@@ -183,7 +183,7 @@ public class Config {
 		 * Creates a builder containing default data.
 		 * 
 		 * @return the builder
-		 * @throws NoSuchAlgorithmException 
+		 * @throws NoSuchAlgorithmException if some hashing algorithm used in the default comfiguration is not available
 		 */
 		public static Builder defaults() throws NoSuchAlgorithmException {
 			return new Builder();
@@ -196,8 +196,8 @@ public class Config {
 		 * 
 		 * @param path the path to the TOML file
 		 * @return the builder
-		 * @throws NoSuchAlgorithmException 
 		 * @throws FileNotFoundException if {@code path} cannot be found
+		 * @throws NoSuchAlgorithmException if the configuration file refers to some non-available hashing algorithm
 		 */
 		public static Builder load(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
 			Toml toml;
@@ -296,7 +296,7 @@ public class Config {
 		/**
 		 * Sets the hashing algorithm for identifying the blocks in the Mokamint blockchain.
 		 * 
-		 * @param hashingForGenerations the name of the hashing algorithm
+		 * @param hashingForBlocks the name of the hashing algorithm
 		 * @return this builder
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
@@ -360,7 +360,7 @@ public class Config {
 		 * Sets the points lost by a miner, as punishment for providing an illegal deadline.
 		 * This defaults to 500.
 		 * 
-		 * @param minerPunishmentForTimeout the points
+		 * @param minerPunishmentForIllegalDeadline the points
 		 * @return this builder
 		 */
 		public Builder setMinerPunishmentForIllegalDeadline(long minerPunishmentForIllegalDeadline) {

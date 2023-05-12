@@ -30,13 +30,20 @@ import picocli.CommandLine.Command;
 @Command(
 	name = "mokamint-node",
 	header = "This is the command-line tool for controlling Mokamint nodes.",
+	footer = "Copyright (c) 2023 Fausto Spoto",
 	subcommands = {
 		Start.class
-	},
-	footer = "Copyright (c) 2023 Fausto Spoto"
+	}
 )
 public class MokamintNode extends Tool {
 
+	private MokamintNode() {}
+
+	/**
+	 * Entry point from the shell.
+	 * 
+	 * @param args the command-line arguments provided to this tool
+	 */
 	public static void main(String[] args) {
 		main(MokamintNode::new, args);
 	}

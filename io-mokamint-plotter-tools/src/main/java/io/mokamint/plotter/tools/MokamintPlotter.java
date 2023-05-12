@@ -30,13 +30,20 @@ import picocli.CommandLine.Command;
 @Command(
 	name = "mokamint-plotter",
 	header = "This is the command-line tool for creating Mokamint plots.",
+	footer = "Copyright (c) 2023 Fausto Spoto",
 	subcommands = {
 		Create.class
-	},
-	footer = "Copyright (c) 2023 Fausto Spoto"
+	}
 )
 public class MokamintPlotter extends Tool {
 
+	private MokamintPlotter() {}
+
+	/**
+	 * Entry point from the shell.
+	 * 
+	 * @param args the command-line arguments provided to this tool
+	 */
 	public static void main(String[] args) {
 		main(MokamintPlotter::new, args);
 	}

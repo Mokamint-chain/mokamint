@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.plotter.Plots;
 import io.mokamint.tools.AbstractCommand;
+import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -47,13 +48,23 @@ public class Create extends AbstractCommand {
 	private String hashing;
 
 	@Override
-	protected void execute() throws IOException, NoSuchAlgorithmException {
-		Files.deleteIfExists(path);
+	protected void execute() {
+		try {
+			Files.deleteIfExists(path);
+		}
+		catch (IOException e) {
+			throw new CommandException(e);
+		}
 
 		var prolog = new byte[] { 11, 13, 24, 88 };
-		var algorithm = HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes);
 
-		try (var plot = Plots.create(path, prolog, start, length, algorithm, this::onNewPercent)) {
+		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes), this::onNewPercent)) {
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new CommandException(e);
+		}
+		catch (IOException e) {
+			throw new CommandException(e);
 		}
 
 		System.out.println();

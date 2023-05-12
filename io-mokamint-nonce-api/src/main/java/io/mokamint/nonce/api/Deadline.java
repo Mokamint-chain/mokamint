@@ -36,7 +36,7 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	final static int MAX_SCOOP_NUMBER = 4095;
 
 	/**
-	 * The prolog that was used to create the plot file from which
+	 * Yields the prolog that was used to create the plot file from which
 	 * this deadline has been generated.
 	 * 
 	 * @return the prolog
@@ -44,14 +44,17 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	byte[] getProlog();
 
 	/**
-	 * The progressive number of the nonce of the deadline. It is between
-	 * {@link Plot#getStart()} (inclusive) and {@link Plot#getStart()}+{@link Plot#getLength()}.
+	 * Yields the progressive number of the nonce of the deadline.
+	 * 
+	 * @return the progressive number
 	 */
 	long getProgressive();
 
 	/**
-	 * The value of the deadline computed for the nonce {@link #getProgressive()}
+	 * Yields the value of the deadline computed for the nonce {@link #getProgressive()}
 	 * of the plot file.
+	 * 
+	 * @return the value
 	 */
 	byte[] getValue();
 
@@ -78,6 +81,7 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * Determines if this deadline matches the given description: same scoop number,
 	 * same data and same hashing algorithm.
 	 * 
+	 * @param description the description matched to this deadline
 	 * @return true if and inly if that condition holds
 	 */
 	boolean matches(DeadlineDescription description);

@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements a command-line tool for working with Mokamint miners.
+ */
 module io.mokamint.miner.tools {
 	exports io.mokamint.miner.tools;
     opens io.mokamint.miner.tools.internal to info.picocli; // for injecting CLI options
@@ -22,5 +25,6 @@ module io.mokamint.miner.tools {
     requires io.mokamint.miner.service;
     requires io.mokamint.plotter;
     requires io.mokamint.tools;
+    requires info.picocli;
 	requires java.logging;
 }

@@ -37,6 +37,13 @@ import picocli.CommandLine.Command;
 )
 public class MokamintMiner extends Tool {
 
+	private MokamintMiner() {}
+
+	/**
+	 * Entry point from the shell.
+	 * 
+	 * @param args the command-line arguments provided to this tool
+	 */
 	public static void main(String[] args) {
 		main(MokamintMiner::new, args);
 	}

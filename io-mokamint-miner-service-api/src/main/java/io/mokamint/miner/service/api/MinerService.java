@@ -27,6 +27,8 @@ public interface MinerService extends WebSocketClient {
 	/**
 	 * Waits until the websockets session gets disconnected (for instance
 	 * because the remote miner has been turned off or is not reachable anymore).
+	 * 
+	 * @throws InterruptedException if the thread has been interrupted while waiting
 	 */
 	void waitUntilDisconnected() throws InterruptedException;
 }

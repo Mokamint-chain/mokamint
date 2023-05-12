@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements a command-line tool for working with Mokamint plot files.
+ */
 module io.mokamint.plotter.tools {
 	exports io.mokamint.plotter.tools;
     opens io.mokamint.plotter.tools.internal to info.picocli; // for injecting CLI options
@@ -21,4 +24,5 @@ module io.mokamint.plotter.tools {
 	requires io.mokamint.plotter;
 	requires io.mokamint.tools;
 	requires io.hotmoka.crypto;
+	requires info.picocli;
 }

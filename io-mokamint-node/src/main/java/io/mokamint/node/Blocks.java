@@ -40,17 +40,19 @@ public interface Blocks {
 	/**
 	 * Yields a new non-genesis block.
 	 * 
-	 * @param blockNumber
-	 * @param totalWaitingTime
-	 * @param weightedWaitingTime
-	 * @param acceleration
-	 * @param deadline
-	 * @param hashOfPreviousBlock
+	 * @param height the block height, non-negative, counting from 0, which is the genesis block
+	 * @param totalWaitingTime the total waiting time between the creation of the genesis block and the creation of this block
+	 * @param weightedWaitingTime the weighted waiting time between the creation of the genesis block and the creation of this block
+	 * @param acceleration a value used to divide the deadline to derive the time needed to wait for it.
+	 *                     The higher, the shorter the time. This value changes dynamically to cope with
+	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
+	 * @param deadline the deadline computed for this block
+	 * @param hashOfPreviousBlock the reference to the previous block
 	 * @return the non-genesis block
 	 */
-	static NonGenesisBlock of(long blockNumber, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
+	static NonGenesisBlock of(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
 			Deadline deadline, byte[] hashOfPreviousBlock) {
-		return new NonGenesisBlockImpl(blockNumber, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
+		return new NonGenesisBlockImpl(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
 	}
 
 	/**

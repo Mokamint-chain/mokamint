@@ -25,12 +25,22 @@ public class CommandException extends RuntimeException {
 
 	private static final long serialVersionUID = 3026861370427646020L;
 
-	CommandException(Throwable wrapped) {
-		super(wrapped);
+	/**
+	 * Creates the exception, with the given cause.
+	 * 
+	 * @param cause the cause
+	 */
+	public CommandException(Throwable cause) {
+		super(cause);
 
-		Objects.requireNonNull(wrapped);
+		Objects.requireNonNull(cause);
 	}
 
+	/**
+	 * Creates the exception, with the given message.
+	 * 
+	 * @param message the message
+	 */
 	public CommandException(String message) {
 		super(message);
 	}

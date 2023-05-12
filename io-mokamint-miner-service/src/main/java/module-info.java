@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements a miner service, that is, a network service that
+ * provides mining capabilities by network.
+ */
 module io.mokamint.miner.service {
 	exports io.mokamint.miner.service;
 	requires transitive io.mokamint.miner.service.api;

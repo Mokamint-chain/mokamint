@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module defines the API of the plots for a Mokamint blockchain.
+ */
 module io.mokamint.plotter.api {
 	exports io.mokamint.plotter.api;
 

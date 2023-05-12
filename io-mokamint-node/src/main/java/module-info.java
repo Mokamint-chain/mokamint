@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements the classes shared by all implementations of a Mokamint node.
+ */
 module io.mokamint.node {
 	exports io.mokamint.node;
 
@@ -21,5 +24,4 @@ module io.mokamint.node {
 	requires transitive io.hotmoka.marshalling.api;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.marshalling;
-	requires io.hotmoka.exceptions;
 }

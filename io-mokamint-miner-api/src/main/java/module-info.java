@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module defines the API of a Mokamint miner.
+ */
 module io.mokamint.miner.api {
 	exports io.mokamint.miner.api;
 	requires transitive io.mokamint.nonce.api;

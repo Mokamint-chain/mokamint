@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * Implementation of a Mokamint local node, that is, a node
+ * that actually works on the local machine where it is executed.
+ */
 module io.mokamint.node.local {
 	exports io.mokamint.node.local;
 

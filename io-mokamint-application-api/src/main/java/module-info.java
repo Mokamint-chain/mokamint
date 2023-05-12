@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements the API of an application run on a Mokamint blockchain.
+ */
 module io.mokamint.application.api {
 	exports io.mokamint.application.api;
 }

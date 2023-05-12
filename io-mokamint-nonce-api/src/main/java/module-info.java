@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module defines the API of the deadlines and the nonces.
+ */
 module io.mokamint.nonce.api {
 	exports io.mokamint.nonce.api;
 

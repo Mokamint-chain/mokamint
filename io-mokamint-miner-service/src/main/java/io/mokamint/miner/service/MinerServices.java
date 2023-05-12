@@ -31,11 +31,11 @@ import jakarta.websocket.DeploymentException;
 public interface MinerServices {
 
 	/**
-	 * Creates a mining service that adapts the given miner and connects it
-	 * to the given URI of a remote miner.
+	 * Creates a miner service that adapts the given miner and connects it to the given URI of a remote miner.
 	 * 
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @return the miner service
 	 * @throws URISyntaxException if the {@code uri} syntax is wrong
 	 * @throws IOException if an I/O error occurs
 	 * @throws DeploymentException if the service cannot be deployed

@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements a remote miner, that is, a miner that works
+ * by forwarding its work to remote services connected by network.
+ */
 module io.mokamint.miner.remote {
 	exports io.mokamint.miner.remote;
 	// needed to allow the endpoint to be created by reflection although it is not exported
@@ -22,6 +26,7 @@ module io.mokamint.miner.remote {
 	requires transitive io.mokamint.miner.api;
 	requires transitive io.mokamint.nonce;
 	requires transitive io.hotmoka.websockets.server;
+	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
 	requires java.logging;
 }

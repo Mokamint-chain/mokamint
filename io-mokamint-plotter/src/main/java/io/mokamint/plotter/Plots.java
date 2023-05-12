@@ -34,6 +34,7 @@ public interface Plots {
 	 * Loads a plot file.
 	 * 
 	 * @param path the path to the file that contains the plot
+	 * @return the plot that has been loaded
 	 * @throws IOException if the file of the plot cannot be read
 	 * @throws NoSuchAlgorithmException if the plot file uses an unknown hashing algorithm
 	 */

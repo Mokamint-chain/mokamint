@@ -44,10 +44,28 @@ public abstract class Tool {
 	@Option(names = { "--version" }, versionHelp = true, description = "print version information and exit")
 	private boolean versionRequested;
 
+	/**
+	 * Builds the tool.
+	 */
+	protected Tool() {}
+
+	/**
+	 * Entry point of a tool. This is typically called by the actual {@code main} method
+	 * of the tool, providing its same supplier.
+	 * 
+	 * @param tool the supplier of an object of the tool that will be run
+	 * @param args the command-line arguments passed to the tool
+	 */
 	protected static void main(Supplier<Tool> tool, String[] args) {
 		System.exit(tool.get().run(args));
 	}
 
+	/**
+	 * Runs the tool with the given command-line arguments.
+	 * 
+	 * @param args the command-line arguments
+	 * @return the exit status of the execution
+	 */
 	public int run(String[] args) {
 		return new CommandLine(this)
 			.setExecutionExceptionHandler(new PrintExceptionMessageHandler())

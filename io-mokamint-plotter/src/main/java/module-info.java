@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module implements the plots of a Mokamint blockchain.
+ */
 module io.mokamint.plotter {
 	exports io.mokamint.plotter;
 

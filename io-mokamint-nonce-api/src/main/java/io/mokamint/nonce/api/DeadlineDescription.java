@@ -41,6 +41,8 @@ public interface DeadlineDescription {
 	/**
 	 * The hashing algorithm used for the plot file from which
 	 * this deadline has been generated.
+	 * 
+	 * @return the hashing algorithm
 	 */
 	HashingAlgorithm<byte[]> getHashing();
 

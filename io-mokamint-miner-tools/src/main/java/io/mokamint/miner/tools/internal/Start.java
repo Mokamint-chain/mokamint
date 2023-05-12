@@ -32,6 +32,7 @@ import io.mokamint.miner.service.MinerServices;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
@@ -60,7 +61,7 @@ public class Start extends AbstractCommand {
 			catch (URISyntaxException e) {
 				// impossible: the syntax of the URI is correct
 				LOGGER.log(Level.SEVERE, "unexpected exception", e);
-				throw new RuntimeException(e);
+				throw new CommandException(e);
 			}
 
 		loadPlotsAndStartMiningServices(plots, 0, new ArrayList<>());
