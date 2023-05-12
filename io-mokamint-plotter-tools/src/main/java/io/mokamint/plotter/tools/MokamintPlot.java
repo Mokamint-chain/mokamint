@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.plotter.tools;
 
 import io.mokamint.plotter.tools.internal.Create;
+import io.mokamint.tools.POMVersionProvider;
 import io.mokamint.tools.Tool;
-import io.mokamint.tools.Version;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
@@ -33,9 +33,9 @@ import picocli.CommandLine.HelpCommand;
 	subcommands = {
 		Create.class,
 		HelpCommand.class,
-		Version.class
 	},
-	description = "This is the command-line tool for creating Mokamint plots.",
+	header = "This is the command-line tool for creating Mokamint plots.",
+	versionProvider = POMVersionProvider.class,
 	showDefaultValues = true
 )
 public class MokamintPlot extends Tool {

@@ -23,11 +23,15 @@ import java.util.logging.LogManager;
 
 import io.mokamint.tools.internal.PrintExceptionMessageHandler;
 import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
 /**
  * A command-line tool of Mokamint. Subclasses specify arguments, options and execution.
  */
 public abstract class Tool {
+
+	@Option(names = { "--version" }, versionHelp = true, description = "print version information and exit")
+	private boolean versionRequested;
 
 	protected static void main(Supplier<Tool> tool, String[] args) {
 		System.exit(tool.get().run(args));
