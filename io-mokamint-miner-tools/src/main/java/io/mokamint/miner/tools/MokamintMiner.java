@@ -27,11 +27,13 @@ import picocli.CommandLine.Command;
  * 
  * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.miner.tools/io.mokamint.miner.tools.MokamintMiner
  */
-@Command(name = "mokamint-miner",
+@Command(
+	name = "mokamint-miner",
+	header = "This is the command-line tool for Mokamint miners.",
+	footer = "Copyright (c) 2023 Fausto Spoto",
 	subcommands = {
 		Start.class
-	},
-	header = "This is the command-line tool for Mokamint miners."
+	}
 )
 public class MokamintMiner extends Tool {
 

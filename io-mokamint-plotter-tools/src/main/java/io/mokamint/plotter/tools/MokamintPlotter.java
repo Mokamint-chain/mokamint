@@ -27,11 +27,13 @@ import picocli.CommandLine.Command;
  * 
  * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.plotter.tools/io.mokamint.plotter.tools.MokamintPlotter
  */
-@Command(name = "mokamint-plotter",
+@Command(
+	name = "mokamint-plotter",
+	header = "This is the command-line tool for creating Mokamint plots.",
 	subcommands = {
 		Create.class
 	},
-	header = "This is the command-line tool for creating Mokamint plots."
+	footer = "Copyright (c) 2023 Fausto Spoto"
 )
 public class MokamintPlotter extends Tool {
 

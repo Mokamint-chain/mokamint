@@ -27,11 +27,13 @@ import picocli.CommandLine.Command;
  * 
  * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.node.tools/io.mokamint.node.tools.MokamintNode
  */
-@Command(name = "mokamint-node",
+@Command(
+	name = "mokamint-node",
+	header = "This is the command-line tool for controlling Mokamint nodes.",
 	subcommands = {
 		Start.class
 	},
-	header = "This is the command-line tool for controlling Mokamint nodes."
+	footer = "Copyright (c) 2023 Fausto Spoto"
 )
 public class MokamintNode extends Tool {
 
