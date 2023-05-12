@@ -17,30 +17,25 @@ limitations under the License.
 package io.mokamint.plotter.tools;
 
 import io.mokamint.plotter.tools.internal.Create;
-import io.mokamint.tools.POMVersionProvider;
 import io.mokamint.tools.Tool;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
 
 /**
  * A command-line interface for creating Mokamint plot files.
  * 
  * This class is meant to be run from the parent directory, after building the project, with this command-line:
  * 
- * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.plotter.tools/io.mokamint.plotter.tools.MokamintPlot
+ * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.plotter.tools/io.mokamint.plotter.tools.MokamintPlotter
  */
-@Command(name = "mokamint-plot",
+@Command(name = "mokamint-plotter",
 	subcommands = {
-		Create.class,
-		HelpCommand.class,
+		Create.class
 	},
-	header = "This is the command-line tool for creating Mokamint plots.",
-	versionProvider = POMVersionProvider.class,
-	showDefaultValues = true
+	header = "This is the command-line tool for creating Mokamint plots."
 )
-public class MokamintPlot extends Tool {
+public class MokamintPlotter extends Tool {
 
 	public static void main(String[] args) {
-		main(MokamintPlot::new, args);
+		main(MokamintPlotter::new, args);
 	}
 }

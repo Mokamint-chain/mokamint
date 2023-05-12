@@ -16,61 +16,26 @@ limitations under the License.
 
 package io.mokamint.miner.tools;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.logging.LogManager;
-
-import io.mokamint.miner.tools.internal.PrintExceptionMessageHandler;
 import io.mokamint.miner.tools.internal.Start;
-import io.mokamint.miner.tools.internal.Version;
-import picocli.CommandLine;
+import io.mokamint.tools.Tool;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
 
 /**
- * A command-line interface for creating Mokamint plot files.
+ * A command-line interface for starting Mokamint miners.
  * 
  * This class is meant to be run from the parent directory, after building the project, with this command-line:
  * 
- * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.plotter.tools/io.mokamint.plotter.tools.MokamintPlot
+ * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.miner.tools/io.mokamint.miner.tools.MokamintMiner
  */
 @Command(name = "mokamint-miner",
 	subcommands = {
-		HelpCommand.class,
-		Start.class,
-		Version.class
+		Start.class
 	},
-	description = "This is the command-line tool for Mokamint miners.",
-	showDefaultValues = true
+	header = "This is the command-line tool for Mokamint miners."
 )
-public class MokamintMiner {
+public class MokamintMiner extends Tool {
 
-	public static void main(String[] args) throws IOException {
-		int exit = new CommandLine(new MokamintMiner())
-			.setExecutionExceptionHandler(new PrintExceptionMessageHandler())
-			.execute(args);
-
-		System.exit(exit);
-	}
-
-	public static void run(String command) {
-		new CommandLine(new MokamintMiner())
-			.setExecutionExceptionHandler(new PrintExceptionMessageHandler())
-			.execute(command.split(" "));
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = MokamintMiner.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load the logging.properties file", e);
-				}
-		}
+	public static void main(String[] args) {
+		main(MokamintMiner::new, args);
 	}
 }

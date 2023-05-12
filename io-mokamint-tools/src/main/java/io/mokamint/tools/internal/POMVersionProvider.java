@@ -14,26 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.tools.internal;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import io.mokamint.node.tools.MokamintNode;
-import picocli.CommandLine.Command;
+import picocli.CommandLine.IVersionProvider;
 
-@Command(name = "version",
-	description = "Print version information.",
-	showDefaultValues = true)
-public class Version extends AbstractCommand {
+/**
+ * A picocli dynamic version provider, that reads the maven.properties file, where the
+ * version of Mokamint is tored during the Maven build.
+ */
+public class POMVersionProvider implements IVersionProvider {
 
 	@Override
-	protected void execute() throws IOException {
-		try (InputStream is = MokamintNode.class.getClassLoader().getResourceAsStream("maven.properties")) {
+	public String[] getVersion() throws Exception {
+		try (InputStream is = POMVersionProvider.class.getClassLoader().getResourceAsStream("maven.properties")) {
 			var mavenProperties = new Properties();
 			mavenProperties.load(is);
-			System.out.println(mavenProperties.getProperty("mokamint.version"));
+			return new String[] { mavenProperties.getProperty("mokamint.version") };
 		}
 	}
 }

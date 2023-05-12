@@ -23,6 +23,6 @@ module io.mokamint.node.tools {
 	requires io.mokamint.miner.local;
 	requires io.mokamint.miner.remote;
 	requires io.mokamint.plotter;
+	requires io.mokamint.tools;
 	requires java.logging;
-	requires info.picocli;
 }

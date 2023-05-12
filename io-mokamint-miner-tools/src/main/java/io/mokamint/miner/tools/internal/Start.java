@@ -31,6 +31,7 @@ import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.tools.AbstractCommand;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;

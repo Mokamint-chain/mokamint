@@ -25,7 +25,7 @@ public class CommandException extends RuntimeException {
 
 	private static final long serialVersionUID = 3026861370427646020L;
 
-	public CommandException(Throwable wrapped) {
+	CommandException(Throwable wrapped) {
 		super(wrapped);
 
 		Objects.requireNonNull(wrapped);

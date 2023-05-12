@@ -21,13 +21,24 @@ import java.net.URL;
 import java.util.function.Supplier;
 import java.util.logging.LogManager;
 
+import io.mokamint.tools.internal.POMVersionProvider;
 import io.mokamint.tools.internal.PrintExceptionMessageHandler;
 import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.Option;
 
 /**
  * A command-line tool of Mokamint. Subclasses specify arguments, options and execution.
  */
+
+@Command(name = "mokamint-node",
+	subcommands = {
+		HelpCommand.class
+	},
+	versionProvider = POMVersionProvider.class,
+	showDefaultValues = true
+)
 public abstract class Tool {
 
 	@Option(names = { "--version" }, versionHelp = true, description = "print version information and exit")

@@ -38,31 +38,11 @@
       <artifactId>io-mokamint-plotter</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
-    <dependency>
-      <groupId>info.picocli</groupId>
-      <artifactId>picocli</artifactId>
-      <version>4.7.2</version>
-	</dependency>
+	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-tools</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <version>1.1.0</version>
-        <executions>
-          <execution>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>write-project-properties</goal>
-            </goals>
-            <configuration>
-              <outputFile>${project.build.outputDirectory}/maven.properties</outputFile>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>

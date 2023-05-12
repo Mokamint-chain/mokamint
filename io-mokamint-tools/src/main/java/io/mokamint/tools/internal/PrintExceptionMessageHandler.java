@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,9 +42,8 @@ public class PrintExceptionMessageHandler implements IExecutionExceptionHandler 
 			else
 				cmd.getErr().println(cmd.getColorScheme().errorText(cause.getClass().getName() + ": " + cause.getMessage()));
 
-			return cmd.getExitCodeExceptionMapper() != null
-					? cmd.getExitCodeExceptionMapper().getExitCode(cause)
-							: cmd.getCommandSpec().exitCodeOnExecutionException();
+			var mapper = cmd.getExitCodeExceptionMapper();
+			return mapper != null ? mapper.getExitCode(cause) : cmd.getCommandSpec().exitCodeOnExecutionException();
 		}
 		else
 			throw e;
