@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.tools.internal;
+package io.mokamint.tools;
 
 import java.util.Objects;
 
@@ -25,13 +25,13 @@ public class CommandException extends RuntimeException {
 
 	private static final long serialVersionUID = 3026861370427646020L;
 
-	CommandException(Throwable wrapped) {
+	public CommandException(Throwable wrapped) {
 		super(wrapped);
 
 		Objects.requireNonNull(wrapped);
 	}
 
-	CommandException(String message) {
+	public CommandException(String message) {
 		super(message);
 	}
 }

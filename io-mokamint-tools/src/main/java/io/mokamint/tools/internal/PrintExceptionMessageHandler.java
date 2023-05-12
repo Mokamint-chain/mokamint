@@ -14,13 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.tools.internal;
+package io.mokamint.tools.internal;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import io.mokamint.tools.CommandException;
 import picocli.CommandLine;
 import picocli.CommandLine.IExecutionExceptionHandler;
 import picocli.CommandLine.ParseResult;
 
 public class PrintExceptionMessageHandler implements IExecutionExceptionHandler {
+
+	private final static Logger LOGGER = Logger.getLogger(PrintExceptionMessageHandler.class.getName());
 
 	@Override
 	public int handleExecutionException(Exception e, CommandLine cmd, ParseResult parseResult) throws Exception {
@@ -28,6 +34,8 @@ public class PrintExceptionMessageHandler implements IExecutionExceptionHandler 
 			Throwable cause = e;
 			if (cause.getCause() != null)
 				cause = cause.getCause();
+
+			LOGGER.log(Level.SEVERE, "command threw exception", cause);
 
 			if (cause instanceof CommandException)
 				cmd.getErr().println(cmd.getColorScheme().errorText(cause.getMessage()));

@@ -16,16 +16,18 @@ limitations under the License.
 
 package io.mokamint.plotter.tools.internal;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.plotter.Plots;
+import io.mokamint.tools.AbstractCommand;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "create",
 	description = "Create a new plot file.",
@@ -45,11 +47,11 @@ public class Create extends AbstractCommand {
 	private String hashing;
 
 	@Override
-	protected void execute() throws Exception {
+	protected void execute() throws IOException, NoSuchAlgorithmException {
 		Files.deleteIfExists(path);
 
 		var prolog = new byte[] { 11, 13, 24, 88 };
-		HashingAlgorithm<byte[]> algorithm = HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes);
+		var algorithm = HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes);
 
 		try (var plot = Plots.create(path, prolog, start, length, algorithm, this::onNewPercent)) {
 		}

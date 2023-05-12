@@ -16,11 +16,9 @@ limitations under the License.
 
 module io.mokamint.plotter.tools {
 	exports io.mokamint.plotter.tools;
-	opens io.mokamint.plotter.tools to info.picocli; // for injecting CLI options
     opens io.mokamint.plotter.tools.internal to info.picocli; // for injecting CLI options
 
 	requires io.mokamint.plotter;
+	requires io.mokamint.tools;
 	requires io.hotmoka.crypto;
-	requires info.picocli;
-	requires java.logging;
 }

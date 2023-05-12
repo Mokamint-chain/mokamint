@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.tools.internal;
+package io.mokamint.tools;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import io.mokamint.plotter.tools.MokamintPlot;
 import picocli.CommandLine.Command;
 
 @Command(name = "version",
@@ -30,7 +29,7 @@ public class Version extends AbstractCommand {
 
 	@Override
 	protected void execute() throws IOException {
-		try (InputStream is = MokamintPlot.class.getClassLoader().getResourceAsStream("maven.properties")) {
+		try (InputStream is = Version.class.getClassLoader().getResourceAsStream("maven.properties")) {
 			var mavenProperties = new Properties();
 			mavenProperties.load(is);
 			System.out.println(mavenProperties.getProperty("mokamint.version"));
