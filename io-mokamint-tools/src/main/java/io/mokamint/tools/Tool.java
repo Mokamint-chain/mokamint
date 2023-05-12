@@ -18,6 +18,7 @@ package io.mokamint.tools;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.function.Supplier;
 import java.util.logging.LogManager;
 
 import io.mokamint.tools.internal.PrintExceptionMessageHandler;
@@ -28,7 +29,11 @@ import picocli.CommandLine;
  */
 public abstract class Tool {
 
-	protected int run(String[] args) {
+	protected static void main(Supplier<Tool> tool, String[] args) {
+		System.exit(tool.get().run(args));
+	}
+
+	public int run(String[] args) {
 		return new CommandLine(this)
 			.setExecutionExceptionHandler(new PrintExceptionMessageHandler())
 			.execute(args);

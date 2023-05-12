@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.plotter.tools;
 
-import java.io.IOException;
-
 import io.mokamint.plotter.tools.internal.Create;
 import io.mokamint.tools.Tool;
 import io.mokamint.tools.Version;
@@ -42,11 +40,7 @@ import picocli.CommandLine.HelpCommand;
 )
 public class MokamintPlot extends Tool {
 
-	public static void main(String[] args) throws IOException {
-		System.exit(new MokamintPlot().run(args));
-	}
-
-	public static void run(String command) {
-		new MokamintPlot().run(command.split(" "));
+	public static void main(String[] args) {
+		main(MokamintPlot::new, args);
 	}
 }
