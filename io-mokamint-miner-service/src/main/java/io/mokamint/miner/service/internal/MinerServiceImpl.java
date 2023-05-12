@@ -59,7 +59,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	private final static Logger LOGGER = Logger.getLogger(MinerServiceImpl.class.getName());
 
 	/**
-	 * Creates an web service by adapting the given miner.
+	 * Creates an miner service by adapting the given miner.
 	 * 
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}

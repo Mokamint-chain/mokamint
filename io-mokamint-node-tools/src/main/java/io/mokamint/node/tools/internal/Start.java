@@ -220,28 +220,7 @@ public class Start extends AbstractCommand {
 	}
 
 	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException {
-		/*var config = getConfig2();
-		System.out.println(config);
-		return config;
-	}
-
-	private Config getConfig2() throws FileNotFoundException, NoSuchAlgorithmException {
-	*/
-		if (config == null)
-			return Config.Builder.defaults().build();
-		else
-			try {
-				return Config.Builder.load(config).build();
-			}
-		// TODO
-			catch (RuntimeException e) {
-				// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
-				Throwable cause = e.getCause();
-				if (cause instanceof FileNotFoundException)
-					throw (FileNotFoundException) cause;
-				else
-					throw e;
-			}
+		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
 	}
 
 	private static class TestApplication implements Application {

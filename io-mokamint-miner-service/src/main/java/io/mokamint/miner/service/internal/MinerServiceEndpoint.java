@@ -35,6 +35,9 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 
+/**
+ * A websocket endpoint connected to a remote miner.
+ */
 class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
 
 	private final static Logger LOGGER = Logger.getLogger(MinerServiceEndpoint.class.getName());
@@ -45,9 +48,9 @@ class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
 
 	Session deployAt(URI uri) throws DeploymentException, IOException {
 		var config = ClientEndpointConfig.Builder.create()
-				.encoders(List.of(Deadlines.Encoder.class))
-				.decoders(List.of(DeadlineDescriptions.Decoder.class))
-				.build();
+			.decoders(List.of(DeadlineDescriptions.Decoder.class)) // it receives DeadlineDescription's
+			.encoders(List.of(Deadlines.Encoder.class)) // and sends back Deadline's
+			.build();
 
 		return ClientManager.createClient().connectToServer(this, config, uri);
 	}

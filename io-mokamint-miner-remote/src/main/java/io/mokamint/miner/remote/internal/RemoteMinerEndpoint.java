@@ -31,18 +31,18 @@ import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
+/**
+ * An endpoint that connects to miner services.
+ */
 public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
 	private final static Logger LOGGER = Logger.getLogger(RemoteMinerEndpoint.class.getName());
 
+	@SuppressWarnings("resource")
 	@Override
     public void onOpen(Session session, EndpointConfig config) {
     	getServer().addSession(session);
-    	session.addMessageHandler((MessageHandler.Whole<Deadline>) this::onDeadlineComputed);
-    }
-
-    private void onDeadlineComputed(Deadline deadline) {
-    	getServer().processDeadline(deadline);
+    	session.addMessageHandler((MessageHandler.Whole<Deadline>) getServer()::processDeadline);
     }
 
     @Override
@@ -57,8 +57,8 @@ public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl>
 
 	static ServerEndpointConfig config(Configurator configurator) {
 		return ServerEndpointConfig.Builder.create(RemoteMinerEndpoint.class, "/")
-			.encoders(List.of(DeadlineDescriptions.Encoder.class))
-			.decoders(List.of(Deadlines.Decoder.class))
+			.encoders(List.of(DeadlineDescriptions.Encoder.class)) // it sends DeadlineDescription's
+			.decoders(List.of(Deadlines.Decoder.class)) // and receives Deadline's back
 			.configurator(configurator)
 			.build();
 	}

@@ -69,7 +69,7 @@ public class MokamintMiner {
 					LogManager.getLogManager().readConfiguration(is);
 				}
 				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
+					throw new RuntimeException("Cannot load the logging.properties file", e);
 				}
 		}
 	}

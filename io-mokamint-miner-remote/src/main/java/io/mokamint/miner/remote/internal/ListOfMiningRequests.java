@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
@@ -79,9 +78,8 @@ public class ListOfMiningRequests {
 	 * Performs all actions when a deadline is found.
 	 * 
 	 * @param deadline the deadline
-	 * @param miner the miner that found the deadline
 	 */
-	public void runAllActionsFor(Deadline deadline, Miner miner) {
+	public void runAllActionsFor(Deadline deadline) {
 		List<Consumer<Deadline>> filtered = new ArrayList<>();
 
 		synchronized (lock) {

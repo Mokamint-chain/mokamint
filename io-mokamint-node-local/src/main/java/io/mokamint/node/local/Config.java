@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -196,9 +197,23 @@ public class Config {
 		 * @param path the path to the TOML file
 		 * @return the builder
 		 * @throws NoSuchAlgorithmException 
+		 * @throws FileNotFoundException if {@code path} cannot be found
 		 */
-		public static Builder load(Path path) throws NoSuchAlgorithmException {
-			var toml = new Toml().read(path.toFile());
+		public static Builder load(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
+			Toml toml;
+
+			try {
+				toml = new Toml().read(path.toFile());
+			}
+			catch (RuntimeException e) {
+				// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
+				Throwable cause = e.getCause();
+				if (cause instanceof FileNotFoundException)
+					throw (FileNotFoundException) cause;
+				else
+					throw e;
+			}
+
 			var builder = new Builder();
 
 			var dir = toml.getString("dir");
