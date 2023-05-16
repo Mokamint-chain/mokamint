@@ -121,7 +121,7 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the genesis block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
-	 * @throws IOException if the databse is corrupted
+	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, IOException {
 		return checkNoSuchAlgorithmExceptionIOException(() ->
@@ -149,7 +149,7 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the head block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws IOException if the databse is corrupted
+	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, IOException {
 		return checkNoSuchAlgorithmExceptionIOException(() ->

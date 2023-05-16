@@ -86,6 +86,12 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		semaphore.release();
 	}
 
+	@Override
+	public void close() {
+		disconnect();
+		super.close();
+	}
+
 	/**
 	 * The endpoint calls this when a new deadline request arrives.
 	 * It forwards the request to the miner.

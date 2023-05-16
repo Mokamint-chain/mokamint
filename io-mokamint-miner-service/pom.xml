@@ -34,6 +34,12 @@
       <artifactId>io-mokamint-nonce</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-remote</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
