@@ -24,5 +24,4 @@ module io.mokamint.plotter.tools {
 	requires io.mokamint.plotter;
 	requires io.mokamint.tools;
 	requires io.hotmoka.crypto;
-	requires info.picocli;
 }

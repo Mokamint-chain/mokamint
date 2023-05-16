@@ -5,6 +5,7 @@
   <name>io-mokamint-node</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module implements the classes shared by all implementations of a Mokamint node</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -34,5 +35,21 @@
       <version>${hotmoka.version}</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

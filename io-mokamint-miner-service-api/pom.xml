@@ -5,6 +5,7 @@
   <name>io-mokamint-miner-service-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module defines the API of a miner service, that is, a network service that provides mining capabilities by network</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -14,15 +15,31 @@
 
   <dependencies>
     <dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-miner-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-    	<groupId>io.hotmoka</groupId>
-    	<artifactId>io-hotmoka-websockets-client-api</artifactId>
-    	<version>${io.hotmoka.websockets.version}</version>
+      <groupId>io.hotmoka.websockets</groupId>
+      <artifactId>io-hotmoka-websockets-client-api</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

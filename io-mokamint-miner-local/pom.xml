@@ -5,6 +5,7 @@
   <name>io-mokamint-miner-local</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module implements a local miner, that is, a miner that actually executes on the local machine</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -34,5 +35,21 @@
 	  <version>${hotmoka.version}</version>
 	</dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

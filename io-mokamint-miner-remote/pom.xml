@@ -4,6 +4,7 @@
   <name>io-mokamint-miner-remote</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module implements a remote miner, that is, a miner that works by forwarding its work to remote services connected by network</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -13,7 +14,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.hotmoka</groupId>
+      <groupId>io.hotmoka.websockets</groupId>
       <artifactId>io-hotmoka-websockets-server</artifactId>
       <version>${io.hotmoka.websockets.version}</version>
     </dependency>
@@ -33,5 +34,21 @@
       <version>${hotmoka.version}</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

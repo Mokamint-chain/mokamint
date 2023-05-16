@@ -5,6 +5,7 @@
   <name>io-mokamint-miner-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module defines the API of a Mokamint miner</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -19,5 +20,21 @@
        <version>${mokamint.version}</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

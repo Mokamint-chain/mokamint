@@ -6,6 +6,7 @@
   <name>io-mokamint-plotter-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module defines the API of the plots for a Mokamint blockchain</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -15,15 +16,31 @@
 
   <dependencies>
   	<dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-crypto-api</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-crypto-api</artifactId>
+      <version>${hotmoka.version}</version>
     </dependency>
    	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-nonce-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-nonce-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

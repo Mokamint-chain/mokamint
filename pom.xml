@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+Compilation and installation of all modules in the local repository:
+  mvn clean install
+
+Compilation and installation of all modules in the local repository, without running the tests nor generating Javadocs:
+  mvn clean install -DskipTests -Dmaven.javadoc.skip
+
+Compilation of selected modules, sign with the given key and deploy to Maven Central:
+  mvn clean deploy -Prelease -Dgpg.keyname=4C7956B69002DE470EA573E2EA910A03A447A7E5
+
+By using the maven-flatten-plugin, this pom.xml allows us to use properties to define
+the versions of the artifacts: the properties will be replaced by their value in the deployed artifacts.
+Moreover, this makes the parent pom useless, hence it is not deployed.
+Note: submodules whose artifact must be deployed on Maven Central must activate the Nexus staging plugin
+(see for instance the pom-xml of the io-mokamint-miner-api submodule).
+
+-->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                              http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -6,7 +26,6 @@
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <maven.compiler.source>19</maven.compiler.source>
       <maven.compiler.target>19</maven.compiler.target>
-      <failOnMissingWebXml>false</failOnMissingWebXml>
       <hotmoka.version>1.1.0</hotmoka.version>
       <mokamint.version>1.0.0</mokamint.version>
       <io.hotmoka.websockets.version>1.0.0</io.hotmoka.websockets.version>
@@ -24,6 +43,7 @@
       <url>https://www.mokamint.io</url>
       <name>Mokamint</name>
     </organization>
+
     <inceptionYear>2023</inceptionYear>
 
     <licenses>
@@ -63,6 +83,24 @@
       <module>io-mokamint-tools</module>
     </modules>
 
+    <distributionManagement>
+      <snapshotRepository>
+        <id>ossrh</id>
+        <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+      </snapshotRepository>
+      <repository>
+        <id>ossrh</id>
+        <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      </repository>
+    </distributionManagement>
+
+    <scm>
+      <connection>scm:git:git://github.com/Mokamint-chain/mokamint.git</connection>
+      <developerConnection>scm:git:git@github.com:Mokamint-chain/mokamint.git</developerConnection>
+      <url>https://github.com/Mokamint-chain/mokamint</url>
+      <tag>HEAD</tag>
+    </scm>
+
     <dependencies>
   	  <dependency>
         <groupId>org.junit.jupiter</groupId>
@@ -84,76 +122,57 @@
       </dependency>
     </dependencies>
 
-    <profiles>
-	  <profile>
-	    <id>full</id>
-        <build>
-          <plugins>
-            <!-- for deployment, javadocs get generated -->
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-   	          <artifactId>maven-javadoc-plugin</artifactId>
-       	      <version>3.5.0</version>
-       	      <executions>
-           	    <execution>
-           	      <id>attach-javadocs</id>
-           	      <goals>
-                    <goal>jar</goal>
-           	      </goals>
-          	    </execution>
-              </executions>
-            </plugin>
-            <!-- for deployment, jars get signed -->
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-gpg-plugin</artifactId>
-              <version>3.1.0</version>
-              <executions>
-                <execution>
-                  <id>sign-artifacts</id>
-                  <phase>verify</phase>
-                  <goals>
-                    <goal>sign</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            <!-- for deployment, source jars get generated -->
-            <plugin>
-      		  <groupId>org.apache.maven.plugins</groupId>
-        	  <artifactId>maven-source-plugin</artifactId>
-    	      <version>3.2.1</version>
-    	      <executions>
-        	    <execution>
-                  <id>attach-sources</id>
-                  <goals>
-                    <goal>jar-no-fork</goal>
-                  </goals>
-            	</execution>
-        	  </executions>
-	        </plugin>
-          </plugins>
-        </build>
-      </profile>
-    </profiles>
-
-    <distributionManagement>
-      <snapshotRepository>
-        <id>ossrh</id>
-        <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-      </snapshotRepository>
-      <repository>
-        <id>ossrh</id>
-        <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-      </repository>
-    </distributionManagement>
-
-    <scm>
-      <connection>scm:git:git://github.com/Mokamint-chain/mokamint.git</connection>
-      <developerConnection>scm:git:git@github.com:Mokamint-chain/mokamint.git</developerConnection>
-      <url>https://github.com/Mokamint-chain/mokamint</url>
-      <tag>HEAD</tag>
-    </scm>
+  <profiles>
+	<profile>
+	  <id>release</id>
+      <build>
+        <plugins>
+          <!-- source jars get generated -->
+          <plugin>
+      		<groupId>org.apache.maven.plugins</groupId>
+        	<artifactId>maven-source-plugin</artifactId>
+    	    <version>3.2.1</version>
+    	    <executions>
+        	  <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+            </execution>
+        	</executions>
+	      </plugin>
+          <!-- the artifacts get signed -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- jars get sent to the remote repository -->
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.6.13</version>
+            <extensions>true</extensions>
+            <configuration>
+              <serverId>ossrh</serverId>
+              <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+              <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
     <build>
       <plugins>
@@ -171,23 +190,17 @@
 		        </includes>
 		        <followSymlinks>false</followSymlinks>
 	          </fileset>
-	          <fileset>
-		        <directory>docs</directory>
-		        <includes>
-		          <include>**/*</include>
-		        </includes>
-		        <followSymlinks>false</followSymlinks>
-	          </fileset>
 	        </filesets>
 	      </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-	      <version>3.11.0</version>
-	      <configuration>
-	        <release>19</release>
-	      </configuration>
+          <version>3.11.0</version>
+          <configuration>
+            <source>${maven.compiler.source}</source>
+            <target>${maven.compiler.target}</target>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -215,14 +228,22 @@
      	  </configuration>
         </plugin>
         <plugin>
-          <groupId>org.sonatype.plugins</groupId>
-          <artifactId>nexus-staging-maven-plugin</artifactId>
-          <version>1.6.13</version>
-          <extensions>true</extensions>
+  	      <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>3.1.1</version>
           <configuration>
-            <serverId>ossrh</serverId>
-            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+            <skip>true</skip>   <!-- skip, since we are using nexus -->
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>3.0.0</version>
+          <configuration>
+            <autoVersionSubmodules>true</autoVersionSubmodules>
+            <useReleaseProfile>false</useReleaseProfile>
+            <releaseProfiles>release</releaseProfiles>
+            <goals>deploy</goals>
           </configuration>
         </plugin>
         <plugin>
@@ -247,6 +268,19 @@
               <phase>clean</phase>
               <goals>
                 <goal>clean</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.5.0</version>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
               </goals>
             </execution>
           </executions>

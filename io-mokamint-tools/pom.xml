@@ -11,6 +11,7 @@
   <name>io-mokamint-node-tools</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module implements shared classes among all the command-line tools of Mokamint</description>
 
   <dependencies>
     <dependency>
@@ -40,5 +41,21 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

@@ -5,6 +5,7 @@
   <name>io-mokamint-plotter</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module implements the plots of a Mokamint blockchain</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -29,5 +30,21 @@
       <version>${mokamint.version}</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

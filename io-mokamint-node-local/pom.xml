@@ -5,6 +5,7 @@
   <name>io-mokamint-node-local</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
+  <description>This module implements a Mokamint local node, that is, a node that actually works on the local machine where it is executed</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -14,49 +15,49 @@
 
   <dependencies>
   	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-node</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   	<dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-marshalling</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-marshalling</artifactId>
+      <version>${hotmoka.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-xodus</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-xodus</artifactId>
+      <version>${hotmoka.version}</version>
     </dependency>
   	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-application-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   	<dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-nonce</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-nonce</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-miner-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-annotations</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-annotations</artifactId>
+      <version>${hotmoka.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-crypto</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-crypto</artifactId>
+      <version>${hotmoka.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-exceptions</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-exceptions</artifactId>
+      <version>${hotmoka.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka</groupId>
@@ -64,10 +65,26 @@
       <version>0.7.3</version>
     </dependency>
     <dependency>
-       <groupId>org.slf4j</groupId>
-       <artifactId>slf4j-nop</artifactId>
-       <version>2.0.7</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-nop</artifactId>
+      <version>2.0.7</version>
 	</dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <configuration>
+              <skipNexusStagingDeployMojo>false</skipNexusStagingDeployMojo>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
