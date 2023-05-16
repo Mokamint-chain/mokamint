@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.LogManager;
 
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
@@ -43,7 +43,7 @@ public class MinerServiceTests {
 
 	@Test
 	@DisplayName("if a deadline description is presented to a miner service, it gets forwarded to the adapted miner")
-	public void minerServiceForwardsToMiner() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
+	public void minerServiceForwardsToMiner() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, HashingAlgorithms.shabal256((byte[] bytes) -> bytes));
 
@@ -59,8 +59,8 @@ public class MinerServiceTests {
 			public void close() {}
 		};
 
-		try (var remote = RemoteMiners.of(8025); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
-			remote.requestDeadline(description, deadline -> {});
+		try (var remote = new TestServer(8025); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
+			remote.requestDeadline(description, 1);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

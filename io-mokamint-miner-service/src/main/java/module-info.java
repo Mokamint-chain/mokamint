@@ -25,5 +25,9 @@ module io.mokamint.miner.service {
 	requires transitive io.hotmoka.websockets.client;
 	requires io.mokamint.nonce;
 	requires java.logging;
-	requires io.hotmoka.crypto; // TODO: actually only used in tests
+	requires io.hotmoka.crypto;
+	requires jakarta.websocket;
+	requires org.glassfish.tyrus.spi;
+	// needed to allow the endpoint to be created by reflection although it is not exported
+	//opens io.mokamint.miner.service.tests to org.glassfish.tyrus.core;
 }
