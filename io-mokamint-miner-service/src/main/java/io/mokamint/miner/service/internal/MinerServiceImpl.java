@@ -19,7 +19,7 @@ package io.mokamint.miner.service.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
@@ -54,7 +54,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	/**
 	 * Used to wait until the service gets disconnected.
 	 */
-	private final Semaphore semaphore = new Semaphore(0);
+	private final CountDownLatch latch = new CountDownLatch(1);
 
 	private final static Logger LOGGER = Logger.getLogger(MinerServiceImpl.class.getName());
 
@@ -76,14 +76,14 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 
 	@Override
 	public void waitUntilDisconnected() throws InterruptedException {
-		semaphore.acquire();
+		latch.await();
 	}
 
 	/**
 	 * The endpoint calls this when it gets closed, to wake-up who was waiting for disconnection.
 	 */
 	void disconnect() {
-		semaphore.release();
+		latch.countDown();
 	}
 
 	@Override
@@ -110,9 +110,9 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * @param deadline the deadline that the miner has just computed
 	 */
 	private void onDeadlineComputed(Deadline deadline) {
-		LOGGER.info("sending " + deadline + " to " + uri);
-
-		if (session.isOpen())
+		if (session.isOpen()) {
+			LOGGER.info("sending " + deadline + " to " + uri);
 			session.getAsyncRemote().sendObject(deadline);
+		}
 	}
 }

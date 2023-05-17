@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.LogManager;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +44,7 @@ import jakarta.websocket.DeploymentException;
 public class MinerServiceTests {
 
 	@Test
-	@DisplayName("if a deadline description is presented to a miner service, it gets forwarded to the adapted miner")
+	@DisplayName("if a deadline description is requested to a miner service, it gets forwarded to the adapted miner")
 	public void minerServiceForwardsToMiner() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, HashingAlgorithms.shabal256((byte[] bytes) -> bytes));
@@ -60,18 +61,19 @@ public class MinerServiceTests {
 			public void close() {}
 		};
 
-		try (var remote = new TestServer(8025, deadline -> {}); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
-			remote.requestDeadline(description, 1);
+		try (var requester = new TestServer(8025, deadline -> {}); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
+			requester.requestDeadline(description);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if the miner sends a deadline, it gets forwarded to the service")
-	public void minerForwardsToMinerService() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	@DisplayName("if the miner sends a deadline, it gets forwarded to the requester")
+	public void minerForwardsToRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
-		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, HashingAlgorithms.shabal256((byte[] bytes) -> bytes));
-		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, HashingAlgorithms.shabal256((byte[] bytes) -> bytes));
+		var shabal256 = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
+		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
 
 		var miner = new Miner() {
 
@@ -89,9 +91,86 @@ public class MinerServiceTests {
 				semaphore.release();
 		};
 
-		try (var remote = new TestServer(8025, onDeadlineReceived); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
-			remote.requestDeadline(description, 1);
+		try (var requester = new TestServer(8025, onDeadlineReceived); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
+			requester.requestDeadline(description);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if the miner sends a deadline after a delayed one, it gets forwarded to the requester")
+	public void minerForwardsToRequesterAfterDelay() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+		var semaphore = new Semaphore(0);
+		var shabal256 = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
+		var description1 = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var description2 = DeadlineDescriptions.of(43, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var deadline1 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var deadline2 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 43L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var delay = 2000L;
+
+		var miner = new Miner() {
+
+			@Override
+			public void requestDeadline(DeadlineDescription received, Consumer<Deadline> onDeadlineComputed) {
+				if (received.equals(description1))
+					onDeadlineComputed.accept(deadline1);
+				else
+					onDeadlineComputed.accept(deadline2);
+			}
+
+			@Override
+			public void close() {}
+		};
+
+		Consumer<Deadline> onDeadlineReceived = received -> {
+			if (deadline2.equals(received))
+				semaphore.release();
+			else {
+				try {
+					Thread.sleep(delay);
+				}
+				catch (InterruptedException e) {}
+			}
+		};
+
+		try (var requester = new TestServer(8025, onDeadlineReceived); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
+			requester.requestDeadline(description1); // the call-back hangs for some time, then it works
+			requester.requestDeadline(description2); // this works after the delay
+			assertTrue(semaphore.tryAcquire(1, 2 * delay, TimeUnit.MILLISECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("a deadline sent back after the requester disconnects is simply lost, without errors")
+	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+		var shabal256 = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
+		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
+		long delay = 2000;
+
+		var miner = new Miner() {
+
+			@Override
+			public void requestDeadline(DeadlineDescription received, Consumer<Deadline> onDeadlineComputed) {
+				try {
+					Thread.sleep(delay);
+				}
+				catch (InterruptedException e) {}
+
+				// when this is called, the requester has been already closed: the deadline is ignored
+				onDeadlineComputed.accept(deadline);
+			}
+
+			@Override
+			public void close() {}
+		};
+
+		// the deadline is not sent back to the closed requester, so no exception actually occurs
+		try (var requester = new TestServer(8025, _deadline -> { throw new IllegalStateException("unexpected"); }); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
+			requester.requestDeadline(description);
+			Thread.sleep(delay / 4);
+			requester.close();
+			Thread.sleep(delay * 2);
 		}
 	}
 

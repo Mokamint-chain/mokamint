@@ -18,7 +18,7 @@ package io.mokamint.miner.service.tests;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -40,33 +40,33 @@ import jakarta.websocket.server.ServerEndpointConfig;
  */
 public class TestServer extends AbstractWebSocketServer {
 	private static volatile Session session;
-	private final static Semaphore semaphore = new Semaphore(0);
+	private final static CountDownLatch latch = new CountDownLatch(1);
 	private static Consumer<Deadline> onDeadlineReceived;
 
 	public TestServer(int port, Consumer<Deadline> onDeadlineReceived) throws DeploymentException, IOException {
 		TestServer.onDeadlineReceived = onDeadlineReceived;
     	var container = getContainer();
-    	container.addEndpoint(ServerEndpointConfig.Builder.create(RemoteMinerEndpoint.class, "/")
+    	container.addEndpoint(ServerEndpointConfig.Builder.create(MyEndpoint.class, "/")
 				.encoders(List.of(DeadlineDescriptions.Encoder.class)) // it sends DeadlineDescription's
 				.decoders(List.of(Deadlines.Decoder.class)) // it receives deadlines
 				.build());
     	container.start("", port);
 	}
 
-	public void requestDeadline(DeadlineDescription description, int timeout) throws TimeoutException, InterruptedException {
-		if (!semaphore.tryAcquire(timeout, TimeUnit.SECONDS))
+	public void requestDeadline(DeadlineDescription description) throws TimeoutException, InterruptedException {
+		if (!latch.await(1, TimeUnit.SECONDS))
 			throw new TimeoutException();
 
 		session.getAsyncRemote().sendObject(description);
 	}
 
-	public static class RemoteMinerEndpoint extends Endpoint {
+	public static class MyEndpoint extends Endpoint {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			TestServer.session = session;
 			session.addMessageHandler((MessageHandler.Whole<Deadline>) onDeadlineReceived::accept);
-			semaphore.release();
+			latch.countDown();
 	    }
 	}
 }
