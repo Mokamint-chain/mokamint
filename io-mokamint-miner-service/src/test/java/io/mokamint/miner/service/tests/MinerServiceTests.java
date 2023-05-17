@@ -35,6 +35,7 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
@@ -59,7 +60,36 @@ public class MinerServiceTests {
 			public void close() {}
 		};
 
-		try (var remote = new TestServer(8025); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
+		try (var remote = new TestServer(8025, deadline -> {}); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
+			remote.requestDeadline(description, 1);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if the miner sends a deadline, it gets forwarded to the service")
+	public void minerForwardsToMinerService() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+		var semaphore = new Semaphore(0);
+		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, HashingAlgorithms.shabal256((byte[] bytes) -> bytes));
+		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, HashingAlgorithms.shabal256((byte[] bytes) -> bytes));
+
+		var miner = new Miner() {
+
+			@Override
+			public void requestDeadline(DeadlineDescription received, Consumer<Deadline> onDeadlineComputed) {
+				onDeadlineComputed.accept(deadline);
+			}
+
+			@Override
+			public void close() {}
+		};
+
+		Consumer<Deadline> onDeadlineReceived = received -> {
+			if (deadline.equals(received))
+				semaphore.release();
+		};
+
+		try (var remote = new TestServer(8025, onDeadlineReceived); var service = MinerServices.adapt(miner, new URI("ws://localhost:8025"))) {
 			remote.requestDeadline(description, 1);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}

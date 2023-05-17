@@ -95,7 +95,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 				Arrays.equals(value, otherAsDeadline.getValue()) &&
 				Arrays.equals(prolog, otherAsDeadline.getProlog()) &&
 				Arrays.equals(data, otherAsDeadline.getData()) &&
-				hashing.equals(otherAsDeadline.getHashing());
+				hashing.getName().equals(otherAsDeadline.getHashing().getName());
 		}
 		else
 			return false;
