@@ -17,9 +17,15 @@ limitations under the License.
 package io.mokamint.node.local;
 
 import java.io.FileNotFoundException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import com.moandjiezana.toml.Toml;
 
@@ -93,6 +99,13 @@ public class Config {
 	public final long minerPunishmentForIllegalDeadline;
 
 	/**
+	 * The set of URIs of the initial peers that must be contacted at start-up
+	 * and potentially end-up in the set of active peers.
+	 * It defaults to the empty set.
+	 */
+	private final Set<URI> seeds;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 */
 	private Config(Builder builder) {
@@ -105,6 +118,17 @@ public class Config {
 		this.minerInitialPoints = builder.minerInitialPoints;
 		this.minerPunishmentForTimeout = builder.minerPunishmentForTimeout;
 		this.minerPunishmentForIllegalDeadline = builder.minerPunishmentForIllegalDeadline;
+		this.seeds = builder.seeds;
+	}
+
+	/**
+	 * Yields the URIs of the initial peers that must be contacted at start-up
+	 * and potentially end-up in the set of active peers. It defaults to the empty set.
+	 * 
+	 * @return the set of URIs of initial peers
+	 */
+	public Stream<URI> seeds() {
+		return seeds.stream();
 	}
 
 	@Override
@@ -155,6 +179,10 @@ public class Config {
 		sb.append("\n");
 		sb.append("# the points that a miner loses as punishment for providing an illegal deadline\n");
 		sb.append("miner_punishment_for_illegal_deadline = " + minerPunishmentForIllegalDeadline + "\n");
+		sb.append("\n");
+		sb.append("# the URIs of the initial peers, that will always get added to the previous set of peers\n");
+		sb.append("# (if any) and contacted at start-up\n");
+		sb.append("seeds = [\"ws://mymachine.com:8026\", \"ws://hermachine.de:8028\"]");
 
 		return sb.toString();
 	}
@@ -172,6 +200,7 @@ public class Config {
 		private long minerInitialPoints = 1000L;
 		private long minerPunishmentForTimeout = 1L;
 		private long minerPunishmentForIllegalDeadline = 500L;
+		private final Set<URI> seeds = new HashSet<>();
 
 		private Builder() throws NoSuchAlgorithmException {
 			setHashingForDeadlines("shabal256");
@@ -198,8 +227,9 @@ public class Config {
 		 * @return the builder
 		 * @throws FileNotFoundException if {@code path} cannot be found
 		 * @throws NoSuchAlgorithmException if the configuration file refers to some non-available hashing algorithm
+		 * @throws URISyntaxException if the configuration file refers to a URI with wrong syntax
 		 */
-		public static Builder load(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
+		public static Builder load(Path path) throws NoSuchAlgorithmException, FileNotFoundException, URISyntaxException {
 			Toml toml;
 
 			try {
@@ -251,6 +281,11 @@ public class Config {
 			var minerPunishmentForIllegalDeadline = toml.getLong("miner_punishment_for_illegal_deadline");
 			if (minerPunishmentForIllegalDeadline != null)
 				builder.setMinerPunishmentForIllegalDeadline(minerPunishmentForIllegalDeadline);
+
+			List<String> seeds = toml.getList("seeds");
+			if (seeds != null)
+				for (String uri: seeds)
+					builder.seeds.add(new URI(uri));
 
 			return builder;
 		}
@@ -365,6 +400,18 @@ public class Config {
 		 */
 		public Builder setMinerPunishmentForIllegalDeadline(long minerPunishmentForIllegalDeadline) {
 			this.minerPunishmentForIllegalDeadline = minerPunishmentForIllegalDeadline;
+			return this;
+		}
+
+		/**
+		 * Adds the given URI to those of the initial peers (called seeds).
+		 * Such peers are contacted at start-up.
+		 * 
+		 * @param uri the URI to add
+		 * @return this builder
+		 */
+		public Builder addSeed(URI uri) {
+			seeds.add(uri);
 			return this;
 		}
 

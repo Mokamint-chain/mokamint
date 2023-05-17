@@ -14,13 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package io.mokamint.node.api;
+
 /**
- * This module implements the API of a Mokamint node.
+ * The restricted interface of a node of a Mokamint blockchain.
+ * Typically, this API can be called from the local machine only.
  */
-module io.mokamint.node.api {
-	exports io.mokamint.node.api;
-	requires transitive io.hotmoka.crypto.api;
-	requires transitive io.mokamint.nonce.api;
-	requires transitive io.hotmoka.annotations;
-	requires io.hotmoka.marshalling.api;
+public interface RestrictedNode {
+
+	/**
+	 * Adds the given peer to the set of peers of this node.
+	 * 
+	 * @param peer the peer to add
+	 */
+	void addPeer(Peer peer);
+
+	/**
+	 * Removes the given peer from the set of peers of this node.
+	 * 
+	 * @param peer the peer to remove
+	 */
+	void removePeer(Peer peer);
 }

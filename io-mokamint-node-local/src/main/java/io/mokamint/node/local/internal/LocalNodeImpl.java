@@ -37,6 +37,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
@@ -61,7 +62,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The miners connected to the node.
 	 */
-	private final SetOfMiners miners;
+	private final PunishableSet<Miner> miners;
 
 	/**
 	 * The database containing the blockchain.
@@ -99,7 +100,7 @@ public class LocalNodeImpl implements LocalNode {
 	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException {
 		this.config = config;
 		this.app = app;
-		this.miners = new SetOfMiners(config, Stream.of(miners));
+		this.miners = new PunishableSet<Miner>(Stream.of(miners), config.minerInitialPoints);
 		this.db = new Database(config);
 
 		Optional<Block> head = db.getHead();
@@ -121,6 +122,12 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public Stream<Peer> getPeers() {
+		// TODO Auto-generated method stub
+		return Stream.empty();
+	}
+
+	@Override
 	public void close() throws InterruptedException {
 		events.shutdownNow();
 		tasks.shutdownNow();
@@ -132,6 +139,16 @@ public class LocalNodeImpl implements LocalNode {
 		finally {
 			db.close();
 		}
+	}
+
+	@Override
+	public void addPeer(Peer peer) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void removePeer(Peer peer) {
+		// TODO Auto-generated method stub
 	}
 
 	/**
@@ -157,7 +174,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @return the miners
 	 */
-	public SetOfMiners getMiners() {
+	public PunishableSet<Miner> getMiners() {
 		return miners;
 	}
 

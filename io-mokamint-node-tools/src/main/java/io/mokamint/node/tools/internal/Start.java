@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -165,6 +166,11 @@ public class Start extends AbstractCommand {
 			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" does not exist", e);
 			return;
 		}
+		catch (URISyntaxException e) {
+			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" refers to a URI with wrong syntax!|@"));
+			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" refers to a URI with wrong syntax", e);
+			return;
+		}
 
 		try {
 			ensureExists(config.dir);
@@ -175,7 +181,9 @@ public class Start extends AbstractCommand {
 			return;
 		}
 
+		System.out.print(Ansi.AUTO.string("@|blue Starting a local node... |@"));
 		try (var node = LocalNodes.of(config, new TestApplication(), miners.toArray(Miner[]::new))) {
+			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 			waitForKeyPress();
 		}
 		catch (NoSuchAlgorithmException e) {
@@ -220,7 +228,7 @@ public class Start extends AbstractCommand {
 		}
 	}
 
-	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException {
+	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
 		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
 	}
 

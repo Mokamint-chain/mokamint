@@ -16,8 +16,28 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.net.URI;
+
+import io.hotmoka.annotations.Immutable;
+
 /**
- * A node of a Mokamint blockchain. Its API is split into a public and a restricted part.
+ * A peer of a node. It is the address of another node connected to the node.
+ * In general, a node is connected to zero or more peers.
  */
-public interface Node extends PublicNode, RestrictedNode, AutoCloseable {
+@Immutable
+public interface Peer {
+
+	/**
+	 * Yields the URI of this peer. It is the network address (including the port, if any)
+	 * where the peer can be contacted by websockets. Consequently, it always starts with {@code ws://}.
+	 * 
+	 * @return the URI
+	 */
+	URI getURI();
+
+	@Override
+	boolean equals(Object obj);
+
+	@Override
+	int hashCode();
 }

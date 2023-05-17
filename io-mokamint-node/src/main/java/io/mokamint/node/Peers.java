@@ -14,13 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package io.mokamint.node;
+
+import java.net.URI;
+
+import io.mokamint.node.api.Peer;
+import io.mokamint.node.internal.PeerImpl;
+
 /**
- * This module implements the API of a Mokamint node.
+ * Providers of peers.
  */
-module io.mokamint.node.api {
-	exports io.mokamint.node.api;
-	requires transitive io.hotmoka.crypto.api;
-	requires transitive io.mokamint.nonce.api;
-	requires transitive io.hotmoka.annotations;
-	requires io.hotmoka.marshalling.api;
+public interface Peers {
+
+	/**
+	 * Yields a peer with the given URI.
+	 * 
+	 * @param uri the URI of the peer
+	 * @return the peer
+	 */
+	static Peer of(URI uri) {
+		return new PeerImpl(uri);
+	}
 }
