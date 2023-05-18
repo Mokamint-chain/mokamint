@@ -16,13 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.CheckSupplier.checkNoSuchAlgorithmException;
-import static io.hotmoka.exceptions.CheckSupplier.checkNoSuchAlgorithmExceptionIOException;
+import static io.hotmoka.exceptions.CheckSupplier.check;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,14 +34,19 @@ import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.UncheckedIOException;
+import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
+import io.hotmoka.exceptions.UncheckedURISyntaxException;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 
 /**
@@ -64,6 +70,16 @@ public class Database implements AutoCloseable {
 	private final Store storeOfBlocks;
 
 	/**
+	 * The Xodus store that maps each block to its immediate successor(s).
+	 */
+	private final Store storeOfForwards;
+
+	/**
+	 * The Xodus store that contains the set of peers of the node.
+	 */
+	private final Store storeOfPeers;
+
+	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.
 	 */
 	private final static ByteIterable genesis = fromByte((byte) 42);
@@ -74,9 +90,9 @@ public class Database implements AutoCloseable {
 	private final static ByteIterable head = fromByte((byte) 19);
 
 	/**
-	 * The Xodus store that maps each block to its immediate successor(s).
+	 * The key mapped in the {@link #storeOfPeers} to the amount of peers.
 	 */
-	private final Store storeOfForwards;
+	private final static ByteIterable size = fromByte((byte) 17);
 
 	private final static Logger LOGGER = Logger.getLogger(Database.class.getName());
 
@@ -88,8 +104,9 @@ public class Database implements AutoCloseable {
 	public Database(Config config) {
 		this.hashingForBlocks = config.hashingForBlocks;
 		this.environment = createBlockchainEnvironment(config);
-		this.storeOfBlocks = openStoreOfBlocks();
-		this.storeOfForwards = openStoreOfForwards();
+		this.storeOfBlocks = openStore("blocks");
+		this.storeOfForwards = openStore("forwards");
+		this.storeOfPeers = openStore("peers");
 	}
 
 	/**
@@ -100,7 +117,7 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 */
 	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException {
-		return checkNoSuchAlgorithmException(() ->
+		return check(UncheckedNoSuchAlgorithmException.class, () ->
 			Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
 				.map(ByteIterable::getBytes)
 				.map(uncheck(Blocks::from))
@@ -124,7 +141,7 @@ public class Database implements AutoCloseable {
 	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, IOException {
-		return checkNoSuchAlgorithmExceptionIOException(() ->
+		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
 			getGenesisHash()
 				.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the genesis hash is set but it is not in the database"))))
 				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new IOException("the genesis hash is set but it refers to a non-genesis block in the database"))))
@@ -141,7 +158,7 @@ public class Database implements AutoCloseable {
 	 * @return the hash of the head block, if any
 	 */
 	public Optional<byte[]> getHeadHash() {
-		return environment.computeInReadonlyTransaction(txn -> Optional.ofNullable(storeOfBlocks.get(txn, head)).map(ByteIterable::getBytes));
+		return Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, head))).map(ByteIterable::getBytes);
 	}
 
 	/**
@@ -152,7 +169,7 @@ public class Database implements AutoCloseable {
 	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, IOException {
-		return checkNoSuchAlgorithmExceptionIOException(() ->
+		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
 			getHeadHash()
 				.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the head hash is set but it is not in the database"))))
 		);
@@ -185,6 +202,52 @@ public class Database implements AutoCloseable {
 	private static byte[] slice(byte[] all, int n, int size) {
 		byte[] result = new byte[size];
 		System.arraycopy(all, n * size, result, 0, size);
+		return result;
+	}
+
+	/**
+	 * Yields the set of peers saved in this database, if any.
+	 * 
+	 * @return the peers
+	 * @throws IOException of the database is corrupted
+	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
+	 */
+	public Stream<Peer> getPeers() throws URISyntaxException, IOException {
+		return check(UncheckedURISyntaxException.class, UncheckedIOException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> {
+			var bi = storeOfPeers.get(txn, size);
+			if (bi == null)
+				return Stream.empty();
+
+			int size = bytesToUnsignedInt(bi.getBytes());
+
+			Stream<ByteIterable> x = IntStream.range(0, size)
+				.mapToObj(Database::intToBytes)
+				.map(ByteIterable::fromBytes)
+				.map(uncheck(index -> Optional.ofNullable(storeOfPeers.get(txn, index)).orElseThrow(() -> new IOException("null entry in peers table"))));
+
+			return x.map(ByteIterable::getBytes)
+				.map(uncheck(Peers::from));
+		})));
+	}
+
+	private static byte[] intToBytes(int i) {
+		ByteBuffer bb = ByteBuffer.allocate(4); 
+	    bb.putInt(i); 
+	    bb.rewind();
+	    return bb.array();
+	}
+
+	private static int bytesToUnsignedInt(byte[] bytes) throws IOException {
+		if (bytes.length >= 4)
+			throw new IOException("two many bytes for an integer in database");
+
+		int result = 0;
+		for (byte b: bytes)
+		    result = (result << 8) + (b & 0xFF);
+
+		if (result < 0)
+			throw new IOException("negative value for unsigned integer in database");
+
 		return result;
 	}
 
@@ -229,6 +292,14 @@ public class Database implements AutoCloseable {
 		environment.executeInTransaction(txn -> storeOfBlocks.put(txn, head, fromBytes(hash)));
 	}
 
+	public void addPeer(Peer peer) {
+		
+	}
+
+	public void removePeer(Peer peer) {
+		
+	}
+
 	@Override
 	public void close() {
 		try {
@@ -253,17 +324,10 @@ public class Database implements AutoCloseable {
 		return env;
 	}
 
-	private Store openStoreOfBlocks() {
-		var storeOfBlocks = new AtomicReference<Store>();
-		environment.executeInTransaction(txn -> storeOfBlocks.set(environment.openStoreWithoutDuplicates("blocks", txn)));
-		LOGGER.info("opened the store of blocks inside the blockchain database");
-		return storeOfBlocks.get();
-	}
-
-	private Store openStoreOfForwards() {
-		var storeOfForwards = new AtomicReference<Store>();
-		environment.executeInTransaction(txn -> storeOfForwards.set(environment.openStoreWithoutDuplicates("forwards", txn)));
-		LOGGER.info("opened the store of forwards inside the blockchain database");
-		return storeOfForwards.get();
+	private Store openStore(String name) {
+		var store = new AtomicReference<Store>();
+		environment.executeInTransaction(txn -> store.set(environment.openStoreWithoutDuplicates(name, txn)));
+		LOGGER.info("opened the store of " + name + " inside the blockchain database");
+		return store.get();
 	}
 }

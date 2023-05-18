@@ -19,13 +19,14 @@ package io.mokamint.node.api;
 import java.net.URI;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * A peer of a node. It is the address of another node connected to the node.
  * In general, a node is connected to zero or more peers.
  */
 @Immutable
-public interface Peer {
+public interface Peer extends Marshallable {
 
 	/**
 	 * Yields the URI of this peer. It is the network address (including the port, if any)
