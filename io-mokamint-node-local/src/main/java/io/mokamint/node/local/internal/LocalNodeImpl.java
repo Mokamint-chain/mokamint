@@ -100,7 +100,7 @@ public class LocalNodeImpl implements LocalNode {
 	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException {
 		this.config = config;
 		this.app = app;
-		this.miners = new PunishableSet<Miner>(Stream.of(miners), config.minerInitialPoints);
+		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
 
 		Optional<Block> head = db.getHead();

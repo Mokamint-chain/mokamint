@@ -16,52 +16,28 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import io.hotmoka.annotations.ThreadSafe;
 
 /**
  * A set of actors that can be punished and potentially removed from the set
- * if they have been punished too much.
+ * if they have been punished too much. Each actor has an associated value.
  * 
  * @param <A> the type of the actors
+ * @param <V> the type of the values
  */
 @ThreadSafe
-public interface PunishableSet<A> {
+public interface PunishableSetWithValue<A, V> extends PunishableSet<A> {
 
 	/**
-	 * Checks if the given actor is among those of this container.
-	 * 
-	 * @param actor the actor
-	 * @return true if and only if that condition holds
-	 */
-	boolean contains(A actor);
-
-	/**
-	 * Checks is this set is empty.
-	 * 
-	 * @return true if and only if this set is empty
-	 */
-	boolean isEmpty();
-
-	/**
-	 * Runs some code on each actor in this set. This is weakly consistent,
+	 * Runs some code on each actor in this set and its associated value. This is weakly consistent,
 	 * in the sense that the set of actors can be modified in the meantime and there is
-	 * no guarantee that the code will be run for such newly added actors.
+	 * no guarantee that the code will be run for newly added actors.
 	 * 
-	 * @param what the code to execute for each actor
+	 * @param what the code to execute for each actor and value
 	 */
-	void forEach(Consumer<A> what);
-
-	/**
-	 * Punishes an actor, by reducing its points. If the actor reaches zero points,
-	 * it gets removed from this set of actors.
-	 * 
-	 * @param actor the actor to punish
-	 * @param points how many points get removed
-	 * @return true if and only if the actor has reached zero points and has consequently been removed
-	 */
-	boolean punish(A actor, long points);
+	void forEachEntry(BiConsumer<A, V> what);
 
 	/**
 	 * Adds the given actor to this container, if it is not already there.
@@ -69,6 +45,16 @@ public interface PunishableSet<A> {
 	 * with an implementation specific policy.
 	 * 
 	 * @param actor the actor to add
+	 * @param value the initial value of the actor
 	 */
-	void add(A actor);
+	void add(A actor, V value);
+
+	/**
+	 * Replaces the value of the given actor from this container, if it is already there.
+	 * Otherwise, nothing is set.
+	 * 
+	 * @param actor the actor whose value must be replaced
+	 * @param value the new value set for the actor
+	 */
+	void replace(A actor, V value);
 }
