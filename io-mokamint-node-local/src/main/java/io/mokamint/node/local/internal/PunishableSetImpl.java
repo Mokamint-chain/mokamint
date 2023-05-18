@@ -63,6 +63,19 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		this.actors = actors.distinct().collect(toMap(actor -> actor, pointInitializer, (_i1, _i2) -> 0L, HashMap::new));
 	}
 
+	/**
+	 * Copy constructor.
+	 * 
+	 * @param parent the copied object
+	 */
+	private PunishableSetImpl(PunishableSetImpl<A> parent) {
+		synchronized (parent.actors) {
+			this.actors = new HashMap<>(parent.actors);
+		}
+
+		this.pointInitializer = parent.pointInitializer;
+	}
+
 	@Override
 	public boolean contains(A actor) {
 		synchronized (actors) {
@@ -78,8 +91,13 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	}
 
 	@Override
-	public void forEach(Consumer<A> what) {
-		getActors().forEach(what::accept);
+	public void forEach(Consumer<A> action) {
+		new PunishableSetImpl<>(this).actors.keySet().forEach(action::accept);
+	}
+
+	@Override
+	public PunishableSet<A> snapshot() {
+		return new PunishableSetImpl<>(this);
 	}
 
 	/**

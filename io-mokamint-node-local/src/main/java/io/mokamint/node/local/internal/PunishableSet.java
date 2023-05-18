@@ -49,9 +49,9 @@ public interface PunishableSet<A> {
 	 * in the sense that the set of actors can be modified in the meantime and there is
 	 * no guarantee that the code will be run for such newly added actors.
 	 * 
-	 * @param what the code to execute for each actor
+	 * @param action the code to execute for each actor
 	 */
-	void forEach(Consumer<A> what);
+	void forEach(Consumer<A> action);
 
 	/**
 	 * Punishes an actor, by reducing its points. If the actor reaches zero points,
@@ -71,4 +71,12 @@ public interface PunishableSet<A> {
 	 * @param actor the actor to add
 	 */
 	void add(A actor);
+
+	/**
+	 * Yields a snapshot of this container. It is a consistent view of the container
+	 * at the time of call.
+	 * 
+	 * @return the snapshot
+	 */
+	PunishableSet<A> snapshot();
 }

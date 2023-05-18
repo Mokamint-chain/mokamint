@@ -20,7 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * Provider of punishable sets.
+ * A provider of punishable sets.
  */
 public interface PunishableSets {
 
@@ -28,11 +28,11 @@ public interface PunishableSets {
 	 * Creates a new punishable set of actors.
 	 * 
 	 * @param actors the actors initially contained in the set
-	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
-	 *                      function will be used also when adding a new actor to the set later
-	 *                      (see @link {@link PunishableSet#add(Object)})
+	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
+	 *                         function will be used also when adding a new actor to the set later
+	 *                         (see @link {@link PunishableSet#add(Object)})
 	 */
-	static <A> PunishableSet<A> of(Stream<A> actors, Function<A, Long> initialPoints) {
-		return new PunishableSetImpl<A>(actors, initialPoints);
+	static <A> PunishableSet<A> of(Stream<A> actors, Function<A, Long> pointInitializer) {
+		return new PunishableSetImpl<A>(actors, pointInitializer);
 	}
 }

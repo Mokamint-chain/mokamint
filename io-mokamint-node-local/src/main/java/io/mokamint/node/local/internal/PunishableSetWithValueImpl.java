@@ -16,14 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static java.util.stream.Collectors.toMap;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 
@@ -38,7 +35,12 @@ import io.hotmoka.annotations.ThreadSafe;
  * @param <V> the type of the values
  */
 @ThreadSafe
-public class PunishableSetWithValueImpl<A, V> extends PunishableSetImpl<A> implements PunishableSetWithValue<A, V> {
+public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<A, V> {
+
+	/**
+	 * The adapted punishable set.
+	 */
+	private final PunishableSet<A> parent;
 
 	/**
 	 * The values associated to actors.
@@ -51,37 +53,44 @@ public class PunishableSetWithValueImpl<A, V> extends PunishableSetImpl<A> imple
 	private final Function<A, V> valueInitializer;
 
 	/**
-	 * Creates a new punishable set of actors.
+	 * Creates a new punishable set of actors with associated value, by adapting a punishable set of actors.
 	 * 
-	 * @param actors the actors initially contained in the set
-	 * @param valueInitializer the initial values assigned to each actor when it is added to the set; this
-	 *                         function will be used also when adding new actors to the set later
+	 * @param parent the punishable set of actors that gets adapted. If {@code parent} gets modified later,
+	 *               changes are not reflected to this adaptation
+	 * @param valueInitializer the initial values assigned to each actor when it is added to this container;
+	 *                         this function is used also when adding new actors to the set later
 	 *                         (see @link {@link PunishableSet#add(Object)})
 	 */
-	public PunishableSetWithValueImpl(Stream<A> actors, Function<A, Long> pointInitializer, Function<A, V> valueInitializer) {
-		super(actors, pointInitializer);
-
+	public PunishableSetWithValueImpl(PunishableSet<A> parent, Function<A, V> valueInitializer) {
+		this.parent = parent;
 		this.valueInitializer = valueInitializer;
-		this.values = actors.distinct().collect(toMap(actor -> actor, valueInitializer, (_i1, _i2) -> null, HashMap::new));
+		this.values = new HashMap<>();
+		parent.forEach(actor -> values.put(actor, valueInitializer.apply(actor)));
+	}
+
+	/**
+	 * Copy constructor.
+	 * 
+	 * @param parent the copied object
+	 */
+	private PunishableSetWithValueImpl(PunishableSetWithValueImpl<A, V> parent) {
+		synchronized (parent.values) {
+			this.parent = parent.snapshot();
+			this.values = new HashMap<>(parent.values);
+			this.valueInitializer = parent.valueInitializer;
+		}
 	}
 
 	@Override
-	public void forEachEntry(BiConsumer<A, V> what) {
-		Set<A> actors;
-		Map<A, V> copy;
-
-		synchronized (values) {
-			actors = getActors();
-			copy = new HashMap<>(values);
-		}
-
-		actors.forEach(actor -> what.accept(actor, copy.get(actor)));
+	public void forEachEntry(BiConsumer<A, V> action) {
+		var copy = new PunishableSetWithValueImpl<>(this);
+		copy.forEach(actor -> action.accept(actor, copy.values.get(actor)));
 	}
 
 	@Override
 	public boolean punish(A actor, long points) {
 		synchronized (values) {
-			if (super.punish(actor, points)) {
+			if (parent.punish(actor, points)) {
 				values.remove(actor);
 				return true;
 			}
@@ -93,7 +102,7 @@ public class PunishableSetWithValueImpl<A, V> extends PunishableSetImpl<A> imple
 	@Override
 	public void add(A actor) {
 		synchronized (values) {
-			super.add(actor);
+			parent.add(actor);
 			values.computeIfAbsent(actor, valueInitializer);
 		}
 	}
@@ -101,7 +110,7 @@ public class PunishableSetWithValueImpl<A, V> extends PunishableSetImpl<A> imple
 	@Override
 	public void add(A actor, V value) {
 		synchronized (values) {
-			super.add(actor);
+			parent.add(actor);
 			values.put(actor, value);
 		}
 	}
@@ -111,5 +120,25 @@ public class PunishableSetWithValueImpl<A, V> extends PunishableSetImpl<A> imple
 		synchronized (values) {
 			values.replace(actor, value);
 		}
+	}
+
+	@Override
+	public boolean contains(A actor) {
+		return parent.contains(actor);
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return parent.isEmpty();
+	}
+
+	@Override
+	public void forEach(Consumer<A> what) {
+		parent.forEach(what);
+	}
+
+	@Override
+	public PunishableSetWithValue<A, V> snapshot() {
+		return new PunishableSetWithValueImpl<>(this);
 	}
 }

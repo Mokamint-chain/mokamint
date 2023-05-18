@@ -35,9 +35,9 @@ public interface PunishableSetWithValue<A, V> extends PunishableSet<A> {
 	 * in the sense that the set of actors can be modified in the meantime and there is
 	 * no guarantee that the code will be run for newly added actors.
 	 * 
-	 * @param what the code to execute for each actor and value
+	 * @param action the code to execute for each actor and value
 	 */
-	void forEachEntry(BiConsumer<A, V> what);
+	void forEachEntry(BiConsumer<A, V> action);
 
 	/**
 	 * Adds the given actor to this container, if it is not already there.
