@@ -21,9 +21,9 @@ import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,7 +36,10 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.UncheckedIOException;
 import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
-import io.hotmoka.exceptions.UncheckedURISyntaxException;
+import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.UnmarshallingContexts;
+import io.hotmoka.marshalling.api.MarshallingContext;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
@@ -90,9 +93,9 @@ public class Database implements AutoCloseable {
 	private final static ByteIterable head = fromByte((byte) 19);
 
 	/**
-	 * The key mapped in the {@link #storeOfPeers} to the amount of peers.
+	 * The key mapped in the {@link #storeOfPeers} to the sequence of peers.
 	 */
-	private final static ByteIterable size = fromByte((byte) 17);
+	private final static ByteIterable peers = fromByte((byte) 17);
 
 	private final static Logger LOGGER = Logger.getLogger(Database.class.getName());
 
@@ -208,47 +211,64 @@ public class Database implements AutoCloseable {
 	/**
 	 * Yields the set of peers saved in this database, if any.
 	 * 
-	 * @return the peers
+	 * @return the peers, in ascending order and without duplicates
 	 * @throws IOException of the database is corrupted
 	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
 	 */
 	public Stream<Peer> getPeers() throws URISyntaxException, IOException {
-		return check(UncheckedURISyntaxException.class, UncheckedIOException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> {
-			var bi = storeOfPeers.get(txn, size);
-			if (bi == null)
-				return Stream.empty();
+		var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
+		if (bi == null)
+			return Stream.empty();
 
-			int size = bytesToUnsignedInt(bi.getBytes());
-
-			Stream<ByteIterable> x = IntStream.range(0, size)
-				.mapToObj(Database::intToBytes)
-				.map(ByteIterable::fromBytes)
-				.map(uncheck(index -> Optional.ofNullable(storeOfPeers.get(txn, index)).orElseThrow(() -> new IOException("null entry in peers table"))));
-
-			return x.map(ByteIterable::getBytes)
-				.map(uncheck(Peers::from));
-		})));
+		try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
+			return Stream.of(ArrayOfPeers.from(context).peers);
+		}
 	}
 
-	private static byte[] intToBytes(int i) {
-		ByteBuffer bb = ByteBuffer.allocate(4); 
-	    bb.putInt(i); 
-	    bb.rewind();
-	    return bb.array();
+	/**
+	 * Saves the given set of peers into the database.
+	 * 
+	 * @param peers the peers to write
+	 * @throws IOException if the peers could not be written
+	 */
+	private void setPeers(Stream<Peer> peers) throws IOException {
+		var bi = fromBytes(new ArrayOfPeers(peers).toByteArray());
+		environment.executeInTransaction(txn -> storeOfPeers.put(txn, Database.peers, bi));
 	}
 
-	private static int bytesToUnsignedInt(byte[] bytes) throws IOException {
-		if (bytes.length >= 4)
-			throw new IOException("two many bytes for an integer in database");
+	/**
+	 * A marshallable array of peers.
+	 */
+	private static class ArrayOfPeers extends AbstractMarshallable {
+		private final Peer[] peers;
 
-		int result = 0;
-		for (byte b: bytes)
-		    result = (result << 8) + (b & 0xFF);
+		private ArrayOfPeers(Stream<Peer> peers) {
+			this.peers = peers.distinct().sorted().toArray(Peer[]::new);
+		}
 
-		if (result < 0)
-			throw new IOException("negative value for unsigned integer in database");
+		@Override
+		public void into(MarshallingContext context) throws IOException {
+			context.writeCompactInt(peers.length);
+			for (Peer peer: peers)
+				peer.into(context);
+		}
 
-		return result;
+		/**
+		 * Unmarshals a peer from the given context.
+		 * 
+		 * @param context the context
+		 * @return the peer
+		 * @throws IOException if the peer cannot be unmarshalled
+		 * @throws URISyntaxException if the context contains a URI with illegal syntax
+		 */
+		private static ArrayOfPeers from(UnmarshallingContext context) throws IOException, URISyntaxException {
+			int length = context.readCompactInt();
+			Peer[] peers = new Peer[length];
+			for (int pos = 0; pos < length; pos++)
+				peers[pos] = Peers.from(context);
+
+			return new ArrayOfPeers(Stream.of(peers));
+		}
 	}
 
 	/**
@@ -292,12 +312,26 @@ public class Database implements AutoCloseable {
 		environment.executeInTransaction(txn -> storeOfBlocks.put(txn, head, fromBytes(hash)));
 	}
 
-	public void addPeer(Peer peer) {
-		
+	/**
+	 * Adds the given peer to the set of peers in this database.
+	 * 
+	 * @param peer the peer to add.
+	 * @throws IOException if there is an I/O error in the access to the database
+	 * @throws URISyntaxException if the database contains a peer with an illegal URI
+	 */
+	public void addPeer(Peer peer) throws IOException, URISyntaxException {
+		setPeers(Stream.concat(getPeers(), Stream.of(peer)));
 	}
 
-	public void removePeer(Peer peer) {
-		
+	/**
+	 * Removes the given peer from those stored in this database.
+	 * 
+	 * @param peer the peer to remove
+	 * @throws IOException if there is an I/O error in the access to the database
+	 * @throws URISyntaxException if the database contains a peer with an illegal URI
+	 */
+	public void removePeer(Peer peer) throws IOException, URISyntaxException {
+		setPeers(getPeers().filter(p -> !peer.equals(p)));
 	}
 
 	@Override

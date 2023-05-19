@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import io.hotmoka.marshalling.UnmarshallingContexts;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.internal.PeerImpl;
 
@@ -52,5 +53,17 @@ public interface Peers {
 		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
 			return PeerImpl.from(context);
 		}
+	}
+
+	/**
+	 * Unmarshals a peer from the given context.
+	 * 
+	 * @param context the context
+	 * @return the peer
+	 * @throws IOException if the peer cannot be unmarshalled
+	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
+	 */
+	static Peer from(UnmarshallingContext context) throws IOException, URISyntaxException {
+		return PeerImpl.from(context);
 	}
 }

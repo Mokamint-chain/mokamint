@@ -19,9 +19,7 @@ package io.mokamint.node.local.internal;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -51,6 +49,16 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	private final Function<A, Long> pointInitializer;
 
 	/**
+	 * A call-back invoked when a new actor is actually added through {@link #add(Object)}.
+	 */
+	private final Consumer<A> onAdd;
+
+	/**
+	 * A call-back invoked when an actor is actually removed through {@link #punish(Object, long)}.
+	 */
+	private final Consumer<A> onRemove;
+
+	/**
 	 * Creates a new punishable set of actors.
 	 * 
 	 * @param actors the actors initially contained in the set
@@ -59,21 +67,39 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 *                         (see @link {@link PunishableSet#add(Object)})
 	 */
 	public PunishableSetImpl(Stream<A> actors, Function<A, Long> pointInitializer) {
-		this.pointInitializer = pointInitializer;
+		this(actors, pointInitializer, _actor -> {}, _actor -> {});
+	}
+
+	/**
+	 * Creates a new punishable set of actors.
+	 * 
+	 * @param actors the actors initially contained in the set
+	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
+	 *                         function will be used also when adding new actors to the set later
+	 *                         (see @link {@link PunishableSet#add(Object)})
+	 * @param onAdd a call-back invoked when a new actor is actually added through {@link #add(Object)}
+	 * @param onRemove a call-back invoked when an actor is actually removed through {@link #punish(Object, long)}
+	 */
+	public PunishableSetImpl(Stream<A> actors, Function<A, Long> pointInitializer, Consumer<A> onAdd, Consumer<A> onRemove) {
 		this.actors = actors.distinct().collect(toMap(actor -> actor, pointInitializer, (_i1, _i2) -> 0L, HashMap::new));
+		this.pointInitializer = pointInitializer;
+		this.onAdd = onAdd;
+		this.onRemove = onRemove;
 	}
 
 	/**
 	 * Copy constructor.
 	 * 
-	 * @param parent the copied object
+	 * @param original the copied object
 	 */
-	private PunishableSetImpl(PunishableSetImpl<A> parent) {
-		synchronized (parent.actors) {
-			this.actors = new HashMap<>(parent.actors);
+	private PunishableSetImpl(PunishableSetImpl<A> original) {
+		synchronized (original.actors) {
+			this.actors = new HashMap<>(original.actors);
 		}
 
-		this.pointInitializer = parent.pointInitializer;
+		this.pointInitializer = original.pointInitializer;
+		this.onAdd = original.onAdd;
+		this.onRemove = original.onRemove;
 	}
 
 	@Override
@@ -92,30 +118,20 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 
 	@Override
 	public void forEach(Consumer<A> action) {
-		new PunishableSetImpl<>(this).actors.keySet().forEach(action::accept);
+		snapshot().actors.keySet().forEach(action::accept);
 	}
 
 	@Override
-	public PunishableSet<A> snapshot() {
+	public PunishableSetImpl<A> snapshot() {
 		return new PunishableSetImpl<>(this);
-	}
-
-	/**
-	 * Yields a snapshot of the actors of this set.
-	 * 
-	 * @return the actors
-	 */
-	protected Set<A> getActors() {
-		synchronized (actors) {
-			return new HashSet<>(actors.keySet());
-		}
 	}
 
 	@Override
 	public boolean punish(A actor, long points) {
 		synchronized (actors) {
-			if (actors.computeIfPresent(actor, (__, oldPoints) -> Math.max(0L, oldPoints - points)) == 0) {
+			if (contains(actor) && actors.compute(actor, (__, oldPoints) -> Math.max(0L, oldPoints - points)) == 0) {
 				actors.remove(actor);
+				onRemove.accept(actor);
 				return true;
 			}
 		}
@@ -124,9 +140,15 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	}
 
 	@Override
-	public void add(A actor) {
+	public boolean add(A actor) {
 		synchronized (actors) {
-			actors.computeIfAbsent(actor, pointInitializer);
+			if (!contains(actor)) {
+				actors.put(actor, pointInitializer.apply(actor));
+				onAdd.accept(actor);
+				return true;
+			}
 		}
+
+		return false;
 	}
 }

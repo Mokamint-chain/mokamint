@@ -18,6 +18,7 @@ package io.mokamint.node.local.internal;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -71,14 +72,15 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	/**
 	 * Copy constructor.
 	 * 
-	 * @param parent the copied object
+	 * @param original the copied object
 	 */
-	private PunishableSetWithValueImpl(PunishableSetWithValueImpl<A, V> parent) {
-		synchronized (parent.values) {
-			this.parent = parent.snapshot();
-			this.values = new HashMap<>(parent.values);
-			this.valueInitializer = parent.valueInitializer;
+	private PunishableSetWithValueImpl(PunishableSetWithValueImpl<A, V> original) {
+		synchronized (original.values) {
+			this.parent = original.snapshot();
+			this.values = new HashMap<>(original.values);
 		}
+
+		this.valueInitializer = original.valueInitializer;
 	}
 
 	@Override
@@ -100,26 +102,29 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	}
 
 	@Override
-	public void add(A actor) {
+	public boolean add(A actor) {
 		synchronized (values) {
-			parent.add(actor);
 			values.computeIfAbsent(actor, valueInitializer);
+			return parent.add(actor);
 		}
 	}
 
 	@Override
-	public void add(A actor, V value) {
+	public boolean add(A actor, V value) {
 		synchronized (values) {
-			parent.add(actor);
-			values.put(actor, value);
+			values.putIfAbsent(actor, value);
+			return parent.add(actor);
 		}
 	}
 
 	@Override
-	public void replace(A actor, V value) {
+	public boolean replace(A actor, V value) {
 		synchronized (values) {
-			values.replace(actor, value);
+			if (contains(actor))
+				return !Objects.equals(value, values.replace(actor, value));
 		}
+
+		return false;
 	}
 
 	@Override
@@ -138,7 +143,7 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	}
 
 	@Override
-	public PunishableSetWithValue<A, V> snapshot() {
+	public PunishableSetWithValueImpl<A, V> snapshot() {
 		return new PunishableSetWithValueImpl<>(this);
 	}
 }

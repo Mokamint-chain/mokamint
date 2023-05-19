@@ -34,23 +34,14 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	private final URI uri;
 
 	/**
-	 * Unmarshals a peer from the given context.
-	 * 
-	 * @param context the context
-	 * @return the peer
-	 * @throws IOException if the peer cannot be unmarshalled
-	 * @throws URISyntaxException if the context contains a URI with illegal syntax
-	 */
-	public static PeerImpl from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return new PeerImpl(new URI(context.readUTF()));
-	}
-
-	/**
 	 * Creates a peer with the given URI.
 	 * 
 	 * @param uri the URI of the peer
 	 */
 	public PeerImpl(URI uri) {
+		if (uri == null)
+			throw new NullPointerException();
+
 		this.uri = uri;
 	}
 
@@ -72,5 +63,22 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		context.writeUTF(uri.toString());
+	}
+
+	@Override
+	public int compareTo(Peer other) {
+		return uri.compareTo(other.getURI());
+	}
+
+	/**
+	 * Unmarshals a peer from the given context.
+	 * 
+	 * @param context the context
+	 * @return the peer
+	 * @throws IOException if the peer cannot be unmarshalled
+	 * @throws URISyntaxException if the context contains a URI with illegal syntax
+	 */
+	public static PeerImpl from(UnmarshallingContext context) throws IOException, URISyntaxException {
+		return new PeerImpl(new URI(context.readUTF()));
 	}
 }

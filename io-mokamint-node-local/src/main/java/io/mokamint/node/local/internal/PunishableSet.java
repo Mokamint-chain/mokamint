@@ -55,22 +55,25 @@ public interface PunishableSet<A> {
 
 	/**
 	 * Punishes an actor, by reducing its points. If the actor reaches zero points,
-	 * it gets removed from this set of actors.
+	 * it gets removed from this set of actors. If the actor was not present in this
+	 * container, nothing happens.
 	 * 
 	 * @param actor the actor to punish
 	 * @param points how many points get removed
-	 * @return true if and only if the actor has reached zero points and has consequently been removed
+	 * @return true if and only if the actor was present in this container,
+	 *         has reached zero points and has been consequently removed
 	 */
 	boolean punish(A actor, long points);
 
 	/**
 	 * Adds the given actor to this container, if it is not already there.
-	 * Otherwise, nothing is added. The initial points of a new actor get reset
+	 * Otherwise, nothing happens. The initial points of a new actor get reset
 	 * with an implementation specific policy.
 	 * 
 	 * @param actor the actor to add
+	 * @return true if and only if the actor was not present and has been added
 	 */
-	void add(A actor);
+	boolean add(A actor);
 
 	/**
 	 * Yields a snapshot of this container. It is a consistent view of the container

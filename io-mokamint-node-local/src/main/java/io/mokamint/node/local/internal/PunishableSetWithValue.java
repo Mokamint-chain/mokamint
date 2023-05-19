@@ -41,20 +41,24 @@ public interface PunishableSetWithValue<A, V> extends PunishableSet<A> {
 
 	/**
 	 * Adds the given actor to this container, if it is not already there.
-	 * Otherwise, nothing is added. The initial points of a new actor get reset
-	 * with an implementation specific policy.
+	 * Otherwise, nothing happens. The initial points of a new actor get reset
+	 * with an implementation-specific policy.
 	 * 
 	 * @param actor the actor to add
 	 * @param value the initial value of the actor
+	 * @return true if and only if the actor was not in the container and
+	 *         has been consequently added
 	 */
-	void add(A actor, V value);
+	boolean add(A actor, V value);
 
 	/**
 	 * Replaces the value of the given actor from this container, if it is already there.
-	 * Otherwise, nothing is set.
+	 * Otherwise, nothing happens.
 	 * 
 	 * @param actor the actor whose value must be replaced
 	 * @param value the new value set for the actor
+	 * @return true if and only if the actor was in the container and its old
+	 *         value was different from {@code value} (modulo {@link Object#equals(Object)})
 	 */
-	void replace(A actor, V value);
+	boolean replace(A actor, V value);
 }

@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -34,5 +35,19 @@ public interface PunishableSets {
 	 */
 	static <A> PunishableSet<A> of(Stream<A> actors, Function<A, Long> pointInitializer) {
 		return new PunishableSetImpl<A>(actors, pointInitializer);
+	}
+
+	/**
+	 * Creates a new punishable set of actors.
+	 * 
+	 * @param actors the actors initially contained in the set
+	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
+	 *                         function will be used also when adding a new actor to the set later
+	 *                         (see @link {@link PunishableSet#add(Object)})
+	 * @param onAdd a call-back invoked when a new actor is actually added through {@link #add(Object)}
+	 * @param onRemove a call-back invoked when an actor is actually removed through {@link #punish(Object, long)}
+	 */
+	static <A> PunishableSet<A> of(Stream<A> actors, Function<A, Long> pointInitializer, Consumer<A> onAdd, Consumer<A> onRemove) {
+		return new PunishableSetImpl<A>(actors, pointInitializer, onAdd, onRemove);
 	}
 }

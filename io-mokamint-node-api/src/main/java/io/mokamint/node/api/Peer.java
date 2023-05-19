@@ -26,7 +26,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * In general, a node is connected to zero or more peers.
  */
 @Immutable
-public interface Peer extends Marshallable {
+public interface Peer extends Marshallable, Comparable<Peer> {
 
 	/**
 	 * Yields the URI of this peer. It is the network address (including the port, if any)
