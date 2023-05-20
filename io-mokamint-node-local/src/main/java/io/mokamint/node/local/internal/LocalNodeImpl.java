@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
+
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -35,6 +38,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Peer;
@@ -85,6 +89,11 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
+	/**
+	 * The peers of the node, with the time of the last contact.
+	 */
+	private final PunishableSetWithValue<Peer, Long> peers;
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -96,12 +105,18 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the database is corrupted
+	 * @throws URISyntaxException if some URI in the database has an illegal syntax
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException, URISyntaxException {
 		this.config = config;
 		this.app = app;
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
+		// TODO: initial value in config
+		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.minerInitialPoints, uncheck(db::addPeer), uncheck(db::removePeer)), _peer -> 0L);
+		config.seeds()
+			.map(Peers::of)
+			.forEach(peers::add);
 
 		Optional<Block> head = db.getHead();
 		if (head.isPresent()) {
@@ -123,8 +138,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Stream<Peer> getPeers() {
-		// TODO Auto-generated method stub
-		return Stream.empty();
+		return peers.getElements();
 	}
 
 	@Override
@@ -143,12 +157,12 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void addPeer(Peer peer) {
-		// TODO Auto-generated method stub
+		peers.add(peer);
 	}
 
 	@Override
 	public void removePeer(Peer peer) {
-		// TODO Auto-generated method stub
+		peers.remove(peer);
 	}
 
 	/**

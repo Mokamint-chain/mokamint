@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -69,7 +70,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
-	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException, IOException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 		var deadlineProlog = new byte[] { 1, 2, 3, 4 };
@@ -96,7 +97,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 
@@ -120,7 +121,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
 	@Timeout(1)
-	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException, IOException {
+	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 	
@@ -144,7 +145,7 @@ public class LocalNodeTests {
 	
 		class MyLocalNode extends LocalNodeImpl {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 	
@@ -167,12 +168,12 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
 	@Timeout(1)
-	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException, IOException {
+	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() throws NoSuchAlgorithmException, IOException {
+			public MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app, new Miner[0]);
 			}
 
@@ -193,13 +194,13 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
 	@Timeout(3) // three times config.deadlineWaitTimeout
-	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException, IOException {
+	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
 		var semaphore = new Semaphore(0);
 		var myMiner = mock(Miner.class);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 
@@ -220,7 +221,7 @@ public class LocalNodeTests {
 	@Test
 	@DisplayName("if a miner provides deadlines for the wrong hashing algorithm, an event is signalled to the node")
 	@Timeout(1)
-	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException, IOException {
+	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 
@@ -254,7 +255,7 @@ public class LocalNodeTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 

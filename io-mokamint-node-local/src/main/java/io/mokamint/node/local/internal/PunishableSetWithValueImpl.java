@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 
@@ -110,6 +111,18 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	}
 
 	@Override
+	public boolean remove(A actor) {
+		synchronized (values) {
+			if (values.containsKey(actor)) {
+				values.remove(actor);
+				return parent.remove(actor);
+			}
+		}
+
+		return false;
+	}
+
+	@Override
 	public boolean add(A actor, V value) {
 		synchronized (values) {
 			values.putIfAbsent(actor, value);
@@ -135,6 +148,11 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	@Override
 	public boolean isEmpty() {
 		return parent.isEmpty();
+	}
+
+	@Override
+	public Stream<A> getElements() {
+		return parent.getElements();
 	}
 
 	@Override

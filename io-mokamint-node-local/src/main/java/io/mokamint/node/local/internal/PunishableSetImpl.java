@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -117,6 +118,13 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	}
 
 	@Override
+	public Stream<A> getElements() {
+		synchronized (actors) {
+			return new HashSet<>(actors.keySet()).stream();
+		}
+	}
+
+	@Override
 	public void forEach(Consumer<A> action) {
 		snapshot().actors.keySet().forEach(action::accept);
 	}
@@ -145,6 +153,19 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 			if (!contains(actor)) {
 				actors.put(actor, pointInitializer.apply(actor));
 				onAdd.accept(actor);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean remove(A actor) {
+		synchronized (actors) {
+			if (contains(actor)) {
+				actors.remove(actor);
+				onRemove.accept(actor);
 				return true;
 			}
 		}

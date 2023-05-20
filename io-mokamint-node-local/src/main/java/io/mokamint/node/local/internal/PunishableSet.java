@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 
@@ -43,6 +44,13 @@ public interface PunishableSet<A> {
 	 * @return true if and only if this set is empty
 	 */
 	boolean isEmpty();
+
+	/**
+	 * Yields the elements in this container.
+	 * 
+	 * @return the elements
+	 */
+	Stream<A> getElements();
 
 	/**
 	 * Runs some code on each actor in this set. This is weakly consistent,
@@ -74,6 +82,15 @@ public interface PunishableSet<A> {
 	 * @return true if and only if the actor was not present and has been added
 	 */
 	boolean add(A actor);
+
+	/**
+	 * Removes the given actor from this container, if it is there.
+	 * Otherwise, nothing happens.
+	 * 
+	 * @param actor the actor to remove
+	 * @return true if and only if the actor was present and has been consequently removed
+	 */
+	boolean remove(A actor);
 
 	/**
 	 * Yields a snapshot of this container. It is a consistent view of the container
