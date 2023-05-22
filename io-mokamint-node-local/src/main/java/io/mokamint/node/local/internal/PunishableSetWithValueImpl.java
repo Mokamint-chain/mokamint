@@ -17,8 +17,10 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -29,9 +31,6 @@ import io.hotmoka.annotations.ThreadSafe;
 /**
  * A set of actors that can be punished and potentially removed from the set
  * if they have been punished too much. Each actor has an associated value.
- * The constructor specifies a map for the initial points of the actors and
- * another map for the initial values of the actors. Both maps get used also
- * when actors are added at a later time.
 
  * @param <A> the type of the actors
  * @param <V> the type of the values
@@ -70,24 +69,17 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 		parent.forEach(actor -> values.put(actor, valueInitializer.apply(actor)));
 	}
 
-	/**
-	 * Copy constructor.
-	 * 
-	 * @param original the copied object
-	 */
-	private PunishableSetWithValueImpl(PunishableSetWithValueImpl<A, V> original) {
-		synchronized (original.values) {
-			this.parent = original.snapshot();
-			this.values = new HashMap<>(original.values);
-		}
-
-		this.valueInitializer = original.valueInitializer;
-	}
-
 	@Override
 	public void forEachEntry(BiConsumer<A, V> action) {
-		var copy = new PunishableSetWithValueImpl<>(this);
-		copy.forEach(actor -> action.accept(actor, copy.values.get(actor)));
+		Map<A, V> copy;
+		Set<A> actors = new HashSet<>();
+
+		synchronized (values) {
+			copy = new HashMap<>(values);
+			forEach(actors::add);
+		}
+
+		actors.forEach(actor -> action.accept(actor, copy.get(actor)));
 	}
 
 	@Override
@@ -158,10 +150,5 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	@Override
 	public void forEach(Consumer<A> what) {
 		parent.forEach(what);
-	}
-
-	@Override
-	public PunishableSetWithValueImpl<A, V> snapshot() {
-		return new PunishableSetWithValueImpl<>(this);
 	}
 }

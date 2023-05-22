@@ -112,8 +112,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
-		// TODO: initial value in config
-		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.minerInitialPoints, uncheck(db::addPeer), uncheck(db::removePeer)), _peer -> 0L);
+		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, uncheck(db::addPeer), uncheck(db::removePeer)), _peer -> 0L);
 		config.seeds()
 			.map(Peers::of)
 			.forEach(peers::add);
@@ -142,6 +141,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public void addPeer(Peer peer) {
+		peers.add(peer);
+	}
+
+	@Override
+	public void removePeer(Peer peer) {
+		peers.remove(peer);
+	}
+
+	@Override
 	public void close() throws InterruptedException {
 		events.shutdownNow();
 		tasks.shutdownNow();
@@ -153,16 +162,6 @@ public class LocalNodeImpl implements LocalNode {
 		finally {
 			db.close();
 		}
-	}
-
-	@Override
-	public void addPeer(Peer peer) {
-		peers.add(peer);
-	}
-
-	@Override
-	public void removePeer(Peer peer) {
-		peers.remove(peer);
 	}
 
 	/**

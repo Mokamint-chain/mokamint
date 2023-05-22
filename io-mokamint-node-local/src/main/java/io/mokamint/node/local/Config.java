@@ -106,6 +106,28 @@ public class Config {
 	private final Set<URI> seeds;
 
 	/**
+	 * Yields the URIs of the initial peers that must be contacted at start-up
+	 * and potentially end-up in the set of active peers. It defaults to the empty set.
+	 * 
+	 * @return the set of URIs of initial peers
+	 */
+	public Stream<URI> seeds() {
+		return seeds.stream();
+	}
+
+	/**
+	 * The initial points of a peer, freshly added to a node.
+	 * It defaults to 1000.
+	 */
+	public final long peerInitialPoints;
+
+	/**
+	 * The points lost for punishment by a peer that does not answer to a ping request.
+	 * It defaults to 1.
+	 */
+	public final long peerPunishmentForUnreachable;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 */
 	private Config(Builder builder) {
@@ -119,16 +141,8 @@ public class Config {
 		this.minerPunishmentForTimeout = builder.minerPunishmentForTimeout;
 		this.minerPunishmentForIllegalDeadline = builder.minerPunishmentForIllegalDeadline;
 		this.seeds = builder.seeds;
-	}
-
-	/**
-	 * Yields the URIs of the initial peers that must be contacted at start-up
-	 * and potentially end-up in the set of active peers. It defaults to the empty set.
-	 * 
-	 * @return the set of URIs of initial peers
-	 */
-	public Stream<URI> seeds() {
-		return seeds.stream();
+		this.peerInitialPoints = builder.peerInitialPoints;
+		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 	}
 
 	@Override
@@ -182,7 +196,13 @@ public class Config {
 		sb.append("\n");
 		sb.append("# the URIs of the initial peers, that will always get added to the previous set of peers\n");
 		sb.append("# (if any) and contacted at start-up\n");
-		sb.append("seeds = [\"ws://mymachine.com:8026\", \"ws://hermachine.de:8028\"]");
+		sb.append("seeds = [\"ws://mymachine.com:8026\", \"ws://hermachine.de:8028\"]\n");
+		sb.append("\n");
+		sb.append("# the initial points of a peer, freshly added to a node\n");
+		sb.append("peer_initial_points = " + peerInitialPoints + "\n");
+		sb.append("\n");
+		sb.append("# the points that a peer loses as punishment for not answering a ping\n");
+		sb.append("peer_punishment_for_unreachable = " + peerPunishmentForUnreachable + "\n");
 
 		return sb.toString();
 	}
@@ -201,6 +221,8 @@ public class Config {
 		private long minerPunishmentForTimeout = 1L;
 		private long minerPunishmentForIllegalDeadline = 500L;
 		private final Set<URI> seeds = new HashSet<>();
+		private long peerInitialPoints = 1000L;
+		private long peerPunishmentForUnreachable = 1L;
 
 		private Builder() throws NoSuchAlgorithmException {
 			setHashingForDeadlines("shabal256");
@@ -286,6 +308,14 @@ public class Config {
 			if (seeds != null)
 				for (String uri: seeds)
 					builder.seeds.add(new URI(uri));
+
+			var peerInitialPoints = toml.getLong("peer_initial_points");
+			if (peerInitialPoints != null)
+				builder.setPeerInitialPoints(peerInitialPoints);
+
+			var peerPunishmentForUnreachable = toml.getLong("peer_punishment_for_unreachable");
+			if (peerPunishmentForUnreachable != null)
+				builder.setPeerPunishmentForUnreachable(peerPunishmentForUnreachable);
 
 			return builder;
 		}
@@ -412,6 +442,31 @@ public class Config {
 		 */
 		public Builder addSeed(URI uri) {
 			seeds.add(uri);
+			return this;
+		}
+
+		/**
+		 * Sets the initial points of a peer, freshly added to a node.
+		 * These points might be reduced for punishment. If they reach zero, the peer
+		 * gets disconnected. This defaults to 1000.
+		 * 
+		 * @param peerInitialPoints the initial points
+		 * @return this builder
+		 */
+		public Builder setPeerInitialPoints(long peerInitialPoints) {
+			this.peerInitialPoints = peerInitialPoints;
+			return this;
+		}
+
+		/**
+		 * Sets the points lost by a peer, as punishment for not answering a ping.
+		 * This defaults to 1.
+		 * 
+		 * @param peerPunishmentForUnreachable the points
+		 * @return this builder
+		 */
+		public Builder setPeerPunishmentForUnreachable(long peerPunishmentForUnreachable) {
+			this.peerPunishmentForUnreachable = peerPunishmentForUnreachable;
 			return this;
 		}
 

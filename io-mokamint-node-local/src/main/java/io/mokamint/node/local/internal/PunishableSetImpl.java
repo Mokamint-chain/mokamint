@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -88,21 +89,6 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		this.onRemove = onRemove;
 	}
 
-	/**
-	 * Copy constructor.
-	 * 
-	 * @param original the copied object
-	 */
-	private PunishableSetImpl(PunishableSetImpl<A> original) {
-		synchronized (original.actors) {
-			this.actors = new HashMap<>(original.actors);
-		}
-
-		this.pointInitializer = original.pointInitializer;
-		this.onAdd = original.onAdd;
-		this.onRemove = original.onRemove;
-	}
-
 	@Override
 	public boolean contains(A actor) {
 		synchronized (actors) {
@@ -126,12 +112,13 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 
 	@Override
 	public void forEach(Consumer<A> action) {
-		snapshot().actors.keySet().forEach(action::accept);
-	}
+		Set<A> copy;
 
-	@Override
-	public PunishableSetImpl<A> snapshot() {
-		return new PunishableSetImpl<>(this);
+		synchronized (actors) {
+			copy = new HashSet<>(actors.keySet());
+		}
+
+		copy.forEach(action::accept);
 	}
 
 	@Override

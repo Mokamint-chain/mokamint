@@ -70,6 +70,11 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 		return uri.compareTo(other.getURI());
 	}
 
+	@Override
+	public String toString() {
+		return uri.toString();
+	}
+
 	/**
 	 * Unmarshals a peer from the given context.
 	 * 

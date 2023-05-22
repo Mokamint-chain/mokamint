@@ -20,17 +20,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -45,7 +51,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
-public class LocalNodeTests {
+public class EventsTests {
 
 	/**
 	 * The configuration of the node used for testing.
@@ -58,15 +64,39 @@ public class LocalNodeTests {
 	private static Application app;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException {
+	public static void beforeAll() {
+		createApplication();
+	}
+
+	@BeforeEach
+	public void beforeEach() throws IOException, NoSuchAlgorithmException {
+		createConfiguration();
+		deleteChainDirectiory();
+	}
+
+	private static void createConfiguration() throws NoSuchAlgorithmException {
 		config = Config.Builder.defaults()
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
 			.build();
+	}
 
+	private static void deleteChainDirectiory() throws IOException {
+		try {
+			Files.walk(config.dir)
+				.sorted(Comparator.reverseOrder())
+				.map(Path::toFile)
+				.forEach(File::delete);
+		}
+		catch (NoSuchFileException e) {
+			// OK, it happens for the first test
+		}
+	}
+	
+	private static void createApplication() {
 		app = mock(Application.class);
 		when(app.prologIsValid(any())).thenReturn(true);
 	}
-	
+
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
@@ -277,7 +307,7 @@ public class LocalNodeTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = LocalNodeTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = EventsTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

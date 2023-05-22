@@ -91,12 +91,4 @@ public interface PunishableSet<A> {
 	 * @return true if and only if the actor was present and has been consequently removed
 	 */
 	boolean remove(A actor);
-
-	/**
-	 * Yields a snapshot of this container. It is a consistent view of the container
-	 * at the time of call.
-	 * 
-	 * @return the snapshot
-	 */
-	PunishableSet<A> snapshot();
 }

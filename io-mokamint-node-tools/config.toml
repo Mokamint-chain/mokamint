@@ -34,6 +34,12 @@ miner_punishment_for_timeout = 1
 # the points that a miner loses as punishment for providing an illegal deadline
 miner_punishment_for_illegal_deadline = 500
 
-# the URIs of the initial peers, that get added to the previous set of peers
+# the URIs of the initial peers, that will always get added to the previous set of peers
 # (if any) and contacted at start-up
 seeds = ["ws://mymachine.com:8026", "ws://hermachine.de:8028"]
+
+# the initial points of a peer, freshly added to a node
+peer_initial_points = 1000
+
+# the points that a peer loses as punishment for not answering a ping
+peer_punishment_for_unreachable = 1
