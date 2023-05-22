@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.plotter.tools;
 
 import io.mokamint.plotter.tools.internal.Create;
-import io.mokamint.tools.Tool;
+import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
 /**
@@ -35,7 +35,7 @@ import picocli.CommandLine.Command;
 		Create.class
 	}
 )
-public class MokamintPlotter extends Tool {
+public class MokamintPlotter extends AbstractTool {
 
 	private MokamintPlotter() {}
 

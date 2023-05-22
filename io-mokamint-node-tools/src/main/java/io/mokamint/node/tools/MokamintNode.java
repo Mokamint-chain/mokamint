@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools;
 
 import io.mokamint.node.tools.internal.Start;
-import io.mokamint.tools.Tool;
+import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
 /**
@@ -35,7 +35,7 @@ import picocli.CommandLine.Command;
 		Start.class
 	}
 )
-public class MokamintNode extends Tool {
+public class MokamintNode extends AbstractTool {
 
 	private MokamintNode() {}
 

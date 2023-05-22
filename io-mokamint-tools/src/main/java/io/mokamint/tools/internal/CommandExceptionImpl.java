@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools;
+package io.mokamint.tools.internal;
 
-import io.mokamint.tools.internal.CommandExceptionImpl;
+import java.util.Objects;
 
 /**
  * An exception thrown during the execution of a CLI command.
  */
-public class CommandException extends CommandExceptionImpl {
+public abstract class CommandExceptionImpl extends RuntimeException {
 
 	private static final long serialVersionUID = 2066756038127592236L;
 
@@ -30,8 +30,10 @@ public class CommandException extends CommandExceptionImpl {
 	 * 
 	 * @param cause the cause
 	 */
-	public CommandException(Throwable cause) {
+	protected CommandExceptionImpl(Throwable cause) {
 		super(cause);
+
+		Objects.requireNonNull(cause);
 	}
 
 	/**
@@ -39,7 +41,7 @@ public class CommandException extends CommandExceptionImpl {
 	 * 
 	 * @param message the message
 	 */
-	public CommandException(String message) {
+	protected CommandExceptionImpl(String message) {
 		super(message);
 	}
 }

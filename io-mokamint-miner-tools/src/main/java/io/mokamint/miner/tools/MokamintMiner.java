@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.miner.tools;
 
 import io.mokamint.miner.tools.internal.Start;
-import io.mokamint.tools.Tool;
+import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
 /**
@@ -35,7 +35,7 @@ import picocli.CommandLine.Command;
 		Start.class
 	}
 )
-public class MokamintMiner extends Tool {
+public class MokamintMiner extends AbstractTool {
 
 	private MokamintMiner() {}
 

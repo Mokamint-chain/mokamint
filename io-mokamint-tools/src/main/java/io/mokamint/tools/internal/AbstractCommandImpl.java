@@ -14,13 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements shared classes among all the command-line tools of Mokamint.
- */
-module io.mokamint.tools {
-	exports io.mokamint.tools;
-	opens io.mokamint.tools.internal to info.picocli; // for injecting CLI options and accessing the POMVersionProvider
+package io.mokamint.tools.internal;
 
-	requires transitive info.picocli;
-	requires java.logging;
+import io.mokamint.tools.CommandException;
+
+/**
+ * Partial implementation of all commands of a Mokamint CLI tool.
+ */
+public abstract class AbstractCommandImpl implements Runnable {
+
+	/**
+	 * Builds the command.
+	 */
+	protected AbstractCommandImpl() {}
+
+	@Override
+	public final void run() {
+		try {
+			execute();
+		}
+		catch (CommandException e) {
+			throw e;
+		}
+		catch (Exception t) {
+			throw new CommandException(t);
+		}
+	}
+
+	/**
+	 * Executes the command.
+	 */
+	protected abstract void execute();
 }

@@ -14,32 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools;
+package io.mokamint.tools.internal;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.function.Supplier;
 import java.util.logging.LogManager;
 
-import io.mokamint.tools.internal.POMVersionProvider;
-import io.mokamint.tools.internal.PrintExceptionMessageHandler;
+import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.Option;
 
 /**
- * A command-line tool of Mokamint. Subclasses specify arguments, options and execution.
+ * Partial implementation of a command-line tool of Mokamint. Subclasses specify arguments, options and execution.
  */
-
-@Command(name = "mokamint-node",
+@Command(
 	subcommands = {
 		HelpCommand.class
 	},
 	versionProvider = POMVersionProvider.class,
 	showDefaultValues = true
 )
-public abstract class Tool {
+public abstract class AbstractToolImpl {
 
 	@Option(names = { "--version" }, versionHelp = true, description = "print version information and exit")
 	private boolean versionRequested;
@@ -47,7 +45,7 @@ public abstract class Tool {
 	/**
 	 * Builds the tool.
 	 */
-	protected Tool() {}
+	protected AbstractToolImpl() {}
 
 	/**
 	 * Entry point of a tool. This is typically called by the actual {@code main} method
@@ -56,7 +54,7 @@ public abstract class Tool {
 	 * @param tool the supplier of an object of the tool that will be run
 	 * @param args the command-line arguments passed to the tool
 	 */
-	protected static void main(Supplier<Tool> tool, String[] args) {
+	protected static void main(Supplier<AbstractTool> tool, String[] args) {
 		System.exit(tool.get().run(args));
 	}
 
@@ -76,7 +74,7 @@ public abstract class Tool {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = Tool.class.getClassLoader().getResource("logging.properties");
+			URL resource = AbstractToolImpl.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

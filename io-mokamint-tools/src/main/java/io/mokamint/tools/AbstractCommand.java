@@ -16,31 +16,15 @@ limitations under the License.
 
 package io.mokamint.tools;
 
+import io.mokamint.tools.internal.AbstractCommandImpl;
+
 /**
  * Shared code of all commands of a Mokamint CLI tool.
  */
-public abstract class AbstractCommand implements Runnable {
+public abstract class AbstractCommand extends AbstractCommandImpl {
 
 	/**
 	 * Builds the command.
 	 */
 	protected AbstractCommand() {}
-
-	@Override
-	public final void run() {
-		try {
-			execute();
-		}
-		catch (CommandException e) {
-			throw e;
-		}
-		catch (Exception t) {
-			throw new CommandException(t);
-		}
-	}
-
-	/**
-	 * Executes the command.
-	 */
-	protected abstract void execute();
 }

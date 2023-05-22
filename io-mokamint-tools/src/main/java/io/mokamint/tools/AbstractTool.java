@@ -14,13 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements shared classes among all the command-line tools of Mokamint.
- */
-module io.mokamint.tools {
-	exports io.mokamint.tools;
-	opens io.mokamint.tools.internal to info.picocli; // for injecting CLI options and accessing the POMVersionProvider
+package io.mokamint.tools;
 
-	requires transitive info.picocli;
-	requires java.logging;
+import io.mokamint.tools.internal.AbstractToolImpl;
+
+/**
+ * A command-line tool of Mokamint. Subclasses specify arguments, options and execution.
+ */
+public abstract class AbstractTool extends AbstractToolImpl {
+
+	/**
+	 * Builds the tool.
+	 */
+	protected AbstractTool() {}
 }
