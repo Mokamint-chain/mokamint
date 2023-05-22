@@ -24,6 +24,8 @@ import java.net.URISyntaxException;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.internal.PeerDecoder;
+import io.mokamint.node.internal.PeerEncoder;
 import io.mokamint.node.internal.PeerImpl;
 
 /**
@@ -66,4 +68,14 @@ public interface Peers {
 	static Peer from(UnmarshallingContext context) throws IOException, URISyntaxException {
 		return PeerImpl.from(context);
 	}
+
+	/**
+	 * Gson encoder.
+	 */
+	static class Encoder extends PeerEncoder {}
+
+	/**
+	 * Gson decoder.
+	 */
+    static class Decoder extends PeerDecoder {}
 }
