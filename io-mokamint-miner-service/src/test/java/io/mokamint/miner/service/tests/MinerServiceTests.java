@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.service.tests;
 
+import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -31,7 +32,6 @@ import java.util.logging.LogManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -46,7 +46,7 @@ public class MinerServiceTests {
 	@DisplayName("if a deadline description is requested to a miner service, it gets forwarded to the adapted miner")
 	public void minerServiceForwardsToMiner() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
-		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, HashingAlgorithms.shabal256((byte[] bytes) -> bytes));
+		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256((byte[] bytes) -> bytes));
 
 		var miner = new Miner() {
 
@@ -70,7 +70,7 @@ public class MinerServiceTests {
 	@DisplayName("if the miner sends a deadline, it gets forwarded to the requester")
 	public void minerForwardsToRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
-		var shabal256 = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
+		var shabal256 = shabal256((byte[] bytes) -> bytes);
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
 
@@ -100,7 +100,7 @@ public class MinerServiceTests {
 	@DisplayName("if the miner sends a deadline after a delayed one, it gets forwarded to the requester")
 	public void minerForwardsToRequesterAfterDelay() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
-		var shabal256 = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
+		var shabal256 = shabal256((byte[] bytes) -> bytes);
 		var description1 = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var description2 = DeadlineDescriptions.of(43, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var deadline1 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
@@ -142,7 +142,7 @@ public class MinerServiceTests {
 	@Test
 	@DisplayName("a deadline sent back after the requester disconnects is simply lost, without errors")
 	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
-		var shabal256 = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
+		var shabal256 = shabal256((byte[] bytes) -> bytes);
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
 		long delay = 2000;

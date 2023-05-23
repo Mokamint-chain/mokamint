@@ -18,7 +18,6 @@ package io.mokamint.miner.service;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.service.api.MinerService;
@@ -36,11 +35,10 @@ public interface MinerServices {
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
 	 * @return the miner service
-	 * @throws URISyntaxException if the {@code uri} syntax is wrong
 	 * @throws IOException if an I/O error occurs
 	 * @throws DeploymentException if the service cannot be deployed
 	 */
-	static MinerService adapt(Miner miner, URI uri) throws DeploymentException, IOException, URISyntaxException {
+	static MinerService adapt(Miner miner, URI uri) throws DeploymentException, IOException {
 		return new MinerServiceImpl(miner, uri);
 	}
 }

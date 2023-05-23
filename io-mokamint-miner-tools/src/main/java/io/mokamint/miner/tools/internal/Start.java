@@ -123,11 +123,6 @@ public class Start extends AbstractCommand {
 				LOGGER.log(Level.SEVERE, "I/O error while deploying a miner service bound to " + uris[pos], e);
 				startMiningServices(uris, pos + 1, atLeastOne, miner);
 			}
-			catch (URISyntaxException e) {
-				System.out.println(Ansi.AUTO.string("@|red wrong URI syntax!|@"));
-				LOGGER.log(Level.SEVERE, "the syntax of this URI is wrong: " + uris[pos], e);
-				startMiningServices(uris, pos + 1, atLeastOne, miner);
-			}
 			catch (InterruptedException e) {
 				// unexpected: who could interrupt this process?
 				System.out.println(Ansi.AUTO.string("@|red The process has been interrupted!|@"));

@@ -25,9 +25,7 @@ module io.mokamint.node.local {
 	requires transitive io.mokamint.application.api;
 	requires transitive io.mokamint.miner.api;
 	requires io.mokamint.nonce;
-	requires io.hotmoka.marshalling;
 	requires io.hotmoka.crypto;
-	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
 	requires toml4j;
 	requires io.hotmoka.xodus;

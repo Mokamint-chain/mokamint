@@ -29,4 +29,8 @@ module io.mokamint.miner.remote {
 	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
 	requires java.logging;
+
+	// only used for testing
+	requires static io.hotmoka.crypto;
+	requires static org.glassfish.tyrus.client;
 }

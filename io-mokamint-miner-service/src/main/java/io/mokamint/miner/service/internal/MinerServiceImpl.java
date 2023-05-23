@@ -18,8 +18,8 @@ package io.mokamint.miner.service.internal;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
@@ -63,11 +63,10 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * 
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
-	 * @throws URISyntaxException if the {@code uri} syntax is wrong
 	 * @throws IOException if an I/O error occurs
 	 * @throws DeploymentException if the service cannot be deployed
 	 */
-	public MinerServiceImpl(Miner miner, URI uri) throws DeploymentException, IOException, URISyntaxException {
+	public MinerServiceImpl(Miner miner, URI uri) throws DeploymentException, IOException {
 		this.miner = miner;
 		this.uri = uri;
 		this.session = new MinerServiceEndpoint(this).deployAt(uri);
@@ -88,7 +87,14 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 
 	@Override
 	public void close() {
-		disconnect();
+		try {
+			session.close();
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.WARNING, "cannot close the session", e);
+			disconnect();
+		}
+
 		super.close();
 	}
 
