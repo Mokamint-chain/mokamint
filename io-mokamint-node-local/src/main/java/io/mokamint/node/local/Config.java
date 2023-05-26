@@ -25,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.moandjiezana.toml.Toml;
@@ -341,7 +342,7 @@ public class Config {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public Builder setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
-			this.hashingForDeadlines = HashingAlgorithms.mk(hashingForDeadlines, (byte[] bytes) -> bytes);
+			this.hashingForDeadlines = HashingAlgorithms.mk(hashingForDeadlines, Function.identity());
 			return this;
 		}
 
@@ -354,7 +355,7 @@ public class Config {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public Builder setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
-			this.hashingForGenerations = HashingAlgorithms.mk(hashingForGenerations, (byte[] bytes) -> bytes);
+			this.hashingForGenerations = HashingAlgorithms.mk(hashingForGenerations, Function.identity());
 			return this;
 		}
 
@@ -366,7 +367,7 @@ public class Config {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public Builder setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
-			this.hashingForBlocks = HashingAlgorithms.mk(hashingForBlocks, (byte[] bytes) -> bytes);
+			this.hashingForBlocks = HashingAlgorithms.mk(hashingForBlocks, Function.identity());
 			return this;
 		}
 

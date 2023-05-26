@@ -265,7 +265,7 @@ public class LocalNodeImpl implements LocalNode {
 				execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "database error", e);
+				LOGGER.log(Level.SEVERE, "I/O error in the database", e);
 			}
 		}
 	}

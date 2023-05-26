@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
@@ -263,7 +264,7 @@ public class EventsTests {
 			.findAny()
 			.get();
 
-		HashingAlgorithm<byte[]> algo = HashingAlgorithms.mk(algoName, (byte[] bytes) -> bytes);
+		HashingAlgorithm<byte[]> algo = HashingAlgorithms.mk(algoName, Function.identity());
 
 		var myMiner = new Miner() {
 

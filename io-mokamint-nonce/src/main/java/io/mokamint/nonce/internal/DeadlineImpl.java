@@ -19,6 +19,7 @@ package io.mokamint.nonce.internal;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
@@ -83,7 +84,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			context.readBytes(context.readCompactInt(), "mismatch in deadline's value length"),
 			context.readInt(),
 			context.readBytes(context.readInt(), "mismatch in deadline's data length"),
-			HashingAlgorithms.mk(context.readUTF(), (byte[] bytes) -> bytes));
+			HashingAlgorithms.mk(context.readUTF(), Function.identity()));
 	}
 
 	@Override

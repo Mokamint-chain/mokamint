@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.DisplayName;
@@ -45,7 +46,7 @@ public class RemoteMinerTests {
 	@DisplayName("if a deadline description is requested to a remote miner, it gets forwarded to the connected service(s)")
 	public void remoteMinerForwardsToServices() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var semaphore = new Semaphore(0);
-		var shabal256 = shabal256((byte[] bytes) -> bytes);
+		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 
 		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = received -> {
@@ -65,7 +66,7 @@ public class RemoteMinerTests {
 	@DisplayName("if a client sends a deadline, it reaches the requester of the corresponding description")
 	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var semaphore = new Semaphore(0);
-		var shabal256 = shabal256((byte[] bytes) -> bytes);
+		var shabal256 = shabal256(Function.identity());
 		byte[] data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
@@ -88,7 +89,7 @@ public class RemoteMinerTests {
 	@DisplayName("if a client sends a deadline, it does not reach the requester of another description")
 	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var semaphore = new Semaphore(0);
-		var shabal256 = shabal256((byte[] bytes) -> bytes);
+		var shabal256 = shabal256(Function.identity());
 		byte[] data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
@@ -110,7 +111,7 @@ public class RemoteMinerTests {
 	@DisplayName("if a client has been closed, it does not receive descriptions anymore")
 	public void remoteMinerDoesNotForwardDescriptionToClosedClient() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var semaphore = new Semaphore(0);
-		var shabal256 = shabal256((byte[] bytes) -> bytes);
+		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = received -> semaphore.release();
 

@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
@@ -106,11 +107,11 @@ public class PlotImpl implements Plot {
 			throw new IllegalArgumentException("the plot length must be positive");
 
 		int hashingNameLength = reader.readInt();
-		byte[] hashingNameBytes = new byte[hashingNameLength];
+		var hashingNameBytes = new byte[hashingNameLength];
 		if (reader.read(hashingNameBytes) != hashingNameLength)
 			throw new IOException("cannot read the name of the hashing algorithm used for the plot file");
-		String hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
-		this.hashing = HashingAlgorithms.mk(hashingName, (byte[] bytes) -> bytes);
+		var hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
+		this.hashing = HashingAlgorithms.mk(hashingName, Function.identity());
 	}
 
 	/**

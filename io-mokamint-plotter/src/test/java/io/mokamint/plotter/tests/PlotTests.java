@@ -21,6 +21,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.Assertions;
@@ -32,7 +33,6 @@ import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.api.Plot;
 
 public class PlotTests {
 
@@ -41,13 +41,13 @@ public class PlotTests {
 	public void testDeadlineRecomputation() throws IOException {
 		Path path = Paths.get("pippo.plot");
 		Files.deleteIfExists(path);
-		byte[] prolog = new byte[] { 11, 13, 24, 88 };
+		var prolog = new byte[] { 11, 13, 24, 88 };
 		long start = 65536L;
 		long length = 100L;
-		var hashing = HashingAlgorithms.shabal256((byte[] bytes) -> bytes);
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
-		try (Plot plot = Plots.create(path, prolog, start, length, hashing, __ -> {})) {
+		try (var plot = Plots.create(path, prolog, start, length, hashing, __ -> {})) {
 			Deadline deadline1 = plot.getSmallestDeadline(description);
 			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description);
 			Assertions.assertEquals(deadline1, deadline2);
