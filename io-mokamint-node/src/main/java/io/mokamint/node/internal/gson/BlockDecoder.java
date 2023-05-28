@@ -16,32 +16,81 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.reflect.Type;
+import java.math.BigInteger;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
-import io.hotmoka.websockets.beans.AbstractDecoder;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+
+import io.hotmoka.websockets.beans.BaseDecoder;
+import io.hotmoka.websockets.beans.BaseDeserializer;
 import io.mokamint.node.api.Block;
-import jakarta.websocket.DecodeException;
+import io.mokamint.node.internal.GenesisBlockImpl;
+import io.mokamint.node.internal.NonGenesisBlockImpl;
+import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * A decoder for {@link Block}.
  */
-public class BlockDecoder extends AbstractDecoder<Block> {
-
-	private final static Logger LOGGER = Logger.getLogger(BlockDecoder.class.getName());
+public class BlockDecoder extends BaseDecoder<Block> {
 
 	public BlockDecoder() {
-		super(Block.class);
+		super(new BlockDeserializer());
 	}
 
-	@Override
-	public Block decode(String s) throws DecodeException {
-		try {
-			return gson.fromJson(s, BlockGsonHelper.class).toBean();
+	private static class BlockDeserializer extends BaseDeserializer<Block> {
+
+		protected BlockDeserializer() {
+			super(Block.class);
 		}
-		catch (Exception e) {
-			LOGGER.log(Level.WARNING, "could not decode a Block", e);
-			throw new DecodeException(s, "could not decode a Block", e);
+
+		@Override
+		protected void registerTypeDeserializers(GsonBuilder where) {
+			where.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer());
+			new Deadlines.Decoder().registerAsTypeDeserializer(where);
 		}
+
+		@Override
+		protected Block deserialize(JsonElement json, Gson gson) throws JsonParseException {
+			return gson.fromJson(json, BlockGsonHelper.class).toBean();
+		}
+	}
+
+	private static class LocalDateTimeDeserializer implements JsonDeserializer<LocalDateTime> {
+
+		@Override
+		public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			try {
+				return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			}
+			catch (DateTimeParseException e) {
+				throw new JsonParseException(e);
+			}
+		}
+	}
+
+	private static class BlockGsonHelper {
+		private LocalDateTime startDateTimeUTC;
+		private long height;
+		private long totalWaitingTime;
+		private long weightedWaitingTime;
+		private BigInteger acceleration;
+		private Deadline deadline;
+		private byte[] hashOfPreviousBlock;
+
+		private Block toBean() {
+			if (startDateTimeUTC != null)
+				return new GenesisBlockImpl(startDateTimeUTC);
+			else
+				return new NonGenesisBlockImpl(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
+	    }
 	}
 }

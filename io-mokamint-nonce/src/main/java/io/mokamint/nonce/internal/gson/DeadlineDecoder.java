@@ -16,32 +16,73 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.reflect.Type;
+import java.security.NoSuchAlgorithmException;
+import java.util.function.Function;
 
-import io.hotmoka.websockets.beans.AbstractDecoder;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.websockets.beans.BaseDecoder;
+import io.hotmoka.websockets.beans.BaseDeserializer;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
-import jakarta.websocket.DecodeException;
 
 /**
  * A decoder for {@link io.mokamint.nonce.api.Deadline}.
  */
-public class DeadlineDecoder extends AbstractDecoder<Deadline> {
-
-	private final static Logger LOGGER = Logger.getLogger(DeadlineDecoder.class.getName());
+public class DeadlineDecoder extends BaseDecoder<Deadline> {
 
 	public DeadlineDecoder() {
-		super(Deadline.class);
+		super(new DeadlineDeserializer());
 	}
 
-	@Override
-	public Deadline decode(String s) throws DecodeException {
-		try {
-			return gson.fromJson(s, DeadlineGsonHelper.class).toBean();
+	private static class DeadlineDeserializer extends BaseDeserializer<Deadline> {
+
+		protected DeadlineDeserializer() {
+			super(Deadline.class);
 		}
-		catch (Exception e) {
-			LOGGER.log(Level.WARNING, "could not decode a Deadline", e);
-			throw new DecodeException(s, "could not decode a Deadline", e);
+
+		@Override
+		protected void registerTypeDeserializers(GsonBuilder where) {
+			where.registerTypeAdapter(HashingAlgorithm.class, new HashingAlgorithmDeserializer());
 		}
+
+		@Override
+		protected Deadline deserialize(JsonElement json, Gson gson) throws JsonParseException {
+			return gson.fromJson(json, DeadlineGsonHelper.class).toBean();
+		}
+	}
+
+	private static class HashingAlgorithmDeserializer implements JsonDeserializer<HashingAlgorithm<byte[]>> {
+
+		@Override
+		public HashingAlgorithm<byte[]> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			try {
+				return HashingAlgorithms.mk(json.getAsString(), Function.identity());
+			}
+			catch (NoSuchAlgorithmException e) {
+				throw new JsonParseException(e);
+			}
+		}
+	}
+
+	private static class DeadlineGsonHelper {
+		private byte[] prolog;
+		private long progressive;
+		private byte[] value;
+		private int scoopNumber;
+		private byte[] data;
+		private HashingAlgorithm<byte[]> hashing;
+
+		private Deadline toBean() {
+			return Deadlines.of(prolog, progressive, value, scoopNumber, data, hashing);
+	    }
 	}
 }

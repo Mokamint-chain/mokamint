@@ -16,32 +16,66 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.URISyntaxException;
 
-import io.hotmoka.websockets.beans.AbstractDecoder;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+
+import io.hotmoka.websockets.beans.BaseDecoder;
+import io.hotmoka.websockets.beans.BaseDeserializer;
+import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
-import jakarta.websocket.DecodeException;
 
 /**
  * A decoder for {@link Peer}.
  */
-public class PeerDecoder extends AbstractDecoder<Peer> {
-
-	private final static Logger LOGGER = Logger.getLogger(PeerDecoder.class.getName());
+public class PeerDecoder extends BaseDecoder<Peer> {
 
 	public PeerDecoder() {
-		super(Peer.class);
+		super(new PeerDeserializer());
 	}
 
-	@Override
-	public Peer decode(String s) throws DecodeException {
-		try {
-			return gson.fromJson(s, PeerGsonHelper.class).toBean();
+	private static class PeerDeserializer extends BaseDeserializer<Peer> {
+
+		protected PeerDeserializer() {
+			super(Peer.class);
 		}
-		catch (Exception e) {
-			LOGGER.log(Level.WARNING, "could not decode a Peer", e);
-			throw new DecodeException(s, "could not decode a Peer", e);
+
+		@Override
+		protected void registerTypeDeserializers(GsonBuilder where) {
+			where.registerTypeAdapter(URI.class, new URIDeserializer());
 		}
+
+		@Override
+		protected Peer deserialize(JsonElement json, Gson gson) throws JsonParseException {
+			return gson.fromJson(json, PeerGsonHelper.class).toBean();
+		}
+	}
+
+	private static class URIDeserializer implements JsonDeserializer<URI> {
+
+		@Override
+		public URI deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			try {
+				return new URI(json.getAsString());
+			}
+			catch (URISyntaxException e) {
+				throw new JsonParseException(e);
+			}
+		}
+	}
+
+	private static class PeerGsonHelper {
+		private URI uri;
+
+		private Peer toBean() {
+			return Peers.of(uri);
+	    }
 	}
 }
