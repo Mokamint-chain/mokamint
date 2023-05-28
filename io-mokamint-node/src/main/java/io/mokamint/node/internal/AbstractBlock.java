@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -45,13 +47,27 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 */
 	public static AbstractBlock from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		// by reading the height, we can determine if it's a genesis block or not
-		long height = context.readLong();
+		var height = context.readLong();
 		if (height == 0L)
 			return new GenesisBlockImpl(context);
 		else if (height > 0L)
 			return new NonGenesisBlockImpl(height, context);
 		else
 			throw new IOException("negative block height");
+	}
+
+	/**
+	 * Unmarshals a block from the given bytes.
+	 * 
+	 * @param bytes the bytes
+	 * @return the block
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws IOException if the block could not be unmarshalled
+	 */
+	public static AbstractBlock from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
+		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
+			return from(context);
+		}
 	}
 
 	@Override
@@ -63,21 +79,21 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	}
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {
-		byte[] generationHash = hashing.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
+		var generationHash = hashing.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
 	}
 
 	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashing);
 
 	protected static byte[] concat(byte[] array1, byte[] array2) {
-		byte[] merge = new byte[array1.length + array2.length];
+		var merge = new byte[array1.length + array2.length];
 		System.arraycopy(array1, 0, merge, 0, array1.length);
 		System.arraycopy(array2, 0, merge, array1.length, array2.length);
 		return merge;
 	}
 
 	private static byte[] longToBytesBE(long l) {
-		byte[] target = new byte[8];
+		var target = new byte[8];
 
 		for (int i = 0; i <= 7; i++)
 			target[7 - i] = (byte) ((l>>(8*i)) & 0xFF);

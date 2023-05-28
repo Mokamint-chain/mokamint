@@ -19,6 +19,7 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -68,6 +69,15 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * Creates a new non-genesis block.
 	 */
 	public NonGenesisBlockImpl(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
+		if (acceleration == null)
+			throw new NullPointerException("acceleration");
+
+		if (deadline == null)
+			throw new NullPointerException("deadline");
+
+		if (hashOfPreviousBlock == null)
+			throw new NullPointerException("hashOfPreviousBlock");
+
 		this.height = height;
 		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
@@ -130,6 +140,21 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog();
 		return hashing.hash(concat(previousGenerationSignature, previousProlog));
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other instanceof NonGenesisBlock) {
+			var otherAsNGB = (NonGenesisBlock) other;
+			return height == otherAsNGB.getHeight() &&
+				totalWaitingTime == otherAsNGB.getTotalWaitingTime() &&
+				weightedWaitingTime == otherAsNGB.getWeightedWaitingTime() &&
+				acceleration.equals(otherAsNGB.getAcceleration()) &&
+				deadline.equals(otherAsNGB.getDeadline()) &&
+				Arrays.equals(hashOfPreviousBlock, otherAsNGB.getHashOfPreviousBlock());
+		}
+
+		return false;
 	}
 
 	@Override

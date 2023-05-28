@@ -16,13 +16,11 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
-import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
@@ -30,6 +28,8 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.internal.AbstractBlock;
 import io.mokamint.node.internal.GenesisBlockImpl;
 import io.mokamint.node.internal.NonGenesisBlockImpl;
+import io.mokamint.node.internal.gson.BlockDecoder;
+import io.mokamint.node.internal.gson.BlockEncoder;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -86,8 +86,16 @@ public interface Blocks {
 	 * @throws IOException if the block could not be unmarshalled
 	 */
 	static Block from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
-		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
-			return from(context);
-		}
+		return AbstractBlock.from(bytes);
 	}
+
+	/**
+	 * Gson encoder.
+	 */
+	static class Encoder extends BlockEncoder {}
+
+	/**
+	 * Gson decoder.
+	 */
+    static class Decoder extends BlockDecoder {}
 }

@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -264,7 +263,7 @@ public class EventsTests {
 			.findAny()
 			.get();
 
-		HashingAlgorithm<byte[]> algo = HashingAlgorithms.mk(algoName, Function.identity());
+		var algo = HashingAlgorithms.mk(algoName, Function.identity());
 
 		var myMiner = new Miner() {
 

@@ -14,35 +14,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.nonce.internal;
+package io.mokamint.node.internal.gson;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.websockets.beans.AbstractDecoder;
-import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.internal.gson.DeadlineDescriptionGsonHelper;
+import io.mokamint.node.api.Block;
 import jakarta.websocket.DecodeException;
 
 /**
- * A decoder for {@link io.mokamint.nonce.api.DeadlineDescription}.
+ * A decoder for {@link Block}.
  */
-public class DeadlineDescriptionDecoder extends AbstractDecoder<DeadlineDescription> {
+public class BlockDecoder extends AbstractDecoder<Block> {
 
-	private final static Logger LOGGER = Logger.getLogger(DeadlineDescriptionDecoder.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(BlockDecoder.class.getName());
 
-	public DeadlineDescriptionDecoder() {
-		super(DeadlineDescription.class);
+	public BlockDecoder() {
+		super(Block.class);
 	}
 
 	@Override
-	public DeadlineDescription decode(String s) throws DecodeException {
+	public Block decode(String s) throws DecodeException {
 		try {
-			return gson.fromJson(s, DeadlineDescriptionGsonHelper.class).toBean();
+			return gson.fromJson(s, BlockGsonHelper.class).toBean();
 		}
 		catch (Exception e) {
-			LOGGER.log(Level.WARNING, "could not decode a DeadlineDescription", e);
-			throw new DecodeException(s, "could not decode a DeadlineDescription", e);
+			LOGGER.log(Level.WARNING, "could not decode a Block", e);
+			throw new DecodeException(s, "could not decode a Block", e);
 		}
 	}
 }

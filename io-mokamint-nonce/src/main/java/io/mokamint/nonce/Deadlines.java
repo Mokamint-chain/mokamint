@@ -22,9 +22,9 @@ import java.security.NoSuchAlgorithmException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.internal.DeadlineDecoder;
-import io.mokamint.nonce.internal.DeadlineEncoder;
 import io.mokamint.nonce.internal.DeadlineImpl;
+import io.mokamint.nonce.internal.gson.DeadlineDecoder;
+import io.mokamint.nonce.internal.gson.DeadlineEncoder;
 
 /**
  * A provider of deadlines.

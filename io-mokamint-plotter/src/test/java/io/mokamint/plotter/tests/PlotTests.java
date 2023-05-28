@@ -19,7 +19,6 @@ package io.mokamint.plotter.tests;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.logging.LogManager;
@@ -39,7 +38,7 @@ public class PlotTests {
 	@Test
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
 	public void testDeadlineRecomputation() throws IOException {
-		Path path = Paths.get("pippo.plot");
+		var path = Paths.get("pippo.plot");
 		Files.deleteIfExists(path);
 		var prolog = new byte[] { 11, 13, 24, 88 };
 		long start = 65536L;

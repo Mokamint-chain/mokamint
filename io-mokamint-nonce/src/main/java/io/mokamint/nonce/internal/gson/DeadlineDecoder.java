@@ -14,35 +14,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.internal;
+package io.mokamint.nonce.internal.gson;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.websockets.beans.AbstractDecoder;
-import io.mokamint.node.api.Peer;
-import io.mokamint.node.internal.gson.PeerGsonHelper;
+import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.DecodeException;
 
 /**
- * A decoder for {@link Peer}.
+ * A decoder for {@link io.mokamint.nonce.api.Deadline}.
  */
-public class PeerDecoder extends AbstractDecoder<Peer> {
+public class DeadlineDecoder extends AbstractDecoder<Deadline> {
 
-	private final static Logger LOGGER = Logger.getLogger(PeerDecoder.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(DeadlineDecoder.class.getName());
 
-	public PeerDecoder() {
-		super(Peer.class);
+	public DeadlineDecoder() {
+		super(Deadline.class);
 	}
 
 	@Override
-	public Peer decode(String s) throws DecodeException {
+	public Deadline decode(String s) throws DecodeException {
 		try {
-			return gson.fromJson(s, PeerGsonHelper.class).toBean();
+			return gson.fromJson(s, DeadlineGsonHelper.class).toBean();
 		}
 		catch (Exception e) {
-			LOGGER.log(Level.WARNING, "could not decode a Peer", e);
-			throw new DecodeException(s, "could not decode a Peer", e);
+			LOGGER.log(Level.WARNING, "could not decode a Deadline", e);
+			throw new DecodeException(s, "could not decode a Deadline", e);
 		}
 	}
 }

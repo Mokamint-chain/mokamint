@@ -31,4 +31,7 @@ module io.mokamint.node {
 	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
 	requires java.logging;
+	
+	// only needed for testing
+	requires static io.hotmoka.crypto;
 }

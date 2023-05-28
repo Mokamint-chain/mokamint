@@ -16,17 +16,15 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.internal.PeerDecoder;
-import io.mokamint.node.internal.PeerEncoder;
 import io.mokamint.node.internal.PeerImpl;
+import io.mokamint.node.internal.gson.PeerDecoder;
+import io.mokamint.node.internal.gson.PeerEncoder;
 
 /**
  * Providers of peers.
@@ -52,9 +50,7 @@ public interface Peers {
 	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
 	 */
 	static Peer from(byte[] bytes) throws IOException, URISyntaxException {
-		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
-			return PeerImpl.from(context);
-		}
+		return PeerImpl.from(bytes);
 	}
 
 	/**

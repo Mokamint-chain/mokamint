@@ -70,4 +70,12 @@ public interface Block extends Marshallable {
 	 * @return the description
 	 */
 	DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, HashingAlgorithm<byte[]> hashingForDeadlines);
+
+	/**
+	 * Checks if this block is equal to another object.
+	 * 
+	 * @param other the other object
+	 * @return true if and only if {@code other} is a {@link Block} with the same data
+	 */
+	boolean equals(Object other);
 }

@@ -39,6 +39,9 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC) {
+		if (startDateTimeUTC == null)
+			throw new NullPointerException("startDateTimeUTC");
+
 		this.startDateTimeUTC = startDateTimeUTC;
 	}
 
@@ -92,5 +95,10 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		// and a non-genesis block (height > 0)
 		context.writeLong(0L);
 		context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof GenesisBlock && startDateTimeUTC.equals(((GenesisBlock) other).getStartDateTimeUTC());
 	}
 }

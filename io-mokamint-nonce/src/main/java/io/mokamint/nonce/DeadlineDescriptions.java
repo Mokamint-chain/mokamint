@@ -18,9 +18,9 @@ package io.mokamint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.internal.DeadlineDescriptionDecoder;
-import io.mokamint.nonce.internal.DeadlineDescriptionEncoder;
 import io.mokamint.nonce.internal.DeadlineDescriptionImpl;
+import io.mokamint.nonce.internal.gson.DeadlineDescriptionDecoder;
+import io.mokamint.nonce.internal.gson.DeadlineDescriptionEncoder;
 
 /**
  * A provider of deadline descriptions.
