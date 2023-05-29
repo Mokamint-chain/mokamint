@@ -81,6 +81,8 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-api</module>
       <module>io-mokamint-plotter-tools</module>
       <module>io-mokamint-tools</module>
+      <module>io-mokamint-node-service-api</module>
+      <module>io-mokamint-node-service</module>
     </modules>
 
     <distributionManagement>
@@ -312,10 +314,12 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
               <outputDirectory>${project.parent.basedir}/modules/unnamed</outputDirectory>
               <excludeArtifactIds>
                 <!-- we exclude all modules built by Maven: their build will put them at the right place -->
+                io-mokamint-node-api,
                 io-mokamint-node,
                 io-mokamint-node-local,
-                io-mokamint-node-api,
                 io-mokamint-node-tools,
+                io-mokamint-node-service-api,
+                io-mokamint-node-service,
                 io-mokamint-miner-api,
                 io-mokamint-miner-local,
                 io-mokamint-miner-remote,

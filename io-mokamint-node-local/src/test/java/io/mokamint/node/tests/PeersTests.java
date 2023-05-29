@@ -25,11 +25,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
+import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -149,6 +151,21 @@ public class PeersTests {
 		try (var node = LocalNodes.of(config, app)) {
 			assertTrue(node.getPeers().count() == 1L);
 			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
+		}
+	}
+
+	static {
+		String current = System.getProperty("java.util.logging.config.file");
+		if (current == null) {
+			// if the property is not set, we provide a default (if it exists)
+			URL resource = PeersTests.class.getClassLoader().getResource("logging.properties");
+			if (resource != null)
+				try (var is = resource.openStream()) {
+					LogManager.getLogManager().readConfiguration(is);
+				}
+				catch (SecurityException | IOException e) {
+					throw new RuntimeException("Cannot load logging.properties file", e);
+				}
 		}
 	}
 }
