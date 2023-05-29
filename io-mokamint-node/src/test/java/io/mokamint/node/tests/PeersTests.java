@@ -1,6 +1,6 @@
 package io.mokamint.node.tests;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,7 +23,7 @@ public class PeersTests {
 		var peer1 = Peers.of(new URI("ws://mygreatsite.org:2090"));
 		String encoded = new Peers.Encoder().encode(peer1);
 		var peer2 = new Peers.Decoder().decode(encoded);
-		assertTrue(peer1.equals(peer2));
+		assertEquals(peer1, peer2);
 	}
 
 	static {

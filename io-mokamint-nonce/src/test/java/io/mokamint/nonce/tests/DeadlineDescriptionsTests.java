@@ -1,6 +1,6 @@
 package io.mokamint.nonce.tests;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URL;
@@ -24,7 +24,7 @@ public class DeadlineDescriptionsTests {
 		var deadlineDescription1 = DeadlineDescriptions.of(13, new byte[] { 4, 5, 6 }, hashing);
 		String encoded = new DeadlineDescriptions.Encoder().encode(deadlineDescription1);
 		var deadlineDescription2 = new DeadlineDescriptions.Decoder().decode(encoded);
-		assertTrue(deadlineDescription1.equals(deadlineDescription2));
+		assertEquals(deadlineDescription1, deadlineDescription2);
 	}
 
 	static {

@@ -25,6 +25,7 @@ module io.mokamint.node.service {
 
 	requires transitive io.mokamint.node.service.api;
 	requires transitive io.mokamint.node.api;
+	requires io.mokamint.node.messages;
 	requires transitive io.hotmoka.websockets.server;
 	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
