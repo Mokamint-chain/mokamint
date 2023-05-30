@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Objects;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -69,14 +70,9 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * Creates a new non-genesis block.
 	 */
 	public NonGenesisBlockImpl(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
-		if (acceleration == null)
-			throw new NullPointerException("acceleration");
-
-		if (deadline == null)
-			throw new NullPointerException("deadline");
-
-		if (hashOfPreviousBlock == null)
-			throw new NullPointerException("hashOfPreviousBlock");
+		Objects.requireNonNull(acceleration, "acceleration cannot be null");
+		Objects.requireNonNull(deadline, "deadline cannot be null");
+		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
 
 		this.height = height;
 		this.totalWaitingTime = totalWaitingTime;

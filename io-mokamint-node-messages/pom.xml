@@ -19,6 +19,11 @@
       <artifactId>io-hotmoka-websockets-beans</artifactId>
       <version>${io.hotmoka.websockets.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
   </dependencies>
 
   <profiles>

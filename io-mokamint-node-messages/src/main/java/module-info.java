@@ -22,7 +22,14 @@ module io.mokamint.node.messages {
 	// beans must be accessible, encoded and decoded by reflection through Gson
 	opens io.mokamint.node.messages.internal to com.google.gson;
 	opens io.mokamint.node.messages.internal.gson to com.google.gson;
+
+	requires transitive io.mokamint.node.api;
+	requires io.mokamint.node;
 	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
 	requires java.logging;
+
+	// only used for tests
+	requires static io.hotmoka.crypto;
+	requires static io.mokamint.nonce;
 }

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -39,8 +40,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC) {
-		if (startDateTimeUTC == null)
-			throw new NullPointerException("startDateTimeUTC");
+		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
 
 		this.startDateTimeUTC = startDateTimeUTC;
 	}

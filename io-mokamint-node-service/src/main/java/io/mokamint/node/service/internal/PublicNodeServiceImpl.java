@@ -28,6 +28,7 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -100,7 +101,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * An endpoint that connects to public node remotes.
 	 */
 	private abstract static class PublicNodeServiceEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
-		private Session session;
+		protected Session session;
 		protected final PublicNode node;
 
 		@SuppressWarnings("resource")
@@ -132,7 +133,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private void getPeers(GetPeersMessage message) {
-			node.getPeers().map(Object::toString).forEach(LOGGER::info);
+			session.getAsyncRemote().sendObject(node.getPeers().toArray(Peer[]::new));
 		}
 
 		private static ServerEndpointConfig config(Configurator configurator) {
@@ -153,7 +154,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		private void getBlock(GetBlockMessage message) {
 			try {
-				node.getBlock(message.getHash());
+				session.getAsyncRemote().sendObject(node.getBlock(message.getHash()));
 			}
 			catch (NoSuchAlgorithmException e) {
 				// TODO Auto-generated catch block
