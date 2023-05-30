@@ -26,9 +26,11 @@ import jakarta.websocket.DeploymentException;
 /**
  * A provider of public node services.
  */
-public interface PublicNodeServices {
+public class PublicNodeServices {
 
-	static PublicNodeService of(PublicNode node, int port) throws DeploymentException, IOException {
+	private PublicNodeServices() {}
+
+	public static PublicNodeService of(PublicNode node, int port) throws DeploymentException, IOException {
 		return new PublicNodeServiceImpl(node, port);
 	}
 }

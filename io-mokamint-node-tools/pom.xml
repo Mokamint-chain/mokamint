@@ -39,6 +39,11 @@
       <artifactId>io-mokamint-plotter</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+  	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-service</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
 	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-tools</artifactId>

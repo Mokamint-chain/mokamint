@@ -33,8 +33,10 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.remote.RemoteMiners;
+import io.mokamint.node.api.Node;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
+import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
@@ -55,8 +57,11 @@ public class Start extends AbstractCommand {
 	@Option(names = "--config", description = { "the toml config file of the node;", "if missing, defaults are used"})
 	private Path config;
 
-	@Option(names = "--miner-port", description = { "the http port where a remote miner", "must be published" })
+	@Option(names = "--miner-port", description = { "network ports where a remote miner", "must be published" })
 	private int[] minerPorts;
+
+	@Option(names = "--public-port", description = { "network ports where the public API", "of the node must be published" })
+	private int[] publicPorts;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
@@ -68,45 +73,47 @@ public class Start extends AbstractCommand {
 		if (minerPorts == null)
 			minerPorts = new int[0];
 
-		loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(plots, 0, new ArrayList<>());
+		if (publicPorts == null)
+			publicPorts = new int[0];
+
+		loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(plots, 0, new ArrayList<>());
 	}
 
 	/**
-	 * Loads the given plots, start a local miner on them and run a node
-	 * with that miner.
+	 * Loads the given plots, start a local miner on them and run a node with that miner.
 	 * 
 	 * @param paths the paths to the plots to load
 	 * @param pos the index to the next plot to load
 	 * @param plots the plots that are being loaded
 	 */
-	private void loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(Path[] paths, int pos, List<Plot> plots) {
+	private void loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(Path[] paths, int pos, List<Plot> plots) {
 		if (pos < paths.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Loading " + paths[pos] + "... |@"));
 			try (var plot = Plots.load(paths[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				plots.add(plot);
-				loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
+				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
 				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + paths[pos] + "\"", e);
-				loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
+				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
 			}
 			catch (NoSuchAlgorithmException e) {
 				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
 				LOGGER.log(Level.SEVERE, "the plot file \"" + paths[pos] + "\" uses an unknown hashing algorithm", e);
-				loadPlotsCreateLocalMinerPublishRemoteMinersAndStartNode(paths, pos + 1, plots);
+				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
 			}
 		}
 		else
-			createLocalMinerPublishRemoteMinersAndStartNode(minerPorts, plots);
+			createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(plots);
 	}
 
-	private void createLocalMinerPublishRemoteMinersAndStartNode(int[] minerPorts, List<Plot> plots) {
+	private void createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(List<Plot> plots) {
 		List<Miner> miners = new ArrayList<>();
 
 		if (plots.isEmpty())
-			publishRemoteMinersAndStartNode(minerPorts, 0, miners);
+			publishRemoteMinersStartNodeAndPublishNodeServices(0, miners);
 		else {
 			if (plots.size() == 1)
 				System.out.print(Ansi.AUTO.string("@|blue Starting a local miner with 1 plot... |@"));
@@ -116,41 +123,41 @@ public class Start extends AbstractCommand {
 			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				miners.add(miner);
-				publishRemoteMinersAndStartNode(minerPorts, 0, miners);
+				publishRemoteMinersStartNodeAndPublishNodeServices(0, miners);
 			}
 		}
 	}
 
-	private void publishRemoteMinersAndStartNode(int[] minerPorts, int pos, List<Miner> miners) {
+	private void publishRemoteMinersStartNodeAndPublishNodeServices(int pos, List<Miner> miners) {
 		if (pos < minerPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a remote miner listening at port " + minerPorts[pos] + " of localhost... |@"));
 			try (var remote = RemoteMiners.of(minerPorts[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				miners.add(remote);
-				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
 				LOGGER.log(Level.SEVERE, "I/O error while creating a remote miner at port " + minerPorts[pos], e);
-				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
 			}
 			catch (DeploymentException e) {
 				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
 				LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
-				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
 			}
 			catch (IllegalArgumentException e) {
 				// for instance, the port number is illegal
 				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
 				LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
-				publishRemoteMinersAndStartNode(minerPorts, pos + 1, miners);
+				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
 			}
 		}
 		else
-			startNode(miners);
+			startNodeAndPublishNodeServices(miners);
 	}
 
-	private void startNode(List<Miner> miners) {
+	private void startNodeAndPublishNodeServices(List<Miner> miners) {
 		Config config;
 
 		try {
@@ -184,7 +191,7 @@ public class Start extends AbstractCommand {
 		System.out.print(Ansi.AUTO.string("@|blue Starting a local node... |@"));
 		try (var node = LocalNodes.of(config, new TestApplication(), miners.toArray(Miner[]::new))) {
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-			waitForKeyPress();
+			publishNodeServices(0, node);
 		}
 		catch (URISyntaxException e) {
 			System.out.println(Ansi.AUTO.string("@|red The database refers to an illegal URI!|@"));
@@ -205,6 +212,34 @@ public class Start extends AbstractCommand {
 		}
 	}
 
+	private void publishNodeServices(int pos, Node node) {
+		if (pos < publicPorts.length) {
+			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
+			try (var service = PublicNodeServices.of(node, publicPorts[pos])) {
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				publishNodeServices(pos + 1, node);
+			}
+			catch (IOException e) {
+				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
+				LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + publicPorts[pos], e);
+				publishNodeServices(pos + 1, node);
+			}
+			catch (DeploymentException e) {
+				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
+				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
+				publishNodeServices(pos + 1, node);
+			}
+			catch (IllegalArgumentException e) {
+				// for instance, the port number is illegal
+				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
+				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
+				publishNodeServices(pos + 1, node);
+			}
+		}
+		else
+			waitForKeyPress();
+	}
+
 	/**
 	 * Creates the given directory for the blockchain.
 	 * If the directory exists, nothing will happen.
@@ -214,8 +249,8 @@ public class Start extends AbstractCommand {
 	 */
 	private void ensureExists(Path dir) throws IOException {
 		if (Files.exists(dir)) {
-			System.out.println(Ansi.AUTO.string("@|blue The path \"" + dir + "\" already exists! Will restart the blockchain from the old database.|@"));
-			System.out.println(Ansi.AUTO.string("@|blue If you want to start the blockchain from scratch, delete that path and start again this node.|@"));
+			System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the blockchain from the old database.|@"));
+			System.out.println(Ansi.AUTO.string("@|yellow If you want to start the blockchain from scratch, delete that path and start again this node.|@"));
 		}
 
 		Files.createDirectories(dir);
