@@ -16,43 +16,51 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
-import java.lang.reflect.Type;
+import java.security.NoSuchAlgorithmException;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-
-import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.hotmoka.websockets.beans.BaseSerializer;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
 public class DeadlineEncoder extends BaseEncoder<Deadline> {
 
 	public DeadlineEncoder() {
-		super(new DeadlineSerializer());
+		super(Deadline.class);
 	}
 
-	private static class DeadlineSerializer extends BaseSerializer<Deadline> {
-
-		private DeadlineSerializer() {
-			super(Deadline.class);
-		}
-
-		@Override
-		protected void registerTypeSerializers(GsonBuilder where) {
-			where.registerTypeAdapter(HashingAlgorithm.class, new HashingAlgorithmSerializer());
-		}
+	@Override
+	public Supplier<Deadline> map(Deadline deadline) {
+		return new Json(deadline);
 	}
 
-	private static class HashingAlgorithmSerializer implements JsonSerializer<HashingAlgorithm<byte[]>> {
+	private static class Json implements Supplier<Deadline> {
+		private byte[] prolog;
+		private long progressive;
+		private byte[] value;
+		private int scoopNumber;
+		private byte[] data;
+		private String hashing;
 	
+		private Json(Deadline deadline) {
+			this.prolog = deadline.getProlog();
+			this.progressive = deadline.getProgressive();
+			this.value = deadline.getValue();
+			this.scoopNumber = deadline.getScoopNumber();
+			this.data = deadline.getData();
+			this.hashing = deadline.getHashing().getName();
+		}
+
 		@Override
-		public JsonElement serialize(HashingAlgorithm<byte[]> hashing, Type type, JsonSerializationContext context) {
-			// a hashing algorithm is simply represented as its name
-			return new JsonPrimitive(hashing.getName());
+		public Deadline get() {
+			try {
+				return Deadlines.of(prolog, progressive, value, scoopNumber, data, HashingAlgorithms.mk(hashing, Function.identity()));
+			}
+			catch (NoSuchAlgorithmException e) {
+				throw new IllegalArgumentException(e);
+			}
 		}
 	}
 }

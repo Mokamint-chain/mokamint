@@ -16,46 +16,67 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.lang.reflect.Type;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import java.util.function.Supplier;
 
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.hotmoka.websockets.beans.BaseSerializer;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.api.Deadline;
 
 public class BlockEncoder extends BaseEncoder<Block> {
 
 	public BlockEncoder() {
-		super(new BlockSerializer());
+		super(Block.class);
 	}
 
-	private static class BlockSerializer extends BaseSerializer<Block> {
+	@Override
+	public Supplier<Block> map(Block block) {
+		if (block instanceof GenesisBlock)
+			return new GenesisJson((GenesisBlock) block);
+		else
+			return new NonGenesisJson((NonGenesisBlock) block);
+	}
 
-		private BlockSerializer() {
-			super(Block.class);
+	private static class GenesisJson implements Supplier<Block> {
+		private String startDateTimeUTC;
+
+		private GenesisJson(GenesisBlock block) {
+			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(block.getStartDateTimeUTC());
 		}
 
 		@Override
-		protected void registerTypeSerializers(GsonBuilder where) {
-			where.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeSerializer());
-			new Deadlines.Encoder().registerAsTypeSerializer(where);
+		public Block get() {
+			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 		}
 	}
 
-	private static class LocalDateTimeSerializer implements JsonSerializer<LocalDateTime> {
+	private static class NonGenesisJson implements Supplier<Block> {
+		private long height;
+		private long totalWaitingTime;
+		private long weightedWaitingTime;
+		private BigInteger acceleration;
+		@SuppressWarnings("rawtypes")
+		private Supplier deadline;
+		private byte[] hashOfPreviousBlock;
+
+		private NonGenesisJson(NonGenesisBlock block) {
+			this.height = block.getHeight();
+			this.totalWaitingTime = block.getTotalWaitingTime();
+			this.weightedWaitingTime = block.getWeightedWaitingTime();
+			this.acceleration = block.getAcceleration();
+			this.deadline = new Deadlines.Encoder().map(block.getDeadline());
+			this.hashOfPreviousBlock = block.getHashOfPreviousBlock();
+		}
 
 		@Override
-		public JsonElement serialize(LocalDateTime time, Type type, JsonSerializationContext context) {
-			// a date and time is represented as its string representation in ISO
-			return new JsonPrimitive(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(time));
+		public Block get() {
+			return Blocks.of(height, totalWaitingTime, weightedWaitingTime, acceleration, (Deadline) deadline.get(), hashOfPreviousBlock);
 		}
 	}
 }

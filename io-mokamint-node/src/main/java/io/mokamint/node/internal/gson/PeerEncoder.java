@@ -16,43 +16,40 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.lang.reflect.Type;
 import java.net.URI;
-
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import java.net.URISyntaxException;
+import java.util.function.Supplier;
 
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.hotmoka.websockets.beans.BaseSerializer;
+import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 
 public class PeerEncoder extends BaseEncoder<Peer> {
 
 	public PeerEncoder() {
-		super(new PeerSerializer());
+		super(Peer.class);
 	}
 
-	private static class PeerSerializer extends BaseSerializer<Peer> {
+	@Override
+	public Supplier<Peer> map(Peer peer) {
+		return new Json(peer);
+	}
 
-		private PeerSerializer() {
-			super(Peer.class);
+	private static class Json implements Supplier<Peer> {
+		private String uri;
+	
+		private Json(Peer peer) {
+			this.uri = peer.getURI().toString();
 		}
 
 		@Override
-		protected void registerTypeSerializers(GsonBuilder where) {
-			where.registerTypeAdapter(URI.class, new URISerializer());
-		}
-	}
-
-	private static class URISerializer implements JsonSerializer<URI> {
-
-		@Override
-		public JsonElement serialize(URI uri, Type type, JsonSerializationContext context) {
-			// a URI is simply represented as its string representation
-			return new JsonPrimitive(uri.toString());
+		public Peer get() {
+			try {
+				return Peers.of(new URI(uri));
+			}
+			catch (URISyntaxException e) {
+				throw new IllegalArgumentException(e);
+			}
 		}
 	}
 }

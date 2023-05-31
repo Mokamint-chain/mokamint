@@ -16,12 +16,15 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import com.google.gson.GsonBuilder;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.hotmoka.websockets.beans.BaseSerializer;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.GetPeersResultMessage;
+import io.mokamint.node.messages.GetPeersResultMessages;
 
 /**
  * An encoder of {@code GetPeersResultMessage}.
@@ -29,18 +32,26 @@ import io.mokamint.node.messages.GetPeersResultMessage;
 public class GetPeersResultMessageEncoder extends BaseEncoder<GetPeersResultMessage> {
 
 	public GetPeersResultMessageEncoder() {
-		super(new GetPeersResultMessageSerializer());
+		super(GetPeersResultMessage.class);
 	}
 
-	private static class GetPeersResultMessageSerializer extends BaseSerializer<GetPeersResultMessage> {
+	@Override
+	public Supplier<GetPeersResultMessage> map(GetPeersResultMessage message) {
+		return new Json(message);
+	}
 
-		private GetPeersResultMessageSerializer() {
-			super(GetPeersResultMessage.class);
+	private static class Json implements Supplier<GetPeersResultMessage> {
+		@SuppressWarnings("rawtypes")
+		private List<Supplier> peers;
+	
+		private Json(GetPeersResultMessage message) {
+			var encoder = new Peers.Encoder();
+			this.peers = message.get().map(encoder::map).collect(Collectors.toList());
 		}
 
 		@Override
-		protected void registerTypeSerializers(GsonBuilder where) {
-			new Peers.Encoder().registerAsTypeSerializer(where);
+		public GetPeersResultMessage get() {
+			return GetPeersResultMessages.of(peers.stream().map(Supplier::get).map(p -> (Peer) p));
 		}
 	}
 }

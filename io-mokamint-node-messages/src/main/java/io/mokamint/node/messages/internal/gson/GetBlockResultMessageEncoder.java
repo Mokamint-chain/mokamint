@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import com.google.gson.GsonBuilder;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.hotmoka.websockets.beans.BaseSerializer;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.GetBlockResultMessage;
+import io.mokamint.node.messages.GetBlockResultMessages;
 
 /**
  * An encoder of {@code GetBlockResultMessage}.
@@ -29,18 +31,29 @@ import io.mokamint.node.messages.GetBlockResultMessage;
 public class GetBlockResultMessageEncoder extends BaseEncoder<GetBlockResultMessage> {
 
 	public GetBlockResultMessageEncoder() {
-		super(new Serializer());
+		super(GetBlockResultMessage.class);
 	}
 
-	private static class Serializer extends BaseSerializer<GetBlockResultMessage> {
+	@Override
+	public Supplier<GetBlockResultMessage> map(GetBlockResultMessage message) {
+		return new Json(message);
+	}
 
-		private Serializer() {
-			super(GetBlockResultMessage.class);
+	private static class Json implements Supplier<GetBlockResultMessage> {
+		@SuppressWarnings("rawtypes")
+		private Supplier block;
+	
+		private Json(GetBlockResultMessage message) {
+			if (message.get().isPresent())
+				this.block = new Blocks.Encoder().map(message.get().get());
 		}
 
 		@Override
-		protected void registerTypeSerializers(GsonBuilder where) {
-			new Blocks.Encoder().registerAsTypeSerializer(where);
+		public GetBlockResultMessage get() {
+			if (block == null)
+				return GetBlockResultMessages.of(Optional.empty());
+			else
+				return GetBlockResultMessages.of(Optional.of((Block) block.get()));
 		}
 	}
 }
