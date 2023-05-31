@@ -25,6 +25,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.internal.PeerImpl;
 import io.mokamint.node.internal.gson.PeerDecoder;
 import io.mokamint.node.internal.gson.PeerEncoder;
+import io.mokamint.node.internal.gson.PeerJson;
 
 /**
  * Providers of peers.
@@ -74,4 +75,19 @@ public interface Peers {
 	 * Gson decoder.
 	 */
     static class Decoder extends PeerDecoder {}
+
+    /**
+     * Json representation.
+     */
+    static class Json extends PeerJson {
+
+    	/**
+    	 * Creates the Json representation for the given peer.
+    	 * 
+    	 * @param peer the peer
+    	 */
+    	public Json(Peer peer) {
+    		super(peer);
+    	}
+    }
 }

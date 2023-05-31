@@ -25,6 +25,7 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.internal.DeadlineImpl;
 import io.mokamint.nonce.internal.gson.DeadlineDecoder;
 import io.mokamint.nonce.internal.gson.DeadlineEncoder;
+import io.mokamint.nonce.internal.gson.DeadlineJson;
 
 /**
  * A provider of deadlines.
@@ -67,4 +68,19 @@ public interface Deadlines {
 	 * Gson decoder.
 	 */
     static class Decoder extends DeadlineDecoder {}
+
+    /**
+     * Json representation.
+     */
+    static class Json extends DeadlineJson {
+
+    	/**
+    	 * Creates the Json representation for the given deadline.
+    	 * 
+    	 * @param deadline the deadline
+    	 */
+    	public Json(Deadline deadline) {
+    		super(deadline);
+    	}
+    }
 }

@@ -16,11 +16,6 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.websockets.beans.BaseEncoder;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -32,29 +27,7 @@ public class DeadlineDescriptionEncoder extends BaseEncoder<DeadlineDescription>
 	}
 
 	@Override
-	public Supplier<DeadlineDescription> map(DeadlineDescription description) {
-		return new Json(description);
-	}
-
-	private static class Json implements Supplier<DeadlineDescription> {
-		private int scoopNumber;
-		private byte[] data;
-		private String hashing;
-	
-		private Json(DeadlineDescription description) {
-			this.scoopNumber = description.getScoopNumber();
-			this.data = description.getData();
-			this.hashing = description.getHashing().getName();
-		}
-
-		@Override
-		public DeadlineDescription get() {
-			try {
-				return DeadlineDescriptions.of(scoopNumber, data, HashingAlgorithms.mk(hashing, Function.identity()));
-			}
-			catch (NoSuchAlgorithmException e) {
-				throw new IllegalArgumentException(e);
-			}
-		}
+	public DeadlineDescriptions.Json map(DeadlineDescription description) {
+		return new DeadlineDescriptions.Json(description);
 	}
 }

@@ -22,6 +22,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.internal.GetPeersResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetPeersResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetPeersResultMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetPeersResultMessageJson;
 
 /**
  * A provider of {@link GetPeersResultMessage}.
@@ -49,4 +50,19 @@ public class GetPeersResultMessages {
 	 * Gson decoder.
 	 */
 	public static class Decoder extends GetPeersResultMessageDecoder {}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetPeersResultMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetPeersResultMessage message) {
+    		super(message);
+    	}
+    }
 }

@@ -16,26 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.lang.reflect.Type;
-import java.math.BigInteger;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-
 import io.hotmoka.websockets.beans.BaseDecoder;
-import io.hotmoka.websockets.beans.BaseDeserializer;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.internal.GenesisBlockImpl;
-import io.mokamint.node.internal.NonGenesisBlockImpl;
-import io.mokamint.nonce.Deadlines;
-import io.mokamint.nonce.api.Deadline;
 
 /**
  * A decoder for {@link Block}.
@@ -43,54 +26,6 @@ import io.mokamint.nonce.api.Deadline;
 public class BlockDecoder extends BaseDecoder<Block> {
 
 	public BlockDecoder() {
-		super(new BlockDeserializer());
-	}
-
-	private static class BlockDeserializer extends BaseDeserializer<Block> {
-
-		protected BlockDeserializer() {
-			super(Block.class);
-		}
-
-		@Override
-		protected void registerTypeDeserializers(GsonBuilder where) {
-			where.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer());
-			new Deadlines.Decoder().registerAsTypeDeserializer(where);
-		}
-
-		@Override
-		protected Block deserialize(JsonElement json, Gson gson) throws JsonParseException {
-			return gson.fromJson(json, BlockGsonHelper.class).toBean();
-		}
-	}
-
-	private static class LocalDateTimeDeserializer implements JsonDeserializer<LocalDateTime> {
-
-		@Override
-		public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-			try {
-				return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-			}
-			catch (DateTimeParseException e) {
-				throw new JsonParseException(e);
-			}
-		}
-	}
-
-	private static class BlockGsonHelper {
-		private LocalDateTime startDateTimeUTC;
-		private long height;
-		private long totalWaitingTime;
-		private long weightedWaitingTime;
-		private BigInteger acceleration;
-		private Deadline deadline;
-		private byte[] hashOfPreviousBlock;
-
-		private Block toBean() {
-			if (startDateTimeUTC != null)
-				return new GenesisBlockImpl(startDateTimeUTC);
-			else
-				return new NonGenesisBlockImpl(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
-	    }
+		super(Block.class, Blocks.Json.class);
 	}
 }

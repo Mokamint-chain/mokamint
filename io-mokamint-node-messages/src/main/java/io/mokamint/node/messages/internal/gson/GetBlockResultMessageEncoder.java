@@ -16,12 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.util.Optional;
-import java.util.function.Supplier;
-
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.mokamint.node.Blocks;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
 
@@ -35,25 +30,7 @@ public class GetBlockResultMessageEncoder extends BaseEncoder<GetBlockResultMess
 	}
 
 	@Override
-	public Supplier<GetBlockResultMessage> map(GetBlockResultMessage message) {
-		return new Json(message);
-	}
-
-	private static class Json implements Supplier<GetBlockResultMessage> {
-		@SuppressWarnings("rawtypes")
-		private Supplier block;
-	
-		private Json(GetBlockResultMessage message) {
-			if (message.get().isPresent())
-				this.block = new Blocks.Encoder().map(message.get().get());
-		}
-
-		@Override
-		public GetBlockResultMessage get() {
-			if (block == null)
-				return GetBlockResultMessages.of(Optional.empty());
-			else
-				return GetBlockResultMessages.of(Optional.of((Block) block.get()));
-		}
+	public GetBlockResultMessages.Json map(GetBlockResultMessage message) {
+		return new GetBlockResultMessages.Json(message);
 	}
 }

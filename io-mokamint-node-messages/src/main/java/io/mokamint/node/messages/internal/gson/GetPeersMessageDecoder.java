@@ -16,12 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-
 import io.hotmoka.websockets.beans.BaseDecoder;
 import io.mokamint.node.messages.GetPeersMessage;
-import io.mokamint.node.messages.GetPeersMessages;
+import io.mokamint.node.messages.internal.GetPeersMessageImpl;
 
 /**
  * A decoder for {@link GetPeersMessage}.
@@ -29,17 +26,6 @@ import io.mokamint.node.messages.GetPeersMessages;
 public class GetPeersMessageDecoder extends BaseDecoder<GetPeersMessage> {
 
 	public GetPeersMessageDecoder() {
-		super(GetPeersMessage.class);
-	}
-
-	@Override
-	protected GetPeersMessage decode(JsonElement element, Gson gson) {
-		return gson.fromJson(element, GetPeersMessageGsonHelper.class).toBean();
-	}
-
-	private static class GetPeersMessageGsonHelper {
-		private GetPeersMessage toBean() {
-			return GetPeersMessages.instance();
-	    }
+		super(GetPeersMessageImpl.class);
 	}
 }

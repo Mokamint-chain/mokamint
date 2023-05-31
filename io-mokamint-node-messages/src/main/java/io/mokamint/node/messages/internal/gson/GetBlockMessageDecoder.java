@@ -16,12 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-
 import io.hotmoka.websockets.beans.BaseDecoder;
 import io.mokamint.node.messages.GetBlockMessage;
-import io.mokamint.node.messages.GetBlockMessages;
+import io.mokamint.node.messages.internal.GetBlockMessageImpl;
 
 /**
  * A decoder for {@link GetBlockMessage}.
@@ -29,19 +26,6 @@ import io.mokamint.node.messages.GetBlockMessages;
 public class GetBlockMessageDecoder extends BaseDecoder<GetBlockMessage> {
 
 	public GetBlockMessageDecoder() {
-		super(GetBlockMessage.class);
-	}
-
-	@Override
-	protected GetBlockMessage decode(JsonElement element, Gson gson) {
-		return gson.fromJson(element, GetBlockMessageGsonHelper.class).toBean();
-	}
-
-	private static class GetBlockMessageGsonHelper {
-		private byte[] hash;
-
-		private GetBlockMessage toBean() {
-			return GetBlockMessages.of(hash);
-	    }
+		super(GetBlockMessageImpl.class);
 	}
 }

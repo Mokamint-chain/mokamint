@@ -16,13 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.mokamint.node.Peers;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 
@@ -36,22 +30,7 @@ public class GetPeersResultMessageEncoder extends BaseEncoder<GetPeersResultMess
 	}
 
 	@Override
-	public Supplier<GetPeersResultMessage> map(GetPeersResultMessage message) {
-		return new Json(message);
-	}
-
-	private static class Json implements Supplier<GetPeersResultMessage> {
-		@SuppressWarnings("rawtypes")
-		private List<Supplier> peers;
-	
-		private Json(GetPeersResultMessage message) {
-			var encoder = new Peers.Encoder();
-			this.peers = message.get().map(encoder::map).collect(Collectors.toList());
-		}
-
-		@Override
-		public GetPeersResultMessage get() {
-			return GetPeersResultMessages.of(peers.stream().map(Supplier::get).map(p -> (Peer) p));
-		}
+	public GetPeersResultMessages.Json map(GetPeersResultMessage message) {
+		return new GetPeersResultMessages.Json(message);
 	}
 }

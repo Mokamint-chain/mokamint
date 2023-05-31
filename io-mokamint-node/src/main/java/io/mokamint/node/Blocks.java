@@ -30,6 +30,7 @@ import io.mokamint.node.internal.GenesisBlockImpl;
 import io.mokamint.node.internal.NonGenesisBlockImpl;
 import io.mokamint.node.internal.gson.BlockDecoder;
 import io.mokamint.node.internal.gson.BlockEncoder;
+import io.mokamint.node.internal.gson.BlockJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -98,4 +99,19 @@ public interface Blocks {
 	 * Gson decoder.
 	 */
     static class Decoder extends BlockDecoder {}
+
+    /**
+     * Json representation.
+     */
+    static class Json extends BlockJson {
+
+    	/**
+    	 * Creates the Json representation for the given block.
+    	 * 
+    	 * @param block the block
+    	 */
+    	public Json(Block block) {
+    		super(block);
+    	}
+    }
 }

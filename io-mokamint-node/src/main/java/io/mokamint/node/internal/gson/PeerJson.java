@@ -16,18 +16,30 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseEncoder;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.function.Supplier;
+
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 
-public class PeerEncoder extends BaseEncoder<Peer> {
+/**
+ * The peer representation of a peer.
+ */
+public abstract class PeerJson implements Supplier<Peer> {
+	private String uri;
 
-	public PeerEncoder() {
-		super(Peer.class);
+	protected PeerJson(Peer peer) {
+		this.uri = peer.getURI().toString();
 	}
 
 	@Override
-	public Peers.Json map(Peer peer) {
-		return new Peers.Json(peer);
+	public Peer get() {
+		try {
+			return Peers.of(new URI(uri));
+		}
+		catch (URISyntaxException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 }
