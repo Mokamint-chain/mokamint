@@ -89,7 +89,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		@SuppressWarnings("resource")
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			super.onOpen(session, config);
 			this.node = getServer().node;
 		}
 	}
@@ -98,14 +97,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			super.onOpen(session, config);
-			addMessageHandler(this::getPeers);
-	    }
 
-		private void getPeers(GetPeersMessage message) {
-			LOGGER.info("received a get_peers request");
-			sendObjectAsync(GetPeersResultMessages.of(node.getPeers()));
-		}
+			class GetPeers {
+				private GetPeers(GetPeersMessage message) {
+					LOGGER.info("received a get_peers request");
+					sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers()));
+				}
+			}
+
+			addMessageHandler(session, GetPeers::new);
+	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return ServerEndpointConfig.Builder.create(GetPeersEndpoint.class, "/get_peers")
@@ -120,19 +121,21 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			super.onOpen(session, config);
-			addMessageHandler(this::getBlock);
-	    }
 
-		private void getBlock(GetBlockMessage message) {
-			LOGGER.info("received a get_block request");
-			try {
-				sendObjectAsync(GetBlockResultMessages.of(node.getBlock(message.getHash())));
+			class GetBlock {
+				private GetBlock(GetBlockMessage message) {
+					LOGGER.info("received a get_block request");
+					try {
+						sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash())));
+					}
+					catch (NoSuchAlgorithmException e) {
+						// TODO Auto-generated catch block
+					}
+				}
 			}
-			catch (NoSuchAlgorithmException e) {
-				// TODO Auto-generated catch block
-			}
-		}
+
+			addMessageHandler(session, GetBlock::new);
+	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return ServerEndpointConfig.Builder.create(GetBlockEndpoint.class, "/get_block")

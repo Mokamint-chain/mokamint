@@ -148,8 +148,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			super.onOpen(session, config);
-			addMessageHandler(MinerServiceImpl.this::requestDeadline);
+			addMessageHandler(session, MinerServiceImpl.this::requestDeadline);
 		}
 
 		@Override
