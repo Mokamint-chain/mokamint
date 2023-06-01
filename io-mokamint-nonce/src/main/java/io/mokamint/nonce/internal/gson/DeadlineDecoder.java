@@ -16,16 +16,16 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseDecoder;
+import io.hotmoka.websockets.beans.MappedDecoder;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * A decoder for {@link io.mokamint.nonce.api.Deadline}.
  */
-public class DeadlineDecoder extends BaseDecoder<Deadline> {
+public class DeadlineDecoder extends MappedDecoder<Deadline, Deadlines.Json> {
 
 	public DeadlineDecoder() {
-		super(Deadline.class, Deadlines.Json.class);
+		super(Deadlines.Json.class);
 	}
 }

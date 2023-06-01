@@ -16,18 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseEncoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 
-public class BlockEncoder extends BaseEncoder<Block> {
+public class BlockEncoder extends MappedEncoder<Block, Blocks.Json> {
 
 	public BlockEncoder() {
-		super(Block.class);
-	}
-
-	@Override
-	public Blocks.Json map(Block block) {
-		return new Blocks.Json(block);
+		super(Blocks.Json::new);
 	}
 }

@@ -18,15 +18,15 @@ package io.mokamint.node.internal.gson;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.function.Supplier;
 
+import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 
 /**
- * The peer representation of a peer.
+ * The JSON representation of a {@code Peer}.
  */
-public abstract class PeerJson implements Supplier<Peer> {
+public abstract class PeerJson implements JsonRepresentation<Peer> {
 	private String uri;
 
 	protected PeerJson(Peer peer) {
@@ -34,12 +34,7 @@ public abstract class PeerJson implements Supplier<Peer> {
 	}
 
 	@Override
-	public Peer get() {
-		try {
-			return Peers.of(new URI(uri));
-		}
-		catch (URISyntaxException e) {
-			throw new IllegalArgumentException(e);
-		}
+	public Peer unmap() throws URISyntaxException {
+		return Peers.of(new URI(uri));
 	}
 }

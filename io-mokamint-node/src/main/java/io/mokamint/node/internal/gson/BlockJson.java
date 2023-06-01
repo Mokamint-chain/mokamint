@@ -17,17 +17,21 @@ limitations under the License.
 package io.mokamint.node.internal.gson;
 
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.function.Supplier;
 
+import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.nonce.Deadlines;
 
-public abstract class BlockJson implements Supplier<Block> {
+/**
+ * The JSON representation of a {@link Block}.
+ */
+public abstract class BlockJson implements JsonRepresentation<Block> {
 	private String startDateTimeUTC;
 	private Long height;
 	private Long totalWaitingTime;
@@ -53,9 +57,9 @@ public abstract class BlockJson implements Supplier<Block> {
 	}
 
 	@Override
-	public Block get() {
+	public Block unmap() throws NoSuchAlgorithmException {
 		if (startDateTimeUTC == null)
-			return Blocks.of(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline.get(), hashOfPreviousBlock);
+			return Blocks.of(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), hashOfPreviousBlock);
 		else
 			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 	}

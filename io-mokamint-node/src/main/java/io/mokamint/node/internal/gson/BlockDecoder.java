@@ -16,16 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseDecoder;
+import io.hotmoka.websockets.beans.MappedDecoder;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 
 /**
  * A decoder for {@link Block}.
  */
-public class BlockDecoder extends BaseDecoder<Block> {
+public class BlockDecoder extends MappedDecoder<Block, Blocks.Json> {
 
 	public BlockDecoder() {
-		super(Block.class, Blocks.Json.class);
+		super(Blocks.Json.class);
 	}
 }

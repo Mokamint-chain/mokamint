@@ -16,18 +16,13 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseEncoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
-public class DeadlineEncoder extends BaseEncoder<Deadline> {
+public class DeadlineEncoder extends MappedEncoder<Deadline, Deadlines.Json> {
 
 	public DeadlineEncoder() {
-		super(Deadline.class);
-	}
-
-	@Override
-	public Deadlines.Json map(Deadline deadline) {
-		return new Deadlines.Json(deadline);
+		super(Deadlines.Json::new);
 	}
 }

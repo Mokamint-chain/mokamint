@@ -16,17 +16,18 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
-import java.util.function.Supplier;
 
+import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
 
 /**
- * The Json representation of a {@code GetBlockResultMessage}.
+ * The JSON representation of a {@link GetBlockResultMessage}.
  */
-public abstract class GetBlockResultMessageJson implements Supplier<GetBlockResultMessage> {
+public abstract class GetBlockResultMessageJson implements JsonRepresentation<GetBlockResultMessage> {
 	private Blocks.Json block;
 
 	protected GetBlockResultMessageJson(GetBlockResultMessage message) {
@@ -35,10 +36,7 @@ public abstract class GetBlockResultMessageJson implements Supplier<GetBlockResu
 	}
 
 	@Override
-	public GetBlockResultMessage get() {
-		if (block == null)
-			return GetBlockResultMessages.of(Optional.empty());
-		else
-			return GetBlockResultMessages.of(Optional.of(block.get()));
+	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException {
+		return GetBlockResultMessages.of(Optional.ofNullable(block == null ? null : block.unmap()));
 	}
 }

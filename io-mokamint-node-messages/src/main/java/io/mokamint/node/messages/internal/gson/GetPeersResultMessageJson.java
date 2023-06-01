@@ -16,17 +16,22 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.util.function.Supplier;
+import static io.hotmoka.exceptions.CheckSupplier.check;
+import static io.hotmoka.exceptions.UncheckFunction.uncheck;
+
+import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
+import io.hotmoka.exceptions.UncheckedURISyntaxException;
+import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 
 /**
- * Json representation of a {@code GetPeersResultMessage}.
+ * The JSON representation of a {@link GetPeersResultMessage}.
  */
-public abstract class GetPeersResultMessageJson implements Supplier<GetPeersResultMessage> {
+public abstract class GetPeersResultMessageJson implements JsonRepresentation<GetPeersResultMessage> {
 	private Peers.Json[] peers;
 
 	protected GetPeersResultMessageJson(GetPeersResultMessage message) {
@@ -35,7 +40,7 @@ public abstract class GetPeersResultMessageJson implements Supplier<GetPeersResu
 	}
 
 	@Override
-	public GetPeersResultMessage get() {
-		return GetPeersResultMessages.of(Stream.of(peers).map(Supplier::get));
+	public GetPeersResultMessage unmap() throws URISyntaxException {
+		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(Peers.Json::unmap))));
 	}
 }

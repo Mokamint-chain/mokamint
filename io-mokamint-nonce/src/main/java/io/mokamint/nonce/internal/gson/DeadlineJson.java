@@ -18,13 +18,16 @@ package io.mokamint.nonce.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
-public abstract class DeadlineJson implements Supplier<Deadline> {
+/**
+ * The JSON representation of a {@link Deadline}.
+ */
+public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	private byte[] prolog;
 	private long progressive;
 	private byte[] value;
@@ -42,12 +45,7 @@ public abstract class DeadlineJson implements Supplier<Deadline> {
 	}
 
 	@Override
-	public Deadline get() {
-		try {
-			return Deadlines.of(prolog, progressive, value, scoopNumber, data, HashingAlgorithms.mk(hashing, Function.identity()));
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new IllegalArgumentException(e);
-		}
+	public Deadline unmap() throws NoSuchAlgorithmException {
+		return Deadlines.of(prolog, progressive, value, scoopNumber, data, HashingAlgorithms.mk(hashing, Function.identity()));
 	}
 }
