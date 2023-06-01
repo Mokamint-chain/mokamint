@@ -30,7 +30,16 @@ public class PublicNodeServices {
 
 	private PublicNodeServices() {}
 
-	public static PublicNodeService of(PublicNode node, int port) throws DeploymentException, IOException {
+	/**
+	 * Opens and yields a new service for the given node, at the given network port.
+	 * 
+	 * @param node the node
+	 * @param port the port
+	 * @return the new service
+	 * @throws DeploymentException if the service cannot be deployed
+	 * @throws IOException if an I/O error occurs
+	 */
+	public static PublicNodeService open(PublicNode node, int port) throws DeploymentException, IOException {
 		return new PublicNodeServiceImpl(node, port);
 	}
 }

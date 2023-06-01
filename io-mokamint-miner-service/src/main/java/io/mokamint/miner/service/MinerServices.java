@@ -30,7 +30,7 @@ import jakarta.websocket.DeploymentException;
 public interface MinerServices {
 
 	/**
-	 * Creates a miner service that adapts the given miner and connects it to the given URI of a remote miner.
+	 * Opens and yields a new miner service that adapts the given miner and connects it to the given URI of a remote miner.
 	 * 
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
@@ -38,7 +38,7 @@ public interface MinerServices {
 	 * @throws IOException if an I/O error occurs
 	 * @throws DeploymentException if the service cannot be deployed
 	 */
-	static MinerService adapt(Miner miner, URI uri) throws DeploymentException, IOException {
+	static MinerService open(Miner miner, URI uri) throws DeploymentException, IOException {
 		return new MinerServiceImpl(miner, uri);
 	}
 }

@@ -17,8 +17,6 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -29,14 +27,11 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
-import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
 /**
  * An endpoint that connects to miner services.
  */
 public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
-
-	private final static Logger LOGGER = Logger.getLogger(RemoteMinerEndpoint.class.getName());
 
 	@SuppressWarnings("resource")
 	@Override
@@ -50,21 +45,11 @@ public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl>
     	getServer().removeSession(session);
     }
 
-	@Override
-    public void onError(Session session, Throwable throwable) {
-		LOGGER.log(Level.SEVERE, "websocket error", throwable);
-    }
-
-	static ServerEndpointConfig config(Configurator configurator) {
+	static ServerEndpointConfig config(RemoteMinerImpl server) {
 		return ServerEndpointConfig.Builder.create(RemoteMinerEndpoint.class, "/")
 			.encoders(List.of(DeadlineDescriptions.Encoder.class)) // it sends DeadlineDescription's
 			.decoders(List.of(Deadlines.Decoder.class)) // and receives Deadline's back
-			.configurator(configurator)
+			.configurator(mkConfigurator(server))
 			.build();
-	}
-
-	@Override
-	protected void setServer(RemoteMinerImpl server) {
-		super.setServer(server);
 	}
 }

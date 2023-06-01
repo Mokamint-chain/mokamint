@@ -19,29 +19,23 @@ package io.mokamint.node.service.internal;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.Blocks;
-import io.mokamint.node.Peers;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
+import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersMessages;
+import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.EncodeException;
 import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
-import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
 /**
  * The implementation of a public node service. It publishes an endpoint at a URL,
@@ -62,22 +56,22 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
+	/**
+	 * Creates a new service for the given node, at the given network port.
+	 * 
+	 * @param node the node
+	 * @param port the port
+	 * @throws DeploymentException if the service cannot be deployed
+	 * @throws IOException if an I/O error occurs
+	 */
 	public PublicNodeServiceImpl(PublicNode node, int port) throws DeploymentException, IOException {
 		this.port = port;
 		this.node = node;
-		var configurator = new MyConfigurator();
     	var container = getContainer();
-    	container.addEndpoint(GetPeersEndpoint.config(configurator));
-    	container.addEndpoint(GetBlockEndpoint.config(configurator));
+    	container.addEndpoint(GetPeersEndpoint.config(this));
+    	container.addEndpoint(GetBlockEndpoint.config(this));
     	container.start("", port);
     	LOGGER.info("published a public node service at ws://localhost:" + port);
-    	try {
-			System.out.println(new GetPeersMessages.Encoder().encode(GetPeersMessages.instance()));
-			System.out.println(new GetBlockMessages.Encoder().encode(GetBlockMessages.of(new byte[] { 1, 2, 3, 4 })));
-		} catch (EncodeException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	@Override
@@ -86,42 +80,17 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
 	}
 
-	private class MyConfigurator extends Configurator {
-
-    	@Override
-    	public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
-            var result = super.getEndpointInstance(endpointClass);
-            ((PublicNodeServiceEndpoint) result).setServer(PublicNodeServiceImpl.this); // we inject the server
-
-            return result;
-        }
-    }
-
 	/**
 	 * An endpoint that connects to public node remotes.
 	 */
 	private abstract static class PublicNodeServiceEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
-		protected Session session;
-		protected final PublicNode node;
+		protected PublicNode node;
 
 		@SuppressWarnings("resource")
-		protected PublicNodeServiceEndpoint() {
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {
+			super.onOpen(session, config);
 			this.node = getServer().node;
-		}
-
-		@Override
-	    public void onError(Session session, Throwable throwable) {
-			LOGGER.log(Level.SEVERE, "websocket error", throwable);
-	    }
-
-		@Override
-		protected void setServer(PublicNodeServiceImpl server) {
-			super.setServer(server);
-		}
-
-		protected <M> void addMessageHandler(Session session, Consumer<M> action) {
-			this.session = session;
-			session.addMessageHandler((MessageHandler.Whole<M>) action::accept);
 		}
 	}
 
@@ -129,18 +98,20 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, this::getPeers);
+			super.onOpen(session, config);
+			addMessageHandler(this::getPeers);
 	    }
 
 		private void getPeers(GetPeersMessage message) {
-			session.getAsyncRemote().sendObject(node.getPeers().toArray(Peer[]::new));
+			LOGGER.info("received a get_peers request");
+			sendObjectAsync(GetPeersResultMessages.of(node.getPeers()));
 		}
 
-		private static ServerEndpointConfig config(Configurator configurator) {
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return ServerEndpointConfig.Builder.create(GetPeersEndpoint.class, "/get_peers")
-				.decoders(List.of(GetPeersMessages.Decoder.class)) // it receives GetPeerMessage's
-				.encoders(List.of(Peers.Encoder.class)) // it sends Peer's
-				.configurator(configurator)
+				.decoders(List.of(GetPeersMessages.Decoder.class))
+				.encoders(List.of(GetPeersResultMessages.Encoder.class))
+				.configurator(mkConfigurator(server))
 				.build();
 		}
 	}
@@ -149,23 +120,25 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, this::getBlock);
+			super.onOpen(session, config);
+			addMessageHandler(this::getBlock);
 	    }
 
 		private void getBlock(GetBlockMessage message) {
+			LOGGER.info("received a get_block request");
 			try {
-				session.getAsyncRemote().sendObject(node.getBlock(message.getHash()));
+				sendObjectAsync(GetBlockResultMessages.of(node.getBlock(message.getHash())));
 			}
 			catch (NoSuchAlgorithmException e) {
 				// TODO Auto-generated catch block
 			}
 		}
 
-		private static ServerEndpointConfig config(Configurator configurator) {
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return ServerEndpointConfig.Builder.create(GetBlockEndpoint.class, "/get_block")
-				.decoders(List.of(GetBlockMessages.Decoder.class)) // it receives GetBlockMessage's
-				.encoders(List.of(Blocks.Encoder.class)) // it sends Block's
-				.configurator(configurator)
+				.decoders(List.of(GetBlockMessages.Decoder.class))
+				.encoders(List.of(GetBlockResultMessages.Encoder.class))
+				.configurator(mkConfigurator(server))
 				.build();
 		}
 	}

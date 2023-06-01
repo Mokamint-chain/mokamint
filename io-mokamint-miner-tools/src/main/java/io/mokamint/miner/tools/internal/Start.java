@@ -108,7 +108,7 @@ public class Start extends AbstractCommand {
 		if (pos < uris.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Connecting to " + uris[pos] + "... |@"));
 
-			try (var service = MinerServices.adapt(miner, uris[pos])) {
+			try (var service = MinerServices.open(miner, uris[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				startMiningServices(uris, pos + 1, true, miner);
 				service.waitUntilDisconnected();

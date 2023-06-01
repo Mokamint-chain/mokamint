@@ -30,7 +30,6 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpointConfig.Configurator;
 
 /**
  * The implementation of a remote miner. It publishes an endpoint at a URL,
@@ -53,9 +52,8 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	public RemoteMinerImpl(int port) throws DeploymentException, IOException {
 		this.port = port;
-		var configurator = new MyConfigurator();
     	var container = getContainer();
-    	container.addEndpoint(RemoteMinerEndpoint.config(configurator));
+    	container.addEndpoint(RemoteMinerEndpoint.config(this));
     	container.start("", port);
     	LOGGER.info("published a remote miner at ws://localhost:" + port);
 	}
@@ -107,16 +105,4 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		LOGGER.info("notifying deadline: " + deadline);
 		requests.runAllActionsFor(deadline);
 	}
-
-	private class MyConfigurator extends Configurator {
-
-    	@Override
-    	public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
-            var result = super.getEndpointInstance(endpointClass);
-            if (result instanceof RemoteMinerEndpoint)
-            	((RemoteMinerEndpoint) result).setServer(RemoteMinerImpl.this); // we inject the server
-
-            return result;
-        }
-    }
 }

@@ -215,7 +215,7 @@ public class Start extends AbstractCommand {
 	private void publishNodeServices(int pos, Node node) {
 		if (pos < publicPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
-			try (var service = PublicNodeServices.of(node, publicPorts[pos])) {
+			try (var service = PublicNodeServices.open(node, publicPorts[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				publishNodeServices(pos + 1, node);
 			}
