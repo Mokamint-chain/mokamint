@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.miner.remote.internal;
 
-import java.util.List;
-
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Deadlines;
@@ -46,10 +44,6 @@ public class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl>
     }
 
 	static ServerEndpointConfig config(RemoteMinerImpl server) {
-		return ServerEndpointConfig.Builder.create(RemoteMinerEndpoint.class, "/")
-			.encoders(List.of(DeadlineDescriptions.Encoder.class)) // it sends DeadlineDescription's
-			.decoders(List.of(Deadlines.Decoder.class)) // and receives Deadline's back
-			.configurator(mkConfigurator(server))
-			.build();
+		return simpleConfig(server, RemoteMinerEndpoint.class, "/", Deadlines.Decoder.class, DeadlineDescriptions.Encoder.class);
 	}
 }

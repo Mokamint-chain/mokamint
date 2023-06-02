@@ -20,6 +20,7 @@ limitations under the License.
  */
 module io.mokamint.node.service {
 	exports io.mokamint.node.service;
+
 	// needed to allow the endpoint to be created by reflection although it is not exported
 	opens io.mokamint.node.service.internal to org.glassfish.tyrus.core;
 

@@ -18,7 +18,6 @@ package io.mokamint.node.service.internal;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -80,69 +79,42 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
 	}
 
-	/**
-	 * An endpoint that connects to public node remotes.
-	 */
-	private abstract static class PublicNodeServiceEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
-		protected PublicNode node;
+	private void getPeers(GetPeersMessage message, Session session) {
+		LOGGER.info("received a get_peers request");
+		sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers()));
+	};
 
-		@SuppressWarnings("resource")
-		@Override
-		public void onOpen(Session session, EndpointConfig config) {
-			this.node = getServer().node;
-		}
-	}
-
-	public static class GetPeersEndpoint extends PublicNodeServiceEndpoint {
+	public static class GetPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-
-			class GetPeers {
-				private GetPeers(GetPeersMessage message) {
-					LOGGER.info("received a get_peers request");
-					sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers()));
-				}
-			}
-
-			addMessageHandler(session, GetPeers::new);
+			addMessageHandler(session, (GetPeersMessage message) -> getServer().getPeers(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return ServerEndpointConfig.Builder.create(GetPeersEndpoint.class, "/get_peers")
-				.decoders(List.of(GetPeersMessages.Decoder.class))
-				.encoders(List.of(GetPeersResultMessages.Encoder.class))
-				.configurator(mkConfigurator(server))
-				.build();
+			return simpleConfig(server, GetPeersEndpoint.class, "/get_peers", GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class);
 		}
 	}
 
-	public static class GetBlockEndpoint extends PublicNodeServiceEndpoint {
+	private void getBlock(GetBlockMessage message, Session session) {
+		LOGGER.info("received a get_block request");
+		try {
+			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash())));
+		}
+		catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+		}
+	};
+
+	public static class GetBlockEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-
-			class GetBlock {
-				private GetBlock(GetBlockMessage message) {
-					LOGGER.info("received a get_block request");
-					try {
-						sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash())));
-					}
-					catch (NoSuchAlgorithmException e) {
-						// TODO Auto-generated catch block
-					}
-				}
-			}
-
-			addMessageHandler(session, GetBlock::new);
+			addMessageHandler(session, (GetBlockMessage message) -> getServer().getBlock(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return ServerEndpointConfig.Builder.create(GetBlockEndpoint.class, "/get_block")
-				.decoders(List.of(GetBlockMessages.Decoder.class))
-				.encoders(List.of(GetBlockResultMessages.Encoder.class))
-				.configurator(mkConfigurator(server))
-				.build();
+			return simpleConfig(server, GetBlockEndpoint.class, "/get_block", GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class);
 		}
 	}
 }

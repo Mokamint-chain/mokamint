@@ -18,12 +18,9 @@ package io.mokamint.miner.service.internal;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.glassfish.tyrus.client.ClientManager;
 
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
@@ -33,7 +30,6 @@ import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
-import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -113,7 +109,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * 
 	 * @param description the description of the requested deadline
 	 */
-	void requestDeadline(DeadlineDescription description) {
+	private void requestDeadline(DeadlineDescription description) {
 		LOGGER.info("received deadline request: " + description + " from " + uri);
 		miner.requestDeadline(description, this::onDeadlineComputed);
 	}
@@ -138,12 +134,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		}
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			var config = ClientEndpointConfig.Builder.create()
-				.decoders(List.of(DeadlineDescriptions.Decoder.class)) // it receives DeadlineDescription's
-				.encoders(List.of(Deadlines.Encoder.class)) // and sends back Deadline's
-				.build();
-
-			return ClientManager.createClient().connectToServer(this, config, uri);
+			return deployAt(uri, DeadlineDescriptions.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override
