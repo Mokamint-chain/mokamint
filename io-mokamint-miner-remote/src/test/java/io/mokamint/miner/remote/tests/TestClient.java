@@ -18,23 +18,16 @@ package io.mokamint.miner.remote.tests;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import org.glassfish.tyrus.client.ClientManager;
-
+import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
-import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 
 /**
@@ -42,13 +35,9 @@ import jakarta.websocket.Session;
  */
 public class TestClient extends AbstractWebSocketClient {
 	private final Session session;
-	private final Consumer<DeadlineDescription> onDeadlineDescriptionReceived;
-	private final static Logger LOGGER = Logger.getLogger(TestClient.class.getName());
 
 	public TestClient(URI uri, Consumer<DeadlineDescription> onDeadlineDescriptionReceived) throws DeploymentException, IOException {
-		this.onDeadlineDescriptionReceived = onDeadlineDescriptionReceived;
-		this.session = new MyEndpoint().deployAt(uri);
-		LOGGER.info("test client bound to " + uri);
+		this.session = new MyEndpoint(this, onDeadlineDescriptionReceived).deployAt(uri);
 	}
 
 	@Override
@@ -56,31 +45,30 @@ public class TestClient extends AbstractWebSocketClient {
 		try {
 			session.close();
 		}
-		catch (IOException e) {
-			LOGGER.log(Level.WARNING, "cannot close the session", e);
-		}
+		catch (IOException e) {}
 
 		super.close();
 	}
 
 	public void send(Deadline deadline) {
-		session.getAsyncRemote().sendObject(deadline);
+		sendObjectAsync(session, deadline);
 	}
 
-	private class MyEndpoint extends Endpoint {
+	private class MyEndpoint extends AbstractClientEndpoint<TestClient> {
+		private final Consumer<DeadlineDescription> onDeadlineDescriptionReceived;
 
-		Session deployAt(URI uri) throws DeploymentException, IOException {
-			var config = ClientEndpointConfig.Builder.create()
-				.decoders(List.of(DeadlineDescriptions.Decoder.class)) // it receives DeadlineDescription's
-				.encoders(List.of(Deadlines.Encoder.class)) // and sends back Deadline's
-				.build();
+		private MyEndpoint(TestClient client, Consumer<DeadlineDescription> onDeadlineDescriptionReceived) {
+			super(client);
+			this.onDeadlineDescriptionReceived = onDeadlineDescriptionReceived;
+		}
 
-			return ClientManager.createClient().connectToServer(this, config, uri);
+		private Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, DeadlineDescriptions.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			session.addMessageHandler((MessageHandler.Whole<DeadlineDescription>) onDeadlineDescriptionReceived::accept);
+			addMessageHandler(session, onDeadlineDescriptionReceived);
 		}
 	}
 }
