@@ -34,10 +34,12 @@ import jakarta.websocket.Session;
  * The implementation of a test websocket client that forwards deadlines.
  */
 public class TestClient extends AbstractWebSocketClient {
+	private final Consumer<DeadlineDescription> onDeadlineDescriptionReceived;
 	private final Session session;
 
 	public TestClient(URI uri, Consumer<DeadlineDescription> onDeadlineDescriptionReceived) throws DeploymentException, IOException {
-		this.session = new MyEndpoint(this, onDeadlineDescriptionReceived).deployAt(uri);
+		this.onDeadlineDescriptionReceived = onDeadlineDescriptionReceived;
+		this.session = new MyEndpoint().deployAt(uri);
 	}
 
 	@Override
@@ -46,8 +48,6 @@ public class TestClient extends AbstractWebSocketClient {
 			session.close();
 		}
 		catch (IOException e) {}
-
-		super.close();
 	}
 
 	public void send(Deadline deadline) {
@@ -55,12 +55,6 @@ public class TestClient extends AbstractWebSocketClient {
 	}
 
 	private class MyEndpoint extends AbstractClientEndpoint<TestClient> {
-		private final Consumer<DeadlineDescription> onDeadlineDescriptionReceived;
-
-		private MyEndpoint(TestClient client, Consumer<DeadlineDescription> onDeadlineDescriptionReceived) {
-			super(client);
-			this.onDeadlineDescriptionReceived = onDeadlineDescriptionReceived;
-		}
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, DeadlineDescriptions.Decoder.class, Deadlines.Encoder.class);

@@ -74,7 +74,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	public MinerServiceImpl(Miner miner, URI uri) throws DeploymentException, IOException {
 		this.miner = miner;
 		this.uri = uri;
-		this.session = new MinerServiceEndpoint(this).deployAt(uri);
+		this.session = new MinerServiceEndpoint().deployAt(uri);
 		LOGGER.info("miner service bound to " + uri);
 	}
 
@@ -128,10 +128,6 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	}
 
 	private class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
-
-		private MinerServiceEndpoint(MinerServiceImpl client) {
-			super(client);
-		}
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, DeadlineDescriptions.Decoder.class, Deadlines.Encoder.class);
