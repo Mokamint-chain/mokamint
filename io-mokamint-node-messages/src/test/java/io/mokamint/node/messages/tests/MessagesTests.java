@@ -1,12 +1,14 @@
 package io.mokamint.node.messages.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.LogManager;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.Peers;
+import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
@@ -77,6 +80,32 @@ public class MessagesTests {
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
 		var getBlockResultMessage2 = new GetBlockResultMessages.Decoder().decode(encoded);
 		assertEquals(getBlockResultMessage1, getBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("exception result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForExceptionResult() throws EncodeException, DecodeException {
+		var exceptionResultMessage1 = ExceptionResultMessages.of(NoSuchAlgorithmException.class, "something went wrong");
+		String encoded = new ExceptionResultMessages.Encoder().encode(exceptionResultMessage1);
+		System.out.println(encoded);
+		var exceptionResultMessage2 = new ExceptionResultMessages.Decoder().decode(encoded);
+		assertEquals(exceptionResultMessage1, exceptionResultMessage2);
+	}
+
+	@Test
+	@DisplayName("exception result messages cannot be decoded from Json if the class type is not an exception")
+	public void decodeFailsForExceptionResultIfNotException() {
+		String encoded = "{\"clazz\":\"java.lang.String\",\"message\":\"something went wrong\"}";
+
+		try {
+			new ExceptionResultMessages.Decoder().decode(encoded);
+		}
+		catch (DecodeException e) {
+			if (e.getCause() instanceof ClassCastException)
+				return;
+		}
+
+		fail();
 	}
 
 	static {
