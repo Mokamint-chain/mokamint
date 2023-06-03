@@ -41,6 +41,7 @@ public abstract class GetPeersResultMessageJson implements JsonRepresentation<Ge
 
 	@Override
 	public GetPeersResultMessage unmap() throws URISyntaxException {
-		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(Peers.Json::unmap))));
+		// using Peers.Json::map below leads to a run-time error in the JVM!
+		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap()))));
 	}
 }

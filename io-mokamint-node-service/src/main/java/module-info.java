@@ -34,4 +34,7 @@ module io.mokamint.node.service {
 	requires java.logging;
 
 	// only used for testing
+	requires static io.mokamint.nonce;
+	requires static io.hotmoka.crypto;
+	requires static org.glassfish.tyrus.client;
 }
