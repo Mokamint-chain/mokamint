@@ -19,7 +19,7 @@ package io.mokamint.node.messages;
 /**
  * A network message corresponding to an exception thrown by a method call.
  */
-public interface ExceptionResultMessage extends ResultMessage<Exception> {
+public interface ExceptionResultMessage {
 
 	/**
 	 * Yields the class of the exception.
@@ -32,4 +32,7 @@ public interface ExceptionResultMessage extends ResultMessage<Exception> {
 	 * Yields the message of the exception.
 	 */
 	String getMessage();
+
+	@Override
+	boolean equals(Object obj);
 }

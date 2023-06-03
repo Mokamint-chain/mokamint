@@ -67,10 +67,4 @@ public class ExceptionResultMessageImpl implements ExceptionResultMessage {
 	public String getMessage() {
 		return message;
 	}
-
-	@Override
-	public Exception get() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

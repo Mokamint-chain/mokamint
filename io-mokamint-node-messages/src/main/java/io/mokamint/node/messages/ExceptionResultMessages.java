@@ -40,6 +40,16 @@ public class ExceptionResultMessages {
 	}
 
 	/**
+	 * Yields an {@link ExceptionResultMessage} built from the given exception.
+	 * 
+	 * @param exception the exception
+	 * @return the message
+	 */
+	public static ExceptionResultMessage of(Exception exception) {
+		return new ExceptionResultMessageImpl(exception.getClass(), exception.getMessage());
+	}
+
+	/**
 	 * Gson encoder.
 	 */
 	public static class Encoder extends ExceptionResultMessageEncoder {}

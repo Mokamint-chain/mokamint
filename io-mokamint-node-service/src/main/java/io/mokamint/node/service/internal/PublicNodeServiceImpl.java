@@ -24,6 +24,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -102,7 +103,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash())));
 		}
 		catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
+			sendObjectAsync(session, ExceptionResultMessages.of(e));
 		}
 	};
 
@@ -114,7 +115,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetBlockEndpoint.class, "/get_block", GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class);
+			return simpleConfig(server, GetBlockEndpoint.class, "/get_block", GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 }
