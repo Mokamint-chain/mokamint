@@ -39,11 +39,10 @@ public class ExceptionResultMessageImpl implements ExceptionResultMessage {
 	 * Creates the message.
 	 * 
 	 * @param clazz the class of the exception
-	 * @param message the message of the exception
+	 * @param message the message of the exception; this might be {@code null}
 	 */
 	public ExceptionResultMessageImpl(Class<? extends Exception> clazz, String message) {
 		Objects.requireNonNull(clazz, "clazz");
-		Objects.requireNonNull(message, "message");
 		this.clazz = clazz;
 		this.message = message;
 	}
@@ -52,7 +51,7 @@ public class ExceptionResultMessageImpl implements ExceptionResultMessage {
 	public boolean equals(Object other) {
 		if (other instanceof ExceptionResultMessage) {
 			ExceptionResultMessage oerm = (ExceptionResultMessage) other;
-			return clazz == oerm.getExceptionClass() && message.equals(oerm.getMessage());
+			return clazz == oerm.getExceptionClass() && Objects.equals(message, oerm.getMessage());
 		}
 		else
 			return false;
