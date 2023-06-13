@@ -23,4 +23,11 @@ import io.mokamint.node.messages.GetBlockMessage;
  * An encoder of {@code GetBlockMessage}.
  */
 public class GetBlockMessageEncoder extends BaseEncoder<GetBlockMessage> {
+
+	/**
+	 * Creates the encoder, by adding a type property.
+	 */
+	public GetBlockMessageEncoder() {
+		super(GetBlockMessage.class);
+	}
 }

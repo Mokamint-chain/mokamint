@@ -26,6 +26,6 @@ import io.mokamint.node.messages.GetBlockResultMessages;
 public class GetBlockResultMessageEncoder extends MappedEncoder<GetBlockResultMessage, GetBlockResultMessages.Json> {
 
 	public GetBlockResultMessageEncoder() {
-		super(GetBlockResultMessages.Json::new);
+		super(GetBlockResultMessages.Json::new, GetBlockResultMessage.class);
 	}
 }

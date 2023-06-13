@@ -26,6 +26,6 @@ import io.mokamint.node.messages.ExceptionResultMessages;
 public class ExceptionResultMessageEncoder extends MappedEncoder<ExceptionResultMessage, ExceptionResultMessages.Json> {
 
 	public ExceptionResultMessageEncoder() {
-		super(ExceptionResultMessages.Json::new);
+		super(ExceptionResultMessages.Json::new, ExceptionResultMessage.class);
 	}
 }
