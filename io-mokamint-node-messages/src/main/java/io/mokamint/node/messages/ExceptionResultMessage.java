@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.RpcMessage;
+
 /**
  * A network message corresponding to an exception thrown by a method call.
  */
-public interface ExceptionResultMessage {
+public interface ExceptionResultMessage extends RpcMessage {
 
 	/**
 	 * Yields the class of the exception.
@@ -30,6 +32,8 @@ public interface ExceptionResultMessage {
 
 	/**
 	 * Yields the message of the exception.
+	 * 
+	 * @return the message
 	 */
 	String getMessage();
 

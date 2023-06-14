@@ -36,7 +36,6 @@ import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -127,14 +126,11 @@ public class NodeServiceTests {
 	}
 
 	@Test
-	@Disabled
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
 	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 
-		Consumer<ExceptionResultMessage> onException = received -> {
-			System.out.println("received exception");
-		};
+		Consumer<ExceptionResultMessage> onException = _received -> semaphore.release();
 
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mock(PublicNode.class);

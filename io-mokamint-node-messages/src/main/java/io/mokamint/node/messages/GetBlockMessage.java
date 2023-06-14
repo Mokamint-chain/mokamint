@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.RpcMessage;
+
 /**
  * The network message corresponding to the {@code getBlock} method of a node.
  */
-public interface GetBlockMessage {
+public interface GetBlockMessage extends RpcMessage {
 
 	/**
 	 * Yields the {@code hash} parameter of the method.

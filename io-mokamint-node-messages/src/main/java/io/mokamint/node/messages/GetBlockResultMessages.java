@@ -35,10 +35,11 @@ public class GetBlockResultMessages {
 	 * Yields a {@link GetBlockResultMessage}.
 	 * 
 	 * @param block the block in the result, if any
+	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetBlockResultMessage of(Optional<Block> block) {
-		return new GetBlockResultMessageImpl(block);
+	public static GetBlockResultMessage of(Optional<Block> block, String id) {
+		return new GetBlockResultMessageImpl(block, id);
 	}
 
 	/**

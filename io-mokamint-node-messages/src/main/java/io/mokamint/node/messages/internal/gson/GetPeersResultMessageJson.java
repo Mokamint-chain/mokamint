@@ -23,7 +23,7 @@ import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
 import io.hotmoka.exceptions.UncheckedURISyntaxException;
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
@@ -31,10 +31,12 @@ import io.mokamint.node.messages.GetPeersResultMessages;
 /**
  * The JSON representation of a {@link GetPeersResultMessage}.
  */
-public abstract class GetPeersResultMessageJson implements JsonRepresentation<GetPeersResultMessage> {
+public abstract class GetPeersResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetPeersResultMessage> {
 	private Peers.Json[] peers;
 
 	protected GetPeersResultMessageJson(GetPeersResultMessage message) {
+		super(message);
+
 		var encoder = new Peers.Encoder();
 		this.peers = message.get().map(encoder::map).toArray(Peers.Json[]::new);
 	}
@@ -42,6 +44,6 @@ public abstract class GetPeersResultMessageJson implements JsonRepresentation<Ge
 	@Override
 	public GetPeersResultMessage unmap() throws URISyntaxException {
 		// using Peers.Json::map below leads to a run-time error in the JVM!
-		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap()))));
+		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap())), getId()));
 	}
 }

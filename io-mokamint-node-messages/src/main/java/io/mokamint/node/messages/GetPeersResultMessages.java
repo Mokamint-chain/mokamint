@@ -35,10 +35,11 @@ public class GetPeersResultMessages {
 	 * Yields a {@link GetPeersResultMessage}.
 	 * 
 	 * @param peers the peers in the result
+	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPeersResultMessage of(Stream<Peer> peers) {
-		return new GetPeersResultMessageImpl(peers);
+	public static GetPeersResultMessage of(Stream<Peer> peers, String id) {
+		return new GetPeersResultMessageImpl(peers, id);
 	}
 
 	/**

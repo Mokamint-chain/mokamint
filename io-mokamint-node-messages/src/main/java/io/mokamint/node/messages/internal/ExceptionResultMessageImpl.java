@@ -18,12 +18,13 @@ package io.mokamint.node.messages.internal;
 
 import java.util.Objects;
 
+import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.messages.ExceptionResultMessage;
 
 /**
  * Implementation of the network message corresponding to an exception thrown by a method call.
  */
-public class ExceptionResultMessageImpl implements ExceptionResultMessage {
+public class ExceptionResultMessageImpl extends AbstractRpcMessage implements ExceptionResultMessage {
 
 	/**
 	 * The class of the exception.
@@ -40,8 +41,11 @@ public class ExceptionResultMessageImpl implements ExceptionResultMessage {
 	 * 
 	 * @param clazz the class of the exception
 	 * @param message the message of the exception; this might be {@code null}
+	 * @param id the identifier of the message
 	 */
-	public ExceptionResultMessageImpl(Class<? extends Exception> clazz, String message) {
+	public ExceptionResultMessageImpl(Class<? extends Exception> clazz, String message, String id) {
+		super(ExceptionResultMessage.class.getName(), id);
+
 		Objects.requireNonNull(clazz, "clazz");
 		this.clazz = clazz;
 		this.message = message;

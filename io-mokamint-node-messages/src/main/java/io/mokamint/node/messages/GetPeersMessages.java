@@ -30,10 +30,11 @@ public class GetPeersMessages {
 	/**
 	 * Yields a {@link GetPeersMessage}.
 	 * 
+	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPeersMessage instance() {
-		return new GetPeersMessageImpl();
+	public static GetPeersMessage of(String id) {
+		return new GetPeersMessageImpl(id);
 	}
 
 	/**

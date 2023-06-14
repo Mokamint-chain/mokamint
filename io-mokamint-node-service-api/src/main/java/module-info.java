@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * This module defines the API of a node service, that is, a network server that provides
+ * the API of a Mokamint node.
+ */
 module io.mokamint.node.service.api {
 	exports io.mokamint.node.service.api;
 

@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.RpcMessage;
+
 /**
  * The network message corresponding to the {@code getPeers} method of a node.
  */
-public interface GetPeersMessage {
+public interface GetPeersMessage extends RpcMessage {
 	
 	@Override
 	boolean equals(Object obj);

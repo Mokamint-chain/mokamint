@@ -37,4 +37,5 @@ module io.mokamint.node.service {
 	requires static io.mokamint.nonce;
 	requires static io.hotmoka.crypto;
 	requires static org.glassfish.tyrus.client;
+	requires static io.hotmoka.websockets.beans;
 }

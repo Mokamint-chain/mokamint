@@ -18,5 +18,8 @@ package io.mokamint.node.service.api;
 
 import io.hotmoka.websockets.server.api.WebSocketServer;
 
+/**
+ * A websocket server for the public API of a Mokamint node.
+ */
 public interface PublicNodeService extends WebSocketServer {
 }

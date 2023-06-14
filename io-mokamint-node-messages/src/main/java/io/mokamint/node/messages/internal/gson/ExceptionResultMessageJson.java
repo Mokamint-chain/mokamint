@@ -16,18 +16,20 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.messages.ExceptionResultMessage;
 import io.mokamint.node.messages.ExceptionResultMessages;
 
 /**
  * The JSON representation of an {@link ExceptionResultMessage}.
  */
-public abstract class ExceptionResultMessageJson implements JsonRepresentation<ExceptionResultMessage> {
+public abstract class ExceptionResultMessageJson extends AbstractRpcMessageJsonRepresentation<ExceptionResultMessage> {
 	private String clazz;
 	private String message;
 
 	protected ExceptionResultMessageJson(ExceptionResultMessage message) {
+		super(message);
+
 		this.clazz = message.getExceptionClass().getName();
 		this.message = message.getMessage();
 	}
@@ -39,6 +41,6 @@ public abstract class ExceptionResultMessageJson implements JsonRepresentation<E
 		if (!Exception.class.isAssignableFrom(exceptionClass))
 			throw new ClassCastException(clazz + " is not an Exception");
 
-		return ExceptionResultMessages.of((Class<? extends Exception>) exceptionClass, message);
+		return ExceptionResultMessages.of((Class<? extends Exception>) exceptionClass, message, getId());
 	}
 }

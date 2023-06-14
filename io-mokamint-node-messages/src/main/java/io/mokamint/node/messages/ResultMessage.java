@@ -18,12 +18,14 @@ package io.mokamint.node.messages;
 
 import java.util.function.Supplier;
 
+import io.hotmoka.websockets.beans.RpcMessage;
+
 /**
  * A network message corresponding to the result of method of a node.
  * 
  * @param <T> the type of the result value of the method
  */
-public interface ResultMessage<T> extends Supplier<T> {
+public interface ResultMessage<T> extends Supplier<T>, RpcMessage {
 
 	@Override
 	boolean equals(Object obj);

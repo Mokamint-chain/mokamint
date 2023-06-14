@@ -19,20 +19,24 @@ package io.mokamint.node.messages.internal;
 import java.util.Arrays;
 import java.util.Objects;
 
+import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.messages.GetBlockMessage;
 
 /**
  * Implementation of the network message corresponding to the {@code getBlock} method of a node.
  */
-public class GetBlockMessageImpl implements GetBlockMessage {
+public class GetBlockMessageImpl extends AbstractRpcMessage implements GetBlockMessage {
 	private final byte[] hash;
 
 	/**
 	 * Creates the message.
 	 * 
 	 * @param hash the {@code hash} parameter of the method
+	 * @param id the identifier of the message
 	 */
-	public GetBlockMessageImpl(byte[] hash) {
+	public GetBlockMessageImpl(byte[] hash, String id) {
+		super(GetBlockMessage.class.getName(), id);
+
 		Objects.requireNonNull(hash);
 		this.hash = hash;
 	}

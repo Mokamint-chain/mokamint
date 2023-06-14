@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -27,16 +27,18 @@ import io.mokamint.node.messages.GetBlockResultMessages;
 /**
  * The JSON representation of a {@link GetBlockResultMessage}.
  */
-public abstract class GetBlockResultMessageJson implements JsonRepresentation<GetBlockResultMessage> {
+public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockResultMessage> {
 	private Blocks.Json block;
 
 	protected GetBlockResultMessageJson(GetBlockResultMessage message) {
+		super(message);
+
 		if (message.get().isPresent())
 			this.block = new Blocks.Encoder().map(message.get().get());
 	}
 
 	@Override
 	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException {
-		return GetBlockResultMessages.of(Optional.ofNullable(block == null ? null : block.unmap()));
+		return GetBlockResultMessages.of(Optional.ofNullable(block == null ? null : block.unmap()), getId());
 	}
 }

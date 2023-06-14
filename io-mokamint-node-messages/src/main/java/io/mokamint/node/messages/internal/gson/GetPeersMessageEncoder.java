@@ -25,9 +25,8 @@ import io.mokamint.node.messages.GetPeersMessage;
 public class GetPeersMessageEncoder extends BaseEncoder<GetPeersMessage> {
 	
 	/**
-	 * Creates the encoder, by adding a type property.
+	 * Creates the encoder.
 	 */
 	public GetPeersMessageEncoder() {
-		super(GetPeersMessage.class);
 	}
 }

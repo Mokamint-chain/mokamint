@@ -82,7 +82,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	private void getPeers(GetPeersMessage message, Session session) {
 		LOGGER.info("received a get_peers request");
-		sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers()));
+		sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
 	};
 
 	public static class GetPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -100,10 +100,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private void getBlock(GetBlockMessage message, Session session) {
 		LOGGER.info("received a get_block request");
 		try {
-			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash())));
+			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
 		catch (NoSuchAlgorithmException e) {
-			sendObjectAsync(session, ExceptionResultMessages.of(e));
+			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
 		}
 	};
 

@@ -19,13 +19,14 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.GetBlockResultMessage;
 
 /**
  * Implementation of the network message corresponding to the result of the {@code getBlock} method of a node.
  */
-public class GetBlockResultMessageImpl implements GetBlockResultMessage {
+public class GetBlockResultMessageImpl extends AbstractRpcMessage implements GetBlockResultMessage {
 
 	private final Block block;
 
@@ -33,8 +34,11 @@ public class GetBlockResultMessageImpl implements GetBlockResultMessage {
 	 * Creates the message.
 	 * 
 	 * @param block the block in the message, if any
+	 * @param id the identifier of the message
 	 */
-	public GetBlockResultMessageImpl(Optional<Block> block) {
+	public GetBlockResultMessageImpl(Optional<Block> block, String id) {
+		super(GetBlockResultMessage.class.getName(), id);
+
 		Objects.requireNonNull(block, "block cannot be null");
 		block.map(Objects::requireNonNull);
 		this.block = block.isPresent() ? block.get() : null;

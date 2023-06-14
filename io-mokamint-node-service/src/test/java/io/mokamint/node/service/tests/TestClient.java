@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import io.hotmoka.websockets.beans.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.Block;
@@ -70,11 +71,11 @@ public class TestClient extends AbstractWebSocketClient {
 	}
 
 	public void sendGetPeers() {
-		sendObjectAsync(getPeersSession, GetPeersMessages.instance());
+		sendObjectAsync(getPeersSession, GetPeersMessages.of("id"));
 	}
 
 	public void sendGetBlock(byte[] hash) {
-		sendObjectAsync(getBlockSession, GetBlockMessages.of(hash));
+		sendObjectAsync(getBlockSession, GetBlockMessages.of(hash, "id"));
 	}
 
 	private class GetPeersEndpoint extends AbstractClientEndpoint<TestClient> {
@@ -97,8 +98,12 @@ public class TestClient extends AbstractWebSocketClient {
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetBlockResultMessage message) -> onGetBlockResult.accept(message.get()));
-			addMessageHandler(session, TestClient.this.onException);
+			addMessageHandler(session, (RpcMessage message) -> {
+				if (message instanceof GetBlockResultMessage)
+					onGetBlockResult.accept(((GetBlockResultMessage) message).get());
+				else if (message instanceof ExceptionResultMessage)
+					onException.accept((ExceptionResultMessage) message);
+			});
 		}
 	}
 }

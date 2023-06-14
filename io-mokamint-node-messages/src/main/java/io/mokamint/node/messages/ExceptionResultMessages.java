@@ -33,20 +33,22 @@ public class ExceptionResultMessages {
 	 * 
 	 * @param clazz the class of the exception
 	 * @param message the message of the exception
+	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static ExceptionResultMessage of(Class<? extends Exception> clazz, String message) {
-		return new ExceptionResultMessageImpl(clazz, message);
+	public static ExceptionResultMessage of(Class<? extends Exception> clazz, String message, String id) {
+		return new ExceptionResultMessageImpl(clazz, message, id);
 	}
 
 	/**
 	 * Yields an {@link ExceptionResultMessage} built from the given exception.
 	 * 
 	 * @param exception the exception
+	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static ExceptionResultMessage of(Exception exception) {
-		return new ExceptionResultMessageImpl(exception.getClass(), exception.getMessage());
+	public static ExceptionResultMessage of(Exception exception, String id) {
+		return new ExceptionResultMessageImpl(exception.getClass(), exception.getMessage(), id);
 	}
 
 	/**

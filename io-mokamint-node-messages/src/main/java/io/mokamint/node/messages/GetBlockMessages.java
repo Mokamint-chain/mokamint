@@ -31,10 +31,11 @@ public class GetBlockMessages {
 	 * Yields a {@link GetBlockMessage}.
 	 * 
 	 * @param hash the {@code hash} parameter of the message
+	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetBlockMessage of(byte[] hash) {
-		return new GetBlockMessageImpl(hash);
+	public static GetBlockMessage of(byte[] hash, String id) {
+		return new GetBlockMessageImpl(hash, id);
 	}
 
 	/**

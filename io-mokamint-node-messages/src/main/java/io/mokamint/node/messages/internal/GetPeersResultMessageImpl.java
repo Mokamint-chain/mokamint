@@ -20,13 +20,14 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.GetPeersResultMessage;
 
 /**
  * Implementation of the network message corresponding to the {@code getPeers} method of a node.
  */
-public class GetPeersResultMessageImpl implements GetPeersResultMessage {
+public class GetPeersResultMessageImpl extends AbstractRpcMessage implements GetPeersResultMessage {
 
 	private final Peer[] peers;
 
@@ -34,8 +35,11 @@ public class GetPeersResultMessageImpl implements GetPeersResultMessage {
 	 * Creates the message.
 	 * 
 	 * @param peers the peers in the message
+	 * @param id the identifier of the message
 	 */
-	public GetPeersResultMessageImpl(Stream<Peer> peers) {
+	public GetPeersResultMessageImpl(Stream<Peer> peers, String id) {
+		super(GetPeersResultMessage.class.getName(), id);
+
 		this.peers = peers
 			.map(Objects::requireNonNull)
 			.toArray(Peer[]::new);

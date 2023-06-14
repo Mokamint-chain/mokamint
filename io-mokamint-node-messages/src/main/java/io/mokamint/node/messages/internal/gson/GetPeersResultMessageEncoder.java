@@ -26,6 +26,6 @@ import io.mokamint.node.messages.GetPeersResultMessages;
 public class GetPeersResultMessageEncoder extends MappedEncoder<GetPeersResultMessage, GetPeersResultMessages.Json> {
 
 	public GetPeersResultMessageEncoder() {
-		super(GetPeersResultMessages.Json::new, GetPeersResultMessage.class);
+		super(GetPeersResultMessages.Json::new);
 	}
 }
