@@ -43,9 +43,12 @@ public class TestServer extends AbstractWebSocketServer {
 
 	public TestServer(int port, Consumer<Deadline> onDeadlineReceived) throws DeploymentException, IOException {
 		this.onDeadlineReceived = onDeadlineReceived;
-    	var container = getContainer();
-    	container.addEndpoint(MyEndpoint.config(this));
-    	container.start("", port);
+		startContainer("", port, MyEndpoint.config(this));
+	}
+
+	@Override
+	public void close() {
+		stopContainer();
 	}
 
 	public void requestDeadline(DeadlineDescription description) throws TimeoutException, InterruptedException {

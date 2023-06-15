@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.io.IOException;
+
 import io.hotmoka.annotations.ThreadSafe;
 
 /**
@@ -38,4 +40,13 @@ public interface RestrictedNode extends AutoCloseable {
 	 * @param peer the peer to remove
 	 */
 	void removePeer(Peer peer);
+
+	/**
+	 * Closes the node.
+	 * 
+	 * @throws IOException if an I/O error occurred
+	 * @throws InterruptedException if some closing activity has been interrupted
+	 */
+	@Override
+	void close() throws IOException, InterruptedException;
 }

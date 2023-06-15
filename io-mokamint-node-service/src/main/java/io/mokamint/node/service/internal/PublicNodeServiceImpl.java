@@ -67,16 +67,13 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	public PublicNodeServiceImpl(PublicNode node, int port) throws DeploymentException, IOException {
 		this.port = port;
 		this.node = node;
-    	var container = getContainer();
-    	container.addEndpoint(GetPeersEndpoint.config(this));
-    	container.addEndpoint(GetBlockEndpoint.config(this));
-    	container.start("", port);
+		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this));
     	LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
 	@Override
 	public void close() {
-		super.close();
+		stopContainer();
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
 	}
 

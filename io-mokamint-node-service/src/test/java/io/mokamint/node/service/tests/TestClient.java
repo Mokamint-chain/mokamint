@@ -58,16 +58,16 @@ public class TestClient extends AbstractWebSocketClient {
 	}
 
 	@Override
-	public void close() {
+	public void close() throws IOException {
 		try {
 			getPeersSession.close();
 		}
-		catch (IOException e) {}
-
-		try {
+		catch (IOException e) {
 			getBlockSession.close();
+			throw e;
 		}
-		catch (IOException e) {}
+
+		getBlockSession.close();
 	}
 
 	public void sendGetPeers() {

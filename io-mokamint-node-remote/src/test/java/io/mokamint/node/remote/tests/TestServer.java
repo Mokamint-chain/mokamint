@@ -48,11 +48,12 @@ public class TestServer extends AbstractWebSocketServer {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public TestServer(int port) throws DeploymentException, IOException {
-    	var container = getContainer();
-    	container.addEndpoint(GetPeersEndpoint.config(this));
-    	container.addEndpoint(GetBlockEndpoint.config(this));
-    	container.start("", port);
+		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this));
 	}
+
+	public void close() {
+		stopContainer();
+	};
 
 	protected void onGetPeers(GetPeersMessage message, Session session) {}
 

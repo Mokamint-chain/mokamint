@@ -83,24 +83,23 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		latch.await();
 	}
 
-	/**
-	 * The endpoint calls this when it gets closed, to wake-up who was waiting for disconnection.
-	 */
-	void disconnect() {
-		latch.countDown();
-	}
-
 	@Override
-	public void close() {
+	public void close() throws IOException {
 		try {
 			session.close();
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.WARNING, "cannot close the session", e);
 			disconnect();
+			throw e;
 		}
+	}
 
-		super.close();
+	/**
+	 * The endpoint calls this when it gets closed, to wake-up who was waiting for disconnection.
+	 */
+	private void disconnect() {
+		latch.countDown();
 	}
 
 	/**

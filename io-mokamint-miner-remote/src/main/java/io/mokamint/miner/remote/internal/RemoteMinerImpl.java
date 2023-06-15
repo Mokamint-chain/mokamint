@@ -52,9 +52,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	public RemoteMinerImpl(int port) throws DeploymentException, IOException {
 		this.port = port;
-    	var container = getContainer();
-    	container.addEndpoint(RemoteMinerEndpoint.config(this));
-    	container.start("", port);
+		startContainer("", port, RemoteMinerEndpoint.config(this));
     	LOGGER.info("published a remote miner at ws://localhost:" + port);
 	}
 
@@ -77,7 +75,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	@Override
 	public void close() {
-		super.close();
+		stopContainer();
 		LOGGER.info("closed the remote miner at ws://localhost:" + port);
 	}
 

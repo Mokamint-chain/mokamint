@@ -22,4 +22,7 @@ import io.hotmoka.websockets.server.api.WebSocketServer;
  * A websocket server for the restricted API of a Mokamint node.
  */
 public interface RestrictedNodeService extends WebSocketServer {
+	
+	@Override
+	void close();
 }

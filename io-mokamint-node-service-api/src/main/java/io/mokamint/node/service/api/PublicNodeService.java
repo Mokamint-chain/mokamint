@@ -32,4 +32,7 @@ public interface PublicNodeService extends WebSocketServer {
 	 * The network endpoint path where the {@code getBlock()} method is published.
 	 */
 	String GET_BLOCK_ENDPOINT = "/get_block";
+
+	@Override
+	void close();
 }

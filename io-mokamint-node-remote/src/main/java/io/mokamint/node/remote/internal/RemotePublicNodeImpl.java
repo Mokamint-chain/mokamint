@@ -79,12 +79,15 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	}
 
 	@Override
-	public void close() {
+	public void close() throws IOException {
+		IOException exception = null;
+
 		try {
 			getPeersSession.close();
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.WARNING, "cannot close the getPeers session", e);
+			exception = e;
 		}
 
 		try {
@@ -92,7 +95,11 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.WARNING, "cannot close the getBlock session", e);
+			exception = e;
 		}
+
+		if (exception != null)
+			throw exception;
 	}
 
 	private String nextId() {

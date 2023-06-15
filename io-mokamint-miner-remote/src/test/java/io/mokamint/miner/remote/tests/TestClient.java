@@ -43,11 +43,8 @@ public class TestClient extends AbstractWebSocketClient {
 	}
 
 	@Override
-	public void close() {
-		try {
-			session.close();
-		}
-		catch (IOException e) {}
+	public void close() throws IOException {
+		session.close();
 	}
 
 	public void send(Deadline deadline) {

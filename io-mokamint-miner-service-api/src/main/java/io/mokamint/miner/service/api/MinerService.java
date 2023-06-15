@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.miner.service.api;
 
+import java.io.IOException;
+
 import io.hotmoka.websockets.client.api.WebSocketClient;
 
 /**
@@ -31,4 +33,12 @@ public interface MinerService extends WebSocketClient {
 	 * @throws InterruptedException if the thread has been interrupted while waiting
 	 */
 	void waitUntilDisconnected() throws InterruptedException;
+
+	/**
+	 * Closes the service.
+	 * 
+	 * @throws IOException if some I/O error occurred
+	 */
+	@Override
+	void close() throws IOException;
 }
