@@ -19,23 +19,26 @@ package io.mokamint.node.remote;
 import java.io.IOException;
 import java.net.URI;
 
-import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import jakarta.websocket.DeploymentException;
 
+/**
+ * Providers of remote public nodes. They present a programmatic interface
+ * to a network service for a public node.
+ */
 public abstract class RemotePublicNodes {
 
 	private RemotePublicNodes() {}
 
 	/**
-	 * Opens and yields a new remote node for the public API.
+	 * Opens and yields a new public remote node for the public API of a network service.
 	 * 
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @return the new remote node
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static PublicNode of(URI uri) throws DeploymentException, IOException {
+	public static RemotePublicNode of(URI uri) throws DeploymentException, IOException {
 		return new RemotePublicNodeImpl(uri);
 	}
 }

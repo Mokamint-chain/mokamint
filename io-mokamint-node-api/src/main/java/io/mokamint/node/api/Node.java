@@ -16,8 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import io.hotmoka.annotations.ThreadSafe;
+
 /**
  * A node of a Mokamint blockchain. Its API is split into a public and a restricted part.
  */
-public interface Node extends PublicNode, RestrictedNode, AutoCloseable {
+@ThreadSafe
+public interface Node extends PublicNode, RestrictedNode {
 }

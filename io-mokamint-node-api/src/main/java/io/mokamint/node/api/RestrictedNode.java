@@ -16,11 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import io.hotmoka.annotations.ThreadSafe;
+
 /**
  * The restricted interface of a node of a Mokamint blockchain.
  * Typically, this API can be called from the local machine only.
  */
-public interface RestrictedNode {
+@ThreadSafe
+public interface RestrictedNode extends AutoCloseable {
 
 	/**
 	 * Adds the given peer to the set of peers of this node.

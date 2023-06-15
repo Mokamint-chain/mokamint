@@ -18,9 +18,12 @@ package io.mokamint.node.api;
 
 import java.time.LocalDateTime;
 
+import io.hotmoka.annotations.Immutable;
+
 /**
  * The genesis block of a Mokamint blockchain.
  */
+@Immutable
 public interface GenesisBlock extends Block {
 
 	/**

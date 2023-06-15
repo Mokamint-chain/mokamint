@@ -14,21 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local;
+package io.mokamint.node.remote;
 
-import io.mokamint.node.api.Node;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * A local node of a Mokamint blockchain.
+ * A remote public node of a Mokamint blockchain.
  */
-public interface LocalNode extends Node {
+public interface RemotePublicNode extends PublicNode {
 
 	/**
 	 * Closes the node.
-	 * 
-	 * @throws InterruptedException if the thread was interrupted while waiting
-	 *                              for its executors to shut down
 	 */
 	@Override
-	void close() throws InterruptedException;
+	void close();
 }

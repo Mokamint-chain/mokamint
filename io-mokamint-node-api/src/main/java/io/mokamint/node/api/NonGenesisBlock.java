@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * A non-genesis block of the Mokamint blockchain.
  */
+@Immutable
 public interface NonGenesisBlock extends Block {
 
 	/**

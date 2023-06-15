@@ -22,8 +22,14 @@ module io.mokamint.node.remote {
 
 	requires transitive io.mokamint.node.api;
 	requires transitive jakarta.websocket.client;
+	requires io.mokamint.node.service.api;
 	requires io.mokamint.node.messages;
 	requires io.hotmoka.websockets.client;
 	requires io.hotmoka.websockets.beans;
 	requires java.logging;
+
+	// only needed for testing
+	requires static jakarta.websocket;
+	requires static org.glassfish.tyrus.spi;
+	requires static io.mokamint.node;
 }

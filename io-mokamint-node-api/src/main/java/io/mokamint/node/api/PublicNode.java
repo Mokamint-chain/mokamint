@@ -20,11 +20,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.ThreadSafe;
+
 /**
  * The public interface of a node of a Mokamint blockchain.
  * Typically, this API can be called from every machine.
  */
-public interface PublicNode {
+@ThreadSafe
+public interface PublicNode extends AutoCloseable {
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.

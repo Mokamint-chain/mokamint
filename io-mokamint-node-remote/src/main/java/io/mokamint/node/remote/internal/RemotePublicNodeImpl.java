@@ -32,12 +32,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionResultMessage;
 import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -46,12 +46,18 @@ import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.remote.RemotePublicNode;
+import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
-public class RemotePublicNodeImpl extends AbstractWebSocketClient implements PublicNode {
-
+/**
+ * An implementation of a remote node that presents a programmatic interface
+ * to a service for a Mokamint node.
+ */
+@ThreadSafe
+public class RemotePublicNodeImpl extends AbstractWebSocketClient implements RemotePublicNode {
 	private final Session getPeersSession;
 	private final Session getBlockSession;
 	private final AtomicInteger nextId = new AtomicInteger(0);
@@ -68,8 +74,8 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemotePublicNodeImpl(URI uri) throws DeploymentException, IOException {
-		this.getPeersSession = new GetPeersEndpoint().deployAt(uri.resolve("/get_peers"));
-		this.getBlockSession = new GetBlockEndpoint().deployAt(uri.resolve("/get_block"));
+		this.getPeersSession = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
+		this.getBlockSession = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
 	}
 
 	@Override
@@ -77,12 +83,16 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 		try {
 			getPeersSession.close();
 		}
-		catch (IOException e) {}
+		catch (IOException e) {
+			LOGGER.log(Level.WARNING, "cannot close the getPeers session", e);
+		}
 
 		try {
 			getBlockSession.close();
 		}
-		catch (IOException e) {}
+		catch (IOException e) {
+			LOGGER.log(Level.WARNING, "cannot close the getBlock session", e);
+		}
 	}
 
 	private String nextId() {
@@ -102,8 +112,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 			throw e;
 		}
 		catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw unexpectedException(e);
 		}
 	}
 
@@ -118,7 +127,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 	@Override
 	public Stream<Peer> getPeers() {
 		var id = nextId();
-		sendObjectAsync(getPeersSession, GetPeersMessages.of("id"));
+		sendObjectAsync(getPeersSession, GetPeersMessages.of(id));
 		try {
 			return waitForResult(id, this::processGetPeersSuccess, this::processGetPeersException);
 		}
@@ -126,8 +135,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 			throw e;
 		}
 		catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw unexpectedException(e);
 		}
 	}
 
@@ -200,6 +208,11 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 			else
 				LOGGER.log(Level.SEVERE, "received a message of type " + message.getClass().getName() + " but its id " + message.getId() + " has no corresponding waiting queue");
 		}
+	}
+
+	private static RuntimeException unexpectedException(Exception e) {
+		LOGGER.log(Level.SEVERE, "unexpected exception", e);
+		return new RuntimeException("unexpected exception", e);
 	}
 
 	private abstract class Endpoint extends AbstractClientEndpoint<RemotePublicNodeImpl> {

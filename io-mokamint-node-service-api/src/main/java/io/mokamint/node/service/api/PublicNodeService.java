@@ -22,4 +22,14 @@ import io.hotmoka.websockets.server.api.WebSocketServer;
  * A websocket server for the public API of a Mokamint node.
  */
 public interface PublicNodeService extends WebSocketServer {
+	
+	/**
+	 * The network endpoint path where the {@code getPeers()} method is published.
+	 */
+	String GET_PEERS_ENDPOINT = "/get_peers";
+
+	/**
+	 * The network endpoint path where the {@code getBlock()} method is published.
+	 */
+	String GET_BLOCK_ENDPOINT = "/get_block";
 }

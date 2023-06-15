@@ -93,7 +93,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetPeersEndpoint.class, "/get_peers", GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class);
+			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT, GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class);
 		}
 	}
 
@@ -115,7 +115,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetBlockEndpoint.class, "/get_block", GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT, GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 }

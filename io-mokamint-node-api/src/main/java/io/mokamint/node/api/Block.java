@@ -18,6 +18,7 @@ package io.mokamint.node.api;
 
 import java.math.BigInteger;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -25,6 +26,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * A block of the Mokamint blockchain.
  */
+@Immutable
 public interface Block extends Marshallable {
 
 	/**
