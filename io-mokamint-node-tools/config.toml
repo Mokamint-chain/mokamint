@@ -43,3 +43,6 @@ peer_initial_points = 1000
 
 # the points that a peer loses as punishment for not answering a ping
 peer_punishment_for_unreachable = 1
+
+# the time (in milliseconds) for communications to the peers
+peer_timeout = 10000

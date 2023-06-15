@@ -36,7 +36,9 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class RemotePublicNodeTests {
-	
+
+	private final static long TIME_OUT = 500L;
+
 	@Test
 	@DisplayName("getPeers() works")
 	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
@@ -54,7 +56,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			var peers2 = remote.getPeers();
 			assertArrayEquals(peers1, peers2.toArray(Peer[]::new));
 		}
@@ -77,7 +79,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			var exception = assertThrows(TimeoutException.class, () -> remote.getPeers());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
@@ -100,7 +102,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			var exception = assertThrows(InterruptedException.class, () -> remote.getPeers());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
@@ -128,7 +130,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			assertThrows(TimeoutException.class, () -> remote.getPeers());
 		}
 	}
@@ -154,7 +156,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			var block2 = remote.getBlock(hash);
 			assertEquals(block1, block2.get());
 		}
@@ -178,7 +180,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			var block = remote.getBlock(hash);
 			assertTrue(block.isEmpty());
 		}
@@ -203,7 +205,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getBlock(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}

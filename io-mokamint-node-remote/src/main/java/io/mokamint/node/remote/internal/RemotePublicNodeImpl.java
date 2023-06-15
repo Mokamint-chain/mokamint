@@ -59,6 +59,7 @@ import jakarta.websocket.Session;
  */
 @ThreadSafe
 public class RemotePublicNodeImpl extends AbstractWebSocketClient implements RemotePublicNode {
+	private final long timeout;
 	private final Session[] sessions = new Session[2];
 	private final AtomicInteger nextId = new AtomicInteger();
 	private final ConcurrentMap<String, BlockingQueue<RpcMessage>> queues = new ConcurrentHashMap<>();
@@ -69,11 +70,14 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	 * Opens and yields a new remote node for the public API.
 	 * 
 	 * @param uri the URI of the network service that gets bound to the remote node
+	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
+	 *                beyond that threshold, a time-out exception is thrown
 	 * @return the new remote node
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public RemotePublicNodeImpl(URI uri) throws DeploymentException, IOException {
+	public RemotePublicNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
+		this.timeout = timeout;
 		sessions[0] = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
 		sessions[1] = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
 	}
@@ -154,12 +158,11 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	}
 
 	private <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionResultMessage> processException) throws Exception {
-		final long waitingTime = 1000L;
 		final long startTime = System.currentTimeMillis();
 
 		do {
 			try {
-				RpcMessage message = queues.get(id).poll(waitingTime - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
+				RpcMessage message = queues.get(id).poll(timeout - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
 				if (message == null) {
 					queues.remove(id);
 					throw new TimeoutException();
@@ -198,7 +201,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 				throw e;
 			}
 		}
-		while (System.currentTimeMillis() - startTime < waitingTime);
+		while (System.currentTimeMillis() - startTime < timeout);
 
 		queues.remove(id);
 		throw new TimeoutException();

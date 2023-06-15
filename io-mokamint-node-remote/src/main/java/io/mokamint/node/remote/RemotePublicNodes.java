@@ -34,11 +34,13 @@ public abstract class RemotePublicNodes {
 	 * Opens and yields a new public remote node for the public API of a network service.
 	 * 
 	 * @param uri the URI of the network service that gets bound to the remote node
+	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
+	 *                beyond that threshold, a time-out exception is thrown
 	 * @return the new remote node
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemotePublicNode of(URI uri) throws DeploymentException, IOException {
-		return new RemotePublicNodeImpl(uri);
+	public static RemotePublicNode of(URI uri, long timeout) throws DeploymentException, IOException {
+		return new RemotePublicNodeImpl(uri, timeout);
 	}
 }

@@ -129,6 +129,12 @@ public class Config {
 	public final long peerPunishmentForUnreachable;
 
 	/**
+	 * The time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request time-outs.
+	 * It defaulst to 10,000 (ie, 10 seconds).
+	 */
+	public final long peerTimeout;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 */
 	private Config(Builder builder) {
@@ -144,6 +150,7 @@ public class Config {
 		this.seeds = builder.seeds;
 		this.peerInitialPoints = builder.peerInitialPoints;
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
+		this.peerTimeout = builder.peerTimeout;
 	}
 
 	@Override
@@ -204,6 +211,9 @@ public class Config {
 		sb.append("\n");
 		sb.append("# the points that a peer loses as punishment for not answering a ping\n");
 		sb.append("peer_punishment_for_unreachable = " + peerPunishmentForUnreachable + "\n");
+		sb.append("\n");
+		sb.append("# the time (in milliseconds) for communications to the peers\n");
+		sb.append("peer_timeout = " + peerTimeout + "\n");
 
 		return sb.toString();
 	}
@@ -224,6 +234,7 @@ public class Config {
 		private final Set<URI> seeds = new HashSet<>();
 		private long peerInitialPoints = 1000L;
 		private long peerPunishmentForUnreachable = 1L;
+		private long peerTimeout = 10000L;
 
 		private Builder() throws NoSuchAlgorithmException {
 			setHashingForDeadlines("shabal256");
@@ -317,6 +328,10 @@ public class Config {
 			var peerPunishmentForUnreachable = toml.getLong("peer_punishment_for_unreachable");
 			if (peerPunishmentForUnreachable != null)
 				builder.setPeerPunishmentForUnreachable(peerPunishmentForUnreachable);
+
+			var peerTimeout = toml.getLong("peer_timeout");
+			if (peerTimeout != null)
+				builder.setPeerTimeout(peerTimeout);
 
 			return builder;
 		}
@@ -468,6 +483,18 @@ public class Config {
 		 */
 		public Builder setPeerPunishmentForUnreachable(long peerPunishmentForUnreachable) {
 			this.peerPunishmentForUnreachable = peerPunishmentForUnreachable;
+			return this;
+		}
+
+		/**
+		 * Sets the time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request time-outs.
+		 * It defaults to 10,000 (ie, 10 seconds).
+		 * 
+		 * @param peerTimeout the timeout
+		 * @return this builder
+		 */
+		public Builder setPeerTimeout(long peerTimeout) {
+			this.peerTimeout = peerTimeout;
 			return this;
 		}
 
