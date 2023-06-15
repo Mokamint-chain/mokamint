@@ -20,6 +20,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -45,6 +54,8 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 
 	private final Session getPeersSession;
 	private final Session getBlockSession;
+	private final AtomicInteger nextId = new AtomicInteger(0);
+	private final ConcurrentMap<String, BlockingQueue<RpcMessage>> queues = new ConcurrentHashMap<>();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
@@ -74,48 +85,142 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Pub
 		catch (IOException e) {}
 	}
 
+	private String nextId() {
+		String id = String.valueOf(nextId.getAndIncrement());
+		queues.put(id, new ArrayBlockingQueue<>(10));
+		return id;
+	}
+
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException {
-		sendObjectAsync(getBlockSession, GetBlockMessages.of(hash, "id"));
-		return Optional.empty();
+		var id = nextId();
+		sendObjectAsync(getBlockSession, GetBlockMessages.of(hash, id));
+		try {
+			return waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
+		}
+		catch (RuntimeException | NoSuchAlgorithmException e) { // TODO
+			throw e;
+		}
+		catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
+		}
+	}
+
+	private Optional<Block> processGetBlockSuccess(RpcMessage message) {
+		return message instanceof GetBlockResultMessage ? ((GetBlockResultMessage) message).get() : null;
+	}
+
+	private boolean processGetBlockException(ExceptionResultMessage message) {
+		return NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass());
 	}
 
 	@Override
 	public Stream<Peer> getPeers() {
+		var id = nextId();
 		sendObjectAsync(getPeersSession, GetPeersMessages.of("id"));
-		return null;
+		try {
+			return waitForResult(id, this::processGetPeersSuccess, this::processGetPeersException);
+		}
+		catch (RuntimeException e) { // TODO
+			throw e;
+		}
+		catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
+		}
 	}
 
-	private class GetPeersEndpoint extends AbstractClientEndpoint<RemotePublicNodeImpl> {
+	private Stream<Peer> processGetPeersSuccess(RpcMessage message) {
+		return message instanceof GetPeersResultMessage ? ((GetPeersResultMessage) message).get() : null;
+	}
+
+	private boolean processGetPeersException(ExceptionResultMessage message) {
+		return false;
+	}
+
+	private <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionResultMessage> processException) throws Exception {
+		final long waitingTime = 1000L;
+		final long startTime = System.currentTimeMillis();
+
+		do {
+			try {
+				RpcMessage message = queues.get(id).poll(waitingTime - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
+				if (message == null) {
+					queues.remove(id);
+					throw new RuntimeException("time-out");
+				}
+
+				var result = processSuccess.apply(message);
+				if (result != null) {
+					queues.remove(id);
+					return result;
+				}
+
+				if (message instanceof ExceptionResultMessage) {
+					var erm = (ExceptionResultMessage) message;
+
+					if (processException.test(erm)) {
+						queues.remove(id);
+						Exception exc;
+						try {
+							exc = erm.getExceptionClass().getConstructor(String.class).newInstance(erm.getMessage());
+						}
+						catch (Exception e) {
+							LOGGER.log(Level.SEVERE, "cannot instantiate the exception type", e);
+							continue;
+						}
+
+						throw exc;
+					}
+
+					LOGGER.warning("received unexpected exception of type " + ((ExceptionResultMessage) message).getExceptionClass().getName());
+				}
+				else
+					LOGGER.warning("received unexpected message of type " + message.getClass().getName());
+			}
+			catch (InterruptedException e) {
+				queues.remove(id);
+				throw new RuntimeException(e);
+			}
+		}
+		while (System.currentTimeMillis() - startTime < waitingTime);
+
+		queues.remove(id);
+		throw new RuntimeException("time-out");
+	}
+
+	private void notifyResult(RpcMessage message) {
+		if (message != null) {
+			var queue = queues.get(message.getId());
+			if (queue != null) {
+				if (!queue.offer(message))
+					LOGGER.log(Level.SEVERE, "could not enqueue a message since the queue was full");
+			}
+			else
+				LOGGER.log(Level.SEVERE, "received a message of type " + message.getClass().getName() + " but its id " + message.getId() + " has no corresponding waiting queue");
+		}
+	}
+
+	private abstract class Endpoint extends AbstractClientEndpoint<RemotePublicNodeImpl> {
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, RemotePublicNodeImpl.this::notifyResult);
+		}
+	}
+
+	private class GetPeersEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetPeersResultMessages.Decoder.class, GetPeersMessages.Encoder.class);
 		}
-
-		@Override
-		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetPeersResultMessage message) -> message.get());
-		}
 	}
 
-	private class GetBlockEndpoint extends AbstractClientEndpoint<RemotePublicNodeImpl> {
+	private class GetBlockEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
-		}
-
-		@Override
-		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (RpcMessage message) -> {
-				if (message instanceof GetBlockResultMessage)
-					((GetBlockResultMessage) message).get();
-				else if (message instanceof ExceptionResultMessage)
-					{} //onException.accept((ExceptionResultMessage) message);
-				else if (message == null)
-					LOGGER.warning("received unexpected null message");
-				else
-					LOGGER.warning("received unexpected message of class " + message.getClass().getName());
-			});
 		}
 	}
 }
