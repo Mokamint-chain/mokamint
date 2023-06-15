@@ -136,6 +136,46 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
+	@DisplayName("getPeers() ignores unexpected exceptions")
+	public void getPeersWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetPeers(GetPeersMessage message, Session session) {
+				sendObjectAsync(session, ExceptionResultMessages.of(new IllegalArgumentException(), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.getPeers());
+		}
+	}
+
+	@Test
+	@DisplayName("getPeers() ignores unexpected messages")
+	public void getPeersWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetPeers(GetPeersMessage message, Session session) {
+				sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.getPeers());
+		}
+	}
+
+	@Test
 	@DisplayName("getBlock() works if the block exists")
 	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
