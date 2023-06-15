@@ -25,6 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -58,9 +59,8 @@ import jakarta.websocket.Session;
  */
 @ThreadSafe
 public class RemotePublicNodeImpl extends AbstractWebSocketClient implements RemotePublicNode {
-	private final Session getPeersSession;
-	private final Session getBlockSession;
-	private final AtomicInteger nextId = new AtomicInteger(0);
+	private final Session[] sessions = new Session[2];
+	private final AtomicInteger nextId = new AtomicInteger();
 	private final ConcurrentMap<String, BlockingQueue<RpcMessage>> queues = new ConcurrentHashMap<>();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
@@ -74,32 +74,27 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemotePublicNodeImpl(URI uri) throws DeploymentException, IOException {
-		this.getPeersSession = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
-		this.getBlockSession = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
+		sessions[0] = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
+		sessions[1] = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
 	}
 
 	@Override
 	public void close() throws IOException {
 		IOException exception = null;
 
-		try {
-			getPeersSession.close();
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.WARNING, "cannot close the getPeers session", e);
-			exception = e;
-		}
-
-		try {
-			getBlockSession.close();
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.WARNING, "cannot close the getBlock session", e);
-			exception = e;
+		for (var session: sessions) {
+			try {
+				session.close();
+			}
+			catch (IOException e) {
+				exception = e;
+			}
 		}
 
-		if (exception != null)
+		if (exception != null) {
+			LOGGER.log(Level.WARNING, "cannot close the sessions", exception);
 			throw exception;
+		}
 	}
 
 	private String nextId() {
@@ -109,36 +104,13 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException {
+	public Stream<Peer> getPeers() throws TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(getBlockSession, GetBlockMessages.of(hash, id));
-		try {
-			return waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
-		}
-		catch (RuntimeException | NoSuchAlgorithmException e) { // TODO
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
-	}
-
-	private Optional<Block> processGetBlockSuccess(RpcMessage message) {
-		return message instanceof GetBlockResultMessage ? ((GetBlockResultMessage) message).get() : null;
-	}
-
-	private boolean processGetBlockException(ExceptionResultMessage message) {
-		return NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass());
-	}
-
-	@Override
-	public Stream<Peer> getPeers() {
-		var id = nextId();
-		sendObjectAsync(getPeersSession, GetPeersMessages.of(id));
+		sendObjectAsync(sessions[0], GetPeersMessages.of(id));
 		try {
 			return waitForResult(id, this::processGetPeersSuccess, this::processGetPeersException);
 		}
-		catch (RuntimeException e) { // TODO
+		catch (RuntimeException | TimeoutException | InterruptedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -151,7 +123,34 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	}
 
 	private boolean processGetPeersException(ExceptionResultMessage message) {
-		return false;
+		var clazz = message.getExceptionClass();
+		return TimeoutException.class.isAssignableFrom(clazz) || InterruptedException.class.isAssignableFrom(clazz);
+	}
+
+	@Override
+	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException {
+		var id = nextId();
+		sendObjectAsync(sessions[1], GetBlockMessages.of(hash, id));
+		try {
+			return waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
+		}
+		catch (RuntimeException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private Optional<Block> processGetBlockSuccess(RpcMessage message) {
+		return message instanceof GetBlockResultMessage ? ((GetBlockResultMessage) message).get() : null;
+	}
+
+	private boolean processGetBlockException(ExceptionResultMessage message) {
+		var clazz = message.getExceptionClass();
+		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
+			TimeoutException.class.isAssignableFrom(clazz) ||
+			InterruptedException.class.isAssignableFrom(clazz);
 	}
 
 	private <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionResultMessage> processException) throws Exception {
@@ -163,7 +162,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 				RpcMessage message = queues.get(id).poll(waitingTime - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
 				if (message == null) {
 					queues.remove(id);
-					throw new RuntimeException("time-out");
+					throw new TimeoutException();
 				}
 
 				var result = processSuccess.apply(message);
@@ -196,13 +195,13 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 			}
 			catch (InterruptedException e) {
 				queues.remove(id);
-				throw new RuntimeException(e);
+				throw e;
 			}
 		}
 		while (System.currentTimeMillis() - startTime < waitingTime);
 
 		queues.remove(id);
-		throw new RuntimeException("time-out");
+		throw new TimeoutException();
 	}
 
 	private void notifyResult(RpcMessage message) {
@@ -233,7 +232,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	private class GetPeersEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetPeersResultMessages.Decoder.class, GetPeersMessages.Encoder.class);
+			return deployAt(uri, GetPeersResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetPeersMessages.Encoder.class);
 		}
 	}
 

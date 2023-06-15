@@ -19,6 +19,7 @@ package io.mokamint.node.api;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -36,8 +37,10 @@ public interface PublicNode extends AutoCloseable {
 	 * @param hash the hash of the block
 	 * @return the block, if any
 	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException;
+	Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the peers this node is connected to. There can be zero or more peers
@@ -45,8 +48,10 @@ public interface PublicNode extends AutoCloseable {
 	 * active and/or reachable.
 	 * 
 	 * @return the peers
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	Stream<Peer> getPeers();
+	Stream<Peer> getPeers() throws TimeoutException, InterruptedException;
 
 	/**
 	 * Closes the node.

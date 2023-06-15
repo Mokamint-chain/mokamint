@@ -31,6 +31,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -92,7 +93,7 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("seeds are used as peers")
-	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException {
+	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException {
 		URI uri1 = new URI("ws://www.mokamint.io:8029");
 		URI uri2 = new URI("ws://www.mokamint.io:8030");
 
@@ -110,7 +111,7 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("if a peer is added to a node, it is saved into the database and it is used at next start-up")
-	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
+	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		Peer peer1 = Peers.of(new URI("ws://www.mokamint.io:8029"));
 		Peer peer2 = Peers.of(new URI("ws://www.mokamint.io:8030"));
 
@@ -130,7 +131,7 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at next start-up")
-	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
+	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		URI uri1 = new URI("ws://www.mokamint.io:8029");
 		URI uri2 = new URI("ws://www.mokamint.io:8030");
 

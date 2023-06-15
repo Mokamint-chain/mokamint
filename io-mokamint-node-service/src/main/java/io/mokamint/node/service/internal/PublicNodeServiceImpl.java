@@ -18,6 +18,7 @@ package io.mokamint.node.service.internal;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -79,7 +80,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	private void getPeers(GetPeersMessage message, Session session) {
 		LOGGER.info("received a get_peers request");
-		sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
+		try {
+			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
+		}
+		catch (TimeoutException | InterruptedException e) {
+			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+		}
 	};
 
 	public static class GetPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -90,7 +96,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT, GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class);
+			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT, GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 
@@ -99,7 +105,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		try {
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
-		catch (NoSuchAlgorithmException e) {
+		catch (NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
 			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
 		}
 	};

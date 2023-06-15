@@ -66,7 +66,7 @@ public class TestServer extends AbstractWebSocketServer {
 
 		private static ServerEndpointConfig config(TestServer server) {
 			return simpleConfig(server, GetPeersEndpoint.class, PublicNodeService.GET_PEERS_ENDPOINT,
-					GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class);
+					GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 

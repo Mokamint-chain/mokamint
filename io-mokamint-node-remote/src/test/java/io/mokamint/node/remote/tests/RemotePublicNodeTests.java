@@ -13,6 +13,7 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
@@ -38,7 +39,7 @@ public class RemotePublicNodeTests {
 	
 	@Test
 	@DisplayName("getPeers() works")
-	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException {
+	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
 
 		class MyServer extends TestServer {
@@ -60,8 +61,81 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
+	@DisplayName("getPeers() works if it throws TimeoutException")
+	public void getPeersWorksInCaseOfTimeoutException() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+		var exceptionMessage = "time-out";
+
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetPeers(GetPeersMessage message, Session session) {
+				sendObjectAsync(session, ExceptionResultMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+			var exception = assertThrows(TimeoutException.class, () -> remote.getPeers());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getPeers() works if it throws InterruptedException")
+	public void getPeersWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+		var exceptionMessage = "interrupted";
+
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetPeers(GetPeersMessage message, Session session) {
+				sendObjectAsync(session, ExceptionResultMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+			var exception = assertThrows(InterruptedException.class, () -> remote.getPeers());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("if getPeers() is slow, it leads to a time-out")
+	public void getPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
+
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetPeers(GetPeersMessage message, Session session) {
+				try {
+					Thread.sleep(2000L); // <----
+				}
+				catch (InterruptedException e) {}
+
+				sendObjectAsync(session, GetPeersResultMessages.of(Stream.of(peers1), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"))) {
+			assertThrows(TimeoutException.class, () -> remote.getPeers());
+		}
+	}
+
+	@Test
 	@DisplayName("getBlock() works if the block exists")
-	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block1 = Blocks.of(13, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
@@ -88,7 +162,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block is missing")
-	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
 		var hash = new byte[] { 67, 56, 43 };
 
 		class MyServer extends TestServer {

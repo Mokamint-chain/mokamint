@@ -30,6 +30,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.LogManager;
@@ -53,7 +54,7 @@ public class NodeServiceTests {
 
 	@Test
 	@DisplayName("if a getPeers() request reaches the service, it sends back the peers of the node")
-	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
+	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -77,7 +78,7 @@ public class NodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
-	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
+	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
 		Consumer<Optional<Block>> onGetBlockResult = received -> {
@@ -99,7 +100,7 @@ public class NodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
-	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
+	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		byte[] data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -127,7 +128,7 @@ public class NodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
-	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
+	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
 		Consumer<ExceptionResultMessage> onException = _received -> semaphore.release();
