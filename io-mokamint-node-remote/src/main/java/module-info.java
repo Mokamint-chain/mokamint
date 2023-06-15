@@ -32,4 +32,6 @@ module io.mokamint.node.remote {
 	requires static jakarta.websocket;
 	requires static org.glassfish.tyrus.spi;
 	requires static io.mokamint.node;
+	requires static io.hotmoka.crypto;
+	requires static io.mokamint.nonce;
 }
