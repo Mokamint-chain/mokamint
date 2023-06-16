@@ -10,7 +10,6 @@ import java.util.logging.LogManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.mokamint.node.BaseConsensusConfig;
 import io.mokamint.node.ConsensusConfigs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
@@ -20,7 +19,7 @@ public class ConfigTests {
 	@Test
 	@DisplayName("configs are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorks() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var config1 = BaseConsensusConfig.Builder.defaults().build();
+		var config1 = ConsensusConfigs.defaults().build();
 		String encoded = new ConsensusConfigs.Encoder().encode(config1);
 		var config2 = new ConsensusConfigs.Decoder().decode(encoded);
 		assertEquals(config1, config2);

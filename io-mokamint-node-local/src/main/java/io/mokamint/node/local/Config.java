@@ -30,13 +30,14 @@ import java.util.stream.Stream;
 import com.moandjiezana.toml.Toml;
 
 import io.hotmoka.annotations.Immutable;
-import io.mokamint.node.BaseConsensusConfig;
+import io.mokamint.node.AbstractConfigBuilder;
+import io.mokamint.node.AbstractConfig;
 
 /**
  * The configuration of a local Mokamint node.
  */
 @Immutable
-public class Config extends BaseConsensusConfig {
+public class Config extends AbstractConfig {
 
 	/**
 	 * The path where the node's data will be persisted.
@@ -180,7 +181,7 @@ public class Config extends BaseConsensusConfig {
 	/**
 	 * The builder of a configuration object.
 	 */
-	public static class Builder extends Config.AbstractBuilder<Builder> {
+	public static class Builder extends AbstractConfigBuilder<Builder> {
 		private Path dir = Paths.get("mokamint-chain");
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;

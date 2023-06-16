@@ -19,13 +19,13 @@ package io.mokamint.node.internal.gson;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.JsonRepresentation;
-import io.mokamint.node.BaseConsensusConfig;
+import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.api.ConsensusConfig;
 
 /**
  * The JSON representation of a {@code Config}.
  */
-public abstract class ConsensusConfigJson implements JsonRepresentation<BaseConsensusConfig> {
+public abstract class ConsensusConfigJson implements JsonRepresentation<ConsensusConfig> {
 	private String hashingForDeadlines;
 	private String hashingForGenerations;
 	private String hashingForBlocks;
@@ -39,8 +39,8 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<BaseCons
 	}
 
 	@Override
-	public BaseConsensusConfig unmap() throws NoSuchAlgorithmException {
-		return BaseConsensusConfig.Builder.defaults()
+	public ConsensusConfig unmap() throws NoSuchAlgorithmException {
+		return ConsensusConfigs.defaults()
 			.setHashingForDeadlines(hashingForDeadlines)
 			.setHashingForGenerations(hashingForGenerations)
 			.setHashingForBlocks(hashingForBlocks)

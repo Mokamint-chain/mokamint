@@ -66,7 +66,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	 * 
 	 * @param builder the builder where information is extracted from
 	 */
-	protected ConsensusConfigImpl(AbstractBuilder<?> builder) {
+	public ConsensusConfigImpl(AbstractBuilder<?> builder) {
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
 		this.hashingForBlocks = builder.hashingForBlocks;
@@ -133,53 +133,6 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	@Override
 	public long getTargetBlockCreationTime() {
 		return targetBlockCreationTime;
-	}
-
-	/**
-	 * The builder of consensus configurations, according to the builder pattern.
-	 */
-	public static class Builder extends AbstractBuilder<Builder> {
-
-		private Builder() throws NoSuchAlgorithmException {
-		}
-
-		private Builder(Toml toml) throws NoSuchAlgorithmException, FileNotFoundException {
-			super(toml);
-		}
-
-		/**
-		 * Creates a builder containing default data.
-		 * 
-		 * @return the builder
-		 * @throws NoSuchAlgorithmException if some hashing algorithm used in the default configuration is not available
-		 */
-		public static Builder defaults() throws NoSuchAlgorithmException {
-			return new Builder();
-		}
-
-		/**
-		 * Creates a builder from the given TOML configuration file.
-		 * The resulting builder will contain the information in the file,
-		 * and use defaults for the data not contained in the file.
-		 * 
-		 * @param path the path to the TOML file
-		 * @return the builder
-		 * @throws FileNotFoundException if {@code path} cannot be found
-		 * @throws NoSuchAlgorithmException if the configuration file refers to some non-available hashing algorithm
-		 */
-		public static Builder load(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
-			return new Builder(readToml(path));
-		}
-
-		@Override
-		public ConsensusConfigImpl build() {
-			return new ConsensusConfigImpl(this);
-		}
-
-		@Override
-		protected Builder getThis() {
-			return this;
-		}
 	}
 
 	/**
@@ -281,7 +234,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * 
 		 * @return the configuration
 		 */
-		public abstract ConsensusConfigImpl build();
+		public abstract ConsensusConfig build();
 
 		/**
 		 * Standard design pattern. See http://www.angelikalanger.com/GenericsFAQ/FAQSections/ProgrammingIdioms.html#FAQ205
