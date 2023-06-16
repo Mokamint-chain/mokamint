@@ -74,5 +74,10 @@ public class ExceptionResultMessages {
     	public Json(ExceptionResultMessage message) {
     		super(message);
     	}
+
+		@Override
+		public String getExpectedType() {
+			return ExceptionResultMessage.class.getName();
+		}
     }
 }

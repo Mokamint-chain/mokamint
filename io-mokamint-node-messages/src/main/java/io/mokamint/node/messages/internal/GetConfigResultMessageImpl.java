@@ -34,7 +34,7 @@ public class GetConfigResultMessageImpl extends AbstractRpcMessage implements Ge
 	 * @param id the identifier of the message
 	 */
 	public GetConfigResultMessageImpl(ConsensusConfig config, String id) {
-		super(GetConfigResultMessage.class.getName(), id);
+		super(id);
 
 		this.config = config;
 	}
@@ -47,5 +47,10 @@ public class GetConfigResultMessageImpl extends AbstractRpcMessage implements Ge
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof GetConfigResultMessage && config.equals(((GetConfigResultMessage) other).get());
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetConfigResultMessage.class.getName();
 	}
 }

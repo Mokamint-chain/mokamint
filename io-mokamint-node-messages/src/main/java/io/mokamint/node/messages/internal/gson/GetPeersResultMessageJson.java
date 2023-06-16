@@ -45,4 +45,9 @@ public abstract class GetPeersResultMessageJson extends AbstractRpcMessageJsonRe
 		// using Peers.Json::unmap below leads to a run-time error in the JVM!
 		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap())), getId()));
 	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetPeersResultMessage.class.getName();
+	}
 }

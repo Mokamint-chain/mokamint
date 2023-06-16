@@ -41,4 +41,10 @@ public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRe
 	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException {
 		return GetBlockResultMessages.of(Optional.ofNullable(block == null ? null : block.unmap()), getId());
 	}
+
+
+	@Override
+	protected String getExpectedType() {
+		return GetBlockResultMessage.class.getName();
+	}
 }

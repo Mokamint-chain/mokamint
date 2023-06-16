@@ -44,7 +44,7 @@ public class ExceptionResultMessageImpl extends AbstractRpcMessage implements Ex
 	 * @param id the identifier of the message
 	 */
 	public ExceptionResultMessageImpl(Class<? extends Exception> clazz, String message, String id) {
-		super(ExceptionResultMessage.class.getName(), id);
+		super(id);
 
 		Objects.requireNonNull(clazz, "clazz");
 		this.clazz = clazz;
@@ -69,5 +69,10 @@ public class ExceptionResultMessageImpl extends AbstractRpcMessage implements Ex
 	@Override
 	public String getMessage() {
 		return message;
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return ExceptionResultMessage.class.getName();
 	}
 }

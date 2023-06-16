@@ -39,4 +39,9 @@ public abstract class GetConfigResultMessageJson extends AbstractRpcMessageJsonR
 	public GetConfigResultMessage unmap() throws NoSuchAlgorithmException {
 		return GetConfigResultMessages.of(config.unmap(), getId());
 	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetConfigResultMessage.class.getName();
+	}
 }

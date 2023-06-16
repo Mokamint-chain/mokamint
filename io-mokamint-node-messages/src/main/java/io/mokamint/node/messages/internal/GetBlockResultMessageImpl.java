@@ -37,7 +37,7 @@ public class GetBlockResultMessageImpl extends AbstractRpcMessage implements Get
 	 * @param id the identifier of the message
 	 */
 	public GetBlockResultMessageImpl(Optional<Block> block, String id) {
-		super(GetBlockResultMessage.class.getName(), id);
+		super(id);
 
 		Objects.requireNonNull(block, "block cannot be null");
 		block.map(Objects::requireNonNull);
@@ -52,5 +52,10 @@ public class GetBlockResultMessageImpl extends AbstractRpcMessage implements Get
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof GetBlockResultMessage && Objects.equals(get(), ((GetBlockResultMessage) other).get());
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetBlockResultMessage.class.getName();
 	}
 }

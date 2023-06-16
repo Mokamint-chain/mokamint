@@ -43,4 +43,9 @@ public abstract class ExceptionResultMessageJson extends AbstractRpcMessageJsonR
 
 		return ExceptionResultMessages.of((Class<? extends Exception>) exceptionClass, message, getId());
 	}
+
+	@Override
+	protected String getExpectedType() {
+		return ExceptionResultMessage.class.getName();
+	}
 }

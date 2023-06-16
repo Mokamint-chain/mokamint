@@ -30,11 +30,16 @@ public class GetPeersMessageImpl extends AbstractRpcMessage implements GetPeersM
 	 * @param id the identifier of the message
 	 */
 	public GetPeersMessageImpl(String id) {
-		super(GetPeersMessage.class.getName(), id);
+		super(id);
 	}
 
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof GetPeersMessage;
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetPeersMessage.class.getName();
 	}
 }

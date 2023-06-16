@@ -38,7 +38,7 @@ public class GetPeersResultMessageImpl extends AbstractRpcMessage implements Get
 	 * @param id the identifier of the message
 	 */
 	public GetPeersResultMessageImpl(Stream<Peer> peers, String id) {
-		super(GetPeersResultMessage.class.getName(), id);
+		super(id);
 
 		this.peers = peers
 			.map(Objects::requireNonNull)
@@ -53,5 +53,10 @@ public class GetPeersResultMessageImpl extends AbstractRpcMessage implements Get
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof GetPeersResultMessage && Arrays.equals(peers, ((GetPeersResultMessage) other).get().toArray(Peer[]::new));
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetPeersResultMessage.class.getName();
 	}
 }

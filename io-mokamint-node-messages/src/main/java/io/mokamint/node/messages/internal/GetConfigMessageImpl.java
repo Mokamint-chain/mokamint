@@ -30,11 +30,16 @@ public class GetConfigMessageImpl extends AbstractRpcMessage implements GetConfi
 	 * @param id the identifier of the message
 	 */
 	public GetConfigMessageImpl(String id) {
-		super(GetConfigMessage.class.getName(), id);
+		super(id);
 	}
 
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof GetConfigMessage;
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetConfigMessage.class.getName();
 	}
 }

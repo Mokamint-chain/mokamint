@@ -35,7 +35,7 @@ public class GetBlockMessageImpl extends AbstractRpcMessage implements GetBlockM
 	 * @param id the identifier of the message
 	 */
 	public GetBlockMessageImpl(byte[] hash, String id) {
-		super(GetBlockMessage.class.getName(), id);
+		super(id);
 
 		Objects.requireNonNull(hash);
 		this.hash = hash;
@@ -49,5 +49,10 @@ public class GetBlockMessageImpl extends AbstractRpcMessage implements GetBlockM
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof GetBlockMessage && Arrays.equals(hash, ((GetBlockMessageImpl) other).getHash());
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetBlockMessage.class.getName();
 	}
 }
