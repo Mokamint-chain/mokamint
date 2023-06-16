@@ -45,6 +45,9 @@ import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetConfigMessages;
+import io.mokamint.node.messages.GetConfigResultMessage;
+import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
@@ -61,7 +64,7 @@ import jakarta.websocket.Session;
 @ThreadSafe
 public class RemotePublicNodeImpl extends AbstractWebSocketClient implements RemotePublicNode {
 	private final long timeout;
-	private final Session[] sessions = new Session[2];
+	private final Session[] sessions = new Session[3];
 	private final AtomicInteger nextId = new AtomicInteger();
 	private final ConcurrentMap<String, BlockingQueue<RpcMessage>> queues = new ConcurrentHashMap<>();
 
@@ -81,6 +84,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		this.timeout = timeout;
 		sessions[0] = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
 		sessions[1] = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
+		sessions[2] = new GetConfigEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CONFIG_ENDPOINT));
 	}
 
 	@Override
@@ -159,9 +163,29 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	}
 
 	@Override
-	public ConsensusConfig getConfig() throws TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+	public ConsensusConfig getConfig() throws NoSuchAlgorithmException, TimeoutException, InterruptedException {
+		var id = nextId();
+		sendObjectAsync(sessions[2], GetConfigMessages.of(id));
+		try {
+			return waitForResult(id, this::processGetConfigSuccess, this::processGetConfigException);
+		}
+		catch (RuntimeException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private ConsensusConfig processGetConfigSuccess(RpcMessage message) {
+		return message instanceof GetConfigResultMessage ? ((GetConfigResultMessage) message).get() : null;
+	}
+
+	private boolean processGetConfigException(ExceptionResultMessage message) {
+		var clazz = message.getExceptionClass();
+		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
+			TimeoutException.class.isAssignableFrom(clazz) ||
+			InterruptedException.class.isAssignableFrom(clazz);
 	}
 
 	private <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionResultMessage> processException) throws Exception {
@@ -250,6 +274,13 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
+		}
+	}
+
+	private class GetConfigEndpoint extends Endpoint {
+
+		private Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 	}
 }

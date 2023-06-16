@@ -29,6 +29,9 @@ import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetConfigMessage;
+import io.mokamint.node.messages.GetConfigMessages;
+import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
@@ -68,7 +71,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	public PublicNodeServiceImpl(PublicNode node, int port) throws DeploymentException, IOException {
 		this.port = port;
 		this.node = node;
-		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this));
+		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this));
     	LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
@@ -119,6 +122,28 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT, GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+		}
+	}
+
+	private void getConfig(GetConfigMessage message, Session session) {
+		LOGGER.info("received a get_config request");
+		try {
+			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
+		}
+		catch (NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+		}
+	};
+
+	public static class GetConfigEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetConfigMessage message) -> getServer().getConfig(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT, GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 }

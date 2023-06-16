@@ -25,6 +25,9 @@ import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetConfigMessage;
+import io.mokamint.node.messages.GetConfigMessages;
+import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
@@ -48,7 +51,7 @@ public class TestServer extends AbstractWebSocketServer {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public TestServer(int port) throws DeploymentException, IOException {
-		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this));
+		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this));
 	}
 
 	public void close() {
@@ -82,6 +85,21 @@ public class TestServer extends AbstractWebSocketServer {
 		private static ServerEndpointConfig config(TestServer server) {
 			return simpleConfig(server, GetBlockEndpoint.class, PublicNodeService.GET_BLOCK_ENDPOINT,
 					GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetConfig(GetConfigMessage message, Session session) {}
+
+	public static class GetConfigEndpoint extends AbstractServerEndpoint<TestServer> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetConfigMessage message) -> getServer().onGetConfig(message, session));
+	    }
+
+		private static ServerEndpointConfig config(TestServer server) {
+			return simpleConfig(server, GetConfigEndpoint.class, PublicNodeService.GET_CONFIG_ENDPOINT,
+					GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 }
