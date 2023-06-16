@@ -33,6 +33,11 @@ public interface PublicNodeService extends WebSocketServer {
 	 */
 	String GET_BLOCK_ENDPOINT = "/get_block";
 
+	/**
+	 * The network endpoint path where the {@code getConfig()} method is published.
+	 */
+	String GET_CONFIG_ENDPOINT = "/get_config";
+
 	@Override
 	void close();
 }

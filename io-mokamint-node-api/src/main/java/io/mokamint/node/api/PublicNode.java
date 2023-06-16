@@ -54,6 +54,15 @@ public interface PublicNode extends AutoCloseable {
 	Stream<Peer> getPeers() throws TimeoutException, InterruptedException;
 
 	/**
+	 * Yields the consensus parameters of this node.
+	 * 
+	 * @return the consensus parameters
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	ConsensusConfig getConfig() throws TimeoutException, InterruptedException;
+
+	/**
 	 * Closes the node.
 	 * 
 	 * @throws IOException if an I/O error occurred

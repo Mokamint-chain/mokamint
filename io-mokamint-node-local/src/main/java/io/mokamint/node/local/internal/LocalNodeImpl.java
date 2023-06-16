@@ -169,6 +169,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @return the configuration of this node
 	 */
+	@Override
 	public Config getConfig() {
 		return config;
 	}

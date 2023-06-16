@@ -19,11 +19,14 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.ExceptionResultMessage;
 import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetConfigMessages;
+import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.nonce.Deadlines;
@@ -81,6 +84,25 @@ public class MessagesTests {
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
 		var getBlockResultMessage2 = new GetBlockResultMessages.Decoder().decode(encoded);
 		assertEquals(getBlockResultMessage1, getBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getConfig messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetConfig() throws EncodeException, DecodeException {
+		var getConfigMessage1 = GetConfigMessages.of("id");
+		String encoded = new GetConfigMessages.Encoder().encode(getConfigMessage1);
+		var getConfigMessage2 = new GetConfigMessages.Decoder().decode(encoded);
+		assertEquals(getConfigMessage1, getConfigMessage2);
+	}
+
+	@Test
+	@DisplayName("getConfigResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetConfigResult() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var config1 = ConsensusConfigs.defaults().build();
+		var getConfigResultMessage1 = GetConfigResultMessages.of(config1, "id");
+		String encoded = new GetConfigResultMessages.Encoder().encode(getConfigResultMessage1);
+		var getConfigResultMessage2 = new GetConfigResultMessages.Decoder().decode(encoded);
+		assertEquals(getConfigResultMessage1, getConfigResultMessage2);
 	}
 
 	@Test

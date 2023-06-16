@@ -37,13 +37,12 @@ public abstract class GetPeersResultMessageJson extends AbstractRpcMessageJsonRe
 	protected GetPeersResultMessageJson(GetPeersResultMessage message) {
 		super(message);
 
-		var encoder = new Peers.Encoder();
-		this.peers = message.get().map(encoder::map).toArray(Peers.Json[]::new);
+		this.peers = message.get().map(Peers.Json::new).toArray(Peers.Json[]::new);
 	}
 
 	@Override
 	public GetPeersResultMessage unmap() throws URISyntaxException {
-		// using Peers.Json::map below leads to a run-time error in the JVM!
+		// using Peers.Json::unmap below leads to a run-time error in the JVM!
 		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap())), getId()));
 	}
 }
