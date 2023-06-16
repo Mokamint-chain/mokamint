@@ -86,7 +86,7 @@ public class MineNewBlockTask extends Task {
 		this.heightOfNewBlock = previous.getHeight() + 1;
 		this.logIntro = "height " + heightOfNewBlock + ": ";
 		this.startTime = startTime;
-		this.targetBlockCreationTime = BigInteger.valueOf(node.getConfig().targetBlockCreationTime);
+		this.targetBlockCreationTime = BigInteger.valueOf(node.getConfig().getTargetBlockCreationTime());
 	}
 
 	@Override
@@ -143,8 +143,8 @@ public class MineNewBlockTask extends Task {
 
 		private Run() throws InterruptedException, IOException, TimeoutException {
 			LOGGER.info(logIntro + "started mining new block");
-			var hashingForGenerations = node.getConfig().hashingForGenerations;
-			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().hashingForDeadlines);
+			var hashingForGenerations = node.getConfig().getHashingForGenerations();
+			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().getHashingForDeadlines());
 
 			try {
 				requestDeadlineToEveryMiner();
@@ -245,7 +245,7 @@ public class MineNewBlockTask extends Task {
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
-			var hashingForBlocks = node.getConfig().hashingForBlocks;
+			var hashingForBlocks = node.getConfig().getHashingForBlocks();
 			var hashOfPreviousBlock = hashingForBlocks.hash(previous.toByteArray());
 
 			return Blocks.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock,

@@ -105,7 +105,7 @@ public class Database implements AutoCloseable {
 	 * @param config the configuration of the node using this database
 	 */
 	public Database(Config config) {
-		this.hashingForBlocks = config.hashingForBlocks;
+		this.hashingForBlocks = config.getHashingForBlocks();
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");

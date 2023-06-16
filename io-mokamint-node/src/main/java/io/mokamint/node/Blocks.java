@@ -36,7 +36,9 @@ import io.mokamint.nonce.api.Deadline;
 /**
  * Providers of blocks.
  */
-public interface Blocks {
+public abstract class Blocks {
+
+	private Blocks() {}
 
 	/**
 	 * Yields a new non-genesis block.
@@ -51,7 +53,7 @@ public interface Blocks {
 	 * @param hashOfPreviousBlock the reference to the previous block
 	 * @return the non-genesis block
 	 */
-	static NonGenesisBlock of(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
+	public static NonGenesisBlock of(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
 			Deadline deadline, byte[] hashOfPreviousBlock) {
 		return new NonGenesisBlockImpl(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
 	}
@@ -62,7 +64,7 @@ public interface Blocks {
 	 * @param startDateTimeUTC the moment when the block has been created
 	 * @return the genesis block
 	 */
-	static GenesisBlock genesis(LocalDateTime startDateTimeUTC) {
+	public static GenesisBlock genesis(LocalDateTime startDateTimeUTC) {
 		return new GenesisBlockImpl(startDateTimeUTC);
 	}
 
@@ -74,7 +76,7 @@ public interface Blocks {
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		return AbstractBlock.from(context);
 	}
 
@@ -86,24 +88,24 @@ public interface Blocks {
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the block could not be unmarshalled
 	 */
-	static Block from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
+	public static Block from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
 		return AbstractBlock.from(bytes);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	static class Encoder extends BlockEncoder {}
+	public static class Encoder extends BlockEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-    static class Decoder extends BlockDecoder {}
+	public static class Decoder extends BlockDecoder {}
 
     /**
      * Json representation.
      */
-    static class Json extends BlockJson {
+	public static class Json extends BlockJson {
 
     	/**
     	 * Creates the Json representation for the given block.

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node;
+package io.mokamint.node.internal;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
@@ -26,34 +26,32 @@ import com.moandjiezana.toml.Toml;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.node.internal.gson.ConfigDecoder;
-import io.mokamint.node.internal.gson.ConfigEncoder;
-import io.mokamint.node.internal.gson.ConfigJson;
+import io.mokamint.node.api.ConsensusConfig;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
  * on this data in order to achieve consensus.
  */
 @Immutable
-public class Config {
+public class ConsensusConfigImpl implements ConsensusConfig {
 
 	/**
 	 * The hashing algorithm used for computing the deadlines, hence
 	 * also in the plot files used by the miners. It defaults to {@code shabal256}.
 	 */
-	public final HashingAlgorithm<byte[]> hashingForDeadlines;
+	private final HashingAlgorithm<byte[]> hashingForDeadlines;
 
 	/**
 	 * The hashing algorithm used for computing the next generation signature
 	 * and the new scoop number from the previous block. It defaults to {@code sha256}.
 	 */
-	public final HashingAlgorithm<byte[]> hashingForGenerations;
+	private final HashingAlgorithm<byte[]> hashingForGenerations;
 
 	/**
 	 * The hashing algorithm used for the identifying the blocks of
 	 * the Mokamint blockchain. It defaults to {@code sha256}.
 	 */
-	public final HashingAlgorithm<byte[]> hashingForBlocks;
+	private final HashingAlgorithm<byte[]> hashingForBlocks;
 
 	/**
 	 * The target time interval, in milliseconds, between the creation of a block
@@ -61,14 +59,14 @@ public class Config {
 	 * to this time. The higher the hashing power of the network, the more precise
 	 * this will be.
 	 */
-	public final long targetBlockCreationTime;
+	private final long targetBlockCreationTime;
 
 	/**
 	 * Full constructor for the builder pattern.
 	 * 
 	 * @param builder the builder where information is extracted from
 	 */
-	protected Config(AbstractBuilder<?> builder) {
+	protected ConsensusConfigImpl(AbstractBuilder<?> builder) {
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
 		this.hashingForBlocks = builder.hashingForBlocks;
@@ -78,7 +76,7 @@ public class Config {
 	@Override
 	public boolean equals(Object other) {
 		if (other != null && getClass() == other.getClass()) {
-			var otherConfig = (Config) other;
+			var otherConfig = (ConsensusConfigImpl) other;
 			return targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
 				hashingForDeadlines.getName().equals(otherConfig.hashingForDeadlines.getName()) &&
 				hashingForGenerations.getName().equals(otherConfig.hashingForGenerations.getName()) &&
@@ -93,12 +91,7 @@ public class Config {
 		return toToml();
 	}
 
-	/**
-	 * Yields a toml representation of this configuration. Later, it can be loaded
-	 * through {@link Builder#load(Path)}.
-	 * 
-	 * @return the toml representation, as a string
-	 */
+	@Override
 	public String toToml() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("# This is a TOML config file for Mokamint nodes.\n");
@@ -122,6 +115,29 @@ public class Config {
 		return sb.toString();
 	}
 
+	@Override
+	public HashingAlgorithm<byte[]> getHashingForDeadlines() {
+		return hashingForDeadlines;
+	}
+
+	@Override
+	public HashingAlgorithm<byte[]> getHashingForGenerations() {
+		return hashingForGenerations;
+	}
+
+	@Override
+	public HashingAlgorithm<byte[]> getHashingForBlocks() {
+		return hashingForBlocks;
+	}
+
+	@Override
+	public long getTargetBlockCreationTime() {
+		return targetBlockCreationTime;
+	}
+
+	/**
+	 * The builder of consensus configurations, according to the builder pattern.
+	 */
 	public static class Builder extends AbstractBuilder<Builder> {
 
 		private Builder() throws NoSuchAlgorithmException {
@@ -156,8 +172,8 @@ public class Config {
 		}
 
 		@Override
-		public Config build() {
-			return new Config(this);
+		public ConsensusConfigImpl build() {
+			return new ConsensusConfigImpl(this);
 		}
 
 		@Override
@@ -265,10 +281,12 @@ public class Config {
 		 * 
 		 * @return the configuration
 		 */
-		public abstract Config build();
+		public abstract ConsensusConfigImpl build();
 
 		/**
 		 * Standard design pattern. See http://www.angelikalanger.com/GenericsFAQ/FAQSections/ProgrammingIdioms.html#FAQ205
+		 * 
+		 * @return this same builder
 		 */
 		protected abstract T getThis();
 
@@ -293,29 +311,4 @@ public class Config {
 			}
 		}
 	}
-
-	/**
-	 * Gson encoder.
-	 */
-	public static class Encoder extends ConfigEncoder {}
-
-	/**
-	 * Gson decoder.
-	 */
-	public static class Decoder extends ConfigDecoder {}
-
-    /**
-     * Json representation.
-     */
-    public static class Json extends ConfigJson {
-
-    	/**
-    	 * Creates the Json representation for the given configuration.
-    	 * 
-    	 * @param config the configuration
-    	 */
-    	public Json(Config config) {
-    		super(config);
-    	}
-    }
 }

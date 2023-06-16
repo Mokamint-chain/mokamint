@@ -30,12 +30,13 @@ import java.util.stream.Stream;
 import com.moandjiezana.toml.Toml;
 
 import io.hotmoka.annotations.Immutable;
+import io.mokamint.node.BaseConsensusConfig;
 
 /**
  * The configuration of a local Mokamint node.
  */
 @Immutable
-public class Config extends io.mokamint.node.Config {
+public class Config extends BaseConsensusConfig {
 
 	/**
 	 * The path where the node's data will be persisted.

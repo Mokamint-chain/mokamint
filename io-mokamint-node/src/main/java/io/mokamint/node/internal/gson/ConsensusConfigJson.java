@@ -19,27 +19,28 @@ package io.mokamint.node.internal.gson;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.JsonRepresentation;
-import io.mokamint.node.Config;
+import io.mokamint.node.BaseConsensusConfig;
+import io.mokamint.node.api.ConsensusConfig;
 
 /**
  * The JSON representation of a {@code Config}.
  */
-public abstract class ConfigJson implements JsonRepresentation<Config> {
+public abstract class ConsensusConfigJson implements JsonRepresentation<BaseConsensusConfig> {
 	private String hashingForDeadlines;
 	private String hashingForGenerations;
 	private String hashingForBlocks;
 	private long targetBlockCreationTime;
 
-	protected ConfigJson(Config config) {
-		this.hashingForDeadlines = config.hashingForDeadlines.getName();
-		this.hashingForGenerations = config.hashingForGenerations.getName();
-		this.hashingForBlocks = config.hashingForBlocks.getName();
-		this.targetBlockCreationTime = config.targetBlockCreationTime;
+	protected ConsensusConfigJson(ConsensusConfig config) {
+		this.hashingForDeadlines = config.getHashingForDeadlines().getName();
+		this.hashingForGenerations = config.getHashingForGenerations().getName();
+		this.hashingForBlocks = config.getHashingForBlocks().getName();
+		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 	}
 
 	@Override
-	public Config unmap() throws NoSuchAlgorithmException {
-		return Config.Builder.defaults()
+	public BaseConsensusConfig unmap() throws NoSuchAlgorithmException {
+		return BaseConsensusConfig.Builder.defaults()
 			.setHashingForDeadlines(hashingForDeadlines)
 			.setHashingForGenerations(hashingForGenerations)
 			.setHashingForBlocks(hashingForBlocks)

@@ -16,15 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.Config;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.BaseConsensusConfig;
+import io.mokamint.node.ConsensusConfigs;
 
-/**
- * A decoder for {@link Config}.
- */
-public class ConfigDecoder extends MappedDecoder<Config, Config.Json> {
+public class ConsensusConfigEncoder extends MappedEncoder<BaseConsensusConfig, ConsensusConfigs.Json> {
 
-	public ConfigDecoder() {
-		super(Config.Json.class);
+	public ConsensusConfigEncoder() {
+		super(ConsensusConfigs.Json::new);
 	}
 }

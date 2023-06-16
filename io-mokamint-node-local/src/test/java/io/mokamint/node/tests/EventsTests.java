@@ -259,7 +259,7 @@ public class EventsTests {
 		String algoName = Stream.of(HashingAlgorithms.TYPES.values())
 			.map(Enum::name)
 			.map(String::toLowerCase)
-			.filter(name -> !name.equals(config.hashingForDeadlines.getName()))
+			.filter(name -> !name.equals(config.getHashingForDeadlines().getName()))
 			.findAny()
 			.get();
 

@@ -30,7 +30,9 @@ import io.mokamint.node.internal.gson.PeerJson;
 /**
  * Providers of peers.
  */
-public interface Peers {
+public abstract class Peers {
+
+	private Peers() {}
 
 	/**
 	 * Yields a peer with the given URI.
@@ -38,7 +40,7 @@ public interface Peers {
 	 * @param uri the URI of the peer
 	 * @return the peer
 	 */
-	static Peer of(URI uri) {
+	public static Peer of(URI uri) {
 		return new PeerImpl(uri);
 	}
 
@@ -50,7 +52,7 @@ public interface Peers {
 	 * @throws IOException if the peer cannot be unmarshalled
 	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
 	 */
-	static Peer from(byte[] bytes) throws IOException, URISyntaxException {
+	public static Peer from(byte[] bytes) throws IOException, URISyntaxException {
 		return PeerImpl.from(bytes);
 	}
 
@@ -62,24 +64,24 @@ public interface Peers {
 	 * @throws IOException if the peer cannot be unmarshalled
 	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
 	 */
-	static Peer from(UnmarshallingContext context) throws IOException, URISyntaxException {
+	public static Peer from(UnmarshallingContext context) throws IOException, URISyntaxException {
 		return PeerImpl.from(context);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	static class Encoder extends PeerEncoder {}
+	public static class Encoder extends PeerEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-    static class Decoder extends PeerDecoder {}
+	public static class Decoder extends PeerDecoder {}
 
     /**
      * Json representation.
      */
-    static class Json extends PeerJson {
+	public static class Json extends PeerJson {
 
     	/**
     	 * Creates the Json representation for the given peer.
