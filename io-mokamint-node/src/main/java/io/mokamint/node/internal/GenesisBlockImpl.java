@@ -101,4 +101,16 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	public boolean equals(Object other) {
 		return other instanceof GenesisBlock && startDateTimeUTC.equals(((GenesisBlock) other).getStartDateTimeUTC());
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder("Genesis Block:\n");
+		result.append("* startDateTimeUTC: " + startDateTimeUTC + "\n");
+		result.append("* height: " + getHeight() + "\n");
+		result.append("* totalWaitingTime: " + getTotalWaitingTime() + "ms\n");
+		result.append("* weightedWaitingTime: " + getWeightedWaitingTime() + "ms\n");
+		result.append("* acceleration: " + getAcceleration());
+		
+		return result.toString();
+	}
 }

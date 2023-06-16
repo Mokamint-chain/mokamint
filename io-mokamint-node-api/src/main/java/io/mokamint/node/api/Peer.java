@@ -41,4 +41,7 @@ public interface Peer extends Marshallable, Comparable<Peer> {
 
 	@Override
 	int hashCode();
+
+	@Override
+	String toString();
 }

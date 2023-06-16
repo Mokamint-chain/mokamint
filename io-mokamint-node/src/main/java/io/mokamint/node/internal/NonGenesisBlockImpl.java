@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -132,7 +133,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	public byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashing) {
+	protected byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashing) {
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog();
 		return hashing.hash(concat(previousGenerationSignature, previousProlog));
@@ -165,5 +166,18 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		deadline.into(context);
 		context.writeCompactInt(hashOfPreviousBlock.length);
 		context.write(hashOfPreviousBlock);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder("Block:\n");
+		result.append("* height: " + getHeight() + "\n");
+		result.append("* totalWaitingTime: " + getTotalWaitingTime() + "ms\n");
+		result.append("* weightedWaitingTime: " + getWeightedWaitingTime() + "ms\n");
+		result.append("* acceleration: " + getAcceleration() + "\n");
+		result.append("* hashOfPreviousBlock: " + Hex.toHexString(hashOfPreviousBlock) + "\n");
+		result.append("* deadline: " + deadline);
+		
+		return result.toString();
 	}
 }

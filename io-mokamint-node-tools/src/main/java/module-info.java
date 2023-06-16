@@ -19,14 +19,20 @@ limitations under the License.
  */
 module io.mokamint.node.tools {
 	exports io.mokamint.node.tools;
-    opens io.mokamint.node.tools.internal to info.picocli; // for injecting CLI options
+	
+	// needed to inject CLI options
+    opens io.mokamint.node.tools.internal to info.picocli;
+    opens io.mokamint.node.tools.internal.blocks to info.picocli;
+    opens io.mokamint.node.tools.internal.peers to info.picocli;
 
 	requires io.mokamint.node.local;
 	requires io.mokamint.application.api;
 	requires io.mokamint.miner.local;
 	requires io.mokamint.miner.remote;
+	requires io.mokamint.node.remote;
 	requires io.mokamint.plotter;
 	requires io.mokamint.tools;
 	requires io.mokamint.node.service;
+	requires io.hotmoka.crypto;
 	requires java.logging;
 }

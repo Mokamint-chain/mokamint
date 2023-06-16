@@ -79,5 +79,9 @@ public interface Block extends Marshallable {
 	 * @param other the other object
 	 * @return true if and only if {@code other} is a {@link Block} with the same data
 	 */
+	@Override
 	boolean equals(Object other);
+
+	@Override
+	String toString();
 }
