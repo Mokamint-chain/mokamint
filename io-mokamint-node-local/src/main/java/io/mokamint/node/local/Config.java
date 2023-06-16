@@ -25,53 +25,23 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.moandjiezana.toml.Toml;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 
 /**
  * The configuration of a local Mokamint node.
  */
 @Immutable
-public class Config {
+public class Config extends io.mokamint.node.Config {
 
 	/**
 	 * The path where the node's data will be persisted.
 	 * It defaults to {@code mokamint-chain} in the current directory.
 	 */
 	public final Path dir;
-
-	/**
-	 * The hashing algorithm used for computing the deadlines, hence
-	 * also in the plot files used by the miners. It defaults to <code>shabal256</code>.
-	 */
-	public final HashingAlgorithm<byte[]> hashingForDeadlines;
-
-	/**
-	 * The hashing algorithm used for computing the next generation
-	 * signature and the new scoop number from the previous block. It defaults to
-	 * <code>sha256</code>.
-	 */
-	public final HashingAlgorithm<byte[]> hashingForGenerations;
-
-	/**
-	 * The hashing algorithm used for the identifying the blocks of
-	 * the Mokamint blockchain. It defaults to <code>sha256</code>.
-	 */
-	public final HashingAlgorithm<byte[]> hashingForBlocks;
-
-	/**
-	 * The target time interval, in milliseconds, between the creation of a block
-	 * and the creation of a next block. The network will strive to get close
-	 * to this time. The higher the hashing power of the network, the more precise
-	 * this will be.
-	 */
-	public final long targetBlockCreationTime;
 
 	/**
 	 * The maximal delay, in milliseconds, between a deadline request to the miners
@@ -138,11 +108,9 @@ public class Config {
 	 * Full constructor for the builder pattern.
 	 */
 	private Config(Builder builder) {
+		super(builder);
+
 		this.dir = builder.dir;
-		this.hashingForDeadlines = builder.hashingForDeadlines;
-		this.hashingForGenerations = builder.hashingForGenerations;
-		this.hashingForBlocks = builder.hashingForBlocks;
-		this.targetBlockCreationTime = builder.targetBlockCreationTime;
 		this.deadlineWaitTimeout = builder.deadlineWaitTimeout;
 		this.minerInitialPoints = builder.minerInitialPoints;
 		this.minerPunishmentForTimeout = builder.minerPunishmentForTimeout;
@@ -154,41 +122,13 @@ public class Config {
 	}
 
 	@Override
-	public String toString() {
-		return toToml();
-	}
-
-	/**
-	 * Yields a toml representation of this configuration. In the future, it can be loaded
-	 * through {@link Builder#load(Path)}.
-	 * 
-	 * @return the toml representation, as a string
-	 */
 	public String toToml() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("# This is a TOML config file for Mokamint nodes.\n");
-		sb.append("# For more information about TOML, see https://github.com/toml-lang/toml\n");
-		sb.append("# For more information about Mokamint, see https://www.mokamint.io\n");
+		StringBuilder sb = new StringBuilder(super.toToml());
 		sb.append("\n");
-		sb.append("# NOTE: Any path below can be absolute or relative to the directory\n");
-		sb.append("# where the mokamint-node command is run.\n");
-		sb.append("\n");
-		sb.append("## Main options\n");
+		sb.append("## Local parameters\n");
 		sb.append("\n");
 		sb.append("# the path where the node's data will be persisted\n");
 		sb.append("dir = \"" + dir + "\"\n");
-		sb.append("\n");
-		sb.append("# the hashing algorithm used for the deadlines and hence for the plot files of the miners\n");
-		sb.append("hashing_for_deadlines = \"" + hashingForDeadlines.getName() + "\"\n");
-		sb.append("\n");
-		sb.append("# the hashing algorithm used for the computation of the new generation and scoop number from the previous block\n");
-		sb.append("hashing_for_generations = \"" + hashingForGenerations.getName() + "\"\n");
-		sb.append("\n");
-		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
-		sb.append("hashing_for_blocks = \"" + hashingForBlocks.getName() + "\"\n");
-		sb.append("\n");
-		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
-		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
 		sb.append("\n");
 		sb.append("# maximal milliseconds to wait between deadline request to the miners and first deadline reception\n");
 		sb.append("deadline_wait_timeout = " + deadlineWaitTimeout + "\n");
@@ -218,15 +158,29 @@ public class Config {
 		return sb.toString();
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		if (super.equals(other)) {
+			var otherConfig = (Config) other;
+			return dir.equals(otherConfig.dir) &&
+				deadlineWaitTimeout == otherConfig.deadlineWaitTimeout &&
+				minerInitialPoints == otherConfig.minerInitialPoints &&
+				minerPunishmentForTimeout == otherConfig.minerPunishmentForTimeout &&
+				minerPunishmentForIllegalDeadline == otherConfig.minerPunishmentForIllegalDeadline &&
+				seeds.equals(otherConfig.seeds) &&
+				peerInitialPoints == otherConfig.peerInitialPoints &&
+				peerPunishmentForUnreachable == otherConfig.peerPunishmentForUnreachable &&
+				peerTimeout == otherConfig.peerTimeout;
+		}
+		else
+			return false;
+	}
+
 	/**
 	 * The builder of a configuration object.
 	 */
-	public static class Builder {
+	public static class Builder extends Config.AbstractBuilder<Builder> {
 		private Path dir = Paths.get("mokamint-chain");
-		private HashingAlgorithm<byte[]> hashingForDeadlines;
-		private HashingAlgorithm<byte[]> hashingForGenerations;
-		private HashingAlgorithm<byte[]> hashingForBlocks;
-		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
 		private long minerPunishmentForTimeout = 1L;
@@ -237,9 +191,47 @@ public class Config {
 		private long peerTimeout = 10000L;
 
 		private Builder() throws NoSuchAlgorithmException {
-			setHashingForDeadlines("shabal256");
-			setHashingForGenerations("sha256");
-			setHashingForBlocks("sha256");
+		}
+
+		private Builder(Toml toml) throws NoSuchAlgorithmException, FileNotFoundException, URISyntaxException {
+			super(toml);
+
+			var dir = toml.getString("dir");
+			if (dir != null)
+				setDir(Paths.get(dir));
+
+			var deadlineWaitTimeout = toml.getLong("deadline_wait_timeout");
+			if (deadlineWaitTimeout != null)
+				setDeadlineWaitTimeout(deadlineWaitTimeout);
+
+			var minerInitialPoints = toml.getLong("miner_initial_points");
+			if (minerInitialPoints != null)
+				setMinerInitialPoints(minerInitialPoints);
+
+			var minerPunishmentForTimeout = toml.getLong("miner_punishment_for_timeout");
+			if (minerPunishmentForTimeout != null)
+				setMinerPunishmentForTimeout(minerPunishmentForTimeout);
+
+			var minerPunishmentForIllegalDeadline = toml.getLong("miner_punishment_for_illegal_deadline");
+			if (minerPunishmentForIllegalDeadline != null)
+				setMinerPunishmentForIllegalDeadline(minerPunishmentForIllegalDeadline);
+
+			List<String> seeds = toml.getList("seeds");
+			if (seeds != null)
+				for (String uri: seeds)
+					this.seeds.add(new URI(uri));
+
+			var peerInitialPoints = toml.getLong("peer_initial_points");
+			if (peerInitialPoints != null)
+				setPeerInitialPoints(peerInitialPoints);
+
+			var peerPunishmentForUnreachable = toml.getLong("peer_punishment_for_unreachable");
+			if (peerPunishmentForUnreachable != null)
+				setPeerPunishmentForUnreachable(peerPunishmentForUnreachable);
+
+			var peerTimeout = toml.getLong("peer_timeout");
+			if (peerTimeout != null)
+				setPeerTimeout(peerTimeout);
 		}
 
 		/**
@@ -264,76 +256,7 @@ public class Config {
 		 * @throws URISyntaxException if the configuration file refers to a URI with wrong syntax
 		 */
 		public static Builder load(Path path) throws NoSuchAlgorithmException, FileNotFoundException, URISyntaxException {
-			Toml toml;
-
-			try {
-				toml = new Toml().read(path.toFile());
-			}
-			catch (RuntimeException e) {
-				// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
-				Throwable cause = e.getCause();
-				if (cause instanceof FileNotFoundException)
-					throw (FileNotFoundException) cause;
-				else
-					throw e;
-			}
-
-			var builder = new Builder();
-
-			var dir = toml.getString("dir");
-			if (dir != null)
-				builder.setDir(Paths.get(dir));
-
-			var hashingForDeadlines = toml.getString("hashing_for_deadlines");
-			if (hashingForDeadlines != null)
-				builder.setHashingForDeadlines(hashingForDeadlines);
-
-			var hashingForGenerations = toml.getString("hashing_for_generations");
-			if (hashingForGenerations != null)
-				builder.setHashingForGenerations(hashingForGenerations);
-
-			var hashingForBlocks = toml.getString("hashing_for_blocks");
-			if (hashingForBlocks != null)
-				builder.setHashingForBlocks(hashingForBlocks);
-
-			var targetBlockCreationTime = toml.getLong("target_block_creation_time");
-			if (targetBlockCreationTime != null)
-				builder.setTargetBlockCreationTime(targetBlockCreationTime);
-
-			var deadlineWaitTimeout = toml.getLong("deadline_wait_timeout");
-			if (deadlineWaitTimeout != null)
-				builder.setDeadlineWaitTimeout(deadlineWaitTimeout);
-
-			var minerInitialPoints = toml.getLong("miner_initial_points");
-			if (minerInitialPoints != null)
-				builder.setMinerInitialPoints(minerInitialPoints);
-
-			var minerPunishmentForTimeout = toml.getLong("miner_punishment_for_timeout");
-			if (minerPunishmentForTimeout != null)
-				builder.setMinerPunishmentForTimeout(minerPunishmentForTimeout);
-
-			var minerPunishmentForIllegalDeadline = toml.getLong("miner_punishment_for_illegal_deadline");
-			if (minerPunishmentForIllegalDeadline != null)
-				builder.setMinerPunishmentForIllegalDeadline(minerPunishmentForIllegalDeadline);
-
-			List<String> seeds = toml.getList("seeds");
-			if (seeds != null)
-				for (String uri: seeds)
-					builder.seeds.add(new URI(uri));
-
-			var peerInitialPoints = toml.getLong("peer_initial_points");
-			if (peerInitialPoints != null)
-				builder.setPeerInitialPoints(peerInitialPoints);
-
-			var peerPunishmentForUnreachable = toml.getLong("peer_punishment_for_unreachable");
-			if (peerPunishmentForUnreachable != null)
-				builder.setPeerPunishmentForUnreachable(peerPunishmentForUnreachable);
-
-			var peerTimeout = toml.getLong("peer_timeout");
-			if (peerTimeout != null)
-				builder.setPeerTimeout(peerTimeout);
-
-			return builder;
+			return new Builder(readToml(path));
 		}
 
 		/**
@@ -345,58 +268,6 @@ public class Config {
 		 */
 		public Builder setDir(Path dir) {
 			this.dir = dir;
-			return this;
-		}
-
-		/**
-		 * Sets the hashing algorithm for computing the deadlines and hence also the
-		 * plot files used by the miners.
-		 * 
-		 * @param hashingForDeadlines the name of the hashing algorithm
-		 * @return this builder
-		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
-		 */
-		public Builder setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
-			this.hashingForDeadlines = HashingAlgorithms.mk(hashingForDeadlines, Function.identity());
-			return this;
-		}
-
-		/**
-		 * Sets the hashing algorithm for computing the new generation and the new scoop
-		 * number from the previous block.
-		 * 
-		 * @param hashingForGenerations the name of the hashing algorithm
-		 * @return this builder
-		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
-		 */
-		public Builder setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
-			this.hashingForGenerations = HashingAlgorithms.mk(hashingForGenerations, Function.identity());
-			return this;
-		}
-
-		/**
-		 * Sets the hashing algorithm for identifying the blocks in the Mokamint blockchain.
-		 * 
-		 * @param hashingForBlocks the name of the hashing algorithm
-		 * @return this builder
-		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
-		 */
-		public Builder setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
-			this.hashingForBlocks = HashingAlgorithms.mk(hashingForBlocks, Function.identity());
-			return this;
-		}
-
-		/**
-		 * Sets the target time interval, in milliseconds, between the creation of a block
-		 * and the creation of a next block.  The network will strive to get close
-		 * to this time. The higher the hashing power of the network, the more precise
-		 * this will be.
-		 * 
-		 * @param targetBlockCreationTime the target time interval, in milliseconds
-		 * @return this builder
-		 */
-		public Builder setTargetBlockCreationTime(long targetBlockCreationTime) {
-			this.targetBlockCreationTime = targetBlockCreationTime;
 			return this;
 		}
 
@@ -505,6 +376,11 @@ public class Config {
 		 */
 		public Config build() {
 			return new Config(this);
+		}
+
+		@Override
+		protected Builder getThis() {
+			return this;
 		}
 	}
 }

@@ -2,13 +2,7 @@
 # For more information about TOML, see https://github.com/toml-lang/toml
 # For more information about Mokamint, see https://www.mokamint.io
 
-# NOTE: Any path below can be absolute or relative to the directory
-# where the mokamint-node command is run.
-
-## Main options
-
-# the path where the node's data will be persisted
-dir = "mokamint-chain"
+## Consensus parameters
 
 # the hashing algorithm used for the deadlines and hence for the plot files of the miners
 hashing_for_deadlines = "shabal256"
@@ -21,6 +15,11 @@ hashing_for_blocks = "sha256"
 
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
 target_block_creation_time = 240000
+
+## Local parameters
+
+# the path where the node's data will be persisted
+dir = "mokamint-chain"
 
 # maximal milliseconds to wait between deadline request to the miners and first deadline reception
 deadline_wait_timeout = 20000

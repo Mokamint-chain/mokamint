@@ -30,6 +30,7 @@ module io.mokamint.node {
 	requires io.hotmoka.marshalling;
 	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
+	requires toml4j;
 	requires java.logging;
 	
 	// only needed for testing
