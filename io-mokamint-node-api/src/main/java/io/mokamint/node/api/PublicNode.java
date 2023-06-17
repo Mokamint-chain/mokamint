@@ -63,6 +63,17 @@ public interface PublicNode extends AutoCloseable {
 	ConsensusConfig getConfig() throws TimeoutException, InterruptedException;
 
 	/**
+	 * Yields information about the current chain of this node.
+	 * 
+	 * @return the information
+	 * @throws NoSuchAlgorithmException if the head block uses an unknown hashing algorithm
+	 * @throws IOException if the database is corrupted
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException;
+
+	/**
 	 * Closes the node.
 	 * 
 	 * @throws IOException if an I/O error occurred

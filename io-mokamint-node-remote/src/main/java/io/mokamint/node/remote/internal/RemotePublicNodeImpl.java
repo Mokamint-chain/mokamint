@@ -38,6 +38,7 @@ import io.hotmoka.websockets.beans.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionResultMessage;
@@ -186,6 +187,12 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||
 			InterruptedException.class.isAssignableFrom(clazz);
+	}
+
+	@Override
+	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	private <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionResultMessage> processException) throws Exception {

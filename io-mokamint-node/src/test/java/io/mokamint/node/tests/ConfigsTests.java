@@ -14,7 +14,7 @@ import io.mokamint.node.ConsensusConfigs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class ConfigTests {
+public class ConfigsTests {
 
 	@Test
 	@DisplayName("configs are correctly encoded into Json and decoded from Json")
@@ -29,7 +29,7 @@ public class ConfigTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = ConfigTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = ConfigsTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

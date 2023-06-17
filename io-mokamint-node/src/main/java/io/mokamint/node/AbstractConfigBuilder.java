@@ -29,6 +29,11 @@ import io.mokamint.node.internal.ConsensusConfigImpl;
  */
 public abstract class AbstractConfigBuilder<T extends AbstractConfigBuilder<T>> extends ConsensusConfigImpl.AbstractBuilder<T> {
 
+	/**
+	 * Creates the builder.
+	 * 
+	 * @throws NoSuchAlgorithmException if the configuration refers to some unknown hashing algorithm
+	 */
 	protected AbstractConfigBuilder() throws NoSuchAlgorithmException {
 	}
 

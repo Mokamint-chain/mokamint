@@ -38,8 +38,10 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
@@ -172,6 +174,20 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public Config getConfig() {
 		return config;
+	}
+
+	@Override
+	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException {
+		var headHash = db.getHeadHash();
+		if (headHash.isEmpty())
+			return ChainInfos.of(0L, db.getGenesisHash(), Optional.empty()); // TODO: I should remove getGenesisHash
+		else {
+			var head = db.getHead();
+			if (head.isEmpty())
+				throw new IOException("the hash of the head is set but the head block is not in the database");
+
+			return ChainInfos.of(head.get().getHeight(), db.getGenesisHash(), headHash);
+		}
 	}
 
 	/**
