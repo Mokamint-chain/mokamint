@@ -20,26 +20,27 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
- * The JSON representation of a [@link DeadlineDescription}.
+ * The JSON representation of a {@link DeadlineDescription}.
  */
 public abstract class DeadlineDescriptionJson implements JsonRepresentation<DeadlineDescription> {
 	private int scoopNumber;
-	private byte[] data;
+	private String data;
 	private String hashing;
 
 	protected DeadlineDescriptionJson(DeadlineDescription description) {
 		this.scoopNumber = description.getScoopNumber();
-		this.data = description.getData();
+		this.data = Hex.toHexString(description.getData());
 		this.hashing = description.getHashing().getName();
 	}
 
 	@Override
 	public DeadlineDescription unmap() throws NoSuchAlgorithmException {
-		return DeadlineDescriptions.of(scoopNumber, data, HashingAlgorithms.mk(hashing, Function.identity()));
+		return DeadlineDescriptions.of(scoopNumber, Hex.fromHexString(data), HashingAlgorithms.mk(hashing, Function.identity()));
 	}
 }

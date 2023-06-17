@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -38,7 +39,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private Long weightedWaitingTime;
 	private BigInteger acceleration;
 	private Deadlines.Json deadline;
-	private byte[] hashOfPreviousBlock;
+	private String hashOfPreviousBlock;
 
 	protected BlockJson(Block block) {
 		if (block instanceof GenesisBlock) {
@@ -52,14 +53,14 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 			this.weightedWaitingTime = ngb.getWeightedWaitingTime();
 			this.acceleration = ngb.getAcceleration();
 			this.deadline = new Deadlines.Encoder().map(ngb.getDeadline());
-			this.hashOfPreviousBlock = ngb.getHashOfPreviousBlock();
+			this.hashOfPreviousBlock = Hex.toHexString(ngb.getHashOfPreviousBlock());
 		}
 	}
 
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException {
 		if (startDateTimeUTC == null)
-			return Blocks.of(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), hashOfPreviousBlock);
+			return Blocks.of(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
 		else
 			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 	}

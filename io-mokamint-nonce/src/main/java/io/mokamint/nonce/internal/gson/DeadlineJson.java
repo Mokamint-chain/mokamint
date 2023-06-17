@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -28,24 +29,24 @@ import io.mokamint.nonce.api.Deadline;
  * The JSON representation of a {@link Deadline}.
  */
 public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
-	private byte[] prolog;
+	private String prolog;
 	private long progressive;
-	private byte[] value;
+	private String value;
 	private int scoopNumber;
-	private byte[] data;
+	private String data;
 	private String hashing;
 
 	protected DeadlineJson(Deadline deadline) {
-		this.prolog = deadline.getProlog();
+		this.prolog = Hex.toHexString(deadline.getProlog());
 		this.progressive = deadline.getProgressive();
-		this.value = deadline.getValue();
+		this.value = Hex.toHexString(deadline.getValue());
 		this.scoopNumber = deadline.getScoopNumber();
-		this.data = deadline.getData();
+		this.data = Hex.toHexString(deadline.getData());
 		this.hashing = deadline.getHashing().getName();
 	}
 
 	@Override
 	public Deadline unmap() throws NoSuchAlgorithmException {
-		return Deadlines.of(prolog, progressive, value, scoopNumber, data, HashingAlgorithms.mk(hashing, Function.identity()));
+		return Deadlines.of(Hex.fromHexString(prolog), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.mk(hashing, Function.identity()));
 	}
 }
