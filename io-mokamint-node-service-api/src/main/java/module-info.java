@@ -22,4 +22,5 @@ module io.mokamint.node.service.api {
 	exports io.mokamint.node.service.api;
 
 	requires io.hotmoka.websockets.server.api;
+	requires io.mokamint.node.api;
 }

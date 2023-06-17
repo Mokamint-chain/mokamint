@@ -46,6 +46,9 @@ import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetChainInfoMessages;
+import io.mokamint.node.messages.GetChainInfoResultMessage;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessages;
@@ -65,7 +68,7 @@ import jakarta.websocket.Session;
 @ThreadSafe
 public class RemotePublicNodeImpl extends AbstractWebSocketClient implements RemotePublicNode {
 	private final long timeout;
-	private final Session[] sessions = new Session[3];
+	private final Session[] sessions = new Session[4];
 	private final AtomicInteger nextId = new AtomicInteger();
 	private final ConcurrentMap<String, BlockingQueue<RpcMessage>> queues = new ConcurrentHashMap<>();
 
@@ -86,6 +89,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		sessions[0] = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
 		sessions[1] = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
 		sessions[2] = new GetConfigEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CONFIG_ENDPOINT));
+		sessions[3] = new GetChainInfoEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CHAIN_INFO_ENDPOINT));
 	}
 
 	@Override
@@ -191,8 +195,29 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 
 	@Override
 	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+		var id = nextId();
+		sendObjectAsync(sessions[3], GetChainInfoMessages.of(id));
+		try {
+			return waitForResult(id, this::processGetChainInfoSuccess, this::processGetChainInfoException);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | IOException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private ChainInfo processGetChainInfoSuccess(RpcMessage message) {
+		return message instanceof GetChainInfoResultMessage ? ((GetChainInfoResultMessage) message).get() : null;
+	}
+
+	private boolean processGetChainInfoException(ExceptionResultMessage message) {
+		var clazz = message.getExceptionClass();
+		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
+			IOException.class.isAssignableFrom(clazz) ||
+			TimeoutException.class.isAssignableFrom(clazz) ||
+			InterruptedException.class.isAssignableFrom(clazz);
 	}
 
 	private <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionResultMessage> processException) throws Exception {
@@ -288,6 +313,13 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
+		}
+	}
+
+	private class GetChainInfoEndpoint extends Endpoint {
+
+		private Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
 	}
 }

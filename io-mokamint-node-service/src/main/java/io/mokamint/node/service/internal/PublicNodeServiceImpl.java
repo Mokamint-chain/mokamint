@@ -29,6 +29,9 @@ import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetChainInfoMessage;
+import io.mokamint.node.messages.GetChainInfoMessages;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessage;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
@@ -71,7 +74,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	public PublicNodeServiceImpl(PublicNode node, int port) throws DeploymentException, IOException {
 		this.port = port;
 		this.node = node;
-		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this));
+		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this));
     	LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
@@ -144,6 +147,28 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT, GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+		}
+	}
+
+	private void getChainInfo(GetChainInfoMessage message, Session session) {
+		LOGGER.info("received a get_chain_info request");
+		try {
+			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
+		}
+		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | IOException e) {
+			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+		}
+	};
+
+	public static class GetChainInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetChainInfoMessage message) -> getServer().getChainInfo(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT, GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 }

@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.service.api;
 
+import io.mokamint.node.api.PublicNode;
 import io.hotmoka.websockets.server.api.WebSocketServer;
 
 /**
@@ -24,19 +25,24 @@ import io.hotmoka.websockets.server.api.WebSocketServer;
 public interface PublicNodeService extends WebSocketServer {
 	
 	/**
-	 * The network endpoint path where the {@code getPeers()} method is published.
+	 * The network endpoint path where the {@link PublicNode#getPeers()} method is published.
 	 */
 	String GET_PEERS_ENDPOINT = "/get_peers";
 
 	/**
-	 * The network endpoint path where the {@code getBlock()} method is published.
+	 * The network endpoint path where the {@link PublicNode#getBlock(byte[])} method is published.
 	 */
 	String GET_BLOCK_ENDPOINT = "/get_block";
 
 	/**
-	 * The network endpoint path where the {@code getConfig()} method is published.
+	 * The network endpoint path where the {@link PublicNode#getConfig()} method is published.
 	 */
 	String GET_CONFIG_ENDPOINT = "/get_config";
+
+	/**
+	 * The network endpoint path where {@link PublicNode#getChainInfo()} is published.
+	 */
+	String GET_CHAIN_INFO_ENDPOINT = "/get_chain_info";
 
 	@Override
 	void close();

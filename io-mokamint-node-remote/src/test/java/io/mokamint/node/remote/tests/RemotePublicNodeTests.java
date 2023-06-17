@@ -23,11 +23,17 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.ChainInfos;
+import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetChainInfoMessage;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.messages.GetConfigMessage;
+import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -247,6 +253,98 @@ public class RemotePublicNodeTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
 			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getBlock(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getConfig() works")
+	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
+		var config1 = ConsensusConfigs.defaults().build();
+
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetConfig(GetConfigMessage message, Session session) {
+				sendObjectAsync(session, GetConfigResultMessages.of(config1, message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+			var config2 = remote.getConfig();
+			assertEquals(config1, config2);
+		}
+	}
+
+	@Test
+	@DisplayName("getChainInfo() works")
+	public void getChainInfoWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
+		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }));
+
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
+				sendObjectAsync(session, GetChainInfoResultMessages.of(info1, message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+			var info2 = remote.getChainInfo();
+			assertEquals(info1, info2);
+		}
+	}
+
+	@Test
+	@DisplayName("getChainInfo() works in case of IOException")
+	public void getChainInfoWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var exceptionMessage = "exception message";
+
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
+				sendObjectAsync(session, ExceptionResultMessages.of(new IOException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+			var exception = assertThrows(IOException.class, () -> remote.getChainInfo());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getChainInfo() works in case of NoSuchAlgorithmException")
+	public void getChainInfoWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var exceptionMessage = "exception message";
+
+		class MyServer extends TestServer {
+
+			public MyServer() throws DeploymentException, IOException {
+				super(8025);
+			}
+
+			@Override
+			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
+				sendObjectAsync(session, ExceptionResultMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getChainInfo());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

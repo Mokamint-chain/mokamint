@@ -41,8 +41,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.mokamint.node.Blocks;
+import io.mokamint.node.ChainInfos;
+import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionResultMessage;
@@ -69,7 +73,7 @@ public class NodeServiceTests {
 		when(node.getPeers()).thenReturn(Stream.of(peer1, peer2));
 
 		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), onGetPeersResult, null, null)) {
+			 var client = new TestClient(new URI("ws://localhost:8025"), onGetPeersResult, null, null, null, null)) {
 
 			client.sendGetPeers();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
@@ -91,7 +95,7 @@ public class NodeServiceTests {
 		when(node.getBlock(hash)).thenReturn(Optional.empty());
 
 		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, onGetBlockResult, e -> {})) {
+			 var client = new TestClient(new URI("ws://localhost:8025"), null, onGetBlockResult, null, null, null)) {
 
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
@@ -119,7 +123,7 @@ public class NodeServiceTests {
 		when(node.getBlock(hash)).thenReturn(Optional.of(block));
 
 		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, onGetBlockResult, e -> {})) {
+			 var client = new TestClient(new URI("ws://localhost:8025"), null, onGetBlockResult, null, null, null)) {
 
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
@@ -138,9 +142,53 @@ public class NodeServiceTests {
 		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
 
 		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, block -> {}, onException)) {
+			 var client = new TestClient(new URI("ws://localhost:8025"), null, null, null, null, onException)) {
 
 			client.sendGetBlock(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getConfig() request reaches the service, it sends back its consensus configuration")
+	public void serviceGetConfigWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+		var semaphore = new Semaphore(0);
+		var config = ConsensusConfigs.defaults().build();
+
+		Consumer<ConsensusConfig> onGetConfigResult = received -> {
+			if (config.equals(received))
+				semaphore.release();
+		};
+
+		var node = mock(PublicNode.class);
+		when(node.getConfig()).thenReturn(config);
+
+		try (var service = PublicNodeServices.open(node, 8025);
+			 var client = new TestClient(new URI("ws://localhost:8025"), null, null, onGetConfigResult, null, null)) {
+
+			client.sendGetConfig();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getChainInfo() request reaches the service, it sends back its chain information")
+	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+		var semaphore = new Semaphore(0);
+		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
+
+		Consumer<ChainInfo> onGetChainInfoResult = received -> {
+			if (info.equals(received))
+				semaphore.release();
+		};
+
+		var node = mock(PublicNode.class);
+		when(node.getChainInfo()).thenReturn(info);
+
+		try (var service = PublicNodeServices.open(node, 8025);
+			 var client = new TestClient(new URI("ws://localhost:8025"), null, null, null, onGetChainInfoResult, null)) {
+
+			client.sendGetChainInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

@@ -25,6 +25,9 @@ import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetChainInfoMessage;
+import io.mokamint.node.messages.GetChainInfoMessages;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessage;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
@@ -51,7 +54,7 @@ public class TestServer extends AbstractWebSocketServer {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public TestServer(int port) throws DeploymentException, IOException {
-		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this));
+		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this));
 	}
 
 	public void close() {
@@ -100,6 +103,21 @@ public class TestServer extends AbstractWebSocketServer {
 		private static ServerEndpointConfig config(TestServer server) {
 			return simpleConfig(server, GetConfigEndpoint.class, PublicNodeService.GET_CONFIG_ENDPOINT,
 					GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetChainInfo(GetChainInfoMessage message, Session session) {}
+
+	public static class GetChainInfoEndpoint extends AbstractServerEndpoint<TestServer> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetChainInfoMessage message) -> getServer().onGetChainInfo(message, session));
+	    }
+
+		private static ServerEndpointConfig config(TestServer server) {
+			return simpleConfig(server, GetChainInfoEndpoint.class, PublicNodeService.GET_CHAIN_INFO_ENDPOINT,
+					GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
 		}
 	}
 }
