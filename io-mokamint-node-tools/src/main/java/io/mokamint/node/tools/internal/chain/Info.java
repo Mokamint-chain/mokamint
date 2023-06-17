@@ -52,7 +52,7 @@ public class Info extends AbstractRpcCommand {
 			LOGGER.log(Level.SEVERE, "unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\".", e);
 		}
 		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted!|@"));
+			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
 			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
 		}
 	}

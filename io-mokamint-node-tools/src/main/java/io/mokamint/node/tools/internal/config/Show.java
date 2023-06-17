@@ -34,7 +34,9 @@ public class Show extends AbstractRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
 		try {
+			System.out.println("a");
 			var config = remote.getConfig();
+			System.out.println("b");
 
 			if (json())
 				System.out.println(new ConsensusConfigs.Encoder().encode(config));

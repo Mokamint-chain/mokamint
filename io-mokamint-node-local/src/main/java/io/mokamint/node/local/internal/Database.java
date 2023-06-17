@@ -280,7 +280,7 @@ public class Database implements AutoCloseable {
 	 * @throws IOException if an I/O error occurred in the database
 	 */
 	public byte[] add(Block block) throws IOException {
-		byte[] bytesOfBlock = block.toByteArray();
+		var bytesOfBlock = block.toByteArray();
 		byte[] hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
 		environment.executeInTransaction(txn -> {

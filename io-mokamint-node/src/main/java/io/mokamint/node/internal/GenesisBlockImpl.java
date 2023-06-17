@@ -22,9 +22,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlock;
 
 /**
@@ -104,13 +106,28 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	@Override
 	public String toString() {
-		StringBuilder result = new StringBuilder("Genesis Block:\n");
-		result.append("* startDateTimeUTC: " + startDateTimeUTC + "\n");
-		result.append("* height: " + getHeight() + "\n");
-		result.append("* totalWaitingTime: " + getTotalWaitingTime() + "ms\n");
-		result.append("* weightedWaitingTime: " + getWeightedWaitingTime() + "ms\n");
-		result.append("* acceleration: " + getAcceleration());
+		var builder = new StringBuilder("Genesis Block:\n");
+		builder.append("* creation date and time UTC: " + startDateTimeUTC + "\n");
+		populate(builder);
 		
-		return result.toString();
+		return builder.toString();
+	}
+
+	@Override
+	public String toString(ConsensusConfig config, LocalDateTime startDateTimeUTC) {
+		var builder = new StringBuilder("Genesis Block:\n");
+		builder.append("* creation date and time UTC: " + startDateTimeUTC + "\n");
+		builder.append("* hash: " + Hex.toHexString(config.getHashingForBlocks().hash(toByteArray())) + "\n");
+		populate(builder);
+
+		return builder.toString();
+	}
+
+	private void populate(StringBuilder builder) {
+		builder.append("* height: " + getHeight() + "\n");
+		builder.append("* total waiting time: " + getTotalWaitingTime() + "ms\n");
+		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + "ms\n");
+		builder.append("* acceleration: " + getAcceleration() + "\n");
+		builder.append("* next generation signature: " + Hex.toHexString(BLOCK_1_GENERATION_SIGNATURE));
 	}
 }

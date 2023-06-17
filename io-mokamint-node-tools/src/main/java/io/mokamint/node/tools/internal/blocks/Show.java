@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.blocks;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
@@ -25,6 +26,7 @@ import java.util.logging.Logger;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractRpcCommand;
 import jakarta.websocket.EncodeException;
@@ -57,26 +59,75 @@ public class Show extends AbstractRpcCommand {
 					hash = hash.substring(2);
 
 				Optional<Block> result = remote.getBlock(Hex.fromHexString(hash));
-				if (result.isPresent()) {
-					Block block = result.get();
-					if (json())
-						System.out.println(new Blocks.Encoder().encode(block));
-					else
-						System.out.println(block);
-				}
+				if (result.isPresent())
+					print(remote, result.get());
 				else
 					System.out.println(Ansi.AUTO.string("@|red The node does not contain any block with hash " + hash + "|@"));
 			}
+			else if (blockIdentifier.head) {
+				var info = remote.getChainInfo();
+				var headHash = info.getHeadHash();
+				if (headHash.isPresent()) {
+					Optional<Block> result = remote.getBlock(headHash.get());
+					if (result.isPresent())
+						print(remote, result.get());
+					else
+						throw new IOException("The node has a head hash but it is bound to no block!");
+				}
+				else
+					System.out.println(Ansi.AUTO.string("@|red There is no chain head in the node!|@"));
+			}
+			else if (blockIdentifier.genesis) {
+				var info = remote.getChainInfo();
+				var genesisHash = info.getGenesisHash();
+				if (genesisHash.isPresent()) {
+					Optional<Block> result = remote.getBlock(genesisHash.get());
+					if (result.isPresent())
+						print(remote, result.get());
+					else
+						throw new IOException("The node has a genesis hash but it is bound to no block!");
+				}
+				else
+					System.out.println(Ansi.AUTO.string("@|red There is no genesis block in the node!|@"));
+			}
 		}
 		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red The block uses an unknown hashing algorithm!|@"));
+			System.out.println(Ansi.AUTO.string("@|red Some block uses an unknown hashing algorithm!|@"));
 			LOGGER.log(Level.SEVERE, "unknown hashing algotihm in a block at \"" + publicUri() + "\"", e);
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
 			LOGGER.log(Level.SEVERE, "cannot encode a block from \"" + publicUri() + "\" in JSON format.", e);
 		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
+			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
+		}
 	}
+
+    private void print(RemotePublicNode remote, Block block) throws EncodeException, NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
+    	if (json())
+			System.out.println(new Blocks.Encoder().encode(block));
+		else {
+			var info = remote.getChainInfo();
+			var genesisHash = info.getGenesisHash();
+			if (genesisHash.isPresent()) {
+				var config = remote.getConfig();
+				var genesis = remote.getBlock(genesisHash.get());
+				if (genesis.isPresent()) {
+					var content = genesis.get();
+					if (content instanceof GenesisBlock)
+						System.out.println(block.toString(config, ((GenesisBlock) content).getStartDateTimeUTC()));
+					else
+						throw new IOException("The initial block of the chain is not a genesis block!");
+				}
+				else
+					System.out.println(block);
+			}
+			else
+				System.out.println(block);
+		}	
+    }
 
     @Override
 	protected void execute() {
