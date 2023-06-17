@@ -24,7 +24,6 @@ import picocli.CommandLine.HelpCommand;
 
 @Command(name = "peers",
 	description = "Control the peers of a node.",
-	showDefaultValues = true,
 	subcommands = {
 		Add.class,
 		HelpCommand.class,

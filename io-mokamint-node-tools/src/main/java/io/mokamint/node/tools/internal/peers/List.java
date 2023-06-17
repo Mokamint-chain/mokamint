@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.peers;
 
-import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -27,36 +25,21 @@ import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.remote.RemotePublicNodes;
-import io.mokamint.tools.AbstractCommand;
-import jakarta.websocket.DeploymentException;
+import io.mokamint.node.remote.RemotePublicNode;
+import io.mokamint.node.tools.internal.AbstractRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
-import picocli.CommandLine.Option;
 
-@Command(name = "ls",
-	description = "List the peers of a node.",
-	showDefaultValues = true
-)
-public class List extends AbstractCommand {
-
-	@Option(names = "--uri", description = "the network URI where the node is published", defaultValue = "ws://localhost:8025")
-	private URI uri;
-
-	@Option(names = "--timeout", description = "the timeout of the connection, in milliseconds", defaultValue = "10000")
-	private long timeout;
-
-	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
-	private boolean json;
+@Command(name = "ls", description = "List the peers of a node.")
+public class List extends AbstractRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
-	@Override
-	protected void execute() {
-		try (var remote = RemotePublicNodes.of(uri, timeout)) {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+		try {
 			Stream<Peer> peers = remote.getPeers();
-			if (json) {
+			if (json()) {
 				var encoder = new Peers.Encoder();
 				java.util.List<String> encoded = new ArrayList<>();
 				for (var peer: peers.toArray(Peer[]::new))
@@ -67,25 +50,14 @@ public class List extends AbstractCommand {
 			else
 				peers.forEach(System.out::println);
 		}
-		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			LOGGER.log(Level.SEVERE, "I/O error while accessing \"" + uri + "\"", e);
-		}
-		catch (DeploymentException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot contact the remote service! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			LOGGER.log(Level.SEVERE, "failed deployment a remote node for \"" + uri + "\"", e);
-		}
-		catch (TimeoutException e) {
-			System.out.println(Ansi.AUTO.string("@|red Timeout: I waited for " + timeout + "ms but the remote service didn't answer.|@"));
-			LOGGER.log(Level.SEVERE, "call timeout to getPeers() on \"" + uri + "\"", e);
-		}
-		catch (InterruptedException e) {
-			System.out.println(Ansi.AUTO.string("@|red Unexpected interruption while waiting for \"" + uri + "\".|@"));
-			LOGGER.log(Level.SEVERE, "call to getPeers() on \"" + uri + "\" interrupted", e);
-		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode the peers of the node at \"" + uri + "\" in JSON format.", e);
+			LOGGER.log(Level.SEVERE, "cannot encode the peers of the node at \"" + publicUri() + "\" in JSON format.", e);
 		}
+	}
+
+	@Override
+	protected void execute() {
+		executeOnPublicAPI(this::body, LOGGER);
 	}
 }

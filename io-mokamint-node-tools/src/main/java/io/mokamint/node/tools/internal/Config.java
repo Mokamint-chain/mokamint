@@ -22,7 +22,6 @@ import picocli.CommandLine.HelpCommand;
 
 @Command(name = "config",
 	description = "Control the configuration of a node.",
-	showDefaultValues = true,
 	subcommands = {
 		HelpCommand.class,
 		Show.class

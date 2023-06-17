@@ -17,10 +17,12 @@ limitations under the License.
 package io.mokamint.tools;
 
 import io.mokamint.tools.internal.AbstractCommandImpl;
+import picocli.CommandLine.Command;
 
 /**
  * Shared code of all commands of a Mokamint CLI tool.
  */
+@Command(showDefaultValues = true)
 public abstract class AbstractCommand extends AbstractCommandImpl {
 
 	/**

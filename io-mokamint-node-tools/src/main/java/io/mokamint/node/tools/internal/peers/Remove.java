@@ -23,10 +23,7 @@ import io.mokamint.tools.AbstractCommand;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "rm",
-	description = "Remove peers from a node.",
-	showDefaultValues = true
-)
+@Command(name = "rm", description = "Remove peers from a node.")
 public class Remove extends AbstractCommand {
 
 	@Option(names = "--uri", description = "the network URI where the node is published", defaultValue = "ws://localhost:8025")

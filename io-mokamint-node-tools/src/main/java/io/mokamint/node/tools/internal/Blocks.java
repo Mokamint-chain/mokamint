@@ -22,7 +22,6 @@ import picocli.CommandLine.HelpCommand;
 
 @Command(name = "blocks",
 	description = "Access the blocks of a node.",
-	showDefaultValues = true,
 	subcommands = {
 		HelpCommand.class,
 		Show.class

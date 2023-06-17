@@ -46,9 +46,7 @@ import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "start",
-	description = "Start a new node.",
-	showDefaultValues = true)
+@Command(name = "start", description = "Start a new node.")
 public class Start extends AbstractCommand {
 
 	@Parameters(description = { "plot files that will be used for local mining" })

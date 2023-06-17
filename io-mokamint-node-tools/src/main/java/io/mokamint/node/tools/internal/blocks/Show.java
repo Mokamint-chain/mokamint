@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.blocks;
 
-import java.io.IOException;
-import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
@@ -27,32 +25,19 @@ import java.util.logging.Logger;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.remote.RemotePublicNodes;
-import io.mokamint.tools.AbstractCommand;
-import jakarta.websocket.DeploymentException;
+import io.mokamint.node.remote.RemotePublicNode;
+import io.mokamint.node.tools.internal.AbstractRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 
-@Command(name = "show",
-	description = "Show the blocks of a node.",
-	showDefaultValues = true
-)
-public class Show extends AbstractCommand {
-
-	@Option(names = "--uri", description = "the network URI where the node is published", defaultValue = "ws://localhost:8025")
-	private URI uri;
-
-	@Option(names = "--timeout", description = "the timeout of the connection, in milliseconds", defaultValue = "10000")
-	private long timeout;
+@Command(name = "show", description = "Show the blocks of a node.")
+public class Show extends AbstractRpcCommand {
 
 	@ArgGroup(exclusive = true, multiplicity = "1")
 	private BlockIdentifier blockIdentifier;
-
-	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
-	private boolean json;
 
 	static class BlockIdentifier {
         @Option(names = "--hash", required = true, description = "the block with the given hexadecimal hash (not necessarily in the current chain)") String hash;
@@ -64,9 +49,8 @@ public class Show extends AbstractCommand {
 
     private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
 
-	@Override
-	protected void execute() {
-		try (var remote = RemotePublicNodes.of(uri, timeout)) {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+		try {
 			String hash = blockIdentifier.hash;
 			if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
@@ -75,7 +59,7 @@ public class Show extends AbstractCommand {
 				Optional<Block> result = remote.getBlock(Hex.fromHexString(hash));
 				if (result.isPresent()) {
 					Block block = result.get();
-					if (json)
+					if (json())
 						System.out.println(new Blocks.Encoder().encode(block));
 					else
 						System.out.println(block);
@@ -84,29 +68,18 @@ public class Show extends AbstractCommand {
 					System.out.println(Ansi.AUTO.string("@|red The node does not contain any block with hash " + hash + "|@"));
 			}
 		}
-		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			LOGGER.log(Level.SEVERE, "I/O error while accessing \"" + uri + "\"", e);
-		}
-		catch (DeploymentException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot contact the remote service! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			LOGGER.log(Level.SEVERE, "failed deployment a remote node for \"" + uri + "\"", e);
-		}
-		catch (TimeoutException e) {
-			System.out.println(Ansi.AUTO.string("@|red Timeout: I waited for " + timeout + "ms but the remote service didn't answer.|@"));
-			LOGGER.log(Level.SEVERE, "call timeout to getPeers() on \"" + uri + "\"", e);
-		}
-		catch (InterruptedException e) {
-			System.out.println(Ansi.AUTO.string("@|red Unexpected interruption while waiting for \"" + uri + "\".|@"));
-			LOGGER.log(Level.SEVERE, "call to getPeers() on \"" + uri + "\" interrupted", e);
-		}
 		catch (NoSuchAlgorithmException e) {
 			System.out.println(Ansi.AUTO.string("@|red The block uses an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "unknown hashing algotihm in a block at \"" + uri + "\"", e);
+			LOGGER.log(Level.SEVERE, "unknown hashing algotihm in a block at \"" + publicUri() + "\"", e);
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode a block from \"" + uri + "\" in JSON format.", e);
+			LOGGER.log(Level.SEVERE, "cannot encode a block from \"" + publicUri() + "\" in JSON format.", e);
 		}
+	}
+
+    @Override
+	protected void execute() {
+		executeOnPublicAPI(this::body, LOGGER);
 	}
 }
