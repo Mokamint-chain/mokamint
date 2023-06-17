@@ -25,10 +25,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.tools.AbstractCommand;
 import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EncodeException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
@@ -49,7 +51,10 @@ public class Show extends AbstractCommand {
 	@ArgGroup(exclusive = true, multiplicity = "1")
 	private BlockIdentifier blockIdentifier;
 
-    static class BlockIdentifier {
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
+	static class BlockIdentifier {
         @Option(names = "--hash", required = true, description = "the block with the given hexadecimal hash (not necessarily in the current chain)") String hash;
         @Option(names = "--head", required = true, description = "the head of the current chain") boolean head;
         @Option(names = "--genesis", required = true, description = "the genesis of the current chain") boolean genesis;
@@ -67,9 +72,14 @@ public class Show extends AbstractCommand {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
 
-				Optional<Block> block = remote.getBlock(Hex.fromHexString(hash));
-				if (block.isPresent())
-					System.out.println(block.get());
+				Optional<Block> result = remote.getBlock(Hex.fromHexString(hash));
+				if (result.isPresent()) {
+					Block block = result.get();
+					if (json)
+						System.out.println(new Blocks.Encoder().encode(block));
+					else
+						System.out.println(block);
+				}
 				else
 					System.out.println(Ansi.AUTO.string("@|red The node does not contain any block with hash " + hash + "|@"));
 			}
@@ -93,6 +103,10 @@ public class Show extends AbstractCommand {
 		catch (NoSuchAlgorithmException e) {
 			System.out.println(Ansi.AUTO.string("@|red The block uses an unknown hashing algorithm!|@"));
 			LOGGER.log(Level.SEVERE, "unknown hashing algotihm in a block at \"" + uri + "\"", e);
+		}
+		catch (EncodeException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
+			LOGGER.log(Level.SEVERE, "cannot encode a block from \"" + uri + "\" in JSON format.", e);
 		}
 	}
 }

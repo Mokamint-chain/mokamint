@@ -163,13 +163,13 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	}
 
 	@Override
-	public ConsensusConfig getConfig() throws NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public ConsensusConfig getConfig() throws TimeoutException, InterruptedException {
 		var id = nextId();
 		sendObjectAsync(sessions[2], GetConfigMessages.of(id));
 		try {
 			return waitForResult(id, this::processGetConfigSuccess, this::processGetConfigException);
 		}
-		catch (RuntimeException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException e) {
 			throw e;
 		}
 		catch (Exception e) {

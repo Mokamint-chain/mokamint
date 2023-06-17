@@ -130,7 +130,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		try {
 			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 		}
-		catch (NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (TimeoutException | InterruptedException e) {
 			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
 		}
 	};
