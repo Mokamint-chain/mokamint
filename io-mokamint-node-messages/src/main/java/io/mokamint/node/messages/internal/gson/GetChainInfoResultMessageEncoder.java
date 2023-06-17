@@ -14,12 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.internal.gson;
 
-import io.mokamint.node.api.ConsensusConfig;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.GetChainInfoResultMessage;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
 
 /**
- * The network message corresponding to the result of the {@code PublicNode#getConfig()} method of a node.
+ * An encoder of {@code GetChainInfoResultMessage}.
  */
-public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig> {
+public class GetChainInfoResultMessageEncoder extends MappedEncoder<GetChainInfoResultMessage, GetChainInfoResultMessages.Json> {
+
+	public GetChainInfoResultMessageEncoder() {
+		super(GetChainInfoResultMessages.Json::new);
+	}
 }

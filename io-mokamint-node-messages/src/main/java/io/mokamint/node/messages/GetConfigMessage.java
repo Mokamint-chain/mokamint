@@ -19,7 +19,7 @@ package io.mokamint.node.messages;
 import io.hotmoka.websockets.beans.RpcMessage;
 
 /**
- * The network message corresponding to the {@code getConfig} method of a node.
+ * The network message corresponding to the {@code PublicNode#getConfig()} method of a node.
  */
 public interface GetConfigMessage extends RpcMessage {
 	

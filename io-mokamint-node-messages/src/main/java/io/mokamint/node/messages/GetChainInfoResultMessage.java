@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.ChainInfo;
 
 /**
- * The network message corresponding to the result of the {@code PublicNode#getConfig()} method of a node.
+ * The network message corresponding to the result of the {@code PublicNode#getChainInfo()} method of a node.
  */
-public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig> {
+public interface GetChainInfoResultMessage extends ResultMessage<ChainInfo> {
 }

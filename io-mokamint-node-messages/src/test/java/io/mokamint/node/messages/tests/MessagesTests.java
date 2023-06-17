@@ -19,12 +19,15 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.ExceptionResultMessage;
 import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetChainInfoMessages;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
@@ -98,8 +101,8 @@ public class MessagesTests {
 	@Test
 	@DisplayName("getConfigResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetConfigResult() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var config1 = ConsensusConfigs.defaults().build();
-		var getConfigResultMessage1 = GetConfigResultMessages.of(config1, "id");
+		var config = ConsensusConfigs.defaults().build();
+		var getConfigResultMessage1 = GetConfigResultMessages.of(config, "id");
 		String encoded = new GetConfigResultMessages.Encoder().encode(getConfigResultMessage1);
 		var getConfigResultMessage2 = new GetConfigResultMessages.Decoder().decode(encoded);
 		assertEquals(getConfigResultMessage1, getConfigResultMessage2);
@@ -112,6 +115,25 @@ public class MessagesTests {
 		String encoded = new ExceptionResultMessages.Encoder().encode(exceptionResultMessage1);
 		var exceptionResultMessage2 = new ExceptionResultMessages.Decoder().decode(encoded);
 		assertEquals(exceptionResultMessage1, exceptionResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getChainInfo messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetChainInfo() throws EncodeException, DecodeException {
+		var getChainInfo1 = GetChainInfoMessages.of("id");
+		String encoded = new GetChainInfoMessages.Encoder().encode(getChainInfo1);
+		var getChainInfo2 = new GetChainInfoMessages.Decoder().decode(encoded);
+		assertEquals(getChainInfo1, getChainInfo2);
+	}
+
+	@Test
+	@DisplayName("getChainInfoResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetChainInfoResult() throws EncodeException, DecodeException {
+		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 3, 7, 8, 11 }));
+		var getChainInfoResultMessage1 = GetChainInfoResultMessages.of(info, "id");
+		String encoded = new GetChainInfoResultMessages.Encoder().encode(getChainInfoResultMessage1);
+		var getChainInfoResultMessage2 = new GetChainInfoResultMessages.Decoder().decode(encoded);
+		assertEquals(getChainInfoResultMessage1, getChainInfoResultMessage2);
 	}
 
 	@Test
