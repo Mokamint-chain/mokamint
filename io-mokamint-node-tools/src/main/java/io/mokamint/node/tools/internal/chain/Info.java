@@ -14,36 +14,46 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal.config;
+package io.mokamint.node.tools.internal.chain;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.ChainInfos;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 
-@Command(name = "show", description = "Show the configuration of a node.")
-public class Show extends AbstractRpcCommand {
+@Command(name = "info", description = "Report information about the chain of a node.")
+public class Info extends AbstractRpcCommand {
 
-	private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(Info.class.getName());
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
 		try {
-			var config = remote.getConfig();
+			var info = remote.getChainInfo();
 
 			if (json())
-				System.out.println(new ConsensusConfigs.Encoder().encode(config));
+				System.out.println(new ChainInfos.Encoder().encode(info));
 			else
-				System.out.println(config);
+				System.out.println(info);
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
 			LOGGER.log(Level.SEVERE, "cannot encode the configuration of the node at \"" + publicUri() + "\" in JSON format.", e);
+		}
+		catch (NoSuchAlgorithmException e) {
+			System.out.println(Ansi.AUTO.string("@|red The head of the chain uses an unknown hashing algorithm!|@"));
+			LOGGER.log(Level.SEVERE, "unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\".", e);
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted!|@"));
+			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
 		}
 	}
 

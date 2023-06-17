@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools;
 
 import io.mokamint.node.tools.internal.Blocks;
+import io.mokamint.node.tools.internal.Chain;
 import io.mokamint.node.tools.internal.Config;
 import io.mokamint.node.tools.internal.Peers;
 import io.mokamint.node.tools.internal.Start;
@@ -36,6 +37,7 @@ import picocli.CommandLine.Command;
 	footer = "Copyright (c) 2023 Fausto Spoto",
 	subcommands = {
 		Blocks.class,
+		Chain.class,
 		Config.class,
 		Peers.class,
 		Start.class

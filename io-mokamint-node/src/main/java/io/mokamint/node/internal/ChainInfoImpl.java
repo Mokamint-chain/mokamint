@@ -87,8 +87,8 @@ public class ChainInfoImpl implements ChainInfo {
 	@Override
 	public String toString() {
 		var builder = new StringBuilder();
-		builder.append("* height: " + height);
-		builder.append("* hash of the head block: " + toString(headHash));
+		builder.append("* height: " + height + "\n");
+		builder.append("* hash of the head block: " + toString(headHash) + "\n");
 		builder.append("* hash of the genesis block: " + toString(genesisHash));
 	
 		return builder.toString();
