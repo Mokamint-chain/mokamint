@@ -27,69 +27,147 @@ import io.hotmoka.crypto.Hex;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
-import io.mokamint.node.tools.internal.AbstractRpcCommand;
+import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 
-@Command(name = "show", description = "Show the blocks of a node.")
-public class Show extends AbstractRpcCommand {
+@Command(name = "show", description = "Show the blocks of the chain of a node.")
+public class Show extends AbstractPublicRpcCommand {
 
 	@ArgGroup(exclusive = true, multiplicity = "1")
 	private BlockIdentifier blockIdentifier;
 
-	static class BlockIdentifier {
+	/**
+	 * The alternative ways of specifying the block to show.
+	 */
+	private static class BlockIdentifier {
         @Option(names = "--hash", required = true, description = "the block with the given hexadecimal hash (not necessarily in the current chain)") String hash;
         @Option(names = "--head", required = true, description = "the head of the current chain") boolean head;
         @Option(names = "--genesis", required = true, description = "the genesis of the current chain") boolean genesis;
-        @Option(names = "--height", required = true, description = "the block of the current chain at the given height (0 for the genesis, 1 for the block above it, etc)") long height;
         @Option(names = "--depth", required = true, description = "the block of the current chain at the given depth (0 for the head, 1 for the block below it, etc)") long depth;
-    }
 
-    private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
-
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
-		try {
-			String hash = blockIdentifier.hash;
-			if (hash != null) {
+        /**
+         * Yields the specified block, if any.
+         * 
+         * @param remote the remote node
+         * @return the block, if any
+         * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
+         * @throws IOException if the database of the remote node is corrupted
+         * @throws TimeoutException if some connection timed-out
+         * @throws InterruptedException if some connection was interrupted while waiting
+         */
+        private Optional<Block> getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
+        	if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
 
 				Optional<Block> result = remote.getBlock(Hex.fromHexString(hash));
 				if (result.isPresent())
-					print(remote, result.get());
+					return result;
 				else
 					System.out.println(Ansi.AUTO.string("@|red The node does not contain any block with hash " + hash + "|@"));
 			}
-			else if (blockIdentifier.head) {
+			else if (head) {
 				var info = remote.getChainInfo();
 				var headHash = info.getHeadHash();
 				if (headHash.isPresent()) {
 					Optional<Block> result = remote.getBlock(headHash.get());
 					if (result.isPresent())
-						print(remote, result.get());
+						return result;
 					else
 						throw new IOException("The node has a head hash but it is bound to no block!");
 				}
 				else
 					System.out.println(Ansi.AUTO.string("@|red There is no chain head in the node!|@"));
 			}
-			else if (blockIdentifier.genesis) {
+			else if (genesis) {
 				var info = remote.getChainInfo();
 				var genesisHash = info.getGenesisHash();
 				if (genesisHash.isPresent()) {
 					Optional<Block> result = remote.getBlock(genesisHash.get());
 					if (result.isPresent())
-						print(remote, result.get());
+						return result;
 					else
 						throw new IOException("The node has a genesis hash but it is bound to no block!");
 				}
 				else
 					System.out.println(Ansi.AUTO.string("@|red There is no genesis block in the node!|@"));
 			}
+			else {
+				// it must be --depth, since the {@code blockIdentifier} parameter is mandatory
+				if (depth < 0)
+					System.out.println(Ansi.AUTO.string("@|red The depth of the block must be positive|@"));
+				else if (depth > 20)
+					System.out.println(Ansi.AUTO.string("@|red Cannot show more than 20 blocks behind the head|@"));
+				else {
+					var info = remote.getChainInfo();
+					var maybeHeadhHash = info.getHeadHash();
+					if (maybeHeadhHash.isPresent()) {
+						Optional<Block> maybeHead = remote.getBlock(maybeHeadhHash.get());
+						if (maybeHead.isPresent()) {
+							var head = maybeHead.get();
+							var height = head.getHeight();
+							if (height - depth < 0)
+								System.out.println(Ansi.AUTO.string("@|red There is no block at that depth since the chain has height " + height + "!|@"));
+							else
+								return Optional.of(backwards(head, depth, remote));
+						}
+						else
+							throw new IOException("The node has a head hash but it is bound to no block!");
+					}
+					else
+						System.out.println(Ansi.AUTO.string("@|red There is no block at that depth since the chain has no head!|@"));
+				}
+			}
+
+        	return Optional.empty();
+        }
+
+        /**
+         * Goes {@code depth} blocks backwards from the given cursor.
+         * 
+         * @param cursor the starting block
+         * @param depth how much backwards it should go
+         * @param the remote node
+         * @return the resulting block
+         * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
+         * @throws IOException if the database of the remote node is corrupted
+         * @throws TimeoutException if some connection timed-out
+         * @throws InterruptedException if some connection was interrupted while waiting
+         */
+		private Block backwards(Block cursor, long depth, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, IOException {
+			if (depth == 0)
+				return cursor;
+			else if (cursor instanceof NonGenesisBlock) {
+				var ngb = (NonGenesisBlock) cursor;
+				var previousHash = ngb.getHashOfPreviousBlock();
+				Optional<Block> maybePrevious = remote.getBlock(previousHash);
+				if (maybePrevious.isPresent())
+					return backwards(maybePrevious.get(), depth - 1, remote);
+				else {
+					var config = remote.getConfig();
+					throw new IOException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " has a previous hash that does not refer to any existing block!");
+				}
+			}
+			else {
+				var config = remote.getConfig();
+				throw new IOException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " is a genesis block but is not at height 0!");
+			}
+		}
+	}
+
+    private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
+
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+		try {
+			var block = blockIdentifier.getBlock(remote);
+			if (block.isPresent())
+				print(remote, block.get());
 		}
 		catch (NoSuchAlgorithmException e) {
 			System.out.println(Ansi.AUTO.string("@|red Some block uses an unknown hashing algorithm!|@"));
@@ -131,6 +209,6 @@ public class Show extends AbstractRpcCommand {
 
     @Override
 	protected void execute() {
-		executeOnPublicAPI(this::body, LOGGER);
+		execute(this::body, LOGGER);
 	}
 }

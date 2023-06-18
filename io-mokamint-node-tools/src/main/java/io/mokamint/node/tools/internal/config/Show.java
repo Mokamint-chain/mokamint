@@ -22,13 +22,13 @@ import java.util.logging.Logger;
 
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.remote.RemotePublicNode;
-import io.mokamint.node.tools.internal.AbstractRpcCommand;
+import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "show", description = "Show the configuration of a node.")
-public class Show extends AbstractRpcCommand {
+public class Show extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
 
@@ -51,6 +51,6 @@ public class Show extends AbstractRpcCommand {
 
 	@Override
 	protected void execute() {
-		executeOnPublicAPI(this::body, LOGGER);
+		execute(this::body, LOGGER);
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools.internal;
 
 import io.mokamint.node.tools.internal.chain.Info;
+import io.mokamint.node.tools.internal.chain.List;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
@@ -24,7 +25,8 @@ import picocli.CommandLine.HelpCommand;
 	description = "Control the chain of a node.",
 	subcommands = {
 		HelpCommand.class,
-		Info.class
+		Info.class,
+		List.class
 	})
 public class Chain {
 }

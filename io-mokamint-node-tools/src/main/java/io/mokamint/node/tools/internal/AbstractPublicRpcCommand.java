@@ -30,15 +30,13 @@ import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 
 /**
- * Shared code among the command that connect to a remote Mokamint node and perform Rpc calls to the node.
+ * Shared code among the command that connect to a remote Mokamint node and perform Rpc calls
+ * to the public API of the node.
  */
-public abstract class AbstractRpcCommand extends AbstractCommand {
+public abstract class AbstractPublicRpcCommand extends AbstractCommand {
 
 	@Option(names = "--uri, --public-uri", description = "the network URI where the public API of the node is published", defaultValue = "ws://localhost:8030")
 	private URI publicUri;
-
-	@Option(names = "--restricted-uri", description = "the network URI where the restricted API of the node is published", defaultValue = "ws://localhost:8031")
-	private URI restrictedUri;
 
 	@Option(names = "--timeout", description = "the timeout of the connection, in milliseconds", defaultValue = "10000")
 	private long timeout;
@@ -65,22 +63,13 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	}
 
 	/**
-	 * Yields the URI of the restricted API of the remote service.
-	 * 
-	 * @return the URI
-	 */
-	protected final URI restrictedUri() {
-		return restrictedUri;
-	}
-
-	/**
 	 * Opens a remote node connected to the public uri of the remote service and runs
 	 * the given command body.
 	 * 
 	 * @param what the body
 	 * @param logger the logger to use for reporting
 	 */
-	protected void executeOnPublicAPI(PublicRpcCommandBody what, Logger logger) {
+	protected void execute(PublicRpcCommandBody what, Logger logger) {
 		try (var remote = RemotePublicNodes.of(publicUri, timeout)) {
 			what.run(remote);
 		}
@@ -101,28 +90,6 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 			logger.log(Level.SEVERE, "a call to \"" + publicUri + "\" has been interrupted", e);
 		}
 	}
-
-	/**
-	 * Opens a remote node connected to the restricted uri of the remote service and runs
-	 * the given command body.
-	 * 
-	 * @param what the body
-	 * @param logger the logger to use for reporting
-	 */
-	protected void executeOnRestrictedAPI(RestrictedRpcCommandBody what, Logger logger) {
-		// TODO
-	}
-
-	/**
-	 * Opens a remote node connected to the public uri of the remote service and a remote
-	 * node connected to the restricted uri of the remote service and runs the given command body.
-	 * 
-	 * @param what the body
-	 * @param logger the logger to use for reporting
-	 */
-	protected void executeOnFullAPI(PublicRpcCommandBody what, Logger logger) {
-		// TODO
-	}
 	
 	/**
 	 * The body of an Rpc command on the public API of a node.
@@ -132,25 +99,5 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 */
 	protected interface PublicRpcCommandBody {
 		void run(RemotePublicNode remote) throws TimeoutException, InterruptedException;
-	}
-
-	/**
-	 * The body of an Rpc command on the restricted API of a node.
-	 * 
-	 * @throws TimeoutException if the command timed-out
-	 * @throws InterruptedException if the command was interrupted while waiting
-	 */
-	protected interface RestrictedRpcCommandBody {
-		//TODO void run(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException;
-	}
-
-	/**
-	 * The body of an Rpc command on the public and restricted API of a node.
-	 * 
-	 * @throws TimeoutException if the command timed-out
-	 * @throws InterruptedException if the command was interrupted while waiting
-	 */
-	protected interface FullRpcCommandBody {
-		//TODO void run(RemotePublicNode publicRemote, RemoteRestrictedNode restrictedRemote) throws TimeoutException, InterruptedException;
 	}
 }

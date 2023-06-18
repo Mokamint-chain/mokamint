@@ -24,13 +24,13 @@ import java.util.logging.Logger;
 
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.remote.RemotePublicNode;
-import io.mokamint.node.tools.internal.AbstractRpcCommand;
+import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "info", description = "Report information about the chain of a node.")
-public class Info extends AbstractRpcCommand {
+public class Info extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(Info.class.getName());
 
@@ -45,7 +45,7 @@ public class Info extends AbstractRpcCommand {
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode the configuration of the node at \"" + publicUri() + "\" in JSON format.", e);
+			LOGGER.log(Level.SEVERE, "cannot encode the chain info of the node at \"" + publicUri() + "\" in JSON format.", e);
 		}
 		catch (NoSuchAlgorithmException e) {
 			System.out.println(Ansi.AUTO.string("@|red The head of the chain uses an unknown hashing algorithm!|@"));
@@ -59,6 +59,6 @@ public class Info extends AbstractRpcCommand {
 
 	@Override
 	protected void execute() {
-		executeOnPublicAPI(this::body, LOGGER);
+		execute(this::body, LOGGER);
 	}
 }

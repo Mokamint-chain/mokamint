@@ -26,13 +26,13 @@ import java.util.stream.Stream;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemotePublicNode;
-import io.mokamint.node.tools.internal.AbstractRpcCommand;
+import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "ls", description = "List the peers of a node.")
-public class List extends AbstractRpcCommand {
+public class List extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
@@ -58,6 +58,6 @@ public class List extends AbstractRpcCommand {
 
 	@Override
 	protected void execute() {
-		executeOnPublicAPI(this::body, LOGGER);
+		execute(this::body, LOGGER);
 	}
 }
