@@ -22,7 +22,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
 @Command(name = "chain",
-	description = "Control the chain of a node.",
+	description = "Display the chain of a node.",
 	subcommands = {
 		HelpCommand.class,
 		Info.class,

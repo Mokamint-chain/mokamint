@@ -18,19 +18,24 @@ package io.mokamint.node.tools.internal.chain;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 import picocli.CommandLine.Help.Ansi;
+import picocli.CommandLine.Option;
 
 @Command(name = "ls", description = "List the blocks in the chain of a node.")
 public class List extends AbstractPublicRpcCommand {
@@ -47,7 +52,9 @@ public class List extends AbstractPublicRpcCommand {
 		}
 
 		try {
-			var maybeHeadHash = remote.getChainInfo().getHeadHash();
+			ChainInfo info = remote.getChainInfo();
+
+			var maybeHeadHash = info.getHeadHash();
 			if (maybeHeadHash.isEmpty())
 				return;
 
@@ -56,10 +63,32 @@ public class List extends AbstractPublicRpcCommand {
 				throw new IOException("The node has a head hash but it is bound to no block!");
 
 			Block head = maybeHead.get();
-			int slotsForHeight = String.valueOf(head.getHeight()).length();
+
+			var maybeGenesisHash = info.getGenesisHash();
+			if (maybeGenesisHash.isEmpty())
+				return;
+
+			Optional<LocalDateTime> startDateTimeUTC;
+			int slotsForHeight = 0;
+
+			if (json())
+				startDateTimeUTC = Optional.empty();
+			else {
+				var maybeGenesis = remote.getBlock(maybeGenesisHash.get());
+				if (maybeGenesis.isEmpty())
+					throw new IOException("The node has a genesis hash but it is bound to no block!");
+
+				Block genesis = maybeGenesis.get();
+				if (!(genesis instanceof GenesisBlock))
+					throw new IOException("The type of the genesisi block is inconsistent!");
+
+				slotsForHeight = String.valueOf(head.getHeight()).length();
+				startDateTimeUTC = Optional.of(((GenesisBlock) genesis).getStartDateTimeUTC());
+			}
+
 			if (json())
 				System.out.print("[");
-			backwards(head, slotsForHeight, remote.getConfig(), remote);
+			backwards(head, slotsForHeight, startDateTimeUTC, remote.getConfig(), remote);
 			if (json())
 				System.out.println("]");
 		}
@@ -77,7 +106,8 @@ public class List extends AbstractPublicRpcCommand {
      * Goes {@code depth} blocks backwards from the given cursor, printing the hashes of the blocks on the way.
      * 
      * @param cursor the starting block
-     * @param slotsForHeight the number of characters reserved for printing the height of each hash
+     * @param slotsForHeight the number of characters reserved for printing the height of each hash; this is used only if json() is false
+     * @param startDateTimeUTC the starting moment of the chain; this is used only if json() is false
      * @param config the configuration of the remote node
      * @param the remote node
      * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
@@ -85,7 +115,7 @@ public class List extends AbstractPublicRpcCommand {
      * @throws TimeoutException if some connection timed-out
      * @throws InterruptedException if some connection was interrupted while waiting
      */
-	private void backwards(Block cursor, int slotsForHeight, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, IOException {
+	private void backwards(Block cursor, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, IOException {
 		long counter = 0;
 
 		while (true) {
@@ -100,7 +130,7 @@ public class List extends AbstractPublicRpcCommand {
 				System.out.print("\"" + hash + "\"");
 			}
 			else
-				System.out.println(String.format("%" + slotsForHeight + "d: %s", cursor.getHeight(), hash));
+				System.out.println(String.format("%" + slotsForHeight + "d: %s [%s]", cursor.getHeight(), hash, startDateTimeUTC.get().plus(cursor.getTotalWaitingTime(), ChronoUnit.MILLIS)));
 
 			if (cursor.getHeight() == 0)
 				return;

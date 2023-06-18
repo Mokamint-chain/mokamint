@@ -23,7 +23,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
 @Command(name = "peers",
-	description = "Control the peers of a node.",
+	description = "Operate on the peers of a node.",
 	subcommands = {
 		Add.class,
 		HelpCommand.class,
