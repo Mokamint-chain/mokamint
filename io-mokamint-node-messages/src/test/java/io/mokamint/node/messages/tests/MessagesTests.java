@@ -23,8 +23,8 @@ import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.AddPeersMessages;
-import io.mokamint.node.messages.ExceptionResultMessage;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
@@ -34,7 +34,7 @@ import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.messages.RemovePeersMessages;
-import io.mokamint.node.messages.VoidResultMessages;
+import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
@@ -114,9 +114,9 @@ public class MessagesTests {
 	@Test
 	@DisplayName("exception result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForExceptionResult() throws EncodeException, DecodeException {
-		var exceptionResultMessage1 = ExceptionResultMessages.of(NoSuchAlgorithmException.class, "something went wrong", "id");
-		String encoded = new ExceptionResultMessages.Encoder().encode(exceptionResultMessage1);
-		var exceptionResultMessage2 = new ExceptionResultMessages.Decoder().decode(encoded);
+		var exceptionResultMessage1 = ExceptionMessages.of(NoSuchAlgorithmException.class, "something went wrong", "id");
+		String encoded = new ExceptionMessages.Encoder().encode(exceptionResultMessage1);
+		var exceptionResultMessage2 = new ExceptionMessages.Decoder().decode(encoded);
 		assertEquals(exceptionResultMessage1, exceptionResultMessage2);
 	}
 
@@ -166,19 +166,19 @@ public class MessagesTests {
 	@Test
 	@DisplayName("VoidResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForVoiResult() throws EncodeException, DecodeException {
-		var voidResultMessage1 = VoidResultMessages.of("id");
-		String encoded = new VoidResultMessages.Encoder().encode(voidResultMessage1);
-		var voidResultMessage2 = new VoidResultMessages.Decoder().decode(encoded);
+		var voidResultMessage1 = VoidMessages.of("id");
+		String encoded = new VoidMessages.Encoder().encode(voidResultMessage1);
+		var voidResultMessage2 = new VoidMessages.Decoder().decode(encoded);
 		assertEquals(voidResultMessage1, voidResultMessage2);
 	}
 
 	@Test
 	@DisplayName("exception result messages cannot be decoded from Json if the class type is not an exception")
 	public void decodeFailsForExceptionResultIfNotException() {
-		String encoded = "{\"clazz\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionResultMessage.class.getName() + "\",\"id\":\"id\"}";
+		String encoded = "{\"clazz\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionMessage.class.getName() + "\",\"id\":\"id\"}";
 
 		try {
-			new ExceptionResultMessages.Decoder().decode(encoded);
+			new ExceptionMessages.Decoder().decode(encoded);
 		}
 		catch (DecodeException e) {
 			if (e.getCause() instanceof ClassCastException)

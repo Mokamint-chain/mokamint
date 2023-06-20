@@ -27,7 +27,7 @@ import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessage;
@@ -42,6 +42,17 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class RemotePublicNodeTests {
+	private final static URI URI;
+	private final static int PORT = 8030;
+
+	static {
+		try {
+			URI = new URI("ws://localhost:" + PORT);
+		}
+		catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	private final static long TIME_OUT = 500L;
 
@@ -50,10 +61,10 @@ public class RemotePublicNodeTests {
 	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
@@ -62,7 +73,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var peers2 = remote.getPeers();
 			assertArrayEquals(peers1, peers2.toArray(Peer[]::new));
 		}
@@ -70,22 +81,22 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() works if it throws TimeoutException")
-	public void getPeersWorksInCaseOfTimeoutException() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+	public void getPeersWorksInCaseOfTimeoutException() throws DeploymentException, IOException, NoSuchAlgorithmException {
 		var exceptionMessage = "time-out";
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, ExceptionResultMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(TimeoutException.class, () -> remote.getPeers());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
@@ -93,22 +104,22 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() works if it throws InterruptedException")
-	public void getPeersWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+	public void getPeersWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException {
 		var exceptionMessage = "interrupted";
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, ExceptionResultMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(InterruptedException.class, () -> remote.getPeers());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
@@ -119,16 +130,16 @@ public class RemotePublicNodeTests {
 	public void getPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
 				try {
-					Thread.sleep(2000L); // <----
+					Thread.sleep(TIME_OUT * 4); // <----
 				}
 				catch (InterruptedException e) {}
 
@@ -136,38 +147,38 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, () -> remote.getPeers());
 		}
 	}
 
 	@Test
 	@DisplayName("getPeers() ignores unexpected exceptions")
-	public void getPeersWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
-		class MyServer extends TestServer {
+	public void getPeersWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, ExceptionResultMessages.of(new IllegalArgumentException(), message.getId()));
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, () -> remote.getPeers());
 		}
 	}
 
 	@Test
 	@DisplayName("getPeers() ignores unexpected messages")
-	public void getPeersWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
-		class MyServer extends TestServer {
+	public void getPeersWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, NoSuchAlgorithmException {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
@@ -176,23 +187,23 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, () -> remote.getPeers());
 		}
 	}
 
 	@Test
 	@DisplayName("getBlock() works if the block exists")
-	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
+	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block1 = Blocks.of(13, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var hash = new byte[] { 67, 56, 43 };
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
@@ -202,7 +213,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var block2 = remote.getBlock(hash);
 			assertEquals(block1, block2.get());
 		}
@@ -210,13 +221,13 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block is missing")
-	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
+	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var hash = new byte[] { 67, 56, 43 };
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
@@ -226,7 +237,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var block = remote.getBlock(hash);
 			assertTrue(block.isEmpty());
 		}
@@ -234,24 +245,24 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if it throws NoSuchAlgorithmException")
-	public void getBlockWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException {
+	public void getBlockWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "sha345";
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionResultMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+					sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getBlock(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
@@ -259,13 +270,13 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getConfig() works")
-	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
+	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var config1 = ConsensusConfigs.defaults().build();
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
@@ -274,7 +285,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var config2 = remote.getConfig();
 			assertEquals(config1, config2);
 		}
@@ -282,13 +293,13 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getChainInfo() works")
-	public void getChainInfoWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, URISyntaxException, TimeoutException, InterruptedException {
+	public void getChainInfoWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }));
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
@@ -297,7 +308,7 @@ public class RemotePublicNodeTests {
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var info2 = remote.getChainInfo();
 			assertEquals(info1, info2);
 		}
@@ -305,22 +316,22 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getChainInfo() works in case of IOException")
-	public void getChainInfoWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void getChainInfoWorksInCaseOfIOException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
 		var exceptionMessage = "exception message";
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				sendObjectAsync(session, ExceptionResultMessages.of(new IOException(exceptionMessage), message.getId()));
+				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(IOException.class, () -> remote.getChainInfo());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
@@ -328,22 +339,22 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getChainInfo() works in case of NoSuchAlgorithmException")
-	public void getChainInfoWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void getChainInfoWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
 		var exceptionMessage = "exception message";
 
-		class MyServer extends TestServer {
+		class MyServer extends PublicTestServer {
 
 			public MyServer() throws DeploymentException, IOException {
-				super(8025);
+				super(PORT);
 			}
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				sendObjectAsync(session, ExceptionResultMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+				sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(new URI("ws://localhost:8025"), TIME_OUT)) {
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getChainInfo());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}

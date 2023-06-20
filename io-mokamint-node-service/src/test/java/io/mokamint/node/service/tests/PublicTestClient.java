@@ -28,8 +28,8 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.ExceptionResultMessage;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -78,7 +78,7 @@ public class PublicTestClient extends AbstractWebSocketClient {
 	protected void onGetBlockResult(Optional<Block> block) {}
 	protected void onGetConfigResult(ConsensusConfig config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
-	protected void onException(ExceptionResultMessage message) {}
+	protected void onException(ExceptionMessage message) {}
 
 	public void sendGetPeers() {
 		sendObjectAsync(getPeersSession, GetPeersMessages.of("id"));
@@ -97,8 +97,8 @@ public class PublicTestClient extends AbstractWebSocketClient {
 	}
 
 	private void dealWithExceptions(RpcMessage message) {
-		if (message instanceof ExceptionResultMessage)
-			onException((ExceptionResultMessage) message);
+		if (message instanceof ExceptionMessage)
+			onException((ExceptionMessage) message);
 	}
 
 	private class GetPeersEndpoint extends AbstractClientEndpoint<PublicTestClient> {
@@ -121,7 +121,7 @@ public class PublicTestClient extends AbstractWebSocketClient {
 	private class GetBlockEndpoint extends AbstractClientEndpoint<PublicTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
+			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
 
 		@Override
@@ -138,7 +138,7 @@ public class PublicTestClient extends AbstractWebSocketClient {
 	private class GetConfigEndpoint extends AbstractClientEndpoint<PublicTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
+			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 
 		@Override
@@ -155,7 +155,7 @@ public class PublicTestClient extends AbstractWebSocketClient {
 	private class GetChainInfoEndpoint extends AbstractClientEndpoint<PublicTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
+			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
 
 		@Override

@@ -26,10 +26,10 @@ import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeersMessage;
 import io.mokamint.node.messages.AddPeersMessages;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeersMessage;
 import io.mokamint.node.messages.RemovePeersMessages;
-import io.mokamint.node.messages.VoidResultMessages;
+import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -80,10 +80,10 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		LOGGER.info("received an " + ADD_PEERS_ENDPOINT + " request");
 		try {
 			node.addPeers(message.getPeers());
-			sendObjectAsync(session, VoidResultMessages.of(message.getId()));
+			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 		}
 	};
 
@@ -95,7 +95,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
-			return simpleConfig(server, AddPeersEndpoint.class, ADD_PEERS_ENDPOINT, AddPeersMessages.Decoder.class, VoidResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+			return simpleConfig(server, AddPeersEndpoint.class, ADD_PEERS_ENDPOINT, AddPeersMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -103,10 +103,10 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		LOGGER.info("received a " + REMOVE_PEERS_ENDPOINT + " request");
 		try {
 			node.removePeers(message.getPeers());
-			sendObjectAsync(session, VoidResultMessages.of(message.getId()));
+			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 		}
 	};
 
@@ -118,7 +118,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
-			return simpleConfig(server, RemovePeersEndpoint.class, REMOVE_PEERS_ENDPOINT, RemovePeersMessages.Decoder.class, VoidResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+			return simpleConfig(server, RemovePeersEndpoint.class, REMOVE_PEERS_ENDPOINT, RemovePeersMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

@@ -19,12 +19,12 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.messages.ExceptionResultMessage;
+import io.mokamint.node.messages.ExceptionMessage;
 
 /**
  * Implementation of the network message corresponding to an exception thrown by a method call.
  */
-public class ExceptionResultMessageImpl extends AbstractRpcMessage implements ExceptionResultMessage {
+public class ExceptionResultMessageImpl extends AbstractRpcMessage implements ExceptionMessage {
 
 	/**
 	 * The class of the exception.
@@ -53,8 +53,8 @@ public class ExceptionResultMessageImpl extends AbstractRpcMessage implements Ex
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof ExceptionResultMessage) {
-			ExceptionResultMessage oerm = (ExceptionResultMessage) other;
+		if (other instanceof ExceptionMessage) {
+			ExceptionMessage oerm = (ExceptionMessage) other;
 			return clazz == oerm.getExceptionClass() && Objects.equals(message, oerm.getMessage());
 		}
 		else
@@ -73,6 +73,6 @@ public class ExceptionResultMessageImpl extends AbstractRpcMessage implements Ex
 
 	@Override
 	protected String getExpectedType() {
-		return ExceptionResultMessage.class.getName();
+		return ExceptionMessage.class.getName();
 	}
 }

@@ -17,12 +17,12 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.mokamint.node.messages.VoidResultMessage;
+import io.mokamint.node.messages.VoidMessage;
 
 /**
  * An encoder of {@code VoidResultMessage}.
  */
-public class VoidResultMessageEncoder extends BaseEncoder<VoidResultMessage> {
+public class VoidResultMessageEncoder extends BaseEncoder<VoidMessage> {
 	
 	/**
 	 * Creates the encoder.

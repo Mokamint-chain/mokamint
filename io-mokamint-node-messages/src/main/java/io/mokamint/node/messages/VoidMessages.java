@@ -16,25 +16,25 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.mokamint.node.messages.internal.VoidResultMessageImpl;
+import io.mokamint.node.messages.internal.VoidMessageImpl;
 import io.mokamint.node.messages.internal.gson.VoidResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.VoidResultMessageEncoder;
 
 /**
- * A provider of {@link VoidResultMessage}.
+ * A provider of {@link VoidMessage}.
  */
-public class VoidResultMessages {
+public class VoidMessages {
 
-	private VoidResultMessages() {}
+	private VoidMessages() {}
 
 	/**
-	 * Yields a {@link VoidResultMessage}.
+	 * Yields a {@link VoidMessage}.
 	 * 
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static VoidResultMessage of(String id) {
-		return new VoidResultMessageImpl(id);
+	public static VoidMessage of(String id) {
+		return new VoidMessageImpl(id);
 	}
 
 	/**

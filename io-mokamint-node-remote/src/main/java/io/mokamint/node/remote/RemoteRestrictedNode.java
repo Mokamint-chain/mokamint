@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2021 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,29 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.remote;
 
-import io.hotmoka.websockets.beans.RpcMessage;
+import java.io.IOException;
+
+import io.mokamint.node.api.RestrictedNode;
 
 /**
- * A network message corresponding to an exception thrown by a method call.
+ * A remote restricted node of a Mokamint blockchain.
  */
-public interface ExceptionResultMessage extends RpcMessage {
-
-	/**
-	 * Yields the class of the exception.
-	 * 
-	 * @return the class of the exception
-	 */
-	Class<? extends Exception> getExceptionClass();
-
-	/**
-	 * Yields the message of the exception.
-	 * 
-	 * @return the message
-	 */
-	String getMessage();
-
+public interface RemoteRestrictedNode extends RestrictedNode {
+	
 	@Override
-	boolean equals(Object obj);
+	void close() throws IOException;
 }

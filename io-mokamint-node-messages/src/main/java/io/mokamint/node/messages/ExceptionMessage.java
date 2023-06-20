@@ -16,8 +16,27 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.RpcMessage;
+
 /**
- * The network message corresponding to the result of {@code void} method of a node.
+ * A network message corresponding to an exception thrown by a method call.
  */
-public interface VoidResultMessage extends ResultMessage<Void> {
+public interface ExceptionMessage extends RpcMessage {
+
+	/**
+	 * Yields the class of the exception.
+	 * 
+	 * @return the class of the exception
+	 */
+	Class<? extends Exception> getExceptionClass();
+
+	/**
+	 * Yields the message of the exception.
+	 * 
+	 * @return the message
+	 */
+	String getMessage();
+
+	@Override
+	boolean equals(Object obj);
 }

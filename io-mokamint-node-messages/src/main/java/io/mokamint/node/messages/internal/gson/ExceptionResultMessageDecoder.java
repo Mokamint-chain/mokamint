@@ -17,15 +17,15 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.messages.ExceptionResultMessage;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.ExceptionMessages;
 
 /**
- * A decoder for {@link ExceptionResultMessage}.
+ * A decoder for {@link ExceptionMessage}.
  */
-public class ExceptionResultMessageDecoder extends MappedDecoder<ExceptionResultMessage, ExceptionResultMessages.Json> {
+public class ExceptionResultMessageDecoder extends MappedDecoder<ExceptionMessage, ExceptionMessages.Json> {
 
 	public ExceptionResultMessageDecoder() {
-		super(ExceptionResultMessages.Json.class);
+		super(ExceptionMessages.Json.class);
 	}
 }

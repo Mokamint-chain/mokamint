@@ -48,7 +48,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.ExceptionResultMessage;
+import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
@@ -169,7 +169,7 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			protected void onException(ExceptionResultMessage message) {
+			protected void onException(ExceptionMessage message) {
 				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}

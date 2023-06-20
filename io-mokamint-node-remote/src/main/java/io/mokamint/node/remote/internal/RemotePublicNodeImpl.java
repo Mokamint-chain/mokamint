@@ -16,33 +16,26 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
+import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_PEERS_ENDPOINT;
+
 import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
-import io.hotmoka.websockets.client.AbstractClientEndpoint;
-import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.ExceptionResultMessage;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -56,73 +49,40 @@ import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.remote.RemotePublicNode;
-import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
 /**
  * An implementation of a remote node that presents a programmatic interface
- * to a service for a Mokamint node.
+ * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public class RemotePublicNodeImpl extends AbstractWebSocketClient implements RemotePublicNode {
-	private final long timeout;
-	private final Session[] sessions = new Session[4];
-	private final AtomicInteger nextId = new AtomicInteger();
-	private final ConcurrentMap<String, BlockingQueue<RpcMessage>> queues = new ConcurrentHashMap<>();
-
-	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
+public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePublicNode {
 
 	/**
-	 * Opens and yields a new remote node for the public API.
+	 * Opens and yields a new remote node for the public API of a node.
 	 * 
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
-	 *                beyond that threshold, a time-out exception is thrown
+	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the new remote node
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemotePublicNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
-		this.timeout = timeout;
-		sessions[0] = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
-		sessions[1] = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
-		sessions[2] = new GetConfigEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CONFIG_ENDPOINT));
-		sessions[3] = new GetChainInfoEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CHAIN_INFO_ENDPOINT));
-	}
-
-	@Override
-	public void close() throws IOException {
-		IOException exception = null;
-
-		for (var session: sessions) {
-			try {
-				session.close();
-			}
-			catch (IOException e) {
-				exception = e;
-			}
-		}
-
-		if (exception != null) {
-			LOGGER.log(Level.WARNING, "cannot close the sessions", exception);
-			throw exception;
-		}
-	}
-
-	private String nextId() {
-		String id = String.valueOf(nextId.getAndIncrement());
-		queues.put(id, new ArrayBlockingQueue<>(10));
-		return id;
+		super(timeout);
+		addSession(GET_PEERS_ENDPOINT, new GetPeersEndpoint().deployAt(uri.resolve(GET_PEERS_ENDPOINT)));
+		addSession(GET_BLOCK_ENDPOINT, new GetBlockEndpoint().deployAt(uri.resolve(GET_BLOCK_ENDPOINT)));
+		addSession(GET_CONFIG_ENDPOINT, new GetConfigEndpoint().deployAt(uri.resolve(GET_CONFIG_ENDPOINT)));
+		addSession(GET_CHAIN_INFO_ENDPOINT, new GetChainInfoEndpoint().deployAt(uri.resolve(GET_CHAIN_INFO_ENDPOINT)));
 	}
 
 	@Override
 	public Stream<Peer> getPeers() throws TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(sessions[0], GetPeersMessages.of(id));
+		sendObjectAsync(getSession(GET_PEERS_ENDPOINT), GetPeersMessages.of(id));
 		try {
-			return waitForResult(id, this::processGetPeersSuccess, this::processGetPeersException);
+			return waitForResult(id, this::processGetPeersSuccess, this::processStandardExceptions);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException e) {
 			throw e;
@@ -136,15 +96,10 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		return message instanceof GetPeersResultMessage ? ((GetPeersResultMessage) message).get() : null;
 	}
 
-	private boolean processGetPeersException(ExceptionResultMessage message) {
-		var clazz = message.getExceptionClass();
-		return TimeoutException.class.isAssignableFrom(clazz) || InterruptedException.class.isAssignableFrom(clazz);
-	}
-
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(sessions[1], GetBlockMessages.of(hash, id));
+		sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
 		try {
 			return waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
 		}
@@ -160,7 +115,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		return message instanceof GetBlockResultMessage ? ((GetBlockResultMessage) message).get() : null;
 	}
 
-	private boolean processGetBlockException(ExceptionResultMessage message) {
+	private boolean processGetBlockException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
 		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||
@@ -170,9 +125,9 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 	@Override
 	public ConsensusConfig getConfig() throws TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(sessions[2], GetConfigMessages.of(id));
+		sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
 		try {
-			return waitForResult(id, this::processGetConfigSuccess, this::processGetConfigException);
+			return waitForResult(id, this::processGetConfigSuccess, this::processStandardExceptions);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException e) {
 			throw e;
@@ -186,17 +141,10 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		return message instanceof GetConfigResultMessage ? ((GetConfigResultMessage) message).get() : null;
 	}
 
-	private boolean processGetConfigException(ExceptionResultMessage message) {
-		var clazz = message.getExceptionClass();
-		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
-			TimeoutException.class.isAssignableFrom(clazz) ||
-			InterruptedException.class.isAssignableFrom(clazz);
-	}
-
 	@Override
 	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(sessions[3], GetChainInfoMessages.of(id));
+		sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
 		try {
 			return waitForResult(id, this::processGetChainInfoSuccess, this::processGetChainInfoException);
 		}
@@ -212,7 +160,7 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 		return message instanceof GetChainInfoResultMessage ? ((GetChainInfoResultMessage) message).get() : null;
 	}
 
-	private boolean processGetChainInfoException(ExceptionResultMessage message) {
+	private boolean processGetChainInfoException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
 		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			IOException.class.isAssignableFrom(clazz) ||
@@ -220,106 +168,31 @@ public class RemotePublicNodeImpl extends AbstractWebSocketClient implements Rem
 			InterruptedException.class.isAssignableFrom(clazz);
 	}
 
-	private <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionResultMessage> processException) throws Exception {
-		final long startTime = System.currentTimeMillis();
-
-		do {
-			try {
-				RpcMessage message = queues.get(id).poll(timeout - (System.currentTimeMillis() - startTime), TimeUnit.MILLISECONDS);
-				if (message == null) {
-					queues.remove(id);
-					throw new TimeoutException();
-				}
-
-				var result = processSuccess.apply(message);
-				if (result != null) {
-					queues.remove(id);
-					return result;
-				}
-
-				if (message instanceof ExceptionResultMessage) {
-					var erm = (ExceptionResultMessage) message;
-
-					if (processException.test(erm)) {
-						queues.remove(id);
-						Exception exc;
-						try {
-							exc = erm.getExceptionClass().getConstructor(String.class).newInstance(erm.getMessage());
-						}
-						catch (Exception e) {
-							LOGGER.log(Level.SEVERE, "cannot instantiate the exception type", e);
-							continue;
-						}
-
-						throw exc;
-					}
-
-					LOGGER.warning("received unexpected exception of type " + ((ExceptionResultMessage) message).getExceptionClass().getName());
-				}
-				else
-					LOGGER.warning("received unexpected message of type " + message.getClass().getName());
-			}
-			catch (InterruptedException e) {
-				queues.remove(id);
-				throw e;
-			}
-		}
-		while (System.currentTimeMillis() - startTime < timeout);
-
-		queues.remove(id);
-		throw new TimeoutException();
-	}
-
-	private void notifyResult(RpcMessage message) {
-		if (message != null) {
-			var queue = queues.get(message.getId());
-			if (queue != null) {
-				if (!queue.offer(message))
-					LOGGER.log(Level.SEVERE, "could not enqueue a message since the queue was full");
-			}
-			else
-				LOGGER.log(Level.SEVERE, "received a message of type " + message.getClass().getName() + " but its id " + message.getId() + " has no corresponding waiting queue");
-		}
-	}
-
-	private static RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "unexpected exception", e);
-		return new RuntimeException("unexpected exception", e);
-	}
-
-	private abstract class Endpoint extends AbstractClientEndpoint<RemotePublicNodeImpl> {
-
-		@Override
-		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, RemotePublicNodeImpl.this::notifyResult);
-		}
-	}
-
 	private class GetPeersEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetPeersResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetPeersMessages.Encoder.class);
+			return deployAt(uri, GetPeersResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPeersMessages.Encoder.class);
 		}
 	}
 
 	private class GetBlockEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
+			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
 	}
 
 	private class GetConfigEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
+			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 	}
 
 	private class GetChainInfoEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
+			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
 	}
 }

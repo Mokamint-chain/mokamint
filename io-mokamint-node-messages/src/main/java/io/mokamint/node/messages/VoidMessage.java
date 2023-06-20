@@ -14,18 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.node.messages;
 
-import io.hotmoka.websockets.beans.BaseDecoder;
-import io.mokamint.node.messages.VoidMessage;
-import io.mokamint.node.messages.internal.VoidMessageImpl;
+import io.hotmoka.websockets.beans.RpcMessage;
 
 /**
- * A decoder for {@link VoidMessage}.
+ * The network message corresponding to the result of {@code void} method of a node.
  */
-public class VoidResultMessageDecoder extends BaseDecoder<VoidMessage> {
-
-	public VoidResultMessageDecoder() {
-		super(VoidMessageImpl.class);
-	}
+public interface VoidMessage extends RpcMessage {
 }

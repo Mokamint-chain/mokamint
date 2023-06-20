@@ -19,19 +19,19 @@ package io.mokamint.node.remote;
 import java.io.IOException;
 import java.net.URI;
 
-import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
+import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import jakarta.websocket.DeploymentException;
 
 /**
- * Providers of remote public nodes. They present a programmatic interface
- * to a network service for a public node.
+ * Providers of remote restricted nodes. They present a programmatic interface
+ * to a network service for a restricted node.
  */
-public abstract class RemotePublicNodes {
+public abstract class RemoteRestrictedNodes {
 
-	private RemotePublicNodes() {}
+	private RemoteRestrictedNodes() {}
 
 	/**
-	 * Opens and yields a new public remote node for the public API of a network service.
+	 * Opens and yields a new restricted remote node for the restricted API of a network service.
 	 * 
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
@@ -40,7 +40,7 @@ public abstract class RemotePublicNodes {
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemotePublicNode of(URI uri, long timeout) throws DeploymentException, IOException {
-		return new RemotePublicNodeImpl(uri, timeout);
+	public static RemoteRestrictedNode of(URI uri, long timeout) throws DeploymentException, IOException {
+		return new RemoteRestrictedNodeImpl(uri, timeout);
 	}
 }

@@ -17,34 +17,29 @@ limitations under the License.
 package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.messages.VoidResultMessage;
+import io.mokamint.node.messages.VoidMessage;
 
 /**
  * Implementation of a network message corresponding to the result of {@code void} method of a node.
  */
-public class VoidResultMessageImpl extends AbstractRpcMessage implements VoidResultMessage {
+public class VoidMessageImpl extends AbstractRpcMessage implements VoidMessage {
 
 	/**
 	 * Creates the message.
 	 * 
 	 * @param id the identifier of the message
 	 */
-	public VoidResultMessageImpl(String id) {
+	public VoidMessageImpl(String id) {
 		super(id);
 	}
 
 	@Override
-	public Void get() {
-		return null;
-	}
-
-	@Override
 	public boolean equals(Object other) {
-		return other instanceof VoidResultMessage;
+		return other instanceof VoidMessage;
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return VoidResultMessage.class.getName();
+		return VoidMessage.class.getName();
 	}
 }

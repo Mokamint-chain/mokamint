@@ -17,17 +17,17 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.ExceptionResultMessage;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.ExceptionMessages;
 
 /**
- * The JSON representation of an {@link ExceptionResultMessage}.
+ * The JSON representation of an {@link ExceptionMessage}.
  */
-public abstract class ExceptionResultMessageJson extends AbstractRpcMessageJsonRepresentation<ExceptionResultMessage> {
+public abstract class ExceptionResultMessageJson extends AbstractRpcMessageJsonRepresentation<ExceptionMessage> {
 	private String clazz;
 	private String message;
 
-	protected ExceptionResultMessageJson(ExceptionResultMessage message) {
+	protected ExceptionResultMessageJson(ExceptionMessage message) {
 		super(message);
 
 		this.clazz = message.getExceptionClass().getName();
@@ -36,16 +36,16 @@ public abstract class ExceptionResultMessageJson extends AbstractRpcMessageJsonR
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public ExceptionResultMessage unmap() throws ClassNotFoundException, ClassCastException {
+	public ExceptionMessage unmap() throws ClassNotFoundException, ClassCastException {
 		var exceptionClass = Class.forName(clazz);
 		if (!Exception.class.isAssignableFrom(exceptionClass))
 			throw new ClassCastException(clazz + " is not an Exception");
 
-		return ExceptionResultMessages.of((Class<? extends Exception>) exceptionClass, message, getId());
+		return ExceptionMessages.of((Class<? extends Exception>) exceptionClass, message, getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return ExceptionResultMessage.class.getName();
+		return ExceptionMessage.class.getName();
 	}
 }

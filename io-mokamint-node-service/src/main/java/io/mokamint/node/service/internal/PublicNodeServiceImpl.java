@@ -25,7 +25,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.ExceptionResultMessages;
+import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -90,7 +90,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 		}
 	};
 
@@ -102,7 +102,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT, GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT, GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -112,7 +112,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
 		catch (NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 		}
 	};
 
@@ -124,7 +124,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT, GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT, GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -134,7 +134,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 		}
 	};
 
@@ -146,7 +146,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT, GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT, GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -156,7 +156,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | IOException e) {
-			sendObjectAsync(session, ExceptionResultMessages.of(e, message.getId()));
+			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 		}
 	};
 
@@ -168,7 +168,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT, GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionResultMessages.Encoder.class);
+			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT, GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }
