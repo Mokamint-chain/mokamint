@@ -85,7 +85,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	private void getPeers(GetPeersMessage message, Session session) {
-		LOGGER.info("received a get_peers request");
+		LOGGER.info("received a " + GET_PEERS_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
 		}
@@ -107,7 +107,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	private void getBlock(GetBlockMessage message, Session session) {
-		LOGGER.info("received a get_block request");
+		LOGGER.info("received a " + GET_BLOCK_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
@@ -129,7 +129,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	private void getConfig(GetConfigMessage message, Session session) {
-		LOGGER.info("received a get_config request");
+		LOGGER.info("received a " + GET_CONFIG_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 		}
@@ -151,7 +151,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	private void getChainInfo(GetChainInfoMessage message, Session session) {
-		LOGGER.info("received a get_chain_info request");
+		LOGGER.info("received a " + GET_CHAIN_INFO_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 		}

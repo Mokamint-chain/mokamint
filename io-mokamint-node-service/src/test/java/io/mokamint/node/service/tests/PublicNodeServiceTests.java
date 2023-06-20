@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
@@ -54,7 +53,18 @@ import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
 
-public class NodeServiceTests {
+public class PublicNodeServiceTests {
+	private final static URI URI;
+	private final static int PORT = 8030;
+
+	static {
+		try {
+			URI = new URI("ws://localhost:" + PORT);
+		}
+		catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Test
 	@DisplayName("if a getPeers() request reaches the service, it sends back the peers of the node")
@@ -62,19 +72,24 @@ public class NodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
-
-		Consumer<Stream<Peer>> onGetPeersResult = received -> {
-			var peers = received.collect(Collectors.toList());
-			if (peers.size() == 2 && peers.contains(peer1) && peers.contains(peer2))
-				semaphore.release();
-		};
-
 		var node = mock(PublicNode.class);
 		when(node.getPeers()).thenReturn(Stream.of(peer1, peer2));
 
-		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), onGetPeersResult, null, null, null, null)) {
+		class MyTestClient extends PublicTestClient {
 
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onGetPeersResult(Stream<Peer> received) {
+				var peers = received.collect(Collectors.toList());
+				if (peers.size() == 2 && peers.contains(peer1) && peers.contains(peer2))
+					semaphore.release();
+			}
+		}
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetPeers();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -85,18 +100,24 @@ public class NodeServiceTests {
 	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		Consumer<Optional<Block>> onGetBlockResult = received -> {
-			if (received.isEmpty())
-				semaphore.release();
-		};
+		class MyTestClient extends PublicTestClient {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onGetBlockResult(Optional<Block> received) {
+				if (received.isEmpty())
+					semaphore.release();
+			}
+		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mock(PublicNode.class);
 		when(node.getBlock(hash)).thenReturn(Optional.empty());
 
-		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, onGetBlockResult, null, null, null)) {
-
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -113,18 +134,24 @@ public class NodeServiceTests {
 		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
 		var block = Blocks.of(13L, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
-		Consumer<Optional<Block>> onGetBlockResult = received -> {
-			if (block.equals(received.get()))
-				semaphore.release();
-		};
+		class MyTestClient extends PublicTestClient {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onGetBlockResult(Optional<Block> received) {
+				if (block.equals(received.get()))
+					semaphore.release();
+			}
+		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mock(PublicNode.class);
 		when(node.getBlock(hash)).thenReturn(Optional.of(block));
 
-		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, onGetBlockResult, null, null, null)) {
-
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -135,15 +162,24 @@ public class NodeServiceTests {
 	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		Consumer<ExceptionResultMessage> onException = _received -> semaphore.release();
+		class MyTestClient extends PublicTestClient {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onException(ExceptionResultMessage message) {
+				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
+					semaphore.release();
+			}
+		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mock(PublicNode.class);
 		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
 
-		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, null, null, null, onException)) {
-
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -155,17 +191,23 @@ public class NodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var config = ConsensusConfigs.defaults().build();
 
-		Consumer<ConsensusConfig> onGetConfigResult = received -> {
-			if (config.equals(received))
-				semaphore.release();
-		};
+		class MyTestClient extends PublicTestClient {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onGetConfigResult(ConsensusConfig received) {
+				if (config.equals(received))
+					semaphore.release();
+			}
+		}
 
 		var node = mock(PublicNode.class);
 		when(node.getConfig()).thenReturn(config);
 
-		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, null, onGetConfigResult, null, null)) {
-
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetConfig();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -177,17 +219,23 @@ public class NodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
 
-		Consumer<ChainInfo> onGetChainInfoResult = received -> {
-			if (info.equals(received))
-				semaphore.release();
-		};
+		class MyTestClient extends PublicTestClient {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onGetChainInfoResult(ChainInfo received) {
+				if (info.equals(received))
+					semaphore.release();
+			}
+		}
 
 		var node = mock(PublicNode.class);
 		when(node.getChainInfo()).thenReturn(info);
 
-		try (var service = PublicNodeServices.open(node, 8025);
-			 var client = new TestClient(new URI("ws://localhost:8025"), null, null, null, onGetChainInfoResult, null)) {
-
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetChainInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -197,7 +245,7 @@ public class NodeServiceTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = NodeServiceTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = PublicNodeServiceTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

@@ -19,7 +19,6 @@ package io.mokamint.node.service.tests;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.RpcMessage;
@@ -49,30 +48,15 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
 /**
- * The implementation of a test websocket client that connects to a node service.
+ * The implementation of a test websocket client that connects to a public node service.
  */
-public class TestClient extends AbstractWebSocketClient {
-	private final Consumer<Stream<Peer>> onGetPeersResult;
-	private final Consumer<Optional<Block>> onGetBlockResult;
-	private final Consumer<ConsensusConfig> onGetConfigResult;
-	private final Consumer<ChainInfo> onGetChainInfoResult;
-	private final Consumer<ExceptionResultMessage> onException;
+public class PublicTestClient extends AbstractWebSocketClient {
 	private final Session getPeersSession;
 	private final Session getBlockSession;
 	private final Session getConfigSession;
 	private final Session getChainInfoSession;
 
-	public TestClient(URI uri, Consumer<Stream<Peer>> onGetPeersResult,
-			Consumer<Optional<Block>> onGetBlockResult,
-			Consumer<ConsensusConfig> onGetConfigResult,
-			Consumer<ChainInfo> onGetChainInfoResult,
-			Consumer<ExceptionResultMessage> onException) throws DeploymentException, IOException {
-
-		this.onGetPeersResult = onGetPeersResult;
-		this.onGetBlockResult = onGetBlockResult;
-		this.onGetConfigResult = onGetConfigResult;
-		this.onGetChainInfoResult = onGetChainInfoResult;
-		this.onException = onException;
+	public PublicTestClient(URI uri) throws DeploymentException, IOException {
 		this.getPeersSession = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
 		this.getBlockSession = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
 		this.getConfigSession = new GetConfigEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CONFIG_ENDPOINT));
@@ -86,6 +70,15 @@ public class TestClient extends AbstractWebSocketClient {
 		getConfigSession.close();
 		getChainInfoSession.close();
 	}
+
+	/**
+	 * Handlers that can be overridden in subclasses.
+	 */
+	protected void onGetPeersResult(Stream<Peer> peers) {}
+	protected void onGetBlockResult(Optional<Block> block) {}
+	protected void onGetConfigResult(ConsensusConfig config) {}
+	protected void onGetChainInfoResult(ChainInfo info) {}
+	protected void onException(ExceptionResultMessage message) {}
 
 	public void sendGetPeers() {
 		sendObjectAsync(getPeersSession, GetPeersMessages.of("id"));
@@ -103,7 +96,12 @@ public class TestClient extends AbstractWebSocketClient {
 		sendObjectAsync(getChainInfoSession, GetChainInfoMessages.of("id"));
 	}
 
-	private class GetPeersEndpoint extends AbstractClientEndpoint<TestClient> {
+	private void dealWithExceptions(RpcMessage message) {
+		if (message instanceof ExceptionResultMessage)
+			onException((ExceptionResultMessage) message);
+	}
+
+	private class GetPeersEndpoint extends AbstractClientEndpoint<PublicTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetPeersResultMessages.Decoder.class, GetPeersMessages.Encoder.class);
@@ -111,11 +109,16 @@ public class TestClient extends AbstractWebSocketClient {
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetPeersResultMessage message) -> onGetPeersResult.accept(message.get()));
+			addMessageHandler(session, (RpcMessage message) -> {
+				if (message instanceof GetPeersResultMessage)
+					onGetPeersResult(((GetPeersResultMessage) message).get());
+				else
+					dealWithExceptions(message);
+			});
 		}
 	}
 
-	private class GetBlockEndpoint extends AbstractClientEndpoint<TestClient> {
+	private class GetBlockEndpoint extends AbstractClientEndpoint<PublicTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
@@ -125,14 +128,14 @@ public class TestClient extends AbstractWebSocketClient {
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, (RpcMessage message) -> {
 				if (message instanceof GetBlockResultMessage)
-					onGetBlockResult.accept(((GetBlockResultMessage) message).get());
-				else if (message instanceof ExceptionResultMessage)
-					onException.accept((ExceptionResultMessage) message);
+					onGetBlockResult(((GetBlockResultMessage) message).get());
+				else
+					dealWithExceptions(message);
 			});
 		}
 	}
 
-	private class GetConfigEndpoint extends AbstractClientEndpoint<TestClient> {
+	private class GetConfigEndpoint extends AbstractClientEndpoint<PublicTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
@@ -142,14 +145,14 @@ public class TestClient extends AbstractWebSocketClient {
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, (RpcMessage message) -> {
 				if (message instanceof GetConfigResultMessage)
-					onGetConfigResult.accept(((GetConfigResultMessage) message).get());
-				else if (message instanceof ExceptionResultMessage)
-					onException.accept((ExceptionResultMessage) message);
+					onGetConfigResult(((GetConfigResultMessage) message).get());
+				else
+					dealWithExceptions(message);
 			});
 		}
 	}
 
-	private class GetChainInfoEndpoint extends AbstractClientEndpoint<TestClient> {
+	private class GetChainInfoEndpoint extends AbstractClientEndpoint<PublicTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
@@ -159,9 +162,9 @@ public class TestClient extends AbstractWebSocketClient {
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, (RpcMessage message) -> {
 				if (message instanceof GetChainInfoResultMessage)
-					onGetChainInfoResult.accept(((GetChainInfoResultMessage) message).get());
-				else if (message instanceof ExceptionResultMessage)
-					onException.accept((ExceptionResultMessage) message);
+					onGetChainInfoResult(((GetChainInfoResultMessage) message).get());
+				else
+					dealWithExceptions(message);
 			});
 		}
 	}

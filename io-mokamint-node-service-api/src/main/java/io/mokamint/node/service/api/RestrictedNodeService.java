@@ -27,12 +27,12 @@ public interface RestrictedNodeService extends WebSocketServer {
 	/**
 	 * The network endpoint path where the {@link RestrictedNode#addPeers(java.util.stream.Stream)} method is published.
 	 */
-	String GET_PEERS_ENDPOINT = "/add_peers";
+	String ADD_PEERS_ENDPOINT = "/add_peers";
 
 	/**
 	 * The network endpoint path where the {@link RestrictedNode#removePeers(java.util.stream.Stream)} method is published.
 	 */
-	String GET_BLOCK_ENDPOINT = "/remove_block";
+	String REMOVE_PEERS_ENDPOINT = "/remove_block";
 
 	@Override
 	void close();
