@@ -5,7 +5,7 @@
   <name>io-mokamint-node-remote</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements Mokamint nodes that forwards all calls to a network node service</description>
+  <description>This module implements Mokamint nodes that forwards all calls to a network node service.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

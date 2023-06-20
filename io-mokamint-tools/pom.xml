@@ -11,7 +11,7 @@
   <name>io-mokamint-tools</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements shared classes among all the command-line tools of Mokamint</description>
+  <description>This module implements shared classes among all the command-line tools of Mokamint.</description>
 
   <dependencies>
     <dependency>

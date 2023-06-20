@@ -5,7 +5,7 @@
   <name>io-mokamint-miner-service-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module defines the API of a miner service, that is, a network service that provides mining capabilities by network</description>
+  <description>This module defines the API of a miner service, that is, a network service that provides mining capabilities by network.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

@@ -5,7 +5,7 @@
   <name>io-mokamint-application-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements the API of an application run on a Mokamint blockchain</description>
+  <description>This module implements the API of an application run on a Mokamint blockchain.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 /**
- * This module implements a remote miner, that is, a miner that works
- * by forwarding its work to remote services connected by network.
+ * This module defines the implementation of a node service, that is,
+ * a network server that provides the API of a Mokamint node.
  */
 module io.mokamint.node.service {
 	exports io.mokamint.node.service;
@@ -36,6 +36,6 @@ module io.mokamint.node.service {
 	// only used for testing
 	requires static io.mokamint.nonce;
 	requires static io.hotmoka.crypto;
-	requires static org.glassfish.tyrus.client;
 	requires static io.hotmoka.websockets.beans;
+	requires static org.glassfish.tyrus.client;
 }

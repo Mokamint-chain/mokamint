@@ -14,26 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.service.api;
+package io.mokamint.node.messages;
 
-import io.hotmoka.websockets.server.api.WebSocketServer;
+import java.util.stream.Stream;
+
+import io.hotmoka.websockets.beans.RpcMessage;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
- * A websocket server for the restricted API of a Mokamint node.
+ * The network message corresponding to {@link RestrictedNode#addPeers(Stream)}.
  */
-public interface RestrictedNodeService extends WebSocketServer {
+public interface AddPeersMessage extends RpcMessage {
 
 	/**
-	 * The network endpoint path where the {@link RestrictedNode#addPeers(java.util.stream.Stream)} method is published.
+	 * Yields the peers requested to add.
+	 * 
+	 * @return the peers
 	 */
-	String GET_PEERS_ENDPOINT = "/add_peers";
-
-	/**
-	 * The network endpoint path where the {@link RestrictedNode#removePeers(java.util.stream.Stream)} method is published.
-	 */
-	String GET_BLOCK_ENDPOINT = "/remove_block";
+	Stream<Peer> getPeers();
 
 	@Override
-	void close();
+	boolean equals(Object obj);
 }

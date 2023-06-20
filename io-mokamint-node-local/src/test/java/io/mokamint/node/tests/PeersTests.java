@@ -33,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -117,8 +118,8 @@ public class PeersTests {
 
 		try (var node = LocalNodes.of(config, app)) {
 			assertTrue(node.getPeers().count() == 0L);
-			node.addPeer(peer1);
-			node.addPeer(peer2);
+			node.addPeers(Stream.of(peer1));
+			node.addPeers(Stream.of(peer2));
 			assertTrue(node.getPeers().count() == 2L);
 		}
 
@@ -142,7 +143,7 @@ public class PeersTests {
 		
 		try (var node = LocalNodes.of(config, app)) {
 			assertTrue(node.getPeers().count() == 2L);
-			node.removePeer(Peers.of(uri1));
+			node.removePeers(Stream.of(Peers.of(uri1)));
 			assertTrue(node.getPeers().count() == 1L);
 		}
 

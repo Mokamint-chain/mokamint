@@ -5,7 +5,7 @@
   <name>io-mokamint-nonce</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This modules implements nonces and deadlines</description>
+  <description>This modules implements nonces and deadlines.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

@@ -46,10 +46,10 @@ public class Show extends AbstractPublicRpcCommand {
 	 * The alternative ways of specifying the block to show.
 	 */
 	private static class BlockIdentifier {
-        @Option(names = "--hash", required = true, description = "the block with the given hexadecimal hash (not necessarily in the current chain)") String hash;
-        @Option(names = "--head", required = true, description = "the head of the current chain") boolean head;
-        @Option(names = "--genesis", required = true, description = "the genesis of the current chain") boolean genesis;
-        @Option(names = "--depth", required = true, description = "the block of the current chain at the given depth (0 for the head, 1 for the block below it, etc)") long depth;
+        @Option(names = "hash", required = true, description = "the block with the given hexadecimal hash (not necessarily in the current chain)") String hash;
+        @Option(names = "head", required = true, description = "the head of the current chain") boolean head;
+        @Option(names = "genesis", required = true, description = "the genesis of the current chain") boolean genesis;
+        @Option(names = "depth", required = true, description = "the block of the current chain at the given depth (0 for the head, 1 for the block below it, etc)") long depth;
 
         /**
          * Yields the specified block, if any.

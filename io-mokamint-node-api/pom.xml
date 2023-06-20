@@ -5,7 +5,7 @@
   <name>io-mokamint-node-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements the API of a Mokamint node</description>
+  <description>This module implements the API of a Mokamint node.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

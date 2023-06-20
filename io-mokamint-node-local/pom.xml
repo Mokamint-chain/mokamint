@@ -5,7 +5,7 @@
   <name>io-mokamint-node-local</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements a Mokamint local node, that is, a node that actually works on the local machine where it is executed</description>
+  <description>This module implements a Mokamint local node, that is, a node that actually works on the local machine where it is executed.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

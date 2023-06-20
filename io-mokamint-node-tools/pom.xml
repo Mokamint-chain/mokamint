@@ -5,7 +5,7 @@
   <name>io-mokamint-node-tools</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements a command-line tool for controlling Mokamint nodes</description>
+  <description>This module implements a command-line tool for controlling Mokamint nodes.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

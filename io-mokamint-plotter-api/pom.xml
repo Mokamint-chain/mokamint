@@ -6,7 +6,7 @@
   <name>io-mokamint-plotter-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module defines the API of the plots for a Mokamint blockchain</description>
+  <description>This module defines the API of the plots for a Mokamint blockchain.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

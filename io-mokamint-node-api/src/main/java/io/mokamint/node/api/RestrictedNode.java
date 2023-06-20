@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 
@@ -28,18 +29,18 @@ import io.hotmoka.annotations.ThreadSafe;
 public interface RestrictedNode extends AutoCloseable {
 
 	/**
-	 * Adds the given peer to the set of peers of this node.
+	 * Adds the given peers to the set of peers of this node.
 	 * 
-	 * @param peer the peer to add
+	 * @param peers the peers to add
 	 */
-	void addPeer(Peer peer);
+	void addPeers(Stream<Peer> peers);
 
 	/**
-	 * Removes the given peer from the set of peers of this node.
+	 * Removes the given peers from the set of peers of this node.
 	 * 
-	 * @param peer the peer to remove
+	 * @param peers the peers to remove
 	 */
-	void removePeer(Peer peer);
+	void removePeers(Stream<Peer> peers);
 
 	/**
 	 * Closes the node.

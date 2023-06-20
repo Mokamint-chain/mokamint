@@ -24,7 +24,7 @@ import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 
 /**
- * A provider of public node services.
+ * A provider of node services for the public API of a node.
  */
 public class PublicNodeServices {
 

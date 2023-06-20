@@ -45,7 +45,7 @@ import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
 
 /**
- * The implementation of a public node service. It publishes an endpoint at a URL,
+ * The implementation of a public node service. It publishes endpoints at a URL,
  * where clients can connect to query the public API of a Mokamint node.
  */
 @ThreadSafe

@@ -5,7 +5,7 @@
   <name>io-mokamint-nonce-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module defines the API of the deadlines and the nonces</description>
+  <description>This module defines the API of the deadlines and the nonces.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>

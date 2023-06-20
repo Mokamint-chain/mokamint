@@ -22,6 +22,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
+import io.mokamint.node.messages.AddPeersMessages;
 import io.mokamint.node.messages.ExceptionResultMessage;
 import io.mokamint.node.messages.ExceptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -32,6 +33,8 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.RemovePeersMessages;
+import io.mokamint.node.messages.VoidResultMessages;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
@@ -134,6 +137,39 @@ public class MessagesTests {
 		String encoded = new GetChainInfoResultMessages.Encoder().encode(getChainInfoResultMessage1);
 		var getChainInfoResultMessage2 = new GetChainInfoResultMessages.Decoder().decode(encoded);
 		assertEquals(getChainInfoResultMessage1, getChainInfoResultMessage2);
+	}
+
+	@Test
+	@DisplayName("addPeers messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForAddPeers() throws EncodeException, DecodeException, URISyntaxException {
+		var peer1 = Peers.of(new URI("ws://google.com:8011"));
+		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
+		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
+		var addPeers1 = AddPeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
+		String encoded = new AddPeersMessages.Encoder().encode(addPeers1);
+		var addPeers2 = new AddPeersMessages.Decoder().decode(encoded);
+		assertEquals(addPeers1, addPeers2);
+	}
+
+	@Test
+	@DisplayName("removePeers messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForRemovePeers() throws EncodeException, DecodeException, URISyntaxException {
+		var peer1 = Peers.of(new URI("ws://google.com:8011"));
+		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
+		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
+		var removePeers1 = RemovePeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
+		String encoded = new RemovePeersMessages.Encoder().encode(removePeers1);
+		var removePeers2 = new RemovePeersMessages.Decoder().decode(encoded);
+		assertEquals(removePeers1, removePeers2);
+	}
+
+	@Test
+	@DisplayName("VoidResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForVoiResult() throws EncodeException, DecodeException {
+		var voidResultMessage1 = VoidResultMessages.of("id");
+		String encoded = new VoidResultMessages.Encoder().encode(voidResultMessage1);
+		var voidResultMessage2 = new VoidResultMessages.Decoder().decode(encoded);
+		assertEquals(voidResultMessage1, voidResultMessage2);
 	}
 
 	@Test

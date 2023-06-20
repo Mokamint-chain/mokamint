@@ -143,13 +143,13 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) {
-		peers.add(peer);
+	public void addPeers(Stream<Peer> peers) {
+		peers.forEach(this.peers::add);
 	}
 
 	@Override
-	public void removePeer(Peer peer) {
-		peers.remove(peer);
+	public void removePeers(Stream<Peer> peers) {
+		peers.forEach(this.peers::remove);
 	}
 
 	@Override

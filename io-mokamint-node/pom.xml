@@ -5,7 +5,7 @@
   <name>io-mokamint-node</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements the classes shared by all implementations of a Mokamint node</description>
+  <description>This module implements the classes shared by all implementations of a Mokamint node.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
