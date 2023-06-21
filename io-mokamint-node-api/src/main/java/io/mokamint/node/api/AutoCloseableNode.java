@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.remote;
+package io.mokamint.node.api;
 
-import io.mokamint.node.api.RestrictedNode;
+import java.io.IOException;
 
 /**
- * A remote restricted node of a Mokamint blockchain.
+ * A node of a Mokamint blockchain, just seen as a closeable object.
  */
-public interface RemoteRestrictedNode extends RestrictedNode, AutoCloseableRemoteNode {
+public interface AutoCloseableNode extends AutoCloseable {
+
+	/**
+	 * Closes the node.
+	 * 
+	 * @throws IOException if an I/O error occurred
+	 * @throws InterruptedException if some closing activity has been interrupted
+	 */
+	@Override
+	void close() throws IOException, InterruptedException;
 }

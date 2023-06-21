@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
@@ -27,7 +26,7 @@ import io.hotmoka.annotations.ThreadSafe;
  * Typically, this API can be called from the local machine only.
  */
 @ThreadSafe
-public interface RestrictedNode extends AutoCloseable {
+public interface RestrictedNode extends AutoCloseableNode {
 
 	/**
 	 * Adds the given peers to the set of peers of this node.
@@ -46,13 +45,4 @@ public interface RestrictedNode extends AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
 	void removePeers(Stream<Peer> peers) throws TimeoutException, InterruptedException;
-
-	/**
-	 * Closes the node.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws InterruptedException if some closing activity has been interrupted
-	 */
-	@Override
-	void close() throws IOException, InterruptedException;
 }

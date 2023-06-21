@@ -17,24 +17,33 @@ limitations under the License.
 package io.mokamint.node.tools.internal.peers;
 
 import java.net.URI;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
-import io.mokamint.tools.AbstractCommand;
+import io.mokamint.node.Peers;
+import io.mokamint.node.remote.RemoteRestrictedNode;
+import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(name = "rm", description = "Remove peers from a node.")
-public class Remove extends AbstractCommand {
+public class Remove extends AbstractRestrictedRpcCommand {
 
-	@Option(names = "--uri", description = "the network URI where the node is published", defaultValue = "ws://localhost:8025")
-	private URI uri;
-
-	@Option(names = "--timeout", description = "the timeout of the connection, in milliseconds", defaultValue = "10000")
-	private long timeout;
+	@Parameters(description = { "the URIs of the peers to remove" })
+	private URI[] uris;
 
 	private final static Logger LOGGER = Logger.getLogger(Remove.class.getName());
 
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException {
+		remote.removePeers(Stream.of(uris).map(Peers::of));
+	}
+
 	@Override
 	protected void execute() {
+		if (uris == null)
+			uris = new URI[0];
+
+		execute(this::body, LOGGER);
 	}
 }

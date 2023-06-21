@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.remote;
 
-import io.mokamint.node.api.RestrictedNode;
+import io.mokamint.node.api.Node;
 
 /**
- * A remote restricted node of a Mokamint blockchain.
+ * A remote node of a Mokamint blockchain, providing both the public and the restricted API to the node.
  */
-public interface RemoteRestrictedNode extends RestrictedNode, AutoCloseableRemoteNode {
+public interface RemoteNode extends RemotePublicNode, RemoteRestrictedNode, Node {
 }

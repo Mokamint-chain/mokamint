@@ -29,7 +29,7 @@ import io.hotmoka.annotations.ThreadSafe;
  * Typically, this API can be called from every machine.
  */
 @ThreadSafe
-public interface PublicNode extends AutoCloseable {
+public interface PublicNode extends AutoCloseableNode {
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
@@ -72,13 +72,4 @@ public interface PublicNode extends AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
 	ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException;
-
-	/**
-	 * Closes the node.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws InterruptedException if some closing activity has been interrupted
-	 */
-	@Override
-	void close() throws IOException, InterruptedException;
 }

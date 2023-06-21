@@ -19,35 +19,20 @@ package io.mokamint.node.tools.internal;
 import java.net.URI;
 import java.util.logging.Logger;
 
-import io.mokamint.tools.AbstractCommand;
+import io.mokamint.node.remote.RemoteNode;
 import picocli.CommandLine.Option;
 
 /**
  * Shared code among the command that connect to a remote Mokamint node and perform Rpc calls
  * to the public and restricted API of the node.
  */
-public abstract class AbstractFullRpcCommand extends AbstractCommand {
+public abstract class AbstractFullRpcCommand extends AbstractRpcCommand {
 
 	@Option(names = "--uri, --public-uri", description = "the network URI where the public API of the node is published", defaultValue = "ws://localhost:8030")
 	private URI publicUri;
 
 	@Option(names = "--restricted-uri", description = "the network URI where the restricted API of the node is published", defaultValue = "ws://localhost:8031")
 	private URI restrictedUri;
-
-	@Option(names = "--timeout", description = "the timeout of the connection, in milliseconds", defaultValue = "10000")
-	private long timeout;
-
-	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
-	private boolean json;
-
-	/**
-	 * Determines if the output must be reported in JSON format.
-	 * 
-	 * @return true if and only if that condition holds
-	 */
-	protected final boolean json() {
-		return json;
-	}
 
 	/**
 	 * Yields the URI of the public API of the remote service.
@@ -74,17 +59,7 @@ public abstract class AbstractFullRpcCommand extends AbstractCommand {
 	 * @param what the body
 	 * @param logger the logger to use for reporting
 	 */
-	protected void execute(FullRpcCommandBody what, Logger logger) {
-		// TODO
-	}
-	
-	/**
-	 * The body of an Rpc command on the public and restricted API of a node.
-	 * 
-	 * @throws TimeoutException if the command timed-out
-	 * @throws InterruptedException if the command was interrupted while waiting
-	 */
-	protected interface FullRpcCommandBody {
-		//TODO void run(RemotePublicNode publicRemote, RemoteRestrictedNode restrictedRemote) throws TimeoutException, InterruptedException;
+	protected void execute(RpcCommandBody<RemoteNode> what, Logger logger) {
+		//execute(RemoteNodes::of, what, publicUri, logger);
 	}
 }

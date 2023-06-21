@@ -16,15 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.remote;
 
-import java.io.IOException;
-
 import io.mokamint.node.api.PublicNode;
 
 /**
  * A remote public node of a Mokamint blockchain.
  */
-public interface RemotePublicNode extends PublicNode {
-	
-	@Override
-	void close() throws IOException;
+public interface RemotePublicNode extends PublicNode, AutoCloseableRemoteNode {
 }
