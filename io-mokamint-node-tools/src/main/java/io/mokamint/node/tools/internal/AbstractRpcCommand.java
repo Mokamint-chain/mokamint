@@ -62,7 +62,9 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 * Opens a remote node connected to the public uri of the remote service and runs
 	 * the given command body.
 	 * 
+	 * @param supplier the supplier of the remote node
 	 * @param what the body
+	 * @param uri the uri where the remote service can be contacted
 	 * @param logger the logger to use for reporting
 	 */
 	protected <N extends AutoCloseableRemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri, Logger logger) {

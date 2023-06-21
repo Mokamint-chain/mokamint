@@ -37,6 +37,7 @@ import io.mokamint.node.api.Node;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.service.PublicNodeServices;
+import io.mokamint.node.service.RestrictedNodeServices;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
@@ -61,6 +62,9 @@ public class Start extends AbstractCommand {
 	@Option(names = "--public-port", description = { "network ports where the public API", "of the node must be published" })
 	private int[] publicPorts;
 
+	@Option(names = "--restricted-port", description = { "network ports where the restricted API", "of the node must be published" })
+	private int[] restrictedPorts;
+
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
 	@Override
@@ -73,6 +77,9 @@ public class Start extends AbstractCommand {
 
 		if (publicPorts == null)
 			publicPorts = new int[0];
+
+		if (restrictedPorts == null)
+			restrictedPorts = new int[0];
 
 		loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(plots, 0, new ArrayList<>());
 	}
@@ -189,7 +196,7 @@ public class Start extends AbstractCommand {
 		System.out.print(Ansi.AUTO.string("@|blue Starting a local node... |@"));
 		try (var node = LocalNodes.of(config, new TestApplication(), miners.toArray(Miner[]::new))) {
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-			publishNodeServices(0, node);
+			publishPublicAndRestrictedNodeServices(0, node);
 		}
 		catch (URISyntaxException e) {
 			System.out.println(Ansi.AUTO.string("@|red The database refers to an illegal URI!|@"));
@@ -210,28 +217,56 @@ public class Start extends AbstractCommand {
 		}
 	}
 
-	private void publishNodeServices(int pos, Node node) {
+	private void publishPublicAndRestrictedNodeServices(int pos, Node node) {
 		if (pos < publicPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
 			try (var service = PublicNodeServices.open(node, publicPorts[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-				publishNodeServices(pos + 1, node);
+				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
 				LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + publicPorts[pos], e);
-				publishNodeServices(pos + 1, node);
+				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}
 			catch (DeploymentException e) {
 				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
 				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
-				publishNodeServices(pos + 1, node);
+				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}
 			catch (IllegalArgumentException e) {
 				// for instance, the port number is illegal
 				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
 				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
-				publishNodeServices(pos + 1, node);
+				publishPublicAndRestrictedNodeServices(pos + 1, node);
+			}
+		}
+		else
+			publishRestrictedNodeServices(0, node);
+	}
+
+	private void publishRestrictedNodeServices(int pos, Node node) {
+		if (pos < restrictedPorts.length) {
+			System.out.print(Ansi.AUTO.string("@|blue Starting a restricted node service at port " + restrictedPorts[pos] + " of localhost... |@"));
+			try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				publishRestrictedNodeServices(pos + 1, node);
+			}
+			catch (IOException e) {
+				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
+				LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + restrictedPorts[pos], e);
+				publishRestrictedNodeServices(pos + 1, node);
+			}
+			catch (DeploymentException e) {
+				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
+				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
+				publishRestrictedNodeServices(pos + 1, node);
+			}
+			catch (IllegalArgumentException e) {
+				// for instance, the port number is illegal
+				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
+				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
+				publishRestrictedNodeServices(pos + 1, node);
 			}
 		}
 		else
