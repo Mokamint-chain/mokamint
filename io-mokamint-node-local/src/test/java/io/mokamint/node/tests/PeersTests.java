@@ -95,8 +95,8 @@ public class PeersTests {
 	@Test
 	@DisplayName("seeds are used as peers")
 	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException {
-		URI uri1 = new URI("ws://www.mokamint.io:8029");
-		URI uri2 = new URI("ws://www.mokamint.io:8030");
+		var uri1 = new URI("ws://www.mokamint.io:8029");
+		var uri2 = new URI("ws://www.mokamint.io:8030");
 
 		config = Config.Builder.defaults()
 				.addSeed(uri1)
@@ -104,6 +104,7 @@ public class PeersTests {
 				.build();
 
 		try (var node = LocalNodes.of(config, app)) {
+			Thread.sleep(1000L); // TODO: how to wait for the right time?
 			assertTrue(node.getPeers().count() == 2L);
 			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri1::equals));
 			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
@@ -113,17 +114,19 @@ public class PeersTests {
 	@Test
 	@DisplayName("if a peer is added to a node, it is saved into the database and it is used at next start-up")
 	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException {
-		Peer peer1 = Peers.of(new URI("ws://www.mokamint.io:8029"));
-		Peer peer2 = Peers.of(new URI("ws://www.mokamint.io:8030"));
+		var peer1 = Peers.of(new URI("ws://www.mokamint.io:8029"));
+		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8030"));
 
 		try (var node = LocalNodes.of(config, app)) {
+			Thread.sleep(1000L);
 			assertTrue(node.getPeers().count() == 0L);
-			node.addPeers(Stream.of(peer1));
-			node.addPeers(Stream.of(peer2));
+			node.addPeers(Stream.of(peer1, peer2));
+			Thread.sleep(1000L);
 			assertTrue(node.getPeers().count() == 2L);
 		}
 
 		try (var node = LocalNodes.of(config, app)) {
+			Thread.sleep(1000L);
 			assertTrue(node.getPeers().count() == 2L);
 			assertTrue(node.getPeers().anyMatch(peer1::equals));
 			assertTrue(node.getPeers().anyMatch(peer2::equals));
@@ -133,8 +136,8 @@ public class PeersTests {
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at next start-up")
 	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException {
-		URI uri1 = new URI("ws://www.mokamint.io:8029");
-		URI uri2 = new URI("ws://www.mokamint.io:8030");
+		var uri1 = new URI("ws://www.mokamint.io:8029");
+		var uri2 = new URI("ws://www.mokamint.io:8030");
 
 		config = Config.Builder.defaults()
 				.addSeed(uri1)
@@ -142,6 +145,7 @@ public class PeersTests {
 				.build();
 		
 		try (var node = LocalNodes.of(config, app)) {
+			Thread.sleep(1000L);
 			assertTrue(node.getPeers().count() == 2L);
 			node.removePeers(Stream.of(Peers.of(uri1)));
 			assertTrue(node.getPeers().count() == 1L);
@@ -151,6 +155,7 @@ public class PeersTests {
 				.build();
 
 		try (var node = LocalNodes.of(config, app)) {
+			Thread.sleep(1000L);
 			assertTrue(node.getPeers().count() == 1L);
 			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
 		}

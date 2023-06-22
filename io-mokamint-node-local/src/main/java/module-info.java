@@ -25,6 +25,7 @@ module io.mokamint.node.local {
 	requires transitive io.mokamint.application.api;
 	requires transitive io.mokamint.miner.api;
 	requires io.mokamint.nonce;
+	requires io.mokamint.node.remote;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;
 	requires toml4j;

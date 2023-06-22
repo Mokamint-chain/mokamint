@@ -40,6 +40,11 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-remote</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka</groupId>
       <artifactId>io-hotmoka-crypto</artifactId>
       <version>${hotmoka.version}</version>

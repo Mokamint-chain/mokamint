@@ -23,7 +23,9 @@ import java.util.stream.Stream;
 /**
  * A provider of punishable sets.
  */
-public interface PunishableSets {
+public abstract class PunishableSets {
+
+	private PunishableSets() {}
 
 	/**
 	 * Creates a new punishable set of actors.

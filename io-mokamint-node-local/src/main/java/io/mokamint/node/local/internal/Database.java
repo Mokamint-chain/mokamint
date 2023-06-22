@@ -203,7 +203,7 @@ public class Database implements AutoCloseable {
 	}
 
 	private static byte[] slice(byte[] all, int n, int size) {
-		byte[] result = new byte[size];
+		var result = new byte[size];
 		System.arraycopy(all, n * size, result, 0, size);
 		return result;
 	}

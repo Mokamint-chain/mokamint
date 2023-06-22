@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -123,7 +124,14 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	}
 
 	@Override
-	public boolean replace(A actor, V value) {
+	public Optional<V> getValue(A actor) {
+		synchronized (values) {
+			return Optional.ofNullable(values.get(actor));
+		}
+	}
+
+	@Override
+	public boolean replaceValue(A actor, V value) {
 		synchronized (values) {
 			if (contains(actor))
 				return !Objects.equals(value, values.replace(actor, value));

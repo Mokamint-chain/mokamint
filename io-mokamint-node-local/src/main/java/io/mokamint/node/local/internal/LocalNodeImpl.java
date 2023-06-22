@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
@@ -46,6 +44,7 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
+import io.mokamint.node.local.internal.tasks.AddPeerTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 
@@ -114,16 +113,15 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
-		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, uncheck(db::addPeer), uncheck(db::removePeer)), _peer -> 0L);
-		config.seeds()
-			.map(Peers::of)
-			.forEach(peers::add);
+		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeer, this::removePeer), _peer -> 0L);
+		addPeers(config.seeds().map(Peers::of));
 
-		Optional<Block> head = db.getHead();
-		if (head.isPresent()) {
+		Optional<Block> maybeHead = db.getHead();
+		if (maybeHead.isPresent()) {
 			this.startDateTime = db.getGenesis().get().getStartDateTimeUTC();
-			LocalDateTime nextBlockStartTime = startDateTime.plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
-			execute(new MineNewBlockTask(this, head.get(), nextBlockStartTime));
+			var head = maybeHead.get();
+			LocalDateTime nextBlockStartTime = startDateTime.plus(head.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			execute(new MineNewBlockTask(this, head, nextBlockStartTime));
 		}
 		else {
 			this.startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
@@ -142,9 +140,31 @@ public class LocalNodeImpl implements LocalNode {
 		return peers.getElements();
 	}
 
+	private void addPeer(Peer peer) {
+		try {
+			db.addPeer(peer);
+			LOGGER.info("added peer " + peer);
+		}
+		catch (IOException | URISyntaxException e) {
+			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void removePeer(Peer peer) {
+		try {
+			db.removePeer(peer);
+			LOGGER.info("removed peer " + peer);
+		}
+		catch (IOException | URISyntaxException e) {
+			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + " from the database", e);
+			throw new RuntimeException(e);
+		}
+	}
+
 	@Override
 	public void addPeers(Stream<Peer> peers) {
-		peers.forEach(this.peers::add);
+		peers.forEach(peer -> execute(new AddPeerTask(peer, this)));
 	}
 
 	@Override
@@ -283,6 +303,37 @@ public class LocalNodeImpl implements LocalNode {
 			}
 			catch (IOException e) {
 				LOGGER.log(Level.SEVERE, "I/O error in the database", e);
+			}
+		}
+	}
+
+	/**
+	 * An event fired to signal that a peer has been accepted as valid
+	 * and can be added to the peers of the node.
+	 */
+	public class PeerAcceptedEvent implements Event {
+		public final Peer peer;
+
+		public PeerAcceptedEvent(Peer peer) {
+			this.peer = peer;
+		}
+
+		@Override
+		public String toString() {
+			return "acceptance event for peer " + peer;
+		}
+
+		@Override @OnThread("events")
+		public void run() {
+			try {
+				peers.add(peer);
+			}
+			catch (RuntimeException e) {
+				var cause = e.getCause();
+				if (cause instanceof IOException || cause instanceof URISyntaxException)
+					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
+				else
+					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
 			}
 		}
 	}

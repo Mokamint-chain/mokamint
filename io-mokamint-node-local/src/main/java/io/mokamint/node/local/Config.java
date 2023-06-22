@@ -101,10 +101,12 @@ public class Config extends AbstractConfig {
 	public final long peerPunishmentForUnreachable;
 
 	/**
-	 * The time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request time-outs.
-	 * It defaulst to 10,000 (ie, 10 seconds).
+	 * The time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request timeouts.
+	 * It defaults to 10,000 (ie, 10 seconds).
 	 */
 	public final long peerTimeout;
+
+	public final long peerAttempts;
 
 	/**
 	 * Full constructor for the builder pattern.
@@ -121,6 +123,7 @@ public class Config extends AbstractConfig {
 		this.peerInitialPoints = builder.peerInitialPoints;
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 		this.peerTimeout = builder.peerTimeout;
+		this.peerAttempts = builder.peerAttempts;
 	}
 
 	@Override
@@ -156,6 +159,11 @@ public class Config extends AbstractConfig {
 		sb.append("\n");
 		sb.append("# the time (in milliseconds) for communications to the peers\n");
 		sb.append("peer_timeout = " + peerTimeout + "\n");
+		sb.append("\n");
+		sb.append("# the number of attempts for contacting a peer; after each attempt,\n");
+		sb.append("# peer_timeout milliseconds are waited before the next attempt;\n");
+		sb.append("# the waited time doubles after each attempt\n.");
+		sb.append("peer_attempts = " + peerAttempts + "\n");
 
 		return sb.toString();
 	}
@@ -191,6 +199,7 @@ public class Config extends AbstractConfig {
 		private long peerInitialPoints = 1000L;
 		private long peerPunishmentForUnreachable = 1L;
 		private long peerTimeout = 10000L;
+		private long peerAttempts = 5;
 
 		private Builder() throws NoSuchAlgorithmException {
 		}
@@ -234,6 +243,10 @@ public class Config extends AbstractConfig {
 			var peerTimeout = toml.getLong("peer_timeout");
 			if (peerTimeout != null)
 				setPeerTimeout(peerTimeout);
+
+			var peerAttempts = toml.getLong("peer_attempts");
+			if (peerAttempts != null)
+				setPeerAttempts(peerAttempts);
 		}
 
 		/**
@@ -360,14 +373,28 @@ public class Config extends AbstractConfig {
 		}
 
 		/**
-		 * Sets the time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request time-outs.
-		 * It defaults to 10,000 (ie, 10 seconds).
+		 * Sets the time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request timeouts
+		 * and nodes will try again after waiting the same threshold, for a total of {@link #peerAttempts} times.
+		 * At each new attempts, the waiting time doubles. It defaults to 10,000 (ie, 10 seconds).
 		 * 
 		 * @param peerTimeout the timeout
 		 * @return this builder
 		 */
 		public Builder setPeerTimeout(long peerTimeout) {
 			this.peerTimeout = peerTimeout;
+			return this;
+		}
+
+		/**
+		 * Sets the number of attempts allowed to contact a peer. After each attempt,
+		 * {@link #peerTimeout} milliseconds are waited before the next attempt. The
+		 * waiting times doubles after each attempt. It defaults to 5.
+		 * 
+		 * @param peerAttempts the number of attempts
+		 * @return this builder
+		 */
+		public Builder setPeerAttempts(long peerAttempts) {
+			this.peerAttempts = peerAttempts;
 			return this;
 		}
 

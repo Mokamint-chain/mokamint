@@ -57,6 +57,7 @@ public class PublicTestServer extends AbstractWebSocketServer {
 		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this));
 	}
 
+	@Override
 	public void close() {
 		stopContainer();
 	};

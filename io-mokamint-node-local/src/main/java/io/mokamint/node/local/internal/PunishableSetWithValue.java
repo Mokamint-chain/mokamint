@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -52,6 +53,15 @@ public interface PunishableSetWithValue<A, V> extends PunishableSet<A> {
 	boolean add(A actor, V value);
 
 	/**
+	 * Yields the value bound to the given actor. If the actor is not
+	 * in this set, it yields an empty optional.
+	 * 
+	 * @param actor the actor
+	 * @return the value, if any
+	 */
+	Optional<V> getValue(A actor);
+
+	/**
 	 * Replaces the value of the given actor from this container, if it is already there.
 	 * Otherwise, nothing happens.
 	 * 
@@ -60,5 +70,5 @@ public interface PunishableSetWithValue<A, V> extends PunishableSet<A> {
 	 * @return true if and only if the actor was in the container and its old
 	 *         value was different from {@code value} (modulo {@link Object#equals(Object)})
 	 */
-	boolean replace(A actor, V value);
+	boolean replaceValue(A actor, V value);
 }
