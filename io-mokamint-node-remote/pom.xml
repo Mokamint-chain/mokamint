@@ -40,6 +40,12 @@
       <version>${io.hotmoka.websockets.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-service</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.websockets</groupId>
       <artifactId>io-hotmoka-websockets-server</artifactId>
       <version>${io.hotmoka.websockets.version}</version>

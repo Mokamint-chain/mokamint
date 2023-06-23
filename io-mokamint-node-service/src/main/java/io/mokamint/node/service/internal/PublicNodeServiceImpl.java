@@ -19,49 +19,33 @@ package io.mokamint.node.service.internal;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
-import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessage;
-import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessage;
-import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
-import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
-import io.mokamint.node.service.api.PublicNodeService;
+import io.mokamint.node.service.AbstractPublicNodeService;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpointConfig;
 
 /**
  * The implementation of a public node service. It publishes endpoints at a URL,
  * where clients can connect to query the public API of a Mokamint node.
  */
 @ThreadSafe
-public class PublicNodeServiceImpl extends AbstractWebSocketServer implements PublicNodeService {
-
-	/**
-	 * The port of localhost, where this service is listening.
-	 */
-	private final int port;
+public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 
 	/**
 	 * The node whose API is published.
 	 */
 	private final PublicNode node;
-
-	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
 	/**
 	 * Creates a new service for the given node, at the given network port.
@@ -72,20 +56,15 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @throws IOException if an I/O error occurs
 	 */
 	public PublicNodeServiceImpl(PublicNode node, int port) throws DeploymentException, IOException {
-		this.port = port;
+		super(port);
 		this.node = node;
-		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this));
-    	LOGGER.info("published a public node service at ws://localhost:" + port);
+		deploy();
 	}
 
 	@Override
-	public void close() {
-		stopContainer();
-		LOGGER.info("closed the public node service at ws://localhost:" + port);
-	}
+	protected void onGetPeers(GetPeersMessage message, Session session) {
+		super.onGetPeers(message, session);
 
-	private void getPeers(GetPeersMessage message, Session session) {
-		LOGGER.info("received a " + GET_PEERS_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
 		}
@@ -94,20 +73,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	};
 
-	public static class GetPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	@Override
+	protected void onGetBlock(GetBlockMessage message, Session session) {
+		super.onGetBlock(message, session);
 
-		@Override
-	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetPeersMessage message) -> getServer().getPeers(message, session));
-	    }
-
-		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT, GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
-		}
-	}
-
-	private void getBlock(GetBlockMessage message, Session session) {
-		LOGGER.info("received a " + GET_BLOCK_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
@@ -116,20 +85,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	};
 
-	public static class GetBlockEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	@Override
+	protected void onGetConfig(GetConfigMessage message, Session session) {
+		super.onGetConfig(message, session);
 
-		@Override
-	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetBlockMessage message) -> getServer().getBlock(message, session));
-	    }
-
-		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT, GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
-		}
-	}
-
-	private void getConfig(GetConfigMessage message, Session session) {
-		LOGGER.info("received a " + GET_CONFIG_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 		}
@@ -138,20 +97,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	};
 
-	public static class GetConfigEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	@Override
+	protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
+		super.onGetChainInfo(message, session);
 
-		@Override
-	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetConfigMessage message) -> getServer().getConfig(message, session));
-	    }
-
-		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT, GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
-		}
-	}
-
-	private void getChainInfo(GetChainInfoMessage message, Session session) {
-		LOGGER.info("received a " + GET_CHAIN_INFO_ENDPOINT + " request");
 		try {
 			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 		}
@@ -159,16 +108,4 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 		}
 	};
-
-	public static class GetChainInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
-
-		@Override
-	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetChainInfoMessage message) -> getServer().getChainInfo(message, session));
-	    }
-
-		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT, GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
-		}
-	}
 }

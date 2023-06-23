@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
@@ -37,6 +38,7 @@ import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
+import io.mokamint.node.service.AbstractPublicNodeService;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
@@ -56,6 +58,24 @@ public class RemotePublicNodeTests {
 
 	private final static long TIME_OUT = 500L;
 
+	/**
+	 * Test server implementation.
+	 */
+	@ThreadSafe
+	private static class PublicTestServer extends AbstractPublicNodeService {
+
+		/**
+		 * Creates a new test server.
+		 * 
+		 * @throws DeploymentException if the service cannot be deployed
+		 * @throws IOException if an I/O error occurs
+		 */
+		private PublicTestServer() throws DeploymentException, IOException {
+			super(PORT);
+			deploy();
+		}
+	}
+
 	@Test
 	@DisplayName("getPeers() works")
 	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
@@ -63,9 +83,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
@@ -86,9 +104,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
@@ -109,9 +125,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
@@ -132,9 +146,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
@@ -157,9 +169,7 @@ public class RemotePublicNodeTests {
 	public void getPeersWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, NoSuchAlgorithmException {
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
@@ -177,9 +187,7 @@ public class RemotePublicNodeTests {
 	public void getPeersWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, NoSuchAlgorithmException {
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
@@ -202,9 +210,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -226,9 +232,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -251,9 +255,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -275,9 +277,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetConfig(GetConfigMessage message, Session session) {
@@ -298,9 +298,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
@@ -321,9 +319,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
@@ -344,9 +340,7 @@ public class RemotePublicNodeTests {
 
 		class MyServer extends PublicTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
