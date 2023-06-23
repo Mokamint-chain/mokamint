@@ -94,7 +94,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	    }
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
-			return simpleConfig(server, GetPeersEndpoint.class, PublicNodeService.GET_PEERS_ENDPOINT,
+			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT,
 					GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
@@ -111,7 +111,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	    }
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
-			return simpleConfig(server, GetBlockEndpoint.class, PublicNodeService.GET_BLOCK_ENDPOINT,
+			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT,
 					GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
@@ -128,7 +128,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	    }
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
-			return simpleConfig(server, GetConfigEndpoint.class, PublicNodeService.GET_CONFIG_ENDPOINT,
+			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT,
 					GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
@@ -145,7 +145,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	    }
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
-			return simpleConfig(server, GetChainInfoEndpoint.class, PublicNodeService.GET_CHAIN_INFO_ENDPOINT,
+			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT,
 					GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}

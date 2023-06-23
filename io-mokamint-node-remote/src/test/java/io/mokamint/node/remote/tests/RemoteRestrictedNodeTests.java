@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeersMessage;
@@ -24,6 +25,7 @@ import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeersMessage;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
+import io.mokamint.node.service.AbstractRestrictedNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -42,6 +44,24 @@ public class RemoteRestrictedNodeTests {
 
 	private final static long TIME_OUT = 500L;
 
+	/**
+	 * Test server implementation.
+	 */
+	@ThreadSafe
+	private static class RestrictedTestServer extends AbstractRestrictedNodeService {
+
+		/**
+		 * Creates a new test server.
+		 * 
+		 * @throws DeploymentException if the service cannot be deployed
+		 * @throws IOException if an I/O error occurs
+		 */
+		private RestrictedTestServer() throws DeploymentException, IOException {
+			super(PORT);
+			deploy();
+		}
+	}
+
 	@Test
 	@DisplayName("addPeers() works")
 	public void addPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
@@ -50,9 +70,7 @@ public class RemoteRestrictedNodeTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onAddPeers(AddPeersMessage message, Session session) {
@@ -75,9 +93,7 @@ public class RemoteRestrictedNodeTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onAddPeers(AddPeersMessage message, Session session) {
@@ -99,9 +115,7 @@ public class RemoteRestrictedNodeTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onAddPeers(AddPeersMessage message, Session session) {
@@ -122,9 +136,7 @@ public class RemoteRestrictedNodeTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onAddPeers(AddPeersMessage message, Session session) {
@@ -150,9 +162,7 @@ public class RemoteRestrictedNodeTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onAddPeers(AddPeersMessage message, Session session) {
@@ -173,9 +183,7 @@ public class RemoteRestrictedNodeTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			public MyServer() throws DeploymentException, IOException {
-				super(PORT);
-			}
+			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onRemovePeers(RemovePeersMessage message, Session session) {
