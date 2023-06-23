@@ -55,6 +55,17 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 		deploy();
 	}
 
+	/**
+	 * Sends an exception message to the given session.
+	 * 
+	 * @param session the session
+	 * @param e the exception used to build the message
+	 * @param id the identifier of the message to send
+	 */
+	protected void sendExceptionAsync(Session session, Exception e, String id) {
+		sendObjectAsync(session, ExceptionMessages.of(e, id));
+	}
+
 	@Override
 	protected void onAddPeers(AddPeersMessage message, Session session) {
 		super.onAddPeers(message, session);
@@ -64,7 +75,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			sendExceptionAsync(session, e, message.getId());
 		}
 	};
 
@@ -77,7 +88,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			sendExceptionAsync(session, e, message.getId());
 		}
 	};
 }

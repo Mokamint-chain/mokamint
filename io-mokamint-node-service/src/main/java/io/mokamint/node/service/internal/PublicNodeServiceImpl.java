@@ -61,6 +61,17 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		deploy();
 	}
 
+	/**
+	 * Sends an exception message to the given session.
+	 * 
+	 * @param session the session
+	 * @param e the exception used to build the message
+	 * @param id the identifier of the message to send
+	 */
+	protected void sendExceptionAsync(Session session, Exception e, String id) {
+		sendObjectAsync(session, ExceptionMessages.of(e, id));
+	}
+
 	@Override
 	protected void onGetPeers(GetPeersMessage message, Session session) {
 		super.onGetPeers(message, session);
@@ -69,7 +80,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			sendExceptionAsync(session, e, message.getId());
 		}
 	};
 
@@ -81,7 +92,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
 		catch (NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			sendExceptionAsync(session, e, message.getId());
 		}
 	};
 
@@ -93,7 +104,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
-			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			sendExceptionAsync(session, e, message.getId());
 		}
 	};
 
@@ -105,7 +116,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | IOException e) {
-			sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			sendExceptionAsync(session, e, message.getId());
 		}
 	};
 }
