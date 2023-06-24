@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,6 +35,7 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
@@ -51,6 +53,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.tasks.AddPeerTask;
 import io.mokamint.node.messages.GetChainInfoMessage;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
@@ -152,13 +155,13 @@ public class PeersTests {
 			}
 
 			@Override
-			 protected void onCompletion(Event event) {
-				 if (event instanceof PeerAcceptedEvent) {
-					 var uri = ((PeerAcceptedEvent) event).peer.getURI();
-					 if (uri.equals(uri1) || uri.equals(uri2))
-						 semaphore.release();
-				 }
-			 };
+			protected void onComplete(Event event) {
+				if (event instanceof PeerAcceptedEvent) {
+					var uri = ((PeerAcceptedEvent) event).peer.getURI();
+					if (uri.equals(uri1) || uri.equals(uri2))
+						semaphore.release();
+				}
+			};
 		}
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2); var node = new MyLocalNode()) {
@@ -177,6 +180,7 @@ public class PeersTests {
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var allowAddPeers = new AtomicBoolean();
 
 		class MyLocalNode extends LocalNodeImpl {
 			private final Semaphore semaphore = new Semaphore(0);
@@ -186,26 +190,33 @@ public class PeersTests {
 			}
 
 			@Override
-			 protected void onCompletion(Event event) {
-				 if (event instanceof PeerAcceptedEvent) {
-					 var peer = ((PeerAcceptedEvent) event).peer;
-					 if (peer.equals(peer1) || peer.equals(peer2))
-						 semaphore.release();
-				 }
-			 };
+			protected void onSchedule(Task task) {
+				if (!allowAddPeers.get() && task instanceof AddPeerTask)
+					fail();
+			}
+
+			@Override
+			protected void onComplete(Event event) {
+				if (event instanceof PeerAcceptedEvent) {
+					var peer = ((PeerAcceptedEvent) event).peer;
+					if (peer.equals(peer1) || peer.equals(peer2))
+						semaphore.release();
+				}
+			};
 		}
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
 			try (var node = new MyLocalNode()) {
-				Thread.sleep(1000L);
 				assertTrue(node.getPeers().count() == 0L);
+				allowAddPeers.set(true);
 				node.addPeers(Stream.of(peer1, peer2));
 				node.semaphore.acquire(2);
 				assertTrue(node.getPeers().count() == 2L);
 			}
 
+			allowAddPeers.set(false);
+
 			try (var node = new MyLocalNode()) {
-				Thread.sleep(1000L);
 				assertTrue(node.getPeers().count() == 2L);
 				assertTrue(node.getPeers().anyMatch(peer1::equals));
 				assertTrue(node.getPeers().anyMatch(peer2::equals));
@@ -214,7 +225,7 @@ public class PeersTests {
 	}
 
 	@Test
-	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at next start-up")
+	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at the next start-up")
 	@Timeout(10)
 	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
 		var port1 = 8032;
@@ -227,6 +238,8 @@ public class PeersTests {
 				.addSeed(uri2)
 				.build();
 
+		var allowAddPeers = new AtomicBoolean(true);
+
 		class MyLocalNode extends LocalNodeImpl {
 			private final Semaphore semaphore = new Semaphore(0);
 
@@ -235,13 +248,19 @@ public class PeersTests {
 			}
 
 			@Override
-			 protected void onCompletion(Event event) {
-				 if (event instanceof PeerAcceptedEvent) {
-					 var uri = ((PeerAcceptedEvent) event).peer.getURI();
-					 if (uri.equals(uri1) || uri.equals(uri2))
-						 semaphore.release();
-				 }
-			 };
+			protected void onSchedule(Task task) {
+				if (!allowAddPeers.get() && task instanceof AddPeerTask)
+					fail();
+			}
+
+			@Override
+			protected void onComplete(Event event) {
+				if (event instanceof PeerAcceptedEvent) {
+					var uri = ((PeerAcceptedEvent) event).peer.getURI();
+					if (uri.equals(uri1) || uri.equals(uri2))
+						semaphore.release();
+				}
+			};
 		}
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
@@ -255,8 +274,9 @@ public class PeersTests {
 			config = Config.Builder.defaults()
 					.build();
 
+			allowAddPeers.set(false);
+
 			try (var node = LocalNodes.of(config, app)) {
-				Thread.sleep(1000L);
 				assertTrue(node.getPeers().count() == 1L);
 				assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
 			}

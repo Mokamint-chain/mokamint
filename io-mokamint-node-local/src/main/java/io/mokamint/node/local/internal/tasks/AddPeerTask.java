@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.annotations.OnThread;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -55,7 +56,12 @@ public class AddPeerTask extends Task {
 	}
 
 	@Override
-	public void run() {
+	public String toString() {
+		return "add " + peer + " as peer";
+	}
+
+	@Override @OnThread("tasks")
+	protected void body() {
 		var config = node.getConfig();
 		var delay = config.peerTimeout;
 		var furtherAttempts = config.peerAttempts;

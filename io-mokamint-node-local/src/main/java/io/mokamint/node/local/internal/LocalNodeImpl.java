@@ -164,7 +164,10 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void addPeers(Stream<Peer> peers) {
-		peers.forEach(peer -> execute(new AddPeerTask(peer, this)));
+		peers
+			.filter(peer -> !this.peers.contains(peer))
+			.map(peer -> new AddPeerTask(peer, this))
+			.forEach(this::execute);
 	}
 
 	@Override
@@ -242,11 +245,11 @@ public class LocalNodeImpl implements LocalNode {
 				body();
 			}
 			catch (Exception e) {
-				onFailure(this, e);
+				onFail(this, e);
 				return;
 			}
 
-			onCompletion(this);
+			onComplete(this);
 		}
 
 		/**
@@ -280,7 +283,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param event the event
 	 */
-	protected void onCompletion(Event event) {}
+	protected void onComplete(Event event) {}
 
 	/**
 	 * Callback called at the end of the failed execution of an event.
@@ -289,7 +292,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param event the event
 	 * @param exception the failure cause
 	 */
-	protected void onFailure(Event event, Exception e) {}
+	protected void onFail(Event event, Exception e) {}
 
 	/**
 	 * Signals that an event occurred. This is typically called from tasks,
@@ -307,7 +310,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.info(event + " rejected, probably because the node is shutting down");
-			onFailure(event, e);
+			onFail(event, e);
 		}
 	}
 
@@ -321,7 +324,63 @@ public class LocalNodeImpl implements LocalNode {
 		 * The node running this task.
 		 */
 		protected final LocalNodeImpl node = LocalNodeImpl.this;
+
+		@Override @OnThread("tasks")
+		public final void run() {
+			onStart(this);
+
+			try {
+				body();
+			}
+			catch (Exception e) {
+				onFail(this, e);
+				return;
+			}
+
+			onComplete(this);
+		}
+
+		/**
+		 * Main body of the task execution.
+		 * 
+		 * @throws Exception if the execution fails
+		 */
+		@OnThread("tasks")
+		protected abstract void body() throws Exception;
 	}
+
+	/**
+	 * Callback called when a task is scheduled.
+	 * It can be useful for testing or monitoring tasks.
+	 * 
+	 * @param task the task
+	 */
+	protected void onSchedule(Task task) {}
+
+	/**
+	 * Callback called when a task begins being executed.
+	 * It can be useful for testing or monitoring events.
+	 * 
+	 * @param task the task
+	 */
+	protected void onStart(Task task) {}
+
+	/**
+	 * Callback called at the end of the successful execution of a task.
+	 * It can be useful for testing or monitoring events.
+	 * 
+	 * @param task the task
+	 */
+	protected void onComplete(Task task) {}
+
+	/**
+	 * Callback called at the end of the failed execution of a task.
+	 * It can be useful for testing or monitoring events.
+	 * 
+	 * @param task the task
+	 * @param exception the failure cause
+	 */
+	protected void onFail(Task task, Exception e) {}
 
 	/**
 	 * Runs the given task in one thread from the {@link #tasks} executors.
@@ -330,10 +389,13 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private void execute(Task task) {
 		try {
+			LOGGER.info("scheduling " + task);
+			onSchedule(task);
 			tasks.execute(task);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.info("task rejected, probably because the node is shutting down");
+			LOGGER.info(task + " rejected, probably because the node is shutting down");
+			onFail(task, e);
 		}
 	}
 

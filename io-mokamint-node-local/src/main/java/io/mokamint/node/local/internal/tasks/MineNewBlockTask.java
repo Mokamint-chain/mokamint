@@ -90,7 +90,12 @@ public class MineNewBlockTask extends Task {
 	}
 
 	@Override
-	public void run() {
+	public String toString() {
+		return "mine block at height " + heightOfNewBlock;
+	}
+
+	@Override @OnThread("tasks")
+	protected void body() {
 		try {
 			if (node.getMiners().isEmpty())
 				node.emit(node.new NoMinersAvailableEvent());

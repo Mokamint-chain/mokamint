@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.annotations.OnThread;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
@@ -35,7 +36,12 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	}
 
 	@Override
-	public void run() {
+	public String toString() {
+		return "delayed " + super.toString();
+	}
+
+	@Override @OnThread("tasks")
+	protected void body() {
 		try {
 			LOGGER.info(logIntro + "I will retry mining in " + delay / 1000L + " seconds");
 			Thread.sleep(delay);
@@ -45,6 +51,6 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 			Thread.currentThread().interrupt();
 		}
 
-		super.run();
+		super.body();
 	}
 }
