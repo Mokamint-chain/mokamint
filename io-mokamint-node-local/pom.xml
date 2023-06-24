@@ -64,6 +64,12 @@
       <artifactId>slf4j-nop</artifactId>
       <version>2.0.7</version>
 	</dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-service</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>

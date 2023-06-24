@@ -132,14 +132,14 @@ public class EventsTests {
 			}
 
 			@Override
-			public void signal(Event event) {
+			protected void onEmit(Event event) {
 				if (event instanceof BlockDiscoveryEvent) {
 					var block = ((BlockDiscoveryEvent) event).block;
 					if (block instanceof NonGenesisBlock && Arrays.equals(((NonGenesisBlock) block).getDeadline().getValue(), deadlineValue))
 						semaphore.release();
 				}
 					
-				super.signal(event);
+				super.onEmit(event);
 			}
 		}
 
@@ -180,13 +180,13 @@ public class EventsTests {
 			}
 	
 			@Override
-			public void signal(Event event) {
+			protected void onEmit(Event event) {
 				if (event instanceof IllegalDeadlineEvent) {
 					if (((IllegalDeadlineEvent) event).miner == myMiner)
 						semaphore.release();
 				}
 					
-				super.signal(event);
+				super.onEmit(event);
 			}
 		}
 	
@@ -208,11 +208,11 @@ public class EventsTests {
 			}
 
 			@Override
-			public void signal(Event event) {
+			protected void onEmit(Event event) {
 				if (event instanceof NoMinersAvailableEvent)
 					semaphore.release();
 					
-				super.signal(event);
+				super.onEmit(event);
 			}
 		}
 
@@ -235,11 +235,11 @@ public class EventsTests {
 			}
 
 			@Override
-			public void signal(Event event) {
+			protected void onEmit(Event event) {
 				if (event instanceof NoDeadlineFoundEvent)
 					semaphore.release();
 					
-				super.signal(event);
+				super.onEmit(event);
 			}
 		}
 
@@ -290,11 +290,11 @@ public class EventsTests {
 			}
 
 			@Override
-			public void signal(Event event) {
+			protected void onEmit(Event event) {
 				if (event instanceof IllegalDeadlineEvent)
 					semaphore.release();
 
-				super.signal(event);
+				super.onEmit(event);
 			}
 		}
 

@@ -31,6 +31,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
+import java.util.Optional;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
@@ -39,12 +41,21 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
+import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
+import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.messages.GetChainInfoMessage;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.service.AbstractPublicNodeService;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Session;
 
 public class PeersTests {
 
@@ -57,6 +68,32 @@ public class PeersTests {
 	 * The application of the node used for testing.
 	 */
 	private static Application app;
+
+	/**
+	 * Test server implementation.
+	 */
+	@ThreadSafe
+	private static class PublicTestServer extends AbstractPublicNodeService {
+
+		/**
+		 * Creates a new test server.
+		 * 
+		 * @param port the port where the server is published
+		 * @throws DeploymentException if the service cannot be deployed
+		 * @throws IOException if an I/O error occurs
+		 */
+		private PublicTestServer(int port) throws DeploymentException, IOException {
+			super(port);
+			deploy();
+		}
+
+		// TODO
+		@Override
+		protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
+			super.onGetChainInfo(message, session);
+			sendObjectAsync(session, GetChainInfoResultMessages.of(ChainInfos.of(0, Optional.empty(), Optional.empty()), message.getId()));
+		};
+	}
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -94,17 +131,38 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("seeds are used as peers")
-	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException {
-		var uri1 = new URI("ws://www.mokamint.io:8029");
-		var uri2 = new URI("ws://www.mokamint.io:8030");
+	@Timeout(10)
+	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException {
+		var port1 = 8032;
+		var port2 = 8034;
+		var uri1 = new URI("ws://localhost:" + port1);
+		var uri2 = new URI("ws://localhost:" + port2);
 
 		config = Config.Builder.defaults()
 				.addSeed(uri1)
 				.addSeed(uri2)
 				.build();
 
-		try (var node = LocalNodes.of(config, app)) {
-			Thread.sleep(1000L); // TODO: how to wait for the right time?
+		var semaphore = new Semaphore(0);
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+				super(config, app);
+			}
+
+			@Override
+			 protected void onCompletion(Event event) {
+				 if (event instanceof PeerAcceptedEvent) {
+					 var uri = ((PeerAcceptedEvent) event).peer.getURI();
+					 if (uri.equals(uri1) || uri.equals(uri2))
+						 semaphore.release();
+				 }
+			 };
+		}
+
+		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2); var node = new MyLocalNode()) {
+			semaphore.acquire(2);
 			assertTrue(node.getPeers().count() == 2L);
 			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri1::equals));
 			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
@@ -113,51 +171,95 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("if a peer is added to a node, it is saved into the database and it is used at next start-up")
-	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException {
-		var peer1 = Peers.of(new URI("ws://www.mokamint.io:8029"));
-		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8030"));
+	@Timeout(10)
+	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+		var port1 = 8032;
+		var port2 = 8034;
+		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
+		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 
-		try (var node = LocalNodes.of(config, app)) {
-			Thread.sleep(1000L);
-			assertTrue(node.getPeers().count() == 0L);
-			node.addPeers(Stream.of(peer1, peer2));
-			Thread.sleep(1000L);
-			assertTrue(node.getPeers().count() == 2L);
+		class MyLocalNode extends LocalNodeImpl {
+			private final Semaphore semaphore = new Semaphore(0);
+
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+				super(config, app);
+			}
+
+			@Override
+			 protected void onCompletion(Event event) {
+				 if (event instanceof PeerAcceptedEvent) {
+					 var peer = ((PeerAcceptedEvent) event).peer;
+					 if (peer.equals(peer1) || peer.equals(peer2))
+						 semaphore.release();
+				 }
+			 };
 		}
 
-		try (var node = LocalNodes.of(config, app)) {
-			Thread.sleep(1000L);
-			assertTrue(node.getPeers().count() == 2L);
-			assertTrue(node.getPeers().anyMatch(peer1::equals));
-			assertTrue(node.getPeers().anyMatch(peer2::equals));
+		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
+			try (var node = new MyLocalNode()) {
+				Thread.sleep(1000L);
+				assertTrue(node.getPeers().count() == 0L);
+				node.addPeers(Stream.of(peer1, peer2));
+				node.semaphore.acquire(2);
+				assertTrue(node.getPeers().count() == 2L);
+			}
+
+			try (var node = new MyLocalNode()) {
+				Thread.sleep(1000L);
+				assertTrue(node.getPeers().count() == 2L);
+				assertTrue(node.getPeers().anyMatch(peer1::equals));
+				assertTrue(node.getPeers().anyMatch(peer2::equals));
+			}
 		}
 	}
 
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at next start-up")
-	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException {
-		var uri1 = new URI("ws://www.mokamint.io:8029");
-		var uri2 = new URI("ws://www.mokamint.io:8030");
+	@Timeout(10)
+	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+		var port1 = 8032;
+		var port2 = 8034;
+		var uri1 = new URI("ws://localhost:" + port1);
+		var uri2 = new URI("ws://localhost:" + port2);
 
 		config = Config.Builder.defaults()
 				.addSeed(uri1)
 				.addSeed(uri2)
 				.build();
-		
-		try (var node = LocalNodes.of(config, app)) {
-			Thread.sleep(1000L);
-			assertTrue(node.getPeers().count() == 2L);
-			node.removePeers(Stream.of(Peers.of(uri1)));
-			assertTrue(node.getPeers().count() == 1L);
+
+		class MyLocalNode extends LocalNodeImpl {
+			private final Semaphore semaphore = new Semaphore(0);
+
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+				super(config, app);
+			}
+
+			@Override
+			 protected void onCompletion(Event event) {
+				 if (event instanceof PeerAcceptedEvent) {
+					 var uri = ((PeerAcceptedEvent) event).peer.getURI();
+					 if (uri.equals(uri1) || uri.equals(uri2))
+						 semaphore.release();
+				 }
+			 };
 		}
 
-		config = Config.Builder.defaults()
-				.build();
+		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
+			try (var node = new MyLocalNode()) {
+				node.semaphore.acquire(2);
+				assertTrue(node.getPeers().count() == 2L);
+				node.removePeers(Stream.of(Peers.of(uri1)));
+				assertTrue(node.getPeers().count() == 1L);
+			}
 
-		try (var node = LocalNodes.of(config, app)) {
-			Thread.sleep(1000L);
-			assertTrue(node.getPeers().count() == 1L);
-			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
+			config = Config.Builder.defaults()
+					.build();
+
+			try (var node = LocalNodes.of(config, app)) {
+				Thread.sleep(1000L);
+				assertTrue(node.getPeers().count() == 1L);
+				assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
+			}
 		}
 	}
 

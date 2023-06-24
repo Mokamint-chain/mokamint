@@ -32,4 +32,7 @@ module io.mokamint.node.local {
 	requires io.hotmoka.xodus;
 	requires java.logging;
 	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
+
+	// only used for testing
+	requires static io.mokamint.node.messages;
 }

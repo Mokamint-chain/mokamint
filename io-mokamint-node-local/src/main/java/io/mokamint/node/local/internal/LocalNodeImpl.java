@@ -126,7 +126,7 @@ public class LocalNodeImpl implements LocalNode {
 		else {
 			this.startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
 			GenesisBlock genesis = Blocks.genesis(startDateTime);
-			signal(new BlockDiscoveryEvent(genesis));
+			emit(new BlockDiscoveryEvent(genesis));
 		}
 	}
 
@@ -229,25 +229,85 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * The type of the events processed on the event thread.
+	 * Partial implementation of events. It weaves the monitoring call-backs
+	 * and delegates to its {@link Event#body()} method.
 	 */
-	public interface Event extends Runnable {}
+	protected abstract class Event implements Runnable {
+
+		@Override @OnThread("events")
+		public final void run() {
+			onStart(this);
+
+			try {
+				body();
+			}
+			catch (Exception e) {
+				onFailure(this, e);
+				return;
+			}
+
+			onCompletion(this);
+		}
+
+		/**
+		 * Main body of the event execution.
+		 * 
+		 * @throws Exception if the execution fails
+		 */
+		@OnThread("events")
+		protected abstract void body() throws Exception;
+	}
 
 	/**
-	 * Signals that an event occurred. This is typically called from task,
+	 * Callback called when an event is emitted.
+	 * It can be useful for testing or monitoring events.
+	 * 
+	 * @param event the event
+	 */
+	protected void onEmit(Event event) {}
+
+	/**
+	 * Callback called when an event begins being executed.
+	 * It can be useful for testing or monitoring events.
+	 * 
+	 * @param event the event
+	 */
+	protected void onStart(Event event) {}
+
+	/**
+	 * Callback called at the end of the successful execution of an event.
+	 * It can be useful for testing or monitoring events.
+	 * 
+	 * @param event the event
+	 */
+	protected void onCompletion(Event event) {}
+
+	/**
+	 * Callback called at the end of the failed execution of an event.
+	 * It can be useful for testing or monitoring events.
+	 * 
+	 * @param event the event
+	 * @param exception the failure cause
+	 */
+	protected void onFailure(Event event, Exception e) {}
+
+	/**
+	 * Signals that an event occurred. This is typically called from tasks,
 	 * to signal that something occurred and that the node must react accordingly.
 	 * Events get queued into the {@link #events} queue and eventually executed
 	 * on its only thread, in order.
 	 * 
-	 * @param event the event that occurred
+	 * @param event the emitted event
 	 */
-	public void signal(Event event) {
+	public final void emit(Event event) {
 		try {
 			LOGGER.info("received " + event);
+			onEmit(event);
 			events.execute(event);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.info(event + " rejected, probably because the node is shutting down");
+			onFailure(event, e);
 		}
 	}
 
@@ -282,7 +342,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * from the node itself, if it finds a deadline and a new block by using its own miners,
 	 * but also from a peer, that fund a block and whispers it to us.
 	 */
-	public class BlockDiscoveryEvent implements Event {
+	public class BlockDiscoveryEvent extends Event {
 		public final Block block;
 
 		public BlockDiscoveryEvent(Block block) {
@@ -295,7 +355,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		@Override @OnThread("events")
-		public void run() {
+		protected void body() throws IOException {
 			try {
 				db.setHeadHash(db.add(block));
 				LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
@@ -303,6 +363,7 @@ public class LocalNodeImpl implements LocalNode {
 			}
 			catch (IOException e) {
 				LOGGER.log(Level.SEVERE, "I/O error in the database", e);
+				throw e;
 			}
 		}
 	}
@@ -311,7 +372,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * An event fired to signal that a peer has been accepted as valid
 	 * and can be added to the peers of the node.
 	 */
-	public class PeerAcceptedEvent implements Event {
+	public class PeerAcceptedEvent extends Event {
 		public final Peer peer;
 
 		public PeerAcceptedEvent(Peer peer) {
@@ -324,16 +385,24 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		@Override @OnThread("events")
-		public void run() {
+		protected void body() throws IOException, URISyntaxException{
 			try {
 				peers.add(peer);
 			}
 			catch (RuntimeException e) {
 				var cause = e.getCause();
-				if (cause instanceof IOException || cause instanceof URISyntaxException)
+				if (cause instanceof IOException) {
 					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
-				else
+					throw (IOException) cause;
+				}
+				else if (cause instanceof URISyntaxException) {
+					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
+					throw (URISyntaxException) cause;
+				}
+				else {
 					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
+					throw e;
+				}
 			}
 		}
 	}
@@ -341,7 +410,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * An event fired to signal that a miner misbehaved.
 	 */
-	public class MinerMisbehaviorEvent implements Event {
+	public class MinerMisbehaviorEvent extends Event {
 		public final Miner miner;
 		public final long points;
 
@@ -362,7 +431,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		@Override @OnThread("events")
-		public void run() {
+		protected void body() {
 			miners.punish(miner, points);
 		}
 	}
@@ -386,7 +455,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * An event fired when a new block task timed-out without finding a single deadline,
 	 * despite having at least a miner available.
 	 */
-	public class NoDeadlineFoundEvent implements Event {
+	public class NoDeadlineFoundEvent extends Event {
 
 		@Override
 		public String toString() {
@@ -394,7 +463,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		@Override @OnThread("events")
-		public void run() {
+		protected void body() throws NoSuchAlgorithmException, IOException {
 			// all miners timed-out
 			miners.forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 
@@ -404,11 +473,11 @@ public class LocalNodeImpl implements LocalNode {
 			}
 			catch (NoSuchAlgorithmException e) {
 				LOGGER.log(Level.SEVERE, "the database referes to an unknown hashing algorithm", e);
-				return;
+				throw e;
 			}
 			catch (IOException e) {
 				LOGGER.log(Level.SEVERE, "the database is corrupted", e);
-				return;
+				throw e;
 			}
 
 			if (head.isPresent()) {
@@ -421,7 +490,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * An event fired when a new block task failed because there are no miners.
 	 */
-	public class NoMinersAvailableEvent implements Event {
+	public class NoMinersAvailableEvent extends Event {
 
 		@Override
 		public String toString() {
@@ -429,6 +498,6 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		@Override @OnThread("events")
-		public void run() {}
+		protected void body() {}
 	}
 }

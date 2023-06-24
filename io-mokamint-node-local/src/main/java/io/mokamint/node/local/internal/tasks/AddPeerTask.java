@@ -60,14 +60,10 @@ public class AddPeerTask extends Task {
 		var delay = config.peerTimeout;
 		var furtherAttempts = config.peerAttempts;
 
-		// TODO
-		node.signal(node.new PeerAcceptedEvent(peer));
-
-		/*
 		while (furtherAttempts-- > 0) {
 			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
 				remote.getChainInfo();
-				node.signal(node.new PeerAcceptedEvent(peer));
+				node.emit(node.new PeerAcceptedEvent(peer));
 				return;
 			}
 			catch (InterruptedException | NoSuchAlgorithmException e) {
@@ -88,6 +84,5 @@ public class AddPeerTask extends Task {
 				delay *= 2;
 			}
 		}
-		*/
 	}
 }

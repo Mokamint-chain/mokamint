@@ -93,7 +93,7 @@ public class MineNewBlockTask extends Task {
 	public void run() {
 		try {
 			if (node.getMiners().isEmpty())
-				node.signal(node.new NoMinersAvailableEvent());
+				node.emit(node.new NoMinersAvailableEvent());
 			else
 				new Run();
 		}
@@ -102,7 +102,7 @@ public class MineNewBlockTask extends Task {
 		}
 		catch (TimeoutException e) {
 			LOGGER.warning(logIntro + "timed out while waiting for a deadline: I will retry later");
-			node.signal(node.new NoDeadlineFoundEvent());
+			node.emit(node.new NoDeadlineFoundEvent());
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "database error", e);
@@ -185,7 +185,7 @@ public class MineNewBlockTask extends Task {
 
 		private void informNodeAboutNewBlock() {
 			LOGGER.info(logIntro + "ended mining new block: informing the node");
-			node.signal(node.new BlockDiscoveryEvent(block));
+			node.emit(node.new BlockDiscoveryEvent(block));
 		}
 
 		/**
@@ -213,7 +213,7 @@ public class MineNewBlockTask extends Task {
 				}
 				else {
 					LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's illegal");
-					node.signal(node.new IllegalDeadlineEvent(miner));
+					node.emit(node.new IllegalDeadlineEvent(miner));
 				}
 			}
 			else

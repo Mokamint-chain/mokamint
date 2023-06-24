@@ -66,7 +66,7 @@ public class RemoteRestrictedNodeTests {
 	@DisplayName("addPeers() works")
 	public void addPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
-		AtomicReference<Peer[]> peers2 = new AtomicReference<>();
+		var peers2 = new AtomicReference<Peer[]>();
 
 		class MyServer extends RestrictedTestServer {
 
