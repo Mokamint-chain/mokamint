@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -61,14 +63,14 @@ public class RestrictedNodeServiceTests {
 		var node = new RestrictedNode() {
 
 			@Override
-			public void addPeers(Stream<Peer> received) throws TimeoutException, InterruptedException {
+			public void addPeer(Stream<Peer> received) throws TimeoutException, InterruptedException {
 				var peers = received.collect(Collectors.toList());
 				if (peers.size() == 2 && peers.contains(peer1) && peers.contains(peer2))
 					semaphore.release();
 			}
 
 			@Override
-			public void removePeers(Stream<Peer> peers) throws TimeoutException, InterruptedException {}
+			public void removePeer(Peer peer) throws TimeoutException, InterruptedException {}
 
 			@Override
 			public void close() throws IOException, InterruptedException {}
@@ -98,18 +100,20 @@ public class RestrictedNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
+		Set<Peer> allPeers = new HashSet<>();
+		allPeers.add(peer1);
+		allPeers.add(peer2);
 
 		var node = new RestrictedNode() {
 
 			@Override
-			public void removePeers(Stream<Peer> received) throws TimeoutException, InterruptedException {
-				var peers = received.collect(Collectors.toList());
-				if (peers.size() == 2 && peers.contains(peer1) && peers.contains(peer2))
+			public void removePeer(Peer peer) throws TimeoutException, InterruptedException {
+				if (allPeers.remove(peer))
 					semaphore.release();
 			}
 
 			@Override
-			public void addPeers(Stream<Peer> peers) throws TimeoutException, InterruptedException {}
+			public void addPeer(Stream<Peer> peers) throws TimeoutException, InterruptedException {}
 
 			@Override
 			public void close() throws IOException, InterruptedException {}
@@ -122,13 +126,14 @@ public class RestrictedNodeServiceTests {
 			}
 
 			@Override
-			protected void onRemovePeersResult() {
+			protected void onRemovePeerResult() {
 				semaphore.release();
 			}
 		}
 
 		try (var service = RestrictedNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			client.sendRemovePeers(Stream.of(peer1, peer2));
+			client.sendRemovePeer(peer1);
+			client.sendRemovePeer(peer2);
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
 		}
 	}

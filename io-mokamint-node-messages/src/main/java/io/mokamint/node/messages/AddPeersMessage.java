@@ -23,7 +23,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to {@link RestrictedNode#addPeers(Stream)}.
+ * The network message corresponding to {@link RestrictedNode#addPeer(Stream)}.
  */
 public interface AddPeersMessage extends RpcMessage {
 

@@ -209,7 +209,7 @@ public class PeersTests {
 			try (var node = new MyLocalNode()) {
 				assertTrue(node.getPeers().count() == 0L);
 				allowAddPeers.set(true);
-				node.addPeers(Stream.of(peer1, peer2));
+				node.addPeer(Stream.of(peer1, peer2));
 				node.semaphore.acquire(2);
 				assertTrue(node.getPeers().count() == 2L);
 			}
@@ -267,7 +267,7 @@ public class PeersTests {
 			try (var node = new MyLocalNode()) {
 				node.semaphore.acquire(2);
 				assertTrue(node.getPeers().count() == 2L);
-				node.removePeers(Stream.of(Peers.of(uri1)));
+				node.removePeer(Peers.of(uri1));
 				assertTrue(node.getPeers().count() == 1L);
 			}
 

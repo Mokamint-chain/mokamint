@@ -16,53 +16,51 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import java.util.stream.Stream;
-
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.internal.RemovePeersMessageImpl;
-import io.mokamint.node.messages.internal.gson.RemovePeersMessageDecoder;
-import io.mokamint.node.messages.internal.gson.RemovePeersMessageEncoder;
-import io.mokamint.node.messages.internal.gson.RemovePeersMessageJson;
+import io.mokamint.node.messages.internal.RemovePeerMessageImpl;
+import io.mokamint.node.messages.internal.gson.RemovePeerMessageDecoder;
+import io.mokamint.node.messages.internal.gson.RemovePeerMessageEncoder;
+import io.mokamint.node.messages.internal.gson.RemovePeerMessageJson;
 
 /**
- * A provider of {@link RemovePeersMessage}.
+ * A provider of {@link RemovePeerMessage}.
  */
-public class RemovePeersMessages {
+public class RemovePeerMessages {
 
-	private RemovePeersMessages() {}
+	private RemovePeerMessages() {}
 
 	/**
-	 * Yields a {@link RemovePeersMessage}.
+	 * Yields a {@link RemovePeerMessage}.
 	 * 
-	 * @param peers the peers to remove
+	 * @param peer the peer to remove
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static RemovePeersMessage of(Stream<Peer> peers, String id) {
-		return new RemovePeersMessageImpl(peers, id);
+	public static RemovePeerMessage of(Peer peer, String id) {
+		return new RemovePeerMessageImpl(peer, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends RemovePeersMessageEncoder {}
+	public static class Encoder extends RemovePeerMessageEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends RemovePeersMessageDecoder {}
+	public static class Decoder extends RemovePeerMessageDecoder {}
 
 	/**
      * Json representation.
      */
-    public static class Json extends RemovePeersMessageJson {
+    public static class Json extends RemovePeerMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(RemovePeersMessage message) {
+    	public Json(RemovePeerMessage message) {
     		super(message);
     	}
     }

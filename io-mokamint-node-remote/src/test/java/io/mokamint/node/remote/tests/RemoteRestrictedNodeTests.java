@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.LogManager;
@@ -22,7 +23,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeersMessage;
 import io.mokamint.node.messages.AddPeersMessages;
 import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.RemovePeersMessage;
+import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.service.AbstractRestrictedNodeService;
@@ -80,7 +81,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			remote.addPeers(Stream.of(peers1));
+			remote.addPeer(Stream.of(peers1));
 			assertArrayEquals(peers1, peers2.get());
 		}
 	}
@@ -102,7 +103,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.addPeers(Stream.of(peers)));
+			var exception = assertThrows(TimeoutException.class, () -> remote.addPeer(Stream.of(peers)));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -124,7 +125,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.addPeers(Stream.of(peers)));
+			var exception = assertThrows(InterruptedException.class, () -> remote.addPeer(Stream.of(peers)));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -150,7 +151,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.addPeers(Stream.of(peers)));
+			assertThrows(TimeoutException.class, () -> remote.addPeer(Stream.of(peers)));
 		}
 	}
 	
@@ -171,30 +172,34 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.addPeers(Stream.of(peers)));
+			assertThrows(TimeoutException.class, () -> remote.addPeer(Stream.of(peers)));
 		}
 	}
 
 	@Test
 	@DisplayName("removePeers() works")
 	public void removePeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
-		AtomicReference<Peer[]> peers2 = new AtomicReference<>();
+		var peers1 = new HashSet<Peer>();
+		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
+		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
+		var peers2 = new HashSet<Peer>();
 
 		class MyServer extends RestrictedTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onRemovePeers(RemovePeersMessage message, Session session) {
-				peers2.set(message.getPeers().toArray(Peer[]::new));
+			protected void onRemovePeer(RemovePeerMessage message, Session session) {
+				peers2.add(message.getPeer());
 				sendObjectAsync(session, VoidMessages.of(message.getId()));
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			remote.removePeers(Stream.of(peers1));
-			assertArrayEquals(peers1, peers2.get());
+			for (Peer peer: peers1)
+				remote.removePeer(peer);
+
+			assertEquals(peers1, peers2);
 		}
 	}
 

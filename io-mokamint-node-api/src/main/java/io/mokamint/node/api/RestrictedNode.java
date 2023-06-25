@@ -29,20 +29,20 @@ import io.hotmoka.annotations.ThreadSafe;
 public interface RestrictedNode extends AutoCloseableNode {
 
 	/**
-	 * Adds the given peers to the set of peers of this node.
+	 * Adds the given peer to the set of peers of this node.
 	 * 
-	 * @param peers the peers to add
+	 * @param peer the peer to add
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void addPeers(Stream<Peer> peers) throws TimeoutException, InterruptedException;
+	void addPeer(Stream<Peer> peer) throws TimeoutException, InterruptedException;
 
 	/**
-	 * Removes the given peers from the set of peers of this node.
+	 * Removes the given peer from the set of peers of this node.
 	 * 
-	 * @param peers the peers to remove
+	 * @param peer the peer to remove
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void removePeers(Stream<Peer> peers) throws TimeoutException, InterruptedException;
+	void removePeer(Peer peer) throws TimeoutException, InterruptedException;
 }

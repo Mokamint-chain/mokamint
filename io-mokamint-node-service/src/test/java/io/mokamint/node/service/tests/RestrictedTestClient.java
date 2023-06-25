@@ -27,7 +27,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeersMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.RemovePeersMessages;
+import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.VoidMessage;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.service.api.RestrictedNodeService;
@@ -40,32 +40,32 @@ import jakarta.websocket.Session;
  */
 public class RestrictedTestClient extends AbstractWebSocketClient {
 	private final Session addPeersSession;
-	private final Session removePeersSession;
+	private final Session removePeerSession;
 
 	public RestrictedTestClient(URI uri) throws DeploymentException, IOException {
-		this.addPeersSession = new AddPeersEndpoint().deployAt(uri.resolve(RestrictedNodeService.ADD_PEERS_ENDPOINT));
-		this.removePeersSession = new RemovePeersEndpoint().deployAt(uri.resolve(RestrictedNodeService.REMOVE_PEERS_ENDPOINT));
+		this.addPeersSession = new AddPeersEndpoint().deployAt(uri.resolve(RestrictedNodeService.ADD_PEER_ENDPOINT));
+		this.removePeerSession = new RemovePeersEndpoint().deployAt(uri.resolve(RestrictedNodeService.REMOVE_PEER_ENDPOINT));
 	}
 
 	@Override
 	public void close() throws IOException {
 		addPeersSession.close();
-		removePeersSession.close();
+		removePeerSession.close();
 	}
 
 	/**
 	 * Handlers that can be overridden in subclasses.
 	 */
 	protected void onAddPeersResult() {}
-	protected void onRemovePeersResult() {}
+	protected void onRemovePeerResult() {}
 	protected void onException(ExceptionMessage message) {}
 
 	public void sendAddPeers(Stream<Peer> peers) {
 		sendObjectAsync(addPeersSession, AddPeersMessages.of(peers, "id"));
 	}
 
-	public void sendRemovePeers(Stream<Peer> peers) {
-		sendObjectAsync(removePeersSession, RemovePeersMessages.of(peers, "id"));
+	public void sendRemovePeer(Peer peer) {
+		sendObjectAsync(removePeerSession, RemovePeerMessages.of(peer, "id"));
 	}
 
 	private void dealWithExceptions(RpcMessage message) {
@@ -93,14 +93,14 @@ public class RestrictedTestClient extends AbstractWebSocketClient {
 	private class RemovePeersEndpoint extends AbstractClientEndpoint<RestrictedTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeersMessages.Encoder.class);
+			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, (RpcMessage message) -> {
 				if (message instanceof VoidMessage)
-					onRemovePeersResult();
+					onRemovePeerResult();
 				else
 					dealWithExceptions(message);
 			});

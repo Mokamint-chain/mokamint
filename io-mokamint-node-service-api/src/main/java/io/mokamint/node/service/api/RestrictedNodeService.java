@@ -25,14 +25,14 @@ import io.mokamint.node.api.RestrictedNode;
 public interface RestrictedNodeService extends WebSocketServer {
 
 	/**
-	 * The network endpoint path where the {@link RestrictedNode#addPeers(java.util.stream.Stream)} method is published.
+	 * The network endpoint path where the {@link RestrictedNode#addPeer(java.util.stream.Stream)} method is published.
 	 */
-	String ADD_PEERS_ENDPOINT = "/add_peers";
+	String ADD_PEER_ENDPOINT = "/add_peer";
 
 	/**
-	 * The network endpoint path where the {@link RestrictedNode#removePeers(java.util.stream.Stream)} method is published.
+	 * The network endpoint path where the {@link RestrictedNode#removePeer(io.mokamint.node.api.Peer)} method is published.
 	 */
-	String REMOVE_PEERS_ENDPOINT = "/remove_block";
+	String REMOVE_PEER_ENDPOINT = "/remove_peer";
 
 	@Override
 	void close();

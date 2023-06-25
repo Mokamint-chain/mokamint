@@ -23,7 +23,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeersMessage;
 import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.RemovePeersMessage;
+import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.service.AbstractRestrictedNodeService;
 import jakarta.websocket.DeploymentException;
@@ -71,7 +71,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 		super.onAddPeers(message, session);
 
 		try {
-			node.addPeers(message.getPeers());
+			node.addPeer(message.getPeers());
 			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
@@ -80,11 +80,11 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	};
 
 	@Override
-	protected void onRemovePeers(RemovePeersMessage message, Session session) {
-		super.onRemovePeers(message, session);
+	protected void onRemovePeer(RemovePeerMessage message, Session session) {
+		super.onRemovePeer(message, session);
 
 		try {
-			node.removePeers(message.getPeers());
+			node.removePeer(message.getPeer());
 			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {

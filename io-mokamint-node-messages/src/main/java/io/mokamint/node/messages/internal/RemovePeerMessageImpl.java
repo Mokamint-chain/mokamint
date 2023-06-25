@@ -16,48 +16,45 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
-import io.mokamint.node.messages.RemovePeersMessage;
+import io.mokamint.node.messages.RemovePeerMessage;
 
 /**
- * Implementation of the network message corresponding to {@link RestrictedNode#removePeers(Stream)}.
+ * Implementation of the network message corresponding to {@link RestrictedNode#removePeer(Peer)}.
  */
-public class RemovePeersMessageImpl extends AbstractRpcMessage implements RemovePeersMessage {
+public class RemovePeerMessageImpl extends AbstractRpcMessage implements RemovePeerMessage {
 
-	private final Peer[] peers;
+	private final Peer peer;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param peers the peers to remove
+	 * @param peer the peer to remove
 	 * @param id the identifier of the message
 	 */
-	public RemovePeersMessageImpl(Stream<Peer> peers, String id) {
+	public RemovePeerMessageImpl(Peer peer, String id) {
 		super(id);
 
-		this.peers = peers
-			.map(Objects::requireNonNull)
-			.toArray(Peer[]::new);
+		Objects.requireNonNull(peer);
+		this.peer = peer;
 	}
 
 	@Override
-	public Stream<Peer> getPeers() {
-		return Stream.of(peers);
+	public Peer getPeer() {
+		return peer;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof RemovePeersMessage && Arrays.equals(peers, ((RemovePeersMessage) other).getPeers().toArray(Peer[]::new));
+		return other instanceof RemovePeerMessage && Objects.equals(peer, ((RemovePeerMessage) other).getPeer());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return RemovePeersMessage.class.getName();
+		return RemovePeerMessage.class.getName();
 	}
 }

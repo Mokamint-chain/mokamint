@@ -36,7 +36,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	private final static Logger LOGGER = Logger.getLogger(Add.class.getName());
 
 	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException {
-		remote.addPeers(Stream.of(uris).map(Peers::of));
+		remote.addPeer(Stream.of(uris).map(Peers::of));
 	}
 
 	@Override

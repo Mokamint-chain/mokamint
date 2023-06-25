@@ -16,16 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.RemovePeersMessage;
-import io.mokamint.node.messages.RemovePeersMessages;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.messages.RemovePeerMessage;
+import io.mokamint.node.messages.RemovePeerMessages;
 
 /**
- * An encoder of a {@code RemovePeersMessage}.
+ * A decoder for a {@link RemovePeerMessage}.
  */
-public class RemovePeersMessageEncoder extends MappedEncoder<RemovePeersMessage, RemovePeersMessages.Json> {
+public class RemovePeerMessageDecoder extends MappedDecoder<RemovePeerMessage, RemovePeerMessages.Json> {
 
-	public RemovePeersMessageEncoder() {
-		super(RemovePeersMessages.Json::new);
+	public RemovePeerMessageDecoder() {
+		super(RemovePeerMessages.Json.class);
 	}
 }

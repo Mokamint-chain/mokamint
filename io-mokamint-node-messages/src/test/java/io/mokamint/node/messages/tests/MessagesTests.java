@@ -33,7 +33,7 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
-import io.mokamint.node.messages.RemovePeersMessages;
+import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DecodeException;
@@ -152,14 +152,12 @@ public class MessagesTests {
 	}
 
 	@Test
-	@DisplayName("removePeers messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForRemovePeers() throws EncodeException, DecodeException, URISyntaxException {
-		var peer1 = Peers.of(new URI("ws://google.com:8011"));
-		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
-		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
-		var removePeers1 = RemovePeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
-		String encoded = new RemovePeersMessages.Encoder().encode(removePeers1);
-		var removePeers2 = new RemovePeersMessages.Decoder().decode(encoded);
+	@DisplayName("removePeer messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForRemovePeer() throws EncodeException, DecodeException, URISyntaxException {
+		var peer = Peers.of(new URI("ws://google.com:8011"));
+		var removePeers1 = RemovePeerMessages.of(peer, "id");
+		String encoded = new RemovePeerMessages.Encoder().encode(removePeers1);
+		var removePeers2 = new RemovePeerMessages.Decoder().decode(encoded);
 		assertEquals(removePeers1, removePeers2);
 	}
 

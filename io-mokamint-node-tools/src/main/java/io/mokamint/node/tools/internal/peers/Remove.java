@@ -22,10 +22,12 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "rm", description = "Remove peers from a node.")
 public class Remove extends AbstractRestrictedRpcCommand {
@@ -36,7 +38,19 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	private final static Logger LOGGER = Logger.getLogger(Remove.class.getName());
 
 	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException {
-		remote.removePeers(Stream.of(uris).map(Peers::of));
+		Stream.of(uris).map(Peers::of).parallel().forEach(peer -> removePeer(peer, remote));
+	}
+
+	private void removePeer(Peer peer, RemoteRestrictedNode remote) {
+		try {
+			remote.removePeer(peer);
+		}
+		catch (TimeoutException e) {
+			System.out.println(Ansi.AUTO.string("@|red Connection time-out while removing peer " + peer + "!|@"));
+		}
+		catch (InterruptedException e) {
+			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for removal of peer " + peer + "!|@"));
+		}
 	}
 
 	@Override

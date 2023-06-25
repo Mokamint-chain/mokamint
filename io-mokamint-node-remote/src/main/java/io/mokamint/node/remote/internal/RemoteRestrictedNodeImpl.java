@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
-import static io.mokamint.node.service.api.RestrictedNodeService.ADD_PEERS_ENDPOINT;
-import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEERS_ENDPOINT;
+import static io.mokamint.node.service.api.RestrictedNodeService.ADD_PEER_ENDPOINT;
+import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -28,7 +28,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeersMessages;
 import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.RemovePeersMessages;
+import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
@@ -53,14 +53,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 */
 	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
 		super(timeout);
-		addSession(ADD_PEERS_ENDPOINT, new AddPeersEndpoint().deployAt(uri.resolve(ADD_PEERS_ENDPOINT)));
-		addSession(REMOVE_PEERS_ENDPOINT, new RemovePeersEndpoint().deployAt(uri.resolve(REMOVE_PEERS_ENDPOINT)));
+		addSession(ADD_PEER_ENDPOINT, new AddPeersEndpoint().deployAt(uri.resolve(ADD_PEER_ENDPOINT)));
+		addSession(REMOVE_PEER_ENDPOINT, new RemovePeersEndpoint().deployAt(uri.resolve(REMOVE_PEER_ENDPOINT)));
 	}
 
 	@Override
-	public void addPeers(Stream<Peer> peers) throws TimeoutException, InterruptedException {
+	public void addPeer(Stream<Peer> peers) throws TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(getSession(ADD_PEERS_ENDPOINT), AddPeersMessages.of(peers, id));
+		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeersMessages.of(peers, id));
 		try {
 			waitForResult(id, this::processVoidSuccess, this::processStandardExceptions);
 		}
@@ -73,9 +73,9 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public void removePeers(Stream<Peer> peers) throws TimeoutException, InterruptedException {
+	public void removePeer(Peer peer) throws TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(getSession(REMOVE_PEERS_ENDPOINT), RemovePeersMessages.of(peers, id));
+		sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
 		try {
 			waitForResult(id, this::processVoidSuccess, this::processStandardExceptions);
 		}
@@ -97,7 +97,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class RemovePeersEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeersMessages.Encoder.class);
+			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 	}
 }

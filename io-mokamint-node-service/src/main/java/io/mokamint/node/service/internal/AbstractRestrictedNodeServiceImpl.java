@@ -25,8 +25,8 @@ import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.messages.AddPeersMessage;
 import io.mokamint.node.messages.AddPeersMessages;
 import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.RemovePeersMessage;
-import io.mokamint.node.messages.RemovePeersMessages;
+import io.mokamint.node.messages.RemovePeerMessage;
+import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import jakarta.websocket.DeploymentException;
@@ -76,7 +76,7 @@ public abstract class AbstractRestrictedNodeServiceImpl extends AbstractWebSocke
 	};
 
 	protected void onAddPeers(AddPeersMessage message, Session session) {
-		LOGGER.info("received a " + ADD_PEERS_ENDPOINT + " request");
+		LOGGER.info("received an " + ADD_PEER_ENDPOINT + " request");
 	}
 
 	public static class AddPeersEndpoint extends AbstractServerEndpoint<AbstractRestrictedNodeServiceImpl> {
@@ -87,25 +87,25 @@ public abstract class AbstractRestrictedNodeServiceImpl extends AbstractWebSocke
 	    }
 
 		private static ServerEndpointConfig config(AbstractRestrictedNodeServiceImpl server) {
-			return simpleConfig(server, AddPeersEndpoint.class, ADD_PEERS_ENDPOINT,
+			return simpleConfig(server, AddPeersEndpoint.class, ADD_PEER_ENDPOINT,
 					AddPeersMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
-	protected void onRemovePeers(RemovePeersMessage message, Session session) {
-		LOGGER.info("received a " + REMOVE_PEERS_ENDPOINT + " request");
+	protected void onRemovePeer(RemovePeerMessage message, Session session) {
+		LOGGER.info("received a " + REMOVE_PEER_ENDPOINT + " request");
 	}
 
 	public static class RemoveBlockEndpoint extends AbstractServerEndpoint<AbstractRestrictedNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (RemovePeersMessage message) -> getServer().onRemovePeers(message, session));
+			addMessageHandler(session, (RemovePeerMessage message) -> getServer().onRemovePeer(message, session));
 	    }
 
 		private static ServerEndpointConfig config(AbstractRestrictedNodeServiceImpl server) {
-			return simpleConfig(server, RemoveBlockEndpoint.class, REMOVE_PEERS_ENDPOINT,
-					RemovePeersMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, RemoveBlockEndpoint.class, REMOVE_PEER_ENDPOINT,
+					RemovePeerMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

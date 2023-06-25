@@ -14,26 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.internal.gson;
 
-import java.util.stream.Stream;
-
-import io.hotmoka.websockets.beans.RpcMessage;
-import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.RestrictedNode;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.RemovePeerMessage;
+import io.mokamint.node.messages.RemovePeerMessages;
 
 /**
- * The network message corresponding to {@link RestrictedNode#removePeers(Stream)}.
+ * An encoder of a {@code RemovePeersMessage}.
  */
-public interface RemovePeersMessage extends RpcMessage {
+public class RemovePeerMessageEncoder extends MappedEncoder<RemovePeerMessage, RemovePeerMessages.Json> {
 
-	/**
-	 * Yields the peers requested to remove.
-	 * 
-	 * @return the peers
-	 */
-	Stream<Peer> getPeers();
-
-	@Override
-	boolean equals(Object obj);
+	public RemovePeerMessageEncoder() {
+		super(RemovePeerMessages.Json::new);
+	}
 }

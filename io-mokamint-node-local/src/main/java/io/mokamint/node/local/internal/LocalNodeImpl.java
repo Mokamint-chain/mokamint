@@ -23,8 +23,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -113,8 +115,8 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
-		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeer, this::removePeer), _peer -> 0L);
-		addPeers(config.seeds().map(Peers::of));
+		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB), _peer -> 0L);
+		addPeer(config.seeds().map(Peers::of));
 
 		Optional<Block> maybeHead = db.getHead();
 		if (maybeHead.isPresent()) {
@@ -140,7 +142,7 @@ public class LocalNodeImpl implements LocalNode {
 		return peers.getElements();
 	}
 
-	private void addPeer(Peer peer) {
+	private void addPeerToDB(Peer peer) {
 		try {
 			db.addPeer(peer);
 			LOGGER.info("added peer " + peer);
@@ -151,7 +153,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	private void removePeer(Peer peer) {
+	private void removePeerFromDB(Peer peer) {
 		try {
 			db.removePeer(peer);
 			LOGGER.info("removed peer " + peer);
@@ -163,7 +165,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeers(Stream<Peer> peers) {
+	public void addPeer(Stream<Peer> peers) {
 		peers
 			.filter(peer -> !this.peers.contains(peer))
 			.map(peer -> new AddPeerTask(peer, this))
@@ -171,8 +173,8 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void removePeers(Stream<Peer> peers) {
-		peers.forEach(this.peers::remove);
+	public void removePeer(Peer peer) {
+		this.peers.remove(peer);
 	}
 
 	@Override
@@ -386,16 +388,20 @@ public class LocalNodeImpl implements LocalNode {
 	 * Runs the given task in one thread from the {@link #tasks} executors.
 	 * 
 	 * @param task the task to run
+	 * @return a future that can be used to wait for the termination of the execution
 	 */
-	private void execute(Task task) {
+	private Future<?> execute(Task task) {
 		try {
 			LOGGER.info("scheduling " + task);
 			onSchedule(task);
-			tasks.execute(task);
+			return tasks.submit(task);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.info(task + " rejected, probably because the node is shutting down");
 			onFail(task, e);
+			var result = new CompletableFuture<>();
+			result.completeExceptionally(e);
+			return result;
 		}
 	}
 
