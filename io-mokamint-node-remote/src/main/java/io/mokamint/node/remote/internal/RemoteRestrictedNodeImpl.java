@@ -59,13 +59,13 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, TimeoutException, InterruptedException {
+	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, IOException, TimeoutException, InterruptedException {
 		var id = nextId();
 		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
 		try {
 			waitForResult(id, this::processVoidSuccess, this::processAddPeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | IncompatiblePeerVersionException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | IOException | IncompatiblePeerVersionException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -76,6 +76,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private boolean processAddPeerException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
 		return IncompatiblePeerVersionException.class.isAssignableFrom(clazz) ||
+			IOException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||
 			InterruptedException.class.isAssignableFrom(clazz);
 	}

@@ -75,7 +75,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 			node.addPeer(message.getPeer());
 			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
-		catch (TimeoutException | InterruptedException | IncompatiblePeerVersionException e) {
+		catch (TimeoutException | InterruptedException | IOException | IncompatiblePeerVersionException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};

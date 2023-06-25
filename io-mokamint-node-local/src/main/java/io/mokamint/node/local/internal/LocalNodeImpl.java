@@ -23,12 +23,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -49,6 +48,8 @@ import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeerTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
+import io.mokamint.node.remote.RemotePublicNodes;
+import jakarta.websocket.DeploymentException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -116,7 +117,12 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
 		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB), _peer -> 0L);
-		config.seeds().map(Peers::of).forEach(this::addPeer);
+
+		config.seeds()
+			.parallel()
+			.map(Peers::of)
+			.map(peer -> new AddPeerTask(peer, this))
+			.forEach(this::execute);
 
 		Optional<Block> maybeHead = db.getHead();
 		if (maybeHead.isPresent()) {
@@ -165,9 +171,21 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) {
-		if (!peers.contains(peer))
-			execute(new AddPeerTask(peer, this));
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException {
+		if (!peers.contains(peer)) {
+			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
+				remote.getChainInfo();
+				if (peers.add(peer))
+					emit(new PeerAcceptedEvent(peer));
+			}
+			catch (NoSuchAlgorithmException e) { // TODO
+				LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
+				return;
+			}
+			catch (DeploymentException | IOException e) {
+				throw new IOException("cannot contact " + peer, e);
+			}
+		}
 	}
 
 	@Override
@@ -327,17 +345,17 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("tasks")
 		public final void run() {
-			onStart(this);
+			onStart();
 
 			try {
 				body();
 			}
 			catch (Exception e) {
-				onFail(this, e);
+				onFail(e);
 				return;
 			}
 
-			onComplete(this);
+			onComplete();
 		}
 
 		/**
@@ -347,6 +365,35 @@ public class LocalNodeImpl implements LocalNode {
 		 */
 		@OnThread("tasks")
 		protected abstract void body() throws Exception;
+
+		/**
+		 * Callback called when this task begins being executed.
+		 * It just forwards to {@link LocalNodeImpl#onStart(Task)}
+		 * but subclasses may redefine.
+		 */
+		protected void onStart() {
+			LocalNodeImpl.this.onStart(this);
+		}
+
+		/**
+		 * Callback called at the end of the successful execution of a task.
+		 * It just forwards to {@link LocalNodeImpl#onComplete(Task)}
+		 * but subclasses may redefine.
+		 */
+		protected void onComplete() {
+			LocalNodeImpl.this.onComplete(this);
+		}
+
+		/**
+		 * Callback called at the end of the failed execution of a task.
+		 * It just forwards to {@link LocalNodeImpl#onFail(Task, Exception)}
+		 * but subclasses may redefine.
+		 * 
+		 * @param exception the failure cause
+		 */
+		protected void onFail(Exception e) {
+			LocalNodeImpl.this.onFail(this, e);
+		}
 	}
 
 	/**
@@ -386,20 +433,16 @@ public class LocalNodeImpl implements LocalNode {
 	 * Runs the given task in one thread from the {@link #tasks} executors.
 	 * 
 	 * @param task the task to run
-	 * @return a future that can be used to wait for the termination of the execution
 	 */
-	private Future<?> execute(Task task) {
+	private void execute(Task task) {
 		try {
 			LOGGER.info("scheduling " + task);
 			onSchedule(task);
-			return tasks.submit(task);
+			tasks.execute(task);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.info(task + " rejected, probably because the node is shutting down");
 			onFail(task, e);
-			var result = new CompletableFuture<>();
-			result.completeExceptionally(e);
-			return result;
 		}
 	}
 

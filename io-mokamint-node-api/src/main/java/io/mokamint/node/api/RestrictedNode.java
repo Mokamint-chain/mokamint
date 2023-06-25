@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -32,10 +33,11 @@ public interface RestrictedNode extends AutoCloseableNode {
 	 * 
 	 * @param peer the peer to add
 	 * @throws IncompatiblePeerVersionException if the version of {@code peer} is incompatible with that of this node
+	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void addPeer(Peer peer) throws IncompatiblePeerVersionException, TimeoutException, InterruptedException;
+	void addPeer(Peer peer) throws IncompatiblePeerVersionException, IOException, TimeoutException, InterruptedException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node.

@@ -31,8 +31,7 @@ import jakarta.websocket.DeploymentException;
 
 /**
  * A task that adds a peer to a node. It asks the peer about its version and checks
- * if it is compatible with the version of the node. If the peer does not answer,
- * it pings it a few times before giving up.
+ * if it is compatible with the version of the node.
  */
 public class AddPeerTask extends Task {
 
@@ -62,33 +61,12 @@ public class AddPeerTask extends Task {
 
 	@Override @OnThread("tasks")
 	protected void body() {
-		var config = node.getConfig();
-		var delay = config.peerTimeout;
-		var furtherAttempts = config.peerAttempts;
-
-		while (furtherAttempts-- > 0) {
-			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
-				remote.getChainInfo();
-				node.emit(node.new PeerAcceptedEvent(peer));
-				return;
-			}
-			catch (InterruptedException | NoSuchAlgorithmException e) {
-				LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
-				return;
-			}
-			catch (IOException | DeploymentException | TimeoutException e) {
-				LOGGER.log(Level.WARNING, "peer " + peer + " did not answer: will retry in " + delay + "ms", e);
-
-				try {
-					Thread.sleep(delay);
-				}
-				catch (InterruptedException e1) {
-					LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e1);
-					return;
-				}
-
-				delay *= 2;
-			}
+		try (var remote = RemotePublicNodes.of(peer.getURI(), node.getConfig().peerTimeout)) {
+			remote.getChainInfo();
+			node.emit(node.new PeerAcceptedEvent(peer));
+		}
+		catch (InterruptedException | NoSuchAlgorithmException | IOException | DeploymentException | TimeoutException e) {
+			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
 		}
 	}
 }

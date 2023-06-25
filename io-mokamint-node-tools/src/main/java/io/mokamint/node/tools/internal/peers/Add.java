@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.peers;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
@@ -52,7 +53,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 				System.out.println("Added " + peer + " to the set of peers");
 		}
 		catch (TimeoutException e) {
-			System.out.println(Ansi.AUTO.string("@|red Connection time-out while adding peer " + peer + "!|@"));
+			System.out.println(Ansi.AUTO.string("@|red Connection timeout while adding peer " + peer + "!|@"));
 		}
 		catch (InterruptedException e) {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for the addition of peer " + peer + "!|@"));
@@ -62,6 +63,9 @@ public class Add extends AbstractRestrictedRpcCommand {
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot establish a connection to " + peer + "!|@"));
 		}
 	}
 

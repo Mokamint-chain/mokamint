@@ -133,6 +133,28 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
+	@DisplayName("addPeers() works in case of IOException")
+	public void addPeersWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var peer = Peers.of(new URI("ws://my.machine:1024"));
+		var exceptionMessage = "I/O error";
+
+		class MyServer extends RestrictedTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAddPeers(AddPeerMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(IOException.class, () -> remote.addPeer(peer));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
 	@DisplayName("addPeers() works in case of IncompatiblePeerVersionException")
 	public void addPeersWorksInCaseOfIncompatiblePeerVersionException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
