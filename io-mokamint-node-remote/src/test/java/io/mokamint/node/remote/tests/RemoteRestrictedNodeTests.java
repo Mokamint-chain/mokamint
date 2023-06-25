@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -62,7 +63,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeers() works")
-	public void addPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerVersionException {
 		var peers1 = new HashSet<Peer>();
 		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
 		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
@@ -127,6 +128,28 @@ public class RemoteRestrictedNodeTests {
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(InterruptedException.class, () -> remote.addPeer(peer));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("addPeers() works in case of IncompatiblePeerVersionException")
+	public void addPeersWorksInCaseOfIncompatiblePeerVersionException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var peer = Peers.of(new URI("ws://my.machine:1024"));
+		var exceptionMessage = "incompatible versions";
+
+		class MyServer extends RestrictedTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAddPeers(AddPeerMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new IncompatiblePeerVersionException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(IncompatiblePeerVersionException.class, () -> remote.addPeer(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

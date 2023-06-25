@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -74,7 +75,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 			node.addPeer(message.getPeer());
 			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
-		catch (TimeoutException | InterruptedException e) {
+		catch (TimeoutException | InterruptedException | IncompatiblePeerVersionException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};

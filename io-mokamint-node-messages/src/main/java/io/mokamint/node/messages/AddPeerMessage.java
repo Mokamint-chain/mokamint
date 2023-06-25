@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import java.util.stream.Stream;
-
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;

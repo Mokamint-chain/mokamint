@@ -25,6 +25,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
+import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Help.Ansi;
@@ -44,12 +45,19 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	private void removePeer(Peer peer, RemoteRestrictedNode remote) {
 		try {
 			remote.removePeer(peer);
+			if (json())
+				System.out.println(new Peers.Encoder().encode(peer));
+			else
+				System.out.println("Removed " + peer + " from the set of peers");
 		}
 		catch (TimeoutException e) {
 			System.out.println(Ansi.AUTO.string("@|red Connection time-out while removing peer " + peer + "!|@"));
 		}
 		catch (InterruptedException e) {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for removal of peer " + peer + "!|@"));
+		}
+		catch (EncodeException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));
 		}
 	}
 

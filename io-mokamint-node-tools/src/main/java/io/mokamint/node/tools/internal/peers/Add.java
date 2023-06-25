@@ -22,9 +22,11 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
+import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Help.Ansi;
@@ -44,12 +46,22 @@ public class Add extends AbstractRestrictedRpcCommand {
 	private void addPeer(Peer peer, RemoteRestrictedNode remote) {
 		try {
 			remote.addPeer(peer);
+			if (json())
+				System.out.println(new Peers.Encoder().encode(peer));
+			else
+				System.out.println("Added " + peer + " to the set of peers");
 		}
 		catch (TimeoutException e) {
 			System.out.println(Ansi.AUTO.string("@|red Connection time-out while adding peer " + peer + "!|@"));
 		}
 		catch (InterruptedException e) {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for the addition of peer " + peer + "!|@"));
+		}
+		catch (IncompatiblePeerVersionException e) {
+			System.out.println(Ansi.AUTO.string("@|red The version of " + peer + " is incompatible with the version of this node!|@"));
+		}
+		catch (EncodeException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));
 		}
 	}
 

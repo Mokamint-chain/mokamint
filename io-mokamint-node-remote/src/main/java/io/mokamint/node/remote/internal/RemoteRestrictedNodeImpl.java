@@ -24,8 +24,10 @@ import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.VoidMessages;
@@ -57,18 +59,25 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException {
+	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, TimeoutException, InterruptedException {
 		var id = nextId();
 		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
 		try {
-			waitForResult(id, this::processVoidSuccess, this::processStandardExceptions);
+			waitForResult(id, this::processVoidSuccess, this::processAddPeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | IncompatiblePeerVersionException e) {
 			throw e;
 		}
 		catch (Exception e) {
 			throw unexpectedException(e);
 		}
+	}
+
+	private boolean processAddPeerException(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return IncompatiblePeerVersionException.class.isAssignableFrom(clazz) ||
+			TimeoutException.class.isAssignableFrom(clazz) ||
+			InterruptedException.class.isAssignableFrom(clazz);
 	}
 
 	@Override

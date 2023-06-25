@@ -31,10 +31,11 @@ public interface RestrictedNode extends AutoCloseableNode {
 	 * Adds the given peer to the set of peers of this node.
 	 * 
 	 * @param peer the peer to add
+	 * @throws IncompatiblePeerVersionException if the version of {@code peer} is incompatible with that of this node
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void addPeer(Peer peer) throws TimeoutException, InterruptedException;
+	void addPeer(Peer peer) throws IncompatiblePeerVersionException, TimeoutException, InterruptedException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node.
