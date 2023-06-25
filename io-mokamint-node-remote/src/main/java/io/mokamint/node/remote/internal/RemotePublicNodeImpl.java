@@ -33,6 +33,7 @@ import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -75,6 +76,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_BLOCK_ENDPOINT, new GetBlockEndpoint().deployAt(uri.resolve(GET_BLOCK_ENDPOINT)));
 		addSession(GET_CONFIG_ENDPOINT, new GetConfigEndpoint().deployAt(uri.resolve(GET_CONFIG_ENDPOINT)));
 		addSession(GET_CHAIN_INFO_ENDPOINT, new GetChainInfoEndpoint().deployAt(uri.resolve(GET_CHAIN_INFO_ENDPOINT)));
+	}
+
+	@Override
+	public NodeInfo getInfo() throws TimeoutException, InterruptedException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override

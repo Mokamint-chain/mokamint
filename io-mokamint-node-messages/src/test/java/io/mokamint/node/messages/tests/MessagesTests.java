@@ -21,7 +21,9 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.Versions;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -31,6 +33,8 @@ import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.GetInfoMessages;
+import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
@@ -102,6 +106,15 @@ public class MessagesTests {
 	}
 
 	@Test
+	@DisplayName("getInfo messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetInfo() throws EncodeException, DecodeException {
+		var getInfoMessage1 = GetInfoMessages.of("id");
+		String encoded = new GetInfoMessages.Encoder().encode(getInfoMessage1);
+		var getInfoMessage2 = new GetInfoMessages.Decoder().decode(encoded);
+		assertEquals(getInfoMessage1, getInfoMessage2);
+	}
+
+	@Test
 	@DisplayName("getConfigResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetConfigResult() throws EncodeException, DecodeException, NoSuchAlgorithmException {
 		var config = ConsensusConfigs.defaults().build();
@@ -140,6 +153,17 @@ public class MessagesTests {
 	}
 
 	@Test
+	@DisplayName("getInfoResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetInfoResult() throws EncodeException, DecodeException {
+		var info = NodeInfos.of(Versions.of(3, 4, 5));
+		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
+		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
+		System.out.println(encoded);
+		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);
+		assertEquals(getInfoResultMessage1, getInfoResultMessage2);
+	}
+
+	@Test
 	@DisplayName("addPeers messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForAddPeers() throws EncodeException, DecodeException, URISyntaxException {
 		var addPeers1 = AddPeerMessages.of(Peers.of(new URI("ws://google.com:8011")), "id");
@@ -158,8 +182,8 @@ public class MessagesTests {
 	}
 
 	@Test
-	@DisplayName("VoidResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForVoiResult() throws EncodeException, DecodeException {
+	@DisplayName("Void messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForVoidResult() throws EncodeException, DecodeException {
 		var voidResultMessage1 = VoidMessages.of("id");
 		String encoded = new VoidMessages.Encoder().encode(voidResultMessage1);
 		var voidResultMessage2 = new VoidMessages.Decoder().decode(encoded);

@@ -32,15 +32,22 @@ import io.hotmoka.annotations.ThreadSafe;
 public interface PublicNode extends AutoCloseableNode {
 
 	/**
-	 * Yields the block with the given hash, if it has been seen by this node.
+	 * Yields non-consensus information about the node.
 	 * 
-	 * @param hash the hash of the block
-	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
+	 * @return the information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException;
+	NodeInfo getInfo() throws TimeoutException, InterruptedException;
+
+	/**
+	 * Yields the consensus configuration parameters of this node.
+	 * 
+	 * @return the consensus parameters
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	ConsensusConfig getConfig() throws TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the peers this node is connected to. There can be zero or more peers
@@ -54,15 +61,6 @@ public interface PublicNode extends AutoCloseableNode {
 	Stream<Peer> getPeers() throws TimeoutException, InterruptedException;
 
 	/**
-	 * Yields the configuration parameters of this node.
-	 * 
-	 * @return the consensus parameters
-	 * @throws TimeoutException if no answer arrives before a time window
-	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 */
-	ConsensusConfig getConfig() throws TimeoutException, InterruptedException;
-
-	/**
 	 * Yields information about the current chain of this node.
 	 * 
 	 * @return the information
@@ -72,4 +70,15 @@ public interface PublicNode extends AutoCloseableNode {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
 	ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException;
+
+	/**
+	 * Yields the block with the given hash, if it has been seen by this node.
+	 * 
+	 * @param hash the hash of the block
+	 * @return the block, if any
+	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException;
 }

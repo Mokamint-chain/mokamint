@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.tools.internal;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -23,12 +24,12 @@ import picocli.CommandLine.IVersionProvider;
 
 /**
  * A picocli dynamic version provider, that reads the maven.properties file, where the
- * version of Mokamint is tored during the Maven build.
+ * version of Mokamint is stored during the Maven build.
  */
 public class POMVersionProvider implements IVersionProvider {
 
 	@Override
-	public String[] getVersion() throws Exception {
+	public String[] getVersion() throws IOException {
 		try (InputStream is = POMVersionProvider.class.getClassLoader().getResourceAsStream("maven.properties")) {
 			var mavenProperties = new Properties();
 			mavenProperties.load(is);

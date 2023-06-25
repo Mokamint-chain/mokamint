@@ -17,12 +17,14 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -38,11 +40,15 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeerTask;
@@ -76,6 +82,11 @@ public class LocalNodeImpl implements LocalNode {
 	 * The database containing the blockchain.
 	 */
 	private final Database db;
+
+	/**
+	 * The non-consensus information about this node.
+	 */
+	private final NodeInfo info;
 
 	/**
 	 * The time of creation of the genesis block.
@@ -116,6 +127,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
+		this.info = NodeInfos.of(mkVersion());
 		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB), _peer -> 0L);
 
 		config.seeds()
@@ -135,6 +147,17 @@ public class LocalNodeImpl implements LocalNode {
 			this.startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
 			GenesisBlock genesis = Blocks.genesis(startDateTime);
 			emit(new BlockDiscoveryEvent(genesis));
+		}
+	}
+
+	private Version mkVersion() throws IOException {
+		// reads the version from the property in the Maven pom.xml
+		try (InputStream is = LocalNodeImpl.class.getClassLoader().getResourceAsStream("maven.properties")) {
+			var mavenProperties = new Properties();
+			mavenProperties.load(is);
+			// the period separates the version components, but we need an escaped escape sequence to refer to it in split
+			int[] components = Stream.of(mavenProperties.getProperty("mokamint.version").split("\\.")).mapToInt(Integer::parseInt).toArray();
+			return Versions.of(components[0], components[1], components[2]);
 		}
 	}
 
@@ -205,6 +228,11 @@ public class LocalNodeImpl implements LocalNode {
 		finally {
 			db.close();
 		}
+	}
+
+	@Override
+	public NodeInfo getInfo() {
+		return info;
 	}
 
 	/**
