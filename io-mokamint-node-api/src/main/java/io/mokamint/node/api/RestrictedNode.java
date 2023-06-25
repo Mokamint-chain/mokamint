@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 
@@ -35,7 +34,7 @@ public interface RestrictedNode extends AutoCloseableNode {
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void addPeer(Stream<Peer> peer) throws TimeoutException, InterruptedException;
+	void addPeer(Peer peer) throws TimeoutException, InterruptedException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node.

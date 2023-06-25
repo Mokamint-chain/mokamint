@@ -23,16 +23,16 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to {@link RestrictedNode#addPeer(Stream)}.
+ * The network message corresponding to {@link RestrictedNode#addPeer(Peer)}.
  */
-public interface AddPeersMessage extends RpcMessage {
+public interface AddPeerMessage extends RpcMessage {
 
 	/**
-	 * Yields the peers requested to add.
+	 * Yields the peer requested to add.
 	 * 
-	 * @return the peers
+	 * @return the peer
 	 */
-	Stream<Peer> getPeers();
+	Peer getPeer();
 
 	@Override
 	boolean equals(Object obj);

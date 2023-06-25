@@ -22,10 +22,12 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "add", description = "Add peers to a node.")
 public class Add extends AbstractRestrictedRpcCommand {
@@ -36,7 +38,19 @@ public class Add extends AbstractRestrictedRpcCommand {
 	private final static Logger LOGGER = Logger.getLogger(Add.class.getName());
 
 	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException {
-		remote.addPeer(Stream.of(uris).map(Peers::of));
+		Stream.of(uris).map(Peers::of).parallel().forEach(peer -> addPeer(peer, remote));
+	}
+
+	private void addPeer(Peer peer, RemoteRestrictedNode remote) {
+		try {
+			remote.addPeer(peer);
+		}
+		catch (TimeoutException e) {
+			System.out.println(Ansi.AUTO.string("@|red Connection time-out while adding peer " + peer + "!|@"));
+		}
+		catch (InterruptedException e) {
+			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for the addition of peer " + peer + "!|@"));
+		}
 	}
 
 	@Override

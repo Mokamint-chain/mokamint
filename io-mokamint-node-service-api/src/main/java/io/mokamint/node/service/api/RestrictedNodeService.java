@@ -25,7 +25,7 @@ import io.mokamint.node.api.RestrictedNode;
 public interface RestrictedNodeService extends WebSocketServer {
 
 	/**
-	 * The network endpoint path where the {@link RestrictedNode#addPeer(java.util.stream.Stream)} method is published.
+	 * The network endpoint path where the {@link RestrictedNode#addPeer(io.mokamint.node.api.Peer)} method is published.
 	 */
 	String ADD_PEER_ENDPOINT = "/add_peer";
 

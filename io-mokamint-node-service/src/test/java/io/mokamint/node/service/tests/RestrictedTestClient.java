@@ -18,13 +18,12 @@ package io.mokamint.node.service.tests;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.AddPeersMessages;
+import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
@@ -60,8 +59,8 @@ public class RestrictedTestClient extends AbstractWebSocketClient {
 	protected void onRemovePeerResult() {}
 	protected void onException(ExceptionMessage message) {}
 
-	public void sendAddPeers(Stream<Peer> peers) {
-		sendObjectAsync(addPeersSession, AddPeersMessages.of(peers, "id"));
+	public void sendAddPeer(Peer peer) {
+		sendObjectAsync(addPeersSession, AddPeerMessages.of(peer, "id"));
 	}
 
 	public void sendRemovePeer(Peer peer) {
@@ -76,7 +75,7 @@ public class RestrictedTestClient extends AbstractWebSocketClient {
 	private class AddPeersEndpoint extends AbstractClientEndpoint<RestrictedTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeersMessages.Encoder.class);
+			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 
 		@Override

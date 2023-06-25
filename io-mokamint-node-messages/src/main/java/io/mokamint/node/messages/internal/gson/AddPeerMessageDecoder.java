@@ -16,16 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.AddPeersMessage;
-import io.mokamint.node.messages.AddPeersMessages;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.messages.AddPeerMessage;
+import io.mokamint.node.messages.AddPeerMessages;
 
 /**
- * An encoder of an {@code AddPeersMessage}.
+ * A decoder for an {@link AddPeerMessage}.
  */
-public class AddPeersMessageEncoder extends MappedEncoder<AddPeersMessage, AddPeersMessages.Json> {
+public class AddPeerMessageDecoder extends MappedDecoder<AddPeerMessage, AddPeerMessages.Json> {
 
-	public AddPeersMessageEncoder() {
-		super(AddPeersMessages.Json::new);
+	public AddPeerMessageDecoder() {
+		super(AddPeerMessages.Json.class);
 	}
 }

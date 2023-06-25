@@ -37,7 +37,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.LogManager;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -209,7 +208,8 @@ public class PeersTests {
 			try (var node = new MyLocalNode()) {
 				assertTrue(node.getPeers().count() == 0L);
 				allowAddPeers.set(true);
-				node.addPeer(Stream.of(peer1, peer2));
+				node.addPeer(peer1);
+				node.addPeer(peer2);
 				node.semaphore.acquire(2);
 				assertTrue(node.getPeers().count() == 2L);
 			}

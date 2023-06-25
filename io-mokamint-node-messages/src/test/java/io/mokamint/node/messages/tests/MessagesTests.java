@@ -22,7 +22,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.AddPeersMessages;
+import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -142,20 +142,16 @@ public class MessagesTests {
 	@Test
 	@DisplayName("addPeers messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForAddPeers() throws EncodeException, DecodeException, URISyntaxException {
-		var peer1 = Peers.of(new URI("ws://google.com:8011"));
-		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
-		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
-		var addPeers1 = AddPeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
-		String encoded = new AddPeersMessages.Encoder().encode(addPeers1);
-		var addPeers2 = new AddPeersMessages.Decoder().decode(encoded);
+		var addPeers1 = AddPeerMessages.of(Peers.of(new URI("ws://google.com:8011")), "id");
+		String encoded = new AddPeerMessages.Encoder().encode(addPeers1);
+		var addPeers2 = new AddPeerMessages.Decoder().decode(encoded);
 		assertEquals(addPeers1, addPeers2);
 	}
 
 	@Test
 	@DisplayName("removePeer messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForRemovePeer() throws EncodeException, DecodeException, URISyntaxException {
-		var peer = Peers.of(new URI("ws://google.com:8011"));
-		var removePeers1 = RemovePeerMessages.of(peer, "id");
+		var removePeers1 = RemovePeerMessages.of(Peers.of(new URI("ws://google.com:8011")), "id");
 		String encoded = new RemovePeerMessages.Encoder().encode(removePeers1);
 		var removePeers2 = new RemovePeerMessages.Decoder().decode(encoded);
 		assertEquals(removePeers1, removePeers2);

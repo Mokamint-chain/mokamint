@@ -22,8 +22,8 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.messages.AddPeersMessage;
-import io.mokamint.node.messages.AddPeersMessages;
+import io.mokamint.node.messages.AddPeerMessage;
+import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.RemovePeerMessages;
@@ -75,7 +75,7 @@ public abstract class AbstractRestrictedNodeServiceImpl extends AbstractWebSocke
 		LOGGER.info("closed the restricted node service at ws://localhost:" + port);
 	};
 
-	protected void onAddPeers(AddPeersMessage message, Session session) {
+	protected void onAddPeers(AddPeerMessage message, Session session) {
 		LOGGER.info("received an " + ADD_PEER_ENDPOINT + " request");
 	}
 
@@ -83,12 +83,12 @@ public abstract class AbstractRestrictedNodeServiceImpl extends AbstractWebSocke
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (AddPeersMessage message) -> getServer().onAddPeers(message, session));
+			addMessageHandler(session, (AddPeerMessage message) -> getServer().onAddPeers(message, session));
 	    }
 
 		private static ServerEndpointConfig config(AbstractRestrictedNodeServiceImpl server) {
 			return simpleConfig(server, AddPeersEndpoint.class, ADD_PEER_ENDPOINT,
-					AddPeersMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
+					AddPeerMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

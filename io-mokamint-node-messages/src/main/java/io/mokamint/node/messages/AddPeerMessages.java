@@ -16,53 +16,51 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import java.util.stream.Stream;
-
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.internal.AddPeersMessageImpl;
-import io.mokamint.node.messages.internal.gson.AddPeersMessageDecoder;
-import io.mokamint.node.messages.internal.gson.AddPeersMessageEncoder;
-import io.mokamint.node.messages.internal.gson.AddPeersMessageJson;
+import io.mokamint.node.messages.internal.AddPeerMessageImpl;
+import io.mokamint.node.messages.internal.gson.AddPeerMessageDecoder;
+import io.mokamint.node.messages.internal.gson.AddPeerMessageEncoder;
+import io.mokamint.node.messages.internal.gson.AddPeerMessageJson;
 
 /**
- * A provider of {@link AddPeersMessage}.
+ * A provider of {@link AddPeerMessage}.
  */
-public class AddPeersMessages {
+public class AddPeerMessages {
 
-	private AddPeersMessages() {}
+	private AddPeerMessages() {}
 
 	/**
-	 * Yields an {@link AddPeersMessage}.
+	 * Yields an {@link AddPeerMessage}.
 	 * 
-	 * @param peers the peers to add
+	 * @param peer the peer to add
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static AddPeersMessage of(Stream<Peer> peers, String id) {
-		return new AddPeersMessageImpl(peers, id);
+	public static AddPeerMessage of(Peer peer, String id) {
+		return new AddPeerMessageImpl(peer, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends AddPeersMessageEncoder {}
+	public static class Encoder extends AddPeerMessageEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends AddPeersMessageDecoder {}
+	public static class Decoder extends AddPeerMessageDecoder {}
 
 	/**
      * Json representation.
      */
-    public static class Json extends AddPeersMessageJson {
+    public static class Json extends AddPeerMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(AddPeersMessage message) {
+    	public Json(AddPeerMessage message) {
     		super(message);
     	}
     }

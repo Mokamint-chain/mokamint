@@ -22,11 +22,10 @@ import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_END
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.AddPeersMessages;
+import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.VoidMessages;
@@ -58,9 +57,9 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public void addPeer(Stream<Peer> peers) throws TimeoutException, InterruptedException {
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException {
 		var id = nextId();
-		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeersMessages.of(peers, id));
+		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
 		try {
 			waitForResult(id, this::processVoidSuccess, this::processStandardExceptions);
 		}
@@ -90,7 +89,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class AddPeersEndpoint extends Endpoint {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeersMessages.Encoder.class);
+			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 	}
 

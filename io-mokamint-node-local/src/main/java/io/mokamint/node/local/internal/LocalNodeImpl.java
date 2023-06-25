@@ -116,7 +116,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
 		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB), _peer -> 0L);
-		addPeer(config.seeds().map(Peers::of));
+		config.seeds().map(Peers::of).forEach(this::addPeer);
 
 		Optional<Block> maybeHead = db.getHead();
 		if (maybeHead.isPresent()) {
@@ -165,11 +165,9 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Stream<Peer> peers) {
-		peers
-			.filter(peer -> !this.peers.contains(peer))
-			.map(peer -> new AddPeerTask(peer, this))
-			.forEach(this::execute);
+	public void addPeer(Peer peer) {
+		if (!peers.contains(peer))
+			execute(new AddPeerTask(peer, this));
 	}
 
 	@Override

@@ -16,48 +16,45 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
-import io.mokamint.node.messages.AddPeersMessage;
+import io.mokamint.node.messages.AddPeerMessage;
 
 /**
- * Implementation of the network message corresponding to {@link RestrictedNode#addPeer(Stream)}.
+ * Implementation of the network message corresponding to {@link RestrictedNode#addPeer(Peer)}.
  */
-public class AddPeersMessageImpl extends AbstractRpcMessage implements AddPeersMessage {
+public class AddPeerMessageImpl extends AbstractRpcMessage implements AddPeerMessage {
 
-	private final Peer[] peers;
+	private final Peer peer;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param peers the peers to add
+	 * @param peer the peer to add
 	 * @param id the identifier of the message
 	 */
-	public AddPeersMessageImpl(Stream<Peer> peers, String id) {
+	public AddPeerMessageImpl(Peer peer, String id) {
 		super(id);
 
-		this.peers = peers
-			.map(Objects::requireNonNull)
-			.toArray(Peer[]::new);
+		Objects.requireNonNull(peer);
+		this.peer = peer;
 	}
 
 	@Override
-	public Stream<Peer> getPeers() {
-		return Stream.of(peers);
+	public Peer getPeer() {
+		return peer;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddPeersMessage && Arrays.equals(peers, ((AddPeersMessage) other).getPeers().toArray(Peer[]::new));
+		return other instanceof AddPeerMessage && peer.equals(((AddPeerMessage) other).getPeer());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return AddPeersMessage.class.getName();
+		return AddPeerMessage.class.getName();
 	}
 }

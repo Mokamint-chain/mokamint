@@ -28,8 +28,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,15 +55,15 @@ public class RestrictedNodeServiceTests {
 	@DisplayName("if an addPeers() request reaches the service, it adds the peers to the node and it sends back a void result")
 	public void serviceAddPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
-		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
-		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
+		var peers = new HashSet<Peer>();
+		peers.add(Peers.of(new URI("ws://my.machine:8032")));
+		peers.add(Peers.of(new URI("ws://her.machine:8033")));
 
 		var node = new RestrictedNode() {
 
 			@Override
-			public void addPeer(Stream<Peer> received) throws TimeoutException, InterruptedException {
-				var peers = received.collect(Collectors.toList());
-				if (peers.size() == 2 && peers.contains(peer1) && peers.contains(peer2))
+			public void addPeer(Peer received) throws TimeoutException, InterruptedException {
+				if (peers.remove(received))
 					semaphore.release();
 			}
 
@@ -89,7 +87,9 @@ public class RestrictedNodeServiceTests {
 		}
 
 		try (var service = RestrictedNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			client.sendAddPeers(Stream.of(peer1, peer2));
+			for (var peer: peers)
+				client.sendAddPeer(peer);
+
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
 		}
 	}
@@ -113,7 +113,7 @@ public class RestrictedNodeServiceTests {
 			}
 
 			@Override
-			public void addPeer(Stream<Peer> peers) throws TimeoutException, InterruptedException {}
+			public void addPeer(Peer peer) throws TimeoutException, InterruptedException {}
 
 			@Override
 			public void close() throws IOException, InterruptedException {}

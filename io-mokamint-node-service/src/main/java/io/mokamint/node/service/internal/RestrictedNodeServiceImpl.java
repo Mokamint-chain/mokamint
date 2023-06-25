@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.RestrictedNode;
-import io.mokamint.node.messages.AddPeersMessage;
+import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.VoidMessages;
@@ -67,11 +67,11 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	}
 
 	@Override
-	protected void onAddPeers(AddPeersMessage message, Session session) {
+	protected void onAddPeers(AddPeerMessage message, Session session) {
 		super.onAddPeers(message, session);
 
 		try {
-			node.addPeer(message.getPeers());
+			node.addPeer(message.getPeer());
 			sendObjectAsync(session, VoidMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
