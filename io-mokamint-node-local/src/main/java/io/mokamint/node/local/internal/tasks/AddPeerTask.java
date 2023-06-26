@@ -66,7 +66,7 @@ public class AddPeerTask extends Task {
 			var version2 = node.getInfo().getVersion();
 
 			if (!version1.canWorkWith(version2))
-				throw new IncompatiblePeerVersionException("version " + version1 + " is incompatible with version " + version2);
+				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
 
 			node.emit(node.new PeerAcceptedEvent(peer));
 		}

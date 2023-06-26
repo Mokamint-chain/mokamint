@@ -199,12 +199,11 @@ public class LocalNodeImpl implements LocalNode {
 		if (!peers.contains(peer)) {
 			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
 				var version1 = remote.getInfo().getVersion();
-				var version2 = this.info.getVersion();
+				var version2 = getInfo().getVersion();
 
 				if (!version1.canWorkWith(version2))
-					throw new IncompatiblePeerVersionException("version " + version1 + " is incompatible with version " + version2);
-
-				if (peers.add(peer))
+					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
+				else if (peers.add(peer))
 					emit(new PeerAcceptedEvent(peer));
 			}
 			catch (DeploymentException | IOException e) {

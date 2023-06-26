@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +53,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
@@ -69,6 +71,11 @@ public class PeersTests {
 	 * The configuration of the node used for testing.
 	 */
 	private static Config config;
+
+	/**
+	 * The node information of the nodes used in the tests.
+	 */
+	private static NodeInfo info = NodeInfos.of(Versions.of(1, 0, 0));
 
 	/**
 	 * The application of the node used for testing.
@@ -96,7 +103,7 @@ public class PeersTests {
 		@Override
 		protected void onGetInfo(GetInfoMessage message, Session session) {
 			super.onGetInfo(message, session);
-			sendObjectAsync(session, GetInfoResultMessages.of(NodeInfos.of(Versions.of(0, 0, 1)), message.getId()));
+			sendObjectAsync(session, GetInfoResultMessages.of(info, message.getId()));
 		};
 	}
 
@@ -161,6 +168,11 @@ public class PeersTests {
 			}
 
 			@Override
+			public NodeInfo getInfo() {
+				return info;
+			}
+
+			@Override
 			protected void onComplete(Event event) {
 				if (event instanceof PeerAcceptedEvent && stillToAccept.remove(((PeerAcceptedEvent) event).peer))
 					semaphore.release();
@@ -190,6 +202,11 @@ public class PeersTests {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app);
+			}
+
+			@Override
+			public NodeInfo getInfo() {
+				return info;
 			}
 
 			@Override
@@ -245,6 +262,11 @@ public class PeersTests {
 			}
 
 			@Override
+			public NodeInfo getInfo() {
+				return info;
+			}
+
+			@Override
 			protected void onSchedule(Task task) {
 				if (!allowAddPeers.get() && task instanceof AddPeerTask)
 					fail();
@@ -274,6 +296,81 @@ public class PeersTests {
 			try (var node = LocalNodes.of(config, app)) {
 				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
 			}
+		}
+	}
+
+	@Test
+	@DisplayName("two peers that differ for the patch version only can work together")
+	public void addPeerWorksIfPatchVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException {
+		var port = 8032;
+		var peer = Peers.of(new URI("ws://localhost:" + port));
+		var allPeers = new HashSet<Peer>();
+		allPeers.add(peer);
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+				super(config, app);
+			}
+
+			@Override
+			public NodeInfo getInfo() {
+				var version = info.getVersion();
+				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3));
+			}
+		}
+
+		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+			node.addPeer(peer);
+			assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+		}
+	}
+
+	@Test
+	@DisplayName("two peers that differ for the minor version cannot work together")
+	public void addPeerFailsIfMinorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+		var port = 8032;
+		var peer = Peers.of(new URI("ws://localhost:" + port));
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+				super(config, app);
+			}
+
+			@Override
+			public NodeInfo getInfo() {
+				var version = info.getVersion();
+				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()));
+			}
+		}
+
+		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+			assertThrows(IncompatiblePeerVersionException.class, () -> node.addPeer(peer));
+		}
+	}
+
+	@Test
+	@DisplayName("two peers that differ for the major version cannot work together")
+	public void addPeerFailsIfMajorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+		var port = 8032;
+		var peer = Peers.of(new URI("ws://localhost:" + port));
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+				super(config, app);
+			}
+
+			@Override
+			public NodeInfo getInfo() {
+				var version = info.getVersion();
+				return NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()));
+			}
+		}
+
+		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+			assertThrows(IncompatiblePeerVersionException.class, () -> node.addPeer(peer));
 		}
 	}
 
