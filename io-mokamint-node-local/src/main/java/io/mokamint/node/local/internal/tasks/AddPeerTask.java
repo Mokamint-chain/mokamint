@@ -17,12 +17,12 @@ limitations under the License.
 package io.mokamint.node.local.internal.tasks;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
+import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -62,10 +62,15 @@ public class AddPeerTask extends Task {
 	@Override @OnThread("tasks")
 	protected void body() {
 		try (var remote = RemotePublicNodes.of(peer.getURI(), node.getConfig().peerTimeout)) {
-			remote.getChainInfo();
+			var version1 = remote.getInfo().getVersion();
+			var version2 = node.getInfo().getVersion();
+
+			if (!version1.canWorkWith(version2))
+				throw new IncompatiblePeerVersionException("version " + version1 + " is incompatible with version " + version2);
+
 			node.emit(node.new PeerAcceptedEvent(peer));
 		}
-		catch (InterruptedException | NoSuchAlgorithmException | IOException | DeploymentException | TimeoutException e) {
+		catch (InterruptedException | IncompatiblePeerVersionException | IOException | DeploymentException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
 		}
 	}

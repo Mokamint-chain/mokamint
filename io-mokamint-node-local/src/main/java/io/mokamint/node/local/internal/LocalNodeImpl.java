@@ -46,6 +46,7 @@ import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.Version;
@@ -194,16 +195,17 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException {
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException {
 		if (!peers.contains(peer)) {
 			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
-				remote.getChainInfo();
+				var version1 = remote.getInfo().getVersion();
+				var version2 = this.info.getVersion();
+
+				if (!version1.canWorkWith(version2))
+					throw new IncompatiblePeerVersionException("version " + version1 + " is incompatible with version " + version2);
+
 				if (peers.add(peer))
 					emit(new PeerAcceptedEvent(peer));
-			}
-			catch (NoSuchAlgorithmException e) { // TODO
-				LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
-				return;
 			}
 			catch (DeploymentException | IOException e) {
 				throw new IOException("cannot contact " + peer, e);

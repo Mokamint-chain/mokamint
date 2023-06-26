@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,11 +33,12 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
-import java.util.Optional;
+import java.util.HashSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,15 +48,17 @@ import org.junit.jupiter.api.Timeout;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.ChainInfos;
+import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.Versions;
+import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.tasks.AddPeerTask;
-import io.mokamint.node.messages.GetChainInfoMessage;
-import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.messages.GetInfoMessage;
+import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
@@ -89,11 +93,10 @@ public class PeersTests {
 			deploy();
 		}
 
-		// TODO
 		@Override
-		protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-			super.onGetChainInfo(message, session);
-			sendObjectAsync(session, GetChainInfoResultMessages.of(ChainInfos.of(0, Optional.empty(), Optional.empty()), message.getId()));
+		protected void onGetInfo(GetInfoMessage message, Session session) {
+			super.onGetInfo(message, session);
+			sendObjectAsync(session, GetInfoResultMessages.of(NodeInfos.of(Versions.of(0, 0, 1)), message.getId()));
 		};
 	}
 
@@ -137,12 +140,16 @@ public class PeersTests {
 	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException {
 		var port1 = 8032;
 		var port2 = 8034;
-		var uri1 = new URI("ws://localhost:" + port1);
-		var uri2 = new URI("ws://localhost:" + port2);
+		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
+		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var allPeers = new HashSet<Peer>();
+		allPeers.add(peer1);
+		allPeers.add(peer2);
+		var stillToAccept = new HashSet<Peer>(allPeers);
 
 		config = Config.Builder.defaults()
-				.addSeed(uri1)
-				.addSeed(uri2)
+				.addSeed(peer1.getURI())
+				.addSeed(peer2.getURI())
 				.build();
 
 		var semaphore = new Semaphore(0);
@@ -155,34 +162,31 @@ public class PeersTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeerAcceptedEvent) {
-					var uri = ((PeerAcceptedEvent) event).peer.getURI();
-					if (uri.equals(uri1) || uri.equals(uri2))
-						semaphore.release();
-				}
-			};
+				if (event instanceof PeerAcceptedEvent && stillToAccept.remove(((PeerAcceptedEvent) event).peer))
+					semaphore.release();
+			}
 		}
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2); var node = new MyLocalNode()) {
 			semaphore.acquire(2);
-			assertTrue(node.getPeers().count() == 2L);
-			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri1::equals));
-			assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
+			assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
 		}
 	}
 
 	@Test
 	@DisplayName("if a peer is added to a node, it is saved into the database and it is used at next start-up")
 	@Timeout(10)
-	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var allPeers = new HashSet<Peer>();
+		allPeers.add(peer1);
+		allPeers.add(peer2);
 		var allowAddPeers = new AtomicBoolean();
 
 		class MyLocalNode extends LocalNodeImpl {
-			private final Semaphore semaphore = new Semaphore(0);
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app);
@@ -193,15 +197,6 @@ public class PeersTests {
 				if (!allowAddPeers.get() && task instanceof AddPeerTask)
 					fail();
 			}
-
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeerAcceptedEvent) {
-					var peer = ((PeerAcceptedEvent) event).peer;
-					if (peer.equals(peer1) || peer.equals(peer2))
-						semaphore.release();
-				}
-			};
 		}
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
@@ -210,16 +205,13 @@ public class PeersTests {
 				allowAddPeers.set(true);
 				node.addPeer(peer1);
 				node.addPeer(peer2);
-				node.semaphore.acquire(2);
-				assertTrue(node.getPeers().count() == 2L);
+				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
 			}
 
 			allowAddPeers.set(false);
 
 			try (var node = new MyLocalNode()) {
-				assertTrue(node.getPeers().count() == 2L);
-				assertTrue(node.getPeers().anyMatch(peer1::equals));
-				assertTrue(node.getPeers().anyMatch(peer2::equals));
+				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
 			}
 		}
 	}
@@ -230,18 +222,23 @@ public class PeersTests {
 	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
 		var port1 = 8032;
 		var port2 = 8034;
-		var uri1 = new URI("ws://localhost:" + port1);
-		var uri2 = new URI("ws://localhost:" + port2);
+		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
+		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var allPeers = new HashSet<Peer>();
+		allPeers.add(peer1);
+		allPeers.add(peer2);
+		var stillToAccept = new HashSet<Peer>(allPeers);
 
 		config = Config.Builder.defaults()
-				.addSeed(uri1)
-				.addSeed(uri2)
+				.addSeed(peer1.getURI())
+				.addSeed(peer2.getURI())
 				.build();
 
 		var allowAddPeers = new AtomicBoolean(true);
 
+		var semaphore = new Semaphore(0);
+
 		class MyLocalNode extends LocalNodeImpl {
-			private final Semaphore semaphore = new Semaphore(0);
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
 				super(config, app);
@@ -255,20 +252,18 @@ public class PeersTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeerAcceptedEvent) {
-					var uri = ((PeerAcceptedEvent) event).peer.getURI();
-					if (uri.equals(uri1) || uri.equals(uri2))
-						semaphore.release();
-				}
-			};
+				if (event instanceof PeerAcceptedEvent && stillToAccept.remove(((PeerAcceptedEvent) event).peer))
+					semaphore.release();
+			}
 		}
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
 			try (var node = new MyLocalNode()) {
-				node.semaphore.acquire(2);
-				assertTrue(node.getPeers().count() == 2L);
-				node.removePeer(Peers.of(uri1));
-				assertTrue(node.getPeers().count() == 1L);
+				semaphore.acquire(2);
+				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+				node.removePeer(peer1);
+				allPeers.remove(peer1);
+				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
 			}
 
 			config = Config.Builder.defaults()
@@ -277,8 +272,7 @@ public class PeersTests {
 			allowAddPeers.set(false);
 
 			try (var node = LocalNodes.of(config, app)) {
-				assertTrue(node.getPeers().count() == 1L);
-				assertTrue(node.getPeers().map(Peer::getURI).anyMatch(uri2::equals));
+				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
 			}
 		}
 	}
