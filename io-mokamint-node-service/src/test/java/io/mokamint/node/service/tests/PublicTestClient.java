@@ -27,6 +27,7 @@ import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -39,6 +40,9 @@ import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.GetInfoMessages;
+import io.mokamint.node.messages.GetInfoResultMessage;
+import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
@@ -55,12 +59,15 @@ public class PublicTestClient extends AbstractWebSocketClient {
 	private final Session getBlockSession;
 	private final Session getConfigSession;
 	private final Session getChainInfoSession;
+	private final Session getInfoSession;
 
 	public PublicTestClient(URI uri) throws DeploymentException, IOException {
+		// TODO avoid code duplication
 		this.getPeersSession = new GetPeersEndpoint().deployAt(uri.resolve(PublicNodeService.GET_PEERS_ENDPOINT));
 		this.getBlockSession = new GetBlockEndpoint().deployAt(uri.resolve(PublicNodeService.GET_BLOCK_ENDPOINT));
 		this.getConfigSession = new GetConfigEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CONFIG_ENDPOINT));
 		this.getChainInfoSession = new GetChainInfoEndpoint().deployAt(uri.resolve(PublicNodeService.GET_CHAIN_INFO_ENDPOINT));
+		this.getInfoSession = new GetInfoEndpoint().deployAt(uri.resolve(PublicNodeService.GET_INFO_ENDPOINT));
 	}
 
 	@Override
@@ -69,6 +76,7 @@ public class PublicTestClient extends AbstractWebSocketClient {
 		getBlockSession.close();
 		getConfigSession.close();
 		getChainInfoSession.close();
+		getInfoSession.close();
 	}
 
 	/**
@@ -78,6 +86,7 @@ public class PublicTestClient extends AbstractWebSocketClient {
 	protected void onGetBlockResult(Optional<Block> block) {}
 	protected void onGetConfigResult(ConsensusConfig config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
+	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
 
 	public void sendGetPeers() {
@@ -94,6 +103,10 @@ public class PublicTestClient extends AbstractWebSocketClient {
 
 	public void sendGetChainInfo() {
 		sendObjectAsync(getChainInfoSession, GetChainInfoMessages.of("id"));
+	}
+
+	public void sendGetInfo() {
+		sendObjectAsync(getInfoSession, GetInfoMessages.of("id"));
 	}
 
 	private void dealWithExceptions(RpcMessage message) {
@@ -163,6 +176,23 @@ public class PublicTestClient extends AbstractWebSocketClient {
 			addMessageHandler(session, (RpcMessage message) -> {
 				if (message instanceof GetChainInfoResultMessage)
 					onGetChainInfoResult(((GetChainInfoResultMessage) message).get());
+				else
+					dealWithExceptions(message);
+			});
+		}
+	}
+
+	private class GetInfoEndpoint extends AbstractClientEndpoint<PublicTestClient> {
+
+		private Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInfoMessages.Encoder.class);
+		}
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (RpcMessage message) -> {
+				if (message instanceof GetInfoResultMessage)
+					onGetInfoResult(((GetInfoResultMessage) message).get());
 				else
 					dealWithExceptions(message);
 			});

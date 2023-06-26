@@ -19,6 +19,7 @@ package io.mokamint.node.remote.internal;
 import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEERS_ENDPOINT;
 
 import java.io.IOException;
@@ -46,6 +47,9 @@ import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.GetInfoMessages;
+import io.mokamint.node.messages.GetInfoResultMessage;
+import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
@@ -72,16 +76,30 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 */
 	public RemotePublicNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
 		super(timeout);
-		addSession(GET_PEERS_ENDPOINT, new GetPeersEndpoint().deployAt(uri.resolve(GET_PEERS_ENDPOINT)));
-		addSession(GET_BLOCK_ENDPOINT, new GetBlockEndpoint().deployAt(uri.resolve(GET_BLOCK_ENDPOINT)));
-		addSession(GET_CONFIG_ENDPOINT, new GetConfigEndpoint().deployAt(uri.resolve(GET_CONFIG_ENDPOINT)));
-		addSession(GET_CHAIN_INFO_ENDPOINT, new GetChainInfoEndpoint().deployAt(uri.resolve(GET_CHAIN_INFO_ENDPOINT)));
+		addSession(GET_PEERS_ENDPOINT, uri, GetPeersEndpoint::new);
+		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
+		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
+		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
+		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
 	}
 
 	@Override
 	public NodeInfo getInfo() throws TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+		var id = nextId();
+		sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
+		try {
+			return waitForResult(id, this::processGetInfoSuccess, this::processStandardExceptions);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private NodeInfo processGetInfoSuccess(RpcMessage message) {
+		return message instanceof GetInfoResultMessage ? ((GetInfoResultMessage) message).get() : null;
 	}
 
 	@Override
@@ -177,29 +195,41 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private class GetPeersEndpoint extends Endpoint {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetPeersResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPeersMessages.Encoder.class);
 		}
 	}
 
 	private class GetBlockEndpoint extends Endpoint {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
 	}
 
 	private class GetConfigEndpoint extends Endpoint {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 	}
 
 	private class GetChainInfoEndpoint extends Endpoint {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
+		}
+	}
+
+	private class GetInfoEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
 	}
 }

@@ -54,8 +54,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 */
 	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
 		super(timeout);
-		addSession(ADD_PEER_ENDPOINT, new AddPeersEndpoint().deployAt(uri.resolve(ADD_PEER_ENDPOINT)));
-		addSession(REMOVE_PEER_ENDPOINT, new RemovePeersEndpoint().deployAt(uri.resolve(REMOVE_PEER_ENDPOINT)));
+		addSession(ADD_PEER_ENDPOINT, uri, AddPeersEndpoint::new);
+		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeersEndpoint::new);
 	}
 
 	@Override
@@ -98,14 +98,16 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	private class AddPeersEndpoint extends Endpoint {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 	}
 
 	private class RemovePeersEndpoint extends Endpoint {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 	}

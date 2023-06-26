@@ -25,6 +25,11 @@ import io.hotmoka.websockets.server.api.WebSocketServer;
 public interface PublicNodeService extends WebSocketServer {
 	
 	/**
+	 * The network endpoint path where {@link PublicNode#getInfo()} is published.
+	 */
+	String GET_INFO_ENDPOINT = "/get_info";
+
+	/**
 	 * The network endpoint path where the {@link PublicNode#getPeers()} method is published.
 	 */
 	String GET_PEERS_ENDPOINT = "/get_peers";

@@ -32,6 +32,9 @@ import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessage;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.GetInfoMessage;
+import io.mokamint.node.messages.GetInfoMessages;
+import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
@@ -72,7 +75,12 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	 * @throws IOException if an I/O error occurs
 	 */
 	protected void deploy() throws DeploymentException, IOException {
-		startContainer("", port, GetPeersEndpoint.config(this), GetBlockEndpoint.config(this), GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this));
+		startContainer("", port,
+				GetInfoEndpoint.config(this),
+				GetPeersEndpoint.config(this),
+				GetBlockEndpoint.config(this),
+				GetConfigEndpoint.config(this),
+				GetChainInfoEndpoint.config(this));
 		LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
@@ -147,6 +155,23 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
 			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT,
 					GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetInfo(GetInfoMessage message, Session session) {
+		LOGGER.info("received a " + GET_INFO_ENDPOINT + " request");
+	}
+
+	public static class GetInfoEndpoint extends AbstractServerEndpoint<AbstractPublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetInfoMessage message) -> getServer().onGetInfo(message, session));
+	    }
+
+		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
+			return simpleConfig(server, GetInfoEndpoint.class, GET_INFO_ENDPOINT,
+					GetInfoMessages.Decoder.class, GetInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

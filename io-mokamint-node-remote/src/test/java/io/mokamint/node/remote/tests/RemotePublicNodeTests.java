@@ -26,7 +26,9 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.Versions;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
@@ -35,6 +37,8 @@ import io.mokamint.node.messages.GetChainInfoMessage;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessage;
 import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.GetInfoMessage;
+import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -351,6 +355,27 @@ public class RemotePublicNodeTests {
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getChainInfo());
 			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getInfo() works")
+	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+		var info1 = NodeInfos.of(Versions.of(1, 2, 3));
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetInfo(GetInfoMessage message, Session session) {
+				sendObjectAsync(session, GetInfoResultMessages.of(info1, message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var info2 = remote.getInfo();
+			assertEquals(info1, info2);
 		}
 	}
 

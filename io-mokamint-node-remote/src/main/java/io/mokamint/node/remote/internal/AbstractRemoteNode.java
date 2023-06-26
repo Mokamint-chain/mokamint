@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.remote.internal;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -65,8 +67,18 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 		this.timeout = timeout;
 	}
 
-	protected final void addSession(String key, Session session) {
-		sessions.put(key, session);
+	/**
+	 * Adds a session at the given path starting at the given URI, connected to the
+	 * endpoint resulting from the given supplier.
+	 * 
+	 * @param path the path
+	 * @param uri the URI
+	 * @param endpoint the supplier of the endpoint
+	 * @throws DeploymentException if the session cannot be deployed
+	 * @throws IOException if an I/O error occurs
+	 */
+	protected final void addSession(String path, URI uri, Supplier<Endpoint> endpoint) throws DeploymentException, IOException {
+		sessions.put(path, endpoint.get().deployAt(uri.resolve(path)));
 	}
 
 	protected Session getSession(String key) {
@@ -180,5 +192,7 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, AbstractRemoteNode.this::notifyResult);
 		}
+
+		protected abstract Session deployAt(URI uri) throws DeploymentException, IOException;
 	}
 }

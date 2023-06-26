@@ -42,10 +42,13 @@ import org.junit.jupiter.api.Test;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessage;
@@ -237,6 +240,34 @@ public class PublicNodeServiceTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetChainInfo();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getInfo() request reaches the service, it sends back its node information")
+	public void serviceGetInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException {
+		var semaphore = new Semaphore(0);
+		var info = NodeInfos.of(Versions.of(1, 2, 3));
+
+		class MyTestClient extends PublicTestClient {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onGetInfoResult(NodeInfo received) {
+				if (info.equals(received))
+					semaphore.release();
+			}
+		}
+
+		var node = mock(PublicNode.class);
+		when(node.getInfo()).thenReturn(info);
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

@@ -29,6 +29,8 @@ import io.mokamint.node.messages.GetChainInfoMessage;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessage;
 import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.GetInfoMessage;
+import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
@@ -71,6 +73,18 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	protected void sendExceptionAsync(Session session, Exception e, String id) {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
+
+	@Override
+	protected void onGetInfo(GetInfoMessage message, Session session) {
+		super.onGetInfo(message, session);
+
+		try {
+			sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), message.getId()));
+		}
+		catch (TimeoutException | InterruptedException e) {
+			sendExceptionAsync(session, e, message.getId());
+		}
+	};
 
 	@Override
 	protected void onGetPeers(GetPeersMessage message, Session session) {
