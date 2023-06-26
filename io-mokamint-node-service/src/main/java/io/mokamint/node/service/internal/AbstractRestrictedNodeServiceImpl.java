@@ -24,10 +24,11 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.RemovePeerMessages;
-import io.mokamint.node.messages.VoidMessages;
+import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -88,7 +89,7 @@ public abstract class AbstractRestrictedNodeServiceImpl extends AbstractWebSocke
 
 		private static ServerEndpointConfig config(AbstractRestrictedNodeServiceImpl server) {
 			return simpleConfig(server, AddPeersEndpoint.class, ADD_PEER_ENDPOINT,
-					AddPeerMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
+					AddPeerMessages.Decoder.class, AddPeerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -105,7 +106,7 @@ public abstract class AbstractRestrictedNodeServiceImpl extends AbstractWebSocke
 
 		private static ServerEndpointConfig config(AbstractRestrictedNodeServiceImpl server) {
 			return simpleConfig(server, RemoveBlockEndpoint.class, REMOVE_PEER_ENDPOINT,
-					RemovePeerMessages.Decoder.class, VoidMessages.Encoder.class, ExceptionMessages.Encoder.class);
+					RemovePeerMessages.Decoder.class, RemovePeerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

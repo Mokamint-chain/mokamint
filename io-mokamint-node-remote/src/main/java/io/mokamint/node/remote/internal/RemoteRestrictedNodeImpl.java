@@ -30,11 +30,13 @@ import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.AddPeerResultMessage;
+import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
-import io.mokamint.node.messages.VoidMessage;
-import io.mokamint.node.messages.VoidMessages;
+import io.mokamint.node.messages.RemovePeerResultMessage;
+import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
@@ -82,16 +84,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		queues.notifyResult(message);
 	}
 
-	private VoidMessage processVoidSuccess(RpcMessage message) {
-		return message instanceof VoidMessage ? (VoidMessage) message : null;
-	}
-
 	@Override
 	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, IOException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
 		try {
-			queues.waitForResult(id, this::processVoidSuccess, this::processAddPeerException);
+			queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | IOException | IncompatiblePeerVersionException e) {
 			throw e;
@@ -99,6 +97,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		catch (Exception e) {
 			throw unexpectedException(e);
 		}
+	}
+
+	private AddPeerResultMessage processAddPeerSuccess(RpcMessage message) {
+		return message instanceof AddPeerResultMessage ? (AddPeerResultMessage) message : null;
 	}
 
 	private boolean processAddPeerException(ExceptionMessage message) {
@@ -114,7 +116,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		var id = queues.nextId();
 		sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
 		try {
-			queues.waitForResult(id, this::processVoidSuccess, this::processStandardExceptions);
+			queues.waitForResult(id, this::processRemovePeerSuccess, this::processStandardExceptions);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException e) {
 			throw e;
@@ -124,11 +126,15 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
+	private RemovePeerResultMessage processRemovePeerSuccess(RpcMessage message) {
+		return message instanceof RemovePeerResultMessage ? (RemovePeerResultMessage) message : null;
+	}
+
 	private class AddPeersEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
+			return deployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 	}
 
@@ -136,7 +142,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
+			return deployAt(uri, RemovePeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 	}
 }

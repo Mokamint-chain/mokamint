@@ -25,6 +25,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -38,7 +39,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
-import io.mokamint.node.messages.VoidMessages;
+import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
@@ -181,12 +182,21 @@ public class MessagesTests {
 	}
 
 	@Test
-	@DisplayName("Void messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForVoidResult() throws EncodeException, DecodeException {
-		var voidResultMessage1 = VoidMessages.of("id");
-		String encoded = new VoidMessages.Encoder().encode(voidResultMessage1);
-		var voidResultMessage2 = new VoidMessages.Decoder().decode(encoded);
-		assertEquals(voidResultMessage1, voidResultMessage2);
+	@DisplayName("addPeer result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForAddPeerResult() throws EncodeException, DecodeException {
+		var addPeerResultMessage1 = AddPeerResultMessages.of("id");
+		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
+		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
+		assertEquals(addPeerResultMessage1, addPeerResultMessage2);
+	}
+
+	@Test
+	@DisplayName("removePeer result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForRemovePeerResult() throws EncodeException, DecodeException {
+		var removePeerResultMessage1 = RemovePeerResultMessages.of("id");
+		String encoded = new RemovePeerResultMessages.Encoder().encode(removePeerResultMessage1);
+		var removePeerResultMessage2 = new RemovePeerResultMessages.Decoder().decode(encoded);
+		assertEquals(removePeerResultMessage1, removePeerResultMessage2);
 	}
 
 	@Test

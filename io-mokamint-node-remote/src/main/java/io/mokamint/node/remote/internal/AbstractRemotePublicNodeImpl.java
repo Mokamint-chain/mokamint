@@ -69,7 +69,6 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 	 * Opens and yields a new remote node for the public API of a node.
 	 * 
 	 * @param uri the URI of the network service that gets bound to the remote node
-	 * @return the new remote node
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */

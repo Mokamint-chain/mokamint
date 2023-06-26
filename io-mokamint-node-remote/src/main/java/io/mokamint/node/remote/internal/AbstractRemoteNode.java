@@ -18,8 +18,9 @@ package io.mokamint.node.remote.internal;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,7 +43,7 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	/**
 	 * A map from path into the session listening to that path.
 	 */
-	private final ConcurrentMap<String, Session> sessions = new ConcurrentHashMap<>();
+	private final Map<String, Session> sessions = new HashMap<>();
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractRemoteNode.class.getName());
 
@@ -66,18 +67,30 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	 * @throws IOException if an I/O error occurs
 	 */
 	protected final void addSession(String path, URI uri, Supplier<Endpoint> endpoint) throws DeploymentException, IOException {
-		sessions.put(path, endpoint.get().deployAt(uri.resolve(path)));
+		var session = endpoint.get().deployAt(uri.resolve(path));
+
+		synchronized (sessions) {
+			sessions.put(path, session);
+		}
 	}
 
 	protected final Session getSession(String key) {
-		return sessions.get(key);
+		synchronized (sessions) {
+			return sessions.get(key);
+		}
 	}
 
 	@Override
-	public synchronized void close() throws IOException {
+	public void close() throws IOException {
 		IOException exception = null;
 
-		for (var session: sessions.values())
+		Collection<Session> sessions;
+
+		synchronized (this.sessions) {
+			sessions = this.sessions.values();
+		}
+
+		for (var session: sessions)
 			try {
 				session.close();
 			}

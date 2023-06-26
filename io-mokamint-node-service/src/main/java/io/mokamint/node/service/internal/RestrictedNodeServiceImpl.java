@@ -23,9 +23,10 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessage;
+import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
-import io.mokamint.node.messages.VoidMessages;
+import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.service.AbstractRestrictedNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
@@ -73,7 +74,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 
 		try {
 			node.addPeer(message.getPeer());
-			sendObjectAsync(session, VoidMessages.of(message.getId()));
+			sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException | IOException | IncompatiblePeerVersionException e) {
 			sendExceptionAsync(session, e, message.getId());
@@ -86,7 +87,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 
 		try {
 			node.removePeer(message.getPeer());
-			sendObjectAsync(session, VoidMessages.of(message.getId()));
+			sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
 			sendExceptionAsync(session, e, message.getId());

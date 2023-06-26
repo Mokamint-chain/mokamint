@@ -20,9 +20,10 @@ import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
-import io.mokamint.node.messages.VoidMessages;
+import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.service.AbstractRestrictedNodeService;
 import jakarta.websocket.DeploymentException;
@@ -76,7 +77,7 @@ public class RemoteRestrictedNodeTests {
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
 				peers2.add(message.getPeer());
-				sendObjectAsync(session, VoidMessages.of(message.getId()));
+				sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
 			}
 		};
 
@@ -237,7 +238,7 @@ public class RemoteRestrictedNodeTests {
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
 				peers2.add(message.getPeer());
-				sendObjectAsync(session, VoidMessages.of(message.getId()));
+				sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
 			}
 		};
 

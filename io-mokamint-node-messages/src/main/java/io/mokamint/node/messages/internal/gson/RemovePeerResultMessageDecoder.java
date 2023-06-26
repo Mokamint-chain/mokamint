@@ -16,17 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseEncoder;
-import io.mokamint.node.messages.VoidMessage;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.messages.RemovePeerResultMessage;
+import io.mokamint.node.messages.RemovePeerResultMessages;
 
 /**
- * An encoder of {@code VoidResultMessage}.
+ * A decoder for {@link RemovePeerResultMessage}.
  */
-public class VoidResultMessageEncoder extends BaseEncoder<VoidMessage> {
-	
-	/**
-	 * Creates the encoder.
-	 */
-	public VoidResultMessageEncoder() {
+public class RemovePeerResultMessageDecoder extends MappedDecoder<RemovePeerResultMessage, RemovePeerResultMessages.Json> {
+
+	public RemovePeerResultMessageDecoder() {
+		super(RemovePeerResultMessages.Json.class);
 	}
 }

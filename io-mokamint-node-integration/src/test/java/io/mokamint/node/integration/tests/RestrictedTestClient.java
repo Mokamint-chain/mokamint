@@ -24,11 +24,13 @@ import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.AddPeerResultMessage;
+import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
-import io.mokamint.node.messages.VoidMessage;
-import io.mokamint.node.messages.VoidMessages;
+import io.mokamint.node.messages.RemovePeerResultMessage;
+import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -75,13 +77,13 @@ public class RestrictedTestClient extends AbstractWebSocketClient {
 	private class AddPeersEndpoint extends AbstractClientEndpoint<RestrictedTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
+			return deployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, (RpcMessage message) -> {
-				if (message instanceof VoidMessage)
+				if (message instanceof AddPeerResultMessage)
 					onAddPeersResult();
 				else
 					dealWithExceptions(message);
@@ -92,13 +94,13 @@ public class RestrictedTestClient extends AbstractWebSocketClient {
 	private class RemovePeersEndpoint extends AbstractClientEndpoint<RestrictedTestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, VoidMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
+			return deployAt(uri, RemovePeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, (RpcMessage message) -> {
-				if (message instanceof VoidMessage)
+				if (message instanceof RemovePeerResultMessage)
 					onRemovePeerResult();
 				else
 					dealWithExceptions(message);
