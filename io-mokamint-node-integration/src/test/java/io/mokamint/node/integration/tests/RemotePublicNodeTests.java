@@ -1,4 +1,4 @@
-package io.mokamint.node.remote.tests;
+package io.mokamint.node.integration.tests;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;

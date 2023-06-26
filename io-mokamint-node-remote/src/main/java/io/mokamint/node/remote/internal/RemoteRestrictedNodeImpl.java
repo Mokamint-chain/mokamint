@@ -22,14 +22,18 @@ import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_END
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
+import io.mokamint.node.messages.VoidMessage;
 import io.mokamint.node.messages.VoidMessages;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
@@ -42,6 +46,10 @@ import jakarta.websocket.Session;
 @ThreadSafe
 public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements RemoteRestrictedNode {
 
+	private final NodeMessageQueues queues;
+
+	private final static Logger LOGGER = Logger.getLogger(RemoteRestrictedNodeImpl.class.getName());
+
 	/**
 	 * Opens and yields a new remote node for the restricted API of a node.
 	 * 
@@ -53,17 +61,37 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
-		super(timeout);
+		this.queues = new NodeMessageQueues(timeout);
+
 		addSession(ADD_PEER_ENDPOINT, uri, AddPeersEndpoint::new);
 		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeersEndpoint::new);
 	}
 
+	private RuntimeException unexpectedException(Exception e) {
+		LOGGER.log(Level.SEVERE, "unexpected exception", e);
+		return new RuntimeException("unexpected exception", e);
+	}
+
+	private boolean processStandardExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return TimeoutException.class.isAssignableFrom(clazz) || InterruptedException.class.isAssignableFrom(clazz);
+	}
+
+	@Override
+	protected void notifyResult(RpcMessage message) {
+		queues.notifyResult(message);
+	}
+
+	private VoidMessage processVoidSuccess(RpcMessage message) {
+		return message instanceof VoidMessage ? (VoidMessage) message : null;
+	}
+
 	@Override
 	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, IOException, TimeoutException, InterruptedException {
-		var id = nextId();
+		var id = queues.nextId();
 		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
 		try {
-			waitForResult(id, this::processVoidSuccess, this::processAddPeerException);
+			queues.waitForResult(id, this::processVoidSuccess, this::processAddPeerException);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | IOException | IncompatiblePeerVersionException e) {
 			throw e;
@@ -83,10 +111,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	@Override
 	public void removePeer(Peer peer) throws TimeoutException, InterruptedException {
-		var id = nextId();
+		var id = queues.nextId();
 		sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
 		try {
-			waitForResult(id, this::processVoidSuccess, this::processStandardExceptions);
+			queues.waitForResult(id, this::processVoidSuccess, this::processStandardExceptions);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException e) {
 			throw e;

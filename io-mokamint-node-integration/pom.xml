@@ -1,0 +1,31 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>io-mokamint-node-integration</artifactId>
+  <name>io-mokamint-node-integration</name>
+  <packaging>pom</packaging>
+  <version>${mokamint.version}</version>
+  <description>This module contains integration tests for Mokamint nodes.</description>
+
+  <parent>
+    <groupId>io.mokamint</groupId>
+    <artifactId>mokamint</artifactId>
+    <version>parent</version>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-service</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-remote</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>

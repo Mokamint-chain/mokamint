@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.service.tests;
+package io.mokamint.node.integration.tests;
 
 import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,6 +52,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
@@ -78,7 +79,7 @@ public class PublicNodeServiceTests {
 		var node = mock(PublicNode.class);
 		when(node.getPeers()).thenReturn(Stream.of(peer1, peer2));
 
-		class MyTestClient extends PublicTestClient {
+		class MyTestClient extends AbstractRemotePublicNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -89,6 +90,10 @@ public class PublicNodeServiceTests {
 				var peers = received.collect(Collectors.toList());
 				if (peers.size() == 2 && peers.contains(peer1) && peers.contains(peer2))
 					semaphore.release();
+			}
+
+			private void sendGetPeers() {
+				sendGetPeers("id");
 			}
 		}
 
@@ -103,7 +108,7 @@ public class PublicNodeServiceTests {
 	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		class MyTestClient extends PublicTestClient {
+		class MyTestClient extends AbstractRemotePublicNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -113,6 +118,10 @@ public class PublicNodeServiceTests {
 			protected void onGetBlockResult(Optional<Block> received) {
 				if (received.isEmpty())
 					semaphore.release();
+			}
+
+			private void sendGetBlock(byte[] hash) {
+				sendGetBlock(hash, "id");
 			}
 		}
 
@@ -137,7 +146,7 @@ public class PublicNodeServiceTests {
 		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
 		var block = Blocks.of(13L, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
-		class MyTestClient extends PublicTestClient {
+		class MyTestClient extends AbstractRemotePublicNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -147,6 +156,10 @@ public class PublicNodeServiceTests {
 			protected void onGetBlockResult(Optional<Block> received) {
 				if (block.equals(received.get()))
 					semaphore.release();
+			}
+
+			private void sendGetBlock(byte[] hash) {
+				sendGetBlock(hash, "id");
 			}
 		}
 
@@ -165,7 +178,7 @@ public class PublicNodeServiceTests {
 	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		class MyTestClient extends PublicTestClient {
+		class MyTestClient extends AbstractRemotePublicNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -175,6 +188,10 @@ public class PublicNodeServiceTests {
 			protected void onException(ExceptionMessage message) {
 				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
+			}
+
+			private void sendGetBlock(byte[] hash) {
+				sendGetBlock(hash, "id");
 			}
 		}
 
@@ -194,7 +211,7 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var config = ConsensusConfigs.defaults().build();
 
-		class MyTestClient extends PublicTestClient {
+		class MyTestClient extends AbstractRemotePublicNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -204,6 +221,10 @@ public class PublicNodeServiceTests {
 			protected void onGetConfigResult(ConsensusConfig received) {
 				if (config.equals(received))
 					semaphore.release();
+			}
+
+			private void sendGetConfig() {
+				sendGetConfig("id");
 			}
 		}
 
@@ -222,7 +243,7 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
 
-		class MyTestClient extends PublicTestClient {
+		class MyTestClient extends AbstractRemotePublicNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -232,6 +253,10 @@ public class PublicNodeServiceTests {
 			protected void onGetChainInfoResult(ChainInfo received) {
 				if (info.equals(received))
 					semaphore.release();
+			}
+
+			private void sendGetChainInfo() {
+				sendGetChainInfo("id");
 			}
 		}
 
@@ -250,7 +275,7 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var info = NodeInfos.of(Versions.of(1, 2, 3));
 
-		class MyTestClient extends PublicTestClient {
+		class MyTestClient extends AbstractRemotePublicNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -260,6 +285,10 @@ public class PublicNodeServiceTests {
 			protected void onGetInfoResult(NodeInfo received) {
 				if (info.equals(received))
 					semaphore.release();
+			}
+
+			private void sendGetInfo() {
+				sendGetInfo("id");
 			}
 		}
 

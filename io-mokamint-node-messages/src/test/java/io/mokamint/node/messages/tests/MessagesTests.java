@@ -158,7 +158,6 @@ public class MessagesTests {
 		var info = NodeInfos.of(Versions.of(3, 4, 5));
 		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
 		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
-		System.out.println(encoded);
 		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);
 		assertEquals(getInfoResultMessage1, getInfoResultMessage2);
 	}

@@ -32,10 +32,4 @@ module io.mokamint.node.service {
 	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
 	requires java.logging;
-
-	// only used for testing
-	requires static io.mokamint.nonce;
-	requires static io.hotmoka.crypto;
-	requires static io.hotmoka.websockets.beans;
-	requires static org.glassfish.tyrus.client;
 }

@@ -27,11 +27,4 @@ module io.mokamint.node.remote {
 	requires io.hotmoka.websockets.client;
 	requires io.hotmoka.websockets.beans;
 	requires java.logging;
-
-	// only needed for testing
-	requires static jakarta.websocket;
-	requires static org.glassfish.tyrus.spi;
-	requires static io.mokamint.node;
-	requires static io.hotmoka.crypto;
-	requires static io.mokamint.nonce;
 }
