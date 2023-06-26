@@ -16,9 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
-import static io.mokamint.node.service.api.RestrictedNodeService.ADD_PEER_ENDPOINT;
-import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_ENDPOINT;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
@@ -29,24 +26,19 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessage;
-import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessage;
-import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessage;
-import io.mokamint.node.messages.RemovePeerResultMessages;
+import io.mokamint.node.remote.AbstractRemoteRestrictedNode;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.Session;
 
 /**
  * An implementation of a remote node that presents a programmatic interface
  * to a service for the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements RemoteRestrictedNode {
+public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode implements RemoteRestrictedNode {
 
 	private final NodeMessageQueues queues;
 
@@ -58,15 +50,13 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
-	 * @return the new remote node
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
-		this.queues = new NodeMessageQueues(timeout);
+		super(uri);
 
-		addSession(ADD_PEER_ENDPOINT, uri, AddPeersEndpoint::new);
-		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeersEndpoint::new);
+		this.queues = new NodeMessageQueues(timeout);
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -81,13 +71,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	@Override
 	protected void notifyResult(RpcMessage message) {
+		super.notifyResult(message);
 		queues.notifyResult(message);
 	}
 
 	@Override
 	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, IOException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
-		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
+		sendAddPeer(peer, id);
 		try {
 			queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
@@ -114,7 +105,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	@Override
 	public void removePeer(Peer peer) throws TimeoutException, InterruptedException {
 		var id = queues.nextId();
-		sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
+		sendRemovePeer(peer, id);
 		try {
 			queues.waitForResult(id, this::processRemovePeerSuccess, this::processStandardExceptions);
 		}
@@ -128,21 +119,5 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	private RemovePeerResultMessage processRemovePeerSuccess(RpcMessage message) {
 		return message instanceof RemovePeerResultMessage ? (RemovePeerResultMessage) message : null;
-	}
-
-	private class AddPeersEndpoint extends Endpoint {
-
-		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
-		}
-	}
-
-	private class RemovePeersEndpoint extends Endpoint {
-
-		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, RemovePeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
-		}
 	}
 }

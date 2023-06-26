@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
+import io.mokamint.node.remote.AbstractRemoteRestrictedNode;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.DeploymentException;
 
@@ -74,15 +75,19 @@ public class RestrictedNodeServiceTests {
 			public void close() throws IOException, InterruptedException {}
 		};
 
-		class MyTestClient extends RestrictedTestClient {
+		class MyTestClient extends AbstractRemoteRestrictedNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
 			}
 
 			@Override
-			protected void onAddPeersResult() {
+			protected void onAddPeerResult() {
 				semaphore.release();
+			}
+
+			private void sendAddPeer(Peer peer) {
+				sendAddPeer(peer, "id");
 			}
 		}
 
@@ -119,7 +124,7 @@ public class RestrictedNodeServiceTests {
 			public void close() throws IOException, InterruptedException {}
 		};
 
-		class MyTestClient extends RestrictedTestClient {
+		class MyTestClient extends AbstractRemoteRestrictedNode {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI);
@@ -128,6 +133,10 @@ public class RestrictedNodeServiceTests {
 			@Override
 			protected void onRemovePeerResult() {
 				semaphore.release();
+			}
+
+			private void sendRemovePeer(Peer peer) {
+				sendRemovePeer(peer, "id");
 			}
 		}
 
