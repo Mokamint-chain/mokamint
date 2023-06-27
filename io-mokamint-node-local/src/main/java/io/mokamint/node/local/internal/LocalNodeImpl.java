@@ -80,6 +80,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final PunishableSet<Miner> miners;
 
 	/**
+	 * The peers of the node.
+	 */
+	private final PunishableSet<Peer> peers;
+
+	/**
 	 * The database containing the blockchain.
 	 */
 	private final Database db;
@@ -105,11 +110,6 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
-	/**
-	 * The peers of the node, with the time of the last contact.
-	 */
-	private final PunishableSetWithValue<Peer, Long> peers;
-
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -129,7 +129,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
 		this.info = NodeInfos.of(mkVersion());
-		this.peers = PunishableSetWithValues.adapt(PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB), _peer -> 0L);
+		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB);
 
 		config.seeds()
 			.parallel()
@@ -185,11 +185,33 @@ public class LocalNodeImpl implements LocalNode {
 
 	private void removePeerFromDB(Peer peer) {
 		try {
-			db.removePeer(peer);
-			LOGGER.info("removed peer " + peer);
+			if (db.removePeer(peer))
+				LOGGER.info("removed peer " + peer);
 		}
 		catch (IOException | URISyntaxException e) {
 			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + " from the database", e);
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void addCandidatePeerToDB(Peer peer) {
+		try {
+			if (db.addCandidatePeer(peer))
+				LOGGER.info("added peer " + peer + " as candidate");
+		}
+		catch (IOException | URISyntaxException e) {
+			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " as candidate to the database", e);
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void removeCandidatePeerFromDB(Peer peer) {
+		try {
+			if (db.removeCandidatePeer(peer))
+				LOGGER.info("removed peer " + peer + " as candidate");
+		}
+		catch (IOException | URISyntaxException e) {
+			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + " as candidate from the database", e);
 			throw new RuntimeException(e);
 		}
 	}
@@ -214,12 +236,12 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void removePeer(Peer peer) {
-		this.peers.remove(peer);
+		peers.remove(peer);
 	}
 
 	@Override
 	public void suggestPeers(Stream<Peer> peers) {
-		// TODO Auto-generated method stub
+		peers.forEach(this::addCandidatePeerToDB);
 	}
 
 	@Override

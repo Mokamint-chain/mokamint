@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -297,6 +298,71 @@ public class PublicNodeServiceTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetInfo();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a suggestPeers() request reaches the service, it sends back a void message")
+	public void serviceSuggestPeersWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, URISyntaxException {
+		var semaphore = new Semaphore(0);
+		var peers = new Peer[] { Peers.of(new URI("ws://www.google.com:8030")), Peers.of(new URI("ws://www.amazon.com:8032")) };
+
+		class MyTestClient extends AbstractRemotePublicNode {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onSuggestPeersResult() {
+				semaphore.release();
+			}
+
+			private void sendSuggestPeers(Stream<Peer> peers) {
+				sendSuggestPeers(peers, "id");
+			}
+		}
+
+		var node = new PublicNode() {
+
+			@Override
+			public void suggestPeers(Stream<Peer> received) throws TimeoutException, InterruptedException {
+				if (Arrays.equals(peers, received.toArray(Peer[]::new)))
+					semaphore.release();
+			}
+
+			@Override
+			public void close() throws IOException, InterruptedException {}
+
+			@Override
+			public NodeInfo getInfo() throws TimeoutException, InterruptedException {
+				return null;
+			}
+
+			@Override
+			public ConsensusConfig getConfig() throws TimeoutException, InterruptedException {
+				return null;
+			}
+
+			@Override
+			public Stream<Peer> getPeers() throws TimeoutException, InterruptedException {
+				return null;
+			}
+
+			@Override
+			public ChainInfo getChainInfo()	throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
+				return null;
+			}
+
+			@Override
+			public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException {
+				return null;
+			}
+		};
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendSuggestPeers(Stream.of(peers));
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

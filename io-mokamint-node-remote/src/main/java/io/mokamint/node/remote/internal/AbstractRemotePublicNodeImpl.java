@@ -21,6 +21,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDP
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEERS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.SUGGEST_PEERS_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -53,6 +54,9 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.SuggestPeersMessages;
+import io.mokamint.node.messages.SuggestPeersResultMessage;
+import io.mokamint.node.messages.SuggestPeersResultMessages;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -78,6 +82,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
+		addSession(SUGGEST_PEERS_ENDPOINT, uri, SuggestPeersEndpoint::new);
 	}
 
 	@Override
@@ -92,6 +97,8 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 			onGetConfigResult(((GetConfigResultMessage) message).get());
 		else if (message instanceof GetChainInfoResultMessage)
 			onGetChainInfoResult(((GetChainInfoResultMessage) message).get());
+		else if (message instanceof SuggestPeersResultMessage)
+			onSuggestPeersResult();
 		else if (message instanceof ExceptionMessage)
 			onException((ExceptionMessage) message);
 		else if (message == null)
@@ -120,6 +127,10 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 		sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
 	}
 
+	protected void sendSuggestPeers(Stream<Peer> peers, String id) {
+		sendObjectAsync(getSession(SUGGEST_PEERS_ENDPOINT), SuggestPeersMessages.of(peers, id));
+	}
+
 	/**
 	 * Handlers that can be overridden in subclasses.
 	 */
@@ -128,6 +139,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 	protected void onGetConfigResult(ConsensusConfig config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetInfoResult(NodeInfo info) {}
+	protected void onSuggestPeersResult() {}
 	protected void onException(ExceptionMessage message) {}
 
 	private class GetPeersEndpoint extends Endpoint {
@@ -167,6 +179,14 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInfoMessages.Encoder.class);
+		}
+	}
+
+	private class SuggestPeersEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, SuggestPeersResultMessages.Decoder.class, ExceptionMessages.Decoder.class, SuggestPeersMessages.Encoder.class);
 		}
 	}
 }

@@ -38,6 +38,9 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.SuggestPeersMessage;
+import io.mokamint.node.messages.SuggestPeersMessages;
+import io.mokamint.node.messages.SuggestPeersResultMessages;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -80,7 +83,9 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 				GetPeersEndpoint.config(this),
 				GetBlockEndpoint.config(this),
 				GetConfigEndpoint.config(this),
-				GetChainInfoEndpoint.config(this));
+				GetChainInfoEndpoint.config(this),
+				SuggestPeersEndpoint.config(this));
+
 		LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
@@ -172,6 +177,23 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
 			return simpleConfig(server, GetInfoEndpoint.class, GET_INFO_ENDPOINT,
 					GetInfoMessages.Decoder.class, GetInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onSuggestPeers(SuggestPeersMessage message, Session session) {
+		LOGGER.info("received a " + SUGGEST_PEERS_ENDPOINT + " request");
+	}
+
+	public static class SuggestPeersEndpoint extends AbstractServerEndpoint<AbstractPublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (SuggestPeersMessage message) -> getServer().onSuggestPeers(message, session));
+	    }
+
+		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
+			return simpleConfig(server, SuggestPeersEndpoint.class, SUGGEST_PEERS_ENDPOINT,
+					SuggestPeersMessages.Decoder.class, SuggestPeersResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

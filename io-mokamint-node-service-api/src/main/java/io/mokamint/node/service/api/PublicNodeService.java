@@ -49,6 +49,11 @@ public interface PublicNodeService extends WebSocketServer {
 	 */
 	String GET_CHAIN_INFO_ENDPOINT = "/get_chain_info";
 
+	/**
+	 * The network endpoint path where the {@link PublicNode#suggestPeers(java.util.stream.Stream)} method is published.
+	 */
+	String SUGGEST_PEERS_ENDPOINT = "/suggest_peers";
+
 	@Override
 	void close();
 }

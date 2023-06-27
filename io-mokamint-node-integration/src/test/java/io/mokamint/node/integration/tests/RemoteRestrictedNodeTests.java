@@ -63,8 +63,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("addPeers() works")
-	public void addPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerVersionException {
+	@DisplayName("addPeer() works")
+	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerVersionException {
 		var peers1 = new HashSet<Peer>();
 		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
 		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
@@ -90,8 +90,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("addPeers() works in case of TimeoutException")
-	public void addPeersWorksInCaseOfTimeoutException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("addPeer() works in case of TimeoutException")
+	public void addPeerWorksInCaseOfTimeoutException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "timeout";
 
@@ -112,8 +112,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("addPeers() works in case of InterruptedException")
-	public void addPeersWorksInCaseOfInterruptedException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("addPeer() works in case of InterruptedException")
+	public void addPeerWorksInCaseOfInterruptedException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "interrupted";
 
@@ -134,8 +134,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("addPeers() works in case of IOException")
-	public void addPeersWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("addPeer() works in case of IOException")
+	public void addPeerWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "I/O error";
 
@@ -156,8 +156,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("addPeers() works in case of IncompatiblePeerVersionException")
-	public void addPeersWorksInCaseOfIncompatiblePeerVersionException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("addPeer() works in case of IncompatiblePeerVersionException")
+	public void addPeerWorksInCaseOfIncompatiblePeerVersionException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "incompatible versions";
 
@@ -178,8 +178,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("if addPeers() is slow, it leads to a time-out")
-	public void addPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("if addPeer() is slow, it leads to a time-out")
+	public void addPeerWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 
 		class MyServer extends RestrictedTestServer {
@@ -203,8 +203,8 @@ public class RemoteRestrictedNodeTests {
 	}
 	
 	@Test
-	@DisplayName("addPeers() works in case of unexpected exception")
-	public void addPeersWorksInCaseOfUnxepectedException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("addPeer() works in case of unexpected exception")
+	public void addPeerWorksInCaseOfUnxepectedException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "unexpected";
 
@@ -224,8 +224,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("removePeers() works")
-	public void removePeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("removePeer() works")
+	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peers1 = new HashSet<Peer>();
 		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
 		peers1.add(Peers.of(new URI("ws://your.machine:1025")));

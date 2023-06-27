@@ -64,7 +64,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	 * @param e the exception used to build the message
 	 * @param id the identifier of the message to send
 	 */
-	protected void sendExceptionAsync(Session session, Exception e, String id) {
+	private void sendExceptionAsync(Session session, Exception e, String id) {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 

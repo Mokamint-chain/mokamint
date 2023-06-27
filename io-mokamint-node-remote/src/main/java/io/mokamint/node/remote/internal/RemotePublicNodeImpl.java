@@ -38,6 +38,7 @@ import io.mokamint.node.messages.GetChainInfoResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetInfoResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessage;
+import io.mokamint.node.messages.SuggestPeersResultMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
@@ -124,7 +125,21 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public void suggestPeers(Stream<Peer> peers) throws TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
+		var id = queues.nextId();
+		sendSuggestPeers(peers, id);
+		try {
+			queues.waitForResult(id, this::processSuggestPeersSuccess, this::processStandardExceptions);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private RpcMessage processSuggestPeersSuccess(RpcMessage message) {
+		return message instanceof SuggestPeersResultMessage ? message : null;
 	}
 
 	@Override
