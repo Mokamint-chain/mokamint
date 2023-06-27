@@ -123,6 +123,11 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
+	public void suggestPeers(Stream<Peer> peers) throws TimeoutException, InterruptedException {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
 	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendGetBlock(hash, id);

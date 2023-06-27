@@ -218,6 +218,11 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public void suggestPeers(Stream<Peer> peers) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
 	public void close() throws InterruptedException {
 		events.shutdownNow();
 		tasks.shutdownNow();

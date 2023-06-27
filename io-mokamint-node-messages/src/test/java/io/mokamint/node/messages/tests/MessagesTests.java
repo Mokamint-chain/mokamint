@@ -40,6 +40,7 @@ import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
+import io.mokamint.node.messages.SuggestPeersMessages;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
@@ -197,6 +198,18 @@ public class MessagesTests {
 		String encoded = new RemovePeerResultMessages.Encoder().encode(removePeerResultMessage1);
 		var removePeerResultMessage2 = new RemovePeerResultMessages.Decoder().decode(encoded);
 		assertEquals(removePeerResultMessage1, removePeerResultMessage2);
+	}
+
+	@Test
+	@DisplayName("suggestPeers messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForSuggestPeers() throws EncodeException, DecodeException, URISyntaxException {
+		var peer1 = Peers.of(new URI("ws://google.com:8011"));
+		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
+		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
+		var suggestPeersMessage1 = SuggestPeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
+		String encoded = new SuggestPeersMessages.Encoder().encode(suggestPeersMessage1);
+		var suggestPeersMessage2 = new SuggestPeersMessages.Decoder().decode(encoded);
+		assertEquals(suggestPeersMessage1, suggestPeersMessage2);
 	}
 
 	@Test
