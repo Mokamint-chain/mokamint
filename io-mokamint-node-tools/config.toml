@@ -37,6 +37,11 @@ miner_punishment_for_illegal_deadline = 500
 # (if any) and contacted at start-up
 seeds = ["ws://mymachine.com:8026", "ws://hermachine.de:8028"]
 
+# the maximal amount of peers of a node; their actual number can be larger
+# only if peers are explicitly added as seeds or through the addPeer() method
+# of the restricted API of the node
+max_peers = 20
+
 # the initial points of a peer, freshly added to a node
 peer_initial_points = 1000
 
@@ -45,3 +50,4 @@ peer_punishment_for_unreachable = 1
 
 # the time (in milliseconds) for communications to the peers
 peer_timeout = 10000
+

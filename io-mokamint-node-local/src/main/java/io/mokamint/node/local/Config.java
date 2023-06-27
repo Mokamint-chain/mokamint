@@ -24,14 +24,18 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.moandjiezana.toml.Toml;
 
 import io.hotmoka.annotations.Immutable;
-import io.mokamint.node.AbstractConfigBuilder;
 import io.mokamint.node.AbstractConfig;
+import io.mokamint.node.AbstractConfigBuilder;
+import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The configuration of a local Mokamint node.
@@ -89,6 +93,14 @@ public class Config extends AbstractConfig {
 	}
 
 	/**
+	 * The maximum number of peers kept by a node. The actual number of peers can
+	 * be larger only if peers are explicitly added as seeds or through the
+	 * {@link RestrictedNode#addPeer(Peer)} method.
+	 * It defaults to 20.
+	 */
+	public final long maxPeers;
+
+	/**
 	 * The initial points of a peer, freshly added to a node.
 	 * It defaults to 1000.
 	 */
@@ -118,6 +130,7 @@ public class Config extends AbstractConfig {
 		this.minerPunishmentForTimeout = builder.minerPunishmentForTimeout;
 		this.minerPunishmentForIllegalDeadline = builder.minerPunishmentForIllegalDeadline;
 		this.seeds = builder.seeds;
+		this.maxPeers = builder.maxPeers;
 		this.peerInitialPoints = builder.peerInitialPoints;
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 		this.peerTimeout = builder.peerTimeout;
@@ -146,7 +159,12 @@ public class Config extends AbstractConfig {
 		sb.append("\n");
 		sb.append("# the URIs of the initial peers, that will always get added to the previous set of peers\n");
 		sb.append("# (if any) and contacted at start-up\n");
-		sb.append("seeds = [\"ws://mymachine.com:8026\", \"ws://hermachine.de:8028\"]\n");
+		sb.append("seeds = " + seeds().map(uri -> "\"" + uri + "\"").collect(Collectors.joining(",", "[", "]")) + "\n");
+		sb.append("\n");
+		sb.append("# the maximal amount of peers of a node; their actual number can be larger\n");
+		sb.append("# only if peers are explicitly added as seeds or through the addPeer() method\n");
+		sb.append("# of the restricted API of the node\n");
+		sb.append("max_peers = " + maxPeers + "\n");
 		sb.append("\n");
 		sb.append("# the initial points of a peer, freshly added to a node\n");
 		sb.append("peer_initial_points = " + peerInitialPoints + "\n");
@@ -171,6 +189,7 @@ public class Config extends AbstractConfig {
 				minerPunishmentForTimeout == otherConfig.minerPunishmentForTimeout &&
 				minerPunishmentForIllegalDeadline == otherConfig.minerPunishmentForIllegalDeadline &&
 				seeds.equals(otherConfig.seeds) &&
+				maxPeers == otherConfig.maxPeers &&
 				peerInitialPoints == otherConfig.peerInitialPoints &&
 				peerPunishmentForUnreachable == otherConfig.peerPunishmentForUnreachable &&
 				peerTimeout == otherConfig.peerTimeout;
@@ -189,6 +208,7 @@ public class Config extends AbstractConfig {
 		private long minerPunishmentForTimeout = 1L;
 		private long minerPunishmentForIllegalDeadline = 500L;
 		private final Set<URI> seeds = new HashSet<>();
+		private long maxPeers = 20;
 		private long peerInitialPoints = 1000L;
 		private long peerPunishmentForUnreachable = 1L;
 		private long peerTimeout = 10000L;
@@ -224,6 +244,10 @@ public class Config extends AbstractConfig {
 				for (String uri: seeds)
 					this.seeds.add(new URI(uri));
 
+			var maxPeers = toml.getLong("max_peers");
+			if (maxPeers != null)
+				setMaxPeers(maxPeers);
+			
 			var peerInitialPoints = toml.getLong("peer_initial_points");
 			if (peerInitialPoints != null)
 				setPeerInitialPoints(peerInitialPoints);
@@ -270,6 +294,7 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setDir(Path dir) {
+			Objects.requireNonNull(dir);
 			this.dir = dir;
 			return this;
 		}
@@ -331,7 +356,22 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder addSeed(URI uri) {
+			Objects.requireNonNull(uri);
 			seeds.add(uri);
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of peers kept by a node. The actual number of peers can
+		 * be larger only if peers are explicitly added as seeds or through the
+		 * {@link RestrictedNode#addPeer(Peer)} method.
+		 * It defaults to 20.
+		 * 
+		 * @param maxPeers the maximal number of peers
+		 * @return this builder
+		 */
+		public Builder setMaxPeers(long maxPeers) {
+			this.maxPeers = maxPeers;
 			return this;
 		}
 
