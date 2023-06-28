@@ -67,7 +67,7 @@ public class Database implements AutoCloseable {
 	/**
 	 * The maximal number of candidate peers kept in the database.
 	 */
-	private final long maxCandidatePeers = 1000L;
+	private final long maxCandidatePeers;
 
 	/**
 	 * The Xodus environment that holds the database.
@@ -118,6 +118,7 @@ public class Database implements AutoCloseable {
 	 */
 	public Database(Config config) {
 		this.hashingForBlocks = config.getHashingForBlocks();
+		this.maxCandidatePeers = config.maxCandidatePeers;
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");

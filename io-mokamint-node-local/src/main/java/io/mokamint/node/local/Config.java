@@ -101,6 +101,13 @@ public class Config extends AbstractConfig {
 	public final long maxPeers;
 
 	/**
+	 * The maximum number of candidate peers kept by a node. Beyond this threshold,
+	 * new candidate peers replace the oldest ones, in a FIFO way.
+	 * It defaults to 1000.
+	 */
+	public final long maxCandidatePeers;
+
+	/**
 	 * The initial points of a peer, freshly added to a node.
 	 * It defaults to 1000.
 	 */
@@ -131,6 +138,7 @@ public class Config extends AbstractConfig {
 		this.minerPunishmentForIllegalDeadline = builder.minerPunishmentForIllegalDeadline;
 		this.seeds = builder.seeds;
 		this.maxPeers = builder.maxPeers;
+		this.maxCandidatePeers = builder.maxCandidatePeers;
 		this.peerInitialPoints = builder.peerInitialPoints;
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 		this.peerTimeout = builder.peerTimeout;
@@ -161,10 +169,14 @@ public class Config extends AbstractConfig {
 		sb.append("# (if any) and contacted at start-up\n");
 		sb.append("seeds = " + seeds().map(uri -> "\"" + uri + "\"").collect(Collectors.joining(",", "[", "]")) + "\n");
 		sb.append("\n");
-		sb.append("# the maximal amount of peers of a node; their actual number can be larger\n");
+		sb.append("# the maximum amount of peers of a node; their actual number can be larger\n");
 		sb.append("# only if peers are explicitly added as seeds or through the addPeer() method\n");
 		sb.append("# of the restricted API of the node\n");
 		sb.append("max_peers = " + maxPeers + "\n");
+		sb.append("\n");
+		sb.append("# the maximum amount of candidate peers kept by a node; beyond this threshold,\n");
+		sb.append("# new candidate peers replace the oldest ones, in a FIFO way\n");
+		sb.append("max_candidate_peers = " + maxCandidatePeers + "\n");
 		sb.append("\n");
 		sb.append("# the initial points of a peer, freshly added to a node\n");
 		sb.append("peer_initial_points = " + peerInitialPoints + "\n");
@@ -208,7 +220,8 @@ public class Config extends AbstractConfig {
 		private long minerPunishmentForTimeout = 1L;
 		private long minerPunishmentForIllegalDeadline = 500L;
 		private final Set<URI> seeds = new HashSet<>();
-		private long maxPeers = 20;
+		private long maxPeers = 20L;
+		private long maxCandidatePeers = 1000L;
 		private long peerInitialPoints = 1000L;
 		private long peerPunishmentForUnreachable = 1L;
 		private long peerTimeout = 10000L;
@@ -241,13 +254,17 @@ public class Config extends AbstractConfig {
 
 			List<String> seeds = toml.getList("seeds");
 			if (seeds != null)
-				for (String uri: seeds)
+				for (var uri: seeds)
 					this.seeds.add(new URI(uri));
 
 			var maxPeers = toml.getLong("max_peers");
 			if (maxPeers != null)
 				setMaxPeers(maxPeers);
-			
+
+			var maxCandidatePeers = toml.getLong("max_candidate_peers");
+			if (maxCandidatePeers != null)
+				setMaxPeers(maxCandidatePeers);
+
 			var peerInitialPoints = toml.getLong("peer_initial_points");
 			if (peerInitialPoints != null)
 				setPeerInitialPoints(peerInitialPoints);
@@ -367,11 +384,24 @@ public class Config extends AbstractConfig {
 		 * {@link RestrictedNode#addPeer(Peer)} method.
 		 * It defaults to 20.
 		 * 
-		 * @param maxPeers the maximal number of peers
+		 * @param maxPeers the maximum number of peers
 		 * @return this builder
 		 */
 		public Builder setMaxPeers(long maxPeers) {
 			this.maxPeers = maxPeers;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of candidate peers kept by a node. Beyond this threshold,
+		 * new candidate peers replace the oldest ones, in a FIFO way.
+		 * It defaults to 1000.
+		 * 
+		 * @param maxCandidatePeers the maximum number of candidate peers
+		 * @return this builder
+		 */
+		public Builder setMaxCandidatePeers(long maxCandidatePeers) {
+			this.maxCandidatePeers = maxCandidatePeers;
 			return this;
 		}
 

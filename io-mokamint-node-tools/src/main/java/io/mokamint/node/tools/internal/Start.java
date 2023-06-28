@@ -115,7 +115,7 @@ public class Start extends AbstractCommand {
 	}
 
 	private void createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(List<Plot> plots) {
-		List<Miner> miners = new ArrayList<>();
+		var miners = new ArrayList<Miner>();
 
 		if (plots.isEmpty())
 			publishRemoteMinersStartNodeAndPublishNodeServices(0, miners);

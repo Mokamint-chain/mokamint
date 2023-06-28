@@ -35,12 +35,16 @@ miner_punishment_for_illegal_deadline = 500
 
 # the URIs of the initial peers, that will always get added to the previous set of peers
 # (if any) and contacted at start-up
-seeds = ["ws://mymachine.com:8026", "ws://hermachine.de:8028"]
+seeds = ["ws://mymachine.com:8026","ws://hermachine.de:8028"]
 
-# the maximal amount of peers of a node; their actual number can be larger
+# the maximum amount of peers of a node; their actual number can be larger
 # only if peers are explicitly added as seeds or through the addPeer() method
 # of the restricted API of the node
 max_peers = 20
+
+# the maximum amount of candidate peers kept by a node; beyond this threshold,
+# new candidate peers replace the oldest ones, in a FIFO way
+max_candidate_peers = 1000
 
 # the initial points of a peer, freshly added to a node
 peer_initial_points = 1000
@@ -50,4 +54,3 @@ peer_punishment_for_unreachable = 1
 
 # the time (in milliseconds) for communications to the peers
 peer_timeout = 10000
-
