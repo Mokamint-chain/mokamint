@@ -40,7 +40,6 @@ import io.hotmoka.exceptions.UncheckedURISyntaxException;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
-import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
@@ -246,27 +245,10 @@ public class Database implements AutoCloseable {
 		@Override
 		public void into(MarshallingContext context) throws IOException {
 			context.writeCompactInt(peers.length);
-			for (Peer peer: peers)
+			for (var peer: peers)
 				peer.into(context);
 		}
 	
-		/**
-		 * Unmarshals an array of peers from the given context.
-		 * 
-		 * @param context the context
-		 * @return the array of peers
-		 * @throws IOException if the peers cannot be unmarshalled
-		 * @throws URISyntaxException if the context contains a peer whose URI has illegal syntax
-		 */
-		private static ArrayOfPeers from(UnmarshallingContext context) throws IOException, URISyntaxException {
-			int length = context.readCompactInt();
-			var peers = new Peer[length];
-			for (int pos = 0; pos < length; pos++)
-				peers[pos] = Peers.from(context);
-	
-			return new ArrayOfPeers(Stream.of(peers));
-		}
-
 		/**
 		 * Unmarshals an array of peers from the given byte iterable.
 		 * 
@@ -277,7 +259,12 @@ public class Database implements AutoCloseable {
 		 */
 		private static ArrayOfPeers from(ByteIterable bi) throws IOException, URISyntaxException {
 			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return ArrayOfPeers.from(context);
+				int length = context.readCompactInt();
+				var peers = new Peer[length];
+				for (int pos = 0; pos < length; pos++)
+					peers[pos] = Peers.from(context);
+		
+				return new ArrayOfPeers(Stream.of(peers));
 			}
 		}
 	}
@@ -290,7 +277,8 @@ public class Database implements AutoCloseable {
 	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
 	 */
 	public Stream<Peer> getPeers() throws URISyntaxException, IOException {
-		return getPeers(peers);
+		var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
+		return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 	}
 
 	/**
@@ -301,25 +289,8 @@ public class Database implements AutoCloseable {
 	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
 	 */
 	public Stream<Peer> getCandidatePeers() throws URISyntaxException, IOException {
-		return getPeers(candidatePeers);
-	}
-
-	/**
-	 * Yields the set of peers saved in this database, if any.
-	 * 
-	 * @param key the key used to store the peers
-	 * @return the peers
-	 * @throws IOException of the database is corrupted
-	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
-	 */
-	private Stream<Peer> getPeers(ByteIterable key) throws URISyntaxException, IOException {
-		var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, key));
-		if (bi == null)
-			return Stream.empty();
-
-		try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-			return ArrayOfPeers.from(context).stream();
-		}
+		var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, candidatePeers));
+		return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 	}
 
 	/**
