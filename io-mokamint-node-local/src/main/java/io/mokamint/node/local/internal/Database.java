@@ -227,11 +227,11 @@ public class Database implements AutoCloseable {
 		private final Peer[] peers;
 	
 		private ArrayOfPeers(Stream<Peer> peers) {
-			this.peers = peers.distinct().sorted().toArray(Peer[]::new);
+			this.peers = peers.toArray(Peer[]::new);
 		}
 
 		private boolean contains(Peer peer) {
-			for(Peer p: peers)
+			for(var p: peers)
 				if (p.equals(peer))
 					return true;
 
@@ -250,12 +250,12 @@ public class Database implements AutoCloseable {
 		}
 	
 		/**
-		 * Unmarshals a peer from the given context.
+		 * Unmarshals an array of peers from the given context.
 		 * 
 		 * @param context the context
-		 * @return the peer
-		 * @throws IOException if the peer cannot be unmarshalled
-		 * @throws URISyntaxException if the context contains a URI with illegal syntax
+		 * @return the array of peers
+		 * @throws IOException if the peers cannot be unmarshalled
+		 * @throws URISyntaxException if the context contains a peer whose URI has illegal syntax
 		 */
 		private static ArrayOfPeers from(UnmarshallingContext context) throws IOException, URISyntaxException {
 			int length = context.readCompactInt();
@@ -265,12 +265,26 @@ public class Database implements AutoCloseable {
 	
 			return new ArrayOfPeers(Stream.of(peers));
 		}
+
+		/**
+		 * Unmarshals an array of peers from the given byte iterable.
+		 * 
+		 * @param bi the byte iterable
+		 * @return the array of peers
+		 * @throws IOException if the peers cannot be unmarshalled
+		 * @throws URISyntaxException if the context contains a peer whose URI has illegal syntax
+		 */
+		private static ArrayOfPeers from(ByteIterable bi) throws IOException, URISyntaxException {
+			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
+				return ArrayOfPeers.from(context);
+			}
+		}
 	}
 
 	/**
 	 * Yields the set of peers saved in this database, if any.
 	 * 
-	 * @return the peers, in ascending order and without duplicates
+	 * @return the peers
 	 * @throws IOException of the database is corrupted
 	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
 	 */
@@ -281,7 +295,7 @@ public class Database implements AutoCloseable {
 	/**
 	 * Yields the set of candidate peers saved in this database, if any.
 	 * 
-	 * @return the candidate peers, in ascending order and without duplicates
+	 * @return the candidate peers
 	 * @throws IOException of the database is corrupted
 	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
 	 */
@@ -293,7 +307,7 @@ public class Database implements AutoCloseable {
 	 * Yields the set of peers saved in this database, if any.
 	 * 
 	 * @param key the key used to store the peers
-	 * @return the peers, in ascending order and without duplicates
+	 * @return the peers
 	 * @throws IOException of the database is corrupted
 	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
 	 */
@@ -312,51 +326,73 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param peer the peer to add
 	 * @return true if the peer has been added; false otherwise, which means
-	 *         that the database already contains the peer
+	 *         that the database already contains the same peer
 	 * @throws IOException if there is an I/O error in the access to the database
 	 * @throws URISyntaxException if the database contains a peer with an illegal URI
 	 */
 	public boolean addPeer(Peer peer) throws IOException, URISyntaxException {
 		return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
-			() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer, -1, peers))));
+			() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer))));
+	}
+
+	private boolean addPeer(Transaction txn, Peer peer) throws IOException, URISyntaxException {
+		var bi = storeOfPeers.get(txn, peers);
+		if (bi == null) {
+			storeOfPeers.put(txn, peers, fromBytes(new ArrayOfPeers(Stream.of(peer)).toByteArray()));
+			return true;
+		}
+		else {
+			var aop = ArrayOfPeers.from(bi);
+			if (aop.contains(peer))
+				return false;
+			else {
+				var concat = Stream.concat(aop.stream(), Stream.of(peer));
+				storeOfPeers.put(txn, peers, fromBytes(new ArrayOfPeers(concat).toByteArray()));
+				return true;
+			}
+		}
 	}
 
 	/**
 	 * Adds the given peer to the set of candidate peers in this database.
+	 * If the maximal number of candidate peers is reached, the oldest peers
+	 * are removed in a FIFO way.
 	 * 
 	 * @param peer the candidate peer to add
 	 * @return true if the candidate peer has been added; false otherwise, which means
-	 *         that the database already contains the candidate peer
-	 *         or that it cannot hold more candidate peers
+	 *         that the database already contains the same peer or candidate peer
 	 * @throws IOException if there is an I/O error in the access to the database
 	 * @throws URISyntaxException if the database contains a peer with an illegal URI
 	 */
 	public boolean addCandidatePeer(Peer peer) throws IOException, URISyntaxException {
 		return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
-			() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer, maxCandidatePeers, candidatePeers))));
+			() -> environment.computeInTransaction(uncheck(txn -> addCandidatePeer(txn, peer))));
 	}
 
-	private boolean addPeer(Transaction txn, Peer peer, long max, ByteIterable key) throws IOException, URISyntaxException {
-		var bi = storeOfPeers.get(txn, key);
+	private boolean addCandidatePeer(Transaction txn, Peer peer) throws IOException, URISyntaxException {
+		if (maxCandidatePeers <= 0)
+			return false;
+
+		var bi = storeOfPeers.get(txn, candidatePeers);
 		if (bi == null) {
-			if (max == 0)
+			storeOfPeers.put(txn, candidatePeers, fromBytes(new ArrayOfPeers(Stream.of(peer)).toByteArray()));
+			return true;
+		}
+		else {
+			var aop = ArrayOfPeers.from(bi);
+			if (aop.contains(peer))
 				return false;
 			else {
-				storeOfPeers.put(txn, key, fromBytes(new ArrayOfPeers(Stream.of(peer)).toByteArray()));
+				var bi2 = storeOfPeers.get(txn, peers);
+				if (bi2 != null && ArrayOfPeers.from(bi2).contains(peer))
+					return false;
+
+				// we put the new peer at the end and remove the oldest peers, at the beginning of the stream
+				var concat = Stream.concat(aop.stream(), Stream.of(peer)).skip(Math.max(0L, aop.peers.length - maxCandidatePeers + 1L));
+				storeOfPeers.put(txn, candidatePeers, fromBytes(new ArrayOfPeers(concat).toByteArray()));
 				return true;
 			}
 		}
-		else
-			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				var aop = ArrayOfPeers.from(context);
-				if ((max >= 0 && aop.peers.length >= max) || aop.contains(peer))
-					return false;
-				else {
-					Stream<Peer> concat = Stream.concat(aop.stream(), Stream.of(peer));
-					storeOfPeers.put(txn, key, fromBytes(new ArrayOfPeers(concat).toByteArray()));
-					return true;
-				}
-			}
 	}
 
 	/**
@@ -391,17 +427,16 @@ public class Database implements AutoCloseable {
 		var bi = storeOfPeers.get(txn, key);
 		if (bi == null)
 			return false;
-		else
-			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				var aop = ArrayOfPeers.from(context);
-				if (aop.contains(peer)) {
-					Stream<Peer> result = aop.stream().filter(p -> !peer.equals(p));
-					storeOfPeers.put(txn, key, fromBytes(new ArrayOfPeers(result).toByteArray()));
-					return true;
-				}
-				else
-					return false;
+		else {
+			var aop = ArrayOfPeers.from(bi);
+			if (aop.contains(peer)) {
+				Stream<Peer> result = aop.stream().filter(p -> !peer.equals(p));
+				storeOfPeers.put(txn, key, fromBytes(new ArrayOfPeers(result).toByteArray()));
+				return true;
 			}
+			else
+				return false;
+		}
 	}
 
 	/**
