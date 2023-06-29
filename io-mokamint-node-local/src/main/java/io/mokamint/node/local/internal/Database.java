@@ -64,6 +64,11 @@ public class Database implements AutoCloseable {
 	private final HashingAlgorithm<byte[]> hashingForBlocks;
 
 	/**
+	 * The maximal number of non-forced peers kept in the database.
+	 */
+	private final long maxPeers;
+
+	/**
 	 * The maximal number of candidate peers kept in the database.
 	 */
 	private final long maxCandidatePeers;
@@ -117,6 +122,7 @@ public class Database implements AutoCloseable {
 	 */
 	public Database(Config config) {
 		this.hashingForBlocks = config.getHashingForBlocks();
+		this.maxPeers = config.maxPeers;
 		this.maxCandidatePeers = config.maxCandidatePeers;
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStore("blocks");
@@ -242,6 +248,10 @@ public class Database implements AutoCloseable {
 			return Stream.of(peers);
 		}
 
+		private int length() {
+			return peers.length;
+		}
+
 		@Override
 		public void into(MarshallingContext context) throws IOException {
 			context.writeCompactInt(peers.length);
@@ -297,25 +307,33 @@ public class Database implements AutoCloseable {
 	 * Adds the given peer to the set of peers in this database.
 	 * 
 	 * @param peer the peer to add
+	 * @param force true if the peer must be added, regardless of the total amount
+	 *              of peers already added; false otherwise, which means that no more
+	 *              than {@link #maxPeers} peers are allowed
 	 * @return true if the peer has been added; false otherwise, which means
-	 *         that the database already contains the same peer
+	 *         that the database already contains the same peer or that the peer was not forced
+	 *         and there are already {@link maxPeers} peers
 	 * @throws IOException if there is an I/O error in the access to the database
 	 * @throws URISyntaxException if the database contains a peer with an illegal URI
 	 */
-	public boolean addPeer(Peer peer) throws IOException, URISyntaxException {
+	public boolean addPeer(Peer peer, boolean force) throws IOException, URISyntaxException {
 		return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
-			() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer))));
+			() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer, force))));
 	}
 
-	private boolean addPeer(Transaction txn, Peer peer) throws IOException, URISyntaxException {
+	private boolean addPeer(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException {
 		var bi = storeOfPeers.get(txn, peers);
 		if (bi == null) {
-			storeOfPeers.put(txn, peers, fromBytes(new ArrayOfPeers(Stream.of(peer)).toByteArray()));
-			return true;
+			if (force || maxPeers >= 1) {
+				storeOfPeers.put(txn, peers, fromBytes(new ArrayOfPeers(Stream.of(peer)).toByteArray()));
+				return true;
+			}
+			else
+				return false;
 		}
 		else {
 			var aop = ArrayOfPeers.from(bi);
-			if (aop.contains(peer))
+			if (aop.contains(peer) || (!force && aop.length() >= maxPeers))
 				return false;
 			else {
 				var concat = Stream.concat(aop.stream(), Stream.of(peer));
@@ -360,7 +378,7 @@ public class Database implements AutoCloseable {
 					return false;
 
 				// we put the new peer at the end and remove the oldest peers, at the beginning of the stream
-				var concat = Stream.concat(aop.stream(), Stream.of(peer)).skip(Math.max(0L, aop.peers.length - maxCandidatePeers + 1L));
+				var concat = Stream.concat(aop.stream(), Stream.of(peer)).skip(Math.max(0L, aop.length() - maxCandidatePeers + 1L));
 				storeOfPeers.put(txn, candidatePeers, fromBytes(new ArrayOfPeers(concat).toByteArray()));
 				return true;
 			}

@@ -174,8 +174,8 @@ public class LocalNodeImpl implements LocalNode {
 
 	private void addPeerToDB(Peer peer) {
 		try {
-			db.addPeer(peer);
-			LOGGER.info("added peer " + peer);
+			if (db.addPeer(peer, false))
+				LOGGER.info("added peer " + peer);
 		}
 		catch (IOException | URISyntaxException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
@@ -225,8 +225,8 @@ public class LocalNodeImpl implements LocalNode {
 
 				if (!version1.canWorkWith(version2))
 					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-				else if (peers.add(peer))
-					emit(new PeerAcceptedEvent(peer));
+				else
+					emit(new PeerAcceptedEvent(peer, true));
 			}
 			catch (DeploymentException | IOException e) {
 				throw new IOException("cannot contact " + peer, e);
@@ -539,9 +539,11 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public class PeerAcceptedEvent extends Event {
 		public final Peer peer;
+		public final boolean force;
 
-		public PeerAcceptedEvent(Peer peer) {
+		public PeerAcceptedEvent(Peer peer, boolean force) {
 			this.peer = peer;
+			this.force = force;
 		}
 
 		@Override
@@ -552,6 +554,7 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() throws IOException, URISyntaxException{
 			try {
+				// TODO: add force
 				peers.add(peer);
 			}
 			catch (RuntimeException e) {
