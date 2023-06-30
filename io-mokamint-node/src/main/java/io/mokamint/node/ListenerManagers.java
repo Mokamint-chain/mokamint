@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.remote;
+package io.mokamint.node;
 
-import io.mokamint.node.api.NodeListeners;
-import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.internal.ListenerManagerImpl;
 
 /**
- * A remote public node of a Mokamint blockchain.
+ * Provider of {@link ListenerManager}.
  */
-public interface RemotePublicNode extends NodeListeners, PublicNode, AutoCloseableRemoteNode {
+public final class ListenerManagers {
+
+	private ListenerManagers() {}
+
+	/**
+	 * Yields a new listener management object.
+	 *
+	 * @param <T> the type of the parameter of the listeners
+	 * @return the listener management object
+	 */
+	public static <T> ListenerManager<T> mk() {
+		return new ListenerManagerImpl<T>();
+	}
 }

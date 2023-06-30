@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -40,6 +41,8 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.ListenerManager;
+import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
@@ -63,6 +66,11 @@ import jakarta.websocket.DeploymentException;
  */
 @ThreadSafe
 public class LocalNodeImpl implements LocalNode {
+
+	/**
+	 * The listeners called whenever a peer is added to this node.
+	 */
+	private final ListenerManager<Peer> onPeerAddedListeners = ListenerManagers.mk();
 
 	/**
 	 * The configuration of the node.
@@ -134,7 +142,7 @@ public class LocalNodeImpl implements LocalNode {
 		config.seeds()
 			.parallel()
 			.map(Peers::of)
-			.map(peer -> new AddPeerTask(peer, this))
+			.map(peer -> new AddPeerTask(peer, true, this))
 			.forEach(this::execute);
 
 		Optional<Block> maybeHead = db.getHead();
@@ -149,6 +157,26 @@ public class LocalNodeImpl implements LocalNode {
 			GenesisBlock genesis = Blocks.genesis(startDateTime);
 			emit(new BlockDiscoveryEvent(genesis));
 		}
+	}
+
+	@Override
+	public void addOnPeerAddedListener(Consumer<Peer> listener) {
+		onPeerAddedListeners.addListener(listener);
+	}
+
+	@Override
+	public void removeOnPeerAddedListener(Consumer<Peer> listener) {
+		onPeerAddedListeners.removeListener(listener);
+	}
+
+	/**
+	 * Notifies all peer added listeners that the given peer has been
+	 * added to the node.
+	 * 
+	 * @param peer the peer
+	 */
+	protected void notifyPeerAdded(Peer peer) {
+		onPeerAddedListeners.notifyAll(peer);
 	}
 
 	private Version mkVersion() throws IOException {
@@ -172,10 +200,14 @@ public class LocalNodeImpl implements LocalNode {
 		return peers.getElements();
 	}
 
-	private void addPeerToDB(Peer peer) {
+	private boolean addPeerToDB(Peer peer, boolean force) {
 		try {
-			if (db.addPeer(peer, false))
+			if (db.addPeer(peer, force)) {
 				LOGGER.info("added peer " + peer);
+				return true;
+			}
+			else
+				return false;
 		}
 		catch (IOException | URISyntaxException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
@@ -183,10 +215,14 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	private void removePeerFromDB(Peer peer) {
+	private boolean removePeerFromDB(Peer peer) {
 		try {
-			if (db.removePeer(peer))
+			if (db.removePeer(peer)) {
 				LOGGER.info("removed peer " + peer);
+				return true;
+			}
+			else
+				return false;
 		}
 		catch (IOException | URISyntaxException e) {
 			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + " from the database", e);
@@ -554,8 +590,7 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() throws IOException, URISyntaxException{
 			try {
-				// TODO: add force
-				peers.add(peer);
+				peers.add(peer, force);
 			}
 			catch (RuntimeException e) {
 				var cause = e.getCause();

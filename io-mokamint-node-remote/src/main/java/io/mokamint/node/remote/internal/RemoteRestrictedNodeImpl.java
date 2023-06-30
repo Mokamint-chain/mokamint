@@ -19,11 +19,14 @@ package io.mokamint.node.remote.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
+import io.mokamint.node.ListenerManager;
+import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerResultMessage;
@@ -39,6 +42,11 @@ import jakarta.websocket.DeploymentException;
  */
 @ThreadSafe
 public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode implements RemoteRestrictedNode {
+
+	/**
+	 * The listeners called whenever a peer is added to this node.
+	 */
+	private final ListenerManager<Peer> onPeerAddedListeners = ListenerManagers.mk();
 
 	private final NodeMessageQueues queues;
 
@@ -57,6 +65,26 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 		super(uri);
 
 		this.queues = new NodeMessageQueues(timeout);
+	}
+
+	@Override
+	public void addOnPeerAddedListener(Consumer<Peer> listener) {
+		onPeerAddedListeners.addListener(listener);
+	}
+
+	@Override
+	public void removeOnPeerAddedListener(Consumer<Peer> listener) {
+		onPeerAddedListeners.removeListener(listener);
+	}
+
+	/**
+	 * Notifies all peer added listeners that the given peer has been
+	 * added to the node.
+	 * 
+	 * @param peer the peer
+	 */
+	protected void notifyPeerAdded(Peer peer) {
+		onPeerAddedListeners.notifyAll(peer);
 	}
 
 	private RuntimeException unexpectedException(Exception e) {

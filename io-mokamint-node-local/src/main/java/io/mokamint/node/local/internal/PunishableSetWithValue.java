@@ -43,7 +43,8 @@ public interface PunishableSetWithValue<A, V> extends PunishableSet<A> {
 	/**
 	 * Adds the given actor to this container, if it is not already there.
 	 * Otherwise, nothing happens. The initial points of a new actor get reset
-	 * with an implementation-specific policy.
+	 * with an implementation-specific policy. This is equivalent to
+	 * {@link #add(Object, Object, boolean)} where {@code force} is false.
 	 * 
 	 * @param actor the actor to add
 	 * @param value the initial value of the actor
@@ -51,6 +52,20 @@ public interface PunishableSetWithValue<A, V> extends PunishableSet<A> {
 	 *         has been consequently added
 	 */
 	boolean add(A actor, V value);
+
+	/**
+	 * Adds the given actor to this container, if it is not already there.
+	 * Otherwise, nothing happens. The initial points of a new actor get reset
+	 * with an implementation-specific policy. It allows one to specify
+	 * an implementation-specific {@code force} parameter.
+	 * 
+	 * @param actor the actor to add
+	 * @param value the initial value of the actor
+	 * @param force the force parameter
+	 * @return true if and only if the actor was not in the container and
+	 *         has been consequently added
+	 */
+	boolean add(A actor, V value, boolean force);
 
 	/**
 	 * Yields the value bound to the given actor. If the actor is not

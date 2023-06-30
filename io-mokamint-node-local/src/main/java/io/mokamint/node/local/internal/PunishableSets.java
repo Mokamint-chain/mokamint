@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.util.function.Consumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -49,7 +49,7 @@ public abstract class PunishableSets {
 	 * @param onAdd a call-back invoked when a new actor is actually added through {@link #add(Object)}
 	 * @param onRemove a call-back invoked when an actor is actually removed through {@link #punish(Object, long)}
 	 */
-	static <A> PunishableSet<A> of(Stream<A> actors, Function<A, Long> pointInitializer, Consumer<A> onAdd, Consumer<A> onRemove) {
+	static <A> PunishableSet<A> of(Stream<A> actors, Function<A, Long> pointInitializer, BiFunction<A, Boolean, Boolean> onAdd, Function<A, Boolean> onRemove) {
 		return new PunishableSetImpl<A>(actors, pointInitializer, onAdd, onRemove);
 	}
 }

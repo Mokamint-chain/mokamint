@@ -40,18 +40,27 @@ public class AddPeerTask extends Task {
 	 */
 	private final Peer peer;
 
+	/**
+	 * True if and only if the addition of the peer must be forced, also if
+	 * the maximal amount of peers has been reached.
+	 */
+	private final boolean force;
+
 	private final static Logger LOGGER = Logger.getLogger(AddPeerTask.class.getName());
 
 	/**
 	 * Creates a task that adds a peer to a node.
 	 * 
 	 * @param peer the peer to add
+	 * @param force true if and only if the addition of the peer must be forced, also if
+	 *              the maximal amount of peers has been reached
 	 * @param node the node for which this task is working
 	 */
-	public AddPeerTask(Peer peer, LocalNodeImpl node) {
+	public AddPeerTask(Peer peer, boolean force, LocalNodeImpl node) {
 		node.super();
 
 		this.peer = peer;
+		this.force = force;
 	}
 
 	@Override
@@ -68,7 +77,7 @@ public class AddPeerTask extends Task {
 			if (!version1.canWorkWith(version2))
 				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
 
-			node.emit(node.new PeerAcceptedEvent(peer, true));
+			node.emit(node.new PeerAcceptedEvent(peer, force));
 		}
 		catch (InterruptedException | IncompatiblePeerVersionException | IOException | DeploymentException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);

@@ -96,19 +96,11 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	}
 
 	@Override
-	public boolean add(A actor) {
-		synchronized (values) {
-			values.computeIfAbsent(actor, valueInitializer);
-			return parent.add(actor);
-		}
-	}
-
-	@Override
 	public boolean remove(A actor) {
 		synchronized (values) {
-			if (values.containsKey(actor)) {
+			if (parent.remove(actor)) {
 				values.remove(actor);
-				return parent.remove(actor);
+				return true;
 			}
 		}
 
@@ -116,11 +108,37 @@ public class PunishableSetWithValueImpl<A, V> implements PunishableSetWithValue<
 	}
 
 	@Override
+	public boolean add(A actor) {
+		return add(actor, false);
+	}
+
+	@Override
 	public boolean add(A actor, V value) {
+		return add(actor, value, false);
+	}
+
+	@Override
+	public boolean add(A actor, boolean force) {
 		synchronized (values) {
-			values.putIfAbsent(actor, value);
-			return parent.add(actor);
+			if (parent.add(actor, force)) {
+				values.computeIfAbsent(actor, valueInitializer);
+				return true;
+			}
 		}
+	
+		return false;
+	}
+
+	@Override
+	public boolean add(A actor, V value, boolean force) {
+		synchronized (values) {
+			if (parent.add(actor, force)) {
+				values.putIfAbsent(actor, value);
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override

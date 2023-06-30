@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -53,12 +54,12 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	/**
 	 * A call-back invoked when a new actor is actually added through {@link #add(Object)}.
 	 */
-	private final Consumer<A> onAdd;
+	private final BiFunction<A, Boolean, Boolean> onAdd;
 
 	/**
 	 * A call-back invoked when an actor is actually removed through {@link #punish(Object, long)}.
 	 */
-	private final Consumer<A> onRemove;
+	private final Function<A, Boolean> onRemove;
 
 	/**
 	 * Creates a new punishable set of actors.
@@ -69,7 +70,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 *                         (see @link {@link PunishableSet#add(Object)})
 	 */
 	public PunishableSetImpl(Stream<A> actors, Function<A, Long> pointInitializer) {
-		this(actors, pointInitializer, _actor -> {}, _actor -> {});
+		this(actors, pointInitializer, (_actor, _force) -> true, _actor -> true);
 	}
 
 	/**
@@ -82,7 +83,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 * @param onAdd a call-back invoked when a new actor is actually added through {@link #add(Object)}
 	 * @param onRemove a call-back invoked when an actor is actually removed through {@link #punish(Object, long)}
 	 */
-	public PunishableSetImpl(Stream<A> actors, Function<A, Long> pointInitializer, Consumer<A> onAdd, Consumer<A> onRemove) {
+	public PunishableSetImpl(Stream<A> actors, Function<A, Long> pointInitializer, BiFunction<A, Boolean, Boolean> onAdd, Function<A, Boolean> onRemove) {
 		this.actors = actors.distinct().collect(toMap(actor -> actor, pointInitializer, (_i1, _i2) -> 0L, HashMap::new));
 		this.pointInitializer = pointInitializer;
 		this.onAdd = onAdd;
@@ -124,9 +125,20 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	@Override
 	public boolean punish(A actor, long points) {
 		synchronized (actors) {
-			if (contains(actor) && actors.compute(actor, (__, oldPoints) -> Math.max(0L, oldPoints - points)) == 0) {
+			if (contains(actor) && actors.compute(actor, (__, oldPoints) -> Math.max(0L, oldPoints - points)) == 0 && onRemove.apply(actor)) {
 				actors.remove(actor);
-				onRemove.accept(actor);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean add(A actor, boolean force) {
+		synchronized (actors) {
+			if (!contains(actor) && onAdd.apply(actor, force)) {
+				actors.put(actor, pointInitializer.apply(actor));
 				return true;
 			}
 		}
@@ -136,23 +148,14 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 
 	@Override
 	public boolean add(A actor) {
-		synchronized (actors) {
-			if (!contains(actor)) {
-				actors.put(actor, pointInitializer.apply(actor));
-				onAdd.accept(actor);
-				return true;
-			}
-		}
-
-		return false;
+		return add(actor, false);
 	}
 
 	@Override
 	public boolean remove(A actor) {
 		synchronized (actors) {
-			if (contains(actor)) {
+			if (contains(actor) && onRemove.apply(actor)) {
 				actors.remove(actor);
-				onRemove.accept(actor);
 				return true;
 			}
 		}

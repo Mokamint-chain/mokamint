@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.remote;
+package io.mokamint.node.api;
 
-import io.mokamint.node.api.NodeListeners;
-import io.mokamint.node.api.PublicNode;
+import java.util.function.Consumer;
 
 /**
- * A remote public node of a Mokamint blockchain.
+ * The listeners of a node.
  */
-public interface RemotePublicNode extends NodeListeners, PublicNode, AutoCloseableRemoteNode {
+public interface NodeListeners {
+
+	/**
+	 * Register the given listener for being called when a peer
+	 * is added to the node.
+	 * 
+	 * @param listener the listener
+	 */
+	void addOnPeerAddedListener(Consumer<Peer> listener);
+
+	/**
+	 * Unregister the given listener from those called when a peer
+	 * is added to the node.
+	 * 
+	 * @param listener the listener
+	 */
+	void removeOnPeerAddedListener(Consumer<Peer> listener);
 }

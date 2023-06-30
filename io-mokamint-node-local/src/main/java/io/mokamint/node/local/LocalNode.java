@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ limitations under the License.
 package io.mokamint.node.local;
 
 import io.mokamint.node.api.Node;
+import io.mokamint.node.api.NodeListeners;
 
 /**
  * A local node of a Mokamint blockchain.
  */
-public interface LocalNode extends Node {
+public interface LocalNode extends Node, NodeListeners {
 
 	/**
 	 * Closes the node.

@@ -76,12 +76,25 @@ public interface PunishableSet<A> {
 	/**
 	 * Adds the given actor to this container, if it is not already there.
 	 * Otherwise, nothing happens. The initial points of a new actor get reset
-	 * with an implementation specific policy.
+	 * with an implementation specific policy. This is equivalent to
+	 * {@link #add(Object, boolean)} where {@code force} is false.
 	 * 
 	 * @param actor the actor to add
 	 * @return true if and only if the actor was not present and has been added
 	 */
 	boolean add(A actor);
+
+	/**
+	 * Adds the given actor to this container, if it is not already there.
+	 * Otherwise, nothing happens. The initial points of a new actor get reset
+	 * with an implementation specific policy. It allows to specify
+	 * an implementation-specific {@code force} parameter.
+	 * 
+	 * @param actor the actor to add
+	 * @param force forces the addition, if this means something to the implementation
+	 * @return true if and only if the actor was not present and has been added
+	 */
+	boolean add(A actor, boolean force);
 
 	/**
 	 * Removes the given actor from this container, if it is there.
