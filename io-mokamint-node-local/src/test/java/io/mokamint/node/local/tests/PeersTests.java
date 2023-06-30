@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tests;
+package io.mokamint.node.local.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -174,7 +174,7 @@ public class PeersTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeerAcceptedEvent && stillToAccept.remove(((PeerAcceptedEvent) event).peer))
+				if (event instanceof PeerAddedEvent && stillToAccept.remove(((PeerAddedEvent) event).peer))
 					semaphore.release();
 			}
 		}
@@ -274,7 +274,7 @@ public class PeersTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeerAcceptedEvent && stillToAccept.remove(((PeerAcceptedEvent) event).peer))
+				if (event instanceof PeerAddedEvent && stillToAccept.remove(((PeerAddedEvent) event).peer))
 					semaphore.release();
 			}
 		}

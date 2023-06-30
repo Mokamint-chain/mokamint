@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tests;
+package io.mokamint.node.local.tests;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

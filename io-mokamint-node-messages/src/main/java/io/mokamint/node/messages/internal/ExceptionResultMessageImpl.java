@@ -55,7 +55,7 @@ public class ExceptionResultMessageImpl extends AbstractRpcMessage implements Ex
 	public boolean equals(Object other) {
 		if (other instanceof ExceptionMessage) {
 			ExceptionMessage oerm = (ExceptionMessage) other;
-			return clazz == oerm.getExceptionClass() && Objects.equals(message, oerm.getMessage());
+			return super.equals(other) && clazz == oerm.getExceptionClass() && Objects.equals(message, oerm.getMessage());
 		}
 		else
 			return false;

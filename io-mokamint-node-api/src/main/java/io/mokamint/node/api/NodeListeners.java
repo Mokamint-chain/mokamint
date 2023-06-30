@@ -24,18 +24,18 @@ import java.util.function.Consumer;
 public interface NodeListeners {
 
 	/**
-	 * Register the given listener for being called when a peer
-	 * is added to the node.
+	 * Register the given listener for being called when peers
+	 * are added to the node.
 	 * 
 	 * @param listener the listener
 	 */
-	void addOnPeerAddedListener(Consumer<Peer> listener);
+	void addOnPeerAddedListener(Consumer<Peer[]> listener);
 
 	/**
-	 * Unregister the given listener from those called when a peer
-	 * is added to the node.
+	 * Unregister the given listener from those called when peers
+	 * are added to the node.
 	 * 
 	 * @param listener the listener
 	 */
-	void removeOnPeerAddedListener(Consumer<Peer> listener);
+	void removeOnPeerAddedListener(Consumer<Peer[]> listener);
 }

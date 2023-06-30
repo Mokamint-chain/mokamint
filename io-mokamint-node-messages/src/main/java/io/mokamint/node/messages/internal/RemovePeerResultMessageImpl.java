@@ -36,7 +36,7 @@ public class RemovePeerResultMessageImpl extends AbstractRpcMessage implements R
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof RemovePeerResultMessage;
+		return other instanceof RemovePeerResultMessage && super.equals(other);
 	}
 
 	@Override

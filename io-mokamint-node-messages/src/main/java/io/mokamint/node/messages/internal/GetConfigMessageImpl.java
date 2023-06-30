@@ -35,7 +35,7 @@ public class GetConfigMessageImpl extends AbstractRpcMessage implements GetConfi
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetConfigMessage;
+		return other instanceof GetConfigMessage && super.equals(other);
 	}
 
 	@Override

@@ -46,7 +46,7 @@ public class GetChainInfoResultMessageImpl extends AbstractRpcMessage implements
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetChainInfoResultMessage && info.equals(((GetChainInfoResultMessage) other).get());
+		return other instanceof GetChainInfoResultMessage && super.equals(other) && info.equals(((GetChainInfoResultMessage) other).get());
 	}
 
 	@Override

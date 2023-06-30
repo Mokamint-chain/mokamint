@@ -48,7 +48,6 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
-import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NodeListeners;
@@ -59,6 +58,7 @@ import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeerTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
+import io.mokamint.node.local.internal.tasks.SuggestPeersTask;
 import io.mokamint.node.remote.RemotePublicNodes;
 import jakarta.websocket.DeploymentException;
 
@@ -69,9 +69,9 @@ import jakarta.websocket.DeploymentException;
 public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 	/**
-	 * The listeners called whenever a peer is added to this node.
+	 * The listeners called whenever peers are added to this node.
 	 */
-	private final ListenerManager<Peer> onPeerAddedListeners = ListenerManagers.mk();
+	private final ListenerManager<Peer[]> onPeerAddedListeners = ListenerManagers.mk();
 
 	/**
 	 * The configuration of the node.
@@ -143,7 +143,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		config.seeds()
 			.parallel()
 			.map(Peers::of)
-			.map(peer -> new AddPeerTask(peer, true, this))
+			.map(peer -> new AddPeerTask(peer, true, peers::add, this))
 			.forEach(this::execute);
 
 		Optional<Block> maybeHead = db.getHead();
@@ -155,29 +155,18 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		}
 		else {
 			this.startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
-			GenesisBlock genesis = Blocks.genesis(startDateTime);
-			emit(new BlockDiscoveryEvent(genesis));
+			emit(new BlockDiscoveryEvent(Blocks.genesis(startDateTime)));
 		}
 	}
 
 	@Override
-	public void addOnPeerAddedListener(Consumer<Peer> listener) {
+	public void addOnPeerAddedListener(Consumer<Peer[]> listener) {
 		onPeerAddedListeners.addListener(listener);
 	}
 
 	@Override
-	public void removeOnPeerAddedListener(Consumer<Peer> listener) {
+	public void removeOnPeerAddedListener(Consumer<Peer[]> listener) {
 		onPeerAddedListeners.removeListener(listener);
-	}
-
-	/**
-	 * Notifies all peer added listeners that the given peer has been
-	 * added to the node.
-	 * 
-	 * @param peer the peer
-	 */
-	protected void notifyPeerAdded(Peer peer) {
-		onPeerAddedListeners.notifyAll(peer);
 	}
 
 	private Version mkVersion() throws IOException {
@@ -262,8 +251,27 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 				if (!version1.canWorkWith(version2))
 					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-				else
-					emit(new PeerAcceptedEvent(peer, true));
+				else {
+					try {
+						if (peers.add(peer, true))
+							emit(new PeerAddedEvent(peer));
+					}
+					catch (RuntimeException e) {
+						var cause = e.getCause();
+						if (cause instanceof IOException) {
+							LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
+							throw (IOException) cause;
+						}
+						else if (cause instanceof URISyntaxException) {
+							LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
+							throw new IOException(cause);
+						}
+						else {
+							LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
+							throw e;
+						}
+					}
+				}
 			}
 			catch (DeploymentException | IOException e) {
 				throw new IOException("cannot contact " + peer, e);
@@ -566,16 +574,14 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	/**
-	 * An event fired to signal that a peer has been accepted as valid
-	 * and can be added to the peers of the node.
+	 * An event fired to signal that a peer has been added
+	 * to the set of peers of the node.
 	 */
-	public class PeerAcceptedEvent extends Event {
+	public class PeerAddedEvent extends Event {
 		public final Peer peer;
-		public final boolean force;
 
-		public PeerAcceptedEvent(Peer peer, boolean force) {
+		public PeerAddedEvent(Peer peer) {
 			this.peer = peer;
-			this.force = force;
 		}
 
 		@Override
@@ -585,24 +591,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 		@Override @OnThread("events")
 		protected void body() throws IOException, URISyntaxException{
-			try {
-				peers.add(peer, force);
-			}
-			catch (RuntimeException e) {
-				var cause = e.getCause();
-				if (cause instanceof IOException) {
-					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
-					throw (IOException) cause;
-				}
-				else if (cause instanceof URISyntaxException) {
-					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
-					throw (URISyntaxException) cause;
-				}
-				else {
-					LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
-					throw e;
-				}
-			}
+			execute(new SuggestPeersTask(Stream.of(peer), onPeerAddedListeners::notifyAll, LocalNodeImpl.this));
 		}
 	}
 

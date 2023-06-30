@@ -35,7 +35,7 @@ public class GetPeersMessageImpl extends AbstractRpcMessage implements GetPeersM
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetPeersMessage;
+		return other instanceof GetPeersMessage && super.equals(other);
 	}
 
 	@Override

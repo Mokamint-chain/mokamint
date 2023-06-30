@@ -47,7 +47,7 @@ public class GetInfoResultMessageImpl extends AbstractRpcMessage implements GetI
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetInfoResultMessage && info.equals(((GetInfoResultMessage) other).get());
+		return other instanceof GetInfoResultMessage && super.equals(other) && info.equals(((GetInfoResultMessage) other).get());
 	}
 
 	@Override

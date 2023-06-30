@@ -18,6 +18,7 @@ package io.mokamint.node.local.internal.tasks;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,6 +47,11 @@ public class AddPeerTask extends Task {
 	 */
 	private final boolean force;
 
+	/**
+	 * The function to call to actually add the peer to the node.
+	 */
+	private final BiFunction<Peer, Boolean, Boolean> adder;
+
 	private final static Logger LOGGER = Logger.getLogger(AddPeerTask.class.getName());
 
 	/**
@@ -54,13 +60,15 @@ public class AddPeerTask extends Task {
 	 * @param peer the peer to add
 	 * @param force true if and only if the addition of the peer must be forced, also if
 	 *              the maximal amount of peers has been reached
+	 * @param adder the function to call to actually add the peer to the node
 	 * @param node the node for which this task is working
 	 */
-	public AddPeerTask(Peer peer, boolean force, LocalNodeImpl node) {
+	public AddPeerTask(Peer peer, boolean force, BiFunction<Peer, Boolean, Boolean> adder, LocalNodeImpl node) {
 		node.super();
 
 		this.peer = peer;
 		this.force = force;
+		this.adder = adder;
 	}
 
 	@Override
@@ -77,7 +85,8 @@ public class AddPeerTask extends Task {
 			if (!version1.canWorkWith(version2))
 				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
 
-			node.emit(node.new PeerAcceptedEvent(peer, force));
+			if (adder.apply(peer, force))
+				node.emit(node.new PeerAddedEvent(peer));
 		}
 		catch (InterruptedException | IncompatiblePeerVersionException | IOException | DeploymentException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);

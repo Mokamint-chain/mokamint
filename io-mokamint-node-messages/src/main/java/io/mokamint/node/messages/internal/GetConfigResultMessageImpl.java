@@ -46,7 +46,7 @@ public class GetConfigResultMessageImpl extends AbstractRpcMessage implements Ge
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetConfigResultMessage && config.equals(((GetConfigResultMessage) other).get());
+		return other instanceof GetConfigResultMessage && super.equals(other) && config.equals(((GetConfigResultMessage) other).get());
 	}
 
 	@Override

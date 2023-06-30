@@ -52,7 +52,7 @@ public class GetPeersResultMessageImpl extends AbstractRpcMessage implements Get
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetPeersResultMessage && Arrays.equals(peers, ((GetPeersResultMessage) other).get().toArray(Peer[]::new));
+		return other instanceof GetPeersResultMessage && super.equals(other) && Arrays.equals(peers, ((GetPeersResultMessage) other).get().toArray(Peer[]::new));
 	}
 
 	@Override

@@ -36,7 +36,7 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddPeerResultMessage;
+		return other instanceof AddPeerResultMessage && super.equals(other);
 	}
 
 	@Override

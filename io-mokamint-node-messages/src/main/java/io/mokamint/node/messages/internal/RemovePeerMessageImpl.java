@@ -50,7 +50,7 @@ public class RemovePeerMessageImpl extends AbstractRpcMessage implements RemoveP
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof RemovePeerMessage && peer.equals(((RemovePeerMessage) other).getPeer());
+		return other instanceof RemovePeerMessage && super.equals(other) && peer.equals(((RemovePeerMessage) other).getPeer());
 	}
 
 	@Override

@@ -35,7 +35,7 @@ public class GetChainInfoMessageImpl extends AbstractRpcMessage implements GetCh
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetChainInfoMessage;
+		return other instanceof GetChainInfoMessage && super.equals(other);
 	}
 
 	@Override
