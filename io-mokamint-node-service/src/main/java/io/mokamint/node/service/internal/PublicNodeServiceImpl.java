@@ -34,8 +34,6 @@ import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
-import io.mokamint.node.messages.SuggestPeersMessage;
-import io.mokamint.node.messages.SuggestPeersResultMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
@@ -149,19 +147,6 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | IOException e) {
-			sendExceptionAsync(session, e, message.getId());
-		}
-	};
-
-	@Override
-	protected void onSuggestPeers(SuggestPeersMessage message, Session session) {
-		super.onSuggestPeers(message, session);
-
-		try {
-			node.suggestPeers(message.getPeers());
-			sendObjectAsync(session, SuggestPeersResultMessages.of(message.getId()));
-		}
-		catch (TimeoutException | InterruptedException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};

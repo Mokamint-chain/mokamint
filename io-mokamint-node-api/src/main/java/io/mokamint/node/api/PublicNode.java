@@ -61,16 +61,6 @@ public interface PublicNode extends AutoCloseableNode {
 	Stream<Peer> getPeers() throws TimeoutException, InterruptedException;
 
 	/**
-	 * Suggests the addition of the given peers. The node may add all, some or none
-	 * of those peers, according to its internal policy.
-	 * 
-	 * @param peers the suggested peers
-	 * @throws TimeoutException if no answer arrives before a time window
-	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 */
-	void suggestPeers(Stream<Peer> peers) throws TimeoutException, InterruptedException;
-
-	/**
 	 * Yields information about the current chain of this node.
 	 * 
 	 * @return the information

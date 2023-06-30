@@ -12,7 +12,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -42,8 +41,6 @@ import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
-import io.mokamint.node.messages.SuggestPeersMessage;
-import io.mokamint.node.messages.SuggestPeersResultMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.AbstractPublicNodeService;
 import io.mokamint.nonce.Deadlines;
@@ -382,31 +379,6 @@ public class RemotePublicNodeTests {
 		}
 	}
 
-	@Test
-	@DisplayName("suggestPeer() works")
-	public void suggestPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peers1 = new HashSet<Peer>();
-		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
-		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
-		var peers2 = new HashSet<Peer>();
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws DeploymentException, IOException {}
-
-			@Override
-			protected void onSuggestPeers(SuggestPeersMessage message, Session session) {
-				message.getPeers().forEach(peers2::add);;
-				sendObjectAsync(session, SuggestPeersResultMessages.of(message.getId()));
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			remote.suggestPeers(peers1.stream());
-			assertEquals(peers1, peers2);
-		}
-	}
-	
 	static {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {

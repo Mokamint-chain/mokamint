@@ -35,11 +35,10 @@ public class SuggestPeersMessages {
 	 * Yields a {@link SuggestPeersMessage}.
 	 * 
 	 * @param peers the peers suggested for addition
-	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static SuggestPeersMessage of(Stream<Peer> peers, String id) {
-		return new SuggestPeersMessageImpl(peers, id);
+	public static SuggestPeersMessage of(Stream<Peer> peers) {
+		return new SuggestPeersMessageImpl(peers);
 	}
 
 	/**

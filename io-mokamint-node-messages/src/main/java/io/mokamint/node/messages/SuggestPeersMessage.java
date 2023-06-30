@@ -18,14 +18,14 @@ package io.mokamint.node.messages;
 
 import java.util.stream.Stream;
 
-import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the {@link PublicNode#suggestPeers(java.util.stream.Stream)} method of a node.
+ * The network message sent by a public node service
+ * to the connected remote nodes, to signify that a new peer has been added to
+ * the serviced node.
  */
-public interface SuggestPeersMessage extends RpcMessage {
+public interface SuggestPeersMessage {
 
 	/**
 	 * Yields the peers suggested for addition.

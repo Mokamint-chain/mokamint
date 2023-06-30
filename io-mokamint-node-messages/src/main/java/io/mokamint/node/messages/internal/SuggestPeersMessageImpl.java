@@ -20,27 +20,24 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.SuggestPeersMessage;
 
 /**
- * Implementation of the network message corresponding to {@link PublicNode#suggestPeers(java.util.stream.Stream)}.
+ * Implementation of the network message sent by a public node service
+ * to the connected remote nodes, to signify that a new peer has been added to
+ * the serviced node.
  */
-public class SuggestPeersMessageImpl extends AbstractRpcMessage implements SuggestPeersMessage {
+public class SuggestPeersMessageImpl implements SuggestPeersMessage {
 
 	private final Peer[] peers;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param peers the peers suggsted for addition
-	 * @param id the identifier of the message
+	 * @param peers the peers suggested for addition
 	 */
-	public SuggestPeersMessageImpl(Stream<Peer> peers, String id) {
-		super(id);
-
+	public SuggestPeersMessageImpl(Stream<Peer> peers) {
 		this.peers = peers.map(Objects::requireNonNull).toArray(Peer[]::new);
 	}
 
@@ -52,10 +49,5 @@ public class SuggestPeersMessageImpl extends AbstractRpcMessage implements Sugge
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof SuggestPeersMessage && Arrays.equals(peers, ((SuggestPeersMessage) other).getPeers().toArray(Peer[]::new));
-	}
-
-	@Override
-	protected String getExpectedType() {
-		return SuggestPeersMessage.class.getName();
 	}
 }

@@ -277,11 +277,6 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public void suggestPeers(Stream<Peer> peers) {
-		peers.forEach(this::addCandidatePeerToDB);
-	}
-
-	@Override
 	public void close() throws InterruptedException {
 		events.shutdownNow();
 		tasks.shutdownNow();
