@@ -141,9 +141,8 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB);
 
 		config.seeds()
-			.parallel()
 			.map(Peers::of)
-			.map(peer -> new AddPeerTask(peer, true, peers::add, this))
+			.map(peer -> new AddPeerTask(peer, p -> peers.add(p, true), this))
 			.forEach(this::execute);
 
 		Optional<Block> maybeHead = db.getHead();
@@ -200,8 +199,8 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 				return false;
 		}
 		catch (IOException | URISyntaxException e) {
-			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
-			throw new RuntimeException(e);
+			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": the database seems corrupted", e);
+			return false;
 		}
 	}
 
@@ -215,30 +214,8 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 				return false;
 		}
 		catch (IOException | URISyntaxException e) {
-			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + " from the database", e);
-			throw new RuntimeException(e);
-		}
-	}
-
-	private void addCandidatePeerToDB(Peer peer) {
-		try {
-			if (db.addCandidatePeer(peer))
-				LOGGER.info("added peer " + peer + " as candidate");
-		}
-		catch (IOException | URISyntaxException e) {
-			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " as candidate to the database", e);
-			throw new RuntimeException(e);
-		}
-	}
-
-	private void removeCandidatePeerFromDB(Peer peer) {
-		try {
-			if (db.removeCandidatePeer(peer))
-				LOGGER.info("removed peer " + peer + " as candidate");
-		}
-		catch (IOException | URISyntaxException e) {
-			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + " as candidate from the database", e);
-			throw new RuntimeException(e);
+			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + ": the database seems corrupted", e);
+			return false;
 		}
 	}
 
@@ -251,27 +228,8 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 				if (!version1.canWorkWith(version2))
 					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-				else {
-					try {
-						if (peers.add(peer, true))
-							emit(new PeerAddedEvent(peer));
-					}
-					catch (RuntimeException e) {
-						var cause = e.getCause();
-						if (cause instanceof IOException) {
-							LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
-							throw (IOException) cause;
-						}
-						else if (cause instanceof URISyntaxException) {
-							LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", cause);
-							throw new IOException(cause);
-						}
-						else {
-							LOGGER.log(Level.SEVERE, "cannot add peer " + peer + " to the database", e);
-							throw e;
-						}
-					}
-				}
+				else if (peers.add(peer, true))
+					emit(new PeerAddedEvent(peer));
 			}
 			catch (DeploymentException | IOException e) {
 				throw new IOException("cannot contact " + peer, e);
