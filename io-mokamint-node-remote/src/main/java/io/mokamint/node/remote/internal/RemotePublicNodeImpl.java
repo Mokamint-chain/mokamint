@@ -56,7 +56,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	/**
 	 * The listeners called whenever a peer is added to this node.
 	 */
-	private final ListenerManager<Peer[]> onPeerAddedListeners = ListenerManagers.mk();
+	private final ListenerManager<Stream<Peer>> onPeerAddedListeners = ListenerManagers.mk();
 
 	private final NodeMessageQueues queues;
 
@@ -78,12 +78,12 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public void addOnPeerAddedListener(Consumer<Peer[]> listener) {
+	public void addOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeerAddedListeners.addListener(listener);
 	}
 
 	@Override
-	public void removeOnPeerAddedListener(Consumer<Peer[]> listener) {
+	public void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeerAddedListeners.removeListener(listener);
 	}
 

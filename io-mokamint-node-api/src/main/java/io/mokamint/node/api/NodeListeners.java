@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * The listeners of a node.
@@ -29,7 +30,7 @@ public interface NodeListeners {
 	 * 
 	 * @param listener the listener
 	 */
-	void addOnPeerAddedListener(Consumer<Peer[]> listener);
+	void addOnPeerAddedListener(Consumer<Stream<Peer>> listener);
 
 	/**
 	 * Unregister the given listener from those called when peers
@@ -37,5 +38,5 @@ public interface NodeListeners {
 	 * 
 	 * @param listener the listener
 	 */
-	void removeOnPeerAddedListener(Consumer<Peer[]> listener);
+	void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener);
 }

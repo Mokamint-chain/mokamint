@@ -71,7 +71,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	/**
 	 * The listeners called whenever peers are added to this node.
 	 */
-	private final ListenerManager<Peer[]> onPeerAddedListeners = ListenerManagers.mk();
+	private final ListenerManager<Stream<Peer>> onPeerAddedListeners = ListenerManagers.mk();
 
 	/**
 	 * The configuration of the node.
@@ -159,12 +159,12 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public void addOnPeerAddedListener(Consumer<Peer[]> listener) {
+	public void addOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeerAddedListeners.addListener(listener);
 	}
 
 	@Override
-	public void removeOnPeerAddedListener(Consumer<Peer[]> listener) {
+	public void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeerAddedListeners.removeListener(listener);
 	}
 
@@ -549,7 +549,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 		@Override @OnThread("events")
 		protected void body() throws IOException, URISyntaxException{
-			execute(new SuggestPeersTask(Stream.of(peer), onPeerAddedListeners::notifyAll, LocalNodeImpl.this));
+			execute(new SuggestPeersTask(Stream.of(peer), onPeerAddedListeners.getListeners(), LocalNodeImpl.this));
 		}
 	}
 

@@ -18,6 +18,7 @@ package io.mokamint.node.internal;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.ListenerManager;
@@ -51,5 +52,10 @@ public class ListenerManagerImpl<T> implements ListenerManager<T> {
 	public void notifyAll(T t) {
 		for (var listener: listeners)
 			listener.accept(t);
+	}
+
+	@Override
+	public Stream<Consumer<T>> getListeners() {
+		return listeners.stream();
 	}
 }

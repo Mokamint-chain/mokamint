@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.tasks;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -35,21 +36,24 @@ public class SuggestPeersTask extends Task {
 	private final Peer[] peers;
 
 	/**
-	 * The handler to call to notify about the new peers.
+	 * The listeners registered in the node, eager to receive
+	 * peer addition suggestions.
 	 */
-	private final Consumer<Peer[]> notifier;
+	private final List<Consumer<Stream<Peer>>> listeners;
 
 	/**
 	 * Creates a task that suggests peers to other peers.
 	 * 
 	 * @param peers the peers to suggest
+	 * @param listeners the listeners registered in the node, eager to receive
+	 *                  peer addition suggestions
 	 * @param node the node for which this task is working
 	 */
-	public SuggestPeersTask(Stream<Peer> peers, Consumer<Peer[]> notifier, LocalNodeImpl node) {
+	public SuggestPeersTask(Stream<Peer> peers, Stream<Consumer<Stream<Peer>>> listeners, LocalNodeImpl node) {
 		node.super();
 
 		this.peers = peers.toArray(Peer[]::new);
-		this.notifier = notifier;
+		this.listeners = listeners.toList();
 	}
 
 	@Override
@@ -59,6 +63,6 @@ public class SuggestPeersTask extends Task {
 
 	@Override @OnThread("tasks")
 	protected void body() {
-		notifier.accept(peers);
+		listeners.forEach(listener -> listener.accept(Stream.of(peers)));
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node;
 
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 
@@ -48,4 +49,11 @@ public interface ListenerManager<T> {
 	 * @param t the object passed to the listeners
 	 */
 	void notifyAll(T t);
+
+	/**
+	 * Yields all listeners in this object.
+	 * 
+	 * @return all listeners in this object
+	 */
+	Stream<Consumer<T>> getListeners();
 }
