@@ -51,6 +51,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
@@ -65,7 +66,7 @@ import jakarta.websocket.DeploymentException;
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public class LocalNodeImpl implements LocalNode {
+public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 	/**
 	 * The listeners called whenever a peer is added to this node.

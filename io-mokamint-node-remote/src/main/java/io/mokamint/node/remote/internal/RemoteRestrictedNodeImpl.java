@@ -28,6 +28,7 @@ import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.ListenerManager;
 import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerResultMessage;
 import io.mokamint.node.messages.ExceptionMessage;
@@ -41,7 +42,7 @@ import jakarta.websocket.DeploymentException;
  * to a service for the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode implements RemoteRestrictedNode {
+public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode implements RemoteRestrictedNode, NodeListeners {
 
 	/**
 	 * The listeners called whenever a peer is added to this node.

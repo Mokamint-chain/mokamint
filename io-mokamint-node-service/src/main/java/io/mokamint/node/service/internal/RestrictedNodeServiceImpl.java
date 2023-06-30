@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -54,7 +55,23 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws DeploymentException, IOException {
 		super(port);
 		this.node = node;
+
+		if (node instanceof NodeListeners) {
+			// TODO
+			// ((NodeListeners) node).addOnPeerAddedListener(null);
+		}
+
 		deploy();
+	}
+
+	@Override
+	public void close() {
+		if (node instanceof NodeListeners) {
+			// TODO
+			// ((NodeListeners) node).removeOnPeerAddedListener(null);
+		}
+
+		super.close();
 	}
 
 	/**

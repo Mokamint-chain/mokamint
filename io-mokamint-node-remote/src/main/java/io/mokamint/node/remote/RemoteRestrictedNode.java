@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.remote;
 
-import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * A remote restricted node of a Mokamint blockchain.
  */
-public interface RemoteRestrictedNode extends NodeListeners, RestrictedNode, AutoCloseableRemoteNode {
+public interface RemoteRestrictedNode extends RestrictedNode, AutoCloseableRemoteNode {
 }

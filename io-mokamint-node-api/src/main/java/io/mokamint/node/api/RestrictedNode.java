@@ -23,7 +23,7 @@ import io.hotmoka.annotations.ThreadSafe;
 
 /**
  * The restricted interface of a node of a Mokamint blockchain.
- * Typically, this API can be called from the local machine only.
+ * Typically, this API can be called from authorized machines only.
  */
 @ThreadSafe
 public interface RestrictedNode extends AutoCloseableNode {

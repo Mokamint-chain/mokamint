@@ -17,12 +17,11 @@ limitations under the License.
 package io.mokamint.node.local;
 
 import io.mokamint.node.api.Node;
-import io.mokamint.node.api.NodeListeners;
 
 /**
  * A local node of a Mokamint blockchain.
  */
-public interface LocalNode extends Node, NodeListeners {
+public interface LocalNode extends Node {
 
 	/**
 	 * Closes the node.

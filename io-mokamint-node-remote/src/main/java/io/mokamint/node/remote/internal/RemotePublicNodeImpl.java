@@ -34,6 +34,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.GetBlockResultMessage;
@@ -51,7 +52,7 @@ import jakarta.websocket.DeploymentException;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements RemotePublicNode {
+public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements RemotePublicNode, NodeListeners {
 
 	/**
 	 * The listeners called whenever a peer is added to this node.

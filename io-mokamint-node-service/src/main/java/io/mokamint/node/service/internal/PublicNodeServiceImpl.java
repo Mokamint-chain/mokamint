@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
@@ -62,7 +63,23 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	public PublicNodeServiceImpl(PublicNode node, int port) throws DeploymentException, IOException {
 		super(port);
 		this.node = node;
+
+		if (node instanceof NodeListeners) {
+			// TODO
+			// ((NodeListeners) node).addOnPeerAddedListener(null);
+		}
+
 		deploy();
+	}
+
+	@Override
+	public void close() {
+		if (node instanceof NodeListeners) {
+			// TODO
+			// ((NodeListeners) remove).addOnPeerAddedListener(null);
+		}
+
+		super.close();
 	}
 
 	/**

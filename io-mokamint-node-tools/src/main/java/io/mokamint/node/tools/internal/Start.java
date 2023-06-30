@@ -33,8 +33,8 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.remote.RemoteMiners;
-import io.mokamint.node.api.Node;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
@@ -217,7 +217,7 @@ public class Start extends AbstractCommand {
 		}
 	}
 
-	private void publishPublicAndRestrictedNodeServices(int pos, Node node) {
+	private void publishPublicAndRestrictedNodeServices(int pos, LocalNode node) {
 		if (pos < publicPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
 			try (var service = PublicNodeServices.open(node, publicPorts[pos])) {
@@ -245,7 +245,7 @@ public class Start extends AbstractCommand {
 			publishRestrictedNodeServices(0, node);
 	}
 
-	private void publishRestrictedNodeServices(int pos, Node node) {
+	private void publishRestrictedNodeServices(int pos, LocalNode node) {
 		if (pos < restrictedPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a restricted node service at port " + restrictedPorts[pos] + " of localhost... |@"));
 			try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
