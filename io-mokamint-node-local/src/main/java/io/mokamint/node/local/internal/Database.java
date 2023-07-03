@@ -136,9 +136,10 @@ public class Database implements AutoCloseable {
 	 * @param hash the hash
 	 * @return the block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws IOException  if the database is corrupted
 	 */
-	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException {
-		return check(UncheckedNoSuchAlgorithmException.class, () ->
+	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException, IOException {
+		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
 			Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
 				.map(ByteIterable::getBytes)
 				.map(uncheck(Blocks::from))

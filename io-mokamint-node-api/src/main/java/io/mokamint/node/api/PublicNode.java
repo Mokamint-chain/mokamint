@@ -76,9 +76,10 @@ public interface PublicNode extends AutoCloseableNode {
 	 * 
 	 * @param hash the hash of the block
 	 * @return the block, if any
+	 * @throws IOException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException;
+	Optional<Block> getBlock(byte[] hash) throws IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException;
 }

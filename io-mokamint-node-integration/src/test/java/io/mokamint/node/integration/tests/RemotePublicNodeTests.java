@@ -275,6 +275,29 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
+	@DisplayName("getBlock() works if it throws IOException")
+	public void getBlockWorksInCaseOfIOException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "corrupted database";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetBlock(GetBlockMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(IOException.class, () -> remote.getBlock(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
 	@DisplayName("getConfig() works")
 	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var config1 = ConsensusConfigs.defaults().build();

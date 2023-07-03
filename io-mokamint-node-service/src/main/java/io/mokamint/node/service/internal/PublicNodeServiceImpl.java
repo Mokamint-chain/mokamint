@@ -122,7 +122,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
-		catch (NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (IOException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};

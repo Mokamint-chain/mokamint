@@ -180,7 +180,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException {
+	public Optional<Block> getBlock(byte[] hash) throws IOException, NoSuchAlgorithmException {
 		return db.get(hash);
 	}
 

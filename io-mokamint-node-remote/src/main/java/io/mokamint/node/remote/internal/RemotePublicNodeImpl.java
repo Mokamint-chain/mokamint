@@ -142,13 +142,13 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public Optional<Block> getBlock(byte[] hash) throws IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendGetBlock(hash, id);
 		try {
 			return queues.waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
 		}
-		catch (RuntimeException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | IOException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -162,7 +162,8 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	private boolean processGetBlockException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
+		return IOException.class.isAssignableFrom(clazz) ||
+			NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||
 			InterruptedException.class.isAssignableFrom(clazz);
 	}
