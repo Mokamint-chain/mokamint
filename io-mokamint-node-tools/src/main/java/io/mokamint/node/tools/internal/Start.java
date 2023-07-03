@@ -33,6 +33,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.remote.RemoteMiners;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.LocalNodes;
@@ -206,9 +207,9 @@ public class Start extends AbstractCommand {
 			System.out.println(Ansi.AUTO.string("@|red The database refers to an unknown hashing algorithm!|@"));
 			LOGGER.log(Level.SEVERE, "the database refers to an unknown hashing algorithm", e);
 		}
-		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red I/O error in the database!|@"));
-			LOGGER.log(Level.SEVERE, "I/O error in the database", e);
+		catch (DatabaseException | IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red the database seems corrupted!|@"));
+			LOGGER.log(Level.SEVERE, "the database seems corrupted", e);
 		}
 		catch (InterruptedException e) {
 			// unexpected: who could interrupt this process?

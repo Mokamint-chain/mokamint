@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
@@ -37,10 +38,11 @@ public interface LocalNodes {
 	 * @param miners the miners
 	 * @return the local node
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
 	 * @throws IOException if the database is corrupted
 	 * @throws URISyntaxException if some URI in the database has an illegal syntax
 	 */
-	static LocalNode of(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException, URISyntaxException {
+	static LocalNode of(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 		return new LocalNodeImpl(config, app, miners);
 	}
 }

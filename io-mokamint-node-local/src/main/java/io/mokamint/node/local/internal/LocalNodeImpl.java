@@ -131,9 +131,10 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the database is corrupted
+	 * @throws DatabaseException if the database is corrupted
 	 * @throws URISyntaxException if some URI in the database has an illegal syntax
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, IOException, URISyntaxException {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 		this.config = config;
 		this.app = app;
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
@@ -146,7 +147,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 			.map(peer -> new AddPeerTask(peer, p -> peers.add(p, true), this))
 			.forEach(this::execute);
 
-		Optional<Block> maybeHead = db.getHead();
+		var maybeHead = db.getHead();
 		if (maybeHead.isPresent()) {
 			this.startDateTime = db.getGenesis().get().getStartDateTimeUTC();
 			var head = maybeHead.get();
@@ -283,14 +284,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		if (headHash.isEmpty())
 			return ChainInfos.of(0L, db.getGenesisHash(), Optional.empty()); // TODO: I should remove getGenesisHash
 		else {
-			Optional<Block> maybeHead;
-			try {
-				maybeHead = db.getHead();
-			}
-			catch (IOException e) {
-				throw new DatabaseException(e);
-			}
-
+			var maybeHead = db.getHead();
 			if (maybeHead.isEmpty())
 				throw new DatabaseException("the hash of the head is set but the head block is not in the database");
 
@@ -377,7 +371,9 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	 * @param event the event
 	 * @param exception the failure cause
 	 */
-	protected void onFail(Event event, Exception e) {}
+	protected void onFail(Event event, Exception e) {
+		LOGGER.log(Level.SEVERE, "failed execution of " + event, e);
+	}
 
 	/**
 	 * Signals that an event occurred. This is typically called from tasks,
@@ -532,15 +528,9 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 		@Override @OnThread("events")
 		protected void body() throws IOException {
-			try {
-				db.setHeadHash(db.add(block));
-				LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-				execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
-			}
-			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "I/O error in the database", e);
-				throw e;
-			}
+			db.setHeadHash(db.add(block));
+			LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
 		}
 	}
 
@@ -622,26 +612,14 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		}
 
 		@Override @OnThread("events")
-		protected void body() throws NoSuchAlgorithmException, IOException {
+		protected void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
 			miners.forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 
-			Optional<Block> head;
-			try {
-				head = db.getHead();
-			}
-			catch (NoSuchAlgorithmException e) {
-				LOGGER.log(Level.SEVERE, "the database referes to an unknown hashing algorithm", e);
-				throw e;
-			}
-			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "the database is corrupted", e);
-				throw e;
-			}
-
-			if (head.isPresent()) {
-				LocalDateTime nextBlockStartTime = startDateTime.plus(head.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
-				execute(new DelayedMineNewBlockTask(LocalNodeImpl.this, head.get(), nextBlockStartTime, config.deadlineWaitTimeout));
+			var maybeHead = db.getHead();
+			if (maybeHead.isPresent()) {
+				LocalDateTime nextBlockStartTime = startDateTime.plus(maybeHead.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
+				execute(new DelayedMineNewBlockTask(LocalNodeImpl.this, maybeHead.get(), nextBlockStartTime, config.deadlineWaitTimeout));
 			}
 		}
 	}

@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Timeout;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -100,7 +101,7 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
-	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 		var deadlineProlog = new byte[] { 1, 2, 3, 4 };
@@ -127,7 +128,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 
@@ -151,7 +152,7 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
 	@Timeout(1)
-	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
+	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 	
@@ -175,7 +176,7 @@ public class EventsTests {
 	
 		class MyLocalNode extends LocalNodeImpl {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 	
@@ -198,12 +199,12 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
 	@Timeout(1)
-	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
+	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
 				super(config, app, new Miner[0]);
 			}
 
@@ -224,13 +225,13 @@ public class EventsTests {
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
 	@Timeout(3) // three times config.deadlineWaitTimeout
-	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
+	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var myMiner = mock(Miner.class);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 
@@ -251,7 +252,7 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a miner provides deadlines for the wrong hashing algorithm, an event is signalled to the node")
 	@Timeout(1)
-	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException {
+	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 
@@ -285,7 +286,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app, myMiner);
 			}
 

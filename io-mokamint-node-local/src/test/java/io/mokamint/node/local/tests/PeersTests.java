@@ -52,6 +52,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
@@ -144,7 +145,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("seeds are used as peers")
 	@Timeout(10)
-	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException {
+	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, DatabaseException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -163,7 +164,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
 				super(config, app);
 			}
 
@@ -188,7 +189,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("if a peer is added to a node, it is saved into the database and it is used at next start-up")
 	@Timeout(10)
-	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException {
+	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException, DatabaseException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -200,7 +201,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app);
 			}
 
@@ -236,7 +237,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at the next start-up")
 	@Timeout(10)
-	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -257,7 +258,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app);
 			}
 
@@ -301,7 +302,7 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the patch version only can work together")
-	public void addPeerWorksIfPatchVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException {
+	public void addPeerWorksIfPatchVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException, DatabaseException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 		var allPeers = new HashSet<Peer>();
@@ -309,7 +310,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app);
 			}
 
@@ -328,13 +329,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the minor version cannot work together")
-	public void addPeerFailsIfMinorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+	public void addPeerFailsIfMinorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app);
 			}
 
@@ -352,13 +353,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the major version cannot work together")
-	public void addPeerFailsIfMajorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException {
+	public void addPeerFailsIfMajorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app);
 			}
 

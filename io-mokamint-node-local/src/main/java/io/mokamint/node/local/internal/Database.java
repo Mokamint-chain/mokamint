@@ -48,6 +48,7 @@ import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
@@ -136,7 +137,7 @@ public class Database implements AutoCloseable {
 	 * @param hash the hash
 	 * @return the block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws IOException  if the database is corrupted
+	 * @throws IOException if the database is corrupted
 	 */
 	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException, IOException {
 		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
@@ -188,13 +189,18 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the head block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws IOException if the database is corrupted
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException, IOException {
-		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
-			getHeadHash()
-				.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the head hash is set but it is not in the database"))))
-		);
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
+				getHeadHash()
+					.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the head hash is set but it is not in the database"))))
+			);
+		}
+		catch (IOException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	/**
@@ -202,9 +208,9 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash of the parent block
 	 * @return the hashes
-	 * @throws IOException if the database is corrupted
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Stream<byte[]> getForwards(byte[] hash) throws IOException {
+	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException {
 		var forwards = environment.computeInReadonlyTransaction(txn -> storeOfForwards.get(txn, fromBytes(hash)));
 		
 		if (forwards == null)
@@ -213,7 +219,7 @@ public class Database implements AutoCloseable {
 			int size = hashingForBlocks.length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
-				throw new IOException("the forward map has been corrupted");
+				throw new DatabaseException("the forward map has been corrupted");
 			else if (hashes.length == size) // frequent case, worth optimizing
 				return Stream.of(hashes);
 			else
