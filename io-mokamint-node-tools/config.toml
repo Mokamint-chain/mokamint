@@ -42,10 +42,6 @@ seeds = ["ws://mymachine.com:8026","ws://hermachine.de:8028"]
 # of the restricted API of the node
 max_peers = 20
 
-# the maximum amount of candidate peers kept by a node; beyond this threshold,
-# new candidate peers replace the oldest ones, in a FIFO way
-max_candidate_peers = 1000
-
 # the initial points of a peer, freshly added to a node
 peer_initial_points = 1000
 
