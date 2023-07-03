@@ -161,14 +161,19 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the genesis block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
-	 * @throws IOException if the database is corrupted
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, IOException {
-		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
-			getGenesisHash()
-				.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the genesis hash is set but it is not in the database"))))
-				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new IOException("the genesis hash is set but it refers to a non-genesis block in the database"))))
-		);
+	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
+				getGenesisHash()
+					.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the genesis hash is set but it is not in the database"))))
+					.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new IOException("the genesis hash is set but it refers to a non-genesis block in the database"))))
+			);
+		}
+		catch (IOException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private static Optional<GenesisBlock> castToGenesis(Block block) {
@@ -290,12 +295,16 @@ public class Database implements AutoCloseable {
 	 * Yields the set of peers saved in this database, if any.
 	 * 
 	 * @return the peers
-	 * @throws IOException of the database is corrupted
-	 * @throws URISyntaxException if the database contains a URI whose syntax is illegal
+	 * @throws DatabaseException of the database is corrupted
 	 */
-	public Stream<Peer> getPeers() throws URISyntaxException, IOException {
+	public Stream<Peer> getPeers() throws DatabaseException {
 		var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
-		return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
+		try {
+			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
+		}
+		catch (IOException | URISyntaxException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	/**
@@ -320,12 +329,16 @@ public class Database implements AutoCloseable {
 	 * @return true if the peer has been added; false otherwise, which means
 	 *         that the database already contains the same peer or that the peer was not forced
 	 *         and there are already {@link maxPeers} peers
-	 * @throws IOException if there is an I/O error in the access to the database
-	 * @throws URISyntaxException if the database contains a peer with an illegal URI
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean addPeer(Peer peer, boolean force) throws IOException, URISyntaxException {
-		return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
-			() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer, force))));
+	public boolean addPeer(Peer peer, boolean force) throws DatabaseException {
+		try {
+			return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
+					() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer, force))));
+		}
+		catch (IOException | URISyntaxException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private boolean addPeer(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException {
@@ -398,12 +411,16 @@ public class Database implements AutoCloseable {
 	 * @param peer the peer to remove
 	 * @return true if the peer has been actually removed; false otherwise, which means
 	 *         that the peer was not in the database
-	 * @throws IOException if there is an I/O error in the access to the database
-	 * @throws URISyntaxException if the database contains a peer with an illegal URI
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean removePeer(Peer peer) throws IOException, URISyntaxException {
-		return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
-			() -> environment.computeInTransaction(uncheck(txn -> removePeer(txn, peer, peers))));
+	public boolean removePeer(Peer peer) throws DatabaseException {
+		try {
+			return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
+					() -> environment.computeInTransaction(uncheck(txn -> removePeer(txn, peer, peers))));
+		}
+		catch (IOException | URISyntaxException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	/**

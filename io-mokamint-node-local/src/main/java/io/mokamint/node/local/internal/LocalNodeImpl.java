@@ -130,11 +130,10 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	 * @param app the application
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 * @throws IOException if the database is corrupted
+	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws URISyntaxException if some URI in the database has an illegal syntax
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
 		this.app = app;
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
@@ -205,7 +204,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 			else
 				return false;
 		}
-		catch (IOException | URISyntaxException e) {
+		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": the database seems corrupted", e);
 			return false;
 		}
@@ -220,7 +219,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 			else
 				return false;
 		}
-		catch (IOException | URISyntaxException e) {
+		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + ": the database seems corrupted", e);
 			return false;
 		}
