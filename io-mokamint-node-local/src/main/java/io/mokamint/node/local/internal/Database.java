@@ -137,9 +137,26 @@ public class Database implements AutoCloseable {
 	 * @param hash the hash
 	 * @return the block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			return getInternal(hash);
+		}
+		catch (IOException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the block with the given hash, if it is contained in this database.
+	 * 
+	 * @param hash the hash
+	 * @return the block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the database is corrupted
 	 */
-	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException, IOException {
+	private Optional<Block> getInternal(byte[] hash) throws NoSuchAlgorithmException, IOException {
 		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
 			Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
 				.map(ByteIterable::getBytes)
@@ -167,7 +184,7 @@ public class Database implements AutoCloseable {
 		try {
 			return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
 				getGenesisHash()
-					.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the genesis hash is set but it is not in the database"))))
+					.map(uncheck(hash -> getInternal(hash).orElseThrow(() -> new IOException("the genesis hash is set but it is not in the database"))))
 					.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new IOException("the genesis hash is set but it refers to a non-genesis block in the database"))))
 			);
 		}
@@ -200,7 +217,7 @@ public class Database implements AutoCloseable {
 		try {
 			return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
 				getHeadHash()
-					.map(uncheck(hash -> get(hash).orElseThrow(() -> new IOException("the head hash is set but it is not in the database"))))
+					.map(uncheck(hash -> getInternal(hash).orElseThrow(() -> new IOException("the head hash is set but it is not in the database"))))
 			);
 		}
 		catch (IOException e) {
@@ -459,9 +476,9 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param block the block to add
 	 * @return the hash of the block
-	 * @throws IOException if an I/O error occurred in the database
 	 */
-	public byte[] add(Block block) throws IOException {
+	public byte[] add(Block block) {
+		// TODO: this does not throw IOException because no exception is thrown by Xodus. Is it OK?
 		var bytesOfBlock = block.toByteArray();
 		byte[] hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
