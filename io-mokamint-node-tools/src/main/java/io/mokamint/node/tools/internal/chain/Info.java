@@ -16,13 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.chain;
 
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
@@ -51,7 +51,7 @@ public class Info extends AbstractPublicRpcCommand {
 			System.out.println(Ansi.AUTO.string("@|red The head of the chain uses an unknown hashing algorithm!|@"));
 			LOGGER.log(Level.SEVERE, "unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\".", e);
 		}
-		catch (IOException e) {
+		catch (DatabaseException e) {
 			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
 			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
 		}

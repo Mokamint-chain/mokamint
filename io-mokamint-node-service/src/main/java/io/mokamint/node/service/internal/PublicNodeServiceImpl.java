@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -122,7 +123,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
-		catch (IOException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};
@@ -146,7 +147,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 		}
-		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | IOException e) {
+		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};

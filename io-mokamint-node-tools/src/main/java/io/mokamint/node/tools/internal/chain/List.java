@@ -29,6 +29,7 @@ import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
@@ -60,7 +61,7 @@ public class List extends AbstractPublicRpcCommand {
 
 			var maybeHead = remote.getBlock(maybeHeadHash.get());
 			if (maybeHead.isEmpty())
-				throw new IOException("The node has a head hash but it is bound to no block!");
+				throw new DatabaseException("The node has a head hash but it is bound to no block!");
 
 			Block head = maybeHead.get();
 
@@ -76,11 +77,11 @@ public class List extends AbstractPublicRpcCommand {
 			else {
 				var maybeGenesis = remote.getBlock(maybeGenesisHash.get());
 				if (maybeGenesis.isEmpty())
-					throw new IOException("The node has a genesis hash but it is bound to no block!");
+					throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
 
 				Block genesis = maybeGenesis.get();
 				if (!(genesis instanceof GenesisBlock))
-					throw new IOException("The type of the genesisi block is inconsistent!");
+					throw new DatabaseException("The type of the genesisi block is inconsistent!");
 
 				slotsForHeight = String.valueOf(head.getHeight()).length();
 				startDateTimeUTC = Optional.of(((GenesisBlock) genesis).getStartDateTimeUTC());
@@ -96,7 +97,7 @@ public class List extends AbstractPublicRpcCommand {
 			System.out.println(Ansi.AUTO.string("@|red The head of the chain uses an unknown hashing algorithm!|@"));
 			LOGGER.log(Level.SEVERE, "unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\".", e);
 		}
-		catch (IOException e) {
+		catch (DatabaseException e) {
 			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
 			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
 		}
@@ -115,7 +116,7 @@ public class List extends AbstractPublicRpcCommand {
      * @throws TimeoutException if some connection timed-out
      * @throws InterruptedException if some connection was interrupted while waiting
      */
-	private void backwards(Block cursor, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, IOException {
+	private void backwards(Block cursor, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException {
 		long counter = 0;
 
 		while (true) {
@@ -143,11 +144,11 @@ public class List extends AbstractPublicRpcCommand {
 					counter++;
 				}
 				else {
-					throw new IOException("Block " + hash + " has a previous hash that does not refer to any existing block!");
+					throw new DatabaseException("Block " + hash + " has a previous hash that does not refer to any existing block!");
 				}
 			}
 			else {
-				throw new IOException("Block " + hash + " is a genesis block but its is not at height 0!");
+				throw new DatabaseException("Block " + hash + " is a genesis block but its is not at height 0!");
 			}
 		}
 	}

@@ -48,6 +48,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NodeListeners;
@@ -180,8 +181,13 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws IOException, NoSuchAlgorithmException {
-		return db.get(hash);
+	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			return db.get(hash);
+		}
+		catch (IOException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	@Override
@@ -272,16 +278,23 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException {
+	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException {
 		var headHash = db.getHeadHash();
 		if (headHash.isEmpty())
 			return ChainInfos.of(0L, db.getGenesisHash(), Optional.empty()); // TODO: I should remove getGenesisHash
 		else {
-			var head = db.getHead();
-			if (head.isEmpty())
-				throw new IOException("the hash of the head is set but the head block is not in the database");
+			Optional<Block> maybeHead;
+			try {
+				maybeHead = db.getHead();
+			}
+			catch (IOException e) {
+				throw new DatabaseException(e);
+			}
 
-			return ChainInfos.of(head.get().getHeight(), db.getGenesisHash(), headHash);
+			if (maybeHead.isEmpty())
+				throw new DatabaseException("the hash of the head is set but the head block is not in the database");
+
+			return ChainInfos.of(maybeHead.get().getHeight(), db.getGenesisHash(), headHash);
 		}
 	}
 

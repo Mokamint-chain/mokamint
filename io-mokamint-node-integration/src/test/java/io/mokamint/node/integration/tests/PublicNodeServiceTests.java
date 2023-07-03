@@ -48,6 +48,7 @@ import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
@@ -105,7 +106,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
-	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends AbstractRemotePublicNode {
@@ -137,7 +138,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
-	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -175,7 +176,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
-	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends AbstractRemotePublicNode {
@@ -239,7 +240,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getChainInfo() request reaches the service, it sends back its chain information")
-	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
 

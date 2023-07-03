@@ -33,6 +33,7 @@ import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
@@ -142,13 +143,13 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendGetBlock(hash, id);
 		try {
 			return queues.waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
 		}
-		catch (RuntimeException | IOException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -162,7 +163,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	private boolean processGetBlockException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return IOException.class.isAssignableFrom(clazz) ||
+		return DatabaseException.class.isAssignableFrom(clazz) ||
 			NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||
 			InterruptedException.class.isAssignableFrom(clazz);
@@ -188,13 +189,13 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
+	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendGetChainInfo(id);
 		try {
 			return queues.waitForResult(id, this::processGetChainInfoSuccess, this::processGetChainInfoException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | IOException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -209,7 +210,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	private boolean processGetChainInfoException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
 		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
-			IOException.class.isAssignableFrom(clazz) ||
+			DatabaseException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||
 			InterruptedException.class.isAssignableFrom(clazz);
 	}

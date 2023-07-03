@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
@@ -65,21 +64,21 @@ public interface PublicNode extends AutoCloseableNode {
 	 * 
 	 * @return the information
 	 * @throws NoSuchAlgorithmException if the head block uses an unknown hashing algorithm
-	 * @throws IOException if the database is corrupted
+	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	ChainInfo getChainInfo() throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException;
+	ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
 	 * 
 	 * @param hash the hash of the block
 	 * @return the block, if any
-	 * @throws IOException if the database is corrupted
+	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	Optional<Block> getBlock(byte[] hash) throws IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException;
+	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException;
 }

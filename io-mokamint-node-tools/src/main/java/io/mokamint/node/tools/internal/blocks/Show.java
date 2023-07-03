@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.blocks;
 
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
@@ -26,6 +25,7 @@ import java.util.logging.Logger;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
@@ -57,11 +57,11 @@ public class Show extends AbstractPublicRpcCommand {
          * @param remote the remote node
          * @return the block, if any
          * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
-         * @throws IOException if the database of the remote node is corrupted
+         * @throws DatabaseException if the database of the remote node is corrupted
          * @throws TimeoutException if some connection timed-out
          * @throws InterruptedException if some connection was interrupted while waiting
          */
-        private Optional<Block> getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
+        private Optional<Block> getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
         	if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
@@ -80,7 +80,7 @@ public class Show extends AbstractPublicRpcCommand {
 					if (result.isPresent())
 						return result;
 					else
-						throw new IOException("The node has a head hash but it is bound to no block!");
+						throw new DatabaseException("The node has a head hash but it is bound to no block!");
 				}
 				else
 					System.out.println(Ansi.AUTO.string("@|red There is no chain head in the node!|@"));
@@ -93,7 +93,7 @@ public class Show extends AbstractPublicRpcCommand {
 					if (result.isPresent())
 						return result;
 					else
-						throw new IOException("The node has a genesis hash but it is bound to no block!");
+						throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
 				}
 				else
 					System.out.println(Ansi.AUTO.string("@|red There is no genesis block in the node!|@"));
@@ -118,7 +118,7 @@ public class Show extends AbstractPublicRpcCommand {
 								return Optional.of(backwards(head, depth, remote));
 						}
 						else
-							throw new IOException("The node has a head hash but it is bound to no block!");
+							throw new DatabaseException("The node has a head hash but it is bound to no block!");
 					}
 					else
 						System.out.println(Ansi.AUTO.string("@|red There is no block at that depth since the chain has no head!|@"));
@@ -136,11 +136,11 @@ public class Show extends AbstractPublicRpcCommand {
          * @param the remote node
          * @return the resulting block
          * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
-         * @throws IOException if the database of the remote node is corrupted
+         * @throws DatabaseException if the database of the remote node is corrupted
          * @throws TimeoutException if some connection timed-out
          * @throws InterruptedException if some connection was interrupted while waiting
          */
-		private Block backwards(Block cursor, long depth, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, IOException {
+		private Block backwards(Block cursor, long depth, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException {
 			if (depth == 0)
 				return cursor;
 			else if (cursor instanceof NonGenesisBlock) {
@@ -151,12 +151,12 @@ public class Show extends AbstractPublicRpcCommand {
 					return backwards(maybePrevious.get(), depth - 1, remote);
 				else {
 					var config = remote.getConfig();
-					throw new IOException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " has a previous hash that does not refer to any existing block!");
+					throw new DatabaseException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " has a previous hash that does not refer to any existing block!");
 				}
 			}
 			else {
 				var config = remote.getConfig();
-				throw new IOException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " is a genesis block but is not at height 0!");
+				throw new DatabaseException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " is a genesis block but is not at height 0!");
 			}
 		}
 	}
@@ -177,13 +177,13 @@ public class Show extends AbstractPublicRpcCommand {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
 			LOGGER.log(Level.SEVERE, "cannot encode a block from \"" + publicUri() + "\" in JSON format.", e);
 		}
-		catch (IOException e) {
+		catch (DatabaseException e) {
 			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
 			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
 		}
 	}
 
-    private void print(RemotePublicNode remote, Block block) throws EncodeException, NoSuchAlgorithmException, IOException, TimeoutException, InterruptedException {
+    private void print(RemotePublicNode remote, Block block) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
     	if (json())
 			System.out.println(new Blocks.Encoder().encode(block));
 		else {
@@ -197,7 +197,7 @@ public class Show extends AbstractPublicRpcCommand {
 					if (content instanceof GenesisBlock)
 						System.out.println(block.toString(config, ((GenesisBlock) content).getStartDateTimeUTC()));
 					else
-						throw new IOException("The initial block of the chain is not a genesis block!");
+						throw new DatabaseException("The initial block of the chain is not a genesis block!");
 				}
 				else
 					System.out.println(block);

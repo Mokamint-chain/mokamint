@@ -29,6 +29,7 @@ import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
@@ -206,7 +207,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block exists")
-	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block1 = Blocks.of(13, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
@@ -231,7 +232,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block is missing")
-	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var hash = new byte[] { 67, 56, 43 };
 
 		class MyServer extends PublicTestServer {
@@ -275,8 +276,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getBlock() works if it throws IOException")
-	public void getBlockWorksInCaseOfIOException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	@DisplayName("getBlock() works if it throws DatabaseException")
+	public void getBlockWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "corrupted database";
 
@@ -287,12 +288,12 @@ public class RemotePublicNodeTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IOException.class, () -> remote.getBlock(hash));
+			var exception = assertThrows(DatabaseException.class, () -> remote.getBlock(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -320,7 +321,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getChainInfo() works")
-	public void getChainInfoWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public void getChainInfoWorks() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }));
 
 		class MyServer extends PublicTestServer {
@@ -340,8 +341,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getChainInfo() works in case of IOException")
-	public void getChainInfoWorksInCaseOfIOException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	@DisplayName("getChainInfo() works in case of DatabaseException")
+	public void getChainInfoWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
 		var exceptionMessage = "exception message";
 
 		class MyServer extends PublicTestServer {
@@ -350,12 +351,12 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+				sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IOException.class, () -> remote.getChainInfo());
+			var exception = assertThrows(DatabaseException.class, () -> remote.getChainInfo());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
