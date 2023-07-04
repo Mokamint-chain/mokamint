@@ -244,7 +244,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public void close() throws InterruptedException {
+	public void close() throws InterruptedException, DatabaseException {
 		events.shutdownNow();
 		tasks.shutdownNow();
 		
@@ -253,7 +253,12 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 			tasks.awaitTermination(10, TimeUnit.SECONDS);
 		}
 		finally {
-			db.close();
+			try {
+				db.close();
+			}
+			catch (IOException e) {
+				throw new DatabaseException("could not close the node database correctly", e);
+			}
 		}
 	}
 
@@ -521,8 +526,14 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		}
 
 		@Override @OnThread("events")
-		protected void body() {
-			db.setHeadHash(db.add(block));
+		protected void body() throws DatabaseException {
+			try {
+				db.setHeadHash(db.add(block));
+			}
+			catch (IOException e) {
+				throw new DatabaseException(e);
+			}
+
 			LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
 		}

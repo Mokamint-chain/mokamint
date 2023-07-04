@@ -397,26 +397,31 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param block the block to add
 	 * @return the hash of the block
+	 * @throws IOException if the block cannot be added, because the database is corrupted
 	 */
-	public byte[] add(Block block) {
-		// TODO: this does not throw IOException because no exception is thrown by Xodus. Is it OK?
+	public byte[] add(Block block) throws IOException {
 		var bytesOfBlock = block.toByteArray();
 		byte[] hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
-		environment.executeInTransaction(txn -> {
-			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-			if (block instanceof NonGenesisBlock) {
-				var previousKey = fromBytes(((NonGenesisBlock) block).getHashOfPreviousBlock());
-				var oldForwards = storeOfForwards.get(txn, previousKey);
-				var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
-				storeOfForwards.put(txn, previousKey, newForwards);
-			}
-			else if (block instanceof GenesisBlock)
-				if (storeOfBlocks.get(txn, genesis) == null) {
-					storeOfBlocks.put(txn, genesis, fromBytes(hashOfBlock));
-					LOGGER.info("setting block " + Hex.toHexString(hashOfBlock) + " as genesis");
+		try {
+			environment.executeInTransaction(txn -> {
+				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
+				if (block instanceof NonGenesisBlock) {
+					var previousKey = fromBytes(((NonGenesisBlock) block).getHashOfPreviousBlock());
+					var oldForwards = storeOfForwards.get(txn, previousKey);
+					var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
+					storeOfForwards.put(txn, previousKey, newForwards);
 				}
-		});
+				else if (block instanceof GenesisBlock)
+					if (storeOfBlocks.get(txn, genesis) == null) {
+						storeOfBlocks.put(txn, genesis, fromBytes(hashOfBlock));
+						LOGGER.info("setting block " + Hex.toHexString(hashOfBlock) + " as genesis");
+					}
+			});
+		}
+		catch (ExodusException e) {
+			throw new IOException("cannot write a block in the database", e);
+		}
 
 		LOGGER.info("height " + block.getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
 
@@ -427,19 +432,26 @@ public class Database implements AutoCloseable {
 	 * Sets the head reference of the chain to the block with the given hash.
 	 * 
 	 * @param hash the hash of the block that becomes the head reference of the blockchain
+	 * @throws IOException if the head hash cannot be written, because the database is corrupted
 	 */
-	public void setHeadHash(byte[] hash) {
-		environment.executeInTransaction(txn -> storeOfBlocks.put(txn, head, fromBytes(hash)));
+	public void setHeadHash(byte[] hash) throws IOException {
+		try {
+			environment.executeInTransaction(txn -> storeOfBlocks.put(txn, head, fromBytes(hash)));
+		}
+		catch (ExodusException e) {
+			throw new IOException("cannot write the head hash in the database", e);
+		}
 	}
 
 	@Override
-	public void close() {
+	public void close() throws IOException {
 		try {
 			environment.close();
 			LOGGER.info("closed the blockchain database");
 		}
 		catch (ExodusException e) {
 			LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
+			throw new IOException("cannopt close the database", e);
 		}
 	}
 

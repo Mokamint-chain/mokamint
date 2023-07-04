@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Node;
 
 /**
@@ -28,7 +29,8 @@ public interface LocalNode extends Node {
 	 * 
 	 * @throws InterruptedException if the thread was interrupted while waiting
 	 *                              for its executors to shut down
+	 * @throws DatabaseException if the node cannot be closed because of an error in the database
 	 */
 	@Override
-	void close() throws InterruptedException;
+	void close() throws InterruptedException, DatabaseException;
 }

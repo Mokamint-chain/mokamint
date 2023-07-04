@@ -27,8 +27,9 @@ public interface AutoCloseableNode extends AutoCloseable {
 	 * Closes the node.
 	 * 
 	 * @throws IOException if an I/O error occurred
+	 * @throws DatabaseException if a database could not be closed correctly
 	 * @throws InterruptedException if some closing activity has been interrupted
 	 */
 	@Override
-	void close() throws IOException, InterruptedException;
+	void close() throws IOException, DatabaseException, InterruptedException;
 }
