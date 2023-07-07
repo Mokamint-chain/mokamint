@@ -69,10 +69,10 @@ public class RestrictedNodeServiceTests {
 			}
 
 			@Override
-			public void removePeer(Peer peer) throws TimeoutException, InterruptedException {}
+			public void removePeer(Peer peer) {}
 
 			@Override
-			public void close() throws IOException, InterruptedException {}
+			public void close() {}
 		};
 
 		class MyTestClient extends AbstractRemoteRestrictedNode {
@@ -118,10 +118,10 @@ public class RestrictedNodeServiceTests {
 			}
 
 			@Override
-			public void addPeer(Peer peer) throws TimeoutException, InterruptedException {}
+			public void addPeer(Peer peer) {}
 
 			@Override
-			public void close() throws IOException, InterruptedException {}
+			public void close() {}
 		};
 
 		class MyTestClient extends AbstractRemoteRestrictedNode {

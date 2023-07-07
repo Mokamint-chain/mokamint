@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerResultMessage;
@@ -64,11 +65,6 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 		return new RuntimeException("unexpected exception", e);
 	}
 
-	private boolean processStandardExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TimeoutException.class.isAssignableFrom(clazz) || InterruptedException.class.isAssignableFrom(clazz);
-	}
-
 	@Override
 	protected void notifyResult(RpcMessage message) {
 		super.notifyResult(message);
@@ -76,13 +72,13 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, IOException, TimeoutException, InterruptedException {
+	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, DatabaseException, IOException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendAddPeer(peer, id);
 		try {
 			queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | IOException | IncompatiblePeerVersionException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | IOException | IncompatiblePeerVersionException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -97,19 +93,20 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 	private boolean processAddPeerException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
 		return IncompatiblePeerVersionException.class.isAssignableFrom(clazz) ||
+			DatabaseException.class.isAssignableFrom(clazz) ||
 			IOException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||
 			InterruptedException.class.isAssignableFrom(clazz);
 	}
 
 	@Override
-	public void removePeer(Peer peer) throws TimeoutException, InterruptedException {
+	public void removePeer(Peer peer) throws DatabaseException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendRemovePeer(peer, id);
 		try {
-			queues.waitForResult(id, this::processRemovePeerSuccess, this::processStandardExceptions);
+			queues.waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -119,5 +116,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 
 	private RemovePeerResultMessage processRemovePeerSuccess(RpcMessage message) {
 		return message instanceof RemovePeerResultMessage ? (RemovePeerResultMessage) message : null;
+	}
+
+	private boolean processRemovePeerException(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return DatabaseException.class.isAssignableFrom(clazz) ||
+			TimeoutException.class.isAssignableFrom(clazz) ||
+			InterruptedException.class.isAssignableFrom(clazz);
 	}
 }

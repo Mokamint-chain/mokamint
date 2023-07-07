@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessage;
@@ -64,7 +65,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works")
-	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerVersionException {
+	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerVersionException, DatabaseException {
 		var peers1 = new HashSet<Peer>();
 		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
 		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
@@ -178,6 +179,28 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
+	@DisplayName("addPeer() works in case of DatabaseException")
+	public void addPeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var peer = Peers.of(new URI("ws://my.machine:1024"));
+		var exceptionMessage = "database exception";
+
+		class MyServer extends RestrictedTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAddPeers(AddPeerMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.addPeer(peer));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
 	@DisplayName("if addPeer() is slow, it leads to a time-out")
 	public void addPeerWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
@@ -225,7 +248,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("removePeer() works")
-	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException {
 		var peers1 = new HashSet<Peer>();
 		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
 		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
@@ -247,6 +270,28 @@ public class RemoteRestrictedNodeTests {
 				remote.removePeer(peer);
 
 			assertEquals(peers1, peers2);
+		}
+	}
+
+	@Test
+	@DisplayName("removePeer() works in case of DatabaseException")
+	public void removePeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var peer = Peers.of(new URI("ws://my.machine:1024"));
+		var exceptionMessage = "database exception";
+
+		class MyServer extends RestrictedTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onRemovePeer(RemovePeerMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.removePeer(peer));
+			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 

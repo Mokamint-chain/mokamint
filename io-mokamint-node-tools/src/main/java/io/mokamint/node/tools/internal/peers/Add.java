@@ -23,14 +23,15 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Help.Ansi;
+import picocli.CommandLine.Parameters;
 
 @Command(name = "add", description = "Add peers to a node.")
 public class Add extends AbstractRestrictedRpcCommand {
@@ -59,7 +60,10 @@ public class Add extends AbstractRestrictedRpcCommand {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for the addition of peer " + peer + "!|@"));
 		}
 		catch (IncompatiblePeerVersionException e) {
-			System.out.println(Ansi.AUTO.string("@|red The version of " + peer + " is incompatible with the version of this node!|@"));
+			System.out.println(Ansi.AUTO.string("@|red The version of " + peer + " is incompatible with the version of the node!|@"));
+		}
+		catch (DatabaseException e) {
+			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted0!|@"));
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));

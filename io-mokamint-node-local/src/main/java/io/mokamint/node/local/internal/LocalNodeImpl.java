@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import static io.hotmoka.exceptions.CheckSupplier.check;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -143,13 +145,13 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 		config.seeds()
 			.map(Peers::of)
-			.map(peer -> new AddPeerTask(peer, p -> peers.add(p, true), this))
+			.map(peer -> new AddPeerTask(peer, () -> check(DatabaseException.class, () -> peers.add(peer, true)), this))
 			.forEach(this::execute);
 
 		var maybeHead = db.getHead();
 		if (maybeHead.isPresent()) {
-			this.startDateTime = db.getGenesis().get().getStartDateTimeUTC();
 			var head = maybeHead.get();
+			this.startDateTime = db.getGenesis().get().getStartDateTimeUTC();
 			LocalDateTime nextBlockStartTime = startDateTime.plus(head.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(this, head, nextBlockStartTime));
 		}
@@ -169,7 +171,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		onPeerAddedListeners.removeListener(listener);
 	}
 
-	private Version mkVersion() throws IOException {
+	private static Version mkVersion() throws IOException {
 		// reads the version from the property in the Maven pom.xml
 		try (InputStream is = LocalNodeImpl.class.getClassLoader().getResourceAsStream("maven.properties")) {
 			var mavenProperties = new Properties();
@@ -201,7 +203,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		}
 		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": the database seems corrupted", e);
-			return false;
+			throw new UncheckedException(e);
 		}
 	}
 
@@ -216,20 +218,20 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		}
 		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + ": the database seems corrupted", e);
-			return false;
+			throw new UncheckedException(e);
 		}
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException {
-		if (!peers.contains(peer)) {
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
+		if (!peers.contains(peer)) { // just an optimization to avoid useless connections
 			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
 				var version1 = remote.getInfo().getVersion();
 				var version2 = getInfo().getVersion();
 
 				if (!version1.canWorkWith(version2))
 					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-				else if (peers.add(peer, true))
+				else if (check(DatabaseException.class, () -> peers.add(peer, true)))
 					emit(new PeerAddedEvent(peer));
 			}
 			catch (DeploymentException | IOException e) {
@@ -239,8 +241,8 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public void removePeer(Peer peer) {
-		peers.remove(peer);
+	public void removePeer(Peer peer) throws DatabaseException {
+		check(DatabaseException.class, () -> peers.remove(peer));
 	}
 
 	@Override

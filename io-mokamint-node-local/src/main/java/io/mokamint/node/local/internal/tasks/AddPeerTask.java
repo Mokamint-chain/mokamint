@@ -18,11 +18,11 @@ package io.mokamint.node.local.internal.tasks;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -42,11 +42,19 @@ public class AddPeerTask extends Task {
 	private final Peer peer;
 
 	/**
-	 * The function to call to actually add the peer to the node.
+	 * The task to execute to actually add the peer to the database of the node.
 	 */
-	private final Function<Peer, Boolean> adder;
+	private final PeerAddition adder;
 
 	private final static Logger LOGGER = Logger.getLogger(AddPeerTask.class.getName());
+
+	/**
+	 * The type of the task to execute to actually add the peer to the
+	 * database of the node.
+	 */
+	public interface PeerAddition {
+		boolean add() throws DatabaseException;
+	}
 
 	/**
 	 * Creates a task that adds a peer to a node.
@@ -55,7 +63,7 @@ public class AddPeerTask extends Task {
 	 * @param adder the function to call to actually add the peer to the node
 	 * @param node the node for which this task is working
 	 */
-	public AddPeerTask(Peer peer, Function<Peer, Boolean> adder, LocalNodeImpl node) {
+	public AddPeerTask(Peer peer, PeerAddition adder, LocalNodeImpl node) {
 		node.super();
 
 		this.peer = peer;
@@ -64,7 +72,7 @@ public class AddPeerTask extends Task {
 
 	@Override
 	public String toString() {
-		return "add " + peer + " as peer";
+		return "addition of " + peer + " as a peer";
 	}
 
 	@Override @OnThread("tasks")
@@ -76,10 +84,10 @@ public class AddPeerTask extends Task {
 			if (!version1.canWorkWith(version2))
 				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
 
-			if (adder.apply(peer))
+			if (adder.add())
 				node.emit(node.new PeerAddedEvent(peer));
 		}
-		catch (InterruptedException | IncompatiblePeerVersionException | IOException | DeploymentException | TimeoutException e) {
+		catch (InterruptedException | IncompatiblePeerVersionException | DatabaseException | IOException | DeploymentException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
 		}
 	}

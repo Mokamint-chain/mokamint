@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
@@ -55,6 +56,9 @@ public class Remove extends AbstractRestrictedRpcCommand {
 		}
 		catch (InterruptedException e) {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for removal of peer " + peer + "!|@"));
+		}
+		catch (DatabaseException e) {
+			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted0!|@"));
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));
