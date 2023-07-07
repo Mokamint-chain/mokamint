@@ -22,7 +22,6 @@ import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
-import io.hotmoka.exceptions.UncheckedURISyntaxException;
 import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.SuggestPeersMessage;
@@ -41,6 +40,6 @@ public abstract class SuggestPeersMessageJson implements JsonRepresentation<Sugg
 	@Override
 	public SuggestPeersMessage unmap() throws URISyntaxException {
 		// using Peers.Json::unmap below leads to a run-time error in the JVM!
-		return check(UncheckedURISyntaxException.class, () -> SuggestPeersMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap()))));
+		return check(URISyntaxException.class, () -> SuggestPeersMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap()))));
 	}
 }

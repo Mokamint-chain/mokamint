@@ -22,7 +22,6 @@ import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
-import io.hotmoka.exceptions.UncheckedURISyntaxException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.GetPeersResultMessage;
@@ -43,7 +42,7 @@ public abstract class GetPeersResultMessageJson extends AbstractRpcMessageJsonRe
 	@Override
 	public GetPeersResultMessage unmap() throws URISyntaxException {
 		// using Peers.Json::unmap below leads to a run-time error in the JVM!
-		return check(UncheckedURISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap())), getId()));
+		return check(URISyntaxException.class, () -> GetPeersResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap())), getId()));
 	}
 
 	@Override

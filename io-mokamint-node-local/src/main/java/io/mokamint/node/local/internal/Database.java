@@ -34,9 +34,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.exceptions.UncheckedIOException;
-import io.hotmoka.exceptions.UncheckedNoSuchAlgorithmException;
-import io.hotmoka.exceptions.UncheckedURISyntaxException;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -146,7 +143,7 @@ public class Database implements AutoCloseable {
 	 * @throws IOException if the database is corrupted
 	 */
 	private Optional<Block> getInternal(byte[] hash) throws NoSuchAlgorithmException, IOException {
-		return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
+		return check(NoSuchAlgorithmException.class, IOException.class, () ->
 			Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
 				.map(ByteIterable::getBytes)
 				.map(uncheck(Blocks::from))
@@ -171,7 +168,7 @@ public class Database implements AutoCloseable {
 	 */
 	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
 		try {
-			return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
+			return check(NoSuchAlgorithmException.class, IOException.class, () ->
 				getGenesisHash()
 					.map(uncheck(hash -> getInternal(hash).orElseThrow(() -> new IOException("the genesis hash is set but it is not in the database"))))
 					.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new IOException("the genesis hash is set but it refers to a non-genesis block in the database"))))
@@ -204,7 +201,7 @@ public class Database implements AutoCloseable {
 	 */
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
 		try {
-			return check(UncheckedNoSuchAlgorithmException.class, UncheckedIOException.class, () ->
+			return check(NoSuchAlgorithmException.class, IOException.class, () ->
 				getHeadHash()
 					.map(uncheck(hash -> getInternal(hash).orElseThrow(() -> new IOException("the head hash is set but it is not in the database"))))
 			);
@@ -327,7 +324,7 @@ public class Database implements AutoCloseable {
 	 */
 	public boolean addPeer(Peer peer, boolean force) throws DatabaseException {
 		try {
-			return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
+			return check(URISyntaxException.class, IOException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer, force))));
 		}
 		catch (IOException | URISyntaxException e) {
@@ -367,7 +364,7 @@ public class Database implements AutoCloseable {
 	 */
 	public boolean removePeer(Peer peer) throws DatabaseException {
 		try {
-			return check(UncheckedURISyntaxException.class, UncheckedIOException.class,
+			return check(URISyntaxException.class, IOException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> removePeer(txn, peer))));
 		}
 		catch (IOException | URISyntaxException e) {
