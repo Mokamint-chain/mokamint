@@ -175,8 +175,11 @@ public class PeersTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeerAddedEvent && stillToAccept.remove(((PeerAddedEvent) event).peer))
-					semaphore.release();
+				if (event instanceof PeersAddedEvent pae)
+					pae.getPeers()
+						.map(stillToAccept::remove)
+						.filter(result -> result == true)
+						.forEach(_result -> semaphore.release());
 			}
 		}
 
@@ -275,8 +278,11 @@ public class PeersTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeerAddedEvent && stillToAccept.remove(((PeerAddedEvent) event).peer))
-					semaphore.release();
+				if (event instanceof PeersAddedEvent pae)
+					pae.getPeers()
+						.map(stillToAccept::remove)
+						.filter(result -> result == true)
+						.forEach(_result -> semaphore.release());
 			}
 		}
 

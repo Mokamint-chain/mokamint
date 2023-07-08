@@ -21,11 +21,11 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -255,7 +255,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 				if (!version1.canWorkWith(version2))
 					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
 				else if (check(DatabaseException.class, () -> peers.add(peer, force)))
-					emit(new PeerAddedEvent(peer));
+					emit(new PeersAddedEvent(Stream.of(peer)));
 			}
 			catch (DeploymentException | IOException e) {
 				throw new IOException("cannot contact " + peer, e);
@@ -555,24 +555,32 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	/**
-	 * An event fired to signal that a peer has been added
-	 * to the set of peers of the node.
+	 * An event fired to signal that some peers have been added to the node.
 	 */
-	public class PeerAddedEvent extends Event {
-		public final Peer peer;
+	public class PeersAddedEvent extends Event {
+		private final Peer[] peers;
 
-		public PeerAddedEvent(Peer peer) {
-			this.peer = peer;
+		public PeersAddedEvent(Stream<Peer> peers) {
+			this.peers = peers.toArray(Peer[]::new);
 		}
 
 		@Override
 		public String toString() {
-			return "acceptance event for peer " + peer;
+			return "addition event for peers " + Arrays.toString(peers);
+		}
+
+		/**
+		 * Yields the added peers.
+		 * 
+		 * @return the added peers
+		 */
+		public Stream<Peer> getPeers() {
+			return Stream.of(peers);
 		}
 
 		@Override @OnThread("events")
-		protected void body() throws IOException, URISyntaxException{
-			execute(new SuggestPeersTask(Stream.of(peer), onPeerAddedListeners.getListeners(), LocalNodeImpl.this));
+		protected void body() {
+			execute(new SuggestPeersTask(getPeers(), onPeerAddedListeners.getListeners(), LocalNodeImpl.this));
 		}
 	}
 
