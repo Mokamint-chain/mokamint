@@ -17,8 +17,10 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import static io.hotmoka.exceptions.CheckSupplier.check;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -58,7 +60,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
-import io.mokamint.node.local.internal.tasks.AddPeerTask;
+import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.SuggestPeersTask;
@@ -142,23 +144,40 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 		this.db = new Database(config);
 		this.info = NodeInfos.of(mkVersion());
 		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB);
+		addSeedsAsPeers();
+		this.startDateTime = startMining();
+	}
 
-		config.seeds()
-			.map(Peers::of)
-			.map(peer -> new AddPeerTask(peer, this::addPeer, this))
-			.forEach(this::execute);
-
+	/**
+	 * Starts the mining.
+	 * 
+	 * @return the start time of the blockchain
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private LocalDateTime startMining() throws NoSuchAlgorithmException, DatabaseException {
 		var maybeHead = db.getHead();
 		if (maybeHead.isPresent()) {
 			var head = maybeHead.get();
-			this.startDateTime = db.getGenesis().get().getStartDateTimeUTC();
+			LocalDateTime startDateTime = db.getGenesis().get().getStartDateTimeUTC();
 			LocalDateTime nextBlockStartTime = startDateTime.plus(head.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(this, head, nextBlockStartTime));
+			return startDateTime;
 		}
 		else {
-			this.startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
+			LocalDateTime startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
 			emit(new BlockDiscoveryEvent(Blocks.genesis(startDateTime)));
+			return startDateTime;
 		}
+	}
+
+	/**
+	 * Adds the seeds as peers.
+	 */
+	private void addSeedsAsPeers() {
+		var uris = config.seeds().toArray(URI[]::new);
+		if (uris.length > 0)
+			execute(new AddPeersTask(Stream.of(uris).map(Peers::of), this::addPeer, this));
 	}
 
 	@Override

@@ -59,7 +59,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.tasks.AddPeerTask;
+import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
@@ -197,7 +197,7 @@ public class PeersTests {
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(peer1);
 		allPeers.add(peer2);
-		var allowAddPeers = new AtomicBoolean();
+		var allowAddPeers = new AtomicBoolean(false);
 
 		class MyLocalNode extends LocalNodeImpl {
 
@@ -212,7 +212,7 @@ public class PeersTests {
 
 			@Override
 			protected void onSchedule(Task task) {
-				if (!allowAddPeers.get() && task instanceof AddPeerTask)
+				if (!allowAddPeers.get() && task instanceof AddPeersTask)
 					fail();
 			}
 		}
@@ -269,7 +269,7 @@ public class PeersTests {
 
 			@Override
 			protected void onSchedule(Task task) {
-				if (!allowAddPeers.get() && task instanceof AddPeerTask)
+				if (!allowAddPeers.get() && task instanceof AddPeersTask)
 					fail();
 			}
 

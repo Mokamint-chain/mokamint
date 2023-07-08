@@ -17,9 +17,12 @@ limitations under the License.
 package io.mokamint.node.local.internal.tasks;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.mokamint.node.api.DatabaseException;
@@ -29,52 +32,57 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 
 /**
- * A task that adds a peer to a node. It asks the peer about its version and checks
- * if it is compatible with the version of the node.
+ * A task that adds peers to a node.
  */
-public class AddPeerTask extends Task {
+public class AddPeersTask extends Task {
 
 	/**
-	 * The peer to add.
+	 * The peers to add.
 	 */
-	private final Peer peer;
+	private final Peer[] peers;
 
 	/**
-	 * The task to execute to actually add the peer to the database of the node.
+	 * The task to execute to actually add a peer to the database of the node.
 	 */
 	private final PeerAddition adder;
 
-	private final static Logger LOGGER = Logger.getLogger(AddPeerTask.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(AddPeersTask.class.getName());
 
 	/**
-	 * The type of the task to execute to actually add the peer to the
-	 * database of the node.
+	 * The type of the code to execute to actually add the peer to the database of the node.
 	 */
 	public interface PeerAddition {
 		void add(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException;
 	}
 
 	/**
-	 * Creates a task that adds a peer to a node.
+	 * Creates a task that adds peers to a node.
 	 * 
-	 * @param peer the peer to add
-	 * @param adder the function to call to actually add the peer to the node
+	 * @param peers the peers to add
+	 * @param adder the function to call to actually add a peer to the node
 	 * @param node the node for which this task is working
 	 */
-	public AddPeerTask(Peer peer, PeerAddition adder, LocalNodeImpl node) {
+	public AddPeersTask(Stream<Peer> peers, PeerAddition adder, LocalNodeImpl node) {
 		node.super();
 
-		this.peer = peer;
+		this.peers = peers.toArray(Peer[]::new);
 		this.adder = adder;
 	}
 
 	@Override
 	public String toString() {
-		return "addition of " + peer + " as a peer";
+		return "addition of " + Arrays.toString(peers) + " as peers";
 	}
 
 	@Override @OnThread("tasks")
 	protected void body() {
+		try (var customThreadPool = new ForkJoinPool()) {
+			customThreadPool.execute(() -> Stream.of(peers).parallel().forEach(this::addPeer));
+		}
+	}
+
+	@OnThread("customThreadPool")
+	private void addPeer(Peer peer) {
 		try {
 			adder.add(peer);
 		}
