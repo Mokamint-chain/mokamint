@@ -17,19 +17,25 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 /**
  * The implementation of a remote miner. It publishes an endpoint at a URL,
@@ -43,8 +49,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	 */
 	private final int port;
 
-	@GuardedBy("itself")
-	private final Set<Session> sessions = new HashSet<>();
+	private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
 
 	private final ListOfMiningRequests requests = new ListOfMiningRequests(10);
 
@@ -60,14 +65,9 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		requests.add(description, onDeadlineComputed);
 
-		Set<Session> copy;
-		synchronized (sessions) {
-			copy = new HashSet<>(sessions);
-		}
+		LOGGER.info("requesting " + description + " to " + sessions.size() + " open sessions");
 
-		LOGGER.info("requesting " + description + " to " + copy.size() + " open sessions");
-
-		copy.stream()
+		sessions.stream()
 			.filter(Session::isOpen)
 			.map(Session::getAsyncRemote)
 			.forEach(remote -> remote.sendObject(description));
@@ -79,11 +79,8 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		LOGGER.info("closed the remote miner at ws://localhost:" + port);
 	}
 
-	void addSession(Session session) {
-		synchronized (sessions) {
-			sessions.add(session);
-		}
-
+	private void addSession(Session session) {
+		sessions.add(session);
 		LOGGER.info("miner service " + session.getId() + ": bound");
 
 		// we inform the newly arrived about work that it can already start doing
@@ -91,16 +88,35 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		requests.forAllDescriptions(remote::sendObject);
 	}
 
-	void removeSession(Session session) {
-		synchronized (sessions) {
-			sessions.remove(session);
-		}
-
+	private void removeSession(Session session) {
+		sessions.remove(session);
 		LOGGER.info("miner service " + session.getId() + ": unbound");
 	}
 
 	void processDeadline(Deadline deadline) {
 		LOGGER.info("notifying deadline: " + deadline);
 		requests.runAllActionsFor(deadline);
+	}
+
+	/**
+	 * An endpoint that connects to miner services.
+	 */
+	public static class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
+
+		@SuppressWarnings("resource")
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+	    	getServer().addSession(session);
+	    	session.addMessageHandler((MessageHandler.Whole<Deadline>) getServer()::processDeadline);
+	    }
+
+	    @Override
+		public void onClose(Session session, CloseReason closeReason) {
+	    	getServer().removeSession(session);
+	    }
+
+		static ServerEndpointConfig config(RemoteMinerImpl server) {
+			return simpleConfig(server, RemoteMinerEndpoint.class, "/", Deadlines.Decoder.class, DeadlineDescriptions.Encoder.class);
+		}
 	}
 }

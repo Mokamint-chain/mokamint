@@ -18,11 +18,16 @@ package io.mokamint.node.service.internal;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeListeners;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
@@ -51,6 +56,16 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 */
 	private final PublicNode node;
 
+	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
+
+	private final Consumer<Stream<Peer>> onPeerAddedListener = new Consumer<>() {
+
+		@Override
+		public void accept(Stream<Peer> peers) {
+			sendPeersSuggestion(peers);
+		}
+	};
+
 	/**
 	 * Creates a new service for the given node, at the given network port.
 	 * 
@@ -63,22 +78,28 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super(port);
 		this.node = node;
 
-		if (node instanceof NodeListeners) {
-			// TODO
-			// ((NodeListeners) node).addOnPeerAddedListener(null);
-		}
+		if (node instanceof NodeListeners nl)
+			nl.addOnPeerAddedListener(onPeerAddedListener);
 
 		deploy();
 	}
 
 	@Override
 	public void close() {
-		if (node instanceof NodeListeners) {
-			// TODO
-			// ((NodeListeners) remove).addOnPeerAddedListener(null);
-		}
+		if (node instanceof NodeListeners nl)
+			nl.removeOnPeerAddedListener(onPeerAddedListener);
 
 		super.close();
+	}
+
+	private void sendPeersSuggestion(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		
+		LOGGER.info("broadcasting newly added peers " + Arrays.toString(peersAsArray) + " to all peers");
+
+		/*session.getOpenSessions().stream()
+    		.filter(Session::isOpen)
+    		.forEach(openSession -> send(SuggestPeersMessages.of(Stream.of(peersAsArray)), openSession));*/
 	}
 
 	/**

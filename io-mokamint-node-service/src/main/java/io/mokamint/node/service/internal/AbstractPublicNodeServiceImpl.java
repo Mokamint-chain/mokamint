@@ -17,6 +17,8 @@ limitations under the License.
 package io.mokamint.node.service.internal;
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -40,6 +42,7 @@ import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.messages.SuggestPeersMessages;
 import io.mokamint.node.service.api.PublicNodeService;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -56,6 +59,11 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	 * The port of localhost, where this service is published.
 	 */
 	private final int port;
+
+	/**
+	 * The sessions connected to the {@link SuggestPeersEndpoint}.
+	 */
+	private final Set<Session> suggestPeersSessions = ConcurrentHashMap.newKeySet();
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractPublicNodeServiceImpl.class.getName());
 
@@ -180,9 +188,17 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 
 	public static class SuggestPeersEndpoint extends AbstractServerEndpoint<AbstractPublicNodeServiceImpl> {
 
+		@SuppressWarnings("resource")
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
+			getServer().suggestPeersSessions.add(session);
 	    }
+
+		@SuppressWarnings("resource")
+		@Override
+		public void onClose(Session session, CloseReason closeReason) {
+			getServer().suggestPeersSessions.remove(session);
+		}
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
 			return simpleConfig(server, SuggestPeersEndpoint.class, SUGGEST_PEERS_ENDPOINT, SuggestPeersMessages.Encoder.class);
