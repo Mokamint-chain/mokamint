@@ -176,8 +176,8 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	 */
 	private void addSeedsAsPeers() {
 		var uris = config.seeds().toArray(URI[]::new);
-		if (uris.length > 0)
-			execute(new AddPeersTask(Stream.of(uris).map(Peers::of), this::addPeer, this));
+		if (uris.length > 0) // just to avoid useless tasks
+			execute(new AddPeersTask(config.seeds().map(Peers::of), peer -> addPeer(peer, true), this));
 	}
 
 	@Override
@@ -243,23 +243,25 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 	@Override
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
-		addPeer(peer, true);
+		if (addPeer(peer, true))
+			emit(new PeersAddedEvent(Stream.of(peer)));
 	}
 
-	private void addPeer(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
-		if (!peers.contains(peer)) { // just an optimization to avoid useless connections
-			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
-				var version1 = remote.getInfo().getVersion();
-				var version2 = getInfo().getVersion();
+	private boolean addPeer(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
+		if (peers.contains(peer))
+			return false;
 
-				if (!version1.canWorkWith(version2))
-					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-				else if (check(DatabaseException.class, () -> peers.add(peer, force)))
-					emit(new PeersAddedEvent(Stream.of(peer)));
-			}
-			catch (DeploymentException | IOException e) {
-				throw new IOException("cannot contact " + peer, e);
-			}
+		try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
+			var version1 = remote.getInfo().getVersion();
+			var version2 = getInfo().getVersion();
+
+			if (!version1.canWorkWith(version2))
+				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
+			else 
+				return check(DatabaseException.class, () -> peers.add(peer, force));
+		}
+		catch (DeploymentException | IOException e) {
+			throw new IOException("cannot contact " + peer, e);
 		}
 	}
 

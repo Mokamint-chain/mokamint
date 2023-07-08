@@ -52,14 +52,26 @@ public class AddPeersTask extends Task {
 	 * The type of the code to execute to actually add the peer to the database of the node.
 	 */
 	public interface PeerAddition {
-		void add(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException;
+		
+		/**
+		 * Tries to add the given peer to the node.
+		 * 
+		 * @param peer the peer to add
+		 * @return true if and only if the peer has been added
+		 * @throws IOException if a connection to the peer cannot be established
+		 * @throws IncompatiblePeerVersionException if the version of {@code peer} is incompatible with that of this node
+		 * @throws DatabaseException if the database is corrupted
+		 * @throws TimeoutException if no answer arrives before a time window
+		 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+		 */
+		boolean add(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException;
 	}
 
 	/**
 	 * Creates a task that adds peers to a node.
 	 * 
 	 * @param peers the peers to add
-	 * @param adder the function to call to actually add a peer to the node
+	 * @param adder the code to execute to actually add a peer to the node
 	 * @param node the node for which this task is working
 	 */
 	public AddPeersTask(Stream<Peer> peers, PeerAddition adder, LocalNodeImpl node) {
@@ -77,17 +89,24 @@ public class AddPeersTask extends Task {
 	@Override @OnThread("tasks")
 	protected void body() {
 		try (var customThreadPool = new ForkJoinPool()) {
-			customThreadPool.execute(() -> Stream.of(peers).parallel().forEach(this::addPeer));
+			customThreadPool.execute(() -> flagPeersAddedEvent(Stream.of(peers).parallel().filter(this::addPeer)));
 		}
 	}
 
+	private void flagPeersAddedEvent(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		if (peersAsArray.length > 0) // just to avoid useless events
+			node.emit(node.new PeersAddedEvent(Stream.of(peersAsArray)));
+	}
+
 	@OnThread("customThreadPool")
-	private void addPeer(Peer peer) {
+	private boolean addPeer(Peer peer) {
 		try {
-			adder.add(peer);
+			return adder.add(peer);
 		}
 		catch (InterruptedException | IncompatiblePeerVersionException | DatabaseException | IOException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
+			return false;
 		}
 	}
 }
