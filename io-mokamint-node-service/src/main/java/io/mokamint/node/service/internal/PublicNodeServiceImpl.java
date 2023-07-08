@@ -18,10 +18,8 @@ package io.mokamint.node.service.internal;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -56,15 +54,11 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 */
 	private final PublicNode node;
 
-	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
-
-	private final Consumer<Stream<Peer>> onPeerAddedListener = new Consumer<>() {
-
-		@Override
-		public void accept(Stream<Peer> peers) {
-			sendPeersSuggestion(peers);
-		}
-	};
+	/**
+	 * We need this intermediate definition since two instances of a method reference
+	 * are not the same, nor equals.
+	 */
+	private final Consumer<Stream<Peer>> onPeerAddedListener = this::sendPeersSuggestion;
 
 	/**
 	 * Creates a new service for the given node, at the given network port.
@@ -90,16 +84,6 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			nl.removeOnPeerAddedListener(onPeerAddedListener);
 
 		super.close();
-	}
-
-	private void sendPeersSuggestion(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		
-		LOGGER.info("broadcasting newly added peers " + Arrays.toString(peersAsArray) + " to all peers");
-
-		/*session.getOpenSessions().stream()
-    		.filter(Session::isOpen)
-    		.forEach(openSession -> send(SuggestPeersMessages.of(Stream.of(peersAsArray)), openSession));*/
 	}
 
 	/**

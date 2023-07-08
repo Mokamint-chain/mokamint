@@ -68,7 +68,7 @@ public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNod
 		else if (message == null)
 			LOGGER.log(Level.SEVERE, "unexpected null message");
 		else
-			LOGGER.log(Level.SEVERE, "unexpected message", message.getClass().getName());
+			LOGGER.log(Level.SEVERE, "unexpected message of class " + message.getClass().getName());
 	}
 
 	protected void sendAddPeer(Peer peer, String id) {

@@ -17,13 +17,16 @@ limitations under the License.
 package io.mokamint.node.service.internal;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -93,6 +96,16 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 				SuggestPeersEndpoint.config(this));
 
 		LOGGER.info("published a public node service at ws://localhost:" + port);
+	}
+
+	protected void sendPeersSuggestion(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		
+		LOGGER.info("broadcasting newly added peers " + Arrays.toString(peersAsArray) + " to all listeners");
+
+		suggestPeersSessions.stream()
+			.filter(Session::isOpen)
+			.forEach(openSession -> sendObjectAsync(openSession, SuggestPeersMessages.of(Stream.of(peersAsArray))));
 	}
 
 	@Override

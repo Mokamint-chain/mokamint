@@ -26,16 +26,20 @@ import static io.mokamint.node.service.api.PublicNodeService.SUGGEST_PEERS_ENDPO
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
+import io.mokamint.node.ListenerManager;
+import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -65,7 +69,12 @@ import jakarta.websocket.Session;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
+public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode implements NodeListeners {
+
+	/**
+	 * The listeners called whenever a peer is added to this node.
+	 */
+	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractRemotePublicNodeImpl.class.getName());
 
@@ -86,6 +95,16 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 	}
 
 	@Override
+	public void addOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
+		onPeersAddedListeners.addListener(listener);
+	}
+
+	@Override
+	public void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
+		onPeersAddedListeners.removeListener(listener);
+	}
+
+	@Override
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof GetInfoResultMessage)
 			onGetInfoResult(((GetInfoResultMessage) message).get());
@@ -102,11 +121,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 		else if (message == null)
 			LOGGER.log(Level.SEVERE, "unexpected null message");
 		else
-			LOGGER.log(Level.SEVERE, "unexpected message", message.getClass().getName());
-	}
-
-	private void notifyPeerAdded(SuggestPeersMessage message) {
-		// TODO
+			LOGGER.log(Level.SEVERE, "unexpected message of class " + message.getClass().getName());
 	}
 
 	protected void sendGetInfo(String id) {
@@ -183,12 +198,16 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, AbstractRemotePublicNodeImpl.this::notifyPeerAdded);
+			addMessageHandler(session, this::notifyPeersAdded);
 		}
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, SuggestPeersMessages.Decoder.class);
+		}
+
+		private void notifyPeersAdded(SuggestPeersMessage message) {
+			onPeersAddedListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
 		}
 	}
 }

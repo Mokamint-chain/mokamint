@@ -21,21 +21,17 @@ import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
-import io.mokamint.node.ListenerManager;
-import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.GetBlockResultMessage;
@@ -52,12 +48,7 @@ import jakarta.websocket.DeploymentException;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements RemotePublicNode, NodeListeners {
-
-	/**
-	 * The listeners called whenever a peer is added to this node.
-	 */
-	private final ListenerManager<Stream<Peer>> onPeerAddedListeners = ListenerManagers.mk();
+public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements RemotePublicNode {
 
 	private final NodeMessageQueues queues;
 
@@ -76,16 +67,6 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 		super(uri);
 
 		this.queues = new NodeMessageQueues(timeout);
-	}
-
-	@Override
-	public void addOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeerAddedListeners.addListener(listener);
-	}
-
-	@Override
-	public void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeerAddedListeners.removeListener(listener);
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
