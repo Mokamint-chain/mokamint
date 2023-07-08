@@ -51,7 +51,7 @@ public class GetBlockResultMessageImpl extends AbstractRpcMessage implements Get
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetBlockResultMessage && super.equals(other) && Objects.equals(get(), ((GetBlockResultMessage) other).get());
+		return other instanceof GetBlockResultMessage gbrm && super.equals(other) && Objects.equals(get(), gbrm.get());
 	}
 
 	@Override

@@ -257,8 +257,8 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 			catch (RuntimeException e) {
 				// the toml4j library wraps the FileNotFoundException inside a RuntimeException...
 				Throwable cause = e.getCause();
-				if (cause instanceof FileNotFoundException)
-					throw (FileNotFoundException) cause;
+				if (cause instanceof FileNotFoundException fnfe)
+					throw fnfe;
 				else
 					throw e;
 			}

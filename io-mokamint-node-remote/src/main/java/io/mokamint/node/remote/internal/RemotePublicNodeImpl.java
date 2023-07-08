@@ -101,7 +101,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	private NodeInfo processGetInfoSuccess(RpcMessage message) {
-		return message instanceof GetInfoResultMessage ? ((GetInfoResultMessage) message).get() : null;
+		return message instanceof GetInfoResultMessage girm ? girm.get() : null;
 	}
 
 	@Override
@@ -120,7 +120,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	private Stream<Peer> processGetPeersSuccess(RpcMessage message) {
-		return message instanceof GetPeersResultMessage ? ((GetPeersResultMessage) message).get() : null;
+		return message instanceof GetPeersResultMessage gprm ? gprm.get() : null;
 	}
 
 	@Override
@@ -139,7 +139,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	private Optional<Block> processGetBlockSuccess(RpcMessage message) {
-		return message instanceof GetBlockResultMessage ? ((GetBlockResultMessage) message).get() : null;
+		return message instanceof GetBlockResultMessage gbrm ? gbrm.get() : null;
 	}
 
 	private boolean processGetBlockException(ExceptionMessage message) {
@@ -166,7 +166,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	private ConsensusConfig processGetConfigSuccess(RpcMessage message) {
-		return message instanceof GetConfigResultMessage ? ((GetConfigResultMessage) message).get() : null;
+		return message instanceof GetConfigResultMessage gcrm ? gcrm.get() : null;
 	}
 
 	@Override
@@ -185,7 +185,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	private ChainInfo processGetChainInfoSuccess(RpcMessage message) {
-		return message instanceof GetChainInfoResultMessage ? ((GetChainInfoResultMessage) message).get() : null;
+		return message instanceof GetChainInfoResultMessage gcirm ? gcirm.get() : null;
 	}
 
 	private boolean processGetChainInfoException(ExceptionMessage message) {

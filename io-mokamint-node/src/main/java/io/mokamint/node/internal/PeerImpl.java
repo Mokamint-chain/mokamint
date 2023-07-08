@@ -54,7 +54,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof Peer && uri.equals(((Peer) other).getURI());
+		return other instanceof Peer peer && uri.equals(peer.getURI());
 	}
 
 	@Override

@@ -101,7 +101,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	protected void sendPeersSuggestion(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		
-		LOGGER.info("broadcasting newly added peers " + Arrays.toString(peersAsArray) + " to all listeners");
+		LOGGER.info("broadcasting newly added peers " + Arrays.toString(peersAsArray) + " to " + suggestPeersSessions.size() + " sessions");
 
 		suggestPeersSessions.stream()
 			.filter(Session::isOpen)

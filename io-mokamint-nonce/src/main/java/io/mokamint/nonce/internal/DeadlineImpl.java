@@ -89,17 +89,13 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof Deadline) {
-			Deadline otherAsDeadline = (Deadline) other;
-			return progressive == otherAsDeadline.getProgressive() &&
-				scoopNumber == otherAsDeadline.getScoopNumber() &&
-				Arrays.equals(value, otherAsDeadline.getValue()) &&
-				Arrays.equals(prolog, otherAsDeadline.getProlog()) &&
-				Arrays.equals(data, otherAsDeadline.getData()) &&
-				hashing.getName().equals(otherAsDeadline.getHashing().getName());
-		}
-		else
-			return false;
+		return other instanceof Deadline otherAsDeadline &&
+			progressive == otherAsDeadline.getProgressive() &&
+			scoopNumber == otherAsDeadline.getScoopNumber() &&
+			Arrays.equals(value, otherAsDeadline.getValue()) &&
+			Arrays.equals(prolog, otherAsDeadline.getProlog()) &&
+			Arrays.equals(data, otherAsDeadline.getData()) &&
+			hashing.getName().equals(otherAsDeadline.getHashing().getName());
 	}
 
 	@Override

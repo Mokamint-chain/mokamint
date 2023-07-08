@@ -189,7 +189,7 @@ public class Database implements AutoCloseable {
 	}
 
 	private static Optional<GenesisBlock> castToGenesis(Block block) {
-		return block instanceof GenesisBlock ? Optional.of((GenesisBlock) block) : Optional.empty();
+		return block instanceof GenesisBlock gb ? Optional.of(gb) : Optional.empty();
 	}
 
 	/**
@@ -422,8 +422,8 @@ public class Database implements AutoCloseable {
 		try {
 			environment.executeInTransaction(txn -> {
 				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-				if (block instanceof NonGenesisBlock) {
-					var previousKey = fromBytes(((NonGenesisBlock) block).getHashOfPreviousBlock());
+				if (block instanceof NonGenesisBlock ngb) {
+					var previousKey = fromBytes(ngb.getHashOfPreviousBlock());
 					var oldForwards = storeOfForwards.get(txn, previousKey);
 					var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
 					storeOfForwards.put(txn, previousKey, newForwards);

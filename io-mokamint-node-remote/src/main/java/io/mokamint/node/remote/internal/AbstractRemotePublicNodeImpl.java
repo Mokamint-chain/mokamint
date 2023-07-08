@@ -106,18 +106,18 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 
 	@Override
 	protected void notifyResult(RpcMessage message) {
-		if (message instanceof GetInfoResultMessage)
-			onGetInfoResult(((GetInfoResultMessage) message).get());
-		else if (message instanceof GetPeersResultMessage)
-			onGetPeersResult(((GetPeersResultMessage) message).get());
-		else if (message instanceof GetBlockResultMessage)
-			onGetBlockResult(((GetBlockResultMessage) message).get());
-		else if (message instanceof GetConfigResultMessage)
-			onGetConfigResult(((GetConfigResultMessage) message).get());
-		else if (message instanceof GetChainInfoResultMessage)
-			onGetChainInfoResult(((GetChainInfoResultMessage) message).get());
-		else if (message instanceof ExceptionMessage)
-			onException((ExceptionMessage) message);
+		if (message instanceof GetInfoResultMessage girm)
+			onGetInfoResult(girm.get());
+		else if (message instanceof GetPeersResultMessage gprm)
+			onGetPeersResult(gprm.get());
+		else if (message instanceof GetBlockResultMessage gbrm)
+			onGetBlockResult(gbrm.get());
+		else if (message instanceof GetConfigResultMessage gcrm)
+			onGetConfigResult(gcrm.get());
+		else if (message instanceof GetChainInfoResultMessage gcirm)
+			onGetChainInfoResult(gcirm.get());
+		else if (message instanceof ExceptionMessage em)
+			onException(em);
 		else if (message == null)
 			LOGGER.log(Level.SEVERE, "unexpected null message");
 		else
@@ -153,6 +153,15 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
+
+	/**
+	 * Called when the bound service suggests to add some peers.
+	 * 
+	 * @param message the message containing the suggested peers
+	 */
+	protected void onSuggestPeers(SuggestPeersMessage message) {
+		onPeersAddedListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
+	}
 
 	private class GetPeersEndpoint extends Endpoint {
 
@@ -198,16 +207,12 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, this::notifyPeersAdded);
+			addMessageHandler(session, AbstractRemotePublicNodeImpl.this::onSuggestPeers);
 		}
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, SuggestPeersMessages.Decoder.class);
-		}
-
-		private void notifyPeersAdded(SuggestPeersMessage message) {
-			onPeersAddedListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
 		}
 	}
 }

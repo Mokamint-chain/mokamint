@@ -101,7 +101,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GenesisBlock && startDateTimeUTC.equals(((GenesisBlock) other).getStartDateTimeUTC());
+		return other instanceof GenesisBlock gb && startDateTimeUTC.equals(gb.getStartDateTimeUTC());
 	}
 
 	@Override

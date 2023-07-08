@@ -49,14 +49,10 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof DeadlineDescription) {
-			DeadlineDescription otherAsDeadlineDescription = (DeadlineDescription) other;
-			return scoopNumber == otherAsDeadlineDescription.getScoopNumber() &&
-				Arrays.equals(data, otherAsDeadlineDescription.getData()) &&
-				hashing.getName().equals(otherAsDeadlineDescription.getHashing().getName());
-		}
-		else
-			return false;
+		return other instanceof DeadlineDescription otherAsDeadlineDescription &&
+			scoopNumber == otherAsDeadlineDescription.getScoopNumber() &&
+			Arrays.equals(data, otherAsDeadlineDescription.getData()) &&
+			hashing.getName().equals(otherAsDeadlineDescription.getHashing().getName());
 	}
 
 	@Override

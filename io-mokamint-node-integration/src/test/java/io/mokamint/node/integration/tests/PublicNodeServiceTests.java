@@ -18,6 +18,8 @@ package io.mokamint.node.integration.tests;
 
 import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,10 +29,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
@@ -50,9 +55,11 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.SuggestPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Deadlines;
@@ -298,6 +305,46 @@ public class PublicNodeServiceTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetInfo();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a service receives added peers from its node, they get forwarded to the clients")
+	public void serviceSendsAddedPeersToClients() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+		var semaphore = new Semaphore(0);
+		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
+		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
+		var peers = new HashSet<Peer>();
+		peers.add(peer1);
+		peers.add(peer2);
+
+		interface PublicNodeWithListeners extends PublicNode, NodeListeners {};
+
+		var listenerForNewPeers = new AtomicReference<Consumer<Stream<Peer>>>();
+
+		var node = mock(PublicNodeWithListeners.class);
+		doAnswer(listener -> {
+			listenerForNewPeers.set(listener.getArgument(0));
+			return null;
+		}).
+		when(node).addOnPeerAddedListener(any());
+
+		class MyTestClient extends AbstractRemotePublicNode {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI);
+			}
+
+			@Override
+			protected void onSuggestPeers(SuggestPeersMessage message) {
+				if (peers.equals(message.getPeers().collect(Collectors.toSet())))
+					semaphore.release();
+			}
+		}
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			listenerForNewPeers.get().accept(Stream.of(peer1, peer2));
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

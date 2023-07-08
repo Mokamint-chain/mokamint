@@ -74,14 +74,10 @@ public class ChainInfoImpl implements ChainInfo {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof ChainInfo) {
-			var otherChainInfo = (ChainInfo) other;
-			return height == otherChainInfo.getHeight() &&
-				same(genesisHash, otherChainInfo.getGenesisHash()) &&
-				same(headHash, otherChainInfo.getHeadHash());
-		}
-		else
-			return false;
+		return other instanceof ChainInfo otherChainInfo &&
+			height == otherChainInfo.getHeight() &&
+			same(genesisHash, otherChainInfo.getGenesisHash()) &&
+			same(headHash, otherChainInfo.getHeadHash());
 	}
 
 	@Override

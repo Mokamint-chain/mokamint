@@ -77,14 +77,12 @@ class NodeMessageQueues {
 					return result;
 				}
 
-				if (message instanceof ExceptionMessage) {
-					var erm = (ExceptionMessage) message;
-
-					if (processException.test(erm)) {
+				if (message instanceof ExceptionMessage em) {
+					if (processException.test(em)) {
 						queues.remove(id);
 						Exception exc;
 						try {
-							exc = erm.getExceptionClass().getConstructor(String.class).newInstance(erm.getMessage());
+							exc = em.getExceptionClass().getConstructor(String.class).newInstance(em.getMessage());
 						}
 						catch (Exception e) {
 							LOGGER.log(Level.SEVERE, "cannot instantiate the exception type", e);

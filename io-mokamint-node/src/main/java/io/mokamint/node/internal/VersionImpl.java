@@ -68,12 +68,8 @@ public class VersionImpl implements Version {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof Version) {
-			var otherAsVersion = (Version) other;
-			return major == otherAsVersion.getMajor() && minor == otherAsVersion.getMinor() && patch == otherAsVersion.getPatch();
-		}
-		else
-			return false;
+		return other instanceof Version otherAsVersion &&
+			major == otherAsVersion.getMajor() && minor == otherAsVersion.getMinor() && patch == otherAsVersion.getPatch();
 	}
 
 	@Override
@@ -85,5 +81,4 @@ public class VersionImpl implements Version {
 	public boolean canWorkWith(Version other) {
 		return major == other.getMajor() && minor == other.getMinor();
 	}
-
 }

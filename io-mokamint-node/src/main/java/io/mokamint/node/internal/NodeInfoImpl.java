@@ -45,12 +45,7 @@ public class NodeInfoImpl implements NodeInfo {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof NodeInfo) {
-			var otherAsNI = (NodeInfo) other;
-			return version.equals(otherAsNI.getVersion());
-		}
-		else
-			return false;
+		return other instanceof NodeInfo otherAsNI && version.equals(otherAsNI.getVersion());
 	}
 
 	@Override

@@ -87,7 +87,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 	}
 
 	private AddPeerResultMessage processAddPeerSuccess(RpcMessage message) {
-		return message instanceof AddPeerResultMessage ? (AddPeerResultMessage) message : null;
+		return message instanceof AddPeerResultMessage aprm ? aprm : null;
 	}
 
 	private boolean processAddPeerException(ExceptionMessage message) {
@@ -115,7 +115,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 	}
 
 	private RemovePeerResultMessage processRemovePeerSuccess(RpcMessage message) {
-		return message instanceof RemovePeerResultMessage ? (RemovePeerResultMessage) message : null;
+		return message instanceof RemovePeerResultMessage rprm ? rprm : null;
 	}
 
 	private boolean processRemovePeerException(ExceptionMessage message) {

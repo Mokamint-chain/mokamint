@@ -48,6 +48,6 @@ public class SuggestPeersMessageImpl implements SuggestPeersMessage {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof SuggestPeersMessage && Arrays.equals(peers, ((SuggestPeersMessage) other).getPeers().toArray(Peer[]::new));
+		return other instanceof SuggestPeersMessage spm && Arrays.equals(peers, spm.getPeers().toArray(Peer[]::new));
 	}
 }
