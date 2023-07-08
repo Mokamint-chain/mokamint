@@ -27,8 +27,6 @@ import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.remote.RemotePublicNodes;
-import jakarta.websocket.DeploymentException;
 
 /**
  * A task that adds a peer to a node. It asks the peer about its version and checks
@@ -53,7 +51,7 @@ public class AddPeerTask extends Task {
 	 * database of the node.
 	 */
 	public interface PeerAddition {
-		boolean add() throws DatabaseException;
+		void add(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException;
 	}
 
 	/**
@@ -77,17 +75,10 @@ public class AddPeerTask extends Task {
 
 	@Override @OnThread("tasks")
 	protected void body() {
-		try (var remote = RemotePublicNodes.of(peer.getURI(), node.getConfig().peerTimeout)) {
-			var version1 = remote.getInfo().getVersion();
-			var version2 = node.getInfo().getVersion();
-
-			if (!version1.canWorkWith(version2))
-				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-
-			if (adder.add())
-				node.emit(node.new PeerAddedEvent(peer));
+		try {
+			adder.add(peer);
 		}
-		catch (InterruptedException | IncompatiblePeerVersionException | DatabaseException | IOException | DeploymentException | TimeoutException e) {
+		catch (InterruptedException | IncompatiblePeerVersionException | DatabaseException | IOException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
 		}
 	}

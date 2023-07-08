@@ -145,7 +145,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 		config.seeds()
 			.map(Peers::of)
-			.map(peer -> new AddPeerTask(peer, () -> check(DatabaseException.class, () -> peers.add(peer, true)), this))
+			.map(peer -> new AddPeerTask(peer, this::addPeer, this))
 			.forEach(this::execute);
 
 		var maybeHead = db.getHead();
@@ -224,6 +224,10 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 	@Override
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
+		addPeer(peer, true);
+	}
+
+	private void addPeer(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
 		if (!peers.contains(peer)) { // just an optimization to avoid useless connections
 			try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
 				var version1 = remote.getInfo().getVersion();
@@ -231,7 +235,7 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 
 				if (!version1.canWorkWith(version2))
 					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-				else if (check(DatabaseException.class, () -> peers.add(peer, true)))
+				else if (check(DatabaseException.class, () -> peers.add(peer, force)))
 					emit(new PeerAddedEvent(peer));
 			}
 			catch (DeploymentException | IOException e) {
