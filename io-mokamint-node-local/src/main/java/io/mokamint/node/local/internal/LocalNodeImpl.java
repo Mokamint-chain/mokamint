@@ -212,7 +212,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Stream<Peer> getPeers() {
-		return peers.getPeers();
+		return peers.get();
 	}
 
 	@Override

@@ -68,7 +68,7 @@ public class NodePeers {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
-		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB);
+		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addToDB, this::removeFromDB);
 	}
 
 	/**
@@ -76,7 +76,7 @@ public class NodePeers {
 	 * 
 	 * @return the peers
 	 */
-	public Stream<Peer> getPeers() {
+	public Stream<Peer> get() {
 		return peers.getElements();
 	}
 
@@ -121,7 +121,7 @@ public class NodePeers {
 		return check(DatabaseException.class, () -> peers.remove(peer));
 	}
 
-	private boolean addPeerToDB(Peer peer, boolean force) {
+	private boolean addToDB(Peer peer, boolean force) {
 		try {
 			if (db.addPeer(peer, force)) {
 				LOGGER.info("added peer " + peer + " to the db");
@@ -136,7 +136,7 @@ public class NodePeers {
 		}
 	}
 
-	private boolean removePeerFromDB(Peer peer) {
+	private boolean removeFromDB(Peer peer) {
 		try {
 			if (db.removePeer(peer)) {
 				LOGGER.info("removed peer " + peer + " from the db");
