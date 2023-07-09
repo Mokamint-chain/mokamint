@@ -84,7 +84,7 @@ public class NodePeers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
-		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addToDB, this::removeFromDB);
+		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::onAdd, this::onRemove);
 	}
 
 	/**
@@ -125,25 +125,7 @@ public class NodePeers implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public boolean remove(Peer peer) throws DatabaseException {
-		synchronized (peers) {
-			if (check(DatabaseException.class, () -> peers.remove(peer))) {
-				RemotePublicNode remote = remotes.get(peer);
-				if (remote != null) {
-					try {
-						remote.close();
-						LOGGER.info("closed connection to peer " + peer);
-					}
-					catch (IOException e) {
-						LOGGER.log(Level.SEVERE, "cannot close the connection to peer " + peer, e);
-					}
-
-					remotes.remove(peer);
-				}
-				return true;
-			}
-			else
-				return false;
-		}
+		return check(DatabaseException.class, () -> peers.remove(peer));
 	}
 
 	@Override
@@ -151,9 +133,10 @@ public class NodePeers implements AutoCloseable {
 		IOException exception = null;
 
 		synchronized (lock) {
-			for (var remote: remotes.values())
+			for (var entry: remotes.entrySet())
 				try {
-					remote.close();
+					entry.getValue().close();
+					LOGGER.info("closed connection to peer " + entry.getKey());
 				}
 				catch (IOException e) {
 					exception = e;
@@ -164,7 +147,7 @@ public class NodePeers implements AutoCloseable {
 			throw exception;
 	}
 
-	private boolean addToDB(Peer peer, boolean force) {
+	private boolean onAdd(Peer peer, boolean force) {
 		try {
 			RemotePublicNode remote = null;
 
@@ -181,7 +164,7 @@ public class NodePeers implements AutoCloseable {
 						if (db.addPeer(peer, force)) {
 							remotes.put(peer, remote);
 							remote = null; // so that it won't be closed in the finally clause
-							LOGGER.info("added peer " + peer + " to the db");
+							LOGGER.info("added peer " + peer + " to the database");
 							return true;
 						}
 						else
@@ -206,17 +189,33 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private boolean removeFromDB(Peer peer) {
+	private boolean onRemove(Peer peer) {
 		try {
-			if (db.removePeer(peer)) {
-				LOGGER.info("removed peer " + peer + " from the db");
-				return true;
+			synchronized (lock) {
+				if (db.removePeer(peer)) {
+					RemotePublicNode remote = remotes.get(peer);
+					if (remote == null)
+						LOGGER.log(Level.SEVERE, "the peer " + peer + " was in the database, but its remote is missing");
+					else {
+						try {
+							remote.close();
+							LOGGER.info("closed connection to peer " + peer);
+						}
+						catch (IOException e) {
+							LOGGER.log(Level.SEVERE, "cannot close the connection to peer " + peer, e);
+						}
+
+						remotes.remove(peer);
+					}
+					LOGGER.info("removed peer " + peer + " from the database");
+					return true;
+				}
+				else
+					return false;
 			}
-			else
-				return false;
 		}
 		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + ": the db seems corrupted", e);
+			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer, e);
 			throw new UncheckedException(e);
 		}
 	}
