@@ -131,13 +131,23 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 				var newPoints = actors.get(actor) - points;
 				if (newPoints > 0L)
 					actors.put(actor, newPoints);
-				else if (onRemove.test(actor)) {
-					actors.remove(actor);
-					return true;
-				}
+				else
+					return remove(actor);
 			}
 		}
 
+		return false;
+	}
+
+	@Override
+	public boolean remove(A actor) {
+		synchronized (actors) {
+			if (contains(actor) && onRemove.test(actor)) {
+				actors.remove(actor);
+				return true;
+			}
+		}
+	
 		return false;
 	}
 
@@ -159,17 +169,5 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	@Override
 	public boolean add(A actor) {
 		return add(actor, false);
-	}
-
-	@Override
-	public boolean remove(A actor) {
-		synchronized (actors) {
-			if (contains(actor) && onRemove.test(actor)) {
-				actors.remove(actor);
-				return true;
-			}
-		}
-
-		return false;
 	}
 }

@@ -227,7 +227,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void close() throws InterruptedException, DatabaseException {
+	public void close() throws InterruptedException, DatabaseException, IOException {
 		events.shutdownNow();
 		tasks.shutdownNow();
 		
@@ -236,7 +236,12 @@ public class LocalNodeImpl implements LocalNode {
 			tasks.awaitTermination(10, TimeUnit.SECONDS);
 		}
 		finally {
-			db.close();
+			try {
+				db.close();
+			}
+			finally {
+				peers.close();
+			}
 		}
 	}
 

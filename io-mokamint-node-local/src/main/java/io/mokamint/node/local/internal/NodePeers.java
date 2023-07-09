@@ -19,33 +19,33 @@ package io.mokamint.node.local.internal;
 import static io.hotmoka.exceptions.CheckSupplier.check;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
 import jakarta.websocket.DeploymentException;
 
 /**
  * The set of peers of a local node.
  */
-public class NodePeers {
+@ThreadSafe
+public class NodePeers implements AutoCloseable {
 
 	/**
 	 * The node.
 	 */
 	private final LocalNodeImpl node;
-
-	/**
-	 * The peers of the node.
-	 */
-	private final PunishableSet<Peer> peers;
 
 	/**
 	 * The configuration of the node.
@@ -56,6 +56,16 @@ public class NodePeers {
 	 * The db of the node.
 	 */
 	private final Database db;
+
+	/**
+	 * The peers of the node.
+	 */
+	private final PunishableSet<Peer> peers;
+
+	/**
+	 * The remote nodes connected to each peer.
+	 */
+	private final Map<Peer, RemotePublicNode> remotes = new HashMap<>();
 
 	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
@@ -96,17 +106,34 @@ public class NodePeers {
 		if (peers.contains(peer))
 			return false;
 
-		try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
+		RemotePublicNode remote = null;
+
+		try {
+			remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
+			LOGGER.info("opened connection to peer " + peer);
 			var version1 = remote.getInfo().getVersion();
 			var version2 = node.getInfo().getVersion();
 
 			if (!version1.canWorkWith(version2))
 				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-			else 
-				return check(DatabaseException.class, () -> peers.add(peer, force));
+			else {
+				synchronized (peers) {
+					if (check(DatabaseException.class, () -> peers.add(peer, force))) {
+						remotes.put(peer, remote);
+						remote = null; // so that it won't be closed in the finally clause
+						return true;
+					}
+					else
+						return false;
+				}
+			}
 		}
 		catch (DeploymentException | IOException e) {
 			throw new IOException("cannot contact " + peer, e);
+		}
+		finally {
+			if (remote != null)
+				remote.close();
 		}
 	}
 
@@ -118,7 +145,43 @@ public class NodePeers {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public boolean remove(Peer peer) throws DatabaseException {
-		return check(DatabaseException.class, () -> peers.remove(peer));
+		synchronized (peers) {
+			if (check(DatabaseException.class, () -> peers.remove(peer))) {
+				RemotePublicNode remote = remotes.get(peer);
+				if (remote != null) {
+					try {
+						remote.close();
+						LOGGER.info("closed connection to peer " + peer);
+					}
+					catch (IOException e) {
+						LOGGER.log(Level.SEVERE, "cannot close the connection to peer " + peer, e);
+					}
+
+					remotes.remove(peer);
+				}
+				return true;
+			}
+			else
+				return false;
+		}
+	}
+
+	@Override
+	public void close() throws IOException {
+		IOException exception = null;
+
+		synchronized (peers) {
+			for (var remote: remotes.values())
+				try {
+					remote.close();
+				}
+				catch (IOException e) {
+					exception = e;
+				}
+		}
+
+		if (exception != null)
+			throw exception;
 	}
 
 	private boolean addToDB(Peer peer, boolean force) {

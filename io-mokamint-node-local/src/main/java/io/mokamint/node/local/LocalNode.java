@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Node;
 import io.mokamint.node.api.NodeListeners;
 
@@ -24,14 +23,4 @@ import io.mokamint.node.api.NodeListeners;
  * A local node of a Mokamint blockchain.
  */
 public interface LocalNode extends Node, NodeListeners {
-
-	/**
-	 * Closes the node.
-	 * 
-	 * @throws InterruptedException if the thread was interrupted while waiting
-	 *                              for its executors to shut down
-	 * @throws DatabaseException if the node cannot be closed because of an error in the database
-	 */
-	@Override
-	void close() throws InterruptedException, DatabaseException;
 }
