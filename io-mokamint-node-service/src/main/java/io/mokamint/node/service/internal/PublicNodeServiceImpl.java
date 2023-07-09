@@ -73,7 +73,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		this.node = node;
 
 		if (node instanceof NodeListeners nl)
-			nl.addOnPeerAddedListener(onPeerAddedListener);
+			nl.addOnPeersAddedListener(onPeerAddedListener);
 
 		deploy();
 	}
@@ -81,7 +81,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	@Override
 	public void close() {
 		if (node instanceof NodeListeners nl)
-			nl.removeOnPeerAddedListener(onPeerAddedListener);
+			nl.removeOnPeersAddedListener(onPeerAddedListener);
 
 		super.close();
 	}

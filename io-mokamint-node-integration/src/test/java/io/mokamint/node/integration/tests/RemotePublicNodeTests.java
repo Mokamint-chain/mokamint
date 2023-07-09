@@ -13,9 +13,12 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
@@ -386,20 +389,48 @@ public class RemotePublicNodeTests {
 	@DisplayName("getInfo() works")
 	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3));
-
+	
 		class MyServer extends PublicTestServer {
-
+	
 			private MyServer() throws DeploymentException, IOException {}
-
+	
 			@Override
 			protected void onGetInfo(GetInfoMessage message, Session session) {
 				sendObjectAsync(session, GetInfoResultMessages.of(info1, message.getId()));
 			}
 		};
-
+	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var info2 = remote.getInfo();
 			assertEquals(info1, info2);
+		}
+	}
+
+	@Test
+	@DisplayName("if a service suggests some peers, a remote will inform its listeners")
+	public void ifServiceSuggestsPeersTheRemoteInformsTheListeners() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException {
+		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
+		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
+		var peers = Set.of(peer1, peer2);
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			private void sendPeersSuggestion() {
+				super.sendPeersSuggestion(peers.stream());
+			}
+		};
+
+		var semaphore = new Semaphore(0);
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			remote.addOnPeersAddedListener(suggestedPeers -> {
+				if (peers.equals(suggestedPeers.collect(Collectors.toSet())))
+					semaphore.release();
+			});
+			service.sendPeersSuggestion();
+			semaphore.acquire();
 		}
 	}
 

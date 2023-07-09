@@ -18,11 +18,12 @@ package io.mokamint.node.local;
 
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Node;
+import io.mokamint.node.api.NodeListeners;
 
 /**
  * A local node of a Mokamint blockchain.
  */
-public interface LocalNode extends Node {
+public interface LocalNode extends Node, NodeListeners {
 
 	/**
 	 * Closes the node.

@@ -30,7 +30,7 @@ public interface NodeListeners {
 	 * 
 	 * @param listener the listener
 	 */
-	void addOnPeerAddedListener(Consumer<Stream<Peer>> listener);
+	void addOnPeersAddedListener(Consumer<Stream<Peer>> listener);
 
 	/**
 	 * Unregister the given listener from those called when peers
@@ -38,5 +38,5 @@ public interface NodeListeners {
 	 * 
 	 * @param listener the listener
 	 */
-	void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener);
+	void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener);
 }

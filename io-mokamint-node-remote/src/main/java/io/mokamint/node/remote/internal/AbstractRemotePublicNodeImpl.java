@@ -95,12 +95,12 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 	}
 
 	@Override
-	public void addOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
+	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeersAddedListeners.addListener(listener);
 	}
 
 	@Override
-	public void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
+	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeersAddedListeners.removeListener(listener);
 	}
 

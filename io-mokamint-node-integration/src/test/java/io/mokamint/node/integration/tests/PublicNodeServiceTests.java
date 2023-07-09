@@ -29,8 +29,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -315,9 +315,7 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
-		var peers = new HashSet<Peer>();
-		peers.add(peer1);
-		peers.add(peer2);
+		var peers = Set.of(peer1, peer2);
 
 		interface PublicNodeWithListeners extends PublicNode, NodeListeners {};
 
@@ -328,7 +326,7 @@ public class PublicNodeServiceTests {
 			listenerForNewPeers.set(listener.getArgument(0));
 			return null;
 		}).
-		when(node).addOnPeerAddedListener(any());
+		when(node).addOnPeersAddedListener(any());
 
 		class MyTestClient extends AbstractRemotePublicNode {
 

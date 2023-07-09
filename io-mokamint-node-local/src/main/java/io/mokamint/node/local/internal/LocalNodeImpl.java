@@ -55,7 +55,6 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
@@ -71,7 +70,7 @@ import jakarta.websocket.DeploymentException;
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public class LocalNodeImpl implements LocalNode, NodeListeners {
+public class LocalNodeImpl implements LocalNode {
 
 	/**
 	 * The listeners called whenever peers are added to this node.
@@ -181,12 +180,12 @@ public class LocalNodeImpl implements LocalNode, NodeListeners {
 	}
 
 	@Override
-	public void addOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
+	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeerAddedListeners.addListener(listener);
 	}
 
 	@Override
-	public void removeOnPeerAddedListener(Consumer<Stream<Peer>> listener) {
+	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeerAddedListeners.removeListener(listener);
 	}
 
