@@ -63,6 +63,12 @@ public class NodePeers implements AutoCloseable {
 	private final PunishableSet<Peer> peers;
 
 	/**
+	 * Lock used to guarantee that the peers in the database are
+	 * consistent with the peers having a remote in this container.
+	 */
+	private final Object lock = new Object();
+
+	/**
 	 * The remote nodes connected to each peer.
 	 */
 	private final Map<Peer, RemotePublicNode> remotes = new HashMap<>();
@@ -103,38 +109,12 @@ public class NodePeers implements AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
 	public boolean add(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
-		if (peers.contains(peer))
-			return false;
-
-		RemotePublicNode remote = null;
-
-		try {
-			remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
-			LOGGER.info("opened connection to peer " + peer);
-			var version1 = remote.getInfo().getVersion();
-			var version2 = node.getInfo().getVersion();
-
-			if (!version1.canWorkWith(version2))
-				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-			else {
-				synchronized (peers) {
-					if (check(DatabaseException.class, () -> peers.add(peer, force))) {
-						remotes.put(peer, remote);
-						remote = null; // so that it won't be closed in the finally clause
-						return true;
-					}
-					else
-						return false;
-				}
-			}
-		}
-		catch (DeploymentException | IOException e) {
-			throw new IOException("cannot contact " + peer, e);
-		}
-		finally {
-			if (remote != null)
-				remote.close();
-		}
+		return check(TimeoutException.class,
+					 InterruptedException.class,
+					 IOException.class,
+					 IncompatiblePeerVersionException.class,
+					 DatabaseException.class,
+			() -> peers.add(peer, force));
 	}
 
 	/**
@@ -170,7 +150,7 @@ public class NodePeers implements AutoCloseable {
 	public void close() throws IOException {
 		IOException exception = null;
 
-		synchronized (peers) {
+		synchronized (lock) {
 			for (var remote: remotes.values())
 				try {
 					remote.close();
@@ -186,15 +166,42 @@ public class NodePeers implements AutoCloseable {
 
 	private boolean addToDB(Peer peer, boolean force) {
 		try {
-			if (db.addPeer(peer, force)) {
-				LOGGER.info("added peer " + peer + " to the db");
-				return true;
+			RemotePublicNode remote = null;
+
+			try {
+				remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
+				LOGGER.info("opened connection to peer " + peer);
+				var version1 = remote.getInfo().getVersion();
+				var version2 = node.getInfo().getVersion();
+
+				if (!version1.canWorkWith(version2))
+					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
+				else {
+					synchronized (lock) {
+						if (db.addPeer(peer, force)) {
+							remotes.put(peer, remote);
+							remote = null; // so that it won't be closed in the finally clause
+							LOGGER.info("added peer " + peer + " to the db");
+							return true;
+						}
+						else
+							return false;
+					}
+				}
 			}
-			else
-				return false;
+			finally {
+				if (remote != null) {
+					remote.close();
+					LOGGER.info("closed connection to peer " + peer);
+				}
+			}
 		}
-		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": the db seems corrupted", e);
+		catch (DeploymentException e) {
+			LOGGER.log(Level.SEVERE, "cannot add peer " + peer, e);
+			throw new UncheckedException(new IOException(e)); // we consider it as a special case of IOException
+		}
+		catch (IOException | TimeoutException | InterruptedException | DatabaseException | IncompatiblePeerVersionException e) {
+			LOGGER.log(Level.SEVERE, "cannot add peer " + peer, e);
 			throw new UncheckedException(e);
 		}
 	}

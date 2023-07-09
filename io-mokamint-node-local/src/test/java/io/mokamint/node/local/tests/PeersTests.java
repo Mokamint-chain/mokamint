@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -35,11 +36,13 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +59,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -76,12 +80,31 @@ public class PeersTests {
 	/**
 	 * The node information of the nodes used in the tests.
 	 */
-	private static NodeInfo info = NodeInfos.of(Versions.of(1, 0, 0));
+	private static NodeInfo info = NodeInfos.of(mkVersion());
 
 	/**
 	 * The application of the node used for testing.
 	 */
 	private static Application app;
+
+	/**
+	 * Extracts the version of Mokamint from the pom.xml file.
+	 * 
+	 * @return the version
+	 */
+	private static Version mkVersion() {
+		// reads the version from the property in the Maven pom.xml
+		try (InputStream is = LocalNodeImpl.class.getClassLoader().getResourceAsStream("maven.properties")) {
+			var mavenProperties = new Properties();
+			mavenProperties.load(is);
+			// the period separates the version components, but we need an escaped escape sequence to refer to it in split
+			int[] components = Stream.of(mavenProperties.getProperty("mokamint.version").split("\\.")).mapToInt(Integer::parseInt).toArray();
+			return Versions.of(components[0], components[1], components[2]);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Cannot load maven.properties file", e);
+		}
+	}
 
 	/**
 	 * Test server implementation.
@@ -169,11 +192,6 @@ public class PeersTests {
 			}
 
 			@Override
-			public NodeInfo getInfo() {
-				return info;
-			}
-
-			@Override
 			protected void onComplete(Event event) {
 				if (event instanceof PeersAddedEvent pae)
 					pae.getPeers()
@@ -205,11 +223,6 @@ public class PeersTests {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app);
-			}
-
-			@Override
-			public NodeInfo getInfo() {
-				return info;
 			}
 
 			@Override
@@ -262,11 +275,6 @@ public class PeersTests {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 				super(config, app);
-			}
-
-			@Override
-			public NodeInfo getInfo() {
-				return info;
 			}
 
 			@Override
