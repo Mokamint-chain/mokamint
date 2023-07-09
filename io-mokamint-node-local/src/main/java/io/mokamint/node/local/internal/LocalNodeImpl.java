@@ -178,7 +178,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param force true if and only if the peers must be added also if the maximum number of peers
 	 *              for the node has been reached
 	 */
-	private void scheduleAddPeersTask(Stream<Peer> peers, boolean force) {
+	void scheduleAddPeersTask(Stream<Peer> peers, boolean force) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		if (peersAsArray.length > 0)
 			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));

@@ -105,7 +105,7 @@ public class AddPeersTask extends Task {
 			return adder.add(peer);
 		}
 		catch (InterruptedException | IncompatiblePeerVersionException | DatabaseException | IOException | TimeoutException e) {
-			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer", e);
+			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer");
 			return false;
 		}
 	}

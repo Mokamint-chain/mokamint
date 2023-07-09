@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -58,6 +59,11 @@ public class NodePeers implements AutoCloseable {
 	private final Database db;
 
 	/**
+	 * The listener to call when some peers suggests some more peers to add.
+	 */
+	private final Consumer<Stream<Peer>> onAddedPeersListener;
+
+	/**
 	 * The peers of the node.
 	 */
 	private final PunishableSet<Peer> peers;
@@ -84,6 +90,7 @@ public class NodePeers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
+		this.onAddedPeersListener = peers -> node.scheduleAddPeersTask(peers, false);
 		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::onAdd, this::onRemove);
 	}
 
@@ -163,6 +170,7 @@ public class NodePeers implements AutoCloseable {
 					synchronized (lock) {
 						if (db.addPeer(peer, force)) {
 							remotes.put(peer, remote);
+							remote.addOnPeersAddedListener(onAddedPeersListener);
 							remote = null; // so that it won't be closed in the finally clause
 							LOGGER.info("added peer " + peer + " to the database");
 							return true;
@@ -197,6 +205,7 @@ public class NodePeers implements AutoCloseable {
 					if (remote == null)
 						LOGGER.log(Level.SEVERE, "the peer " + peer + " was in the database, but its remote is missing");
 					else {
+						remote.removeOnPeersAddedListener(onAddedPeersListener);
 						try {
 							remote.close();
 							LOGGER.info("closed connection to peer " + peer);
