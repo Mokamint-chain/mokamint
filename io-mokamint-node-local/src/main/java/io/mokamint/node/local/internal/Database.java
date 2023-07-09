@@ -267,7 +267,7 @@ public class Database implements AutoCloseable {
 		private final Peer[] peers;
 	
 		private ArrayOfPeers(Stream<Peer> peers) {
-			this.peers = peers.toArray(Peer[]::new);
+			this.peers = peers.distinct().sorted().toArray(Peer[]::new);
 		}
 
 		private boolean contains(Peer peer) {
@@ -337,8 +337,7 @@ public class Database implements AutoCloseable {
 	 *              of peers already added; false otherwise, which means that no more
 	 *              than {@link #maxPeers} peers are allowed
 	 * @return true if the peer has been added; false otherwise, which means
-	 *         that the database already contains the same peer or that the peer was not forced
-	 *         and there are already {@link maxPeers} peers
+	 *         that the peer was not forced and there are already {@link maxPeers} peers
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public boolean addPeer(Peer peer, boolean force) throws DatabaseException {
@@ -363,7 +362,7 @@ public class Database implements AutoCloseable {
 		}
 		else {
 			var aop = ArrayOfPeers.from(bi);
-			if (aop.contains(peer) || (!force && aop.length() >= maxPeers))
+			if (!force && aop.length() >= maxPeers)
 				return false;
 			else {
 				var concat = Stream.concat(aop.stream(), Stream.of(peer));

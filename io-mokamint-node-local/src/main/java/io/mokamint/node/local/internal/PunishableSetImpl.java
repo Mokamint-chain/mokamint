@@ -43,7 +43,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 * The container of the actors. Each actor is mapped to its points. When an actor
 	 * gets punished, its points are reduced, until they reach zero and the actor is discarded.
 	 */
-	private final Map<A, Long> actors;
+	private final Map<A, Long> actors = new HashMap<>();
 
 	/**
 	 * The initial points assigned to a new actor.
@@ -85,22 +85,11 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 * @param onRemove a filter invoked when an actor is removed from the set
 	 */
 	public PunishableSetImpl(Stream<A> actors, ToLongFunction<A> pointInitializer, OnAdd<A> onAdd, Predicate<A> onRemove) {
-		this.actors = new HashMap<>();
 		this.pointInitializer = pointInitializer;
 		this.onAdd = onAdd;
 		this.onRemove = onRemove;
 
-		actors.forEach(this::init);
-	}
-
-	private void init(A actor) {
-		if (!contains(actor)) {
-			var initialPoints = pointInitializer.applyAsLong(actor);
-			if (initialPoints > 0L) {
-				onAdd.apply(actor, true);
-				actors.put(actor, initialPoints);
-			}
-		}
+		actors.forEach(actor -> add(actor, true));
 	}
 
 	@Override
