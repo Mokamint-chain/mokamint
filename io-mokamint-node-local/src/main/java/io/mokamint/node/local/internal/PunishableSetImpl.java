@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
@@ -43,7 +43,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 * The container of the actors. Each actor is mapped to its points. When an actor
 	 * gets punished, its points are reduced, until they reach zero and the actor is discarded.
 	 */
-	private final Map<A, Long> actors = new HashMap<>();
+	private final ConcurrentMap<A, Long> actors = new ConcurrentHashMap<>();
 
 	/**
 	 * The initial points assigned to a new actor.
@@ -94,76 +94,74 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 
 	@Override
 	public boolean contains(A actor) {
-		synchronized (actors) {
-			return actors.containsKey(actor);
-		}
+		return actors.containsKey(actor);
 	}
 
 	@Override
 	public boolean isEmpty() {
-		synchronized (actors) {
-			return actors.isEmpty();
-		}
+		return actors.isEmpty();
 	}
 
 	@Override
 	public Stream<A> getElements() {
-		synchronized (actors) {
-			return new HashSet<>(actors.keySet()).stream();
-		}
+		return new HashSet<>(actors.keySet()).stream();
 	}
 
 	@Override
 	public void forEach(Consumer<A> action) {
-		Set<A> copy;
-
-		synchronized (actors) {
-			copy = new HashSet<>(actors.keySet());
-		}
-
-		copy.forEach(action::accept);
+		getElements().forEach(action::accept);
 	}
 
 	@Override
 	public boolean punish(A actor, long points) {
-		synchronized (actors) {
-			if (contains(actor)) {
-				var newPoints = actors.get(actor) - points;
-				if (newPoints > 0L)
-					actors.put(actor, newPoints);
-				else
-					return remove(actor);
-			}
-		}
+		var result = new AtomicBoolean();
 
-		return false;
+		actors.computeIfPresent(actor, (a, oldPoints) -> {
+			var newPoints = oldPoints - points;
+			if (newPoints > 0L)
+				return newPoints;
+			else if (onRemove.test(a)) {
+				result.set(true);
+				return null; // which means remove it
+			}
+			else
+				return oldPoints;
+		});
+
+		return result.get();
 	}
 
 	@Override
 	public boolean remove(A actor) {
-		synchronized (actors) {
-			if (contains(actor) && onRemove.test(actor)) {
-				actors.remove(actor);
-				return true;
+		var result = new AtomicBoolean();
+
+		actors.computeIfPresent(actor, (a, oldPoints) -> {
+			if (onRemove.test(a)) {
+				result.set(true);
+				return null; // which means remove it
 			}
-		}
-	
-		return false;
+			else
+				return oldPoints;
+		});
+
+		return result.get();
 	}
 
 	@Override
 	public boolean add(A actor, boolean force) {
-		synchronized (actors) {
-			if (!contains(actor)) {
-				var initialPoints = pointInitializer.applyAsLong(actor);
-				if (initialPoints > 0L && onAdd.apply(actor, force)) {
-					actors.put(actor, initialPoints);
-					return true;
-				}
-			}
-		}
+		var result = new AtomicBoolean();
 
-		return false;
+		actors.computeIfAbsent(actor, a -> {
+			var initialPoints = pointInitializer.applyAsLong(a);
+			if (initialPoints > 0L && onAdd.apply(a, force)) {
+				result.set(true);
+				return initialPoints;
+			}
+			else
+				return null;
+		});
+
+		return result.get();
 	}
 
 	@Override
