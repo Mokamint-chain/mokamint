@@ -64,11 +64,6 @@ import io.mokamint.node.local.internal.tasks.SuggestPeersTask;
 public class LocalNodeImpl implements LocalNode {
 
 	/**
-	 * The listeners called whenever peers are added to this node.
-	 */
-	private final ListenerManager<Stream<Peer>> onPeerAddedListeners = ListenerManagers.mk();
-
-	/**
 	 * The configuration of the node.
 	 */
 	private final Config config;
@@ -114,6 +109,11 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
+	/**
+	 * The listeners called whenever peers are added to this node.
+	 */
+	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -139,12 +139,12 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeerAddedListeners.addListener(listener);
+		onPeersAddedListeners.addListener(listener);
 	}
 
 	@Override
 	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeerAddedListeners.removeListener(listener);
+		onPeersAddedListeners.removeListener(listener);
 	}
 
 	@Override
@@ -384,17 +384,17 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("tasks")
 		public final void run() {
-			onStart();
+			onStart(this);
 
 			try {
 				body();
 			}
 			catch (Exception e) {
-				onFail(e);
+				onFail(this, e);
 				return;
 			}
 
-			onComplete();
+			onComplete(this);
 		}
 
 		/**
@@ -404,35 +404,6 @@ public class LocalNodeImpl implements LocalNode {
 		 */
 		@OnThread("tasks")
 		protected abstract void body() throws Exception;
-
-		/**
-		 * Callback called when this task begins being executed.
-		 * It just forwards to {@link LocalNodeImpl#onStart(Task)}
-		 * but subclasses may redefine.
-		 */
-		protected void onStart() {
-			LocalNodeImpl.this.onStart(this);
-		}
-
-		/**
-		 * Callback called at the end of the successful execution of a task.
-		 * It just forwards to {@link LocalNodeImpl#onComplete(Task)}
-		 * but subclasses may redefine.
-		 */
-		protected void onComplete() {
-			LocalNodeImpl.this.onComplete(this);
-		}
-
-		/**
-		 * Callback called at the end of the failed execution of a task.
-		 * It just forwards to {@link LocalNodeImpl#onFail(Task, Exception)}
-		 * but subclasses may redefine.
-		 * 
-		 * @param exception the failure cause
-		 */
-		protected void onFail(Exception e) {
-			LocalNodeImpl.this.onFail(this, e);
-		}
 	}
 
 	/**
@@ -537,7 +508,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
-			execute(new SuggestPeersTask(getPeers(), onPeerAddedListeners::getListeners, LocalNodeImpl.this));
+			execute(new SuggestPeersTask(getPeers(), onPeersAddedListeners::getListeners, LocalNodeImpl.this));
 		}
 	}
 
@@ -599,7 +570,7 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
-			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
+			getMiners().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 
 			var maybeHead = db.getHead();
 			if (maybeHead.isPresent()) {
