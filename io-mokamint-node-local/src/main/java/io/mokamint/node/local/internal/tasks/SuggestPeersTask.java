@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.tasks;
 
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
@@ -36,10 +36,10 @@ public class SuggestPeersTask extends Task {
 	private final Peer[] peers;
 
 	/**
-	 * The listeners registered in the node, eager to receive
+	 * A supplier of the listeners registered in the node, eager to receive
 	 * peer addition suggestions.
 	 */
-	private final List<Consumer<Stream<Peer>>> listeners;
+	private final Supplier<Stream<Consumer<Stream<Peer>>>> listeners;
 
 	/**
 	 * Creates a task that suggests peers to other peers.
@@ -49,11 +49,11 @@ public class SuggestPeersTask extends Task {
 	 *                  peer addition suggestions
 	 * @param node the node for which this task is working
 	 */
-	public SuggestPeersTask(Stream<Peer> peers, Stream<Consumer<Stream<Peer>>> listeners, LocalNodeImpl node) {
+	public SuggestPeersTask(Stream<Peer> peers, Supplier<Stream<Consumer<Stream<Peer>>>> listeners, LocalNodeImpl node) {
 		node.super();
 
 		this.peers = peers.toArray(Peer[]::new);
-		this.listeners = listeners.toList();
+		this.listeners = listeners;
 	}
 
 	@Override
@@ -63,6 +63,6 @@ public class SuggestPeersTask extends Task {
 
 	@Override @OnThread("tasks")
 	protected void body() {
-		listeners.forEach(listener -> listener.accept(Stream.of(peers)));
+		listeners.get().forEach(listener -> listener.accept(Stream.of(peers)));
 	}
 }

@@ -69,7 +69,7 @@ public interface PunishableSet<A> {
 	 * @param actor the actor to punish
 	 * @param points how many points get removed
 	 * @return true if and only if the actor was present in this container,
-	 *         has reached zero points and has been consequently removed
+	 *         has reached zero points and has been removed
 	 */
 	boolean punish(A actor, long points);
 

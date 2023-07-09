@@ -20,7 +20,6 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -174,9 +173,20 @@ public class LocalNodeImpl implements LocalNode {
 	 * Adds the seeds as peers.
 	 */
 	private void addSeedsAsPeers() {
-		var uris = config.seeds().toArray(URI[]::new);
-		if (uris.length > 0) // just to avoid useless tasks
-			execute(new AddPeersTask(config.seeds().map(Peers::of), peer -> addPeer(peer, true), this));
+		scheduleAddPeersTask(config.seeds().map(Peers::of), true);
+	}
+
+	/**
+	 * Schedules a task that will add the given peers to the node.
+	 * 
+	 * @param peers the peers to add
+	 * @param force true if and only if the peers must be added also if the maximum number of peers
+	 *              for the node has been reached
+	 */
+	private void scheduleAddPeersTask(Stream<Peer> peers, boolean force) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		if (peersAsArray.length > 0)
+			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> addPeer(peer, force), this));
 	}
 
 	@Override
@@ -213,7 +223,7 @@ public class LocalNodeImpl implements LocalNode {
 	private boolean addPeerToDB(Peer peer, boolean force) {
 		try {
 			if (db.addPeer(peer, force)) {
-				LOGGER.info("added peer " + peer);
+				LOGGER.info("added peer " + peer + " to the database");
 				return true;
 			}
 			else
@@ -228,7 +238,7 @@ public class LocalNodeImpl implements LocalNode {
 	private boolean removePeerFromDB(Peer peer) {
 		try {
 			if (db.removePeer(peer)) {
-				LOGGER.info("removed peer " + peer);
+				LOGGER.info("removed peer " + peer + " from the database");
 				return true;
 			}
 			else
@@ -581,7 +591,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
-			execute(new SuggestPeersTask(getPeers(), onPeerAddedListeners.getListeners(), LocalNodeImpl.this));
+			execute(new SuggestPeersTask(getPeers(), onPeerAddedListeners::getListeners, LocalNodeImpl.this));
 		}
 	}
 

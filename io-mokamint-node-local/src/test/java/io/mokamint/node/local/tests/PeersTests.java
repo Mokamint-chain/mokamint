@@ -189,9 +189,9 @@ public class PeersTests {
 	}
 
 	@Test
-	@DisplayName("if a peer is added to a node, it is saved into the database and it is used at next start-up")
+	@DisplayName("if peers are added to a node, they are saved into the database and used at the next start-up")
 	@Timeout(10)
-	public void addedPeerIsUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException, DatabaseException {
+	public void addedPeersAreUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException, DatabaseException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));

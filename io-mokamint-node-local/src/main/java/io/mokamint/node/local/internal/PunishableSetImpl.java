@@ -16,18 +16,17 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static java.util.stream.Collectors.toMap;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.local.internal.PunishableSets.OnAdd;
 
 /**
  * A set of actors that can be punished and potentially removed from the set
@@ -49,17 +48,19 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	/**
 	 * The initial points assigned to a new actor.
 	 */
-	private final Function<A, Long> pointInitializer;
+	private final ToLongFunction<A> pointInitializer;
 
 	/**
-	 * A call-back invoked when a new actor is actually added through {@link #add(Object)}.
+	 * A filter invoked when trying to add a new actor to the set.
+	 * Only iff it yields true the actor is actually added.
 	 */
-	private final BiFunction<A, Boolean, Boolean> onAdd;
+	private final OnAdd<A> onAdd;
 
 	/**
-	 * A call-back invoked when an actor is actually removed through {@link #punish(Object, long)}.
+	 * A filter invoked when trying to remove an actor from the set.
+	 * 
 	 */
-	private final Function<A, Boolean> onRemove;
+	private final Predicate<A> onRemove;
 
 	/**
 	 * Creates a new punishable set of actors.
@@ -69,25 +70,37 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 *                         function will be used also when adding new actors to the set later
 	 *                         (see @link {@link PunishableSet#add(Object)})
 	 */
-	public PunishableSetImpl(Stream<A> actors, Function<A, Long> pointInitializer) {
+	public PunishableSetImpl(Stream<A> actors, ToLongFunction<A> pointInitializer) {
 		this(actors, pointInitializer, (_actor, _force) -> true, _actor -> true);
 	}
 
 	/**
 	 * Creates a new punishable set of actors.
 	 * 
-	 * @param actors the actors initially contained in the set
+	 * @param actors the actors initially added to the set. Their addition is forced
 	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
 	 *                         function will be used also when adding new actors to the set later
-	 *                         (see @link {@link PunishableSet#add(Object)})
-	 * @param onAdd a call-back invoked when a new actor is actually added through {@link #add(Object)}
-	 * @param onRemove a call-back invoked when an actor is actually removed through {@link #punish(Object, long)}
+	 *                         (see {@link PunishableSet#add(Object)})
+	 * @param onAdd a filter invoked when a new actor is added to the set
+	 * @param onRemove a filter invoked when an actor is removed from the set
 	 */
-	public PunishableSetImpl(Stream<A> actors, Function<A, Long> pointInitializer, BiFunction<A, Boolean, Boolean> onAdd, Function<A, Boolean> onRemove) {
-		this.actors = actors.distinct().collect(toMap(actor -> actor, pointInitializer, (_i1, _i2) -> 0L, HashMap::new));
+	public PunishableSetImpl(Stream<A> actors, ToLongFunction<A> pointInitializer, OnAdd<A> onAdd, Predicate<A> onRemove) {
+		this.actors = new HashMap<>();
 		this.pointInitializer = pointInitializer;
 		this.onAdd = onAdd;
 		this.onRemove = onRemove;
+
+		actors.forEach(this::init);
+	}
+
+	private void init(A actor) {
+		if (!contains(actor)) {
+			var initialPoints = pointInitializer.applyAsLong(actor);
+			if (initialPoints > 0L) {
+				onAdd.apply(actor, true);
+				actors.put(actor, initialPoints);
+			}
+		}
 	}
 
 	@Override
@@ -125,9 +138,14 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	@Override
 	public boolean punish(A actor, long points) {
 		synchronized (actors) {
-			if (contains(actor) && actors.compute(actor, (__, oldPoints) -> Math.max(0L, oldPoints - points)) == 0 && onRemove.apply(actor)) {
-				actors.remove(actor);
-				return true;
+			if (contains(actor)) {
+				var newPoints = actors.get(actor) - points;
+				if (newPoints > 0L)
+					actors.put(actor, newPoints);
+				else if (onRemove.test(actor)) {
+					actors.remove(actor);
+					return true;
+				}
 			}
 		}
 
@@ -137,9 +155,12 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	@Override
 	public boolean add(A actor, boolean force) {
 		synchronized (actors) {
-			if (!contains(actor) && onAdd.apply(actor, force)) {
-				actors.put(actor, pointInitializer.apply(actor));
-				return true;
+			if (!contains(actor)) {
+				var initialPoints = pointInitializer.applyAsLong(actor);
+				if (initialPoints > 0L && onAdd.apply(actor, force)) {
+					actors.put(actor, initialPoints);
+					return true;
+				}
 			}
 		}
 
@@ -154,7 +175,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	@Override
 	public boolean remove(A actor) {
 		synchronized (actors) {
-			if (contains(actor) && onRemove.apply(actor)) {
+			if (contains(actor) && onRemove.test(actor)) {
 				actors.remove(actor);
 				return true;
 			}
