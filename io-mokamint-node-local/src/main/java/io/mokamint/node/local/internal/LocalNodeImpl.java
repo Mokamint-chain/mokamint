@@ -89,7 +89,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The peers of the node.
 	 */
-	private final PunishableSetOfPeers peers;
+	private final NodePeers peers;
 
 	/**
 	 * The database containing the blockchain.
@@ -136,7 +136,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
 		this.info = NodeInfos.of(mkVersion());
-		this.peers = new PunishableSetOfPeers(this);
+		this.peers = new NodePeers(this);
 		addSeedsAsPeers();
 		this.startDateTime = startMining();
 	}

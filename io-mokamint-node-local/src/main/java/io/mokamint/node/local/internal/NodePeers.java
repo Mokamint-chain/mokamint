@@ -33,10 +33,9 @@ import io.mokamint.node.remote.RemotePublicNodes;
 import jakarta.websocket.DeploymentException;
 
 /**
- * @author spoto
- *
+ * The set of peers of a local node.
  */
-public class PunishableSetOfPeers {
+public class NodePeers {
 
 	/**
 	 * The node.
@@ -58,22 +57,41 @@ public class PunishableSetOfPeers {
 	 */
 	private final Database db;
 
-	private final static Logger LOGGER = Logger.getLogger(PunishableSetOfPeers.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
 	/**
-	 * @throws DatabaseException if the db is corrupted
+	 * Creates the set of peers of a local node.
+	 * 
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public PunishableSetOfPeers(LocalNodeImpl node) throws DatabaseException {
+	public NodePeers(LocalNodeImpl node) throws DatabaseException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
-		this.peers = PunishableSets.of(node.getDatabase().getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB);
+		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB);
 	}
 
+	/**
+	 * Yields the peers.
+	 * 
+	 * @return the peers
+	 */
 	public Stream<Peer> getPeers() {
 		return peers.getElements();
 	}
 
+	/**
+	 * Adds the given peer.
+	 * 
+	 * @param peer the peer to add
+	 * @param force true if the peer must be added also if the maximum number of peers has been reached
+	 * @return true if and only if the peer was not present and has been added
+	 * @throws IOException if a connection to the peer cannot be established
+	 * @throws IncompatiblePeerVersionException if the version of {@code peer} is incompatible with that of the node
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws TimeoutException if no answer arrives within a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
 	public boolean add(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
 		if (peers.contains(peer))
 			return false;
@@ -92,6 +110,13 @@ public class PunishableSetOfPeers {
 		}
 	}
 
+	/**
+	 * Removes a peer.
+	 * 
+	 * @param peer the peer to remove
+	 * @return true if and only if the peer has been removed
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	public boolean remove(Peer peer) throws DatabaseException {
 		return check(DatabaseException.class, () -> peers.remove(peer));
 	}
