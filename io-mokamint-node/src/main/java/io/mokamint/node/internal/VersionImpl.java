@@ -16,6 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.stream.Stream;
+
 import io.mokamint.node.api.Version;
 
 /**
@@ -49,6 +54,25 @@ public class VersionImpl implements Version {
 		this.major = major;
 		this.minor = minor;
 		this.patch = patch;
+	}
+
+	/**
+	 * Yields a new version object, corresponding to the version of Mokamint
+	 * as reported the pom.xml file of the main project.
+	 * 
+	 * @throws IOException if the information of the pom.xml file cannot be accessed
+	 */
+	public VersionImpl() throws IOException {
+		// reads the version from the property in the Maven pom.xml
+		try (InputStream is = VersionImpl.class.getClassLoader().getResourceAsStream("maven.properties")) {
+			var mavenProperties = new Properties();
+			mavenProperties.load(is);
+			// the period separates the version components, but we need an escaped escape sequence to refer to it in split
+			int[] components = Stream.of(mavenProperties.getProperty("mokamint.version").split("\\.")).mapToInt(Integer::parseInt).toArray();
+			major = components[0];
+			minor = components[1];
+			patch = components[2];
+		}
 	}
 
 	@Override

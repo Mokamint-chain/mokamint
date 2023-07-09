@@ -17,14 +17,12 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -52,7 +50,6 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
@@ -84,7 +81,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The miners connected to the node.
 	 */
-	private final PunishableSet<Miner> miners;
+	private final NodeMiners miners;
 
 	/**
 	 * The peers of the node.
@@ -99,7 +96,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The non-consensus information about this node.
 	 */
-	private final NodeInfo info;
+	private final NodeInfo info = NodeInfos.of(Versions.current());;
 
 	/**
 	 * The time of creation of the genesis block.
@@ -133,55 +130,11 @@ public class LocalNodeImpl implements LocalNode {
 	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
 		this.app = app;
-		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
+		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.db = new Database(config);
-		this.info = NodeInfos.of(mkVersion());
 		this.peers = new NodePeers(this);
 		addSeedsAsPeers();
 		this.startDateTime = startMining();
-	}
-
-	/**
-	 * Starts the mining.
-	 * 
-	 * @return the start time of the blockchain
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private LocalDateTime startMining() throws NoSuchAlgorithmException, DatabaseException {
-		var maybeHead = db.getHead();
-		if (maybeHead.isPresent()) {
-			var head = maybeHead.get();
-			LocalDateTime startDateTime = db.getGenesis().get().getStartDateTimeUTC();
-			LocalDateTime nextBlockStartTime = startDateTime.plus(head.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			execute(new MineNewBlockTask(this, head, nextBlockStartTime));
-			return startDateTime;
-		}
-		else {
-			LocalDateTime startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
-			emit(new BlockDiscoveryEvent(Blocks.genesis(startDateTime)));
-			return startDateTime;
-		}
-	}
-
-	/**
-	 * Adds the seeds as peers.
-	 */
-	private void addSeedsAsPeers() {
-		scheduleAddPeersTask(config.seeds().map(Peers::of), true);
-	}
-
-	/**
-	 * Schedules a task that will add the given peers to the node.
-	 * 
-	 * @param peers the peers to add
-	 * @param force true if and only if the peers must be added also if the maximum number of peers
-	 *              for the node has been reached
-	 */
-	void scheduleAddPeersTask(Stream<Peer> peers, boolean force) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		if (peersAsArray.length > 0)
-			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
 	}
 
 	@Override
@@ -192,17 +145,6 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
 		onPeerAddedListeners.removeListener(listener);
-	}
-
-	private static Version mkVersion() throws IOException {
-		// reads the version from the property in the Maven pom.xml
-		try (InputStream is = LocalNodeImpl.class.getClassLoader().getResourceAsStream("maven.properties")) {
-			var mavenProperties = new Properties();
-			mavenProperties.load(is);
-			// the period separates the version components, but we need an escaped escape sequence to refer to it in split
-			int[] components = Stream.of(mavenProperties.getProperty("mokamint.version").split("\\.")).mapToInt(Integer::parseInt).toArray();
-			return Versions.of(components[0], components[1], components[2]);
-		}
 	}
 
 	@Override
@@ -275,7 +217,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Yields the application this blockchain is running.
+	 * Yields the application this node is running.
 	 * 
 	 * @return the application
 	 */
@@ -288,8 +230,8 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @return the miners
 	 */
-	public PunishableSet<Miner> getMiners() {
-		return miners;
+	public Stream<Miner> getMiners() {
+		return miners.get();
 	}
 
 	/**
@@ -299,6 +241,49 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	Database getDatabase() {
 		return db;
+	}
+
+	/**
+	 * Schedules a task that will add the given peers to the node.
+	 * 
+	 * @param peers the peers to add
+	 * @param force true if and only if the peers must be added also if the maximum number of peers
+	 *              for the node has been reached
+	 */
+	void scheduleAddPeersTask(Stream<Peer> peers, boolean force) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		if (peersAsArray.length > 0)
+			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
+	}
+
+	/**
+	 * Adds the seeds as peers.
+	 */
+	private void addSeedsAsPeers() {
+		scheduleAddPeersTask(config.seeds().map(Peers::of), true);
+	}
+
+	/**
+	 * Starts the mining.
+	 * 
+	 * @return the start time of the blockchain
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private LocalDateTime startMining() throws NoSuchAlgorithmException, DatabaseException {
+		var maybeHead = db.getHead();
+		if (maybeHead.isPresent()) {
+			var head = maybeHead.get();
+			LocalDateTime startDateTime = db.getGenesis().get().getStartDateTimeUTC();
+			LocalDateTime nextBlockStartTime = startDateTime.plus(head.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			execute(new MineNewBlockTask(this, head, nextBlockStartTime));
+			return startDateTime;
+		}
+		else {
+			LocalDateTime startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
+			emit(new BlockDiscoveryEvent(Blocks.genesis(startDateTime)));
+			return startDateTime;
+		}
 	}
 
 	/**
@@ -614,7 +599,7 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
-			miners.forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
+			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 
 			var maybeHead = db.getHead();
 			if (maybeHead.isPresent()) {

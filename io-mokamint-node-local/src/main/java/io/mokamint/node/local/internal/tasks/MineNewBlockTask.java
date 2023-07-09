@@ -97,7 +97,7 @@ public class MineNewBlockTask extends Task {
 	@Override @OnThread("tasks")
 	protected void body() {
 		try {
-			if (node.getMiners().isEmpty())
+			if (node.getMiners().count() == 0L)
 				node.emit(node.new NoMinersAvailableEvent());
 			else
 				new Run();
@@ -205,7 +205,7 @@ public class MineNewBlockTask extends Task {
 
 			if (done)
 				LOGGER.info(logIntro + "discarding deadline " + deadline + " since it arrived too late");
-			else if (!node.getMiners().contains(miner))
+			else if (node.getMiners().noneMatch(m -> m == miner))
 				LOGGER.info(logIntro + "discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
 				if (isLegal(deadline)) {

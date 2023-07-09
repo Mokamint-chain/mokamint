@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -36,13 +35,11 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,15 +91,11 @@ public class PeersTests {
 	 */
 	private static Version mkVersion() {
 		// reads the version from the property in the Maven pom.xml
-		try (InputStream is = LocalNodeImpl.class.getClassLoader().getResourceAsStream("maven.properties")) {
-			var mavenProperties = new Properties();
-			mavenProperties.load(is);
-			// the period separates the version components, but we need an escaped escape sequence to refer to it in split
-			int[] components = Stream.of(mavenProperties.getProperty("mokamint.version").split("\\.")).mapToInt(Integer::parseInt).toArray();
-			return Versions.of(components[0], components[1], components[2]);
+		try {
+			return Versions.current();
 		}
 		catch (IOException e) {
-			throw new RuntimeException("Cannot load maven.properties file", e);
+			throw new RuntimeException("Cannot load the maven.properties file", e);
 		}
 	}
 

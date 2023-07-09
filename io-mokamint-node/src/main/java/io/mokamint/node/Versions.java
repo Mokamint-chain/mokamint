@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.io.IOException;
+
 import io.mokamint.node.api.Version;
 import io.mokamint.node.internal.VersionImpl;
 import io.mokamint.node.internal.gson.VersionDecoder;
@@ -39,6 +41,16 @@ public abstract class Versions {
 	 */
 	public static Version of(int major, int minor, int patch) {
 		return new VersionImpl(major, minor, patch);
+	}
+
+	/**
+	 * Yields a version object, corresponding to the version of Mokamint
+	 * as reported the pom.xml file of the main project.
+	 * 
+	 * @throws IOException if the information of the pom.xml file cannot be accessed
+	 */
+	public static Version current() throws IOException {
+		return new VersionImpl();
 	}
 
 	/**
