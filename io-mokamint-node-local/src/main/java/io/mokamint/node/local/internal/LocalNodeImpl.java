@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
@@ -39,7 +37,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -62,8 +59,6 @@ import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.SuggestPeersTask;
-import io.mokamint.node.remote.RemotePublicNodes;
-import jakarta.websocket.DeploymentException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -94,7 +89,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The peers of the node.
 	 */
-	private final PunishableSet<Peer> peers;
+	private final PunishableSetOfPeers peers;
 
 	/**
 	 * The database containing the blockchain.
@@ -141,7 +136,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = PunishableSets.of(Stream.of(miners), _miner -> config.minerInitialPoints);
 		this.db = new Database(config);
 		this.info = NodeInfos.of(mkVersion());
-		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::addPeerToDB, this::removePeerFromDB);
+		this.peers = new PunishableSetOfPeers(this);
 		addSeedsAsPeers();
 		this.startDateTime = startMining();
 	}
@@ -186,7 +181,7 @@ public class LocalNodeImpl implements LocalNode {
 	private void scheduleAddPeersTask(Stream<Peer> peers, boolean force) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		if (peersAsArray.length > 0)
-			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> addPeer(peer, force), this));
+			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
 	}
 
 	@Override
@@ -217,66 +212,18 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Stream<Peer> getPeers() {
-		return peers.getElements();
-	}
-
-	private boolean addPeerToDB(Peer peer, boolean force) {
-		try {
-			if (db.addPeer(peer, force)) {
-				LOGGER.info("added peer " + peer + " to the database");
-				return true;
-			}
-			else
-				return false;
-		}
-		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": the database seems corrupted", e);
-			throw new UncheckedException(e);
-		}
-	}
-
-	private boolean removePeerFromDB(Peer peer) {
-		try {
-			if (db.removePeer(peer)) {
-				LOGGER.info("removed peer " + peer + " from the database");
-				return true;
-			}
-			else
-				return false;
-		}
-		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer + ": the database seems corrupted", e);
-			throw new UncheckedException(e);
-		}
+		return peers.getPeers();
 	}
 
 	@Override
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
-		if (addPeer(peer, true))
+		if (peers.add(peer, true))
 			emit(new PeersAddedEvent(Stream.of(peer)));
-	}
-
-	private boolean addPeer(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
-		if (peers.contains(peer))
-			return false;
-
-		try (var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout)) {
-			var version1 = remote.getInfo().getVersion();
-			var version2 = getInfo().getVersion();
-
-			if (!version1.canWorkWith(version2))
-				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-			else 
-				return check(DatabaseException.class, () -> peers.add(peer, force));
-		}
-		catch (DeploymentException | IOException e) {
-			throw new IOException("cannot contact " + peer, e);
-		}
 	}
 
 	@Override
 	public void removePeer(Peer peer) throws DatabaseException {
-		check(DatabaseException.class, () -> peers.remove(peer));
+		peers.remove(peer);
 	}
 
 	@Override
@@ -338,6 +285,15 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public PunishableSet<Miner> getMiners() {
 		return miners;
+	}
+
+	/**
+	 * Yields the database of this node.
+	 * 
+	 * @return the database of this node
+	 */
+	Database getDatabase() {
+		return db;
 	}
 
 	/**
