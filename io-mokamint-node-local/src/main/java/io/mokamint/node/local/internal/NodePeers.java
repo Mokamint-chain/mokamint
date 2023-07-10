@@ -82,7 +82,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * The listener to call when some peers suggests some more peers to add.
 	 */
-	private final Consumer<Stream<Peer>> onAddedPeersListener;
+	private final Consumer<Stream<Peer>> onPeersAddedListener;
 
 	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
@@ -95,9 +95,9 @@ public class NodePeers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
-		this.onAddedPeersListener = peers -> node.scheduleAddPeersTask(peers, false);
+		this.onPeersAddedListener = peers -> node.scheduleAddPeersTask(peers, false);
 		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::onAdd, this::onRemove);
-		tryToCreateRemotes();
+		tryToCreateMissingRemotes();
 	}
 
 	/**
@@ -142,6 +142,18 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
+	 * Punishes a peer by reducing its points. If they reach zero (or below),
+	 * the peer is removed.
+	 * 
+	 * @param peer the peer
+	 * @param points the points to remove
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public void punish(Peer peer, long points) throws DatabaseException {
+		check(DatabaseException.class, () -> peers.punish(peer, points));
+	}
+
+	/**
 	 * Removes a peer.
 	 * 
 	 * @param peer the peer to remove
@@ -159,10 +171,7 @@ public class NodePeers implements AutoCloseable {
 		synchronized (lock) {
 			for (var entry: remotes.entrySet())
 				try {
-					entry.getValue().close();
-					var peer = entry.getKey();
-					remotes.remove(peer);
-					LOGGER.info("closed connection to peer " + peer);
+					closeRemoteWithException(entry.getValue(), entry.getKey());
 				}
 				catch (IOException e) {
 					exception = e;
@@ -173,9 +182,14 @@ public class NodePeers implements AutoCloseable {
 			throw exception;
 	}
 
-	private void tryToCreateRemotes() {
+	/**
+	 * Tries to create the remotes of the peers that do not have a remote.
+	 */
+	private void tryToCreateMissingRemotes() {
 		try (var customThreadPool = new ForkJoinPool()) {
-			customThreadPool.execute(() -> peers.getElements().parallel().forEach(this::tryToCreateRemote));
+			customThreadPool.execute(() ->
+				peers.getElements().parallel().filter(peer -> !remotes.containsKey(peer)).forEach(this::tryToCreateRemote)
+			);
 		}
 	}
 
@@ -183,20 +197,13 @@ public class NodePeers implements AutoCloseable {
 		RemotePublicNode remote = null;
 
 		try {
-			remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
-			LOGGER.info("opened connection to peer " + peer);
-			var version1 = remote.getInfo().getVersion();
-			var version2 = node.getInfo().getVersion();
+			remote = openRemote(peer);
+			ensureVersionIsCompatible(remote);
 
-			if (!version1.canWorkWith(version2))
-				throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-			else {
-				synchronized (lock) {
-					if (peers.contains(peer)) {
-						remotes.put(peer, remote);
-						remote.addOnPeersAddedListener(onAddedPeersListener);
-						remote = null; // so that it won't be closed in the finally clause
-					}
+			synchronized (lock) {
+				if (peers.contains(peer)) {
+					storeRemote(remote, peer);
+					remote = null; // so that it won't be closed in the finally clause
 				}
 			}
 		}
@@ -206,16 +213,20 @@ public class NodePeers implements AutoCloseable {
 				remove(peer);
 			}
 			catch (DatabaseException e1) {
-				// OK, the peer cannot be removed from the database
+				LOGGER.log(Level.SEVERE, "cannot remove " + peer + " from the database", e);
 			}
 		}
-		catch (DeploymentException | IOException | TimeoutException | InterruptedException e) {
+		catch (IOException | TimeoutException | InterruptedException e) {
 			LOGGER.log(Level.SEVERE, "cannot contact peer " + peer, e);
-			peers.punish(peer, config.peerPunishmentForUnreachable);
+			try {
+				punish(peer, config.peerPunishmentForUnreachable);
+			}
+			catch (DatabaseException e1) {
+				LOGGER.log(Level.SEVERE, "cannot reduce the points of " + peer, e1);
+			}
 		}
 		finally {
-			if (remote != null)
-				closeRemote(remote, peer);
+			closeRemote(remote, peer);
 		}
 	}
 
@@ -224,35 +235,23 @@ public class NodePeers implements AutoCloseable {
 			RemotePublicNode remote = null;
 
 			try {
-				remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
-				LOGGER.info("opened connection to peer " + peer);
-				var version1 = remote.getInfo().getVersion();
-				var version2 = node.getInfo().getVersion();
+				remote = openRemote(peer);
+				ensureVersionIsCompatible(remote);
 
-				if (!version1.canWorkWith(version2))
-					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
-				else {
-					synchronized (lock) {
-						if (db.addPeer(peer, force)) {
-							remotes.put(peer, remote);
-							remote.addOnPeersAddedListener(onAddedPeersListener);
-							remote = null; // so that it won't be closed in the finally clause
-							LOGGER.info("added peer " + peer + " to the database");
-							return true;
-						}
-						else
-							return false;
+				synchronized (lock) {
+					if (db.addPeer(peer, force)) {
+						LOGGER.info("added peer " + peer + " to the database");
+						storeRemote(remote, peer);
+						remote = null; // so that it won't be closed in the finally clause
+						return true;
 					}
+					else
+						return false;
 				}
 			}
 			finally {
-				if (remote != null)
-					closeRemote(remote, peer);
+				closeRemote(remote, peer);
 			}
-		}
-		catch (DeploymentException e) {
-			LOGGER.log(Level.SEVERE, "cannot add peer " + peer, e);
-			throw new UncheckedException(new IOException(e)); // we consider it as a special case of IOException
 		}
 		catch (IOException | TimeoutException | InterruptedException | DatabaseException | IncompatiblePeerVersionException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer, e);
@@ -264,12 +263,8 @@ public class NodePeers implements AutoCloseable {
 		try {
 			synchronized (lock) {
 				if (db.removePeer(peer)) {
-					RemotePublicNode remote = remotes.get(peer);
-					if (remote != null) {
-						closeRemote(remote, peer);
-						remotes.remove(peer);
-					}
 					LOGGER.info("removed peer " + peer + " from the database");
+					closeRemote(remotes.get(peer), peer);
 					return true;
 				}
 				else
@@ -282,15 +277,45 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private void closeRemote(RemotePublicNode remote, Peer peer) {
-		remote.removeOnPeersAddedListener(onAddedPeersListener);
-
+	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
-			remote.close();
-			LOGGER.info("closed connection to peer " + peer);
+			RemotePublicNode remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
+			LOGGER.info("opened connection to peer " + peer);
+			return remote;
+		}
+		catch (DeploymentException e) {
+			throw new IOException(e);  // we consider it as a special case of IOException
+		}
+	}
+
+	private void ensureVersionIsCompatible(RemotePublicNode remote) throws IncompatiblePeerVersionException, TimeoutException, InterruptedException {
+		var version1 = remote.getInfo().getVersion();
+		var version2 = node.getInfo().getVersion();
+	
+		if (!version1.canWorkWith(version2))
+			throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
+	}
+
+	private void storeRemote(RemotePublicNode remote, Peer peer) {
+		remotes.put(peer, remote);
+		remote.addOnPeersAddedListener(onPeersAddedListener);
+	}
+
+	private void closeRemote(RemotePublicNode remote, Peer peer) {
+		try {
+			closeRemoteWithException(remote, peer);
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "cannot close the connection to peer " + peer, e);
+		}
+	}
+
+	private void closeRemoteWithException(RemotePublicNode remote, Peer peer) throws IOException {
+		if (remote != null) {
+			remote.removeOnPeersAddedListener(onPeersAddedListener);
+			remotes.remove(peer);
+			remote.close();
+			LOGGER.info("closed connection to peer " + peer);
 		}
 	}
 }
