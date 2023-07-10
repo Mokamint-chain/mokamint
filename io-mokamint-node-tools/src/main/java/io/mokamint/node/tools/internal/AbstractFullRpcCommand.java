@@ -28,7 +28,7 @@ import picocli.CommandLine.Option;
  */
 public abstract class AbstractFullRpcCommand extends AbstractRpcCommand {
 
-	@Option(names = "--uri, --public-uri", description = "the network URI where the public API of the node is published", defaultValue = "ws://localhost:8030")
+	@Option(names = { "--uri", "--public-uri" }, description = "the network URI where the public API of the node is published", defaultValue = "ws://localhost:8030")
 	private URI publicUri;
 
 	@Option(names = "--restricted-uri", description = "the network URI where the restricted API of the node is published", defaultValue = "ws://localhost:8031")

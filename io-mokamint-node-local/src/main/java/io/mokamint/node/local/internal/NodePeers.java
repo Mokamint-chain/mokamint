@@ -92,6 +92,7 @@ public class NodePeers implements AutoCloseable {
 		this.db = node.getDatabase();
 		this.onAddedPeersListener = peers -> node.scheduleAddPeersTask(peers, false);
 		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::onAdd, this::onRemove);
+		this.peers.forEach(this::mkRemote);
 	}
 
 	/**
@@ -152,6 +153,37 @@ public class NodePeers implements AutoCloseable {
 
 		if (exception != null)
 			throw exception;
+	}
+
+	private void mkRemote(Peer peer) {
+		try {
+			RemotePublicNode remote = null;
+
+			try {
+				remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
+				LOGGER.info("opened connection to peer " + peer);
+				var version1 = remote.getInfo().getVersion();
+				var version2 = node.getInfo().getVersion();
+
+				if (!version1.canWorkWith(version2))
+					throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
+				else {
+					remotes.put(peer, remote);
+					remote.addOnPeersAddedListener(onAddedPeersListener);
+					remote = null; // so that it won't be closed in the finally clause
+				}
+			}
+			finally {
+				if (remote != null) {
+					remote.close();
+					LOGGER.info("closed connection to peer " + peer);
+				}
+			}
+		}
+		catch (DeploymentException | IOException | TimeoutException | InterruptedException | IncompatiblePeerVersionException e) {
+			LOGGER.log(Level.SEVERE, "cannot contact peer " + peer, e);
+			peers.punish(peer, config.peerPunishmentForUnreachable);
+		}
 	}
 
 	private boolean onAdd(Peer peer, boolean force) {

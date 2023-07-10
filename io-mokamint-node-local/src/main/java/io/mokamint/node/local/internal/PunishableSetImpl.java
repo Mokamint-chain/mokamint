@@ -88,8 +88,14 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		this.pointInitializer = pointInitializer;
 		this.onAdd = onAdd;
 		this.onRemove = onRemove;
+		
+		actors.forEach(this::init);
+	}
 
-		actors.forEach(actor -> add(actor, true));
+	private void init(A actor) {
+		long value = pointInitializer.applyAsLong(actor);
+		if (value > 0L)
+			actors.put(actor, value);
 	}
 
 	@Override

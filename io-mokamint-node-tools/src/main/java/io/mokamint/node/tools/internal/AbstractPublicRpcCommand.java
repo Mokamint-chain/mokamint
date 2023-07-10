@@ -29,7 +29,7 @@ import picocli.CommandLine.Option;
  */
 public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand {
 
-	@Option(names = "--uri, --public-uri", description = "the network URI where the public API of the node is published", defaultValue = "ws://localhost:8030")
+	@Option(names = { "--uri", "--public-uri" }, description = "the network URI where the public API of the node is published", defaultValue = "ws://localhost:8030")
 	private URI publicUri;
 
 	/**

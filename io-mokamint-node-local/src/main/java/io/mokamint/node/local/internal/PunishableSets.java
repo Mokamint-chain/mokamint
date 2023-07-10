@@ -36,7 +36,7 @@ public abstract class PunishableSets {
 	 *                         (see @link {@link PunishableSet#add(Object)})
 	 */
 	public static <A> PunishableSet<A> of(Stream<A> actors, ToLongFunction<A> pointInitializer) {
-		return new PunishableSetImpl<A>(actors, pointInitializer);
+		return new PunishableSetImpl<>(actors, pointInitializer);
 	}
 
 	/**
@@ -69,6 +69,6 @@ public abstract class PunishableSets {
 	 *                 true the actor is removed
 	 */
 	public static <A> PunishableSet<A> of(Stream<A> actors, ToLongFunction<A> pointInitializer, OnAdd<A> onAdd, Predicate<A> onRemove) {
-		return new PunishableSetImpl<A>(actors, pointInitializer, onAdd, onRemove);
+		return new PunishableSetImpl<>(actors, pointInitializer, onAdd, onRemove);
 	}
 }
