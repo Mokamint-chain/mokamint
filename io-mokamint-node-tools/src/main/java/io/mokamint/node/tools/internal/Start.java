@@ -20,12 +20,14 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,6 +58,9 @@ public class Start extends AbstractCommand {
 
 	@Option(names = "--config", description = { "the toml config file of the node;", "if missing, defaults are used"})
 	private Path config;
+
+	@Option(names = "--uri", description = { "the public URI of the node, such as \"ws://my.machine.com\";", "if missing, the node will try to use its public IP"})
+	private URI uri;
 
 	@Option(names = "--miner-port", description = { "network ports where a remote miner", "must be published" })
 	private int[] minerPorts;
@@ -221,7 +226,7 @@ public class Start extends AbstractCommand {
 	private void publishPublicAndRestrictedNodeServices(int pos, LocalNode node) {
 		if (pos < publicPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
-			try (var service = PublicNodeServices.open(node, publicPorts[pos])) {
+			try (var service = PublicNodeServices.open(node, publicPorts[pos], Optional.ofNullable(uri))) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}

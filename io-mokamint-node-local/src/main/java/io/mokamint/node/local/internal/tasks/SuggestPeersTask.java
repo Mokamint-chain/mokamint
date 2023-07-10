@@ -36,8 +36,7 @@ public class SuggestPeersTask extends Task {
 	private final Peer[] peers;
 
 	/**
-	 * A supplier of the listeners registered in the node, eager to receive
-	 * peer addition suggestions.
+	 * A supplier of the listeners registered in the node, eager to receive peer addition suggestions.
 	 */
 	private final Supplier<Stream<Consumer<Stream<Peer>>>> listeners;
 
@@ -45,8 +44,7 @@ public class SuggestPeersTask extends Task {
 	 * Creates a task that suggests peers to other peers.
 	 * 
 	 * @param peers the peers to suggest
-	 * @param listeners the listeners registered in the node, eager to receive
-	 *                  peer addition suggestions
+	 * @param listeners the listeners registered in the node, eager to receive peer addition suggestions
 	 * @param node the node for which this task is working
 	 */
 	public SuggestPeersTask(Stream<Peer> peers, Supplier<Stream<Consumer<Stream<Peer>>>> listeners, LocalNodeImpl node) {

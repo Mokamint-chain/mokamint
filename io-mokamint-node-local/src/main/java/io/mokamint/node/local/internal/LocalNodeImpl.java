@@ -437,7 +437,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param task the task
 	 * @param exception the failure cause
 	 */
-	protected void onFail(Task task, Exception e) {}
+	protected void onFail(Task task, Exception e) {
+		LOGGER.log(Level.SEVERE, "failed execution of " + task, e);
+	}
 
 	/**
 	 * Runs the given task in one thread from the {@link #tasks} executors.

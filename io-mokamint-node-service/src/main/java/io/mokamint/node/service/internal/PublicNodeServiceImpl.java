@@ -17,7 +17,9 @@ limitations under the License.
 package io.mokamint.node.service.internal;
 
 import java.io.IOException;
+import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -58,22 +60,24 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Consumer<Stream<Peer>> onPeerAddedListener = this::sendPeersSuggestion;
+	private final Consumer<Stream<Peer>> onPeersAddedListener = this::sendPeersSuggestion;
 
 	/**
 	 * Creates a new service for the given node, at the given network port.
 	 * 
 	 * @param node the node
 	 * @param port the port
+	 * @param uri the public URI of the machine where this service is running; if missing,
+	 *            the service will try to determine the public IP of the machine and use it as its URI
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public PublicNodeServiceImpl(PublicNode node, int port) throws DeploymentException, IOException {
-		super(port);
+	public PublicNodeServiceImpl(PublicNode node, int port, Optional<URI> uri) throws DeploymentException, IOException {
+		super(port, uri);
 		this.node = node;
 
 		if (node instanceof NodeListeners nl)
-			nl.addOnPeersAddedListener(onPeerAddedListener);
+			nl.addOnPeersAddedListener(onPeersAddedListener);
 
 		deploy();
 	}
@@ -81,7 +85,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	@Override
 	public void close() {
 		if (node instanceof NodeListeners nl)
-			nl.removeOnPeersAddedListener(onPeerAddedListener);
+			nl.removeOnPeersAddedListener(onPeersAddedListener);
 
 		super.close();
 	}

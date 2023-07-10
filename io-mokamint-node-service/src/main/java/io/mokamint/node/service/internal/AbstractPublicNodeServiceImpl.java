@@ -16,16 +16,27 @@ limitations under the License.
 
 package io.mokamint.node.service.internal;
 
+import static io.hotmoka.exceptions.CheckSupplier.check;
+import static io.hotmoka.exceptions.UncheckFunction.uncheck;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
+import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
@@ -64,6 +75,12 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	private final int port;
 
 	/**
+	 * The public URI of the machine where this service is running. If this is missing,
+	 * the URI of the machine will not be suggested as a peer for the connected remotes.
+	 */
+	private final Optional<URI> uri;
+
+	/**
 	 * The sessions connected to the {@link SuggestPeersEndpoint}.
 	 */
 	private final Set<Session> suggestPeersSessions = ConcurrentHashMap.newKeySet();
@@ -74,10 +91,22 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	 * Creates a new server, at the given network port.
 	 * 
 	 * @param port the port
+	 * @param uri the public URI of the machine where this service is running; if missing,
+	 *            the service will try to determine the public IP of the machine and use it as its URI
 	 * @throws DeploymentException if the service cannot be deployed
 	 */
-	protected AbstractPublicNodeServiceImpl(int port) throws DeploymentException {
+	protected AbstractPublicNodeServiceImpl(int port, Optional<URI> uri) throws DeploymentException {
 		this.port = port;
+		this.uri = check(DeploymentException.class, () -> uri.or(this::determinePublicURI).map(uncheck(this::addPort)));
+	}
+
+	private URI addPort(URI uri) throws DeploymentException {
+		try {
+			return new URI(uri.toString() + ":" + port);
+		}
+		catch (URISyntaxException e) {
+			throw new DeploymentException("The public URI of the machine seems incorrect", e);
+		}
 	}
 
 	/**
@@ -99,13 +128,56 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	}
 
 	protected void sendPeersSuggestion(Stream<Peer> peers) {
+		// we add our own URL as a suggestion
+		if (uri.isPresent())
+			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get())));
+
 		var peersAsArray = peers.toArray(Peer[]::new);
 		
-		LOGGER.info("broadcasting newly added peers " + Arrays.toString(peersAsArray) + " to " + suggestPeersSessions.size() + " sessions");
+		LOGGER.info("broadcasting peers " + Arrays.toString(peersAsArray) + " to " + suggestPeersSessions.size() + " sessions");
 
 		suggestPeersSessions.stream()
 			.filter(Session::isOpen)
 			.forEach(openSession -> sendObjectAsync(openSession, SuggestPeersMessages.of(Stream.of(peersAsArray))));
+	}
+
+	/**
+	 * Tries to determine the public URI of the machine where this service is running.
+	 * It is the public IP of the machine, if determinable, with {@code ws://} as prefix.
+	 * 
+	 * @return the public IP address of the machine, if it could be determined
+	 */
+	private Optional<URI> determinePublicURI() {
+		LOGGER.info("trying to determine the public IP of this machine");
+
+		/*try (final DatagramSocket datagramSocket = new DatagramSocket()) {
+		    datagramSocket.connect(InetAddress.getByName("8.8.8.8"), 12345);
+		    return Optional.of(new URI("ws://" + datagramSocket.getLocalAddress().getHostAddress()));
+		} catch (SocketException | UnknownHostException | URISyntaxException e1) {
+			e1.printStackTrace();
+		}*/
+
+		String[] urls = {
+				"http://checkip.amazonaws.com/",
+				"https://ipv4.icanhazip.com/",
+				"http://myexternalip.com/raw",
+				"http://ipecho.net/plain"
+		};
+	
+		for (var url: urls) {
+			try (var br = new BufferedReader(new InputStreamReader(new URL(url).openStream()))) {
+				String ip = br.readLine();
+				LOGGER.info(url + " provided " + ip + " as the IP of the local machine");
+				return Optional.of(new URI("ws://" + ip));
+			}
+			catch (IOException | URISyntaxException e) {
+				LOGGER.log(Level.WARNING, url + " failed to provide the IP of the local machine", e);
+			}
+		}
+	
+		LOGGER.warning("cannot determine the IP of the local machine: its IP won't be propagated to its peers");
+	
+		return Optional.empty();
 	}
 
 	@Override

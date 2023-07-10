@@ -336,7 +336,9 @@ public class PublicNodeServiceTests {
 
 			@Override
 			protected void onSuggestPeers(SuggestPeersMessage message) {
-				if (peers.equals(message.getPeers().collect(Collectors.toSet())))
+				// we must use containsAll since the suggested peers might include
+				// the public URI of the machine where the test is running
+				if (message.getPeers().collect(Collectors.toSet()).containsAll(peers))
 					semaphore.release();
 			}
 		}

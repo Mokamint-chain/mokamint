@@ -426,7 +426,9 @@ public class RemotePublicNodeTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			remote.addOnPeersAddedListener(suggestedPeers -> {
-				if (peers.equals(suggestedPeers.collect(Collectors.toSet())))
+				// we use set inclusion since the suggestion might include the
+				// public URI of the machine where the service is running
+				if (suggestedPeers.collect(Collectors.toSet()).containsAll(peers))
 					semaphore.release();
 			});
 			service.sendPeersSuggestion();

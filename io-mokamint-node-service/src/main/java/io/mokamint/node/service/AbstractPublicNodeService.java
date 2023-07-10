@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.service;
 
+import java.net.URI;
+import java.util.Optional;
+
 import io.mokamint.node.service.internal.AbstractPublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 
@@ -27,11 +30,25 @@ public abstract class AbstractPublicNodeService extends AbstractPublicNodeServic
 
 	/**
 	 * Creates a new server, at the given network port.
+	 * The public URI of the machine is not provided to the service, therefore the
+	 * service will try to guess its public IP and use it as its public URI.
 	 * 
 	 * @param port the port
 	 * @throws DeploymentException if the service cannot be deployed
 	 */
 	protected AbstractPublicNodeService(int port) throws DeploymentException {
-		super(port);
+		super(port, Optional.empty());
+	}
+
+	/**
+	 * Creates a new server, at the given network port.
+	 * 
+	 * @param port the port
+	 * @param uri the public URI of the machine where this service is running; if missing,
+	 *            the service will try to determine the public IP of the machine and use it as its URI
+	 * @throws DeploymentException if the service cannot be deployed
+	 */
+	protected AbstractPublicNodeService(int port, Optional<URI> uri) throws DeploymentException {
+		super(port, uri);
 	}
 }
