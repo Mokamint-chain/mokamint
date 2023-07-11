@@ -231,31 +231,29 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	private boolean onAdd(Peer peer, boolean force) {
+		RemotePublicNode remote = null;
+
 		try {
-			RemotePublicNode remote = null;
+			remote = openRemote(peer);
+			ensureVersionIsCompatible(remote);
 
-			try {
-				remote = openRemote(peer);
-				ensureVersionIsCompatible(remote);
-
-				synchronized (lock) {
-					if (db.addPeer(peer, force)) {
-						LOGGER.info("added peer " + peer + " to the database");
-						storeRemote(remote, peer);
-						remote = null; // so that it won't be closed in the finally clause
-						return true;
-					}
-					else
-						return false;
+			synchronized (lock) {
+				if (db.addPeer(peer, force)) {
+					LOGGER.info("added peer " + peer + " to the database");
+					storeRemote(remote, peer);
+					remote = null; // so that it won't be closed in the finally clause
+					return true;
 				}
-			}
-			finally {
-				closeRemote(remote, peer);
+				else
+					return false;
 			}
 		}
 		catch (IOException | TimeoutException | InterruptedException | DatabaseException | IncompatiblePeerVersionException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer, e);
 			throw new UncheckedException(e);
+		}
+		finally {
+			closeRemote(remote, peer);
 		}
 	}
 
