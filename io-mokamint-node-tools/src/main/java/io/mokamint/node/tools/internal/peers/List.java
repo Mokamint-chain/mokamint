@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.peers;
 
-import java.util.ArrayList;
+import static io.hotmoka.exceptions.CheckSupplier.check;
+import static io.hotmoka.exceptions.UncheckFunction.uncheck;
+
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,11 +43,9 @@ public class List extends AbstractPublicRpcCommand {
 			Stream<Peer> peers = remote.getPeers();
 			if (json()) {
 				var encoder = new Peers.Encoder();
-				java.util.List<String> encoded = new ArrayList<>();
-				for (var peer: peers.toArray(Peer[]::new))
-					encoded.add(encoder.encode(peer));
-
-				System.out.println(encoded.stream().collect(Collectors.joining(",", "[", "]")));
+				System.out.println(check(EncodeException.class, () ->
+					peers.map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
+				));
 			}
 			else
 				peers.forEach(System.out::println);

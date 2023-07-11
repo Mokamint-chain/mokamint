@@ -36,5 +36,6 @@ module io.mokamint.node.tools {
 	requires io.mokamint.tools;
 	requires io.mokamint.node.service;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.exceptions;
 	requires java.logging;
 }
