@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -166,10 +167,8 @@ public class PeersTests {
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var allPeers = new HashSet<Peer>();
-		allPeers.add(peer1);
-		allPeers.add(peer2);
-		var stillToAccept = new HashSet<Peer>(allPeers);
+		var allPeers = Set.of(peer1, peer2);
+		var stillToAccept = new HashSet<>(allPeers);
 
 		config = Config.Builder.defaults()
 				.addSeed(peer1.getURI())
@@ -180,7 +179,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException {
 				super(config, app);
 			}
 
@@ -207,14 +206,12 @@ public class PeersTests {
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var allPeers = new HashSet<Peer>();
-		allPeers.add(peer1);
-		allPeers.add(peer2);
+		var allPeers = Set.of(peer1, peer2);
 		var allowAddPeers = new AtomicBoolean(false);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
 				super(config, app);
 			}
 
@@ -253,7 +250,7 @@ public class PeersTests {
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(peer1);
 		allPeers.add(peer2);
-		var stillToAccept = new HashSet<Peer>(allPeers);
+		var stillToAccept = new HashSet<>(allPeers);
 
 		config = Config.Builder.defaults()
 				.addSeed(peer1.getURI())
@@ -266,7 +263,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
 				super(config, app);
 			}
 
@@ -310,12 +307,11 @@ public class PeersTests {
 	public void addPeerWorksIfPatchVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerVersionException, DatabaseException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
-		var allPeers = new HashSet<Peer>();
-		allPeers.add(peer);
+		var allPeers = Set.of(peer);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
 				super(config, app);
 			}
 
@@ -340,7 +336,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
 				super(config, app);
 			}
 
@@ -364,7 +360,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
 				super(config, app);
 			}
 
