@@ -311,6 +311,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setDeadlineWaitTimeout(long deadlineWaitTimeout) {
+			if (deadlineWaitTimeout < 0L)
+				throw new IllegalArgumentException("deadlineWaitTimeout must be non-negative");
+
 			this.deadlineWaitTimeout = deadlineWaitTimeout;
 			return this;
 		}
@@ -324,6 +327,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setMinerInitialPoints(long minerInitialPoints) {
+			if (minerInitialPoints <= 0L)
+				throw new IllegalArgumentException("minerInitialPoints must be positive");
+
 			this.minerInitialPoints = minerInitialPoints;
 			return this;
 		}
@@ -336,6 +342,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setMinerPunishmentForTimeout(long minerPunishmentForTimeout) {
+			if (minerPunishmentForTimeout < 0L)
+				throw new IllegalArgumentException("minerPunishmentForTimeout must be non-negative");
+
 			this.minerPunishmentForTimeout = minerPunishmentForTimeout;
 			return this;
 		}
@@ -348,6 +357,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setMinerPunishmentForIllegalDeadline(long minerPunishmentForIllegalDeadline) {
+			if (minerPunishmentForIllegalDeadline < 0L)
+				throw new IllegalArgumentException("minerPunishmentForIllegalDeadline must be non-negative");
+
 			this.minerPunishmentForIllegalDeadline = minerPunishmentForIllegalDeadline;
 			return this;
 		}
@@ -375,6 +387,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setMaxPeers(long maxPeers) {
+			if (maxPeers < 0L)
+				throw new IllegalArgumentException("maxPeers must be non-negative");
+
 			this.maxPeers = maxPeers;
 			return this;
 		}
@@ -388,6 +403,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setPeerInitialPoints(long peerInitialPoints) {
+			if (peerInitialPoints <= 0L)
+				throw new IllegalArgumentException("peerInitialPoints must be positive");
+
 			this.peerInitialPoints = peerInitialPoints;
 			return this;
 		}
@@ -400,6 +418,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setPeerPunishmentForUnreachable(long peerPunishmentForUnreachable) {
+			if (peerPunishmentForUnreachable < 0L)
+				throw new IllegalArgumentException("peerPunishmentForUnreachable must be non-negative");
+
 			this.peerPunishmentForUnreachable = peerPunishmentForUnreachable;
 			return this;
 		}
@@ -411,6 +432,9 @@ public class Config extends AbstractConfig {
 		 * @return this builder
 		 */
 		public Builder setPeerTimeout(long peerTimeout) {
+			if (peerTimeout < 0L)
+				throw new IllegalArgumentException("peerTimeout must be non-negative");
+
 			this.peerTimeout = peerTimeout;
 			return this;
 		}

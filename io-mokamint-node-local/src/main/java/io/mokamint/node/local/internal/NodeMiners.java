@@ -46,7 +46,7 @@ public class NodeMiners {
 	 */
 	public NodeMiners(LocalNodeImpl node, Stream<Miner> miners) {
 		this.config = node.getConfig();
-		this.miners = PunishableSets.of(miners, _miner -> config.minerInitialPoints);
+		this.miners = PunishableSets.of(miners, config.minerInitialPoints);
 	}
 
 	/**

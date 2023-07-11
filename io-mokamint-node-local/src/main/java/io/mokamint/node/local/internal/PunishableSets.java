@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.util.function.Predicate;
-import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 /**
@@ -31,12 +30,12 @@ public abstract class PunishableSets {
 	 * Creates a new punishable set of actors.
 	 * 
 	 * @param actors the actors initially contained in the set
-	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
-	 *                         function will be used also when adding a new actor to the set later
-	 *                         (see @link {@link PunishableSet#add(Object)})
+	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
+	 *                      will be used also when adding a new actor to the set later
+	 *                      (see @link {@link PunishableSet#add(Object)})
 	 */
-	public static <A> PunishableSet<A> of(Stream<A> actors, ToLongFunction<A> pointInitializer) {
-		return new PunishableSetImpl<>(actors, pointInitializer);
+	public static <A> PunishableSet<A> of(Stream<A> actors, long initialPoints) {
+		return new PunishableSetImpl<>(actors, initialPoints);
 	}
 
 	/**
@@ -60,15 +59,15 @@ public abstract class PunishableSets {
 	 * Creates a new punishable set of actors.
 	 * 
 	 * @param actors the actors initially contained in the set
-	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
-	 *                         function will be used also when adding a new actor to the set later
-	 *                         (see @link {@link PunishableSet#add(Object)})
+	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
+	 *                      will be used also when adding a new actor to the set later
+	 *                      (see @link {@link PunishableSet#add(Object)})
 	 * @param onAdd a filter invoked when trying to add a new actor to the set; only if it yields true, the
 	 *              actor will be added
 	 * @param onRemove a filter invoked when trying to remove an actor from the set; only if it yields
 	 *                 true the actor is removed
 	 */
-	public static <A> PunishableSet<A> of(Stream<A> actors, ToLongFunction<A> pointInitializer, OnAdd<A> onAdd, Predicate<A> onRemove) {
-		return new PunishableSetImpl<>(actors, pointInitializer, onAdd, onRemove);
+	public static <A> PunishableSet<A> of(Stream<A> actors, long initialPoints, OnAdd<A> onAdd, Predicate<A> onRemove) {
+		return new PunishableSetImpl<>(actors, initialPoints, onAdd, onRemove);
 	}
 }

@@ -96,7 +96,7 @@ public class NodePeers implements AutoCloseable {
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
 		this.onPeersAddedListener = peers -> node.scheduleAddPeersTask(peers, false);
-		this.peers = PunishableSets.of(db.getPeers(), _peer -> config.peerInitialPoints, this::onAdd, this::onRemove);
+		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		tryToCreateMissingRemotes();
 	}
 

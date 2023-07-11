@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -48,7 +47,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	/**
 	 * The initial points assigned to a new actor.
 	 */
-	private final ToLongFunction<A> pointInitializer;
+	private final long initialPoints;
 
 	/**
 	 * A filter invoked when trying to add a new actor to the set.
@@ -66,36 +65,33 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 * Creates a new punishable set of actors.
 	 * 
 	 * @param actors the actors initially contained in the set
-	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
-	 *                         function will be used also when adding new actors to the set later
-	 *                         (see @link {@link PunishableSet#add(Object)})
+	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
+	 *                      will be used also when adding a new actor to the set later
+	 *                      (see @link {@link PunishableSet#add(Object)})
 	 */
-	public PunishableSetImpl(Stream<A> actors, ToLongFunction<A> pointInitializer) {
-		this(actors, pointInitializer, (_actor, _force) -> true, _actor -> true);
+	public PunishableSetImpl(Stream<A> actors, long initialPoints) {
+		this(actors, initialPoints, (_actor, _force) -> true, _actor -> true);
 	}
 
 	/**
 	 * Creates a new punishable set of actors.
 	 * 
 	 * @param actors the actors initially added to the set. Their addition is forced
-	 * @param pointInitializer the initial points assigned to each actor when it is added to the set; this
-	 *                         function will be used also when adding new actors to the set later
-	 *                         (see {@link PunishableSet#add(Object)})
+	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
+	 *                      will be used also when adding a new actor to the set later
+	 *                      (see @link {@link PunishableSet#add(Object)})
 	 * @param onAdd a filter invoked when a new actor is added to the set
 	 * @param onRemove a filter invoked when an actor is removed from the set
 	 */
-	public PunishableSetImpl(Stream<A> actors, ToLongFunction<A> pointInitializer, OnAdd<A> onAdd, Predicate<A> onRemove) {
-		this.pointInitializer = pointInitializer;
+	public PunishableSetImpl(Stream<A> actors, long initialPoints, OnAdd<A> onAdd, Predicate<A> onRemove) {
+		if (initialPoints <= 0L)
+			throw new IllegalArgumentException("initialPoints must be positive");
+
+		this.initialPoints = initialPoints;
 		this.onAdd = onAdd;
 		this.onRemove = onRemove;
 		
-		actors.forEach(this::init);
-	}
-
-	private void init(A actor) {
-		long value = pointInitializer.applyAsLong(actor);
-		if (value > 0L)
-			actors.put(actor, value);
+		actors.forEach(actor -> this.actors.put(actor, initialPoints));
 	}
 
 	@Override
@@ -158,8 +154,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		var result = new AtomicBoolean();
 
 		actors.computeIfAbsent(actor, a -> {
-			var initialPoints = pointInitializer.applyAsLong(a);
-			if (initialPoints > 0L && onAdd.apply(a, force)) {
+			if (onAdd.apply(a, force)) {
 				result.set(true);
 				return initialPoints;
 			}
