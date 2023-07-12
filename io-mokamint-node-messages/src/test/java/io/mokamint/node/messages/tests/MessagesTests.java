@@ -10,6 +10,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
@@ -158,7 +159,7 @@ public class MessagesTests {
 	@Test
 	@DisplayName("getInfoResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetInfoResult() throws EncodeException, DecodeException {
-		var info = NodeInfos.of(Versions.of(3, 4, 5));
+		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID());
 		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
 		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
 		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);

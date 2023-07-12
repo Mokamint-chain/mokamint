@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.UUID;
+
 import io.hotmoka.annotations.Immutable;
 
 /**
@@ -32,6 +34,13 @@ public interface NodeInfo {
 	 */
 	Version getVersion();
 
+	/**
+	 * Yields the UUID (unique identifier) of the node.
+	 * 
+	 * @return the UUID
+	 */
+	UUID getUUID();
+	
 	@Override
 	boolean equals(Object other);
 

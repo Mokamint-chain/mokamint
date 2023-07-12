@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.util.UUID;
+
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.internal.NodeInfoImpl;
@@ -34,10 +36,11 @@ public abstract class NodeInfos {
 	 * Yields a node information object.
 	 * 
 	 * @param version the version of the node
+	 * @param uuid the UUID of the node
 	 * @return the node information object
 	 */
-	public static NodeInfo of(Version version) {
-		return new NodeInfoImpl(version);
+	public static NodeInfo of(Version version, UUID uuid) {
+		return new NodeInfoImpl(version, uuid);
 	}
 
 	/**

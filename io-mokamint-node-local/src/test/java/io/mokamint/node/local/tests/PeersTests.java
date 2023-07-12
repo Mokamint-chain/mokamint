@@ -36,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,7 +80,7 @@ public class PeersTests {
 	/**
 	 * The node information of the nodes used in the tests.
 	 */
-	private static NodeInfo info = NodeInfos.of(mkVersion());
+	private static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID());
 
 	/**
 	 * The application of the node used for testing.
@@ -319,7 +320,7 @@ public class PeersTests {
 			@Override
 			public NodeInfo getInfo() {
 				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3));
+				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3), UUID.randomUUID());
 			}
 		}
 
@@ -344,7 +345,7 @@ public class PeersTests {
 			@Override
 			public NodeInfo getInfo() {
 				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()));
+				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()), UUID.randomUUID());
 			}
 		}
 
@@ -368,7 +369,7 @@ public class PeersTests {
 			@Override
 			public NodeInfo getInfo() {
 				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()));
+				return NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID());
 			}
 		}
 

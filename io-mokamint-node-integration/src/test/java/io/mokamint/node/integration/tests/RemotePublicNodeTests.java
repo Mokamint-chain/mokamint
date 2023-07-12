@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -395,7 +396,7 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("getInfo() works")
 	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException {
-		var info1 = NodeInfos.of(Versions.of(1, 2, 3));
+		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID());
 	
 		class MyServer extends PublicTestServer {
 	

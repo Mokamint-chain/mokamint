@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,6 +35,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -101,6 +103,12 @@ public class Database implements AutoCloseable {
 	 */
 	private final static ByteIterable peers = fromByte((byte) 17);
 
+	/**
+	 * The key mapped in the {@link #storeOfPeers} to the unique identifier of the node
+	 * having this database.
+	 */
+	private final static ByteIterable uuid = fromByte((byte) 23);
+
 	private final static Logger LOGGER = Logger.getLogger(Database.class.getName());
 
 	/**
@@ -116,6 +124,78 @@ public class Database implements AutoCloseable {
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
 		this.storeOfPeers = openStore("peers");
+		ensureNodeUUID();
+	}
+
+	/**
+	 * A marshallable UUID.
+	 */
+	private static class MarshallableUUID extends AbstractMarshallable {
+		private final UUID uuid;
+	
+		private MarshallableUUID(UUID uuid) {
+			this.uuid = uuid;
+		}
+
+		@Override
+		public void into(MarshallingContext context) throws IOException {
+			context.writeLong(uuid.getMostSignificantBits());
+			context.writeLong(uuid.getLeastSignificantBits());
+		}
+	
+		/**
+		 * Unmarshals an UUID from the given byte iterable.
+		 * 
+		 * @param bi the byte iterable
+		 * @return the UUID
+		 * @throws IOException if the UUID cannot be unmarshalled
+		 */
+		private static MarshallableUUID from(ByteIterable bi) throws IOException {
+			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
+				return new MarshallableUUID(new UUID(context.readLong(), context.readLong()));
+			}
+		}
+	}
+
+	private void ensureNodeUUID() throws DatabaseException {
+		try {
+			CheckRunnable.check(IOException.class, () -> {
+				environment.executeInTransaction(txn -> {
+					var bi = storeOfPeers.get(txn, uuid);
+					if (bi == null) {
+						var nodeUUID = UUID.randomUUID();
+						storeOfPeers.put(txn, uuid, fromBytes(new MarshallableUUID(nodeUUID).toByteArray()));
+						LOGGER.info("created the UUID of the node: " + nodeUUID);
+					}
+					else {
+						var nodeUUID = uncheck(MarshallableUUID::from).apply(bi).uuid;
+						LOGGER.info("the UUID of the node is " + nodeUUID);
+					}
+				});
+			});
+		}
+		catch (ExodusException | IOException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the UUID of the node having this database.
+	 * 
+	 * @return the UUID
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public UUID getUUID() throws DatabaseException {
+		try {
+			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, uuid));
+			if (bi == null)
+				throw new DatabaseException("The UUID of the node is not in the database");
+
+			return MarshallableUUID.from(bi).uuid;
+		}
+		catch (ExodusException | IOException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	/**

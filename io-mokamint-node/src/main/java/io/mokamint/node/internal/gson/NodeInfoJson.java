@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import java.util.UUID;
+
 import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Versions;
@@ -26,13 +28,15 @@ import io.mokamint.node.api.NodeInfo;
  */
 public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
 	private Versions.Json version;
+	private String uuid;
 
 	protected NodeInfoJson(NodeInfo info) {
 		this.version = new Versions.Json(info.getVersion());
+		this.uuid = info.getUUID().toString();
 	}
 
 	@Override
 	public NodeInfo unmap() {
-		return NodeInfos.of(version.unmap());
+		return NodeInfos.of(version.unmap(), UUID.fromString(uuid));
 	}
 }

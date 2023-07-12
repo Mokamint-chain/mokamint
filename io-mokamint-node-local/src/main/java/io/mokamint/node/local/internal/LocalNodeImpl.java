@@ -92,7 +92,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The non-consensus information about this node.
 	 */
-	private final NodeInfo info = NodeInfos.of(Versions.current());;
+	private final NodeInfo info;
 
 	/**
 	 * The time of creation of the genesis block.
@@ -131,8 +131,9 @@ public class LocalNodeImpl implements LocalNode {
 	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
 		this.app = app;
-		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.db = new Database(config);
+		this.info = NodeInfos.of(Versions.current(), db.getUUID());
+		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this);
 		addSeedsAsPeers();
 		this.startDateTime = startMining();
