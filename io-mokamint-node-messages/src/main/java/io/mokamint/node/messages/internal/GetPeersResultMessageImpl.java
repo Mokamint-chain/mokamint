@@ -21,15 +21,16 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.GetPeersResultMessage;
 
 /**
- * Implementation of the network message corresponding to the {@code getPeers} method of a node.
+ * Implementation of the network message corresponding to the {@link PublicNode#getPeers()} method of a node.
  */
 public class GetPeersResultMessageImpl extends AbstractRpcMessage implements GetPeersResultMessage {
 
-	private final Peer[] peers;
+	private final PeerInfo[] peers;
 
 	/**
 	 * Creates the message.
@@ -37,22 +38,22 @@ public class GetPeersResultMessageImpl extends AbstractRpcMessage implements Get
 	 * @param peers the peers in the message
 	 * @param id the identifier of the message
 	 */
-	public GetPeersResultMessageImpl(Stream<Peer> peers, String id) {
+	public GetPeersResultMessageImpl(Stream<PeerInfo> peers, String id) {
 		super(id);
 
 		this.peers = peers
 			.map(Objects::requireNonNull)
-			.toArray(Peer[]::new);
+			.toArray(PeerInfo[]::new);
 	}
 
 	@Override
-	public Stream<Peer> get() {
+	public Stream<PeerInfo> get() {
 		return Stream.of(peers);
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetPeersResultMessage gprm && super.equals(other) && Arrays.equals(peers, gprm.get().toArray(Peer[]::new));
+		return other instanceof GetPeersResultMessage gprm && super.equals(other) && Arrays.equals(peers, gprm.get().toArray(PeerInfo[]::new));
 	}
 
 	@Override

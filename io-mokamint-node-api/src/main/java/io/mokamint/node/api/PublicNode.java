@@ -49,15 +49,15 @@ public interface PublicNode extends AutoCloseableNode {
 	ConsensusConfig getConfig() throws TimeoutException, InterruptedException;
 
 	/**
-	 * Yields the peers this node is connected to. There can be zero or more peers
-	 * and their set and amount is dynamic. There is no guarantee that such peers are
-	 * active and/or reachable.
+	 * Yields information about the peers this node is connected to. There is a dynamic
+	 * set of peers connected to a node, potentially zero or more peers.
+	 * Peers might be connected or disconnected to the node at the moment.
 	 * 
-	 * @return the peers
+	 * @return the peers information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	Stream<Peer> getPeers() throws TimeoutException, InterruptedException;
+	Stream<PeerInfo> getPeers() throws TimeoutException, InterruptedException;
 
 	/**
 	 * Yields information about the current chain of this node.

@@ -48,6 +48,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
@@ -57,6 +58,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.SuggestPeersMessage;
@@ -82,10 +84,10 @@ public class PublicNodeServiceTests {
 	@DisplayName("if a getPeers() request reaches the service, it sends back the peers of the node")
 	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
-		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
-		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
+		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
+		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
 		var node = mock(PublicNode.class);
-		when(node.getPeers()).thenReturn(Stream.of(peer1, peer2));
+		when(node.getPeers()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
 		class MyTestClient extends AbstractRemotePublicNode {
 
@@ -94,9 +96,9 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			protected void onGetPeersResult(Stream<Peer> received) {
-				var peers = received.collect(Collectors.toList());
-				if (peers.size() == 2 && peers.contains(peer1) && peers.contains(peer2))
+			protected void onGetPeersResult(Stream<PeerInfo> received) {
+				var peerInfos = received.collect(Collectors.toList());
+				if (peerInfos.size() == 2 && peerInfos.contains(peerInfo1) && peerInfos.contains(peerInfo2))
 					semaphore.release();
 			}
 

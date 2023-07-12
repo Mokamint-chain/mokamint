@@ -19,14 +19,15 @@ package io.mokamint.node.tools.internal.peers;
 import static io.hotmoka.exceptions.CheckSupplier.check;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 
+import java.util.OptionalInt;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.mokamint.node.Peers;
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.PeerInfos;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
@@ -40,20 +41,32 @@ public class List extends AbstractPublicRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
 		try {
-			Stream<Peer> peers = remote.getPeers();
+			PeerInfo[] infos = remote.getPeers().sorted().toArray(PeerInfo[]::new);
 			if (json()) {
-				var encoder = new Peers.Encoder();
+				var encoder = new PeerInfos.Encoder();
 				System.out.println(check(EncodeException.class, () ->
-					peers.map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
+					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
 				));
 			}
-			else
-				peers.forEach(System.out::println);
+			else {
+				OptionalInt maxLength = Stream.of(infos).mapToInt(info -> info.getPeer().toString().length()).max();
+				int size = maxLength.isEmpty() || maxLength.getAsInt() > 50 ? 50: maxLength.getAsInt();
+				printLine("URI", size, "points", "status", true);
+				Stream.of(infos).forEachOrdered(info -> printLine(info.getPeer().toString(), size, String.valueOf(info.getPoints()), info.isConnected() ? "connected" : "disconnected", false));
+			}
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
 			LOGGER.log(Level.SEVERE, "cannot encode the peers of the node at \"" + publicUri() + "\" in JSON format.", e);
 		}
+	}
+
+	private void printLine(String peer, int peerNameSize, String points, String connected, boolean color) {
+		String line = String.format("%-" + peerNameSize + "s   %6s  %s", peer, points, connected);
+		if (color)
+			line = Ansi.AUTO.string("@|red " + line + "|@");
+
+		System.out.println(line);
 	}
 
 	@Override

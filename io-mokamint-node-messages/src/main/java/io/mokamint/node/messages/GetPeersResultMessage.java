@@ -18,10 +18,10 @@ package io.mokamint.node.messages;
 
 import java.util.stream.Stream;
 
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 
 /**
  * The network message corresponding to the result of the {@code getPeers} method of a node.
  */
-public interface GetPeersResultMessage extends ResultMessage<Stream<Peer>> {
+public interface GetPeersResultMessage extends ResultMessage<Stream<PeerInfo>> {
 }

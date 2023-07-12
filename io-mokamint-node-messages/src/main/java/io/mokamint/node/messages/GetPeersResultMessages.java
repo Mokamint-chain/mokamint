@@ -18,7 +18,7 @@ package io.mokamint.node.messages;
 
 import java.util.stream.Stream;
 
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.internal.GetPeersResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetPeersResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetPeersResultMessageEncoder;
@@ -38,7 +38,7 @@ public class GetPeersResultMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPeersResultMessage of(Stream<Peer> peers, String id) {
+	public static GetPeersResultMessage of(Stream<PeerInfo> peers, String id) {
 		return new GetPeersResultMessageImpl(peers, id);
 	}
 

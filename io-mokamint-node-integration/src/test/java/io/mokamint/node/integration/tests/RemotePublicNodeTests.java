@@ -30,10 +30,11 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -87,7 +88,10 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("getPeers() works")
 	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
+		var peerInfos1 = new PeerInfo[] {
+			PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
+			PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false)
+		};
 
 		class MyServer extends PublicTestServer {
 
@@ -95,13 +99,13 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, GetPeersResultMessages.of(Stream.of(peers1), message.getId()));
+				sendObjectAsync(session, GetPeersResultMessages.of(Stream.of(peerInfos1), message.getId()));
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var peers2 = remote.getPeers();
-			assertArrayEquals(peers1, peers2.toArray(Peer[]::new));
+			var peerInfos2 = remote.getPeers();
+			assertArrayEquals(peerInfos1, peerInfos2.toArray(PeerInfo[]::new));
 		}
 	}
 
@@ -150,7 +154,10 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("if getPeers() is slow, it leads to a time-out")
 	public void getPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peers1 = new Peer[] { Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")) };
+		var peerInfos1 = new PeerInfo[] {
+			PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
+			PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false)
+		};
 
 		class MyServer extends PublicTestServer {
 
@@ -163,7 +170,7 @@ public class RemotePublicNodeTests {
 				}
 				catch (InterruptedException e) {}
 
-				sendObjectAsync(session, GetPeersResultMessages.of(Stream.of(peers1), message.getId()));
+				sendObjectAsync(session, GetPeersResultMessages.of(Stream.of(peerInfos1), message.getId()));
 			}
 		};
 

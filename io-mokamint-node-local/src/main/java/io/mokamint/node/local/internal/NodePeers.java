@@ -31,9 +31,11 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -102,12 +104,12 @@ public class NodePeers implements AutoCloseable {
 
 	
 	/**
-	 * Yields the peers.
+	 * Yields information about the peers.
 	 * 
-	 * @return the peers
+	 * @return the peers information
 	 */
-	public Stream<Peer> get() {
-		return peers.getElements();
+	public Stream<PeerInfo> get() {
+		return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey())));
 	}
 
 	/**
@@ -202,6 +204,9 @@ public class NodePeers implements AutoCloseable {
 			ensureVersionIsCompatible(remote);
 
 			synchronized (lock) {
+				// we check if the peer is actually contained in the set of peers,
+				// since it might have been removed in the meanwhile and we not not
+				// want to store remotes for peers not in the set of peers of this object
 				if (peers.contains(peer)) {
 					storeRemote(remote, peer);
 					remote = null; // so that it won't be closed in the finally clause

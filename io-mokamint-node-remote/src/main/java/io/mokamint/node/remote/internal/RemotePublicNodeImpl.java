@@ -32,7 +32,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetChainInfoResultMessage;
@@ -105,7 +105,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public Stream<Peer> getPeers() throws TimeoutException, InterruptedException {
+	public Stream<PeerInfo> getPeers() throws TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendGetPeers(id);
 		try {
@@ -119,7 +119,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 		}
 	}
 
-	private Stream<Peer> processGetPeersSuccess(RpcMessage message) {
+	private Stream<PeerInfo> processGetPeersSuccess(RpcMessage message) {
 		return message instanceof GetPeersResultMessage gprm ? gprm.get() : null;
 	}
 

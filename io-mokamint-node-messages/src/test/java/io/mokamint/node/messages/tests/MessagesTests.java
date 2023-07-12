@@ -22,6 +22,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -59,10 +60,10 @@ public class MessagesTests {
 	@Test
 	@DisplayName("getPeersResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetPeersResult() throws EncodeException, DecodeException, URISyntaxException {
-		var peer1 = Peers.of(new URI("ws://google.com:8011"));
-		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
-		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
-		var getPeersResultMessage1 = GetPeersResultMessages.of(Stream.of(peer1, peer2, peer3), "id");
+		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://google.com:8011")), 1234, true);
+		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://amazon.it:8024")), 313, false);
+		var peerInfo3 = PeerInfos.of(Peers.of(new URI("ws://panarea.io:8025")), 112, true);
+		var getPeersResultMessage1 = GetPeersResultMessages.of(Stream.of(peerInfo1, peerInfo2, peerInfo3), "id");
 		String encoded = new GetPeersResultMessages.Encoder().encode(getPeersResultMessage1);
 		var getPeersResultMessage2 = new GetPeersResultMessages.Decoder().decode(encoded);
 		assertEquals(getPeersResultMessage1, getPeersResultMessage2);

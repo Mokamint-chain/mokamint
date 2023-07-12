@@ -50,6 +50,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
@@ -153,7 +154,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public Stream<Peer> getPeers() {
+	public Stream<PeerInfo> getPeers() {
 		return peers.get();
 	}
 

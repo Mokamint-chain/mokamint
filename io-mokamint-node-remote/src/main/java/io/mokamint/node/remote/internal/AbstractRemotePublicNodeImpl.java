@@ -41,6 +41,7 @@ import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -147,7 +148,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 	/**
 	 * Handlers that can be overridden in subclasses.
 	 */
-	protected void onGetPeersResult(Stream<Peer> peers) {}
+	protected void onGetPeersResult(Stream<PeerInfo> peers) {}
 	protected void onGetBlockResult(Optional<Block> block) {}
 	protected void onGetConfigResult(ConsensusConfig config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}

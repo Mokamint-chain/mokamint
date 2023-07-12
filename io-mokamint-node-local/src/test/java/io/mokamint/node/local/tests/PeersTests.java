@@ -57,6 +57,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerVersionException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
@@ -194,7 +195,7 @@ public class PeersTests {
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2); var node = new MyLocalNode()) {
 			semaphore.acquire(2);
-			assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+			assertEquals(allPeers, node.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
 
@@ -228,13 +229,13 @@ public class PeersTests {
 				allowAddPeers.set(true);
 				node.addPeer(peer1);
 				node.addPeer(peer2);
-				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+				assertEquals(allPeers, node.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 
 			allowAddPeers.set(false);
 
 			try (var node = new MyLocalNode()) {
-				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+				assertEquals(allPeers, node.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 		}
 	}
@@ -285,10 +286,10 @@ public class PeersTests {
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
 			try (var node = new MyLocalNode()) {
 				semaphore.acquire(2);
-				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+				assertEquals(allPeers, node.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 				node.removePeer(peer1);
 				allPeers.remove(peer1);
-				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+				assertEquals(allPeers, node.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 
 			config = Config.Builder.defaults()
@@ -297,7 +298,7 @@ public class PeersTests {
 			allowAddPeers.set(false);
 
 			try (var node = LocalNodes.of(config, app)) {
-				assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+				assertEquals(allPeers, node.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 		}
 	}
@@ -324,7 +325,7 @@ public class PeersTests {
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
 			node.addPeer(peer);
-			assertEquals(allPeers, node.getPeers().collect(Collectors.toSet()));
+			assertEquals(allPeers, node.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
 

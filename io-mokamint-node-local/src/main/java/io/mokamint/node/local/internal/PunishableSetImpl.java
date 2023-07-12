@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -106,6 +107,11 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	@Override
 	public Stream<A> getElements() {
 		return actors.keySet().stream();
+	}
+
+	@Override
+	public Stream<Entry<A, Long>> getActorsWithPoints() {
+		return actors.entrySet().stream();
 	}
 
 	@Override

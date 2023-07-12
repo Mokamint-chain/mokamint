@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.util.Map.Entry;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -51,6 +52,13 @@ public interface PunishableSet<A> {
 	 * @return the elements
 	 */
 	Stream<A> getElements();
+
+	/**
+	 * Yields the entries in this container: actors with associated points.
+	 * 
+	 * @return the entries
+	 */
+	Stream<Entry<A, Long>> getActorsWithPoints();
 
 	/**
 	 * Runs some code on each actor in this set. This is weakly consistent,
