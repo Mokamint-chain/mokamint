@@ -16,26 +16,38 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.net.URI;
-
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * A peer of a node. It is the address of another node connected to the node.
- * In general, a node is connected to zero or more peers. Peers are compared
- * by URL string.
+ * Information about a peer of a node. Peer information is ordered first
+ * by connection (connected peers before disconnected peers), then
+ * by points (decreasing) and finally by peer.
  */
 @Immutable
-public interface Peer extends Marshallable, Comparable<Peer> {
+public interface PeerInfo extends Marshallable, Comparable<PeerInfo> {
 
 	/**
-	 * Yields the URI of this peer. It is the network address (including the port, if any)
-	 * where the peer can be contacted by websockets. Consequently, it always starts with {@code ws://}.
+	 * Yields the peer described by this information.
 	 * 
-	 * @return the URI
+	 * @return the peer
 	 */
-	URI getURI();
+	Peer getPeer();
+
+	/**
+	 * The points of the peer. It is an estimation of how much well the
+	 * peer behaved recently.
+	 *
+	 * @return the points. This should always be positive
+	 */
+	long getPoints();
+
+	/**
+	 * The connection status of the peer.
+	 * 
+	 * @return true if and only if the node is connected to the peer
+	 */
+	boolean isConnected();
 
 	@Override
 	boolean equals(Object obj);

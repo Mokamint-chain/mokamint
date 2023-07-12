@@ -100,6 +100,7 @@ public class NodePeers implements AutoCloseable {
 		tryToCreateMissingRemotes();
 	}
 
+	
 	/**
 	 * Yields the peers.
 	 * 
@@ -186,8 +187,8 @@ public class NodePeers implements AutoCloseable {
 	 * Tries to create the remotes of the peers that do not have a remote.
 	 */
 	private void tryToCreateMissingRemotes() {
-		try (var customThreadPool = new ForkJoinPool()) {
-			customThreadPool.execute(() ->
+		try (var pool = new ForkJoinPool()) {
+			pool.execute(() ->
 				peers.getElements().parallel().filter(peer -> !remotes.containsKey(peer)).forEach(this::tryToCreateRemote)
 			);
 		}

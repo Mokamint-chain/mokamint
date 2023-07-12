@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -41,9 +42,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 * @param uri the URI of the peer
 	 */
 	public PeerImpl(URI uri) {
-		if (uri == null)
-			throw new NullPointerException();
-
+		Objects.requireNonNull(uri);
 		this.uri = uri;
 	}
 
@@ -87,7 +86,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 */
 	public static PeerImpl from(byte[] bytes) throws IOException, URISyntaxException {
 		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
-			return PeerImpl.from(context);
+			return from(context);
 		}
 	}
 

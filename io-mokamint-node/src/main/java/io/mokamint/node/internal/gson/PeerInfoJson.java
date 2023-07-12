@@ -16,25 +16,29 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 
 import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 
 /**
- * The JSON representation of a {@link Peer}.
+ * The JSON representation of a {@link PeerInfo}.
  */
-public abstract class PeerJson implements JsonRepresentation<Peer> {
-	private String uri;
+public abstract class PeerInfoJson implements JsonRepresentation<PeerInfo> {
+	private Peers.Json peer;
+	private long points;
+	private boolean connected;
 
-	protected PeerJson(Peer peer) {
-		this.uri = peer.getURI().toString();
+	protected PeerInfoJson(PeerInfo info) {
+		this.peer = new Peers.Json(info.getPeer());
+		this.points = info.getPoints();
+		this.connected = info.isConnected();
 	}
 
 	@Override
-	public Peer unmap() throws URISyntaxException {
-		return Peers.of(new URI(uri));
+	public PeerInfo unmap() throws URISyntaxException {
+		return PeerInfos.of(peer.unmap(), points, connected);
 	}
 }
