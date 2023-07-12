@@ -14,46 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal.chain;
+package io.mokamint.node.tools.internal;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.node.ChainInfos;
-import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.NodeInfos;
 import io.mokamint.node.remote.RemotePublicNode;
-import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 
-@Command(name = "info", description = "Show information about the chain of a node.")
+@Command(name = "info", description = "Show information about a node.")
 public class Info extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(Info.class.getName());
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
 		try {
-			var info = remote.getChainInfo();
+			var info = remote.getInfo();
 
 			if (json())
-				System.out.println(new ChainInfos.Encoder().encode(info));
+				System.out.println(new NodeInfos.Encoder().encode(info));
 			else
 				System.out.println(info);
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode the chain info of the node at \"" + publicUri() + "\" in JSON format.", e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red The head of the chain uses an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\".", e);
-		}
-		catch (DatabaseException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
-			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
+			LOGGER.log(Level.SEVERE, "cannot encode the node info of the node at \"" + publicUri() + "\" in JSON format.", e);
 		}
 	}
 
