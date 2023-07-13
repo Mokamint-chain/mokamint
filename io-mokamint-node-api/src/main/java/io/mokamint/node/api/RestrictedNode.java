@@ -33,12 +33,12 @@ public interface RestrictedNode extends AutoCloseableNode {
 	 * 
 	 * @param peer the peer to add
 	 * @throws IOException if a connection to the peer cannot be established
-	 * @throws IncompatiblePeerVersionException if the version of {@code peer} is incompatible with that of this node
+	 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of this node or if they look to be the same node
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void addPeer(Peer peer) throws IncompatiblePeerVersionException, IOException, DatabaseException, TimeoutException, InterruptedException;
+	void addPeer(Peer peer) throws IncompatiblePeerException, IOException, DatabaseException, TimeoutException, InterruptedException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node.

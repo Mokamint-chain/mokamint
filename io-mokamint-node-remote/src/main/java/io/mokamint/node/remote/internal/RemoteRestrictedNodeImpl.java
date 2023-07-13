@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerResultMessage;
 import io.mokamint.node.messages.ExceptionMessage;
@@ -72,13 +72,13 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws IncompatiblePeerVersionException, DatabaseException, IOException, TimeoutException, InterruptedException {
+	public void addPeer(Peer peer) throws IncompatiblePeerException, DatabaseException, IOException, TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendAddPeer(peer, id);
 		try {
 			queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | IOException | IncompatiblePeerVersionException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | IOException | IncompatiblePeerException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -92,7 +92,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 
 	private boolean processAddPeerException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return IncompatiblePeerVersionException.class.isAssignableFrom(clazz) ||
+		return IncompatiblePeerException.class.isAssignableFrom(clazz) ||
 			DatabaseException.class.isAssignableFrom(clazz) ||
 			IOException.class.isAssignableFrom(clazz) ||
 			TimeoutException.class.isAssignableFrom(clazz) ||

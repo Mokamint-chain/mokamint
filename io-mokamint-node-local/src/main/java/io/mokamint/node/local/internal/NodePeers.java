@@ -20,6 +20,7 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ForkJoinPool;
@@ -33,7 +34,8 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
@@ -130,16 +132,16 @@ public class NodePeers implements AutoCloseable {
 	 * @param force true if the peer must be added also if the maximum number of peers has been reached
 	 * @return true if and only if the peer was not present and has been added
 	 * @throws IOException if a connection to the peer cannot be established
-	 * @throws IncompatiblePeerVersionException if the version of {@code peer} is incompatible with that of the node
+	 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of the node
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	public boolean add(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
+	public boolean add(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
 		return check(TimeoutException.class,
 					 InterruptedException.class,
 					 IOException.class,
-					 IncompatiblePeerVersionException.class,
+					 IncompatiblePeerException.class,
 					 DatabaseException.class,
 			() -> peers.add(peer, force));
 	}
@@ -201,7 +203,7 @@ public class NodePeers implements AutoCloseable {
 
 		try {
 			remote = openRemote(peer);
-			ensureVersionIsCompatible(remote);
+			ensurePeerIsCompatible(remote);
 
 			synchronized (lock) {
 				// we check if the peer is actually contained in the set of peers,
@@ -213,7 +215,7 @@ public class NodePeers implements AutoCloseable {
 				}
 			}
 		}
-		catch (IncompatiblePeerVersionException e) {
+		catch (IncompatiblePeerException e) {
 			LOGGER.log(Level.SEVERE, "peer " + peer + " version is incompatible with this node", e);
 			try {
 				remove(peer);
@@ -241,7 +243,7 @@ public class NodePeers implements AutoCloseable {
 
 		try {
 			remote = openRemote(peer);
-			ensureVersionIsCompatible(remote);
+			ensurePeerIsCompatible(remote);
 
 			synchronized (lock) {
 				if (db.addPeer(peer, force)) {
@@ -254,8 +256,8 @@ public class NodePeers implements AutoCloseable {
 					return false;
 			}
 		}
-		catch (IOException | TimeoutException | InterruptedException | DatabaseException | IncompatiblePeerVersionException e) {
-			LOGGER.log(Level.SEVERE, "cannot add peer " + peer, e);
+		catch (IOException | TimeoutException | InterruptedException | DatabaseException | IncompatiblePeerException e) {
+			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
 		finally {
@@ -292,12 +294,19 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private void ensureVersionIsCompatible(RemotePublicNode remote) throws IncompatiblePeerVersionException, TimeoutException, InterruptedException {
-		var version1 = remote.getInfo().getVersion();
-		var version2 = node.getInfo().getVersion();
+	private void ensurePeerIsCompatible(RemotePublicNode remote) throws IncompatiblePeerException, TimeoutException, InterruptedException {
+		NodeInfo info1 = remote.getInfo();
+		NodeInfo info2 = node.getInfo();
+		UUID uuid1 = info1.getUUID();
+
+		if (uuid1.equals(info2.getUUID()))
+			throw new IncompatiblePeerException("a peer cannot be added as a peer of itself: same " + info1.getUUID() + " UUID");
+
+		var version1 = info1.getVersion();
+		var version2 = info2.getVersion();
 	
 		if (!version1.canWorkWith(version2))
-			throw new IncompatiblePeerVersionException("peer version " + version1 + " is incompatible with this node's version " + version2);
+			throw new IncompatiblePeerException("peer version " + version1 + " is incompatible with this node's version " + version2);
 	}
 
 	private void storeRemote(RemotePublicNode remote, Peer peer) {

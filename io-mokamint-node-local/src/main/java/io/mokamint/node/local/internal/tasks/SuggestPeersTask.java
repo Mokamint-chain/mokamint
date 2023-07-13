@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.tasks;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -56,11 +57,16 @@ public class SuggestPeersTask extends Task {
 
 	@Override
 	public String toString() {
-		return "suggest " + peers.length + " peers to the peers connected to the node";
+		return "suggest " + Arrays.toString(peers) + " to " + plural(listeners.get().count());
+	}
+
+	private static String plural(long howMany) {
+		return howMany == 1L ? "1 open service" : (howMany + " open services");
 	}
 
 	@Override @OnThread("tasks")
 	protected void body() {
+		// suggest the peers to all nodes having our node as peer
 		listeners.get().forEach(listener -> listener.accept(Stream.of(peers)));
 	}
 }

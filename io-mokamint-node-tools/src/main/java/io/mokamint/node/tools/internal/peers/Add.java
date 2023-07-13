@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
@@ -59,11 +59,11 @@ public class Add extends AbstractRestrictedRpcCommand {
 		catch (InterruptedException e) {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for the addition of peer " + peer + "!|@"));
 		}
-		catch (IncompatiblePeerVersionException e) {
-			System.out.println(Ansi.AUTO.string("@|red The version of " + peer + " is incompatible with the version of the node!|@"));
+		catch (IncompatiblePeerException e) {
+			System.out.println(Ansi.AUTO.string("@|red " + capitalize(e.getMessage()) + "!|@"));
 		}
 		catch (DatabaseException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted0!|@"));
+			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted!|@"));
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));
@@ -71,6 +71,13 @@ public class Add extends AbstractRestrictedRpcCommand {
 		catch (IOException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot establish a connection to " + peer + "!|@"));
 		}
+	}
+
+	private static String capitalize(String message) {
+		if (message.length() > 0)
+			return Character.toUpperCase(message.charAt(0)) + message.substring(1);
+		else
+			return message;
 	}
 
 	@Override

@@ -35,4 +35,5 @@ module io.mokamint.node.local {
 
 	// only used for testing
 	requires static io.mokamint.node.messages;
+	requires static io.mokamint.node.service.api;
 }

@@ -150,13 +150,6 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	private Optional<URI> determinePublicURI() {
 		LOGGER.info("trying to determine the public IP of this machine");
 
-		/*try (final DatagramSocket datagramSocket = new DatagramSocket()) {
-		    datagramSocket.connect(InetAddress.getByName("8.8.8.8"), 12345);
-		    return Optional.of(new URI("ws://" + datagramSocket.getLocalAddress().getHostAddress()));
-		} catch (SocketException | UnknownHostException | URISyntaxException e1) {
-			e1.printStackTrace();
-		}*/
-
 		String[] urls = {
 				"http://checkip.amazonaws.com/",
 				"https://ipv4.icanhazip.com/",

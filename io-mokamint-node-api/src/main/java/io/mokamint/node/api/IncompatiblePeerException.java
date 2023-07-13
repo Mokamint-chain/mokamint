@@ -20,19 +20,19 @@ package io.mokamint.node.api;
  * An exception stating that a peer is incompatible with another peer.
  */
 @SuppressWarnings("serial")
-public class IncompatiblePeerVersionException extends Exception {
+public class IncompatiblePeerException extends Exception {
 
 	/**
 	 * Creates a new exception.
 	 */
-	public IncompatiblePeerVersionException() {}
+	public IncompatiblePeerException() {}
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public IncompatiblePeerVersionException(String message) {
+	public IncompatiblePeerException(String message) {
 		super(message);
 	}
 
@@ -41,7 +41,7 @@ public class IncompatiblePeerVersionException extends Exception {
 	 * 
 	 * @param cause the cause
 	 */
-	public IncompatiblePeerVersionException(Throwable cause) {
+	public IncompatiblePeerException(Throwable cause) {
 		super(cause);
 	}
 
@@ -51,7 +51,7 @@ public class IncompatiblePeerVersionException extends Exception {
 	 * @param message the message
 	 * @param cause the cause
 	 */
-	public IncompatiblePeerVersionException(String message, Throwable cause) {
+	public IncompatiblePeerException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }

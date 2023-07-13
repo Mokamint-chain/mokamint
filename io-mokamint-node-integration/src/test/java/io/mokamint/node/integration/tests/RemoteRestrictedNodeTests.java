@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -65,7 +65,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works")
-	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerVersionException, DatabaseException {
+	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerException, DatabaseException {
 		var peers1 = new HashSet<Peer>();
 		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
 		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
@@ -168,12 +168,12 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IncompatiblePeerVersionException(exceptionMessage), message.getId()));
+				sendObjectAsync(session, ExceptionMessages.of(new IncompatiblePeerException(exceptionMessage), message.getId()));
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IncompatiblePeerVersionException.class, () -> remote.addPeer(peer));
+			var exception = assertThrows(IncompatiblePeerException.class, () -> remote.addPeer(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

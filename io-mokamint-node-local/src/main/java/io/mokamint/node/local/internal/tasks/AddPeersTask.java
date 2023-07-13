@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -59,12 +59,12 @@ public class AddPeersTask extends Task {
 		 * @param peer the peer to add
 		 * @return true if and only if the peer has been added
 		 * @throws IOException if a connection to the peer cannot be established
-		 * @throws IncompatiblePeerVersionException if the version of {@code peer} is incompatible with that of this node
+		 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of this node
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws TimeoutException if no answer arrives before a time window
 		 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 		 */
-		boolean add(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException;
+		boolean add(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException;
 	}
 
 	/**
@@ -104,7 +104,7 @@ public class AddPeersTask extends Task {
 		try {
 			return adder.add(peer);
 		}
-		catch (InterruptedException | IncompatiblePeerVersionException | DatabaseException | IOException | TimeoutException e) {
+		catch (InterruptedException | IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer");
 			return false;
 		}

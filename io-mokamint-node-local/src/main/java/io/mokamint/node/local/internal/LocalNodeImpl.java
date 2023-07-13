@@ -47,7 +47,7 @@ import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerVersionException;
+import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -160,7 +160,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerVersionException, DatabaseException {
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
 		if (peers.add(peer, true))
 			emit(new PeersAddedEvent(Stream.of(peer)));
 	}
