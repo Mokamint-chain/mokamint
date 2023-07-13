@@ -88,8 +88,8 @@ public class AddPeersTask extends Task {
 
 	@Override @OnThread("tasks")
 	protected void body() {
-		try (var customThreadPool = new ForkJoinPool()) {
-			customThreadPool.execute(() -> flagPeersAddedEvent(Stream.of(peers).parallel().filter(this::addPeer)));
+		try (var pool = new ForkJoinPool()) {
+			pool.execute(() -> flagPeersAddedEvent(Stream.of(peers).parallel().filter(this::addPeer)));
 		}
 	}
 

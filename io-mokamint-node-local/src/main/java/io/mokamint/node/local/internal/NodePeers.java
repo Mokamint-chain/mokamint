@@ -23,7 +23,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -88,6 +91,11 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private final Consumer<Stream<Peer>> onPeersAddedListener;
 
+	/**
+	 * A service used to schedule periodic tasks.
+	 */
+	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(2);
+
 	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
 	/**
@@ -101,6 +109,8 @@ public class NodePeers implements AutoCloseable {
 		this.db = node.getDatabase();
 		this.onPeersAddedListener = peers -> node.executeAddPeersTask(peers, false);
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
+		periodicTasks.scheduleWithFixedDelay(this::tryToCreateMissingRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
+		periodicTasks.scheduleWithFixedDelay(this::askForMorePeers, 5000L, 5000L, TimeUnit.MILLISECONDS);
 	}
 
 	
@@ -169,27 +179,40 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() throws IOException, InterruptedException {
 		IOException exception = null;
 
-		synchronized (lock) {
-			for (var entry: remotes.entrySet())
-				try {
-					closeRemoteWithException(entry.getValue(), entry.getKey());
-				}
+		try {
+			periodicTasks.shutdownNow();
+			periodicTasks.awaitTermination(3, TimeUnit.SECONDS);
+		}
+		finally {
+			synchronized (lock) {
+				for (var entry: remotes.entrySet())
+					try {
+						closeRemoteWithException(entry.getValue(), entry.getKey());
+					}
 				catch (IOException e) {
 					exception = e;
 				}
+			}
 		}
 
 		if (exception != null)
 			throw exception;
 	}
 
+	private void askForMorePeers() {
+		long numberOfPeers = peers.getElements().count();
+		if (numberOfPeers < config.maxPeers) {
+			LOGGER.info("this node has " + numberOfPeers + " peers, fewer than " + config.maxPeers + ": asking its peers about their peers");
+		}
+	}
+
 	/**
 	 * Tries to create the remotes of the peers that do not have a remote currently.
 	 */
-	void tryToCreateMissingRemotes() {
+	private void tryToCreateMissingRemotes() {
 		LOGGER.info("trying to create missing remotes for the peers, if any");
 		try (var pool = new ForkJoinPool()) {
 			pool.execute(() ->

@@ -138,10 +138,10 @@ public class PeerPropagationTests {
 		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
 		var peer4 = Peers.of(new URI("ws://localhost:" + port4));
 
-		var config1 = Config.Builder.defaults().setDir(chain1).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).build();
-		var config3 = Config.Builder.defaults().setDir(chain3).build();
-		var config4 = Config.Builder.defaults().setDir(chain4).build();
+		var config1 = Config.Builder.defaults().setDir(chain1).setPeerTimeout(1000).build();
+		var config2 = Config.Builder.defaults().setDir(chain2).setPeerTimeout(1000).build();
+		var config3 = Config.Builder.defaults().setDir(chain3).setPeerTimeout(1000).build();
+		var config4 = Config.Builder.defaults().setDir(chain4).setPeerTimeout(1000).build();
 
 		var semaphore = new Semaphore(0);
 

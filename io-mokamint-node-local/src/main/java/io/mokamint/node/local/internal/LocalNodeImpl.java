@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import static io.hotmoka.exceptions.CheckRunnable.check;
+import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -25,8 +28,8 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -112,11 +115,6 @@ public class LocalNodeImpl implements LocalNode {
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
 	/**
-	 * A service used to schedule periodic tasks.
-	 */
-	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(1);
-
-	/**
 	 * The listeners called whenever peers are added to this node.
 	 */
 	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
@@ -142,7 +140,6 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this);
 		addSeedsAsPeers();
-		periodicTasks.scheduleWithFixedDelay(peers::tryToCreateMissingRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 		this.startDateTime = startMining();
 	}
 
@@ -181,12 +178,13 @@ public class LocalNodeImpl implements LocalNode {
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		events.shutdownNow();
 		tasks.shutdownNow();
-		periodicTasks.shutdownNow();
 		
 		try {
-			events.awaitTermination(2, TimeUnit.SECONDS);
-			tasks.awaitTermination(2, TimeUnit.SECONDS);
-			periodicTasks.awaitTermination(2, TimeUnit.SECONDS);
+			// we close the executor services in parallel, to wait for less time
+			try (var pool = new ForkJoinPool()) {
+				check(InterruptedException.class, () ->
+					Stream.of(events, tasks).parallel().forEach(uncheck(service -> service.awaitTermination(3, TimeUnit.SECONDS))));
+			}
 		}
 		finally {
 			try {
