@@ -50,3 +50,7 @@ peer_punishment_for_unreachable = 1
 
 # the time (in milliseconds) for communications to the peers
 peer_timeout = 10000
+
+# time, in milliseconds, between a ping to a disconnected peer and the subsequent ping
+peer_ping_interval = 120000
+

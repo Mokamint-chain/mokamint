@@ -142,7 +142,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this);
 		addSeedsAsPeers();
-		periodicTasks.scheduleWithFixedDelay(peers::tryToCreateMissingRemotes, 10000, 120000, TimeUnit.MILLISECONDS);
+		periodicTasks.scheduleWithFixedDelay(peers::tryToCreateMissingRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 		this.startDateTime = startMining();
 	}
 

@@ -119,6 +119,14 @@ public class Config extends AbstractConfig {
 	public final long peerTimeout;
 
 	/**
+	 * The time interval, in milliseconds, between a ping to a disconnected peer and the subsequent ping.
+	 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
+	 * until they reach zero and the peer is removed.
+	 * It defaults to 120,000 (ie, 2 minutes).
+	 */
+	public final long peerPingInterval;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 */
 	private Config(Builder builder) {
@@ -134,6 +142,7 @@ public class Config extends AbstractConfig {
 		this.peerInitialPoints = builder.peerInitialPoints;
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 		this.peerTimeout = builder.peerTimeout;
+		this.peerPingInterval = builder.peerPingInterval;
 	}
 
 	@Override
@@ -175,6 +184,8 @@ public class Config extends AbstractConfig {
 		sb.append("# the time (in milliseconds) for communications to the peers\n");
 		sb.append("peer_timeout = " + peerTimeout + "\n");
 		sb.append("\n");
+		sb.append("# time, in milliseconds, between a ping to a disconnected peer and the subsequent ping\n");
+		sb.append("peer_ping_interval = " + peerPingInterval + "\n");
 
 		return sb.toString();
 	}
@@ -192,7 +203,8 @@ public class Config extends AbstractConfig {
 				maxPeers == otherConfig.maxPeers &&
 				peerInitialPoints == otherConfig.peerInitialPoints &&
 				peerPunishmentForUnreachable == otherConfig.peerPunishmentForUnreachable &&
-				peerTimeout == otherConfig.peerTimeout;
+				peerTimeout == otherConfig.peerTimeout &&
+				peerPingInterval == otherConfig.peerPingInterval;
 		}
 		else
 			return false;
@@ -212,6 +224,7 @@ public class Config extends AbstractConfig {
 		private long peerInitialPoints = 1000L;
 		private long peerPunishmentForUnreachable = 1L;
 		private long peerTimeout = 10000L;
+		private long peerPingInterval = 120000L;
 
 		private Builder() throws NoSuchAlgorithmException {
 		}
@@ -263,6 +276,10 @@ public class Config extends AbstractConfig {
 			var peerTimeout = toml.getLong("peer_timeout");
 			if (peerTimeout != null)
 				setPeerTimeout(peerTimeout);
+
+			var peerPingInterval = toml.getLong("peer_ping_interval");
+			if (peerPingInterval != null)
+				setPeerPingInterval(peerPingInterval);
 		}
 
 		/**
@@ -436,6 +453,22 @@ public class Config extends AbstractConfig {
 				throw new IllegalArgumentException("peerTimeout must be non-negative");
 
 			this.peerTimeout = peerTimeout;
+			return this;
+		}
+
+		/**
+		 * Sets the time interval, in milliseconds, between a ping to a disconnected peer and the subsequent ping.
+		 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
+		 * until they reach zero and the peer is removed.
+		 * 
+		 * @param peerPingInterval the time interval
+		 * @return this builder
+		 */
+		public Builder setPeerPingInterval(long peerPingInterval) {
+			if (peerPingInterval < 0L)
+				throw new IllegalArgumentException("peerPeerInterval must be non-negative");
+
+			this.peerPingInterval = peerPingInterval;
 			return this;
 		}
 
