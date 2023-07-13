@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -111,6 +112,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
 	/**
+	 * A service used to schedule periodic tasks.
+	 */
+	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(1);
+
+	/**
 	 * The listeners called whenever peers are added to this node.
 	 */
 	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
@@ -136,6 +142,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this);
 		addSeedsAsPeers();
+		periodicTasks.scheduleWithFixedDelay(peers::tryToCreateMissingRemotes, 10000, 120000, TimeUnit.MILLISECONDS);
 		this.startDateTime = startMining();
 	}
 
@@ -174,10 +181,12 @@ public class LocalNodeImpl implements LocalNode {
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		events.shutdownNow();
 		tasks.shutdownNow();
+		periodicTasks.shutdownNow();
 		
 		try {
 			events.awaitTermination(2, TimeUnit.SECONDS);
 			tasks.awaitTermination(2, TimeUnit.SECONDS);
+			periodicTasks.awaitTermination(2, TimeUnit.SECONDS);
 		}
 		finally {
 			try {
@@ -252,7 +261,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param force true if and only if the peers must be added also if the maximum number of peers
 	 *              for the node has been reached
 	 */
-	void scheduleAddPeersTask(Stream<Peer> peers, boolean force) {
+	void executeAddPeersTask(Stream<Peer> peers, boolean force) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		if (peersAsArray.length > 0)
 			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
@@ -262,7 +271,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * Adds the seeds as peers.
 	 */
 	private void addSeedsAsPeers() {
-		scheduleAddPeersTask(config.seeds().map(Peers::of), true);
+		executeAddPeersTask(config.seeds().map(Peers::of), true);
 	}
 
 	/**

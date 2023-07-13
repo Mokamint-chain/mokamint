@@ -99,7 +99,7 @@ public class NodePeers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
-		this.onPeersAddedListener = peers -> node.scheduleAddPeersTask(peers, false);
+		this.onPeersAddedListener = peers -> node.executeAddPeersTask(peers, false);
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		tryToCreateMissingRemotes();
 	}
@@ -188,9 +188,10 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Tries to create the remotes of the peers that do not have a remote.
+	 * Tries to create the remotes of the peers that do not have a remote currently.
 	 */
-	private void tryToCreateMissingRemotes() {
+	void tryToCreateMissingRemotes() {
+		LOGGER.info("trying to create missing remotes for the peers, if any");
 		try (var pool = new ForkJoinPool()) {
 			pool.execute(() ->
 				peers.getElements().parallel().filter(peer -> !remotes.containsKey(peer)).forEach(this::tryToCreateRemote)
@@ -216,7 +217,7 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (IncompatiblePeerException e) {
-			LOGGER.log(Level.SEVERE, "peer " + peer + " version is incompatible with this node", e);
+			LOGGER.log(Level.SEVERE, e.getMessage());
 			try {
 				remove(peer);
 			}
@@ -225,7 +226,7 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (IOException | TimeoutException | InterruptedException e) {
-			LOGGER.log(Level.SEVERE, "cannot contact peer " + peer, e);
+			LOGGER.log(Level.SEVERE, "cannot contact peer " + peer + ": " + e.getMessage());
 			try {
 				punish(peer, config.peerPunishmentForUnreachable);
 			}
