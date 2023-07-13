@@ -176,8 +176,8 @@ public class LocalNodeImpl implements LocalNode {
 		tasks.shutdownNow();
 		
 		try {
-			events.awaitTermination(10, TimeUnit.SECONDS);
-			tasks.awaitTermination(10, TimeUnit.SECONDS);
+			events.awaitTermination(2, TimeUnit.SECONDS);
+			tasks.awaitTermination(2, TimeUnit.SECONDS);
 		}
 		finally {
 			try {

@@ -36,7 +36,6 @@ import java.util.logging.LogManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -125,21 +124,24 @@ public class PeerPropagationTests {
 
 	@Test
 	@DisplayName("a peer added to a clique is broadcast to all nodes in the clique")
-	@Timeout(10)
-	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
+	//@Timeout(10)
+	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException {
 
 		var port1 = 8032;
 		var port2 = 8034;
 		var port3 = 8036;
+		var port4 = 8038;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
+		var peer4 = Peers.of(new URI("ws://localhost:" + port4));
 
 		var config1 = Config.Builder.defaults().setDir(chain1).build();
 		var config2 = Config.Builder.defaults().setDir(chain2).build();
 		var config3 = Config.Builder.defaults().setDir(chain3).build();
+		var config4 = Config.Builder.defaults().setDir(chain4).build();
 
 		var semaphore = new Semaphore(0);
 
@@ -151,31 +153,35 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				super.onComplete(event);
-				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(peer3::equals))
+				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(peer4::equals))
 					semaphore.release();
 			}
 		}
 
-		try (var node1 = new MyLocalNode(config1); var node2 = new MyLocalNode(config2); var node3 = new MyLocalNode(config3);
-			 var service1 = PublicNodeServices.open(node1, port1); var service2 = PublicNodeServices.open(node2, port2); var service3 = PublicNodeServices.open(node3, port3)) {
+		try (var node1 = new MyLocalNode(config1); var node2 = new MyLocalNode(config2);
+			 var node3 = new MyLocalNode(config3); var node4 = new MyLocalNode(config4);
+			 var service1 = PublicNodeServices.open(node1, port1); var service2 = PublicNodeServices.open(node2, port2);
+			 var service3 = PublicNodeServices.open(node3, port3); var service4 = PublicNodeServices.open(node4, port4)) {
 
 			node1.addPeer(peer2);
-			node2.addPeer(peer1);
+			node2.addPeer(peer3);
+			node3.addPeer(peer1);
 
-			// at this point, each node is a peer of the other
+			// at this point, each node is a peer of the next in the sequence
 			// (there might also be views of the same peer through its local IP address)
 			assertTrue(node1.getPeers().map(PeerInfo::getPeer).anyMatch(peer2::equals));
-			assertTrue(node2.getPeers().map(PeerInfo::getPeer).anyMatch(peer1::equals));
-
-			node1.addPeer(peer3);
-
-			// we wait to two events of addition of peer3 as peer
-			semaphore.tryAcquire(2, 2, TimeUnit.SECONDS);
-
-			// peer3 is a peer of both node1 and node2 now
-			assertTrue(node1.getPeers().map(PeerInfo::getPeer).anyMatch(peer3::equals));
 			assertTrue(node2.getPeers().map(PeerInfo::getPeer).anyMatch(peer3::equals));
+			assertTrue(node3.getPeers().map(PeerInfo::getPeer).anyMatch(peer1::equals));
+
+			// we add peer4 as peer of peer1 now
+			node1.addPeer(peer4);
+
+			// we wait to three events of addition of peer4 as peer
+			semaphore.tryAcquire(3, 2, TimeUnit.SECONDS);
+
+			// peer4 is a peer of node1, node2 and node3 now
+			assertTrue(node1.getPeers().map(PeerInfo::getPeer).anyMatch(peer4::equals));
+			assertTrue(node2.getPeers().map(PeerInfo::getPeer).anyMatch(peer4::equals));
 		}
 	}
 

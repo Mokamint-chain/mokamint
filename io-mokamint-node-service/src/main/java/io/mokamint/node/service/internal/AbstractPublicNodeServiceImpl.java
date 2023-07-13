@@ -133,7 +133,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get())));
 
 		var peersAsArray = peers.toArray(Peer[]::new);
-		
+
 		LOGGER.info("broadcasting peers " + Arrays.toString(peersAsArray) + " to " + suggestPeersSessions.size() + " sessions");
 
 		suggestPeersSessions.stream()
