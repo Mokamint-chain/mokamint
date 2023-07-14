@@ -16,9 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.CheckRunnable.check;
-import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
-
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -28,7 +25,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -180,11 +176,8 @@ public class LocalNodeImpl implements LocalNode {
 		tasks.shutdownNow();
 		
 		try {
-			// we close the executor services in parallel, to wait for less time
-			try (var pool = new ForkJoinPool()) {
-				check(InterruptedException.class, () ->
-					Stream.of(events, tasks).parallel().forEach(uncheck(service -> service.awaitTermination(3, TimeUnit.SECONDS))));
-			}
+			events.awaitTermination(10, TimeUnit.SECONDS);
+			tasks.awaitTermination(10,  TimeUnit.SECONDS);
 		}
 		finally {
 			try {
@@ -375,8 +368,7 @@ public class LocalNodeImpl implements LocalNode {
 			events.execute(event);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.info(event + " rejected, probably because the node is shutting down");
-			onFail(event, e);
+			LOGGER.warning(event + " rejected, probably because the node is shutting down");
 		}
 	}
 
@@ -462,8 +454,7 @@ public class LocalNodeImpl implements LocalNode {
 			tasks.execute(task);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.info(task + " rejected, probably because the node is shutting down");
-			onFail(task, e);
+			LOGGER.warning(task + " rejected, probably because the node is shutting down");
 		}
 	}
 

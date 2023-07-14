@@ -47,7 +47,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 			Thread.sleep(delay);
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "mining interrupted", e);
+			LOGGER.log(Level.WARNING, this + " interrupted");
 			Thread.currentThread().interrupt();
 		}
 

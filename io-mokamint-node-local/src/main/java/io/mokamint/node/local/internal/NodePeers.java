@@ -265,6 +265,10 @@ public class NodePeers implements AutoCloseable {
 		RemotePublicNode remote = null;
 
 		try {
+			// optimization: this avoids opening a remote for an already existing peer
+			if (peers.getElements().anyMatch(peer::equals))
+				return false;
+
 			remote = openRemote(peer);
 			ensurePeerIsCompatible(remote);
 

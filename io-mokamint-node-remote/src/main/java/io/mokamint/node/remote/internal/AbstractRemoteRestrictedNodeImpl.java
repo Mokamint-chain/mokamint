@@ -65,6 +65,8 @@ public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNod
 			onAddPeerResult();
 		else if (message instanceof RemovePeerResultMessage)
 			onRemovePeerResult();
+		else if (message instanceof ExceptionMessage em)
+			onException(em);
 		else if (message == null)
 			LOGGER.log(Level.SEVERE, "unexpected null message");
 		else

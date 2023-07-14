@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal.tasks;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -88,23 +87,21 @@ public class AddPeersTask extends Task {
 
 	@Override @OnThread("tasks")
 	protected void body() {
-		try (var pool = new ForkJoinPool()) {
-			pool.execute(() -> flagPeersAddedEvent(Stream.of(peers).parallel().filter(this::addPeer)));
-		}
+		var added = Stream.of(peers).filter(this::addPeer).toArray(Peer[]::new);
+		if (added.length > 0) // just to avoid useless events
+			node.emit(node.new PeersAddedEvent(Stream.of(added)));
 	}
 
-	private void flagPeersAddedEvent(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		if (peersAsArray.length > 0) // just to avoid useless events
-			node.emit(node.new PeersAddedEvent(Stream.of(peersAsArray)));
-	}
-
-	@OnThread("customThreadPool")
 	private boolean addPeer(Peer peer) {
 		try {
 			return adder.add(peer);
 		}
-		catch (InterruptedException | IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
+		catch (InterruptedException e) {
+			LOGGER.log(Level.WARNING, this + " interrupted");
+			Thread.currentThread().interrupt();
+			return false;
+		}
+		catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
 			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer");
 			return false;
 		}
