@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal;
 import static io.hotmoka.exceptions.CheckSupplier.check;
 
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -187,7 +188,7 @@ public class NodePeers implements AutoCloseable {
 
 		try {
 			periodicTasks.shutdownNow();
-			periodicTasks.awaitTermination(3, TimeUnit.SECONDS);
+			periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
 		}
 		finally {
 			synchronized (lock) {
@@ -210,9 +211,8 @@ public class NodePeers implements AutoCloseable {
 		if (numberOfPeers < config.maxPeers) {
 			LOGGER.info("this node has " + numberOfPeers + " peers, fewer than " + config.maxPeers + ": asking its peers about their peers");
 
-			Stream<Peer> couldBeAdded = peers.getElements()
-				.map(PeerWithRemote::new)
-				.flatMap(PeerWithRemote::askForPeers)
+			Stream<Peer> couldBeAdded = remotes.entrySet().stream()
+				.flatMap(this::askForPeers)
 				.sorted() // so that we try to add peers with highest score first
 				.map(PeerInfo::getPeer);
 
@@ -220,23 +220,15 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private class PeerWithRemote {
-		private final Peer peer;
-		private final Optional<RemotePublicNode> remote;
-
-		private PeerWithRemote(Peer peer) {
-			this.peer = peer;
-			this.remote = getRemote(peer);
-		}
-
-		private Stream<PeerInfo> askForPeers() {
-			if (remote.isEmpty())
-				return Stream.empty();
-
+	private Stream<PeerInfo> askForPeers(Entry<Peer, RemotePublicNode> entry) {
+		var remote = entry.getValue();
+		if (remote != null) {
 			try {
-				return remote.get().getPeers().filter(PeerInfo::isConnected).filter(this::isNewPeer);
+				return remote.getPeers().filter(PeerInfo::isConnected).filter(this::isNewPeer);
 			}
 			catch (TimeoutException | InterruptedException e) {
+				var peer = entry.getKey();
+
 				LOGGER.log(Level.WARNING, "peer " + peer + " seems unreachable");
 				try {
 					punish(peer, config.peerPunishmentForUnreachable);
@@ -244,22 +236,22 @@ public class NodePeers implements AutoCloseable {
 				catch (DatabaseException e1) {
 					LOGGER.log(Level.SEVERE, "could not punish peer " + peer, e1);
 				}
-
-				return Stream.empty();
 			}
 		}
 
-		/**
-		 * Used to avoid suggesting a peer that is already in the set of peers of the node.
-		 * 
-		 * @param info the peer info potentially added
-		 * @return true if and only if the peer of {@code info} is not in {@link NodePeers#peers}
-		 */
-		private boolean isNewPeer(PeerInfo info) {
-			Peer peer = info.getPeer();
-			return peers.getElements().noneMatch(peer::equals);
-		}
-	};
+		return Stream.empty();
+	}
+
+	/**
+	 * Used to avoid suggesting a peer that is already in the set of peers of the node.
+	 * 
+	 * @param info the peer info potentially added
+	 * @return true if and only if the peer of {@code info} is not in {@link NodePeers#peers}
+	 */
+	private boolean isNewPeer(PeerInfo info) {
+		Peer peer = info.getPeer();
+		return peers.getElements().noneMatch(peer::equals);
+	}
 
 	/**
 	 * Tries to create the remotes of the peers that do not have a remote currently.
