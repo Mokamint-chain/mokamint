@@ -61,12 +61,17 @@ public class NodePeers implements AutoCloseable {
 	private final LocalNodeImpl node;
 
 	/**
+	 * Code that can be invoked to try to add some peers to the node.
+	 */
+	private final Consumer<Stream<Peer>> addPeersTask;
+
+	/**
 	 * The configuration of the node.
 	 */
 	private final Config config;
 
 	/**
-	 * The db of the node.
+	 * The database of the node.
 	 */
 	private final Database db;
 
@@ -87,11 +92,6 @@ public class NodePeers implements AutoCloseable {
 	private final ConcurrentMap<Peer, RemotePublicNode> remotes = new ConcurrentHashMap<>();
 
 	/**
-	 * The listener to call when some peers suggests some more peers to add.
-	 */
-	private final Consumer<Stream<Peer>> onPeersAddedListener;
-
-	/**
 	 * A service used to schedule periodic tasks.
 	 */
 	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(2);
@@ -101,13 +101,16 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * Creates the set of peers of a local node.
 	 * 
+	 * @param node the node having these peers
+	 * @param db the database of {@code node}
+	 * @param addPeersTask code that can be invoked to try to add some peers to the node
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public NodePeers(LocalNodeImpl node) throws DatabaseException {
+	public NodePeers(LocalNodeImpl node, Database db, Consumer<Stream<Peer>> addPeersTask) throws DatabaseException {
 		this.node = node;
+		this.addPeersTask = addPeersTask;
 		this.config = node.getConfig();
-		this.db = node.getDatabase();
-		this.onPeersAddedListener = peers -> node.executeAddPeersTask(peers, false);
+		this.db = db;
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		periodicTasks.scheduleWithFixedDelay(this::tryToCreateMissingRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 		periodicTasks.scheduleWithFixedDelay(this::askForMorePeers, 5000L, 5000L, TimeUnit.MILLISECONDS);
@@ -206,8 +209,57 @@ public class NodePeers implements AutoCloseable {
 		long numberOfPeers = peers.getElements().count();
 		if (numberOfPeers < config.maxPeers) {
 			LOGGER.info("this node has " + numberOfPeers + " peers, fewer than " + config.maxPeers + ": asking its peers about their peers");
+
+			Stream<Peer> couldBeAdded = peers.getElements()
+				.map(PeerWithRemote::new)
+				.flatMap(PeerWithRemote::askForPeers)
+				.sorted() // so that we try to add peers with highest score first
+				.map(PeerInfo::getPeer);
+
+			addPeersTask.accept(couldBeAdded);
 		}
 	}
+
+	private class PeerWithRemote {
+		private final Peer peer;
+		private final Optional<RemotePublicNode> remote;
+
+		private PeerWithRemote(Peer peer) {
+			this.peer = peer;
+			this.remote = getRemote(peer);
+		}
+
+		private Stream<PeerInfo> askForPeers() {
+			if (remote.isEmpty())
+				return Stream.empty();
+
+			try {
+				return remote.get().getPeers().filter(PeerInfo::isConnected).filter(this::isNewPeer);
+			}
+			catch (TimeoutException | InterruptedException e) {
+				LOGGER.log(Level.WARNING, "peer " + peer + " seems unreachable");
+				try {
+					punish(peer, config.peerPunishmentForUnreachable);
+				}
+				catch (DatabaseException e1) {
+					LOGGER.log(Level.SEVERE, "could not punish peer " + peer, e1);
+				}
+
+				return Stream.empty();
+			}
+		}
+
+		/**
+		 * Used to avoid suggesting a peer that is already in the set of peers of the node.
+		 * 
+		 * @param info the peer info potentially added
+		 * @return true if and only if the peer of {@code info} is not in {@link NodePeers#peers}
+		 */
+		private boolean isNewPeer(PeerInfo info) {
+			Peer peer = info.getPeer();
+			return peers.getElements().noneMatch(peer::equals);
+		}
+	};
 
 	/**
 	 * Tries to create the remotes of the peers that do not have a remote currently.
@@ -266,7 +318,8 @@ public class NodePeers implements AutoCloseable {
 
 		try {
 			// optimization: this avoids opening a remote for an already existing peer
-			if (peers.getElements().anyMatch(peer::equals))
+			// or trying to add a peer if there are already enough peers for this node
+			if (peers.getElements().anyMatch(peer::equals) || (!force && peers.getElements().count() > config.maxPeers))
 				return false;
 
 			remote = openRemote(peer);
@@ -338,7 +391,7 @@ public class NodePeers implements AutoCloseable {
 
 	private void storeRemote(RemotePublicNode remote, Peer peer) {
 		remotes.put(peer, remote);
-		remote.addOnPeersAddedListener(onPeersAddedListener);
+		remote.addOnPeersAddedListener(addPeersTask);
 	}
 
 	private void closeRemote(RemotePublicNode remote, Peer peer) {
@@ -352,7 +405,7 @@ public class NodePeers implements AutoCloseable {
 
 	private void closeRemoteWithException(RemotePublicNode remote, Peer peer) throws IOException {
 		if (remote != null) {
-			remote.removeOnPeersAddedListener(onPeersAddedListener);
+			remote.removeOnPeersAddedListener(addPeersTask);
 			remotes.remove(peer);
 			remote.close();
 			LOGGER.info("closed connection to peer " + peer);

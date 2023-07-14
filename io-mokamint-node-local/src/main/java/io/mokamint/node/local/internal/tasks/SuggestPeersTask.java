@@ -51,7 +51,7 @@ public class SuggestPeersTask extends Task {
 	public SuggestPeersTask(Stream<Peer> peers, Supplier<Stream<Consumer<Stream<Peer>>>> listeners, LocalNodeImpl node) {
 		node.super();
 
-		this.peers = peers.toArray(Peer[]::new);
+		this.peers = peers.distinct().toArray(Peer[]::new);
 		this.listeners = listeners;
 	}
 

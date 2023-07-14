@@ -76,7 +76,7 @@ public class AddPeersTask extends Task {
 	public AddPeersTask(Stream<Peer> peers, PeerAddition adder, LocalNodeImpl node) {
 		node.super();
 
-		this.peers = peers.toArray(Peer[]::new);
+		this.peers = peers.distinct().toArray(Peer[]::new);
 		this.adder = adder;
 	}
 
@@ -87,6 +87,7 @@ public class AddPeersTask extends Task {
 
 	@Override @OnThread("tasks")
 	protected void body() {
+		// TODO: could addPeer be spawned in parallel?
 		var added = Stream.of(peers).filter(this::addPeer).toArray(Peer[]::new);
 		if (added.length > 0) // just to avoid useless events
 			node.emit(node.new PeersAddedEvent(Stream.of(added)));

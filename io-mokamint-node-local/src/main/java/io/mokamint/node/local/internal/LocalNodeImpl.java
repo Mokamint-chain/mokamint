@@ -134,7 +134,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
 		this.miners = new NodeMiners(this, Stream.of(miners));
-		this.peers = new NodePeers(this);
+		this.peers = new NodePeers(this, db, peers -> executeAddPeersTask(peers, false));
 		addSeedsAsPeers();
 		this.startDateTime = startMining();
 	}
@@ -237,23 +237,14 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Yields the database of this node.
-	 * 
-	 * @return the database of this node
-	 */
-	Database getDatabase() {
-		return db;
-	}
-
-	/**
 	 * Schedules a task that will add the given peers to the node.
 	 * 
 	 * @param peers the peers to add
 	 * @param force true if and only if the peers must be added also if the maximum number of peers
 	 *              for the node has been reached
 	 */
-	void executeAddPeersTask(Stream<Peer> peers, boolean force) {
-		var peersAsArray = peers.toArray(Peer[]::new);
+	private void executeAddPeersTask(Stream<Peer> peers, boolean force) {
+		var peersAsArray = peers.distinct().toArray(Peer[]::new);
 		if (peersAsArray.length > 0)
 			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
 	}
