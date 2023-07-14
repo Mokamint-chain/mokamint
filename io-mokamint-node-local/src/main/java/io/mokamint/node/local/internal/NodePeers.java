@@ -226,22 +226,21 @@ public class NodePeers implements AutoCloseable {
 
 	private Stream<PeerInfo> pingPeer(Entry<Peer, RemotePublicNode> entry) {
 		var peer = entry.getKey();
-		var remote = entry.getValue();
 
-		if (remote == null) {
-			tryToCreateRemote(peer);
-			return Stream.empty();
-		}
-		else
-			return askForPeers(peer, remote);
+		var remote = entry.getValue();
+		if (remote == null)
+			remote = tryToCreateRemote(peer);
+
+		return remote != null ? askForPeers(peer, remote) : Stream.empty();
 	}
 
 
-	private void tryToCreateRemote(Peer peer) {
+	private RemotePublicNode tryToCreateRemote(Peer peer) {
 		RemotePublicNode remote = null;
 	
 		try {
 			remote = openRemote(peer);
+			RemotePublicNode remoteCopy = remote;
 			ensurePeerIsCompatible(remote);
 	
 			synchronized (lock) {
@@ -253,6 +252,8 @@ public class NodePeers implements AutoCloseable {
 					remote = null; // so that it won't be closed in the finally clause
 				}
 			}
+
+			return remoteCopy;
 		}
 		catch (IncompatiblePeerException e) {
 			LOGGER.log(Level.WARNING, e.getMessage());
@@ -279,6 +280,8 @@ public class NodePeers implements AutoCloseable {
 		finally {
 			closeRemote(remote, peer);
 		}
+
+		return null;
 	}
 
 	private Stream<PeerInfo> askForPeers(Peer peer, RemotePublicNode remote) {
