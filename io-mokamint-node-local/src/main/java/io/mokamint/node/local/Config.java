@@ -119,9 +119,10 @@ public class Config extends AbstractConfig {
 	public final long peerTimeout;
 
 	/**
-	 * The time interval, in milliseconds, between a ping to a disconnected peer and the subsequent ping.
+	 * The time interval, in milliseconds, between successive pings to a peer.
 	 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
-	 * until they reach zero and the peer is removed.
+	 * until they reach zero and the peer is removed. During a successful ping, its peers are collected
+	 * if they are useful for the node (for instance, if the node has too few peers).
 	 * It defaults to 120,000 (ie, 2 minutes).
 	 */
 	public final long peerPingInterval;
@@ -184,7 +185,7 @@ public class Config extends AbstractConfig {
 		sb.append("# the time (in milliseconds) for communications to the peers\n");
 		sb.append("peer_timeout = " + peerTimeout + "\n");
 		sb.append("\n");
-		sb.append("# time, in milliseconds, between a ping to a disconnected peer and the subsequent ping\n");
+		sb.append("# time, in milliseconds, between successive pings to a peer\n");
 		sb.append("peer_ping_interval = " + peerPingInterval + "\n");
 
 		return sb.toString();
@@ -457,16 +458,17 @@ public class Config extends AbstractConfig {
 		}
 
 		/**
-		 * Sets the time interval, in milliseconds, between a ping to a disconnected peer and the subsequent ping.
+		 * Sets the time interval, in milliseconds, between successive pings to a peer.
 		 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
-		 * until they reach zero and the peer is removed.
+		 * until they reach zero and the peer is removed.  During a successful ping, its peers are collected
+		 * if they are useful for the node (for instance, if the node has too few peers).
 		 * 
 		 * @param peerPingInterval the time interval
 		 * @return this builder
 		 */
 		public Builder setPeerPingInterval(long peerPingInterval) {
 			if (peerPingInterval < 0L)
-				throw new IllegalArgumentException("peerPeerInterval must be non-negative");
+				throw new IllegalArgumentException("peerPingInterval must be non-negative");
 
 			this.peerPingInterval = peerPingInterval;
 			return this;

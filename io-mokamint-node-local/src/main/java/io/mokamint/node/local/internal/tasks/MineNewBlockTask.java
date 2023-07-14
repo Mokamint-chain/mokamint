@@ -103,7 +103,8 @@ public class MineNewBlockTask extends Task {
 				new Run();
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "mining interrupted", e);
+			LOGGER.log(Level.WARNING, this + " interrupted");
+			Thread.currentThread().interrupt();
 		}
 		catch (TimeoutException e) {
 			LOGGER.warning(logIntro + "timed out while waiting for a deadline: I will retry later");

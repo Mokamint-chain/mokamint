@@ -113,8 +113,7 @@ public class NodePeers implements AutoCloseable {
 		this.config = node.getConfig();
 		this.db = db;
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
-		periodicTasks.scheduleWithFixedDelay(this::tryToCreateMissingRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
-		periodicTasks.scheduleWithFixedDelay(this::askForMorePeers, 5000L, 5000L, TimeUnit.MILLISECONDS);
+		periodicTasks.scheduleWithFixedDelay(this::pingPeers, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
 	
@@ -206,72 +205,45 @@ public class NodePeers implements AutoCloseable {
 			throw exception;
 	}
 
-	private void askForMorePeers() {
-		long numberOfPeers = peers.getElements().count();
-		if (numberOfPeers < config.maxPeers) {
-			LOGGER.info("this node has " + numberOfPeers + " peers, fewer than " + config.maxPeers + ": asking its peers about their peers");
-
-			Stream<Peer> couldBeAdded = remotes.entrySet().stream()
-				.flatMap(this::askForPeers)
-				.sorted() // so that we try to add peers with highest score first
-				.map(PeerInfo::getPeer);
-
-			addPeersTask.accept(couldBeAdded);
-		}
-	}
-
-	private Stream<PeerInfo> askForPeers(Entry<Peer, RemotePublicNode> entry) {
-		var remote = entry.getValue();
-		if (remote != null) {
-			try {
-				return remote.getPeers().filter(PeerInfo::isConnected).filter(this::isNewPeer);
-			}
-			catch (TimeoutException | InterruptedException e) {
-				var peer = entry.getKey();
-
-				LOGGER.log(Level.WARNING, "peer " + peer + " seems unreachable");
-				try {
-					punish(peer, config.peerPunishmentForUnreachable);
-				}
-				catch (DatabaseException e1) {
-					LOGGER.log(Level.SEVERE, "could not punish peer " + peer, e1);
-				}
-			}
-		}
-
-		return Stream.empty();
-	}
-
 	/**
-	 * Used to avoid suggesting a peer that is already in the set of peers of the node.
-	 * 
-	 * @param info the peer info potentially added
-	 * @return true if and only if the peer of {@code info} is not in {@link NodePeers#peers}
+	 * Ping the peers of the node. If they miss a remote, it tries to create their remote.
+	 * If, instead, they have a remote and there are too few peers in the node, then it asks
+	 * them about their peers and schedules the addition to the node of the resulting stream of peers.
 	 */
-	private boolean isNewPeer(PeerInfo info) {
-		Peer peer = info.getPeer();
-		return peers.getElements().noneMatch(peer::equals);
-	}
-
-	/**
-	 * Tries to create the remotes of the peers that do not have a remote currently.
-	 */
-	private void tryToCreateMissingRemotes() {
-		LOGGER.info("trying to create missing remotes for the peers, if any");
+	private void pingPeers() {
+		LOGGER.info("pinging all peers to create missing remotes and collect their peers");
 		try (var pool = new ForkJoinPool()) {
-			pool.execute(() ->
-				peers.getElements().parallel().filter(peer -> !remotes.containsKey(peer)).forEach(this::tryToCreateRemote)
-			);
+			pool.execute(() -> {
+				Stream<Peer> couldBeAdded = remotes.entrySet().parallelStream()
+					.flatMap(this::pingPeer)
+					.sorted() // so that we try to add peers with highest score first
+					.map(PeerInfo::getPeer);
+	
+				addPeersTask.accept(couldBeAdded);
+			});
 		}
 	}
+
+	private Stream<PeerInfo> pingPeer(Entry<Peer, RemotePublicNode> entry) {
+		var peer = entry.getKey();
+		var remote = entry.getValue();
+
+		if (remote == null) {
+			tryToCreateRemote(peer);
+			return Stream.empty();
+		}
+		else
+			return askForPeers(peer, remote);
+	}
+
 
 	private void tryToCreateRemote(Peer peer) {
 		RemotePublicNode remote = null;
-
+	
 		try {
 			remote = openRemote(peer);
 			ensurePeerIsCompatible(remote);
-
+	
 			synchronized (lock) {
 				// we check if the peer is actually contained in the set of peers,
 				// since it might have been removed in the meanwhile and we not not
@@ -283,7 +255,7 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (IncompatiblePeerException e) {
-			LOGGER.log(Level.SEVERE, e.getMessage());
+			LOGGER.log(Level.WARNING, e.getMessage());
 			try {
 				remove(peer);
 			}
@@ -291,8 +263,12 @@ public class NodePeers implements AutoCloseable {
 				LOGGER.log(Level.SEVERE, "cannot remove " + peer + " from the database", e);
 			}
 		}
-		catch (IOException | TimeoutException | InterruptedException e) {
-			LOGGER.log(Level.SEVERE, "cannot contact peer " + peer + ": " + e.getMessage());
+		catch (InterruptedException e) {
+			LOGGER.log(Level.WARNING, "interrupted while creatinga a remote for " + peer + ": " + e.getMessage());
+			Thread.currentThread().interrupt();
+		}
+		catch (IOException | TimeoutException e) {
+			LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
 			try {
 				punish(peer, config.peerPunishmentForUnreachable);
 			}
@@ -305,13 +281,40 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
+	private Stream<PeerInfo> askForPeers(Peer peer, RemotePublicNode remote) {
+		long numberOfPeers = peers.getElements().count();
+		if (numberOfPeers >= config.maxPeers)
+			return Stream.empty();
+
+		try {
+			return remote.getPeers().filter(PeerInfo::isConnected).filter(info -> !peers.contains(info.getPeer()));
+		}
+		catch (InterruptedException e) {
+			LOGGER.log(Level.WARNING, "interrupted while asking the peers of " + peer + ": " + e.getMessage());
+			Thread.currentThread().interrupt();
+			return Stream.empty();
+		}
+		catch (TimeoutException e) {
+			LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
+
+			try {
+				punish(peer, config.peerPunishmentForUnreachable);
+			}
+			catch (DatabaseException e1) {
+				LOGGER.log(Level.SEVERE, "could not punish peer " + peer, e1);
+			}
+			
+			return Stream.empty();
+		}
+	}
+
 	private boolean onAdd(Peer peer, boolean force) {
 		RemotePublicNode remote = null;
 
 		try {
 			// optimization: this avoids opening a remote for an already existing peer
 			// or trying to add a peer if there are already enough peers for this node
-			if (peers.getElements().anyMatch(peer::equals) || (!force && peers.getElements().count() > config.maxPeers))
+			if (peers.contains(peer) || (!force && peers.getElements().count() > config.maxPeers))
 				return false;
 
 			remote = openRemote(peer);
@@ -328,7 +331,12 @@ public class NodePeers implements AutoCloseable {
 					return false;
 			}
 		}
-		catch (IOException | TimeoutException | InterruptedException | DatabaseException | IncompatiblePeerException e) {
+		catch (InterruptedException e) {
+			LOGGER.log(Level.WARNING, "interrupted while adding " + peer + " to the peers: " + e.getMessage());
+			Thread.currentThread().interrupt();
+			throw new UncheckedException(e);
+		}
+		catch (IOException | TimeoutException | DatabaseException | IncompatiblePeerException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
