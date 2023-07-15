@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -27,15 +28,19 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -49,6 +54,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
@@ -124,7 +130,7 @@ public class PeerPropagationTests {
 
 	@Test
 	@DisplayName("a peer added to a clique is broadcast to all nodes in the clique")
-	//@Timeout(10)
+	@Timeout(10)
 	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException {
@@ -137,11 +143,10 @@ public class PeerPropagationTests {
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
 		var peer4 = Peers.of(new URI("ws://localhost:" + port4));
-
-		var config1 = Config.Builder.defaults().setDir(chain1).setPeerTimeout(1000).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).setPeerTimeout(1000).build();
-		var config3 = Config.Builder.defaults().setDir(chain3).setPeerTimeout(1000).build();
-		var config4 = Config.Builder.defaults().setDir(chain4).setPeerTimeout(1000).build();
+		var config1 = Config.Builder.defaults().setDir(chain1).build();
+		var config2 = Config.Builder.defaults().setDir(chain2).build();
+		var config3 = Config.Builder.defaults().setDir(chain3).build();
+		var config4 = Config.Builder.defaults().setDir(chain4).build();
 
 		var semaphore = new Semaphore(0);
 
@@ -182,6 +187,68 @@ public class PeerPropagationTests {
 			// peer4 is a peer of node1, node2 and node3 now
 			assertTrue(node1.getPeers().map(PeerInfo::getPeer).anyMatch(peer4::equals));
 			assertTrue(node2.getPeers().map(PeerInfo::getPeer).anyMatch(peer4::equals));
+		}
+	}
+
+	@Test
+	@DisplayName("a peer added to a node eventually propagates all its peers to that node")
+	@Timeout(10)
+	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
+			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
+				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException {
+
+		var port1 = 8032;
+		var port2 = 8034;
+		var port3 = 8036;
+		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
+		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
+		var allPeers = Set.of(peer1, peer2, peer3);
+		var stillToRemove = new HashSet<>(allPeers);
+		var config1 = Config.Builder.defaults().setDir(chain1).build();
+		var config2 = Config.Builder.defaults().setDir(chain2).build();
+		var config3 = Config.Builder.defaults().setDir(chain3).build();
+		
+		var config4 = Config.Builder.defaults().setDir(chain4)
+			.setPeerPingInterval(2000L) // we must make peer propagation fast
+			.build();
+
+		var semaphore = new Semaphore(0);
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
+				super(config, app);
+			}
+
+			@Override
+			protected void onComplete(Event event) {
+				if (event instanceof PeersAddedEvent pae) {
+					pae.getPeers().forEach(stillToRemove::remove);
+					if (stillToRemove.isEmpty())
+						semaphore.release();
+				}
+			}
+		}
+
+		try (var node1 = LocalNodes.of(config1, app); var node2 = LocalNodes.of(config2, app);
+			 var node3 = LocalNodes.of(config3, app); var node4 = new MyLocalNode(config4);
+			 var service1 = PublicNodeServices.open(node1, port1); var service2 = PublicNodeServices.open(node2, port2);
+			 var service3 = PublicNodeServices.open(node3, port3)) {
+
+			// node1 has peer2 and peer3 as peers
+			node1.addPeer(peer2);
+			node1.addPeer(peer3);
+
+			// at this point, node4 has still no peers
+			assertTrue(node4.getPeers().count() == 0L);
+
+			// we add peer1 as peer of peer4 now
+			node4.addPeer(peer1);
+
+			// we wait until peer1, peer2 and peer3 get propagated to node1
+			semaphore.tryAcquire(1, 8, TimeUnit.SECONDS);
+			assertEquals(allPeers, node4.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
 
