@@ -105,7 +105,7 @@ public class RemotePublicNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var peerInfos2 = remote.getPeers();
+			var peerInfos2 = remote.getPeerInfos();
 			assertArrayEquals(peerInfos1, peerInfos2.toArray(PeerInfo[]::new));
 		}
 	}
@@ -126,7 +126,7 @@ public class RemotePublicNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.getPeers());
+			var exception = assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -147,7 +147,7 @@ public class RemotePublicNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.getPeers());
+			var exception = assertThrows(InterruptedException.class, () -> remote.getPeerInfos());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -176,7 +176,7 @@ public class RemotePublicNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getPeers());
+			assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
 		}
 	}
 
@@ -194,7 +194,7 @@ public class RemotePublicNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getPeers());
+			assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
 		}
 	}
 
@@ -212,7 +212,7 @@ public class RemotePublicNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getPeers());
+			assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
 		}
 	}
 

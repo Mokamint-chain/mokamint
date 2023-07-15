@@ -155,7 +155,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeers() {
+	public Stream<PeerInfo> getPeerInfos() {
 		return peers.get();
 	}
 

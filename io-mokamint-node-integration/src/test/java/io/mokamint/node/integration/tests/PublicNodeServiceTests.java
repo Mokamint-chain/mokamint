@@ -88,7 +88,7 @@ public class PublicNodeServiceTests {
 		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
 		var node = mock(PublicNode.class);
-		when(node.getPeers()).thenReturn(Stream.of(peerInfo1, peerInfo2));
+		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
 		class MyTestClient extends AbstractRemotePublicNode {
 

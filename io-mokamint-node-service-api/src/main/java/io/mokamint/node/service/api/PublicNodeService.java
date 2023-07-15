@@ -30,9 +30,9 @@ public interface PublicNodeService extends WebSocketServer {
 	String GET_INFO_ENDPOINT = "/get_info";
 
 	/**
-	 * The network endpoint path where the {@link PublicNode#getPeers()} method is published.
+	 * The network endpoint path where the {@link PublicNode#getPeerInfos()} method is published.
 	 */
-	String GET_PEERS_ENDPOINT = "/get_peers";
+	String GET_PEER_INFOS_ENDPOINT = "/get_peer_infos";
 
 	/**
 	 * The network endpoint path where the {@link PublicNode#getBlock(byte[])} method is published.

@@ -53,7 +53,7 @@ public class List extends AbstractPublicRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
 		try {
-			PeerInfo[] infos = remote.getPeers().sorted().toArray(PeerInfo[]::new);
+			PeerInfo[] infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
 			if (infos.length == 0)
 				return;
 

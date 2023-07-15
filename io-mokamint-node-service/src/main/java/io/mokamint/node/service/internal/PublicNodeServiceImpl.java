@@ -118,7 +118,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super.onGetPeers(message, session);
 
 		try {
-			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeers(), message.getId()));
+			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeerInfos(), message.getId()));
 		}
 		catch (TimeoutException | InterruptedException e) {
 			sendExceptionAsync(session, e, message.getId());

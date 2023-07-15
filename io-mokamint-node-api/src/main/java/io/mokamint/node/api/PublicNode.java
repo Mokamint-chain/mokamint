@@ -57,7 +57,7 @@ public interface PublicNode extends AutoCloseableNode {
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	Stream<PeerInfo> getPeers() throws TimeoutException, InterruptedException;
+	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException;
 
 	/**
 	 * Yields information about the current chain of this node.

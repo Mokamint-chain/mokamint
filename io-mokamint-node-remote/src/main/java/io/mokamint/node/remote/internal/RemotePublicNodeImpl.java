@@ -105,7 +105,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeers() throws TimeoutException, InterruptedException {
+	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException {
 		var id = queues.nextId();
 		sendGetPeers(id);
 		try {

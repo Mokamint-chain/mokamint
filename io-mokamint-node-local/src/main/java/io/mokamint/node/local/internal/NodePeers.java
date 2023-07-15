@@ -290,7 +290,7 @@ public class NodePeers implements AutoCloseable {
 			return Stream.empty();
 
 		try {
-			return remote.getPeers().filter(PeerInfo::isConnected).filter(info -> !peers.contains(info.getPeer()));
+			return remote.getPeerInfos().filter(PeerInfo::isConnected).filter(info -> !peers.contains(info.getPeer()));
 		}
 		catch (InterruptedException e) {
 			LOGGER.log(Level.WARNING, "interrupted while asking the peers of " + peer + ": " + e.getMessage());

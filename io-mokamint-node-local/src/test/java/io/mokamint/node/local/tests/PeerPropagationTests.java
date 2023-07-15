@@ -174,9 +174,9 @@ public class PeerPropagationTests {
 
 			// at this point, each node is a peer of the next in the sequence
 			// (there might also be views of the same peer through its local IP address)
-			assertTrue(node1.getPeers().map(PeerInfo::getPeer).anyMatch(peer2::equals));
-			assertTrue(node2.getPeers().map(PeerInfo::getPeer).anyMatch(peer3::equals));
-			assertTrue(node3.getPeers().map(PeerInfo::getPeer).anyMatch(peer1::equals));
+			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer2::equals));
+			assertTrue(node2.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer3::equals));
+			assertTrue(node3.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer1::equals));
 
 			// we add peer4 as peer of peer1 now
 			node1.addPeer(peer4);
@@ -185,8 +185,8 @@ public class PeerPropagationTests {
 			semaphore.tryAcquire(3, 2, TimeUnit.SECONDS);
 
 			// peer4 is a peer of node1, node2 and node3 now
-			assertTrue(node1.getPeers().map(PeerInfo::getPeer).anyMatch(peer4::equals));
-			assertTrue(node2.getPeers().map(PeerInfo::getPeer).anyMatch(peer4::equals));
+			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer4::equals));
+			assertTrue(node2.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer4::equals));
 		}
 	}
 
@@ -241,14 +241,14 @@ public class PeerPropagationTests {
 			node1.addPeer(peer3);
 
 			// at this point, node4 has still no peers
-			assertTrue(node4.getPeers().count() == 0L);
+			assertTrue(node4.getPeerInfos().count() == 0L);
 
 			// we add peer1 as peer of peer4 now
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node1
 			semaphore.tryAcquire(1, 8, TimeUnit.SECONDS);
-			assertEquals(allPeers, node4.getPeers().map(PeerInfo::getPeer).collect(Collectors.toSet()));
+			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
 

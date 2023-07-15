@@ -180,7 +180,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	};
 
 	protected void onGetPeers(GetPeersMessage message, Session session) {
-		LOGGER.info("received a " + GET_PEERS_ENDPOINT + " request");
+		LOGGER.info("received a " + GET_PEER_INFOS_ENDPOINT + " request");
 	}
 
 	public static class GetPeersEndpoint extends AbstractServerEndpoint<AbstractPublicNodeServiceImpl> {
@@ -191,7 +191,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	    }
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
-			return simpleConfig(server, GetPeersEndpoint.class, GET_PEERS_ENDPOINT,
+			return simpleConfig(server, GetPeersEndpoint.class, GET_PEER_INFOS_ENDPOINT,
 					GetPeersMessages.Decoder.class, GetPeersResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}

@@ -26,7 +26,7 @@ import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.GetPeersResultMessage;
 
 /**
- * Implementation of the network message corresponding to the {@link PublicNode#getPeers()} method of a node.
+ * Implementation of the network message corresponding to the {@link PublicNode#getPeerInfos()} method of a node.
  */
 public class GetPeersResultMessageImpl extends AbstractRpcMessage implements GetPeersResultMessage {
 

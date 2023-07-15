@@ -20,7 +20,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
-import static io.mokamint.node.service.api.PublicNodeService.GET_PEERS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.SUGGEST_PEERS_ENDPOINT;
 
 import java.io.IOException;
@@ -87,7 +87,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 	 * @throws IOException if the remote node could not be created
 	 */
 	public AbstractRemotePublicNodeImpl(URI uri) throws DeploymentException, IOException {
-		addSession(GET_PEERS_ENDPOINT, uri, GetPeersEndpoint::new);
+		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeersEndpoint::new);
 		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
 		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
@@ -130,7 +130,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 	}
 
 	protected void sendGetPeers(String id) {
-		sendObjectAsync(getSession(GET_PEERS_ENDPOINT), GetPeersMessages.of(id));
+		sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeersMessages.of(id));
 	}
 
 	protected void sendGetBlock(byte[] hash, String id) {
