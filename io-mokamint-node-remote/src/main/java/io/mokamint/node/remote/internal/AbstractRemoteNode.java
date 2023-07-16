@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,6 +48,11 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	 * A map from path into the session listening to that path.
 	 */
 	private final Map<String, Session> sessions = new HashMap<>();
+
+	/**
+	 * True if and only if this node has been closed already.
+	 */
+	private final AtomicBoolean isClosed = new AtomicBoolean();
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractRemoteNode.class.getName());
 
@@ -101,26 +107,37 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 
 	@Override
 	public void close() throws IOException {
-		IOException exception = null;
+		if (!isClosed.getAndSet(true)) {
+			IOException exception = null;
+			Collection<Session> sessions;
 
-		Collection<Session> sessions;
-
-		synchronized (this.sessions) {
-			sessions = this.sessions.values();
-		}
-
-		for (var session: sessions)
-			try {
-				session.close();
-				session.close();
+			synchronized (this.sessions) {
+				sessions = this.sessions.values();
 			}
+
+			for (var session: sessions)
+				try {
+					session.close();
+					session.close();
+				}
 			catch (IOException e) {
 				LOGGER.log(Level.WARNING, "cannot close the sessions", exception);
 				exception = e;
 			}
 
-		if (exception != null)
-			throw exception;
+			if (exception != null)
+				throw exception;
+		}
+	}
+
+	/**
+	 * Ensures that this node is currently open.
+	 * 
+	 * @throws ClosedNodeException if this node is closed already
+	 */
+	protected void ensureIsOpen() throws ClosedNodeException {
+		if (isClosed.get())
+			throw new ClosedNodeException("the node has been closed");
 	}
 
 	protected abstract void notifyResult(RpcMessage message);

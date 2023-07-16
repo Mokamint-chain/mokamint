@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,6 +47,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.NodeInfo;
@@ -115,6 +117,11 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
 
+	/**
+	 * True if and only if this node has been closed already.
+	 */
+	private final AtomicBoolean isClosed = new AtomicBoolean();
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -149,8 +156,14 @@ public class LocalNodeImpl implements LocalNode {
 		onPeersAddedListeners.removeListener(listener);
 	}
 
+	private void ensureIsOpen() throws ClosedNodeException {
+		if (isClosed.get())
+			throw new ClosedNodeException("the node has been closed");
+	}
+
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
+	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
+		ensureIsOpen();
 		return db.get(hash);
 	}
 
@@ -160,31 +173,35 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
+		ensureIsOpen();
 		if (peers.add(peer, true))
 			emit(new PeersAddedEvent(Stream.of(peer)));
 	}
 
 	@Override
-	public void removePeer(Peer peer) throws DatabaseException {
+	public void removePeer(Peer peer) throws DatabaseException, ClosedNodeException {
+		ensureIsOpen();
 		peers.remove(peer);
 	}
 
 	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
-		events.shutdownNow();
-		tasks.shutdownNow();
-		
-		try {
-			events.awaitTermination(10, TimeUnit.SECONDS);
-			tasks.awaitTermination(10, TimeUnit.SECONDS);
-		}
-		finally {
+		if (!isClosed.getAndSet(true)) {
+			events.shutdownNow();
+			tasks.shutdownNow();
+
 			try {
-				db.close();
+				events.awaitTermination(10, TimeUnit.SECONDS);
+				tasks.awaitTermination(10, TimeUnit.SECONDS);
 			}
 			finally {
-				peers.close();
+				try {
+					db.close();
+				}
+				finally {
+					peers.close();
+				}
 			}
 		}
 	}
@@ -205,7 +222,8 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException {
+	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, ClosedNodeException {
+		ensureIsOpen();
 		var headHash = db.getHeadHash();
 		if (headHash.isEmpty())
 			return ChainInfos.of(0L, db.getGenesisHash(), Optional.empty()); // TODO: I should remove getGenesisHash

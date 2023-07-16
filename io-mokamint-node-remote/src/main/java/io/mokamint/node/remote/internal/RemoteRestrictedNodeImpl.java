@@ -74,6 +74,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 
 	@Override
 	public void addPeer(Peer peer) throws IncompatiblePeerException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddPeer(peer, id);
 		try {
@@ -103,6 +104,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode imple
 
 	@Override
 	public void removePeer(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
 		var id = queues.nextId();
 		sendRemovePeer(peer, id);
 		try {

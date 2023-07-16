@@ -83,6 +83,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public NodeInfo getInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetInfo(id);
 		try {
@@ -102,6 +103,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetPeers(id);
 		try {
@@ -121,6 +123,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetBlock(hash, id);
 		try {
@@ -147,6 +150,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public ConsensusConfig getConfig() throws TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetConfig(id);
 		try {
@@ -166,6 +170,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetChainInfo(id);
 		try {
