@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.integration.tests;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,9 +36,12 @@ import org.junit.jupiter.api.Test;
 
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.remote.AbstractRemoteRestrictedNode;
+import io.mokamint.node.remote.RemoteRestrictedNodes;
+import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.DeploymentException;
 
@@ -145,6 +150,40 @@ public class RestrictedNodeServiceTests {
 			client.sendRemovePeer(peer1);
 			client.sendRemovePeer(peer2);
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a restricted service gets closed, the methods of a remote using that service throw ClosedNodeException")
+	public void ifServiceClosedThenRemoteNotUsable() throws DeploymentException, IOException, DatabaseException, InterruptedException, URISyntaxException {
+		var node = mock(RestrictedNode.class);
+		try (var service = RestrictedNodeServices.open(node, 8031); var remote = RemoteRestrictedNodes.of(new URI("ws://localhost:8031"), 2000)) {
+			service.close(); // by closing the service, the remote is not usable anymore
+			assertThrows(ClosedNodeException.class, () -> remote.addPeer(Peers.of(new URI("ws://www.mokamint.io:8031"))));
+		}
+	}
+
+	@Test
+	@DisplayName("if a restricted service gets closed, any remote using that service gets closed as well")
+	public void ifServiceClosedThenRemoteClosed() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
+		var node = mock(RestrictedNode.class);
+		var semaphore = new Semaphore(0);
+		
+		class MyRemoteRestrictedNode extends RemoteRestrictedNodeImpl {
+			MyRemoteRestrictedNode() throws DeploymentException, IOException, URISyntaxException {
+				super(new URI("ws://localhost:8031"), 2000);
+			}
+
+			@Override
+			public void close() throws IOException {
+				super.close();
+				semaphore.release();
+			}
+		}
+
+		try (var service = RestrictedNodeServices.open(node, 8031); var remote = new MyRemoteRestrictedNode()) {
+			service.close(); // by closing the service, the remote is not usable anymore
+			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
 		}
 	}
 

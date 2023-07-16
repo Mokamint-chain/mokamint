@@ -67,6 +67,7 @@ import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.SuggestPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
+import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
@@ -363,6 +364,30 @@ public class PublicNodeServiceTests {
 		try (var service = PublicNodeServices.open(node, 8030); var remote = RemotePublicNodes.of(new URI("ws://localhost:8030"), 2000)) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			assertThrows(ClosedNodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
+		}
+	}
+
+	@Test
+	@DisplayName("if a public service gets closed, any remote using that service gets closed as well")
+	public void ifServiceClosedThenRemoteClosed() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
+		var node = mock(PublicNode.class);
+		var semaphore = new Semaphore(0);
+		
+		class MyRemotePublicNode extends RemotePublicNodeImpl {
+			MyRemotePublicNode() throws DeploymentException, IOException, URISyntaxException {
+				super(new URI("ws://localhost:8030"), 2000);
+			}
+
+			@Override
+			public void close() throws IOException {
+				super.close();
+				semaphore.release();
+			}
+		}
+
+		try (var service = PublicNodeServices.open(node, 8030); var remote = new MyRemotePublicNode()) {
+			service.close(); // by closing the service, the remote is not usable anymore
+			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
 		}
 	}
 

@@ -3,7 +3,6 @@ package io.mokamint.node.integration.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -35,7 +34,6 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -48,9 +46,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
-import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.service.AbstractPublicNodeService;
-import io.mokamint.node.service.RestrictedNodeServices;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
@@ -456,16 +452,6 @@ public class RemotePublicNodeTests {
 			});
 			service.sendPeersSuggestion();
 			semaphore.acquire();
-		}
-	}
-
-	@Test
-	@DisplayName("if a restricted service gets closed, the methods of a remote using that service throw ClosedNodeException")
-	public void ifServiceClosedThenRemoteNotUsable() throws DeploymentException, IOException, DatabaseException, InterruptedException, URISyntaxException {
-		var node = mock(RestrictedNode.class);
-		try (var service = RestrictedNodeServices.open(node, 8031); var remote = RemoteRestrictedNodes.of(new URI("ws://localhost:8031"), 2000)) {
-			service.close(); // by closing the service, the remote is not usable anymore
-			assertThrows(ClosedNodeException.class, () -> remote.addPeer(Peers.of(new URI("ws://www.mokamint.io:8031"))));
 		}
 	}
 

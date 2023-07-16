@@ -36,6 +36,7 @@ import io.mokamint.node.VoidListenerManagers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.messages.ExceptionMessage;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -167,6 +168,21 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient impleme
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, AbstractRemoteNode.this::notifyResult);
+		}
+
+		@Override
+		public void onClose(Session session, CloseReason closeReason) {
+			LOGGER.info("closing the remote node since its bound service is getting closed");
+
+			super.onClose(session, closeReason);
+
+			try {
+				// we close the remote since it is bound to a service that seems to be closed
+				AbstractRemoteNode.this.close();
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, "cannot close the remote node", e);
+			}
 		}
 
 		protected abstract Session deployAt(URI uri) throws DeploymentException, IOException;
