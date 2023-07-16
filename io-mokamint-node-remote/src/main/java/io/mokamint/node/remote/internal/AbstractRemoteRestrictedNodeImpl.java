@@ -26,7 +26,9 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.RestrictedNodeListeners;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessage;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -43,7 +45,7 @@ import jakarta.websocket.Session;
  * to a service for the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNode {
+public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNode implements RestrictedNodeListeners {
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractRemoteRestrictedNodeImpl.class.getName());
 
@@ -73,12 +75,22 @@ public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNod
 			LOGGER.log(Level.SEVERE, "unexpected message of class " + message.getClass().getName());
 	}
 
-	protected void sendAddPeer(Peer peer, String id) {
-		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
+	protected void sendAddPeer(Peer peer, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
+		}
+		catch (IllegalStateException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
-	protected void sendRemovePeer(Peer peer, String id) {
-		sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
+	protected void sendRemovePeer(Peer peer, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
+		}
+		catch (IllegalStateException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
 	/**

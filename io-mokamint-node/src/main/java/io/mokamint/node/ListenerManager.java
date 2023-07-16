@@ -34,14 +34,14 @@ public interface ListenerManager<T> {
 	 * 
 	 * @param listener the listener
 	 */
-	void addListener(Consumer<T> listener);
+	void add(Consumer<T> listener);
 
 	/**
 	 * Removes the given listener.
 	 * 
 	 * @param listener the listener
 	 */
-	void removeListener(Consumer<T> listener);
+	void remove(Consumer<T> listener);
 
 	/**
 	 * Notifies all listeners.

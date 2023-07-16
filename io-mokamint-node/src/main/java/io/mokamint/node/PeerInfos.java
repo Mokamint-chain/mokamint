@@ -40,6 +40,7 @@ public abstract class PeerInfos {
 	 * @param peer the peer described by the peer information
 	 * @param points the points of the peer
 	 * @param connected the connection status of the peer
+	 * @return the peer information
 	 */
 	public static PeerInfo of(Peer peer, long points, boolean connected) {
 		return new PeerInfoImpl(peer, points, connected);

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.integration.tests;
 
 import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -42,11 +43,9 @@ import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
@@ -60,17 +59,16 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.local.Config;
-import io.mokamint.node.local.LocalNodes;
+import io.mokamint.node.api.PublicNodeListeners;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.SuggestPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.PublicNodeServices;
+import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
 
@@ -109,7 +107,7 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetPeers() {
+			private void sendGetPeers() throws ClosedNodeException {
 				sendGetPeers("id");
 			}
 		}
@@ -137,7 +135,7 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetBlock(byte[] hash) {
+			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
 				sendGetBlock(hash, "id");
 			}
 		}
@@ -175,7 +173,7 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetBlock(byte[] hash) {
+			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
 				sendGetBlock(hash, "id");
 			}
 		}
@@ -207,7 +205,7 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetBlock(byte[] hash) {
+			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
 				sendGetBlock(hash, "id");
 			}
 		}
@@ -240,7 +238,7 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetConfig() {
+			private void sendGetConfig() throws ClosedNodeException {
 				sendGetConfig("id");
 			}
 		}
@@ -272,7 +270,7 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetChainInfo() {
+			private void sendGetChainInfo() throws ClosedNodeException {
 				sendGetChainInfo("id");
 			}
 		}
@@ -304,7 +302,7 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetInfo() {
+			private void sendGetInfo() throws ClosedNodeException {
 				sendGetInfo("id");
 			}
 		}
@@ -326,7 +324,7 @@ public class PublicNodeServiceTests {
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
 		var peers = Set.of(peer1, peer2);
 
-		interface PublicNodeWithListeners extends PublicNode, NodeListeners {};
+		interface PublicNodeWithListeners extends PublicNode, PublicNodeListeners {};
 
 		var listenerForNewPeers = new AtomicReference<Consumer<Stream<Peer>>>();
 
@@ -359,18 +357,46 @@ public class PublicNodeServiceTests {
 	}
 
 	@Test
-	@Disabled
-	@DisplayName("if a service receives added peers from its node, they get forwarded to the clients")
-	public void test() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException {
-		var app = mock(Application.class);
-		try (var local = LocalNodes.of(Config.Builder.defaults().build(), app);
-			 var service = PublicNodeServices.open(local, 8030);
-			 var remote = RemotePublicNodes.of(new URI("ws://localhost:8030"), 2000)) {
+	@DisplayName("if a public service gets closed, the methods of a remote using that service throw ClosedNodeException")
+	public void ifServiceClosedThenRemoteNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
+		var node = mock(PublicNode.class);
+		try (var service = PublicNodeServices.open(node, 8030); var remote = RemotePublicNodes.of(new URI("ws://localhost:8030"), 2000)) {
+			service.close(); // by closing the service, the remote is not usable anymore
+			assertThrows(ClosedNodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
+		}
+	}
 
-			System.out.println("hello");
-			System.out.println(remote.getBlock(new byte[] { 1, 2, 3, 4 }));
-			local.close();
-			System.out.println(remote.getBlock(new byte[] { 1, 2, 3, 4 }));
+	@Test
+	@DisplayName("if the node of a service gets closed, the service receives a close call")
+	public void serviceGetsClosedIfNodeGetsClosed() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+		var semaphore = new Semaphore(0);
+
+		interface PublicNodeWithListeners extends PublicNode, PublicNodeListeners {};
+
+		var listenerForClose = new AtomicReference<Runnable>();
+
+		var node = mock(PublicNodeWithListeners.class);
+		doAnswer(listener -> {
+			listenerForClose.set(listener.getArgument(0));
+			return null;
+		}).
+		when(node).addOnCloseListener(any());
+
+		class MyPublicNodeService extends PublicNodeServiceImpl {
+			private MyPublicNodeService() throws DeploymentException, IOException {
+				super(node, PORT, Optional.empty());
+			}
+
+			@Override
+			public void close() {
+				super.close();
+				semaphore.release();
+			}
+		}
+
+		try (var service = new MyPublicNodeService()) {
+			listenerForClose.get().run();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 

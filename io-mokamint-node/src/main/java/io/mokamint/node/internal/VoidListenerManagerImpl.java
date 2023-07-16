@@ -17,45 +17,41 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.ListenerManager;
+import io.mokamint.node.VoidListenerManager;
 
 /**
  * Implementation of a listeners management object.
- * 
- * @param <T> the type of the parameter passed to the listeners
  */
 @ThreadSafe
-public class ListenerManagerImpl<T> implements ListenerManager<T> {
+public class VoidListenerManagerImpl implements VoidListenerManager {
 
-	private final CopyOnWriteArrayList<Consumer<T>> listeners = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<Runnable> listeners = new CopyOnWriteArrayList<>();
 
 	/**
 	 * Creates the listeners.
 	 */
-	public ListenerManagerImpl() {}
+	public VoidListenerManagerImpl() {}
 
 	@Override
-	public void add(Consumer<T> listener) {
+	public void add(Runnable listener) {
 		listeners.add(listener);
 	}
 
 	@Override
-	public void remove(Consumer<T> listener) {
+	public void remove(Runnable listener) {
 		listeners.remove(listener);
 	}
 
 	@Override
-	public void notifyAll(T t) {
-		for (var listener: listeners)
-			listener.accept(t);
+	public void notifyAllListeners() {
+		listeners.forEach(Runnable::run);
 	}
 
 	@Override
-	public Stream<Consumer<T>> getListeners() {
+	public Stream<Runnable> getListeners() {
 		return listeners.stream();
 	}
 }

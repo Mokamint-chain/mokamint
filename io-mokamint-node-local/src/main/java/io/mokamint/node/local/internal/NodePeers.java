@@ -369,7 +369,7 @@ public class NodePeers implements AutoCloseable {
 
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
-			RemotePublicNode remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
+			var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout);
 			LOGGER.info("opened connection to peer " + peer);
 			return remote;
 		}

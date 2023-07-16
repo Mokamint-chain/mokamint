@@ -37,11 +37,12 @@ import io.mokamint.node.ListenerManager;
 import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PublicNodeListeners;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -70,7 +71,7 @@ import jakarta.websocket.Session;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode implements NodeListeners {
+public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode implements PublicNodeListeners {
 
 	/**
 	 * The listeners called whenever a peer is added to this node.
@@ -97,12 +98,12 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 
 	@Override
 	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.addListener(listener);
+		onPeersAddedListeners.add(listener);
 	}
 
 	@Override
 	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.removeListener(listener);
+		onPeersAddedListeners.remove(listener);
 	}
 
 	@Override
@@ -125,24 +126,49 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 			LOGGER.log(Level.SEVERE, "unexpected message of class " + message.getClass().getName());
 	}
 
-	protected void sendGetInfo(String id) {
-		sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
+	protected void sendGetInfo(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
+		}
+		catch (IllegalStateException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
-	protected void sendGetPeers(String id) {
-		sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeersMessages.of(id));
+	protected void sendGetPeers(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeersMessages.of(id));
+		}
+		catch (IllegalStateException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
-	protected void sendGetBlock(byte[] hash, String id) {
-		sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
+	protected void sendGetBlock(byte[] hash, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
+		}
+		catch (IllegalStateException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
-	protected void sendGetConfig(String id) {
-		sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
+	protected void sendGetConfig(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
+		}
+		catch (IllegalStateException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
-	protected void sendGetChainInfo(String id) {
-		sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
+	protected void sendGetChainInfo(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
+		}
+		catch (IllegalStateException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
 	/**

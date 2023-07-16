@@ -17,21 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 /**
- * The listeners of a node.
+ * The listeners of a restricted node.
  */
-public interface NodeListeners {
-
-	/**
-	 * Register the given listener for being called when the node is closed.
-	 * 
-	 * @param listener the listener
-	 */
-	void addOnCloseListener(Runnable listener);
-
-	/**
-	 * Unregister the given listener from those called when the node is closed.
-	 * 
-	 * @param listener the listener
-	 */
-	void removeOnCloseListener(Runnable listener);
+public interface RestrictedNodeListeners extends NodeListeners {
 }

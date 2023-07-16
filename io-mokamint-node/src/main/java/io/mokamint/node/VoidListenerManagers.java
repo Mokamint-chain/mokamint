@@ -14,24 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node;
+
+import io.mokamint.node.internal.VoidListenerManagerImpl;
 
 /**
- * The listeners of a node.
+ * Provider of {@link VoidListenerManager}.
  */
-public interface NodeListeners {
+public final class VoidListenerManagers {
+
+	private VoidListenerManagers() {}
 
 	/**
-	 * Register the given listener for being called when the node is closed.
-	 * 
-	 * @param listener the listener
+	 * Yields a new listener management object.
+	 *
+	 * @return the listener management object
 	 */
-	void addOnCloseListener(Runnable listener);
-
-	/**
-	 * Unregister the given listener from those called when the node is closed.
-	 * 
-	 * @param listener the listener
-	 */
-	void removeOnCloseListener(Runnable listener);
+	public static VoidListenerManager mk() {
+		return new VoidListenerManagerImpl();
+	}
 }

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.remote.AbstractRemoteRestrictedNode;
@@ -54,7 +55,7 @@ public class RestrictedNodeServiceTests {
 
 	@Test
 	@DisplayName("if an addPeers() request reaches the service, it adds the peers to the node and it sends back a void result")
-	public void serviceAddPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	public void serviceAddPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var peers = new HashSet<Peer>();
 		peers.add(Peers.of(new URI("ws://my.machine:8032")));
@@ -86,7 +87,7 @@ public class RestrictedNodeServiceTests {
 				semaphore.release();
 			}
 
-			private void sendAddPeer(Peer peer) {
+			private void sendAddPeer(Peer peer) throws ClosedNodeException {
 				sendAddPeer(peer, "id");
 			}
 		}
@@ -101,7 +102,7 @@ public class RestrictedNodeServiceTests {
 
 	@Test
 	@DisplayName("if a removePeers() request reaches the service, it removes the peers from the node and it sends back a void result")
-	public void serviceRemovePeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	public void serviceRemovePeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -135,7 +136,7 @@ public class RestrictedNodeServiceTests {
 				semaphore.release();
 			}
 
-			private void sendRemovePeer(Peer peer) {
+			private void sendRemovePeer(Peer peer) throws ClosedNodeException {
 				sendRemovePeer(peer, "id");
 			}
 		}
@@ -145,12 +146,6 @@ public class RestrictedNodeServiceTests {
 			client.sendRemovePeer(peer2);
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
 		}
-	}
-
-	@Test
-	@DisplayName("if a removePeers() request reaches the service, it removes the peers from the node and it sends back a void result")
-	public void serviceOfLocalWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
-		
 	}
 
 	static {

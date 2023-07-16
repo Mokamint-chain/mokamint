@@ -31,7 +31,10 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
+import io.mokamint.node.VoidListenerManager;
+import io.mokamint.node.VoidListenerManagers;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.messages.ExceptionMessage;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -42,12 +45,17 @@ import jakarta.websocket.Session;
  * to a service for the public or restricted API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
+public abstract class AbstractRemoteNode extends AbstractWebSocketClient implements NodeListeners {
 
 	/**
 	 * A map from path into the session listening to that path.
 	 */
 	private final Map<String, Session> sessions = new HashMap<>();
+
+	/**
+	 * The listeners called when this node is closed.
+	 */
+	private final VoidListenerManager onCloseListeners = VoidListenerManagers.mk();	
 
 	/**
 	 * True if and only if this node has been closed already.
@@ -64,6 +72,16 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	 * @throws IOException if the remote node could not be created
 	 */
 	protected AbstractRemoteNode() throws DeploymentException, IOException {}
+
+	@Override
+	public void addOnCloseListener(Runnable listener) {
+		onCloseListeners.add(listener);
+	}
+
+	@Override
+	public void removeOnCloseListener(Runnable listener) {
+		onCloseListeners.remove(listener);
+	}
 
 	/**
 	 * Adds a session at the given path starting at the given URI, connected to the
@@ -108,6 +126,8 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	@Override
 	public void close() throws IOException {
 		if (!isClosed.getAndSet(true)) {
+			onCloseListeners.notifyAllListeners();
+	
 			IOException exception = null;
 			Collection<Session> sessions;
 
@@ -115,14 +135,14 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 				sessions = this.sessions.values();
 			}
 
-			for (var session: sessions)
+			for (var session: sessions) {
 				try {
 					session.close();
-					session.close();
 				}
-			catch (IOException e) {
-				LOGGER.log(Level.WARNING, "cannot close the sessions", exception);
-				exception = e;
+				catch (IOException e) {
+					LOGGER.log(Level.WARNING, "cannot close the sessions", exception);
+					exception = e;
+				}
 			}
 
 			if (exception != null)

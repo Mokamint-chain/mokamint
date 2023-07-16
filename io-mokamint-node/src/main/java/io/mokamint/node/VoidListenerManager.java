@@ -14,24 +14,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node;
+
+import java.util.stream.Stream;
+
+import io.hotmoka.annotations.ThreadSafe;
 
 /**
- * The listeners of a node.
+ * A management object for listeners without input.
  */
-public interface NodeListeners {
+@ThreadSafe
+public interface VoidListenerManager {
 
 	/**
-	 * Register the given listener for being called when the node is closed.
+	 * Adds the given listener.
 	 * 
 	 * @param listener the listener
 	 */
-	void addOnCloseListener(Runnable listener);
+	void add(Runnable listener);
 
 	/**
-	 * Unregister the given listener from those called when the node is closed.
+	 * Removes the given listener.
 	 * 
 	 * @param listener the listener
 	 */
-	void removeOnCloseListener(Runnable listener);
+	void remove(Runnable listener);
+
+	/**
+	 * Notifies all listeners.
+	 */
+	void notifyAllListeners();
+
+	/**
+	 * Yields all listeners in this object.
+	 * 
+	 * @return all listeners in this object
+	 */
+	Stream<Runnable> getListeners();
 }

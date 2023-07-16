@@ -30,6 +30,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.PublicNodeListeners;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -64,6 +65,12 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	private final Consumer<Stream<Peer>> onPeersAddedListener = this::sendPeersSuggestion;
 
 	/**
+	 * We need this intermediate definition since two instances of a method reference
+	 * are not the same, nor equals.
+	 */
+	private final Runnable onCloseListener = this::close;
+
+	/**
 	 * Creates a new service for the given node, at the given network port.
 	 * 
 	 * @param node the node
@@ -77,16 +84,24 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super(port, uri);
 		this.node = node;
 
-		if (node instanceof NodeListeners nl)
-			nl.addOnPeersAddedListener(onPeersAddedListener);
+		if (node instanceof NodeListeners nl) {
+			nl.addOnCloseListener(onCloseListener);
+
+			if (node instanceof PublicNodeListeners pnl)
+				pnl.addOnPeersAddedListener(onPeersAddedListener);
+		}
 
 		deploy();
 	}
 
 	@Override
 	public void close() {
-		if (node instanceof NodeListeners nl)
-			nl.removeOnPeersAddedListener(onPeersAddedListener);
+		if (node instanceof NodeListeners nl) {
+			nl.removeOnCloseListener(onCloseListener);
+
+			if (node instanceof PublicNodeListeners pnl)
+				pnl.removeOnPeersAddedListener(onPeersAddedListener);
+		}
 
 		super.close();
 	}
