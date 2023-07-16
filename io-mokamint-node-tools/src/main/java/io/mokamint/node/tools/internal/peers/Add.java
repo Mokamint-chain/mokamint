@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.Peer;
@@ -41,7 +42,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(Add.class.getName());
 
-	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException {
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		Stream.of(uris).map(Peers::of).parallel().forEach(peer -> addPeer(peer, remote));
 	}
 
@@ -52,6 +53,9 @@ public class Add extends AbstractRestrictedRpcCommand {
 				System.out.println(new Peers.Encoder().encode(peer));
 			else
 				System.out.println("Added " + peer + " to the set of peers");
+		}
+		catch (ClosedNodeException e) {
+			System.out.println(Ansi.AUTO.string("@|red The connection to " + peer + " has been closed!|@"));
 		}
 		catch (TimeoutException e) {
 			System.out.println(Ansi.AUTO.string("@|red Connection timeout while adding peer " + peer + "!|@"));

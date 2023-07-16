@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -60,8 +61,9 @@ public class Show extends AbstractPublicRpcCommand {
          * @throws DatabaseException if the database of the remote node is corrupted
          * @throws TimeoutException if some connection timed-out
          * @throws InterruptedException if some connection was interrupted while waiting
+         * @throws ClosedNodeException if the remote node is closed
          */
-        private Optional<Block> getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
+        private Optional<Block> getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
         	if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
@@ -139,8 +141,9 @@ public class Show extends AbstractPublicRpcCommand {
          * @throws DatabaseException if the database of the remote node is corrupted
          * @throws TimeoutException if some connection timed-out
          * @throws InterruptedException if some connection was interrupted while waiting
+         * @throws ClosedNodeException if the remote node is closed
          */
-		private Block backwards(Block cursor, long depth, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException {
+		private Block backwards(Block cursor, long depth, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
 			if (depth == 0)
 				return cursor;
 			else if (cursor instanceof NonGenesisBlock) {
@@ -163,7 +166,7 @@ public class Show extends AbstractPublicRpcCommand {
 
     private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
 
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		try {
 			var block = blockIdentifier.getBlock(remote);
 			if (block.isPresent())
@@ -183,7 +186,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-    private void print(RemotePublicNode remote, Block block) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
+    private void print(RemotePublicNode remote, Block block) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
     	if (json())
 			System.out.println(new Blocks.Encoder().encode(block));
 		else {

@@ -1,6 +1,5 @@
 package io.mokamint.node.integration.tests;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,7 +19,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,8 +32,8 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -88,11 +86,8 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() works")
-	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peerInfos1 = new PeerInfo[] {
-			PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
-			PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false)
-		};
+	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException {
+		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true), PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
 		class MyServer extends PublicTestServer {
 
@@ -100,13 +95,13 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, GetPeersResultMessages.of(Stream.of(peerInfos1), message.getId()));
+				sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var peerInfos2 = remote.getPeerInfos();
-			assertArrayEquals(peerInfos1, peerInfos2.toArray(PeerInfo[]::new));
+			assertEquals(peerInfos1, peerInfos2.collect(Collectors.toSet()));
 		}
 	}
 
@@ -127,6 +122,27 @@ public class RemotePublicNodeTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getPeers() works if it throws ClosedNodeException")
+	public void getPeersWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+		var exceptionMessage = "node is closed";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetPeers(GetPeersMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new ClosedNodeException(exceptionMessage), message.getId()));
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(ClosedNodeException.class, () -> remote.getPeerInfos());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -155,10 +171,7 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("if getPeers() is slow, it leads to a time-out")
 	public void getPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peerInfos1 = new PeerInfo[] {
-			PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
-			PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false)
-		};
+		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true), PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
 		class MyServer extends PublicTestServer {
 
@@ -171,7 +184,7 @@ public class RemotePublicNodeTests {
 				}
 				catch (InterruptedException e) {}
 
-				sendObjectAsync(session, GetPeersResultMessages.of(Stream.of(peerInfos1), message.getId()));
+				sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
 			}
 		};
 
@@ -218,7 +231,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block exists")
-	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block1 = Blocks.of(13, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
@@ -243,7 +256,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block is missing")
-	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
 		var hash = new byte[] { 67, 56, 43 };
 
 		class MyServer extends PublicTestServer {
@@ -311,7 +324,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getConfig() works")
-	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
 		var config1 = ConsensusConfigs.defaults().build();
 
 		class MyServer extends PublicTestServer {
@@ -332,7 +345,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getChainInfo() works")
-	public void getChainInfoWorks() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public void getChainInfoWorks() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
 		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }));
 
 		class MyServer extends PublicTestServer {
@@ -395,7 +408,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getInfo() works")
-	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID());
 	
 		class MyServer extends PublicTestServer {
@@ -417,9 +430,7 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("if a service suggests some peers, a remote will inform its listeners")
 	public void ifServiceSuggestsPeersTheRemoteInformsTheListeners() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException {
-		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
-		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
-		var peers = Set.of(peer1, peer2);
+		var peers = Set.of(Peers.of(new URI("ws://my.machine:8032")), Peers.of(new URI("ws://her.machine:8033")));
 
 		class MyServer extends PublicTestServer {
 

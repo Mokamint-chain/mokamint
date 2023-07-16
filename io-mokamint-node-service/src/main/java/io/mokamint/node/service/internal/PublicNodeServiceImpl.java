@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
@@ -108,7 +109,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), message.getId()));
 		}
-		catch (TimeoutException | InterruptedException e) {
+		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};
@@ -120,7 +121,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeerInfos(), message.getId()));
 		}
-		catch (TimeoutException | InterruptedException e) {
+		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};
@@ -132,7 +133,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 		}
-		catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};
@@ -144,7 +145,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 		}
-		catch (TimeoutException | InterruptedException e) {
+		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};
@@ -156,7 +157,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		try {
 			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 		}
-		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException e) {
+		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};

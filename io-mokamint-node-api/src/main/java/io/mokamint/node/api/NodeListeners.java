@@ -34,7 +34,7 @@ public interface NodeListeners {
 
 	/**
 	 * Unregister the given listener from those called when peers
-	 * are added to the node.
+	 * are added to the node. If it is not registered, nothing happens.
 	 * 
 	 * @param listener the listener
 	 */

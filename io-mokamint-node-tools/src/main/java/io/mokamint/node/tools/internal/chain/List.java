@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
@@ -46,7 +47,7 @@ public class List extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		if (max < 0) {
 			System.out.println(Ansi.AUTO.string("@|red max cannot be negative!|@"));
 			return;
@@ -115,8 +116,9 @@ public class List extends AbstractPublicRpcCommand {
      * @throws IOException if the database of the remote node is corrupted
      * @throws TimeoutException if some connection timed-out
      * @throws InterruptedException if some connection was interrupted while waiting
+     * @throws ClosedNodeException if the remote node is closed
      */
-	private void backwards(Block cursor, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException {
+	private void backwards(Block cursor, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
 		long counter = 0;
 
 		while (true) {

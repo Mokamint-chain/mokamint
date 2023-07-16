@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.mokamint.node.PeerInfos;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -51,7 +52,7 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static int MAX_PEER_LENGTH = 50;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		try {
 			PeerInfo[] infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
 			if (infos.length == 0)
@@ -93,7 +94,7 @@ public class List extends AbstractPublicRpcCommand {
 				version = peerInfo.getVersion().toString();
 				uuid = peerInfo.getUUID().toString();
 			}
-			catch (IOException | DeploymentException | TimeoutException | InterruptedException e) {
+			catch (IOException | DeploymentException | TimeoutException | InterruptedException | ClosedNodeException e) {
 				LOGGER.log(Level.WARNING, "cannot contact " + info.getPeer(), e);
 			}
 

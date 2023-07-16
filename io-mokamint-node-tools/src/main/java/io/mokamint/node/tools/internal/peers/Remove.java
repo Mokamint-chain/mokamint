@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
@@ -50,6 +51,9 @@ public class Remove extends AbstractRestrictedRpcCommand {
 				System.out.println(new Peers.Encoder().encode(peer));
 			else
 				System.out.println("Removed " + peer + " from the set of peers");
+		}
+		catch (ClosedNodeException e) {
+			System.out.println(Ansi.AUTO.string("@|red The connection to " + peer + " has been closed!|@"));
 		}
 		catch (TimeoutException e) {
 			System.out.println(Ansi.AUTO.string("@|red Connection time-out while removing peer " + peer + "!|@"));

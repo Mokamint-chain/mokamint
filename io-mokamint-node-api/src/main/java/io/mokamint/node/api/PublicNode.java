@@ -36,8 +36,9 @@ public interface PublicNode extends AutoCloseableNode {
 	 * @return the information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
 	 */
-	NodeInfo getInfo() throws TimeoutException, InterruptedException;
+	NodeInfo getInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the consensus configuration parameters of this node.
@@ -45,8 +46,9 @@ public interface PublicNode extends AutoCloseableNode {
 	 * @return the consensus parameters
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
 	 */
-	ConsensusConfig getConfig() throws TimeoutException, InterruptedException;
+	ConsensusConfig getConfig() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the peers this node is connected to. There is a dynamic
@@ -56,8 +58,9 @@ public interface PublicNode extends AutoCloseableNode {
 	 * @return the peers information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
 	 */
-	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException;
+	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the current chain of this node.
@@ -67,8 +70,9 @@ public interface PublicNode extends AutoCloseableNode {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
 	 */
-	ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException;
+	ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
@@ -79,6 +83,7 @@ public interface PublicNode extends AutoCloseableNode {
 	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
 	 */
-	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException;
+	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
 }

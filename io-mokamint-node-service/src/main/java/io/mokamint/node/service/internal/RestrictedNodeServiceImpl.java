@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.RestrictedNode;
@@ -78,7 +79,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 			node.addPeer(message.getPeer());
 			sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
 		}
-		catch (TimeoutException | InterruptedException | DatabaseException | IOException | IncompatiblePeerException e) {
+		catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | IncompatiblePeerException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};
@@ -91,7 +92,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 			node.removePeer(message.getPeer());
 			sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
 		}
-		catch (TimeoutException | InterruptedException | DatabaseException e) {
+		catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException e) {
 			sendExceptionAsync(session, e, message.getId());
 		}
 	};

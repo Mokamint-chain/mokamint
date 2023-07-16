@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,6 +30,8 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
+import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.messages.ExceptionMessage;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -80,6 +83,22 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 		}
 	}
 
+	/**
+	 * Determines if the given exception message deals with an exception that all
+	 * methods of a node are expected to throw. These are
+	 * {@code java.lang.TimeoutException}, {@code java.lang.InterruptedException}
+	 * and {@link ClosedNodeException}.
+	 * 
+	 * @param message the message
+	 * @return true if and only if that condiotion holds
+	 */
+	protected boolean processStandardExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return TimeoutException.class.isAssignableFrom(clazz) ||
+			InterruptedException.class.isAssignableFrom(clazz) ||
+			ClosedNodeException.class.isAssignableFrom(clazz);
+	}
+
 	@Override
 	public void close() throws IOException {
 		IOException exception = null;
@@ -92,6 +111,7 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 
 		for (var session: sessions)
 			try {
+				session.close();
 				session.close();
 			}
 			catch (IOException e) {

@@ -147,6 +147,12 @@ public class RestrictedNodeServiceTests {
 		}
 	}
 
+	@Test
+	@DisplayName("if a removePeers() request reaches the service, it removes the peers from the node and it sends back a void result")
+	public void serviceOfLocalWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+		
+	}
+
 	static {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {

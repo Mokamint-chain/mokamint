@@ -21,6 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.remote.RemotePublicNode;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
@@ -31,7 +32,7 @@ public class Info extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(Info.class.getName());
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		try {
 			var info = remote.getInfo();
 

@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.remote.AutoCloseableRemoteNode;
 import io.mokamint.tools.AbstractCommand;
 import jakarta.websocket.DeploymentException;
@@ -75,6 +76,9 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 			System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
 			logger.log(Level.SEVERE, "I/O error while accessing \"" + uri + "\"", e);
 		}
+		catch (ClosedNodeException e) {
+			System.out.println(Ansi.AUTO.string("@|red The connection to " + uri + " has been closed!|@"));
+		}
 		catch (DeploymentException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot contact the remote service! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
 			logger.log(Level.SEVERE, "failed deployment a remote node for \"" + uri + "\"", e);
@@ -111,7 +115,8 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 		 * @param remote the remote node
 		 * @throws TimeoutException if the command does into a timeout
 		 * @throws InterruptedException if the command was interrupted while waiting
+		 * @throws ClosedNodeException if the remote node has been closed
 		 */
-		void run(N remote) throws TimeoutException, InterruptedException;
+		void run(N remote) throws TimeoutException, InterruptedException, ClosedNodeException;
 	}
 }

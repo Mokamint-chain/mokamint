@@ -42,9 +42,11 @@ import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
@@ -54,6 +56,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
@@ -61,9 +64,12 @@ import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.SuggestPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
+import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
@@ -83,7 +89,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getPeers() request reaches the service, it sends back the peers of the node")
-	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
@@ -116,7 +122,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
-	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends AbstractRemotePublicNode {
@@ -148,7 +154,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
-	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -186,7 +192,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
-	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends AbstractRemotePublicNode {
@@ -218,7 +224,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getConfig() request reaches the service, it sends back its consensus configuration")
-	public void serviceGetConfigWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetConfigWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var config = ConsensusConfigs.defaults().build();
 
@@ -250,7 +256,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getChainInfo() request reaches the service, it sends back its chain information")
-	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
 
@@ -282,7 +288,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getInfo() request reaches the service, it sends back its node information")
-	public void serviceGetInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException {
+	public void serviceGetInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID());
 
@@ -349,6 +355,22 @@ public class PublicNodeServiceTests {
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			listenerForNewPeers.get().accept(Stream.of(peer1, peer2));
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@Disabled
+	@DisplayName("if a service receives added peers from its node, they get forwarded to the clients")
+	public void test() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException {
+		var app = mock(Application.class);
+		try (var local = LocalNodes.of(Config.Builder.defaults().build(), app);
+			 var service = PublicNodeServices.open(local, 8030);
+			 var remote = RemotePublicNodes.of(new URI("ws://localhost:8030"), 2000)) {
+
+			System.out.println("hello");
+			System.out.println(remote.getBlock(new byte[] { 1, 2, 3, 4 }));
+			local.close();
+			System.out.println(remote.getBlock(new byte[] { 1, 2, 3, 4 }));
 		}
 	}
 

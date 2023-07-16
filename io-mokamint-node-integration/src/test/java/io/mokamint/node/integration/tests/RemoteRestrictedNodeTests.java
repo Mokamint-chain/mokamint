@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
 
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.Peer;
@@ -65,10 +67,8 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works")
-	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerException, DatabaseException {
-		var peers1 = new HashSet<Peer>();
-		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
-		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
+	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, IncompatiblePeerException, DatabaseException, ClosedNodeException {
+		var peers1 = Set.of(Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")));
 		var peers2 = new HashSet<Peer>();
 
 		class MyServer extends RestrictedTestServer {
@@ -157,10 +157,10 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("addPeer() works in case of IncompatiblePeerVersionException")
-	public void addPeerWorksInCaseOfIncompatiblePeerVersionException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("addPeer() works in case of IncompatiblePeerException")
+	public void addPeerWorksInCaseOfIncompatiblePeerException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
-		var exceptionMessage = "incompatible versions";
+		var exceptionMessage = "incompatible peers";
 
 		class MyServer extends RestrictedTestServer {
 
@@ -248,10 +248,8 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("removePeer() works")
-	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException {
-		var peers1 = new HashSet<Peer>();
-		peers1.add(Peers.of(new URI("ws://my.machine:1024")));
-		peers1.add(Peers.of(new URI("ws://your.machine:1025")));
+	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
+		var peers1 = Set.of(Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")));
 		var peers2 = new HashSet<Peer>();
 
 		class MyServer extends RestrictedTestServer {

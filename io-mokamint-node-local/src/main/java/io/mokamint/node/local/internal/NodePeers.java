@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.NodeInfo;
@@ -216,7 +217,7 @@ public class NodePeers implements AutoCloseable {
 			pool.execute(() -> {
 				Stream<Peer> couldBeAdded = remotes.entrySet().parallelStream()
 					.flatMap(this::pingPeer)
-					.sorted() // so that we try to add peers with highest score first
+					//.sorted() // so that we try to add peers with highest score first
 					.map(PeerInfo::getPeer);
 	
 				addPeersTask.accept(couldBeAdded);
@@ -265,10 +266,10 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "interrupted while creatinga a remote for " + peer + ": " + e.getMessage());
+			LOGGER.log(Level.WARNING, "interrupted while creating a remote for " + peer + ": " + e.getMessage());
 			Thread.currentThread().interrupt();
 		}
-		catch (IOException | TimeoutException e) {
+		catch (IOException | TimeoutException | ClosedNodeException e) {
 			LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
 			try {
 				punish(peer, config.peerPunishmentForUnreachable);
@@ -297,7 +298,7 @@ public class NodePeers implements AutoCloseable {
 			Thread.currentThread().interrupt();
 			return Stream.empty();
 		}
-		catch (TimeoutException e) {
+		catch (TimeoutException | ClosedNodeException e) {
 			LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
 
 			try {
@@ -339,7 +340,7 @@ public class NodePeers implements AutoCloseable {
 			Thread.currentThread().interrupt();
 			throw new UncheckedException(e);
 		}
-		catch (IOException | TimeoutException | DatabaseException | IncompatiblePeerException e) {
+		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | IncompatiblePeerException e) {
 			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
@@ -377,7 +378,7 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private void ensurePeerIsCompatible(RemotePublicNode remote) throws IncompatiblePeerException, TimeoutException, InterruptedException {
+	private void ensurePeerIsCompatible(RemotePublicNode remote) throws IncompatiblePeerException, TimeoutException, InterruptedException, ClosedNodeException {
 		NodeInfo info1 = remote.getInfo();
 		NodeInfo info2 = node.getInfo();
 		UUID uuid1 = info1.getUUID();

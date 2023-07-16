@@ -21,6 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import jakarta.websocket.EncodeException;
@@ -32,7 +33,7 @@ public class Show extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		try {
 			var config = remote.getConfig();
 

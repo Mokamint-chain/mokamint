@@ -29,6 +29,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
@@ -74,11 +75,6 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 		return new RuntimeException("unexpected exception", e);
 	}
 
-	private boolean processStandardExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TimeoutException.class.isAssignableFrom(clazz) || InterruptedException.class.isAssignableFrom(clazz);
-	}
-
 	@Override
 	protected void notifyResult(RpcMessage message) {
 		super.notifyResult(message);
@@ -86,13 +82,13 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public NodeInfo getInfo() throws TimeoutException, InterruptedException {
+	public NodeInfo getInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
 		var id = queues.nextId();
 		sendGetInfo(id);
 		try {
 			return queues.waitForResult(id, this::processGetInfoSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -105,13 +101,13 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException {
+	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
 		var id = queues.nextId();
 		sendGetPeers(id);
 		try {
 			return queues.waitForResult(id, this::processGetPeersSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -124,13 +120,13 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
 		var id = queues.nextId();
 		sendGetBlock(hash, id);
 		try {
 			return queues.waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
 		}
-		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -146,18 +142,17 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 		var clazz = message.getExceptionClass();
 		return DatabaseException.class.isAssignableFrom(clazz) ||
 			NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
-			TimeoutException.class.isAssignableFrom(clazz) ||
-			InterruptedException.class.isAssignableFrom(clazz);
+			processStandardExceptions(message);
 	}
 
 	@Override
-	public ConsensusConfig getConfig() throws TimeoutException, InterruptedException {
+	public ConsensusConfig getConfig() throws TimeoutException, InterruptedException, ClosedNodeException {
 		var id = queues.nextId();
 		sendGetConfig(id);
 		try {
 			return queues.waitForResult(id, this::processGetConfigSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -170,13 +165,13 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
+	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		var id = queues.nextId();
 		sendGetChainInfo(id);
 		try {
 			return queues.waitForResult(id, this::processGetChainInfoSuccess, this::processGetChainInfoException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -192,7 +187,6 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 		var clazz = message.getExceptionClass();
 		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			DatabaseException.class.isAssignableFrom(clazz) ||
-			TimeoutException.class.isAssignableFrom(clazz) ||
-			InterruptedException.class.isAssignableFrom(clazz);
+			processStandardExceptions(message);
 	}
 }
