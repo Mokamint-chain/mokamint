@@ -80,7 +80,7 @@ public class ListOfMiningRequests {
 	 * @param deadline the deadline
 	 */
 	public void runAllActionsFor(Deadline deadline) {
-		List<Consumer<Deadline>> filtered = new ArrayList<>();
+		var filtered = new ArrayList<Consumer<Deadline>>();
 
 		synchronized (lock) {
 			Iterator<Consumer<Deadline>> it = actions.iterator();

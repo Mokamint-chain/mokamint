@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -33,7 +34,6 @@ import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
 
@@ -69,8 +69,16 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 		sessions.stream()
 			.filter(Session::isOpen)
-			.map(Session::getAsyncRemote)
-			.forEach(remote -> remote.sendObject(description));
+			.forEach(session -> sendDescription(session, description));
+	}
+
+	private void sendDescription(Session session, DeadlineDescription description) {
+		try {
+			sendObjectAsync(session, description);
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to miner service " + session.getId(), e);
+		}
 	}
 
 	@Override
@@ -84,8 +92,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		LOGGER.info("miner service " + session.getId() + ": bound");
 
 		// we inform the newly arrived about work that it can already start doing
-		var remote = session.getAsyncRemote();
-		requests.forAllDescriptions(remote::sendObject);
+		requests.forAllDescriptions(description -> sendDescription(session, description));
 	}
 
 	private void removeSession(Session session) {
@@ -107,7 +114,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 	    	getServer().addSession(session);
-	    	session.addMessageHandler((MessageHandler.Whole<Deadline>) getServer()::processDeadline);
+	    	addMessageHandler(session, getServer()::processDeadline);
 	    }
 
 	    @Override

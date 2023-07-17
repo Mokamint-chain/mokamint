@@ -36,8 +36,8 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
 /**
- * Implementation of a websocket client that connects to a remote miner exported
- * by some Mokamint node. It is an adapter of a miner into a web service client.
+ * Implementation of a client that connects to a remote miner.
+ * It is an adapter of a miner into a web service client.
  */
 public class MinerServiceImpl extends AbstractWebSocketClient implements MinerService {
 
