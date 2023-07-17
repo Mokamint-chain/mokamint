@@ -543,6 +543,35 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * An event fired to signal that a peer of the node disconnected.
+	 */
+	public class PeerDisconnectedEvent extends Event {
+		private final Peer peer;
+
+		public PeerDisconnectedEvent(Peer peer) {
+			this.peer = peer;
+		}
+
+		@Override
+		public String toString() {
+			return "disconnection event for peer " + peer;
+		}
+
+		/**
+		 * Yields the disconnected peer.
+		 * 
+		 * @return the disconnected peer
+		 */
+		public Peer getPeer() {
+			return peer;
+		}
+
+		@Override @OnThread("events")
+		protected void body() {
+		}
+	}
+
+	/**
 	 * An event fired to signal that a miner misbehaved.
 	 */
 	public class MinerMisbehaviorEvent extends Event {

@@ -396,6 +396,18 @@ public class NodePeers implements AutoCloseable {
 	private void storeRemote(RemotePublicNode remote, Peer peer) {
 		remotes.put(peer, remote);
 		remote.addOnPeersAddedListener(addPeersTask);
+		remote.addOnCloseListener(() -> peerDisconnected(remote, peer));
+	}
+
+	/**
+	 * Called when a peer gets closed: it removes its remote and generates an event.
+	 * 
+	 * @param remote the remote of the peer, which is what is actually being closed
+	 * @param peer the peer
+	 */
+	private void peerDisconnected(RemotePublicNode remote, Peer peer) {
+		closeRemote(remote, peer);
+		node.emit(node.new PeerDisconnectedEvent(peer));
 	}
 
 	private void closeRemote(RemotePublicNode remote, Peer peer) {
@@ -409,7 +421,7 @@ public class NodePeers implements AutoCloseable {
 
 	private void closeRemoteWithException(RemotePublicNode remote, Peer peer) throws IOException {
 		if (remote != null) {
-			remote.removeOnPeersAddedListener(addPeersTask);
+			remote.removeOnPeersAddedListener(addPeersTask); // probably useless
 			remotes.remove(peer);
 			remote.close();
 			LOGGER.info("closed connection to peer " + peer);
