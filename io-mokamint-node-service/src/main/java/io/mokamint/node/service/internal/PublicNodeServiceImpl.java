@@ -22,6 +22,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -70,6 +72,8 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 */
 	private final Runnable onCloseListener = this::close;
 
+	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
+
 	/**
 	 * Creates a new service for the given node, at the given network port.
 	 * 
@@ -112,8 +116,9 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * @param session the session
 	 * @param e the exception used to build the message
 	 * @param id the identifier of the message to send
+	 * @throws IOException if there was an I/O error
 	 */
-	private void sendExceptionAsync(Session session, Exception e, String id) {
+	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
@@ -122,10 +127,15 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super.onGetInfo(message, session);
 
 		try {
-			sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), message.getId()));
+			try {
+				sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
 		}
-		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
-			sendExceptionAsync(session, e, message.getId());
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -134,10 +144,15 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super.onGetPeers(message, session);
 
 		try {
-			sendObjectAsync(session, GetPeersResultMessages.of(node.getPeerInfos(), message.getId()));
+			try {
+				sendObjectAsync(session, GetPeersResultMessages.of(node.getPeerInfos(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
 		}
-		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
-			sendExceptionAsync(session, e, message.getId());
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -146,10 +161,15 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super.onGetBlock(message, session);
 
 		try {
-			sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
+			try {
+				sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
+			}
+			catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
 		}
-		catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
-			sendExceptionAsync(session, e, message.getId());
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -158,10 +178,15 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super.onGetConfig(message, session);
 
 		try {
-			sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
+			try {
+				sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
 		}
-		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
-			sendExceptionAsync(session, e, message.getId());
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -170,10 +195,15 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super.onGetChainInfo(message, session);
 
 		try {
-			sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
+			try {
+				sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
 		}
-		catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
-			sendExceptionAsync(session, e, message.getId());
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
 }

@@ -138,7 +138,16 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 
 		suggestPeersSessions.stream()
 			.filter(Session::isOpen)
-			.forEach(openSession -> sendObjectAsync(openSession, SuggestPeersMessages.of(Stream.of(peersAsArray))));
+			.forEach(openSession -> suggestPeersToSession(openSession, Stream.of(peersAsArray)));
+	}
+
+	private void suggestPeersToSession(Session session, Stream<Peer> peers) {
+		try {
+			sendObjectAsync(session, SuggestPeersMessages.of(peers));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot suggest peer to session: it might be closed", e);
+		}
 	}
 
 	/**

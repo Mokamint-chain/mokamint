@@ -47,7 +47,7 @@ public class TestClient extends AbstractWebSocketClient {
 		session.close();
 	}
 
-	public void send(Deadline deadline) {
+	public void send(Deadline deadline) throws IOException {
 		sendObjectAsync(session, deadline);
 	}
 

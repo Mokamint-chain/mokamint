@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -44,27 +43,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
-import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.messages.GetInfoMessage;
-import io.mokamint.node.messages.GetInfoResultMessages;
-import io.mokamint.node.service.AbstractPublicNodeService;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.Session;
 
 /**
  * Tests about the propagation of the peers in a network of nodes.
@@ -72,54 +62,9 @@ import jakarta.websocket.Session;
 public class PeerPropagationTests {
 
 	/**
-	 * The node information of the nodes used in the tests.
-	 */
-	private static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID());
-
-	/**
 	 * The application of the node used for testing.
 	 */
 	private static Application app;
-
-	/**
-	 * Extracts the version of Mokamint from the pom.xml file.
-	 * 
-	 * @return the version
-	 */
-	private static Version mkVersion() {
-		// reads the version from the property in the Maven pom.xml
-		try {
-			return Versions.current();
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Cannot load the maven.properties file", e);
-		}
-	}
-
-	/**
-	 * Test server implementation.
-	 */
-	@ThreadSafe
-	private static class PublicTestServer extends AbstractPublicNodeService {
-
-		/**
-		 * Creates a new test server.
-		 * 
-		 * @param port the port where the server is published
-		 * @throws DeploymentException if the service cannot be deployed
-		 * @throws IOException if an I/O error occurs
-		 */
-		private PublicTestServer(int port) throws DeploymentException, IOException {
-			super(port);
-			deploy();
-		}
-
-		@Override
-		protected void onGetInfo(GetInfoMessage message, Session session) {
-			super.onGetInfo(message, session);
-			sendObjectAsync(session, GetInfoResultMessages.of(info, message.getId()));
-		};
-	}
 
 	@BeforeAll
 	public static void beforeAll() {

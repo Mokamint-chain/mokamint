@@ -51,7 +51,7 @@ public class TestServer extends AbstractWebSocketServer {
 		stopContainer();
 	}
 
-	public void requestDeadline(DeadlineDescription description) throws TimeoutException, InterruptedException {
+	public void requestDeadline(DeadlineDescription description) throws TimeoutException, InterruptedException, IOException {
 		if (!latch.await(1, TimeUnit.SECONDS))
 			throw new TimeoutException();
 

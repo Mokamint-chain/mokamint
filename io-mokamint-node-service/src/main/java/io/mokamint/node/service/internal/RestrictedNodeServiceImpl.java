@@ -18,6 +18,8 @@ package io.mokamint.node.service.internal;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.ClosedNodeException;
@@ -45,6 +47,8 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	 */
 	private final RestrictedNode node;
 
+	private final static Logger LOGGER = Logger.getLogger(RestrictedNodeServiceImpl.class.getName());
+
 	/**
 	 * Creates a new service for the given node, at the given network port.
 	 * 
@@ -66,8 +70,9 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	 * @param session the session
 	 * @param e the exception used to build the message
 	 * @param id the identifier of the message to send
+	 * @throws IOException if there was an I/O problem
 	 */
-	private void sendExceptionAsync(Session session, Exception e, String id) {
+	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
@@ -76,11 +81,18 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 		super.onAddPeers(message, session);
 
 		try {
-			node.addPeer(message.getPeer());
+			try {
+				node.addPeer(message.getPeer());
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | IncompatiblePeerException e) {
+				sendExceptionAsync(session, e, message.getId());
+				return;
+			}
+
 			sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
 		}
-		catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | IncompatiblePeerException e) {
-			sendExceptionAsync(session, e, message.getId());
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -89,11 +101,16 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 		super.onRemovePeer(message, session);
 
 		try {
-			node.removePeer(message.getPeer());
-			sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
+			try {
+				node.removePeer(message.getPeer());
+				sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
 		}
-		catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException e) {
-			sendExceptionAsync(session, e, message.getId());
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
 }

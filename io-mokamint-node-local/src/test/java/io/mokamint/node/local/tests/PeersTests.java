@@ -124,7 +124,10 @@ public class PeersTests {
 		@Override
 		protected void onGetInfo(GetInfoMessage message, Session session) {
 			super.onGetInfo(message, session);
-			sendObjectAsync(session, GetInfoResultMessages.of(info, message.getId()));
+			try {
+				sendObjectAsync(session, GetInfoResultMessages.of(info, message.getId()));
+			}
+			catch (IOException e) {}
 		};
 	}
 

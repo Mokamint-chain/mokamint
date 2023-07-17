@@ -79,7 +79,7 @@ public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNod
 		try {
 			sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
 		}
-		catch (IllegalStateException e) {
+		catch (IOException e) {
 			throw new ClosedNodeException(e);
 		}
 	}
@@ -88,7 +88,7 @@ public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNod
 		try {
 			sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
 		}
-		catch (IllegalStateException e) {
+		catch (IOException e) {
 			throw new ClosedNodeException(e);
 		}
 	}

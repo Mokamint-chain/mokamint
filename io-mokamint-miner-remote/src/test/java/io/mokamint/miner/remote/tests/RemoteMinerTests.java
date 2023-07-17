@@ -67,7 +67,7 @@ public class RemoteMinerTests {
 	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
-		byte[] data = new byte[] { 1, 2, 3, 4, 5, 6 };
+		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
 		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, data, scoopNumber, data, shabal256);
@@ -90,7 +90,7 @@ public class RemoteMinerTests {
 	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
-		byte[] data = new byte[] { 1, 2, 3, 4, 5, 6 };
+		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
 		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, data, scoopNumber + 1, data, shabal256); // <-- +1

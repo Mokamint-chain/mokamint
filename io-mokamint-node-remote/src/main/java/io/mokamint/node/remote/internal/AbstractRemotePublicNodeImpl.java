@@ -130,7 +130,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 		try {
 			sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
 		}
-		catch (IllegalStateException e) {
+		catch (IOException e) {
 			throw new ClosedNodeException(e);
 		}
 	}
@@ -139,7 +139,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 		try {
 			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeersMessages.of(id));
 		}
-		catch (IllegalStateException e) {
+		catch (IOException e) {
 			throw new ClosedNodeException(e);
 		}
 	}
@@ -148,7 +148,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 		try {
 			sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
 		}
-		catch (IllegalStateException e) {
+		catch (IOException e) {
 			throw new ClosedNodeException(e);
 		}
 	}
@@ -157,7 +157,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 		try {
 			sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
 		}
-		catch (IllegalStateException e) {
+		catch (IOException e) {
 			throw new ClosedNodeException(e);
 		}
 	}
@@ -166,7 +166,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 		try {
 			sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
 		}
-		catch (IllegalStateException e) {
+		catch (IOException e) {
 			throw new ClosedNodeException(e);
 		}
 	}

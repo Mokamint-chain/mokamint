@@ -95,7 +95,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
+				try {
+					sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -116,7 +119,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -137,7 +143,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new ClosedNodeException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new ClosedNodeException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -158,7 +167,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -184,7 +196,10 @@ public class RemotePublicNodeTests {
 				}
 				catch (InterruptedException e) {}
 
-				sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
+				try {
+					sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -202,7 +217,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -220,7 +238,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetPeers(GetPeersMessage message, Session session) {
-				sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
+				try {
+					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -244,7 +265,10 @@ public class RemotePublicNodeTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetBlockResultMessages.of(Optional.of(block1), message.getId()));
+					try {
+						sendObjectAsync(session, GetBlockResultMessages.of(Optional.of(block1), message.getId()));
+					}
+					catch (IOException e) {}
 			}
 		};
 
@@ -266,7 +290,10 @@ public class RemotePublicNodeTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
+					try {
+						sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
+					}
+					catch (IOException e) {}
 			}
 		};
 
@@ -289,7 +316,10 @@ public class RemotePublicNodeTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
 			}
 		};
 
@@ -312,7 +342,10 @@ public class RemotePublicNodeTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
 			}
 		};
 
@@ -333,7 +366,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetConfig(GetConfigMessage message, Session session) {
-				sendObjectAsync(session, GetConfigResultMessages.of(config1, message.getId()));
+				try {
+					sendObjectAsync(session, GetConfigResultMessages.of(config1, message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -354,7 +390,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				sendObjectAsync(session, GetChainInfoResultMessages.of(info1, message.getId()));
+				try {
+					sendObjectAsync(session, GetChainInfoResultMessages.of(info1, message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -375,7 +414,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -396,7 +438,10 @@ public class RemotePublicNodeTests {
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -417,7 +462,10 @@ public class RemotePublicNodeTests {
 	
 			@Override
 			protected void onGetInfo(GetInfoMessage message, Session session) {
-				sendObjectAsync(session, GetInfoResultMessages.of(info1, message.getId()));
+				try {
+					sendObjectAsync(session, GetInfoResultMessages.of(info1, message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 	

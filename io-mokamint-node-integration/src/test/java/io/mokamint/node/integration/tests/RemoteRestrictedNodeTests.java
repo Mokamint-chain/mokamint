@@ -78,7 +78,10 @@ public class RemoteRestrictedNodeTests {
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
 				peers2.add(message.getPeer());
-				sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
+				try {
+					sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -102,7 +105,10 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -124,7 +130,10 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -146,7 +155,10 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -168,7 +180,10 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IncompatiblePeerException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new IncompatiblePeerException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -190,7 +205,10 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -216,7 +234,10 @@ public class RemoteRestrictedNodeTests {
 				}
 				catch (InterruptedException e) {}
 
-				sendObjectAsync(session, AddPeerMessages.of(peer, message.getId()));
+				try {
+					sendObjectAsync(session, AddPeerMessages.of(peer, message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -237,7 +258,10 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -259,7 +283,10 @@ public class RemoteRestrictedNodeTests {
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
 				peers2.add(message.getPeer());
-				sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
+				try {
+					sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
@@ -283,7 +310,10 @@ public class RemoteRestrictedNodeTests {
 
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
 			}
 		};
 
