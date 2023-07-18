@@ -66,7 +66,6 @@ import io.mokamint.node.api.PublicNodeListeners;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.SuggestPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
-import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -358,18 +357,8 @@ public class PublicNodeServiceTests {
 	}
 
 	@Test
-	@DisplayName("if a public service gets closed, the methods of a remote using that service throw ClosedNodeException")
-	public void ifServiceClosedThenRemoteNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
-		var node = mock(PublicNode.class);
-		try (var service = PublicNodeServices.open(node, 8030); var remote = RemotePublicNodes.of(new URI("ws://localhost:8030"), 2000)) {
-			service.close(); // by closing the service, the remote is not usable anymore
-			assertThrows(ClosedNodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
-		}
-	}
-
-	@Test
-	@DisplayName("if a public service gets closed, any remote using that service gets closed as well")
-	public void ifServiceClosedThenRemoteClosed() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
+	@DisplayName("if a public service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
+	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
 		var node = mock(PublicNode.class);
 		var semaphore = new Semaphore(0);
 		
@@ -388,6 +377,7 @@ public class PublicNodeServiceTests {
 		try (var service = PublicNodeServices.open(node, 8030); var remote = new MyRemotePublicNode()) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
+			assertThrows(ClosedNodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
 		}
 	}
 
