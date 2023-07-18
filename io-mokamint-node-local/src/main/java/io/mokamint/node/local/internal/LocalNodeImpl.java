@@ -243,15 +243,12 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, ClosedNodeException {
 		ensureIsOpen();
-		var headHash = db.getHeadHash();
-		if (headHash.isEmpty())
-			return ChainInfos.of(0L, db.getGenesisHash(), Optional.empty()); // TODO: I should remove getGenesisHash
+		var maybeHeadHash = db.getHeadHash();
+		if (maybeHeadHash.isEmpty())
+			return ChainInfos.of(0L, Optional.empty(), Optional.empty());
 		else {
-			var maybeHead = db.getHead();
-			if (maybeHead.isEmpty())
-				throw new DatabaseException("the hash of the head is set but the head block is not in the database");
-
-			return ChainInfos.of(maybeHead.get().getHeight(), db.getGenesisHash(), headHash);
+			var head = db.getBlock(maybeHeadHash.get()).orElseThrow(() -> new DatabaseException("the hash of the head is set but the head block is not in the database"));
+			return ChainInfos.of(head.getHeight(), db.getGenesisHash(), maybeHeadHash);
 		}
 	}
 
@@ -631,7 +628,7 @@ public class LocalNodeImpl implements LocalNode {
 			// all miners timed-out
 			getMiners().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 
-			var maybeHead = db.getHead();
+			var maybeHead = db.getHead(); // TODO: should use the head when it wakes up
 			if (maybeHead.isPresent()) {
 				LocalDateTime nextBlockStartTime = startDateTime.plus(maybeHead.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
 				execute(new DelayedMineNewBlockTask(LocalNodeImpl.this, maybeHead.get(), nextBlockStartTime, config.deadlineWaitTimeout));
