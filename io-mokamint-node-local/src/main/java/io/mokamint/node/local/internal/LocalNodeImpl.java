@@ -181,7 +181,7 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
 		ensureIsOpen();
-		return db.get(hash);
+		return db.getBlock(hash);
 	}
 
 	@Override
@@ -504,8 +504,8 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		@Override @OnThread("events")
-		protected void body() throws DatabaseException {
-			db.setHeadHash(db.add(block));
+		protected void body() throws DatabaseException, NoSuchAlgorithmException {
+			db.add(block);
 
 			LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));

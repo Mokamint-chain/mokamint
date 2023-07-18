@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal.tasks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -110,9 +109,6 @@ public class MineNewBlockTask extends Task {
 			LOGGER.warning(logIntro + "timed out while waiting for a deadline: I will retry later");
 			node.emit(node.new NoDeadlineFoundEvent());
 		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "database error", e);
-		}
 	}
 
 	/**
@@ -147,7 +143,7 @@ public class MineNewBlockTask extends Task {
 		 */
 		private final boolean done;
 
-		private Run() throws InterruptedException, IOException, TimeoutException {
+		private Run() throws InterruptedException, TimeoutException {
 			LOGGER.info(logIntro + "started mining new block");
 			var hashingForGenerations = node.getConfig().getHashingForGenerations();
 			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().getHashingForDeadlines());
@@ -166,7 +162,7 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void requestDeadlineToEveryMiner() {
-			LOGGER.info(logIntro + "asking miners a deadline: " + description);
+			LOGGER.info(logIntro + "asking miners for a deadline: " + description);
 
 			class DeadlineRequest {
 				private final Miner miner;
@@ -206,7 +202,7 @@ public class MineNewBlockTask extends Task {
 
 			if (done)
 				LOGGER.info(logIntro + "discarding deadline " + deadline + " since it arrived too late");
-			else if (node.getMiners().noneMatch(m -> m == miner))
+			else if (node.getMiners().noneMatch(m -> m == miner)) // TODO: should I really discard it?
 				LOGGER.info(logIntro + "discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
 				if (isLegal(deadline)) {
@@ -245,7 +241,7 @@ public class MineNewBlockTask extends Task {
 				&& node.getApplication().prologIsValid(deadline.getProlog());
 		}
 
-		private Block createNewBlock() throws IOException {
+		private Block createNewBlock() {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);

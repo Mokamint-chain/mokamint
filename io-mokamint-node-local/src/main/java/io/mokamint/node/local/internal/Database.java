@@ -25,6 +25,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,6 +38,7 @@ import java.util.stream.Stream;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -206,11 +209,10 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<Block> get(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
-					.map(ByteIterable::getBytes)
 					.map(uncheck(Database::blockFrom))
 			);
 		}
@@ -220,16 +222,16 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
-	 * Unmarshals a block from the givne bytes.
+	 * Unmarshals a block from the given bytes.
 	 * 
-	 * @param bytes the bytes
+	 * @param bi the bytes
 	 * @return the resulting block
 	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the block cannot be unmarshalled
 	 */
-	private static Block blockFrom(byte[] bytes) throws NoSuchAlgorithmException, DatabaseException {
+	private static Block blockFrom(ByteIterable bi) throws NoSuchAlgorithmException, DatabaseException {
 		try {
-			return Blocks.from(bytes);
+			return Blocks.from(bi.getBytes());
 		}
 		catch (IOException e) {
 			throw new DatabaseException(e);
@@ -263,7 +265,7 @@ public class Database implements AutoCloseable {
 
 		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 			maybeGenesisHash
-				.map(uncheck(hash -> get(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
+				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
 				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database"))))
 		);
 	}
@@ -299,7 +301,7 @@ public class Database implements AutoCloseable {
 
 		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 			maybeHeadHash
-				.map(uncheck(hash -> get(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
+				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
 		);
 	}
 
@@ -311,10 +313,22 @@ public class Database implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException {
+		return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
+	}
+
+	/**
+	 * Yields the hashes of the blocks that follow the block with the given hash, if any.
+	 * 
+	 * @param txn the Xodus transaction to use for the computation
+	 * @param hash the hash of the parent block
+	 * @return the hashes
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Stream<byte[]> getForwards(Transaction txn, ByteIterable hash) throws DatabaseException {
 		ByteIterable forwards;
 
 		try {
-			forwards = environment.computeInReadonlyTransaction(txn -> storeOfForwards.get(txn, fromBytes(hash)));
+			forwards = storeOfForwards.get(txn, hash);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -493,47 +507,109 @@ public class Database implements AutoCloseable {
 	 * @param block the block to add
 	 * @return the hash of the block
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	public byte[] add(Block block) throws DatabaseException {
+	public byte[] add(Block block) throws DatabaseException, NoSuchAlgorithmException {
 		var bytesOfBlock = block.toByteArray();
 		byte[] hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
+		String hex = Hex.toHexString(hashOfBlock);
 
 		try {
-			environment.executeInTransaction(txn -> {
-				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-				if (block instanceof NonGenesisBlock ngb) {
-					var previousKey = fromBytes(ngb.getHashOfPreviousBlock());
-					var oldForwards = storeOfForwards.get(txn, previousKey);
-					var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
-					storeOfForwards.put(txn, previousKey, newForwards);
+			CheckRunnable.check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.executeInTransaction(UncheckConsumer.uncheck(txn -> {
+				ByteIterable key = fromBytes(hashOfBlock);
+				if (storeOfBlocks.get(txn, key) == null) {
+					storeOfBlocks.put(txn, key, fromBytes(bytesOfBlock));
+
+					if (block instanceof NonGenesisBlock ngb) {
+						var previous = fromBytes(ngb.getHashOfPreviousBlock());
+						var oldForwards = storeOfForwards.get(txn, previous);
+						var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
+						storeOfForwards.put(txn, previous, newForwards);
+						updateHead(txn, previous);
+					}
+					else if (storeOfBlocks.get(txn, genesis) == null) {
+						storeOfBlocks.put(txn, genesis, key);
+						LOGGER.info("set block " + hex + " as genesis");
+						storeOfBlocks.put(txn, head, key);
+						LOGGER.info("set block " + hex + " as head");
+					}
+					else
+						LOGGER.warning("discarding genesis block " + hex + " since the database already contains a genesis block");
 				}
-				else if (storeOfBlocks.get(txn, genesis) == null) {
-					storeOfBlocks.put(txn, genesis, fromBytes(hashOfBlock));
-					LOGGER.info("setting block " + Hex.toHexString(hashOfBlock) + " as genesis");
-				}
-			});
+			})));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException("cannot write a block in the database", e);
+			throw new DatabaseException("cannot write block " + hex + " in the database", e);
 		}
 
-		LOGGER.info("height " + block.getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
+		LOGGER.info("height " + block.getHeight() + ": added block " + hex);
 
 		return hashOfBlock;
 	}
 
 	/**
-	 * Sets the head reference of the chain to the block with the given hash.
+	 * Checks if a block is part of the current chain; in that case, it updates the
+	 * head with the highest reachable block through the forwards map;
+	 * for the same height, the block with the smallest total cumulative time is preferred as the new head.
 	 * 
-	 * @param hash the hash of the block that becomes the head reference of the blockchain
-	 * @throws DatabaseException if the head hash cannot be written, because the database is corrupted
+	 * @param txn the transaction that can be used to access the database
+	 * @param hash the hash of the block
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the database contains a block using an unknown hashing algorithm
 	 */
-	public void setHeadHash(byte[] hash) throws DatabaseException {
-		try {
-			environment.executeInTransaction(txn -> storeOfBlocks.put(txn, head, fromBytes(hash)));
+	private void updateHead(Transaction txn, ByteIterable hash) throws DatabaseException, NoSuchAlgorithmException {
+		var currentHead = storeOfBlocks.get(txn, head);
+		if (currentHead == null)
+			return;
+
+		ByteIterable bi = storeOfBlocks.get(txn, hash);
+		if (bi == null)
+			return;
+
+		boolean reachedCurrentHead = false;
+		ByteIterable highest = hash;
+		Block highestBlock = blockFrom(bi);
+
+		var ws = new ArrayList<ByteIterable>();
+		ws.add(hash);
+		var seen = new HashSet<ByteIterable>();
+
+		do {
+			int size = ws.size();
+			ByteIterable cursor = ws.remove(size - 1);
+			reachedCurrentHead |= cursor.equals(currentHead);
+
+			int seenSize = seen.size();
+			getForwards(txn, cursor)
+				.map(ByteIterable::fromBytes)
+				.filter(seen::add)
+				.forEach(ws::add);
+
+			// if we have seen something already, the database of blocks is not a tree rooted at the genesis
+			if (seen.size() - seenSize < ws.size() - size + 1)
+				throw new DatabaseException("the database of blocks does not form a tree");
+
+			if (ws.size() == size - 1) {
+				// we have reached a block without forwards: we check if it is better than highest
+				ByteIterable cursorBlockBytes = storeOfBlocks.get(txn, cursor);
+				if (cursorBlockBytes == null)
+					throw new DatabaseException("block " + Hex.toHexString(cursor.getBytes()) + " is in the forward map codomain but not in the database");
+
+				Block cursorBlock = blockFrom(cursorBlockBytes);
+				long cbh = cursorBlock.getHeight(), hbh = highestBlock.getHeight();
+
+				// we prefer longest chains; if two chains have the same length, we prefer that with the smaller total time
+				if (cbh > hbh || (cbh == hbh && cursorBlock.getTotalWaitingTime() < highestBlock.getTotalWaitingTime())) {
+					highest = cursor;
+					highestBlock = cursorBlock;
+				}
+			}
 		}
-		catch (ExodusException e) {
-			throw new DatabaseException("cannot write the head hash in the database", e);
+		while (!ws.isEmpty());
+
+		if (reachedCurrentHead && !highest.equals(currentHead)) {
+			storeOfBlocks.put(txn, head, highest);
+			LOGGER.info("set block " + Hex.toHexString(highest.getBytes()) + " as head");
 		}
 	}
 
