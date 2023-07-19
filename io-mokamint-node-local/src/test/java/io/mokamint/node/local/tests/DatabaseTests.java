@@ -285,6 +285,47 @@ public class DatabaseTests {
 		}
 	}
 
+	@Test
+	@DisplayName("if the longest chain is added with genesis at the root, then it becomes the current chain")
+	public void ifLongestChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var config = mkConfig(dir);
+		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var block1 = Blocks.of(1, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		previous = block1.getHash(config.getHashingForBlocks());
+		var block2 = Blocks.of(2, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		previous = block2.getHash(config.getHashingForBlocks());
+		var block3 = Blocks.of(3, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+
+		try (var db = new Database(config)) {
+			assertTrue(db.add(block3));
+
+			// no genesis and no head are set up to now
+			assertTrue(db.getGenesis().isEmpty());
+			assertTrue(db.getHead().isEmpty());
+
+			assertTrue(db.add(block2));
+
+			// no genesis and no head are set up to now
+			assertTrue(db.getGenesis().isEmpty());
+			assertTrue(db.getHead().isEmpty());
+
+			assertTrue(db.add(block1));
+
+			// no genesis and no head are set up to now
+			assertTrue(db.getGenesis().isEmpty());
+			assertTrue(db.getHead().isEmpty());
+
+			assertTrue(db.add(genesis));
+
+			// genesis and head are set now
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block3, db.getHead().get());			
+		}
+	}
+
 	static {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {

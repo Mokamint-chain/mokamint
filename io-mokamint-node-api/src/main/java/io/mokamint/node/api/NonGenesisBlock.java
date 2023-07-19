@@ -23,7 +23,7 @@ import io.mokamint.nonce.api.Deadline;
  * A non-genesis block of the Mokamint blockchain.
  */
 @Immutable
-public interface NonGenesisBlock extends Block {
+public non-sealed interface NonGenesisBlock extends Block {
 
 	/**
 	 * Yields the deadline computed for this block.

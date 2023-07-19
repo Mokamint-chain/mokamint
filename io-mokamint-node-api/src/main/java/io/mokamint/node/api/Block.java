@@ -28,7 +28,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * A block of the Mokamint blockchain.
  */
 @Immutable
-public interface Block extends Marshallable {
+public sealed interface Block extends Marshallable permits GenesisBlock, NonGenesisBlock {
 
 	/**
 	 * Yields the total waiting time, in milliseconds, from the genesis block
@@ -59,9 +59,9 @@ public interface Block extends Marshallable {
 	BigInteger getAcceleration();
 
 	/**
-	 * Yields the height of the node, counting from 0 for the genesis block.
+	 * Yields the height of the block, counting from 0 for the genesis block.
 	 * 
-	 * @return the height of the node
+	 * @return the height of the block
 	 */
 	long getHeight();
 

@@ -33,7 +33,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract class AbstractBlock extends AbstractMarshallable implements Block {
+public abstract class AbstractBlock extends AbstractMarshallable {
 
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
 
@@ -45,7 +45,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static AbstractBlock from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		// by reading the height, we can determine if it's a genesis block or not
 		var height = context.readLong();
 		if (height == 0L)
@@ -64,13 +64,12 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the block could not be unmarshalled
 	 */
-	public static AbstractBlock from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
+	public static Block from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
 		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
 			return from(context);
 		}
 	}
 
-	@Override
 	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, HashingAlgorithm<byte[]> hashingForDeadlines) {
 		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
 
@@ -78,10 +77,16 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
-	@Override
 	public final byte[] getHash(HashingAlgorithm<byte[]> hashing) {
 		return hashing.hash(toByteArray());
 	}
+
+	/**
+	 * Yields the height of the block, counting from 0 for the genesis block.
+	 * 
+	 * @return the height of the block
+	 */
+	public abstract long getHeight();
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {
 		var generationHash = hashing.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));

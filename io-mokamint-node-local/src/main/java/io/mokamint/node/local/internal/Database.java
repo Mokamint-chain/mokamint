@@ -545,6 +545,7 @@ public class Database implements AutoCloseable {
 			LOGGER.info("set block " + hex + " as genesis");
 			storeOfBlocks.put(txn, head, key);
 			LOGGER.info("set block " + hex + " as head");
+			updateHead(txn, key);
 			LOGGER.info("height " + block.getHeight() + ": added block " + hex);
 			return true;
 		}
