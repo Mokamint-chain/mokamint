@@ -247,8 +247,7 @@ public class MineNewBlockTask extends Task {
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
-			var hashingForBlocks = node.getConfig().getHashingForBlocks();
-			var hashOfPreviousBlock = hashingForBlocks.hash(previous.toByteArray());
+			var hashOfPreviousBlock = previous.getHash(node.getConfig().getHashingForBlocks());
 
 			return Blocks.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock,
 					accelerationForNewBlock, deadline, hashOfPreviousBlock);

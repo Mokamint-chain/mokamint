@@ -117,7 +117,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	public String toString(ConsensusConfig config, LocalDateTime startDateTimeUTC) {
 		var builder = new StringBuilder("Genesis Block:\n");
 		builder.append("* creation date and time UTC: " + startDateTimeUTC + "\n");
-		builder.append("* hash: " + Hex.toHexString(config.getHashingForBlocks().hash(toByteArray())) + "\n");
+		builder.append("* hash: " + Hex.toHexString(getHash(config.getHashingForBlocks())) + "\n");
 		populate(builder);
 
 		return builder.toString();

@@ -125,7 +125,7 @@ public class List extends AbstractPublicRpcCommand {
 			if (counter >= max)
 				return;
 
-			String hash = Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray()));
+			String hash = Hex.toHexString(cursor.getHash(config.getHashingForBlocks()));
 			if (json()) {
 				if (counter > 0)
 					System.out.print(", ");
@@ -137,8 +137,7 @@ public class List extends AbstractPublicRpcCommand {
 
 			if (cursor.getHeight() == 0)
 				return;
-			else if (cursor instanceof NonGenesisBlock) {
-				var ngb = (NonGenesisBlock) cursor;
+			else if (cursor instanceof NonGenesisBlock ngb) {
 				var previousHash = ngb.getHashOfPreviousBlock();
 				var maybePrevious = remote.getBlock(previousHash);
 				if (maybePrevious.isPresent()) {

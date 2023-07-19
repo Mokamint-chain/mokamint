@@ -325,7 +325,7 @@ public class NodePeers implements AutoCloseable {
 			ensurePeerIsCompatible(remote);
 
 			synchronized (lock) {
-				if (db.addPeer(peer, force)) {
+				if (db.add(peer, force)) {
 					LOGGER.info("added peer " + peer + " to the database");
 					storeRemote(remote, peer);
 					remote = null; // so that it won't be closed in the finally clause
@@ -352,7 +352,7 @@ public class NodePeers implements AutoCloseable {
 	private boolean onRemove(Peer peer) {
 		try {
 			synchronized (lock) {
-				if (db.removePeer(peer)) {
+				if (db.remove(peer)) {
 					LOGGER.info("removed peer " + peer + " from the database");
 					closeRemote(remotes.get(peer), peer);
 					return true;

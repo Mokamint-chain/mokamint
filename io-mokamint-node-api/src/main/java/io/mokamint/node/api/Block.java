@@ -66,6 +66,14 @@ public interface Block extends Marshallable {
 	long getHeight();
 
 	/**
+	 * Yields the hash of this block, by using the given hashing algorithm.
+	 * 
+	 * @param hashing the hashing algorithm
+	 * @return the hash of this block
+	 */
+	byte[] getHash(HashingAlgorithm<byte[]> hashing);
+
+	/**
 	 * Yields the description of the deadline that must be computed for the next block.
 	 * 
 	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature

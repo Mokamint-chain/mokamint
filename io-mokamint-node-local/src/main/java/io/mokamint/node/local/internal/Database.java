@@ -434,17 +434,17 @@ public class Database implements AutoCloseable {
 	 *         that the peer was not forced and there are already {@link maxPeers} peers
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean addPeer(Peer peer, boolean force) throws DatabaseException {
+	public boolean add(Peer peer, boolean force) throws DatabaseException {
 		try {
 			return check(URISyntaxException.class, IOException.class,
-					() -> environment.computeInTransaction(uncheck(txn -> addPeer(txn, peer, force))));
+					() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
 
-	private boolean addPeer(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException {
+	private boolean add(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException {
 		var bi = storeOfPeers.get(txn, peers);
 		if (bi == null) {
 			if (force || maxPeers >= 1) {
@@ -474,17 +474,17 @@ public class Database implements AutoCloseable {
 	 *         that the peer was not in the database
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean removePeer(Peer peer) throws DatabaseException {
+	public boolean remove(Peer peer) throws DatabaseException {
 		try {
 			return check(URISyntaxException.class, IOException.class,
-					() -> environment.computeInTransaction(uncheck(txn -> removePeer(txn, peer))));
+					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
 
-	private boolean removePeer(Transaction txn, Peer peer) throws IOException, URISyntaxException {
+	private boolean remove(Transaction txn, Peer peer) throws IOException, URISyntaxException {
 		var bi = storeOfPeers.get(txn, peers);
 		if (bi == null)
 			return false;
@@ -510,15 +510,14 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
 	public byte[] add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		var bytesOfBlock = block.toByteArray();
-		byte[] hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
+		byte[] hashOfBlock = block.getHash(hashingForBlocks);
 		String hex = Hex.toHexString(hashOfBlock);
 
 		try {
 			CheckRunnable.check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.executeInTransaction(UncheckConsumer.uncheck(txn -> {
 				ByteIterable key = fromBytes(hashOfBlock);
 				if (storeOfBlocks.get(txn, key) == null) {
-					storeOfBlocks.put(txn, key, fromBytes(bytesOfBlock));
+					storeOfBlocks.put(txn, key, fromBytes(block.toByteArray()));
 
 					if (block instanceof NonGenesisBlock ngb) {
 						var previous = fromBytes(ngb.getHashOfPreviousBlock());

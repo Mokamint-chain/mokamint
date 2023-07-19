@@ -78,6 +78,11 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
+	@Override
+	public final byte[] getHash(HashingAlgorithm<byte[]> hashing) {
+		return hashing.hash(toByteArray());
+	}
+
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {
 		var generationHash = hashing.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();

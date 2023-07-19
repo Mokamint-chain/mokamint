@@ -146,20 +146,19 @@ public class Show extends AbstractPublicRpcCommand {
 		private Block backwards(Block cursor, long depth, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
 			if (depth == 0)
 				return cursor;
-			else if (cursor instanceof NonGenesisBlock) {
-				var ngb = (NonGenesisBlock) cursor;
+			else if (cursor instanceof NonGenesisBlock ngb) {
 				var previousHash = ngb.getHashOfPreviousBlock();
 				Optional<Block> maybePrevious = remote.getBlock(previousHash);
 				if (maybePrevious.isPresent())
 					return backwards(maybePrevious.get(), depth - 1, remote);
 				else {
 					var config = remote.getConfig();
-					throw new DatabaseException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " has a previous hash that does not refer to any existing block!");
+					throw new DatabaseException("Block " + Hex.toHexString(cursor.getHash(config.getHashingForBlocks())) + " has a previous hash that does not refer to any existing block!");
 				}
 			}
 			else {
 				var config = remote.getConfig();
-				throw new DatabaseException("Block " + Hex.toHexString(config.getHashingForBlocks().hash(cursor.toByteArray())) + " is a genesis block but is not at height 0!");
+				throw new DatabaseException("Block " + Hex.toHexString(cursor.getHash(config.getHashingForBlocks())) + " is a genesis block but is not at height 0!");
 			}
 		}
 	}
