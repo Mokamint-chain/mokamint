@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
-import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -344,7 +343,7 @@ public class Database implements AutoCloseable {
 			else if (hashes.length == size) // frequent case, worth optimizing
 				return Stream.of(hashes);
 			else
-				return IntStream.rangeClosed(0, hashes.length / size).mapToObj(n -> slice(hashes, n, size));
+				return IntStream.range(0, hashes.length / size).mapToObj(n -> slice(hashes, n, size));
 		}
 	}
 
@@ -431,7 +430,8 @@ public class Database implements AutoCloseable {
 	 *              of peers already added; false otherwise, which means that no more
 	 *              than {@link #maxPeers} peers are allowed
 	 * @return true if the peer has been added; false otherwise, which means
-	 *         that the peer was not forced and there are already {@link maxPeers} peers
+	 *         that the peer was already present or that it was not forced
+	 *         and there are already {@link maxPeers} peers
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public boolean add(Peer peer, boolean force) throws DatabaseException {
@@ -456,7 +456,7 @@ public class Database implements AutoCloseable {
 		}
 		else {
 			var aop = ArrayOfPeers.from(bi);
-			if (!force && aop.length() >= maxPeers)
+			if (aop.contains(peer) || (!force && aop.length() >= maxPeers))
 				return false;
 			else {
 				var concat = Stream.concat(aop.stream(), Stream.of(peer));
@@ -505,45 +505,53 @@ public class Database implements AutoCloseable {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
-	 * @return the hash of the block
+	 * @return true if the block has been actually added to the database, false otherwise.
+	 *         There are a few situations when the result can be false. For instance,
+	 *         if {@code block} was already in the database, or if {@code block} is
+	 *         a genesis block but the genesis block is already set in the database, or
+	 *         if {@code block} ...
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	public byte[] add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		byte[] hashOfBlock = block.getHash(hashingForBlocks);
-		String hex = Hex.toHexString(hashOfBlock);
-
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
 		try {
-			CheckRunnable.check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.executeInTransaction(UncheckConsumer.uncheck(txn -> {
-				ByteIterable key = fromBytes(hashOfBlock);
-				if (storeOfBlocks.get(txn, key) == null) {
-					storeOfBlocks.put(txn, key, fromBytes(block.toByteArray()));
-
-					if (block instanceof NonGenesisBlock ngb) {
-						var previous = fromBytes(ngb.getHashOfPreviousBlock());
-						var oldForwards = storeOfForwards.get(txn, previous);
-						var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
-						storeOfForwards.put(txn, previous, newForwards);
-						updateHead(txn, previous);
-					}
-					else if (storeOfBlocks.get(txn, genesis) == null) {
-						storeOfBlocks.put(txn, genesis, key);
-						LOGGER.info("set block " + hex + " as genesis");
-						storeOfBlocks.put(txn, head, key);
-						LOGGER.info("set block " + hex + " as head");
-					}
-					else
-						LOGGER.warning("discarding genesis block " + hex + " since the database already contains a genesis block");
-				}
-			})));
+			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block))));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException("cannot write block " + hex + " in the database", e);
+			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
 		}
+	}
 
-		LOGGER.info("height " + block.getHeight() + ": added block " + hex);
+	private boolean add(Transaction txn, Block block) throws NoSuchAlgorithmException, DatabaseException {
+		byte[] hashOfBlock = block.getHash(hashingForBlocks);
+		String hex = Hex.toHexString(hashOfBlock);
+		ByteIterable key = fromBytes(hashOfBlock);
 
-		return hashOfBlock;
+		if (storeOfBlocks.get(txn, key) != null)
+			return false;
+		else if (block instanceof NonGenesisBlock ngb) {
+			storeOfBlocks.put(txn, key, fromBytes(block.toByteArray()));
+			var previous = fromBytes(ngb.getHashOfPreviousBlock());
+			var oldForwards = storeOfForwards.get(txn, previous);
+			var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
+			storeOfForwards.put(txn, previous, newForwards);
+			updateHead(txn, previous);
+			LOGGER.info("height " + block.getHeight() + ": added block " + hex);
+			return true;
+		}
+		else if (storeOfBlocks.get(txn, genesis) == null) {
+			storeOfBlocks.put(txn, key, fromBytes(block.toByteArray()));
+			storeOfBlocks.put(txn, genesis, key);
+			LOGGER.info("set block " + hex + " as genesis");
+			storeOfBlocks.put(txn, head, key);
+			LOGGER.info("set block " + hex + " as head");
+			LOGGER.info("height " + block.getHeight() + ": added block " + hex);
+			return true;
+		}
+		else {
+			LOGGER.warning("discarding genesis block " + hex + " since the database already contains a genesis block");
+			return false;
+		}
 	}
 
 	/**

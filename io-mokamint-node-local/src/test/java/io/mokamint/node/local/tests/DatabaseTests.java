@@ -17,9 +17,11 @@ limitations under the License.
 package io.mokamint.node.local.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -27,7 +29,9 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
@@ -35,11 +39,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
+import io.mokamint.nonce.Deadlines;
 
 public class DatabaseTests {
 
@@ -58,8 +64,8 @@ public class DatabaseTests {
 
 		try (var db = new Database(config)) {
 			assertTrue(db.getPeers().count() == 0);
-			db.add(peer1, true);
-			db.add(peer2, true);
+			assertTrue(db.add(peer1, true));
+			assertTrue(db.add(peer2, true));
 		}
 
 		try (var db = new Database(config)) {
@@ -77,10 +83,10 @@ public class DatabaseTests {
 
 		try (var db = new Database(config)) {
 			assertTrue(db.getPeers().count() == 0);
-			db.add(peer1, true);
-			db.add(peer2, true);
-			db.add(peer3, true);
-			db.remove(peer2);
+			assertTrue(db.add(peer1, true));
+			assertTrue(db.add(peer2, true));
+			assertTrue(db.add(peer3, true));
+			assertTrue(db.remove(peer2));
 		}
 
 		try (var db = new Database(config)) {
@@ -97,10 +103,10 @@ public class DatabaseTests {
 
 		try (var db = new Database(config)) {
 			assertTrue(db.getPeers().count() == 0);
-			db.add(peer1, true);
-			db.add(peer2, true);
-			db.add(peer1, true);
-			db.add(peer2, true);
+			assertTrue(db.add(peer1, true));
+			assertTrue(db.add(peer2, true));
+			assertFalse(db.add(peer1, true));
+			assertFalse(db.add(peer2, true));
 			assertEquals(Set.of(peer1, peer2), db.getPeers().collect(Collectors.toSet()));
 		}
 	}
@@ -115,6 +121,167 @@ public class DatabaseTests {
 			db.add(genesis);
 			assertEquals(genesis, db.getGenesis().get());
 			assertEquals(genesis, db.getHead().get());
+		}
+	}
+
+	@Test
+	@DisplayName("if the genesis of the vchain is set, a subsequent genesis block is not added")
+	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES));
+		var config = mkConfig(dir);
+
+		try (var db = new Database(config)) {
+			assertTrue(db.add(genesis1));
+			assertFalse(db.add(genesis2));
+			assertEquals(genesis1, db.getGenesis().get());
+			assertEquals(genesis1, db.getHead().get());
+		}
+	}
+
+	@Test
+	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
+	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		byte[] unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
+		var block = Blocks.of(13, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
+		var config = mkConfig(dir);
+
+		try (var db = new Database(config)) {
+			assertTrue(db.add(genesis));
+			assertTrue(db.add(block));
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(genesis, db.getHead().get());
+		}
+	}
+
+	@Test
+	@DisplayName("if a block added to the head of the chain, it becomes the head of the chain")
+	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var config = mkConfig(dir);
+		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var block = Blocks.of(1, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+
+		try (var db = new Database(config)) {
+			assertTrue(db.add(genesis));
+			assertTrue(db.add(block));
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block, db.getHead().get());
+		}
+	}
+
+	@Test
+	@DisplayName("if a block added to the chain but head is higher, the head of the chain is not changed")
+	public void ifBlockAddedToChainButHeadHigherThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var config = mkConfig(dir);
+		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var block1 = Blocks.of(1, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var added = Blocks.of(1, 4321L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
+		previous = block1.getHash(config.getHashingForBlocks());
+		var block2 = Blocks.of(2, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		previous = block2.getHash(config.getHashingForBlocks());
+		var block3 = Blocks.of(3, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+
+		try (var db = new Database(config)) {
+			assertTrue(db.add(genesis));
+			assertTrue(db.add(block1));
+			assertTrue(db.add(block2));
+			assertTrue(db.add(block3));
+			assertTrue(db.add(added));
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block3, db.getHead().get());
+		}
+	}
+
+	@Test
+	@DisplayName("if a chain longer than the current chain is added, then it becomes the current chain")
+	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var config = mkConfig(dir);
+		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var block1 = Blocks.of(1, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var block0 = Blocks.of(1, 4321L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
+		previous = block1.getHash(config.getHashingForBlocks());
+		var block2 = Blocks.of(2, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		previous = block2.getHash(config.getHashingForBlocks());
+		var block3 = Blocks.of(3, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+
+		try (var db = new Database(config)) {
+			assertTrue(db.add(genesis));
+			assertTrue(db.add(block0));
+			
+			// at this stage, block0 is the head of the current chain, of length 2
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block0, db.getHead().get());
+
+			// we add an orphan (no previous in database)
+			assertTrue(db.add(block3));
+
+			// nothing changes
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block0, db.getHead().get());
+
+			// we add an orphan (no previous in database)
+			assertTrue(db.add(block2));
+
+			// nothing changes
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block0, db.getHead().get());
+
+			// we add a block after the genesis, that creates a chain of length 4
+			assertTrue(db.add(block1));
+
+			// the longer chain is the current chain now
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block3, db.getHead().get());
+		}
+	}
+
+	@Test
+	@DisplayName("if a chain of the same length as the current chain is added, the chain with smaller total time becomes the current chain")
+	public void ifSameLengthChainIsAddedThenTotalTimeMatters(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var config = mkConfig(dir);
+		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var block1 = Blocks.of(1, 4321L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var block2 = Blocks.of(1, 1234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
+		var block3 = Blocks.of(1, 2234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
+
+		try (var db = new Database(config)) {
+			assertTrue(db.add(genesis));
+			assertTrue(db.add(block1));
+			
+			// at this stage, block1 is the head of the current chain, of length 2
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block1, db.getHead().get());
+
+			// we create a chain with the same length as the current chain (2 blocks),
+			// but smaller waiting time (1234 instead of 4321)
+			assertTrue(db.add(block2));
+
+			// block2 is the new head
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block2, db.getHead().get());
+
+			// we create a chain with the same length as the current chain (2 blocks),
+			// but larger waiting time (2234 instead of 1234)
+			assertTrue(db.add(block3));
+
+			// block2 is still the head
+			assertEquals(genesis, db.getGenesis().get());
+			assertEquals(block2, db.getHead().get());
 		}
 	}
 
