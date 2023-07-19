@@ -168,7 +168,7 @@ public class Database implements AutoCloseable {
 					if (bi == null) {
 						var nodeUUID = UUID.randomUUID();
 						storeOfPeers.put(txn, uuid, fromBytes(new MarshallableUUID(nodeUUID).toByteArray()));
-						LOGGER.info("created the UUID of the node: " + nodeUUID);
+						LOGGER.info("created a new UUID for the node: " + nodeUUID);
 					}
 					else {
 						var nodeUUID = uncheck(MarshallableUUID::from).apply(bi).uuid;

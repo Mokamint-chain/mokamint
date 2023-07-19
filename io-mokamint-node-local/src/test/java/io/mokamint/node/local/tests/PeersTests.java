@@ -24,16 +24,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -44,10 +40,10 @@ import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
@@ -72,11 +68,6 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class PeersTests {
-
-	/**
-	 * The configuration of the node used for testing.
-	 */
-	private static Config config;
 
 	/**
 	 * The node information of the nodes used in the tests.
@@ -133,42 +124,21 @@ public class PeersTests {
 
 	@BeforeAll
 	public static void beforeAll() {
-		createApplication();
-	}
-
-	@BeforeEach
-	public void beforeEach() throws IOException, NoSuchAlgorithmException {
-		createConfiguration();
-		deleteChainDirectiory();
-	}
-
-	private static void createConfiguration() throws NoSuchAlgorithmException {
-		config = Config.Builder.defaults()
-			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
-			.build();
-	}
-
-	private static void deleteChainDirectiory() throws IOException {
-		try {
-			Files.walk(config.dir)
-				.sorted(Comparator.reverseOrder())
-				.map(Path::toFile)
-				.forEach(File::delete);
-		}
-		catch (NoSuchFileException e) {
-			// OK, it happens for the first test
-		}
-	}
-	
-	private static void createApplication() {
 		app = mock(Application.class);
 		when(app.prologIsValid(any())).thenReturn(true);
+	}
+
+	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
+		return Config.Builder.defaults()
+			.setDir(dir)
+			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
+			.build();
 	}
 
 	@Test
 	@DisplayName("seeds are used as peers")
 	@Timeout(10)
-	public void seedsAreUsedAsPeers() throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, DatabaseException {
+	public void seedsAreUsedAsPeers(@TempDir Path dir) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, DatabaseException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -176,9 +146,11 @@ public class PeersTests {
 		var allPeers = Set.of(peer1, peer2);
 		var stillToAccept = new HashSet<>(allPeers);
 
-		config = Config.Builder.defaults()
+		Config config = Config.Builder.defaults()
 				.addSeed(peer1.getURI())
 				.addSeed(peer2.getURI())
+				.setDeadlineWaitTimeout(1000)
+				.setDir(dir)
 				.build();
 
 		var semaphore = new Semaphore(0);
@@ -207,7 +179,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("if peers are added to a node, they are saved into the database and used at the next start-up")
 	@Timeout(10)
-	public void addedPeersAreUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException {
+	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -218,7 +190,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(config, app);
+				super(mkConfig(dir), app);
 			}
 
 			@Override
@@ -248,7 +220,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at the next start-up")
 	@Timeout(10)
-	public void removedPeerIsNotUsedAtNextStart() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
+	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -258,9 +230,11 @@ public class PeersTests {
 		allPeers.add(peer2);
 		var stillToAccept = new HashSet<>(allPeers);
 
-		config = Config.Builder.defaults()
+		Config config = Config.Builder.defaults()
 				.addSeed(peer1.getURI())
 				.addSeed(peer2.getURI())
+				.setDir(dir)
+				.setDeadlineWaitTimeout(1000)
 				.build();
 
 		var allowAddPeers = new AtomicBoolean(true);
@@ -297,12 +271,9 @@ public class PeersTests {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 
-			config = Config.Builder.defaults()
-					.build();
-
 			allowAddPeers.set(false);
 
-			try (var node = LocalNodes.of(config, app)) {
+			try (var node = LocalNodes.of(mkConfig(dir), app)) {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 		}
@@ -310,7 +281,7 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the patch version only can work together")
-	public void addPeerWorksIfPatchVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException {
+	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 		var allPeers = Set.of(peer);
@@ -318,7 +289,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(config, app);
+				super(mkConfig(dir), app);
 			}
 
 			@Override
@@ -336,14 +307,14 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the minor version cannot work together")
-	public void addPeerFailsIfMinorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
+	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(config, app);
+				super(mkConfig(dir), app);
 			}
 
 			@Override
@@ -360,14 +331,14 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the major version cannot work together")
-	public void addPeerFailsIfMajorVersionIsDifferent() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
+	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(config, app);
+				super(mkConfig(dir), app);
 			}
 
 			@Override

@@ -20,16 +20,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -37,10 +33,10 @@ import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
@@ -55,53 +51,27 @@ import io.mokamint.nonce.api.DeadlineDescription;
 public class EventsTests {
 
 	/**
-	 * The configuration of the node used for testing.
-	 */
-	private static Config config;
-
-	/**
 	 * The application of the node used for testing.
 	 */
 	private static Application app;
 
 	@BeforeAll
 	public static void beforeAll() {
-		createApplication();
-	}
-
-	@BeforeEach
-	public void beforeEach() throws IOException, NoSuchAlgorithmException {
-		createConfiguration();
-		deleteChainDirectiory();
-	}
-
-	private static void createConfiguration() throws NoSuchAlgorithmException {
-		config = Config.Builder.defaults()
-			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
-			.build();
-	}
-
-	private static void deleteChainDirectiory() throws IOException {
-		try {
-			Files.walk(config.dir)
-				.sorted(Comparator.reverseOrder())
-				.map(Path::toFile)
-				.forEach(File::delete);
-		}
-		catch (NoSuchFileException e) {
-			// OK, it happens for the first test
-		}
-	}
-	
-	private static void createApplication() {
 		app = mock(Application.class);
 		when(app.prologIsValid(any())).thenReturn(true);
+	}
+
+	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
+		return Config.Builder.defaults()
+			.setDir(dir)
+			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
+			.build();
 	}
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
-	public void discoverNewBlockAfterDeadlineRequestToMiner() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 		var deadlineProlog = new byte[] { 1, 2, 3, 4 };
@@ -129,14 +99,14 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
-				super(config, app, myMiner);
+				super(mkConfig(dir), app, myMiner);
 			}
 
 			@Override
 			protected void onEmit(Event event) {
-				if (event instanceof BlockDiscoveryEvent) {
-					var block = ((BlockDiscoveryEvent) event).block;
-					if (block instanceof NonGenesisBlock && Arrays.equals(((NonGenesisBlock) block).getDeadline().getValue(), deadlineValue))
+				if (event instanceof BlockDiscoveryEvent bde) {
+					var block = bde.block;
+					if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDeadline().getValue(), deadlineValue))
 						semaphore.release();
 				}
 					
@@ -152,7 +122,7 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
 	@Timeout(1)
-	public void signalIfInvalidDeadline() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
+	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 	
@@ -177,15 +147,13 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 	
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
-				super(config, app, myMiner);
+				super(mkConfig(dir), app, myMiner);
 			}
 	
 			@Override
 			protected void onEmit(Event event) {
-				if (event instanceof IllegalDeadlineEvent) {
-					if (((IllegalDeadlineEvent) event).miner == myMiner)
-						semaphore.release();
-				}
+				if (event instanceof IllegalDeadlineEvent ide && ide.miner == myMiner)
+					semaphore.release();
 					
 				super.onEmit(event);
 			}
@@ -199,13 +167,13 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
 	@Timeout(1)
-	public void signalIfNoMiners() throws InterruptedException, NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
+	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
-				super(config, app, new Miner[0]);
+				super(mkConfig(dir), app, new Miner[0]);
 			}
 
 			@Override
@@ -225,14 +193,14 @@ public class EventsTests {
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
 	@Timeout(3) // three times config.deadlineWaitTimeout
-	public void signalIfNoDeadlineArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
+	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var myMiner = mock(Miner.class);
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
-				super(config, app, myMiner);
+				super(mkConfig(dir), app, myMiner);
 			}
 
 			@Override
@@ -252,9 +220,10 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a miner provides deadlines for the wrong hashing algorithm, an event is signalled to the node")
 	@Timeout(1)
-	public void signalIfDeadlineForWrongAlgorithmArrives() throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
+	public void signalIfDeadlineForWrongAlgorithmArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+		var config = mkConfig(dir);
 
 		// we look for a hashing algorithm different from that expected by the node
 		String algoName = Stream.of(HashingAlgorithms.TYPES.values())
