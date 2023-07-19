@@ -129,6 +129,208 @@ public class Database implements AutoCloseable {
 		ensureNodeUUID();
 	}
 
+	@Override
+	public void close() throws DatabaseException {
+		try {
+			environment.close();
+			LOGGER.info("closed the blockchain database");
+		}
+		catch (ExodusException e) {
+			LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
+			throw new DatabaseException("cannot close the database", e);
+		}
+	}
+
+	/**
+	 * Yields the UUID of the node having this database.
+	 * 
+	 * @return the UUID
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public UUID getUUID() throws DatabaseException {
+		try {
+			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, uuid));
+			if (bi == null)
+				throw new DatabaseException("The UUID of the node is not in the database");
+
+			return MarshallableUUID.from(bi).uuid;
+		}
+		catch (ExodusException | IOException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the hash of the first genesis block that has been added to this database, if any.
+	 * 
+	 * @return the hash of the genesis block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<byte[]> getGenesisHash() throws DatabaseException {
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the first genesis block that has been added to this database, if any.
+	 * 
+	 * @return the genesis block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
+		Optional<byte[]> maybeGenesisHash = getGenesisHash();
+
+		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+			maybeGenesisHash
+				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
+				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database"))))
+		);
+	}
+
+	/**
+	 * Yields the hash of the head block of the blockchain in the database, if it has been set already.
+	 * 
+	 * @return the hash of the head block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<byte[]> getHeadHash() throws DatabaseException {
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the head block of the blockchain in the database, if it has been set already.
+	 * 
+	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
+		Optional<byte[]> maybeHeadHash = getHeadHash();
+
+		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+			maybeHeadHash
+				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
+		);
+	}
+
+	/**
+	 * Yields the hashes of the blocks that follow the block with the given hash, if any.
+	 * 
+	 * @param hash the hash of the parent block
+	 * @return the hashes
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException {
+		return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
+	}
+
+	/**
+	 * Yields the set of peers saved in this database, if any.
+	 * 
+	 * @return the peers
+	 * @throws DatabaseException of the database is corrupted
+	 */
+	public Stream<Peer> getPeers() throws DatabaseException {
+		try {
+			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
+			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
+		}
+		catch (IOException | URISyntaxException | ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Adds the given peer to the set of peers in this database.
+	 * 
+	 * @param peer the peer to add
+	 * @param force true if the peer must be added, regardless of the total amount
+	 *              of peers already added; false otherwise, which means that no more
+	 *              than {@link #maxPeers} peers are allowed
+	 * @return true if the peer has been added; false otherwise, which means
+	 *         that the peer was already present or that it was not forced
+	 *         and there are already {@link maxPeers} peers
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public boolean add(Peer peer, boolean force) throws DatabaseException {
+		try {
+			return check(URISyntaxException.class, IOException.class,
+					() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
+		}
+		catch (IOException | URISyntaxException | ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Removes the given peer from those stored in this database.
+	 * 
+	 * @param peer the peer to remove
+	 * @return true if the peer has been actually removed; false otherwise, which means
+	 *         that the peer was not in the database
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public boolean remove(Peer peer) throws DatabaseException {
+		try {
+			return check(URISyntaxException.class, IOException.class,
+					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
+		}
+		catch (IOException | URISyntaxException | ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the block with the given hash, if it is contained in this database.
+	 * 
+	 * @param hash the hash
+	 * @return the block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
+			);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Adds the given block to the database of blocks.
+	 * If the block was already in the database, nothing happens.
+	 * 
+	 * @param block the block to add
+	 * @return true if the block has been actually added to the database, false otherwise.
+	 *         There are a few situations when the result can be false. For instance,
+	 *         if {@code block} was already in the database, or if {@code block} is
+	 *         a genesis block but the genesis block is already set in the database, or
+	 *         if {@code block} ...
+	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 */
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block))));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
+		}
+	}
+
 	/**
 	 * A marshallable UUID.
 	 */
@@ -138,7 +340,7 @@ public class Database implements AutoCloseable {
 		private MarshallableUUID(UUID uuid) {
 			this.uuid = uuid;
 		}
-
+	
 		@Override
 		public void into(MarshallingContext context) throws IOException {
 			context.writeLong(uuid.getMostSignificantBits());
@@ -182,91 +384,20 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the UUID of the node having this database.
+	 * Yields the hash of the head block of the blockchain in the database, if it has been set already,
+	 * running inside a transaction.
 	 * 
-	 * @return the UUID
+	 * @param txn the transaction
+	 * @return the hash of the head block, if any
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public UUID getUUID() throws DatabaseException {
+	private Optional<byte[]> getHeadHash(Transaction txn) throws DatabaseException {
 		try {
-			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, uuid));
-			if (bi == null)
-				throw new DatabaseException("The UUID of the node is not in the database");
-
-			return MarshallableUUID.from(bi).uuid;
-		}
-		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
-	/**
-	 * Yields the block with the given hash, if it is contained in this database.
-	 * 
-	 * @param hash the hash
-	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
-		try {
-			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-				Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, fromBytes(hash))))
-					.map(uncheck(Database::blockFrom))
-			);
+			return Optional.ofNullable(storeOfBlocks.get(txn, head)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-	}
-
-	/**
-	 * Unmarshals a block from the given bytes.
-	 * 
-	 * @param bi the bytes
-	 * @return the resulting block
-	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing algorithm
-	 * @throws DatabaseException if the block cannot be unmarshalled
-	 */
-	private static Block blockFrom(ByteIterable bi) throws NoSuchAlgorithmException, DatabaseException {
-		try {
-			return Blocks.from(bi.getBytes());
-		}
-		catch (IOException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
-	/**
-	 * Yields the hash of the first genesis block that has been added to this database, if any.
-	 * 
-	 * @return the hash of the genesis block, if any
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Optional<byte[]> getGenesisHash() throws DatabaseException {
-		try {
-			return environment.computeInReadonlyTransaction(txn -> Optional.ofNullable(storeOfBlocks.get(txn, genesis)).map(ByteIterable::getBytes));
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
-	/**
-	 * Yields the first genesis block that has been added to this database, if any.
-	 * 
-	 * @return the genesis block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
-		Optional<byte[]> maybeGenesisHash = getGenesisHash();
-
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeGenesisHash
-				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
-				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database"))))
-		);
 	}
 
 	private static Optional<GenesisBlock> castToGenesis(Block block) {
@@ -274,45 +405,20 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the hash of the head block of the blockchain in the database, if it has been set already.
+	 * Yields the hash of the first genesis block that has been added to this database, if any,
+	 * running inside a transaction.
 	 * 
-	 * @return the hash of the head block, if any
+	 * @param txn the transaction
+	 * @return the hash of the genesis block, if any
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<byte[]> getHeadHash() throws DatabaseException {
+	private Optional<byte[]> getGenesisHash(Transaction txn) throws DatabaseException {
 		try {
-			return Optional.ofNullable(environment.computeInReadonlyTransaction(txn -> storeOfBlocks.get(txn, head))).map(ByteIterable::getBytes);
+			return Optional.ofNullable(storeOfBlocks.get(txn, genesis)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-	}
-
-	/**
-	 * Yields the head block of the blockchain in the database, if it has been set already.
-	 * 
-	 * @return the head block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
-		Optional<byte[]> maybeHeadHash = getHeadHash();
-
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeHeadHash
-				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
-		);
-	}
-
-	/**
-	 * Yields the hashes of the blocks that follow the block with the given hash, if any.
-	 * 
-	 * @param hash the hash of the parent block
-	 * @return the hashes
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException {
-		return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
 	}
 
 	/**
@@ -379,6 +485,10 @@ public class Database implements AutoCloseable {
 			return peers.length;
 		}
 
+		private ByteIterable toByteIterable() {
+			return fromBytes(toByteArray());
+		}
+
 		@Override
 		public void into(MarshallingContext context) throws IOException {
 			context.writeCompactInt(peers.length);
@@ -406,49 +516,11 @@ public class Database implements AutoCloseable {
 		}
 	}
 
-	/**
-	 * Yields the set of peers saved in this database, if any.
-	 * 
-	 * @return the peers
-	 * @throws DatabaseException of the database is corrupted
-	 */
-	public Stream<Peer> getPeers() throws DatabaseException {
-		try {
-			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
-			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
-		}
-		catch (IOException | URISyntaxException | ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
-	/**
-	 * Adds the given peer to the set of peers in this database.
-	 * 
-	 * @param peer the peer to add
-	 * @param force true if the peer must be added, regardless of the total amount
-	 *              of peers already added; false otherwise, which means that no more
-	 *              than {@link #maxPeers} peers are allowed
-	 * @return true if the peer has been added; false otherwise, which means
-	 *         that the peer was already present or that it was not forced
-	 *         and there are already {@link maxPeers} peers
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public boolean add(Peer peer, boolean force) throws DatabaseException {
-		try {
-			return check(URISyntaxException.class, IOException.class,
-					() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
-		}
-		catch (IOException | URISyntaxException | ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
 	private boolean add(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException {
 		var bi = storeOfPeers.get(txn, peers);
 		if (bi == null) {
 			if (force || maxPeers >= 1) {
-				storeOfPeers.put(txn, peers, fromBytes(new ArrayOfPeers(Stream.of(peer)).toByteArray()));
+				storeOfPeers.put(txn, peers, new ArrayOfPeers(Stream.of(peer)).toByteIterable());
 				return true;
 			}
 			else
@@ -460,27 +532,9 @@ public class Database implements AutoCloseable {
 				return false;
 			else {
 				var concat = Stream.concat(aop.stream(), Stream.of(peer));
-				storeOfPeers.put(txn, peers, fromBytes(new ArrayOfPeers(concat).toByteArray()));
+				storeOfPeers.put(txn, peers, new ArrayOfPeers(concat).toByteIterable());
 				return true;
 			}
-		}
-	}
-
-	/**
-	 * Removes the given peer from those stored in this database.
-	 * 
-	 * @param peer the peer to remove
-	 * @return true if the peer has been actually removed; false otherwise, which means
-	 *         that the peer was not in the database
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public boolean remove(Peer peer) throws DatabaseException {
-		try {
-			return check(URISyntaxException.class, IOException.class,
-					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
-		}
-		catch (IOException | URISyntaxException | ExodusException e) {
-			throw new DatabaseException(e);
 		}
 	}
 
@@ -492,7 +546,7 @@ public class Database implements AutoCloseable {
 			var aop = ArrayOfPeers.from(bi);
 			if (aop.contains(peer)) {
 				Stream<Peer> result = aop.stream().filter(p -> !peer.equals(p));
-				storeOfPeers.put(txn, peers, fromBytes(new ArrayOfPeers(result).toByteArray()));
+				storeOfPeers.put(txn, peers, new ArrayOfPeers(result).toByteIterable());
 				return true;
 			}
 			else
@@ -501,51 +555,62 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
-	 * Adds the given block to the database of blocks.
-	 * If the block was already in the database, nothing happens.
+	 * Yields the block with the given hash, if it is contained in this database,
+	 * running inside the given transaction.
 	 * 
-	 * @param block the block to add
-	 * @return true if the block has been actually added to the database, false otherwise.
-	 *         There are a few situations when the result can be false. For instance,
-	 *         if {@code block} was already in the database, or if {@code block} is
-	 *         a genesis block but the genesis block is already set in the database, or
-	 *         if {@code block} ...
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @param txn the transaction
+	 * @param hash the hash
+	 * @return the block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
+	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
-			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block))));
+			return check(NoSuchAlgorithmException.class, IOException.class, () ->
+				Optional.ofNullable(storeOfBlocks.get(txn, fromBytes(hash)))
+					.map(ByteIterable::getBytes)
+					.map(uncheck(Blocks::from))
+			);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
+			throw new DatabaseException(e);
+		}
+		catch (IOException e) {
+			throw new DatabaseException(e);
 		}
 	}
 
-	private boolean add(Transaction txn, Block block) throws NoSuchAlgorithmException, DatabaseException {
+	private byte[] putInStore(Transaction txn, Block block) {
 		byte[] hashOfBlock = block.getHash(hashingForBlocks);
-		String hex = Hex.toHexString(hashOfBlock);
-		ByteIterable key = fromBytes(hashOfBlock);
+		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(block.toByteArray()));
+		return hashOfBlock;
+	}
 
-		if (storeOfBlocks.get(txn, key) != null)
+	private boolean isInStore(Transaction txn, Block block) {
+		return storeOfBlocks.get(txn, fromBytes(block.getHash(hashingForBlocks))) != null;
+	}
+
+	private boolean add(Transaction txn, Block block) throws NoSuchAlgorithmException, DatabaseException {
+		String hex = Hex.toHexString(block.getHash(hashingForBlocks));
+
+		if (isInStore(txn, block)) {
+			LOGGER.warning("discarding block " + hex + " since it is already in the database");
 			return false;
+		}
 		else if (block instanceof NonGenesisBlock ngb) {
-			storeOfBlocks.put(txn, key, fromBytes(block.toByteArray()));
-			var previous = fromBytes(ngb.getHashOfPreviousBlock());
-			var oldForwards = storeOfForwards.get(txn, previous);
-			var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
-			storeOfForwards.put(txn, previous, newForwards);
-			updateHead(txn, previous);
+			byte[] hashOfBlock = putInStore(txn, block);
+			addToForwards(txn, ngb, hashOfBlock);
+			Optional<Block> previousBlock = getBlock(txn, ngb.getHashOfPreviousBlock());
+			if (previousBlock.isPresent())
+				updateHead(txn, previousBlock.get(), ngb.getHashOfPreviousBlock());
+
 			LOGGER.info("height " + block.getHeight() + ": added block " + hex);
 			return true;
 		}
-		else if (storeOfBlocks.get(txn, genesis) == null) {
-			storeOfBlocks.put(txn, key, fromBytes(block.toByteArray()));
-			storeOfBlocks.put(txn, genesis, key);
-			LOGGER.info("set block " + hex + " as genesis");
-			storeOfBlocks.put(txn, head, key);
-			LOGGER.info("set block " + hex + " as head");
-			updateHead(txn, key);
+		else if (getGenesisHash(txn).isEmpty()) {
+			byte[] newGenesisHash = putInStore(txn, block);
+			setGenesisHash(txn, newGenesisHash);
+			updateHead(txn, block, newGenesisHash);
 			LOGGER.info("height " + block.getHeight() + ": added block " + hex);
 			return true;
 		}
@@ -555,40 +620,59 @@ public class Database implements AutoCloseable {
 		}
 	}
 
+	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) {
+		storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
+		LOGGER.info("set block " + Hex.toHexString(newGenesisHash) + " as genesis");
+	}
+
+	private void setHeadHash(Transaction txn, byte[] newHeadHash) {
+		storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
+		LOGGER.info("set block " + Hex.toHexString(newHeadHash) + " as head");
+	}
+
+	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) {
+		var hashOfPrevious = fromBytes(block.getHashOfPreviousBlock());
+		var oldForwards = storeOfForwards.get(txn, hashOfPrevious);
+		var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlockToAdd) : hashOfBlockToAdd);
+		storeOfForwards.put(txn, hashOfPrevious, newForwards);
+	}
+
 	/**
-	 * Checks if a block is part of the current chain; in that case, it updates the
+	 * Checks if the addition of a block must update the
 	 * head with the highest reachable block through the forwards map;
 	 * for the same height, the block with the smallest total cumulative time is preferred as the new head.
 	 * 
 	 * @param txn the transaction that can be used to access the database
-	 * @param hash the hash of the block
+	 * @param block the added block
+	 * @param hashOfBlock the hash of {@code block}
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if the database contains a block using an unknown hashing algorithm
 	 */
-	private void updateHead(Transaction txn, ByteIterable hash) throws DatabaseException, NoSuchAlgorithmException {
-		var currentHead = storeOfBlocks.get(txn, head);
-		if (currentHead == null)
-			return;
+	private void updateHead(Transaction txn, Block block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
+		boolean addingGenesisWithoutHead = false;
 
-		ByteIterable bi = storeOfBlocks.get(txn, hash);
-		if (bi == null)
-			return;
+		var hashOfHead = getHeadHash(txn);
+		if (hashOfHead.isEmpty())
+			if (block instanceof GenesisBlock)
+				addingGenesisWithoutHead = true;
+			else
+				return;
 
 		boolean reachedCurrentHead = false;
-		ByteIterable highest = hash;
-		Block highestBlock = blockFrom(bi);
+		ByteIterable hashOfBestBlock = fromBytes(hashOfBlock);
+		Block bestBlock = block;
 
 		var ws = new ArrayList<ByteIterable>();
-		ws.add(hash);
+		ws.add(hashOfBestBlock);
 		var seen = new HashSet<ByteIterable>();
 
 		do {
 			int size = ws.size();
-			ByteIterable cursor = ws.remove(size - 1);
-			reachedCurrentHead |= cursor.equals(currentHead);
+			ByteIterable hashOfCursorBlock = ws.remove(size - 1);
+			reachedCurrentHead |= (addingGenesisWithoutHead || hashOfCursorBlock.equals(fromBytes(hashOfHead.get())));
 
 			int seenSize = seen.size();
-			getForwards(txn, cursor)
+			getForwards(txn, hashOfCursorBlock)
 				.map(ByteIterable::fromBytes)
 				.filter(seen::add)
 				.forEach(ws::add);
@@ -599,38 +683,23 @@ public class Database implements AutoCloseable {
 
 			if (ws.size() == size - 1) {
 				// we have reached a block without forwards: we check if it is better than highest
-				ByteIterable cursorBlockBytes = storeOfBlocks.get(txn, cursor);
-				if (cursorBlockBytes == null)
-					throw new DatabaseException("block " + Hex.toHexString(cursor.getBytes()) + " is in the forward map codomain but not in the database");
+				Optional<Block> cursorBlock = getBlock(txn, hashOfCursorBlock.getBytes());
+				if (cursorBlock.isEmpty())
+					throw new DatabaseException("block " + Hex.toHexString(hashOfCursorBlock.getBytes()) + " is in the forward map codomain but not in the database");
 
-				Block cursorBlock = blockFrom(cursorBlockBytes);
-				long cbh = cursorBlock.getHeight(), hbh = highestBlock.getHeight();
+				long cbh = cursorBlock.get().getHeight(), bbh = bestBlock.getHeight();
 
 				// we prefer longest chains; if two chains have the same length, we prefer that with the smaller total time
-				if (cbh > hbh || (cbh == hbh && cursorBlock.getTotalWaitingTime() < highestBlock.getTotalWaitingTime())) {
-					highest = cursor;
-					highestBlock = cursorBlock;
+				if (cbh > bbh || (cbh == bbh && cursorBlock.get().getTotalWaitingTime() < bestBlock.getTotalWaitingTime())) {
+					hashOfBestBlock = hashOfCursorBlock;
+					bestBlock = cursorBlock.get();
 				}
 			}
 		}
 		while (!ws.isEmpty());
 
-		if (reachedCurrentHead && !highest.equals(currentHead)) {
-			storeOfBlocks.put(txn, head, highest);
-			LOGGER.info("set block " + Hex.toHexString(highest.getBytes()) + " as head");
-		}
-	}
-
-	@Override
-	public void close() throws DatabaseException {
-		try {
-			environment.close();
-			LOGGER.info("closed the blockchain database");
-		}
-		catch (ExodusException e) {
-			LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
-			throw new DatabaseException("cannot close the database", e);
-		}
+		if (reachedCurrentHead && (addingGenesisWithoutHead || !hashOfBestBlock.equals(fromBytes(hashOfHead.get()))))
+			setHeadHash(txn, hashOfBestBlock.getBytes());
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {
