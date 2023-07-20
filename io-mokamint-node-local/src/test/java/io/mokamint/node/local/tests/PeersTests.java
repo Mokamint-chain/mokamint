@@ -194,7 +194,7 @@ public class PeersTests {
 			}
 
 			@Override
-			protected void onSchedule(Task task) {
+			protected void onSubmit(Task task) {
 				if (!allowAddPeers.get() && task instanceof AddPeersTask)
 					fail();
 			}
@@ -248,7 +248,7 @@ public class PeersTests {
 			}
 
 			@Override
-			protected void onSchedule(Task task) {
+			protected void onSubmit(Task task) {
 				if (!allowAddPeers.get() && task instanceof AddPeersTask)
 					fail();
 			}

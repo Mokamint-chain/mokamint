@@ -19,25 +19,31 @@ package io.mokamint.node.local.internal.tasks;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
+import io.hotmoka.crypto.Hex;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
- * A task that mines a new block, follower of a previous block.
- * It requests a deadline to the miners of the node and waits for the best deadline to expire.
+ * A task that mines a new block, child of the head, if set, or otherwise
+ * the genesis block of the chain. It requests a deadline to the miners of the node
+ * and waits for the best deadline to expire.
  * Once expired, it builds the block and signals a new block discovery to the node.
  */
 public class MineNewBlockTask extends Task {
@@ -46,68 +52,50 @@ public class MineNewBlockTask extends Task {
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
 	/**
-	 * The target block creation time that will be aimed, in milliseconds.
-	 */
-	private final BigInteger targetBlockCreationTime;
-
-	/**
-	 * The block for which a subsequent block is being mined.
-	 */
-	private final Block previous;
-
-	/**
-	 * The height of the new block that is being mined.
-	 */
-	private final long heightOfNewBlock;
-
-	/**
-	 * The start of the log messages for this block creation.
-	 */
-	protected final String logIntro;
-
-	/**
-	 * The moment when the previous block has been mined. From that moment we
-	 * count the time to wait for the deadline.
-	 */
-	private final LocalDateTime startTime;
-
-	/**
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node for which this task is working
-	 * @param previous the node for which a subsequent node is being built
-	 * @param startTime the time when the mining is considered to be started
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Block previous, LocalDateTime startTime) {
+	public MineNewBlockTask(LocalNodeImpl node) {
 		node.super();
-
-		this.previous = previous;
-		this.heightOfNewBlock = previous.getHeight() + 1;
-		this.logIntro = "height " + heightOfNewBlock + ": ";
-		this.startTime = startTime;
-		this.targetBlockCreationTime = BigInteger.valueOf(node.getConfig().getTargetBlockCreationTime());
 	}
 
 	@Override
 	public String toString() {
-		return "mine block at height " + heightOfNewBlock;
+		return "mine next block";
 	}
 
 	@Override @OnThread("tasks")
 	protected void body() {
 		try {
-			if (node.getMiners().count() == 0L)
-				node.emit(node.new NoMinersAvailableEvent());
-			else
-				new Run();
+			Optional<Block> head = node.getHead();
+			if (head.isPresent()) {
+				if (node.getMiners().count() == 0L)
+					node.submit(node.new NoMinersAvailableEvent());
+				else
+					new Run(head.get());
+			}
+			else {
+				var genesis = Blocks.genesis(node.getStartDateTime());
+				LOGGER.info("height 0: finished mining the genesis block " +
+						Hex.toHexString(genesis.getHash(node.getConfig().getHashingForBlocks())) +
+						": informing the node");
+				node.submit(node.new BlockDiscoveryEvent(genesis));
+			}
 		}
 		catch (InterruptedException e) {
 			LOGGER.log(Level.WARNING, this + " interrupted");
 			Thread.currentThread().interrupt();
 		}
 		catch (TimeoutException e) {
-			LOGGER.warning(logIntro + "timed out while waiting for a deadline: I will retry later");
-			node.emit(node.new NoDeadlineFoundEvent());
+			LOGGER.warning(this + ": timed out while waiting for a deadline");
+			node.submit(node.new NoDeadlineFoundEvent());
+		}
+		catch (NoSuchAlgorithmException e) {
+			LOGGER.log(Level.SEVERE, this + ": the database contains a node that refers to an unknown hashing algorithm", e);
+		}
+		catch (DatabaseException e) {
+			LOGGER.log(Level.SEVERE, this + ": the database seems corrupted", e);
 		}
 	}
 
@@ -115,6 +103,38 @@ public class MineNewBlockTask extends Task {
 	 * Run environment.
 	 */
 	private class Run {
+
+		/**
+		 * The target block creation time that will be aimed, in milliseconds.
+		 */
+		private final BigInteger targetBlockCreationTime;
+
+		/**
+		 * The block for which a subsequent block is being mined.
+		 */
+		private final Block previous;
+
+		/**
+		 * The height of the new block that is being mined.
+		 */
+		private final long heightOfNewBlock;
+
+		/**
+		 * The start of the log messages for this block creation.
+		 */
+		private final String logIntro;
+
+		/**
+		 * The hexadecimal representation of the hash of the parent block of the
+		 * block being mined by this task.
+		 */
+		private final String previousHex;
+
+		/**
+		 * The moment when the previous block has been mined. From that moment we
+		 * count the time to wait for the deadline.
+		 */
+		private final LocalDateTime startTime;
 
 		/**
 		 * The description of the deadline required for the next block.
@@ -143,10 +163,16 @@ public class MineNewBlockTask extends Task {
 		 */
 		private final boolean done;
 
-		private Run() throws InterruptedException, TimeoutException {
-			LOGGER.info(logIntro + "started mining new block");
+		private Run(Block previous) throws InterruptedException, TimeoutException, DatabaseException, NoSuchAlgorithmException {
+			this.previous = previous;
+			this.heightOfNewBlock = previous.getHeight() + 1;
+			this.logIntro = "height " + heightOfNewBlock + ": ";
+			this.previousHex = Hex.toHexString(previous.getHash(node.getConfig().getHashingForBlocks()));
+			this.startTime = node.getStartDateTime().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			this.targetBlockCreationTime = BigInteger.valueOf(node.getConfig().getTargetBlockCreationTime());
 			var hashingForGenerations = node.getConfig().getHashingForGenerations();
 			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().getHashingForDeadlines());
+			LOGGER.info(logIntro + "started mining new block on top of " + previousHex);
 
 			try {
 				requestDeadlineToEveryMiner();
@@ -186,8 +212,8 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private void informNodeAboutNewBlock() {
-			LOGGER.info(logIntro + "ended mining new block: informing the node");
-			node.emit(node.new BlockDiscoveryEvent(block));
+			LOGGER.info(logIntro + "finished mining new block on top of " + previousHex + ": informing the node");
+			node.submit(node.new BlockDiscoveryEvent(block));
 		}
 
 		/**
@@ -215,7 +241,7 @@ public class MineNewBlockTask extends Task {
 				}
 				else {
 					LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's illegal");
-					node.emit(node.new IllegalDeadlineEvent(miner));
+					node.submit(node.new IllegalDeadlineEvent(miner));
 				}
 			}
 			else

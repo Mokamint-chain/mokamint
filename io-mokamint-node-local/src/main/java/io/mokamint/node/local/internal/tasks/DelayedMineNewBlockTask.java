@@ -16,12 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.tasks;
 
-import java.time.LocalDateTime;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DelayedMineNewBlockTask extends MineNewBlockTask {
@@ -29,10 +27,10 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node, Block previous, LocalDateTime startTime, long delay) {
-		super(node, previous, startTime);
+	public DelayedMineNewBlockTask(LocalNodeImpl node) {
+		super(node);
 
-		this.delay = delay;
+		this.delay = node.getConfig().deadlineWaitTimeout;
 	}
 
 	@Override
@@ -43,7 +41,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	@Override @OnThread("tasks")
 	protected void body() {
 		try {
-			LOGGER.info(logIntro + "I will retry mining in " + delay / 1000L + " seconds");
+			LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
 			Thread.sleep(delay);
 		}
 		catch (InterruptedException e) {

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -39,9 +38,9 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ListenerManager;
 import io.mokamint.node.ListenerManagers;
@@ -134,6 +133,19 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final AtomicBoolean isClosed = new AtomicBoolean();
 
+	/**
+	 * A buffer where blocks without a known previous are parked, in case
+	 * their previous block arrives later.
+	 */
+	@GuardedBy("itself")
+	private final NonGenesisBlock[] orphans = new NonGenesisBlock[20];
+
+	/**
+	 * The next insertion position inside the {@link #orphans} array.
+	 */
+	@GuardedBy("orphans")
+	private int orphansPos;
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -155,7 +167,8 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this, db, peers -> executeAddPeersTask(peers, false));
 		addSeedsAsPeers();
-		this.startDateTime = startMining();
+		this.startDateTime = db.getGenesis().map(GenesisBlock::getStartDateTimeUTC).orElse(LocalDateTime.now(ZoneId.of("UTC")));
+		startNextBlockMining();
 	}
 
 	@Override
@@ -198,7 +211,7 @@ public class LocalNodeImpl implements LocalNode {
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
 		ensureIsOpen();
 		if (peers.add(peer, true))
-			emit(new PeersAddedEvent(Stream.of(peer)));
+			submit(new PeersAddedEvent(Stream.of(peer)));
 	}
 
 	@Override
@@ -262,6 +275,8 @@ public class LocalNodeImpl implements LocalNode {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
+	 * @param headChanged set to true if the head has been changed because of the addition
+	 *                    of {@code block}; otherwise it is left unchanged
 	 * @return true if the block has been actually added to the tree of blocks
 	 *         rooted at the genesis block, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
@@ -273,7 +288,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
+	public boolean add(Block block, AtomicBoolean headChanged) throws DatabaseException, NoSuchAlgorithmException {
 		boolean added = false, first = true;
 
 		// we use a working set, since the addition of a single block might
@@ -290,14 +305,14 @@ public class LocalNodeImpl implements LocalNode {
 					if (previous.isEmpty())
 						putAmongOrphans(ngb);
 					else {
-						if (verify(ngb, previous.get()) && db.add(cursor)) {
+						if (verify(ngb, previous.get()) && db.add(cursor, headChanged)) {
 							getOrphansWithParent(cursor).forEach(ws::add);
 							if (first)
 								added = true;
 						}
 					}
 				}
-				else if (verify((GenesisBlock) block) && db.add(cursor)) {
+				else if (verify((GenesisBlock) block) && db.add(cursor, headChanged)) {
 					getOrphansWithParent(cursor).forEach(ws::add);
 					if (first)
 						added = true;
@@ -311,6 +326,26 @@ public class LocalNodeImpl implements LocalNode {
 		return added;
 	}
 
+	/**
+	 * Adds the given block to the database of blocks of this node.
+	 * If the block was already in the database, nothing happens.
+	 * 
+	 * @param block the block to add
+	 * @return true if the block has been actually added to the tree of blocks
+	 *         rooted at the genesis block, false otherwise.
+	 *         There are a few situations when the result can be false. For instance,
+	 *         if {@code block} was already in the tree, or if {@code block} is
+	 *         a genesis block but a genesis block is already present in the tree, or
+	 *         if {@code block} has no previous block already in the tree (it is orphaned),
+	 *         or if the block has a previous block in the tree but it cannot be
+	 *         correctly verified as a legal child of that previous block
+	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 */
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
+		return add(block, new AtomicBoolean()); // the AtomicBoolean is not used
+	}
+
 	private boolean verify(GenesisBlock block) {
 		return true;
 	}
@@ -318,19 +353,6 @@ public class LocalNodeImpl implements LocalNode {
 	private boolean verify(NonGenesisBlock block, Block previous) {
 		return true;
 	}
-
-	/**
-	 * A buffer where blocks without a known previous are parked, in case
-	 * their previous block arrives later.
-	 */
-	@GuardedBy("itself")
-	private final NonGenesisBlock[] orphans = new NonGenesisBlock[20];
-
-	/**
-	 * The next insertion position inside the {@link #orphans} array.
-	 */
-	@GuardedBy("orphans")
-	private int orphansPos;
 
 	/**
 	 * Adds the given block to {@link #orphans}.
@@ -365,6 +387,24 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * The time of creation of the genesis block.
+	 */
+	public LocalDateTime getStartDateTime() {
+		return startDateTime;
+	}
+
+	/**
+	 * Yields the head block of the tree of blocks in the database, if it has been set already.
+	 * 
+	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
+		return db.getHead();
+	}
+
+	/**
 	 * Yields the application this node is running.
 	 * 
 	 * @return the application
@@ -392,7 +432,7 @@ public class LocalNodeImpl implements LocalNode {
 	private void executeAddPeersTask(Stream<Peer> peers, boolean force) {
 		var peersAsArray = peers.distinct().toArray(Peer[]::new);
 		if (peersAsArray.length > 0)
-			execute(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
+			submit(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
 	}
 
 	/**
@@ -404,25 +444,9 @@ public class LocalNodeImpl implements LocalNode {
 
 	/**
 	 * Starts the mining.
-	 * 
-	 * @return the start time of the blockchain
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private LocalDateTime startMining() throws NoSuchAlgorithmException, DatabaseException {
-		var maybeHead = db.getHead();
-		if (maybeHead.isPresent()) {
-			var head = maybeHead.get();
-			LocalDateTime startDateTime = db.getGenesis().get().getStartDateTimeUTC();
-			LocalDateTime nextBlockStartTime = startDateTime.plus(head.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			execute(new MineNewBlockTask(this, head, nextBlockStartTime));
-			return startDateTime;
-		}
-		else {
-			LocalDateTime startDateTime = LocalDateTime.now(ZoneId.of("UTC"));
-			emit(new BlockDiscoveryEvent(Blocks.genesis(startDateTime)));
-			return startDateTime;
-		}
+	private void startNextBlockMining() {
+		submit(new MineNewBlockTask(this));
 	}
 
 	/**
@@ -468,12 +492,12 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Callback called when an event is emitted.
+	 * Callback called when an event is submitted.
 	 * It can be useful for testing or monitoring events.
 	 * 
 	 * @param event the event
 	 */
-	protected void onEmit(Event event) {}
+	protected void onSubmit(Event event) {}
 
 	/**
 	 * Callback called when an event begins being executed.
@@ -510,10 +534,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param event the emitted event
 	 */
-	public final void emit(Event event) {
+	public final void submit(Event event) {
 		try {
 			LOGGER.info("received " + event);
-			onEmit(event);
+			onSubmit(event);
 
 			if (isDisabled(event))
 				LOGGER.info("discarding disabled " + event);
@@ -561,12 +585,12 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Callback called when a task is scheduled.
+	 * Callback called when a task is submitted.
 	 * It can be useful for testing or monitoring tasks.
 	 * 
 	 * @param task the task
 	 */
-	protected void onSchedule(Task task) {}
+	protected void onSubmit(Task task) {}
 
 	/**
 	 * Determines if the given task is disabled, that is, if scheduled
@@ -612,10 +636,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param task the task to run
 	 */
-	private void execute(Task task) {
+	private void submit(Task task) {
 		try {
 			LOGGER.info("scheduling " + task);
-			onSchedule(task);
+			onSubmit(task);
 
 			if (isDisabled(task))
 				LOGGER.info("discarding disabled " + task);
@@ -641,15 +665,15 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override
 		public String toString() {
-			return "block discovery event for block at height " + block.getHeight();
+			return "discovery event for block " + Hex.toHexString(block.getHash(config.getHashingForBlocks())) + " at height " + block.getHeight();
 		}
 
 		@Override @OnThread("events")
 		protected void body() throws DatabaseException, NoSuchAlgorithmException {
-			add(block);
-
-			LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			db.getHead().ifPresent(head -> execute(new MineNewBlockTask(LocalNodeImpl.this, head, nextBlockStartTime)));
+			var headChanged = new AtomicBoolean(false);
+			add(block, headChanged);
+			if (headChanged.get())
+				startNextBlockMining();
 		}
 	}
 
@@ -679,7 +703,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
-			execute(new SuggestPeersTask(getPeers(), onPeersAddedListeners::getListeners, LocalNodeImpl.this));
+			submit(new SuggestPeersTask(getPeers(), onPeersAddedListeners::getListeners, LocalNodeImpl.this));
 		}
 	}
 
@@ -772,11 +796,7 @@ public class LocalNodeImpl implements LocalNode {
 			// all miners timed-out
 			getMiners().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 
-			var maybeHead = db.getHead(); // TODO: should use the head when it wakes up
-			if (maybeHead.isPresent()) {
-				LocalDateTime nextBlockStartTime = startDateTime.plus(maybeHead.get().getTotalWaitingTime(), ChronoUnit.MILLIS);
-				execute(new DelayedMineNewBlockTask(LocalNodeImpl.this, maybeHead.get(), nextBlockStartTime, config.deadlineWaitTimeout));
-			}
+			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this));
 		}
 	}
 

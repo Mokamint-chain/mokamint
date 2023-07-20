@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -343,6 +344,30 @@ public class Database implements AutoCloseable {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
+	 * @param headChanged set to true if the addition modified the head reference;
+	 *                    otherwise, it is left unchanged
+	 * @return true if the block has been actually added to the database, false otherwise.
+	 *         There are a few situations when the result can be false. For instance,
+	 *         if {@code block} was already in the database, or if {@code block} is
+	 *         a genesis block but the genesis block is already set in the database, or
+	 *         if {@code block} ...
+	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 */
+	public boolean add(Block block, AtomicBoolean headChanged) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, headChanged))));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
+		}
+	}
+
+	/**
+	 * Adds the given block to the database of blocks.
+	 * If the block was already in the database, nothing happens.
+	 * 
+	 * @param block the block to add
 	 * @return true if the block has been actually added to the database, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
 	 *         if {@code block} was already in the database, or if {@code block} is
@@ -352,12 +377,7 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		try {
-			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block))));
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
-		}
+		return add(block, new AtomicBoolean()); // the AtomicBoolean is not used
 	}
 
 	/**
@@ -611,14 +631,14 @@ public class Database implements AutoCloseable {
 
 	private void putInStore(Transaction txn, Block block, byte[] hashOfBlock, byte[] bytesOfBlock) {
 		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-		LOGGER.info("height " + block.getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
+		LOGGER.info("height " + block.getHeight() + ": block " + Hex.toHexString(hashOfBlock) + " added to the database");
 	}
 
 	private boolean isInStore(Transaction txn, byte[] hashOfBlock) {
 		return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
 	}
 
-	private void updateHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
+	private boolean updateHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
 		Optional<Block> maybeHead = getHead(txn);
 		if (maybeHead.isEmpty())
 			throw new DatabaseException("the database of blocks is non-empty but the head is not set");
@@ -626,8 +646,12 @@ public class Database implements AutoCloseable {
 		Block head = maybeHead.get();
 		long hh = head.getHeight(), bh = block.getHeight();
 
-		if (hh < bh || (hh == bh && head.getTotalWaitingTime() > block.getTotalWaitingTime()))
-			setHeadHash(txn, hashOfBlock);
+		if (hh < bh || (hh == bh && head.getTotalWaitingTime() > block.getTotalWaitingTime())) {
+			setHeadHash(txn, block, hashOfBlock);
+			return true;
+		}
+		else
+			return false;
 	}
 
 	/**
@@ -637,6 +661,8 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param txn the transaction
 	 * @param block the block to add
+	 * @param headChanged set to true if the addition modified the head reference;
+	 *                    otherwise, it is left unchanged
 	 * @return true if and only if the block has been added. False means that
 	 *         the block was already in the tree; or that {@code block} is a genesis
 	 *         block and there is already a genesis block in the tree; or that {@code block}
@@ -644,7 +670,7 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private boolean add(Transaction txn, Block block) throws NoSuchAlgorithmException, DatabaseException {
+	private boolean add(Transaction txn, Block block, AtomicBoolean headChanged) throws NoSuchAlgorithmException, DatabaseException {
 		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
 		if (isInStore(txn, hashOfBlock)) {
@@ -655,7 +681,9 @@ public class Database implements AutoCloseable {
 			if (getBlock(ngb.getHashOfPreviousBlock()).isPresent()) {
 				putInStore(txn, block, hashOfBlock, bytesOfBlock);
 				addToForwards(txn, ngb, hashOfBlock);
-				updateHead(txn, ngb, hashOfBlock);
+				if (updateHead(txn, ngb, hashOfBlock))
+					headChanged.set(true);
+
 				return true;
 			}
 			else {
@@ -666,8 +694,9 @@ public class Database implements AutoCloseable {
 		else {
 			if (getGenesisHash(txn).isEmpty()) {
 				putInStore(txn, block, hashOfBlock, bytesOfBlock);
-				setGenesisHash(txn, hashOfBlock);
-				setHeadHash(txn, hashOfBlock);
+				setGenesisHash(txn, (GenesisBlock) block, hashOfBlock);
+				setHeadHash(txn, block, hashOfBlock);
+				headChanged.set(true);
 				return true;
 			}
 			else {
@@ -677,14 +706,14 @@ public class Database implements AutoCloseable {
 		}
 	}
 
-	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) {
+	private void setGenesisHash(Transaction txn, GenesisBlock newGenesis, byte[] newGenesisHash) {
 		storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
-		LOGGER.info("set block " + Hex.toHexString(newGenesisHash) + " as genesis");
+		LOGGER.info("height " + newGenesis.getHeight() + ": block " + Hex.toHexString(newGenesisHash) + " set as genesis");
 	}
 
-	private void setHeadHash(Transaction txn, byte[] newHeadHash) {
+	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) {
 		storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
-		LOGGER.info("set block " + Hex.toHexString(newHeadHash) + " as head");
+		LOGGER.info("height " + newHead.getHeight() + ": block " + Hex.toHexString(newHeadHash) + " set as head");
 	}
 
 	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) {

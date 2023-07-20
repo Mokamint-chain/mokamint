@@ -407,7 +407,7 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) {
 		closeRemote(remote, peer);
-		node.emit(node.new PeerDisconnectedEvent(peer));
+		node.submit(node.new PeerDisconnectedEvent(peer));
 	}
 
 	private void closeRemote(RemotePublicNode remote, Peer peer) {

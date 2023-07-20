@@ -90,7 +90,7 @@ public class AddPeersTask extends Task {
 		// TODO: could addPeer be spawned in parallel?
 		var added = Stream.of(peers).filter(this::addPeer).toArray(Peer[]::new);
 		if (added.length > 0) // just to avoid useless events
-			node.emit(node.new PeersAddedEvent(Stream.of(added)));
+			node.submit(node.new PeersAddedEvent(Stream.of(added)));
 	}
 
 	private boolean addPeer(Peer peer) {
