@@ -25,8 +25,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -217,9 +215,28 @@ public class Database implements AutoCloseable {
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
 		Optional<byte[]> maybeHeadHash = getHeadHash();
 
+		// TODO: reuse the following code
 		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 			maybeHeadHash
 				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
+		);
+	}
+
+	/**
+	 * Yields the head block of the blockchain in the database, if it has been set already,
+	 * running inside the given transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<Block> getHead(Transaction txn) throws NoSuchAlgorithmException, DatabaseException {
+		Optional<byte[]> maybeHeadHash = getHeadHash(txn);
+
+		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+			maybeHeadHash
+				.map(uncheck(hash -> getBlock(txn, hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
 		);
 	}
 
@@ -307,6 +324,18 @@ public class Database implements AutoCloseable {
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
+	}
+
+	/**
+	 * Checks if the given block is in the database.
+	 * 
+	 * @param block the block
+	 * @return true if and only if {@code block} is in the database
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public boolean contains(Block block) throws NoSuchAlgorithmException, DatabaseException {
+		return getBlock(block.getHash(hashingForBlocks)).isPresent();
 	}
 
 	/**
@@ -580,43 +609,71 @@ public class Database implements AutoCloseable {
 		}
 	}
 
-	private byte[] putInStore(Transaction txn, Block block) {
-		byte[] hashOfBlock = block.getHash(hashingForBlocks);
-		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(block.toByteArray()));
-		return hashOfBlock;
+	private void putInStore(Transaction txn, Block block, byte[] hashOfBlock, byte[] bytesOfBlock) {
+		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
+		LOGGER.info("height " + block.getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
 	}
 
-	private boolean isInStore(Transaction txn, Block block) {
-		return storeOfBlocks.get(txn, fromBytes(block.getHash(hashingForBlocks))) != null;
+	private boolean isInStore(Transaction txn, byte[] hashOfBlock) {
+		return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
 	}
 
+	private void updateHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
+		Optional<Block> maybeHead = getHead(txn);
+		if (maybeHead.isEmpty())
+			throw new DatabaseException("the database of blocks is non-empty but the head is not set");
+
+		Block head = maybeHead.get();
+		long hh = head.getHeight(), bh = block.getHeight();
+
+		if (hh < bh || (hh == bh && head.getTotalWaitingTime() > block.getTotalWaitingTime()))
+			setHeadHash(txn, hashOfBlock);
+	}
+
+	/**
+	 * Adds a block to the tree of blocks rooted at the genesis block (if any), running
+	 * inside a given transaction. It updates the references to the genesis and to the
+	 * head of the longest chain, if needed.
+	 * 
+	 * @param txn the transaction
+	 * @param block the block to add
+	 * @return true if and only if the block has been added. False means that
+	 *         the block was already in the tree; or that {@code block} is a genesis
+	 *         block and there is already a genesis block in the tree; or that {@code block}
+	 *         is a non-genesis block whose previous is not in the tree
+	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	private boolean add(Transaction txn, Block block) throws NoSuchAlgorithmException, DatabaseException {
-		String hex = Hex.toHexString(block.getHash(hashingForBlocks));
+		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
-		if (isInStore(txn, block)) {
-			LOGGER.warning("discarding block " + hex + " since it is already in the database");
+		if (isInStore(txn, hashOfBlock)) {
+			LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
-			byte[] hashOfBlock = putInStore(txn, block);
-			addToForwards(txn, ngb, hashOfBlock);
-			Optional<Block> previousBlock = getBlock(txn, ngb.getHashOfPreviousBlock());
-			if (previousBlock.isPresent())
-				updateHead(txn, previousBlock.get(), ngb.getHashOfPreviousBlock());
-
-			LOGGER.info("height " + block.getHeight() + ": added block " + hex);
-			return true;
-		}
-		else if (getGenesisHash(txn).isEmpty()) {
-			byte[] newGenesisHash = putInStore(txn, block);
-			setGenesisHash(txn, newGenesisHash);
-			updateHead(txn, block, newGenesisHash);
-			LOGGER.info("height " + block.getHeight() + ": added block " + hex);
-			return true;
+			if (getBlock(ngb.getHashOfPreviousBlock()).isPresent()) {
+				putInStore(txn, block, hashOfBlock, bytesOfBlock);
+				addToForwards(txn, ngb, hashOfBlock);
+				updateHead(txn, ngb, hashOfBlock);
+				return true;
+			}
+			else {
+				LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
+				return false;
+			}
 		}
 		else {
-			LOGGER.warning("discarding genesis block " + hex + " since the database already contains a genesis block");
-			return false;
+			if (getGenesisHash(txn).isEmpty()) {
+				putInStore(txn, block, hashOfBlock, bytesOfBlock);
+				setGenesisHash(txn, hashOfBlock);
+				setHeadHash(txn, hashOfBlock);
+				return true;
+			}
+			else {
+				LOGGER.warning("not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
+				return false;
+			}
 		}
 	}
 
@@ -635,71 +692,6 @@ public class Database implements AutoCloseable {
 		var oldForwards = storeOfForwards.get(txn, hashOfPrevious);
 		var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlockToAdd) : hashOfBlockToAdd);
 		storeOfForwards.put(txn, hashOfPrevious, newForwards);
-	}
-
-	/**
-	 * Checks if the addition of a block must update the
-	 * head with the highest reachable block through the forwards map;
-	 * for the same height, the block with the smallest total cumulative time is preferred as the new head.
-	 * 
-	 * @param txn the transaction that can be used to access the database
-	 * @param block the added block
-	 * @param hashOfBlock the hash of {@code block}
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the database contains a block using an unknown hashing algorithm
-	 */
-	private void updateHead(Transaction txn, Block block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
-		boolean addingGenesisWithoutHead = false;
-
-		var hashOfHead = getHeadHash(txn);
-		if (hashOfHead.isEmpty())
-			if (block instanceof GenesisBlock)
-				addingGenesisWithoutHead = true;
-			else
-				return;
-
-		boolean reachedCurrentHead = false;
-		ByteIterable hashOfBestBlock = fromBytes(hashOfBlock);
-		Block bestBlock = block;
-
-		var ws = new ArrayList<ByteIterable>();
-		ws.add(hashOfBestBlock);
-		var seen = new HashSet<ByteIterable>();
-
-		do {
-			int size = ws.size();
-			ByteIterable hashOfCursorBlock = ws.remove(size - 1);
-			reachedCurrentHead |= (addingGenesisWithoutHead || hashOfCursorBlock.equals(fromBytes(hashOfHead.get())));
-
-			int seenSize = seen.size();
-			getForwards(txn, hashOfCursorBlock)
-				.map(ByteIterable::fromBytes)
-				.filter(seen::add)
-				.forEach(ws::add);
-
-			// if we have seen something already, the database of blocks is not a tree rooted at the genesis
-			if (seen.size() - seenSize < ws.size() - size + 1)
-				throw new DatabaseException("the database of blocks does not form a tree");
-
-			if (ws.size() == size - 1) {
-				// we have reached a block without forwards: we check if it is better than highest
-				Optional<Block> cursorBlock = getBlock(txn, hashOfCursorBlock.getBytes());
-				if (cursorBlock.isEmpty())
-					throw new DatabaseException("block " + Hex.toHexString(hashOfCursorBlock.getBytes()) + " is in the forward map codomain but not in the database");
-
-				long cbh = cursorBlock.get().getHeight(), bbh = bestBlock.getHeight();
-
-				// we prefer longest chains; if two chains have the same length, we prefer that with the smaller total time
-				if (cbh > bbh || (cbh == bbh && cursorBlock.get().getTotalWaitingTime() < bestBlock.getTotalWaitingTime())) {
-					hashOfBestBlock = hashOfCursorBlock;
-					bestBlock = cursorBlock.get();
-				}
-			}
-		}
-		while (!ws.isEmpty());
-
-		if (reachedCurrentHead && (addingGenesisWithoutHead || !hashOfBestBlock.equals(fromBytes(hashOfHead.get()))))
-			setHeadHash(txn, hashOfBestBlock.getBytes());
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {

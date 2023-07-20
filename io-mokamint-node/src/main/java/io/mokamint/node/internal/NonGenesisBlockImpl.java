@@ -144,13 +144,13 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof NonGenesisBlock otherAsNGB &&
-			height == otherAsNGB.getHeight() &&
-			totalWaitingTime == otherAsNGB.getTotalWaitingTime() &&
-			weightedWaitingTime == otherAsNGB.getWeightedWaitingTime() &&
-			acceleration.equals(otherAsNGB.getAcceleration()) &&
-			deadline.equals(otherAsNGB.getDeadline()) &&
-			Arrays.equals(hashOfPreviousBlock, otherAsNGB.getHashOfPreviousBlock());
+		return other instanceof NonGenesisBlock ngb &&
+			height == ngb.getHeight() &&
+			totalWaitingTime == ngb.getTotalWaitingTime() &&
+			weightedWaitingTime == ngb.getWeightedWaitingTime() &&
+			acceleration.equals(ngb.getAcceleration()) &&
+			deadline.equals(ngb.getDeadline()) &&
+			Arrays.equals(hashOfPreviousBlock, ngb.getHashOfPreviousBlock());
 	}
 
 	@Override

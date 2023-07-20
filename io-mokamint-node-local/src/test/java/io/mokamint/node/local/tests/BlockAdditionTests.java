@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -79,7 +80,7 @@ public class BlockAdditionTests {
 
 		try (var node = new MyLocalNode(config)) {
 			assertTrue(node.add(genesis));
-			assertTrue(node.add(block));
+			assertFalse(node.add(block));
 			ChainInfo info = node.getChainInfo();
 			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
 			assertEquals(genesis, node.getBlock(info.getHeadHash().get()).get());
@@ -157,7 +158,7 @@ public class BlockAdditionTests {
 			assertEquals(block0, node.getBlock(info.getHeadHash().get()).get());
 
 			// we add an orphan (no previous in database)
-			assertTrue(node.add(block3));
+			assertFalse(node.add(block3));
 
 			// nothing changes
 			info = node.getChainInfo();
@@ -165,7 +166,7 @@ public class BlockAdditionTests {
 			assertEquals(block0, node.getBlock(info.getHeadHash().get()).get());
 
 			// we add an orphan (no previous in database)
-			assertTrue(node.add(block2));
+			assertFalse(node.add(block2));
 
 			// nothing changes
 			info = node.getChainInfo();
@@ -238,21 +239,21 @@ public class BlockAdditionTests {
 		var block3 = Blocks.of(3, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
 		try (var node = new MyLocalNode(config)) {
-			assertTrue(node.add(block3));
+			assertFalse(node.add(block3));
 
 			// no genesis and no head are set up to now
 			ChainInfo info = node.getChainInfo();
 			assertTrue(info.getGenesisHash().isEmpty());
 			assertTrue(info.getHeadHash().isEmpty());
 
-			assertTrue(node.add(block2));
+			assertFalse(node.add(block2));
 
 			// no genesis and no head are set up to now
 			info = node.getChainInfo();
 			assertTrue(info.getGenesisHash().isEmpty());
 			assertTrue(info.getHeadHash().isEmpty());
 
-			assertTrue(node.add(block1));
+			assertFalse(node.add(block1));
 
 			// no genesis and no head are set up to now
 			info = node.getChainInfo();
