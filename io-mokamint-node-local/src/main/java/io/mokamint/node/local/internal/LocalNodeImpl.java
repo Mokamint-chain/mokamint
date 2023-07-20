@@ -253,6 +253,23 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * Adds the given block to the database of blocks of this node.
+	 * If the block was already in the database, nothing happens.
+	 * 
+	 * @param block the block to add
+	 * @return true if the block has been actually added to the database, false otherwise.
+	 *         There are a few situations when the result can be false. For instance,
+	 *         if {@code block} was already in the database, or if {@code block} is
+	 *         a genesis block but the genesis block is already set in the database, or
+	 *         if {@code block} has no previous block already in the database
+	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 */
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
+		return db.add(block);
+	}
+
+	/**
 	 * Yields the application this node is running.
 	 * 
 	 * @return the application
@@ -344,6 +361,18 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * Determines if the given event is disabled, that is, if emitted
+	 * it won't be executed. By default, this method yields false,
+	 * but subclasses might redefine (typically, for testing).
+	 * 
+	 * @param event the event
+	 * @return true if and only if the event is disabled
+	 */
+	protected boolean isDisabled(Event event) {
+		return false;
+	}
+
+	/**
 	 * Callback called when an event is emitted.
 	 * It can be useful for testing or monitoring events.
 	 * 
@@ -390,7 +419,11 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			LOGGER.info("received " + event);
 			onEmit(event);
-			events.execute(event);
+
+			if (isDisabled(event))
+				LOGGER.info("discarding disabled " + event);
+			else
+				events.execute(event);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(event + " rejected, probably because the node is shutting down");
@@ -441,6 +474,18 @@ public class LocalNodeImpl implements LocalNode {
 	protected void onSchedule(Task task) {}
 
 	/**
+	 * Determines if the given task is disabled, that is, if scheduled
+	 * it won't be executed. By default, this method yields false,
+	 * but subclasses might redefine (typically, for testing).
+	 * 
+	 * @param task the task
+	 * @return true if and only if the task is disabled
+	 */
+	protected boolean isDisabled(Task task) {
+		return false;
+	}
+
+	/**
 	 * Callback called when a task begins being executed.
 	 * It can be useful for testing or monitoring events.
 	 * 
@@ -476,7 +521,11 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			LOGGER.info("scheduling " + task);
 			onSchedule(task);
-			tasks.execute(task);
+
+			if (isDisabled(task))
+				LOGGER.info("discarding disabled " + task);
+			else
+				tasks.execute(task);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task + " rejected, probably because the node is shutting down");
@@ -502,10 +551,10 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() throws DatabaseException, NoSuchAlgorithmException {
-			db.add(block);
+			add(block);
 
 			LocalDateTime nextBlockStartTime = startDateTime.plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			execute(new MineNewBlockTask(LocalNodeImpl.this, block, nextBlockStartTime));
+			db.getHead().ifPresent(head -> execute(new MineNewBlockTask(LocalNodeImpl.this, head, nextBlockStartTime)));
 		}
 	}
 
