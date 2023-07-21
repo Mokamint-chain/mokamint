@@ -75,9 +75,6 @@ public class RestrictedNodeServiceTests {
 
 			@Override
 			public void removePeer(Peer peer) {}
-
-			@Override
-			public void close() {}
 		};
 
 		class MyTestClient extends AbstractRemoteRestrictedNode {
@@ -124,9 +121,6 @@ public class RestrictedNodeServiceTests {
 
 			@Override
 			public void addPeer(Peer peer) {}
-
-			@Override
-			public void close() {}
 		};
 
 		class MyTestClient extends AbstractRemoteRestrictedNode {

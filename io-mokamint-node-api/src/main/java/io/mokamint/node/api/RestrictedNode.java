@@ -26,7 +26,7 @@ import io.hotmoka.annotations.ThreadSafe;
  * Typically, this API can be called from authorized machines only.
  */
 @ThreadSafe
-public interface RestrictedNode extends AutoCloseableNode {
+public interface RestrictedNode {
 
 	/**
 	 * Adds the given peer to the set of peers of this node.

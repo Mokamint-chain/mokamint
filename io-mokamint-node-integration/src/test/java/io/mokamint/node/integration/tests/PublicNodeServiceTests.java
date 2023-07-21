@@ -53,6 +53,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -62,7 +63,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.PublicNodeListeners;
+import io.mokamint.node.api.WhisperingNode;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.SuggestPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
@@ -324,7 +325,7 @@ public class PublicNodeServiceTests {
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
 		var peers = Set.of(peer1, peer2);
 
-		interface PublicNodeWithListeners extends PublicNode, PublicNodeListeners {};
+		interface PublicNodeWithListeners extends PublicNode, WhisperingNode {};
 
 		var listenerForNewPeers = new AtomicReference<Consumer<Stream<Peer>>>();
 
@@ -335,10 +336,10 @@ public class PublicNodeServiceTests {
 		}).
 		when(node).addOnPeersAddedListener(any());
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -386,7 +387,7 @@ public class PublicNodeServiceTests {
 	public void serviceGetsClosedIfNodeGetsClosed() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		interface PublicNodeWithListeners extends PublicNode, PublicNodeListeners {};
+		interface PublicNodeWithListeners extends PublicNode, AutoCloseableNode {};
 
 		var listenerForClose = new AtomicReference<Runnable>();
 

@@ -18,9 +18,12 @@ package io.mokamint.node.api;
 
 import java.io.IOException;
 
+import io.hotmoka.annotations.ThreadSafe;
+
 /**
  * A node of a Mokamint blockchain, just seen as a closeable object.
  */
+@ThreadSafe
 public interface AutoCloseableNode extends AutoCloseable {
 
 	/**
@@ -32,4 +35,18 @@ public interface AutoCloseableNode extends AutoCloseable {
 	 */
 	@Override
 	void close() throws IOException, DatabaseException, InterruptedException;
+
+	/**
+	 * Register the given listener for being called when the node is closed.
+	 * 
+	 * @param listener the listener
+	 */
+	void addOnCloseListener(Runnable listener);
+
+	/**
+	 * Unregister the given listener from those called when the node is closed.
+	 * 
+	 * @param listener the listener
+	 */
+	void removeOnCloseListener(Runnable listener);
 }

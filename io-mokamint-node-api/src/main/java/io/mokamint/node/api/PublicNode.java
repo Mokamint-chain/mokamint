@@ -28,7 +28,7 @@ import io.hotmoka.annotations.ThreadSafe;
  * Typically, this API can be called from every machine.
  */
 @ThreadSafe
-public interface PublicNode extends AutoCloseableNode {
+public interface PublicNode {
 
 	/**
 	 * Yields non-consensus information about the node.

@@ -22,6 +22,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
@@ -47,6 +48,12 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	 */
 	private final RestrictedNode node;
 
+	/**
+	 * We need this intermediate definition since two instances of a method reference
+	 * are not the same, nor equals.
+	 */
+	private final Runnable onCloseListener = this::close;
+
 	private final static Logger LOGGER = Logger.getLogger(RestrictedNodeServiceImpl.class.getName());
 
 	/**
@@ -61,7 +68,18 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 		super(port);
 		this.node = node;
 
+		if (node instanceof AutoCloseableNode acn)
+			acn.addOnCloseListener(onCloseListener);
+
 		deploy();
+	}
+
+	@Override
+	public void close() {
+		if (node instanceof AutoCloseableNode acn)
+			acn.removeOnCloseListener(onCloseListener);
+
+		super.close();
 	}
 
 	/**

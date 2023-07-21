@@ -16,23 +16,29 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
+import static io.mokamint.node.service.api.PublicNodeService.SUGGEST_PEERS_ENDPOINT;
+
 import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
+import io.mokamint.node.ListenerManager;
+import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.GetBlockResultMessage;
@@ -40,9 +46,13 @@ import io.mokamint.node.messages.GetChainInfoResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetInfoResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessage;
+import io.mokamint.node.messages.SuggestPeersMessage;
+import io.mokamint.node.messages.SuggestPeersMessages;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Session;
 
 /**
  * An implementation of a remote node that presents a programmatic interface
@@ -52,6 +62,11 @@ import jakarta.websocket.DeploymentException;
 public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements RemotePublicNode {
 
 	private final NodeMessageQueues queues;
+
+	/**
+	 * The listeners called whenever a peer is added to this node.
+	 */
+	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
@@ -67,7 +82,28 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	public RemotePublicNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
 		super(uri);
 
+		addSession(SUGGEST_PEERS_ENDPOINT, uri, SuggestPeersEndpoint::new);
+
 		this.queues = new NodeMessageQueues(timeout);
+	}
+
+	@Override
+	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
+		onPeersAddedListeners.add(listener);
+	}
+
+	@Override
+	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
+		onPeersAddedListeners.remove(listener);
+	}
+
+	/**
+	 * Called when the bound service suggests to add some peers.
+	 * 
+	 * @param message the message containing the suggested peers
+	 */
+	protected void onSuggestPeers(SuggestPeersMessage message) {
+		onPeersAddedListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -193,5 +229,18 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			DatabaseException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
+	}
+
+	private class SuggestPeersEndpoint extends Endpoint {
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, RemotePublicNodeImpl.this::onSuggestPeers);
+		}
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, SuggestPeersMessages.Decoder.class);
+		}
 	}
 }

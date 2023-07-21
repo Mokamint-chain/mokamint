@@ -21,28 +21,22 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDP
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
-import static io.mokamint.node.service.api.PublicNodeService.SUGGEST_PEERS_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
-import io.mokamint.node.ListenerManager;
-import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.PublicNodeListeners;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -60,10 +54,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
-import io.mokamint.node.messages.SuggestPeersMessage;
-import io.mokamint.node.messages.SuggestPeersMessages;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
 /**
@@ -71,12 +62,7 @@ import jakarta.websocket.Session;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode implements PublicNodeListeners {
-
-	/**
-	 * The listeners called whenever a peer is added to this node.
-	 */
-	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
+public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractRemotePublicNodeImpl.class.getName());
 
@@ -93,17 +79,6 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
-		addSession(SUGGEST_PEERS_ENDPOINT, uri, SuggestPeersEndpoint::new);
-	}
-
-	@Override
-	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.add(listener);
-	}
-
-	@Override
-	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.remove(listener);
 	}
 
 	@Override
@@ -181,15 +156,6 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
 
-	/**
-	 * Called when the bound service suggests to add some peers.
-	 * 
-	 * @param message the message containing the suggested peers
-	 */
-	protected void onSuggestPeers(SuggestPeersMessage message) {
-		onPeersAddedListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
-	}
-
 	private class GetPeersEndpoint extends Endpoint {
 
 		@Override
@@ -227,19 +193,6 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode im
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInfoMessages.Encoder.class);
-		}
-	}
-
-	private class SuggestPeersEndpoint extends Endpoint {
-
-		@Override
-		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, AbstractRemotePublicNodeImpl.this::onSuggestPeers);
-		}
-
-		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, SuggestPeersMessages.Decoder.class);
 		}
 	}
 }

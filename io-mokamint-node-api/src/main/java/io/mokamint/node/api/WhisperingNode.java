@@ -16,22 +16,31 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import io.hotmoka.annotations.ThreadSafe;
+
 /**
- * The listeners of a node.
+ * A node that sends and receives acknowledgments about new peers,
+ * new transactions and new blocks.
  */
-public interface NodeListeners {
+@ThreadSafe
+public interface WhisperingNode {
 
 	/**
-	 * Register the given listener for being called when the node is closed.
+	 * Register the given listener for being called when peers
+	 * are added to the node.
 	 * 
 	 * @param listener the listener
 	 */
-	void addOnCloseListener(Runnable listener);
+	void addOnPeersAddedListener(Consumer<Stream<Peer>> listener);
 
 	/**
-	 * Unregister the given listener from those called when the node is closed.
+	 * Unregister the given listener from those called when peers
+	 * are added to the node. If it is not registered, nothing happens.
 	 * 
 	 * @param listener the listener
 	 */
-	void removeOnCloseListener(Runnable listener);
+	void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener);
 }

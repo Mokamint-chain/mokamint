@@ -34,7 +34,6 @@ import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.VoidListenerManager;
 import io.mokamint.node.VoidListenerManagers;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.messages.ExceptionMessage;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -46,7 +45,7 @@ import jakarta.websocket.Session;
  * to a service for the public or restricted API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemoteNode extends AbstractWebSocketClient implements NodeListeners {
+public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 
 	/**
 	 * A map from path into the session listening to that path.
@@ -74,12 +73,10 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient impleme
 	 */
 	protected AbstractRemoteNode() throws DeploymentException, IOException {}
 
-	@Override
 	public void addOnCloseListener(Runnable listener) {
 		onCloseListeners.add(listener);
 	}
 
-	@Override
 	public void removeOnCloseListener(Runnable listener) {
 		onCloseListeners.remove(listener);
 	}

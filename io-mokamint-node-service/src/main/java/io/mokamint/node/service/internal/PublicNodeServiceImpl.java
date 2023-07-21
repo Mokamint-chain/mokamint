@@ -27,12 +27,12 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.NodeListeners;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.PublicNodeListeners;
+import io.mokamint.node.api.WhisperingNode;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -88,24 +88,22 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super(port, uri);
 		this.node = node;
 
-		if (node instanceof NodeListeners nl) {
-			nl.addOnCloseListener(onCloseListener);
+		if (node instanceof AutoCloseableNode acn)
+			acn.addOnCloseListener(onCloseListener);
 
-			if (node instanceof PublicNodeListeners pnl)
-				pnl.addOnPeersAddedListener(onPeersAddedListener);
-		}
+		if (node instanceof WhisperingNode pnl)
+			pnl.addOnPeersAddedListener(onPeersAddedListener);
 
 		deploy();
 	}
 
 	@Override
 	public void close() {
-		if (node instanceof NodeListeners nl) {
-			nl.removeOnCloseListener(onCloseListener);
+		if (node instanceof AutoCloseableNode acn)
+			acn.removeOnCloseListener(onCloseListener);
 
-			if (node instanceof PublicNodeListeners pnl)
-				pnl.removeOnPeersAddedListener(onPeersAddedListener);
-		}
+		if (node instanceof WhisperingNode pnl)
+			pnl.removeOnPeersAddedListener(onPeersAddedListener);
 
 		super.close();
 	}

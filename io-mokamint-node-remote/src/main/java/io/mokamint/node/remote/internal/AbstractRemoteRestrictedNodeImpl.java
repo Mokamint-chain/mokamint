@@ -28,7 +28,6 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.RestrictedNodeListeners;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessage;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -45,7 +44,7 @@ import jakarta.websocket.Session;
  * to a service for the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNode implements RestrictedNodeListeners {
+public abstract class AbstractRemoteRestrictedNodeImpl extends AbstractRemoteNode {
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractRemoteRestrictedNodeImpl.class.getName());
 
