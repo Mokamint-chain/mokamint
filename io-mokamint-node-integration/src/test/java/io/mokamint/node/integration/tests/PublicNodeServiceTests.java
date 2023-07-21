@@ -396,7 +396,7 @@ public class PublicNodeServiceTests {
 			listenerForClose.set(listener.getArgument(0));
 			return null;
 		}).
-		when(node).addOnCloseListener(any());
+		when(node).addOnClosedHandler(any());
 
 		class MyPublicNodeService extends PublicNodeServiceImpl {
 			private MyPublicNodeService() throws DeploymentException, IOException {

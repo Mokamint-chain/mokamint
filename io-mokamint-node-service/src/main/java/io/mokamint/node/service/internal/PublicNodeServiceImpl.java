@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.PublicNodeInternals;
-import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
@@ -88,10 +87,8 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super(port, uri);
 		this.node = node;
 
+		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(onCloseHandler);
-
-		if (node instanceof AutoCloseableNode acn)
-			acn.addOnCloseListener(onCloseHandler);
 
 		if (node instanceof WhisperingNode pnl)
 			pnl.addOnWhisperPeersListener(onWhisperedPeersListener);
@@ -102,9 +99,6 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	@Override
 	public void close() {
 		node.removeOnCloseHandler(onCloseHandler);
-
-		if (node instanceof AutoCloseableNode acn)
-			acn.removeOnCloseListener(onCloseHandler);
 
 		if (node instanceof WhisperingNode pnl)
 			pnl.removeOnWhisperPeersListener(onWhisperedPeersListener);

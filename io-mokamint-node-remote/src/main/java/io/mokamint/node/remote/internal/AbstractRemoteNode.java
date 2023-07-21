@@ -32,8 +32,6 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
-import io.mokamint.node.VoidListenerManager;
-import io.mokamint.node.VoidListenerManagers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.messages.ExceptionMessage;
 import jakarta.websocket.CloseReason;
@@ -59,11 +57,6 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	private final CopyOnWriteArrayList<Runnable> onCloseHandlers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * The listeners called when this node is closed.
-	 */
-	private final VoidListenerManager onCloseListeners = VoidListenerManagers.mk();	
-
-	/**
 	 * True if and only if this node has been closed already.
 	 */
 	private final AtomicBoolean isClosed = new AtomicBoolean();
@@ -85,14 +78,6 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 
 	public void removeOnCloseHandler(Runnable what) {
 		onCloseHandlers.add(what);
-	}
-
-	public void addOnCloseListener(Runnable listener) {
-		onCloseListeners.add(listener);
-	}
-
-	public void removeOnCloseListener(Runnable listener) {
-		onCloseListeners.remove(listener);
 	}
 
 	/**
@@ -139,7 +124,6 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	public void close() throws IOException {
 		if (!isClosed.getAndSet(true)) {
 			onCloseHandlers.forEach(Runnable::run);
-			onCloseListeners.notifyAllListeners();
 	
 			IOException exception = null;
 			Collection<Session> sessions;

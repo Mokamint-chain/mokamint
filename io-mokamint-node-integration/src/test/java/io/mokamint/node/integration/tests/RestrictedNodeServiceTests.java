@@ -76,16 +76,13 @@ public class RestrictedNodeServiceTests {
 		public void removePeer(Peer peer) {}
 
 		@Override
-		public void addOnClosedHandler(Runnable what) {
-		}
+		public void addOnClosedHandler(Runnable what) {}
 
 		@Override
-		public void removeOnCloseHandler(Runnable what) {
-		}
+		public void removeOnCloseHandler(Runnable what) {}
 
 		@Override
-		public void close() throws IOException, DatabaseException, InterruptedException {
-		}
+		public void close() {}
 	}
 
 	@Test
@@ -164,7 +161,7 @@ public class RestrictedNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		
 		class MyRemoteRestrictedNode extends RemoteRestrictedNodeImpl {
-			MyRemoteRestrictedNode() throws DeploymentException, IOException, URISyntaxException {
+			private MyRemoteRestrictedNode() throws DeploymentException, IOException, URISyntaxException {
 				super(new URI("ws://localhost:8031"), 2000);
 			}
 

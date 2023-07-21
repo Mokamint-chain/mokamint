@@ -35,18 +35,4 @@ public interface AutoCloseableNode extends AutoCloseable {
 	 */
 	@Override
 	void close() throws IOException, DatabaseException, InterruptedException;
-
-	/**
-	 * Register the given listener for being called when the node is closed.
-	 * 
-	 * @param listener the listener
-	 */
-	void addOnCloseListener(Runnable listener);
-
-	/**
-	 * Unregister the given listener from those called when the node is closed.
-	 * 
-	 * @param listener the listener
-	 */
-	void removeOnCloseListener(Runnable listener);
 }

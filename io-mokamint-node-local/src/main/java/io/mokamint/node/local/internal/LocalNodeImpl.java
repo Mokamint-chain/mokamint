@@ -48,8 +48,6 @@ import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
-import io.mokamint.node.VoidListenerManager;
-import io.mokamint.node.VoidListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -130,11 +128,6 @@ public class LocalNodeImpl implements LocalNode {
 	private final ListenerManager<Stream<Peer>> onWhisperPeersListeners = ListenerManagers.mk();
 
 	/**
-	 * The listeners called when this node is closed.
-	 */
-	private final VoidListenerManager onCloseListeners = VoidListenerManagers.mk();	
-
-	/**
 	 * True if and only if this node has been closed already.
 	 */
 	private final AtomicBoolean isClosed = new AtomicBoolean();
@@ -198,16 +191,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addOnCloseListener(Runnable listener) {
-		onCloseListeners.add(listener);
-	}
-
-	@Override
-	public void removeOnCloseListener(Runnable listener) {
-		onCloseListeners.remove(listener);
-	}
-
-	@Override
 	public void receiveWhisperedPeers(Stream<Peer> peers) {
 		executeAddPeersTask(peers, false);
 	}
@@ -245,8 +228,6 @@ public class LocalNodeImpl implements LocalNode {
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		if (!isClosed.getAndSet(true)) {
 			onCloseHandlers.stream().forEach(Runnable::run);
-			onCloseListeners.notifyAllListeners();
-
 			events.shutdownNow();
 			tasks.shutdownNow();
 
