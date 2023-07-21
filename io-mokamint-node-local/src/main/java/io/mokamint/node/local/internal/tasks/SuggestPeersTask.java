@@ -37,27 +37,27 @@ public class SuggestPeersTask extends Task {
 	private final Peer[] peers;
 
 	/**
-	 * A supplier of the listeners registered in the node, eager to receive peer addition suggestions.
+	 * A supplier of the peer whispering handlers registered in the node.
 	 */
-	private final Supplier<Stream<Consumer<Stream<Peer>>>> listeners;
+	private final Supplier<Stream<Consumer<Stream<Peer>>>> handlers;
 
 	/**
 	 * Creates a task that suggests peers to other peers.
 	 * 
 	 * @param peers the peers to suggest
-	 * @param listeners the listeners registered in the node, eager to receive peer addition suggestions
+	 * @param handlers a supplier of the peer whispering handlers registered in the node
 	 * @param node the node for which this task is working
 	 */
-	public SuggestPeersTask(Stream<Peer> peers, Supplier<Stream<Consumer<Stream<Peer>>>> listeners, LocalNodeImpl node) {
+	public SuggestPeersTask(Stream<Peer> peers, Supplier<Stream<Consumer<Stream<Peer>>>> handlers, LocalNodeImpl node) {
 		node.super();
 
 		this.peers = peers.distinct().toArray(Peer[]::new);
-		this.listeners = listeners;
+		this.handlers = handlers;
 	}
 
 	@Override
 	public String toString() {
-		return "suggest " + Arrays.toString(peers) + " to " + plural(listeners.get().count());
+		return "suggest " + Arrays.toString(peers) + " to " + plural(handlers.get().count());
 	}
 
 	private static String plural(long howMany) {
@@ -67,6 +67,6 @@ public class SuggestPeersTask extends Task {
 	@Override @OnThread("tasks")
 	protected void body() {
 		// suggest the peers to all nodes having our node as peer
-		listeners.get().forEach(listener -> listener.accept(Stream.of(peers)));
+		handlers.get().forEach(listener -> listener.accept(Stream.of(peers)));
 	}
 }

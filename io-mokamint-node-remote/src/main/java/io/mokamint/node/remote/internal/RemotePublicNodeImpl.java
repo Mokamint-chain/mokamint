@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -30,8 +31,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.RpcMessage;
-import io.mokamint.node.ListenerManager;
-import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -64,9 +63,9 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	private final NodeMessageQueues queues;
 
 	/**
-	 * The listeners called whenever this node whispers some peers.
+	 * The code to execute when this node has some peers to whisper.
 	 */
-	private final ListenerManager<Stream<Peer>> onWhisperPeersListeners = ListenerManagers.mk();
+	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersHandlers = new CopyOnWriteArrayList<>();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
@@ -88,29 +87,29 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	@Override
-	public void addOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
-		onWhisperPeersListeners.add(listener);
+	public void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersHandlers.add(handler);
 	}
 
 	@Override
-	public void removeOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
-		onWhisperPeersListeners.remove(listener);
+	public void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersHandlers.remove(handler);
 	}
 
 	@Override
 	public void receiveWhisperedPeers(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
-		onWhisperPeersListeners.getListeners().forEach(listener -> listener.accept(Stream.of(peersAsArray)));
+		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
 	}
 
 	/**
 	 * Called when the bound service has whispered some peers to this node.
-	 * It whispers them to all registered listeners.
+	 * It whispers them to all registered handlers.
 	 * 
 	 * @param message the message containing the whispered peers
 	 */
 	protected void onWhisperPeers(WhisperPeersMessage message) {
-		onWhisperPeersListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
+		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(message.getPeers()));
 	}
 
 	private RuntimeException unexpectedException(Exception e) {

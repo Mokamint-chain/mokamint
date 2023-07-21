@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.DatabaseException;
@@ -32,16 +33,32 @@ public interface PublicNodeInternals extends PublicNode, AutoCloseable {
 	/**
 	 * Takes note that the given code must be executed when this node gets closed.
 	 * 
-	 * @param what the code
+	 * @param handler the code
 	 */
-	void addOnClosedHandler(Runnable what);
+	void addOnClosedHandler(Runnable handler);
 
 	/**
 	 * Removes the given code from that executed when this node gets closed.
 	 * 
-	 * @param what the code
+	 * @param handler the code
 	 */
-	void removeOnCloseHandler(Runnable what);
+	void removeOnCloseHandler(Runnable handler);
+
+	/**
+	 * Takes note that the given code must be executed when this node
+	 * has some peers to whisper.
+	 * 
+	 * @param handler the code
+	 */
+	default void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {}
+
+	/**
+	 * Removes the given code from that executed when this node
+	 * has some peers to whisper.
+	 * 
+	 * @param handler the code
+	 */
+	default void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {}
 
 	/**
 	 * Closes the node.

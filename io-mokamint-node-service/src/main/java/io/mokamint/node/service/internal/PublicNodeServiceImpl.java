@@ -31,7 +31,6 @@ import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.WhisperingNode;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -63,13 +62,13 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Consumer<Stream<Peer>> onWhisperedPeersListener = this::whisperPeers;
+	private final Consumer<Stream<Peer>> this_whisperPeers = this::whisperPeers;
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Runnable onCloseHandler = this::close;
+	private final Runnable this_close = this::close;
 
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
@@ -88,21 +87,18 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		this.node = node;
 
 		// if the node gets closed, then this service will be closed as well
-		node.addOnClosedHandler(onCloseHandler);
+		node.addOnClosedHandler(this_close);
 
-		if (node instanceof WhisperingNode pnl)
-			pnl.addOnWhisperPeersListener(onWhisperedPeersListener);
+		// if the node has some peers to whisper, then this service will execute whisperPeers
+		node.addOnWhisperPeersHandler(this_whisperPeers);
 
 		deploy();
 	}
 
 	@Override
 	public void close() {
-		node.removeOnCloseHandler(onCloseHandler);
-
-		if (node instanceof WhisperingNode pnl)
-			pnl.removeOnWhisperPeersListener(onWhisperedPeersListener);
-
+		node.removeOnCloseHandler(this_close);
+		node.removeOnWhisperPeersHandler(this_whisperPeers);
 		super.close();
 	}
 

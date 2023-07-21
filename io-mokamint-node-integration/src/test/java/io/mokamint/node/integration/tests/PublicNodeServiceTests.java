@@ -62,7 +62,6 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.WhisperingNode;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
@@ -324,16 +323,16 @@ public class PublicNodeServiceTests {
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
 		var peers = Set.of(peer1, peer2);
 
-		interface PublicNodeWithListeners extends PublicNodeInternals, WhisperingNode {};
+		interface PublicNodeWithListeners extends PublicNodeInternals {};
 
-		var listenerForNewPeers = new AtomicReference<Consumer<Stream<Peer>>>();
+		var handlerForWhisperedPeers = new AtomicReference<Consumer<Stream<Peer>>>();
 
 		var node = mock(PublicNodeWithListeners.class);
 		doAnswer(listener -> {
-			listenerForNewPeers.set(listener.getArgument(0));
+			handlerForWhisperedPeers.set(listener.getArgument(0));
 			return null;
 		}).
-		when(node).addOnWhisperPeersListener(any());
+		when(node).addOnWhisperPeersHandler(any());
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -351,7 +350,7 @@ public class PublicNodeServiceTests {
 		}
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			listenerForNewPeers.get().accept(Stream.of(peer1, peer2));
+			handlerForWhisperedPeers.get().accept(Stream.of(peer1, peer2));
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

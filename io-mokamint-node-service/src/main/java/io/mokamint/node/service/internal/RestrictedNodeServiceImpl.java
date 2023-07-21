@@ -51,7 +51,7 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Runnable onCloseHandler = this::close;
+	private final Runnable this_close = this::close;
 
 	private final static Logger LOGGER = Logger.getLogger(RestrictedNodeServiceImpl.class.getName());
 
@@ -68,14 +68,14 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 		this.node = node;
 
 		// if the node gets closed, then this service will be closed as well
-		node.addOnClosedHandler(onCloseHandler);
+		node.addOnClosedHandler(this_close);
 
 		deploy();
 	}
 
 	@Override
 	public void close() {
-		node.removeOnCloseHandler(onCloseHandler);
+		node.removeOnCloseHandler(this_close);
 		super.close();
 	}
 

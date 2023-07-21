@@ -43,8 +43,6 @@ import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.ListenerManager;
-import io.mokamint.node.ListenerManagers;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
@@ -123,9 +121,9 @@ public class LocalNodeImpl implements LocalNode {
 	private final CopyOnWriteArrayList<Runnable> onCloseHandlers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * The listeners called whenever this node whispers peers.
+	 * The code to execute when this node has some peers to whisper.
 	 */
-	private final ListenerManager<Stream<Peer>> onWhisperPeersListeners = ListenerManagers.mk();
+	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersHandlers = new CopyOnWriteArrayList<>();
 
 	/**
 	 * True if and only if this node has been closed already.
@@ -171,23 +169,23 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addOnClosedHandler(Runnable what) {
-		onCloseHandlers.add(what);
+	public void addOnClosedHandler(Runnable handler) {
+		onCloseHandlers.add(handler);
 	}
 
 	@Override
-	public void removeOnCloseHandler(Runnable what) {
-		onCloseHandlers.add(what);
+	public void removeOnCloseHandler(Runnable handler) {
+		onCloseHandlers.add(handler);
 	}
 
 	@Override
-	public void addOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
-		onWhisperPeersListeners.add(listener);
+	public void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersHandlers.add(handler);
 	}
 
 	@Override
-	public void removeOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
-		onWhisperPeersListeners.remove(listener);
+	public void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersHandlers.remove(handler);
 	}
 
 	@Override
@@ -706,7 +704,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
-			submit(new SuggestPeersTask(getPeers(), onWhisperPeersListeners::getListeners, LocalNodeImpl.this));
+			submit(new SuggestPeersTask(getPeers(), onWhisperPeersHandlers::stream, LocalNodeImpl.this));
 		}
 	}
 

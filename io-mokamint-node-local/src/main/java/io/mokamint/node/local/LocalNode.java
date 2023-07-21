@@ -19,10 +19,9 @@ package io.mokamint.node.local;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.FullNode;
-import io.mokamint.node.api.WhisperingNode;
 
 /**
  * A local node of a Mokamint blockchain.
  */
-public interface LocalNode extends FullNode, PublicNodeInternals, RestrictedNodeInternals, WhisperingNode {
+public interface LocalNode extends FullNode, PublicNodeInternals, RestrictedNodeInternals {
 }
