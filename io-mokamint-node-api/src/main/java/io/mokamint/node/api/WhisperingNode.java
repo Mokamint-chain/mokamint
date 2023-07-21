@@ -42,4 +42,11 @@ public interface WhisperingNode {
 	 * @param listener the listener
 	 */
 	void removeOnWhisperPeersListener(Consumer<Stream<Peer>> listener);
+
+	/**
+	 * Whisper some peers to the node.
+	 * 
+	 * @param peers the peers
+	 */
+	void receiveWhisperedPeers(Stream<Peer> peers);
 }

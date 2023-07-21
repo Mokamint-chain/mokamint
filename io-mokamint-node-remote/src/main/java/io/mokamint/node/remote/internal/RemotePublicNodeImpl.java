@@ -97,9 +97,15 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 		onWhisperPeersListeners.remove(listener);
 	}
 
+	@Override
+	public void receiveWhisperedPeers(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		onWhisperPeersListeners.getListeners().forEach(listener -> listener.accept(Stream.of(peersAsArray)));
+	}
+
 	/**
 	 * Called when the bound service has whispered some peers to this node.
-	 * It whisper them to all registered listeners.
+	 * It whispers them to all registered listeners.
 	 * 
 	 * @param message the message containing the whispered peers
 	 */

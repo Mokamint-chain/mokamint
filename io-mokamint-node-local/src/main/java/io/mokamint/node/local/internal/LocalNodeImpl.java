@@ -119,9 +119,9 @@ public class LocalNodeImpl implements LocalNode {
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
 	/**
-	 * The listeners called whenever peers are added to this node.
+	 * The listeners called whenever this node whispers peers.
 	 */
-	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
+	private final ListenerManager<Stream<Peer>> onWhisperPeersListeners = ListenerManagers.mk();
 
 	/**
 	 * The listeners called when this node is closed.
@@ -173,12 +173,12 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void addOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.add(listener);
+		onWhisperPeersListeners.add(listener);
 	}
 
 	@Override
 	public void removeOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.remove(listener);
+		onWhisperPeersListeners.remove(listener);
 	}
 
 	@Override
@@ -189,6 +189,11 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void removeOnCloseListener(Runnable listener) {
 		onCloseListeners.remove(listener);
+	}
+
+	@Override
+	public void receiveWhisperedPeers(Stream<Peer> peers) {
+		executeAddPeersTask(peers, false);
 	}
 
 	private void ensureIsOpen() throws ClosedNodeException {
@@ -703,7 +708,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
-			submit(new SuggestPeersTask(getPeers(), onPeersAddedListeners::getListeners, LocalNodeImpl.this));
+			submit(new SuggestPeersTask(getPeers(), onWhisperPeersListeners::getListeners, LocalNodeImpl.this));
 		}
 	}
 
