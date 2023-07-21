@@ -52,6 +52,7 @@ import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.Block;
@@ -62,7 +63,6 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.WhisperingNode;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.WhisperPeersMessage;
@@ -92,7 +92,7 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
 		class MyTestClient extends AbstractRemotePublicNode {
@@ -142,7 +142,7 @@ public class PublicNodeServiceTests {
 		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		when(node.getBlock(hash)).thenReturn(Optional.empty());
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -180,7 +180,7 @@ public class PublicNodeServiceTests {
 		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		when(node.getBlock(hash)).thenReturn(Optional.of(block));
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -212,7 +212,7 @@ public class PublicNodeServiceTests {
 		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -244,7 +244,7 @@ public class PublicNodeServiceTests {
 			}
 		}
 
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		when(node.getConfig()).thenReturn(config);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -276,7 +276,7 @@ public class PublicNodeServiceTests {
 			}
 		}
 
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		when(node.getChainInfo()).thenReturn(info);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -308,7 +308,7 @@ public class PublicNodeServiceTests {
 			}
 		}
 
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		when(node.getInfo()).thenReturn(info);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -325,7 +325,7 @@ public class PublicNodeServiceTests {
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
 		var peers = Set.of(peer1, peer2);
 
-		interface PublicNodeWithListeners extends PublicNode, WhisperingNode {};
+		interface PublicNodeWithListeners extends PublicNodeInternals, WhisperingNode {};
 
 		var listenerForNewPeers = new AtomicReference<Consumer<Stream<Peer>>>();
 
@@ -360,7 +360,7 @@ public class PublicNodeServiceTests {
 	@Test
 	@DisplayName("if a public service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
 	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
-		var node = mock(PublicNode.class);
+		var node = mock(PublicNodeInternals.class);
 		var semaphore = new Semaphore(0);
 		
 		class MyRemotePublicNode extends RemotePublicNodeImpl {
@@ -387,7 +387,7 @@ public class PublicNodeServiceTests {
 	public void serviceGetsClosedIfNodeGetsClosed() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		interface PublicNodeWithListeners extends PublicNode, AutoCloseableNode {};
+		interface PublicNodeWithListeners extends PublicNodeInternals, AutoCloseableNode {};
 
 		var listenerForClose = new AtomicReference<Runnable>();
 

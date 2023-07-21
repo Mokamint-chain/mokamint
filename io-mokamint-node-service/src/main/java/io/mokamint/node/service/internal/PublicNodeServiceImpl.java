@@ -27,11 +27,11 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.WhisperingNode;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
@@ -58,7 +58,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	/**
 	 * The node whose API is published.
 	 */
-	private final PublicNode node;
+	private final PublicNodeInternals node;
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -84,7 +84,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public PublicNodeServiceImpl(PublicNode node, int port, Optional<URI> uri) throws DeploymentException, IOException {
+	public PublicNodeServiceImpl(PublicNodeInternals node, int port, Optional<URI> uri) throws DeploymentException, IOException {
 		super(port, uri);
 		this.node = node;
 

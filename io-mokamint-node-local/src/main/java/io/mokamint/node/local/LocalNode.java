@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
+import io.mokamint.node.PublicNodeInternals;
+import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.AutoCloseableNode;
-import io.mokamint.node.api.Node;
+import io.mokamint.node.api.FullNode;
 import io.mokamint.node.api.WhisperingNode;
 
 /**
  * A local node of a Mokamint blockchain.
  */
-public interface LocalNode extends Node, WhisperingNode, AutoCloseableNode {
+public interface LocalNode extends FullNode, PublicNodeInternals, RestrictedNodeInternals, WhisperingNode, AutoCloseableNode {
 }

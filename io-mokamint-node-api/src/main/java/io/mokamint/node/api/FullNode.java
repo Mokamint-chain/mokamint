@@ -19,8 +19,8 @@ package io.mokamint.node.api;
 import io.hotmoka.annotations.ThreadSafe;
 
 /**
- * A node of a Mokamint blockchain. Its API is split into a public and a restricted part.
+ * A full node of a Mokamint blockchain. Its API is split into a public and a restricted part.
  */
 @ThreadSafe
-public interface Node extends PublicNode, RestrictedNode {
+public interface FullNode extends PublicNode, RestrictedNode {
 }

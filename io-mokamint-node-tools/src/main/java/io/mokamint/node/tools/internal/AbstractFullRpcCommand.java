@@ -19,7 +19,7 @@ package io.mokamint.node.tools.internal;
 import java.net.URI;
 import java.util.logging.Logger;
 
-import io.mokamint.node.remote.RemoteNode;
+import io.mokamint.node.remote.RemoteFullNode;
 import picocli.CommandLine.Option;
 
 /**
@@ -59,7 +59,7 @@ public abstract class AbstractFullRpcCommand extends AbstractRpcCommand {
 	 * @param what the body
 	 * @param logger the logger to use for reporting
 	 */
-	protected void execute(RpcCommandBody<RemoteNode> what, Logger logger) {
+	protected void execute(RpcCommandBody<RemoteFullNode> what, Logger logger) {
 		//execute(RemoteNodes::of, what, publicUri, logger);
 	}
 }

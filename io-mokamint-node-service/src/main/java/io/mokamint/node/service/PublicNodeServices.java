@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
-import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
@@ -43,7 +43,7 @@ public class PublicNodeServices {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static PublicNodeService open(PublicNode node, int port) throws DeploymentException, IOException {
+	public static PublicNodeService open(PublicNodeInternals node, int port) throws DeploymentException, IOException {
 		return new PublicNodeServiceImpl(node, port, Optional.empty());
 	}
 
@@ -60,7 +60,7 @@ public class PublicNodeServices {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static PublicNodeService open(PublicNode node, int port, Optional<URI> uri) throws DeploymentException, IOException {
+	public static PublicNodeService open(PublicNodeInternals node, int port, Optional<URI> uri) throws DeploymentException, IOException {
 		return new PublicNodeServiceImpl(node, port, uri);
 	}
 }
