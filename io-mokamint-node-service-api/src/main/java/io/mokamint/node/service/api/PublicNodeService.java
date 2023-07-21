@@ -50,10 +50,10 @@ public interface PublicNodeService extends WebSocketServer {
 	String GET_CHAIN_INFO_ENDPOINT = "/get_chain_info";
 
 	/**
-	 * The network endpoint path used to send peer suggestions from a public node service
-	 * to the connected node remotes.
+	 * The network endpoint path used to whisper peers between a public node service
+	 * and its connected remotes.
 	 */
-	String SUGGEST_PEERS_ENDPOINT = "/suggest_peers";
+	String WHISPER_PEERS_ENDPOINT = "/whisper_peers";
 
 	@Override
 	void close();

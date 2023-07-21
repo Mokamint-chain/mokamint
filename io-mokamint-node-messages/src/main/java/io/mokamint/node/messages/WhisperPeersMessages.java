@@ -19,49 +19,49 @@ package io.mokamint.node.messages;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.internal.SuggestPeersMessageImpl;
-import io.mokamint.node.messages.internal.gson.SuggestPeersMessageDecoder;
-import io.mokamint.node.messages.internal.gson.SuggestPeersMessageEncoder;
-import io.mokamint.node.messages.internal.gson.SuggestPeersMessageJson;
+import io.mokamint.node.messages.internal.WhisperPeersMessageImpl;
+import io.mokamint.node.messages.internal.gson.WhisperPeersMessageDecoder;
+import io.mokamint.node.messages.internal.gson.WhisperPeersMessageEncoder;
+import io.mokamint.node.messages.internal.gson.WhisperPeersMessageJson;
 
 /**
- * A provider of {@link SuggestPeersMessage}.
+ * A provider of {@link WhisperPeersMessage}.
  */
-public class SuggestPeersMessages {
+public class WhisperPeersMessages {
 
-	private SuggestPeersMessages() {}
+	private WhisperPeersMessages() {}
 
 	/**
-	 * Yields a {@link SuggestPeersMessage}.
+	 * Yields a {@link WhisperPeersMessage}.
 	 * 
-	 * @param peers the peers suggested for addition
+	 * @param peers the whispered peers
 	 * @return the message
 	 */
-	public static SuggestPeersMessage of(Stream<Peer> peers) {
-		return new SuggestPeersMessageImpl(peers);
+	public static WhisperPeersMessage of(Stream<Peer> peers) {
+		return new WhisperPeersMessageImpl(peers);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends SuggestPeersMessageEncoder {}
+	public static class Encoder extends WhisperPeersMessageEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends SuggestPeersMessageDecoder {}
+	public static class Decoder extends WhisperPeersMessageDecoder {}
 
 	/**
      * Json representation.
      */
-    public static class Json extends SuggestPeersMessageJson {
+    public static class Json extends WhisperPeersMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(SuggestPeersMessage message) {
+    	public Json(WhisperPeersMessage message) {
     		super(message);
     	}
     }

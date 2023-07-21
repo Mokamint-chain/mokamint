@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
-import static io.mokamint.node.service.api.PublicNodeService.SUGGEST_PEERS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -46,8 +46,8 @@ import io.mokamint.node.messages.GetChainInfoResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetInfoResultMessage;
 import io.mokamint.node.messages.GetPeersResultMessage;
-import io.mokamint.node.messages.SuggestPeersMessage;
-import io.mokamint.node.messages.SuggestPeersMessages;
+import io.mokamint.node.messages.WhisperPeersMessage;
+import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
@@ -64,9 +64,9 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	private final NodeMessageQueues queues;
 
 	/**
-	 * The listeners called whenever a peer is added to this node.
+	 * The listeners called whenever this node whispers some peers.
 	 */
-	private final ListenerManager<Stream<Peer>> onPeersAddedListeners = ListenerManagers.mk();
+	private final ListenerManager<Stream<Peer>> onWhisperPeersListeners = ListenerManagers.mk();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
@@ -82,28 +82,29 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	public RemotePublicNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
 		super(uri);
 
-		addSession(SUGGEST_PEERS_ENDPOINT, uri, SuggestPeersEndpoint::new);
+		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
 
 		this.queues = new NodeMessageQueues(timeout);
 	}
 
 	@Override
-	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.add(listener);
+	public void addOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
+		onWhisperPeersListeners.add(listener);
 	}
 
 	@Override
-	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
-		onPeersAddedListeners.remove(listener);
+	public void removeOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
+		onWhisperPeersListeners.remove(listener);
 	}
 
 	/**
-	 * Called when the bound service suggests to add some peers.
+	 * Called when the bound service has whispered some peers to this node.
+	 * It whisper them to all registered listeners.
 	 * 
-	 * @param message the message containing the suggested peers
+	 * @param message the message containing the whispered peers
 	 */
-	protected void onSuggestPeers(SuggestPeersMessage message) {
-		onPeersAddedListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
+	protected void onWhisperPeers(WhisperPeersMessage message) {
+		onWhisperPeersListeners.getListeners().forEach(listener -> listener.accept(message.getPeers()));
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -231,16 +232,16 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 			processStandardExceptions(message);
 	}
 
-	private class SuggestPeersEndpoint extends Endpoint {
+	private class WhisperPeersEndpoint extends Endpoint {
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, RemotePublicNodeImpl.this::onSuggestPeers);
+			addMessageHandler(session, RemotePublicNodeImpl.this::onWhisperPeers);
 		}
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, SuggestPeersMessages.Decoder.class);
+			return deployAt(uri, WhisperPeersMessages.Decoder.class);
 		}
 	}
 }

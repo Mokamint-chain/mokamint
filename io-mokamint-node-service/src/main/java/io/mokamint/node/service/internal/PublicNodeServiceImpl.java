@@ -64,7 +64,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Consumer<Stream<Peer>> onPeersAddedListener = this::sendPeersSuggestion;
+	private final Consumer<Stream<Peer>> onWhisperedPeersListener = this::whisperPeers;
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -92,7 +92,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			acn.addOnCloseListener(onCloseListener);
 
 		if (node instanceof WhisperingNode pnl)
-			pnl.addOnPeersAddedListener(onPeersAddedListener);
+			pnl.addOnWhisperPeersListener(onWhisperedPeersListener);
 
 		deploy();
 	}
@@ -103,7 +103,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			acn.removeOnCloseListener(onCloseListener);
 
 		if (node instanceof WhisperingNode pnl)
-			pnl.removeOnPeersAddedListener(onPeersAddedListener);
+			pnl.removeOnWhisperPeersListener(onWhisperedPeersListener);
 
 		super.close();
 	}

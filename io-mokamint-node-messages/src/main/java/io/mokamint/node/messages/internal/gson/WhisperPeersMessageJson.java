@@ -24,22 +24,22 @@ import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.JsonRepresentation;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.SuggestPeersMessage;
-import io.mokamint.node.messages.SuggestPeersMessages;
+import io.mokamint.node.messages.WhisperPeersMessage;
+import io.mokamint.node.messages.WhisperPeersMessages;
 
 /**
- * The JSON representation of an {@link SuggestPeersMessage}.
+ * The JSON representation of an {@link WhisperPeersMessage}.
  */
-public abstract class SuggestPeersMessageJson implements JsonRepresentation<SuggestPeersMessage> {
+public abstract class WhisperPeersMessageJson implements JsonRepresentation<WhisperPeersMessage> {
 	private Peers.Json[] peers;
 
-	protected SuggestPeersMessageJson(SuggestPeersMessage message) {
+	protected WhisperPeersMessageJson(WhisperPeersMessage message) {
 		this.peers = message.getPeers().map(Peers.Json::new).toArray(Peers.Json[]::new);
 	}
 
 	@Override
-	public SuggestPeersMessage unmap() throws URISyntaxException {
+	public WhisperPeersMessage unmap() throws URISyntaxException {
 		// using Peers.Json::unmap below leads to a run-time error in the JVM!
-		return check(URISyntaxException.class, () -> SuggestPeersMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap()))));
+		return check(URISyntaxException.class, () -> WhisperPeersMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap()))));
 	}
 }

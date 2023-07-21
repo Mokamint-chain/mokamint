@@ -29,18 +29,17 @@ import io.hotmoka.annotations.ThreadSafe;
 public interface WhisperingNode {
 
 	/**
-	 * Register the given listener for being called when peers
-	 * are added to the node.
+	 * Register the given listener for being called when this node whispers some peers.
 	 * 
 	 * @param listener the listener
 	 */
-	void addOnPeersAddedListener(Consumer<Stream<Peer>> listener);
+	void addOnWhisperPeersListener(Consumer<Stream<Peer>> listener);
 
 	/**
-	 * Unregister the given listener from those called when peers
-	 * are added to the node. If it is not registered, nothing happens.
+	 * Unregister the given listener from those called when this node whispers some peers.
+	 * If it is not registered, nothing happens.
 	 * 
 	 * @param listener the listener
 	 */
-	void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener);
+	void removeOnWhisperPeersListener(Consumer<Stream<Peer>> listener);
 }

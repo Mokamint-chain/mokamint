@@ -21,14 +21,13 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.SuggestPeersMessage;
+import io.mokamint.node.messages.WhisperPeersMessage;
 
 /**
- * Implementation of the network message sent by a public node service
- * to the connected remote nodes, to signify that a new peer has been added to
- * the serviced node.
+ * Implementation of the network message sent between a public node service and
+ * its connected remotes, to whisper some peers that have been discovered.
  */
-public class SuggestPeersMessageImpl implements SuggestPeersMessage {
+public class WhisperPeersMessageImpl implements WhisperPeersMessage {
 
 	private final Peer[] peers;
 
@@ -37,7 +36,7 @@ public class SuggestPeersMessageImpl implements SuggestPeersMessage {
 	 * 
 	 * @param peers the peers suggested for addition
 	 */
-	public SuggestPeersMessageImpl(Stream<Peer> peers) {
+	public WhisperPeersMessageImpl(Stream<Peer> peers) {
 		this.peers = peers.map(Objects::requireNonNull).toArray(Peer[]::new);
 	}
 
@@ -48,6 +47,6 @@ public class SuggestPeersMessageImpl implements SuggestPeersMessage {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof SuggestPeersMessage spm && Arrays.equals(peers, spm.getPeers().toArray(Peer[]::new));
+		return other instanceof WhisperPeersMessage spm && Arrays.equals(peers, spm.getPeers().toArray(Peer[]::new));
 	}
 }

@@ -14,18 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.node.messages;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.SuggestPeersMessage;
-import io.mokamint.node.messages.SuggestPeersMessages;
+import java.util.stream.Stream;
+
+import io.mokamint.node.api.Peer;
 
 /**
- * An encoder of an {@link SuggestPeersMessage}.
+ * The network message sent between a public node service and its connected remotes,
+ * to whisper some peers that have been discovered.
  */
-public class SuggestPeersMessageEncoder extends MappedEncoder<SuggestPeersMessage, SuggestPeersMessages.Json> {
+public interface WhisperPeersMessage {
 
-	public SuggestPeersMessageEncoder() {
-		super(SuggestPeersMessages.Json::new);
-	}
+	/**
+	 * Yields the whispered peers.
+	 * 
+	 * @return the peers
+	 */
+	Stream<Peer> getPeers();
+
+	@Override
+	boolean equals(Object obj);
 }

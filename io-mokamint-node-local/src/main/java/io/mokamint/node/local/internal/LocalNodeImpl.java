@@ -172,12 +172,12 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
+	public void addOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
 		onPeersAddedListeners.add(listener);
 	}
 
 	@Override
-	public void removeOnPeersAddedListener(Consumer<Stream<Peer>> listener) {
+	public void removeOnWhisperPeersListener(Consumer<Stream<Peer>> listener) {
 		onPeersAddedListeners.remove(listener);
 	}
 

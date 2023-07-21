@@ -65,7 +65,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.WhisperingNode;
 import io.mokamint.node.messages.ExceptionMessage;
-import io.mokamint.node.messages.SuggestPeersMessage;
+import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
@@ -334,7 +334,7 @@ public class PublicNodeServiceTests {
 			listenerForNewPeers.set(listener.getArgument(0));
 			return null;
 		}).
-		when(node).addOnPeersAddedListener(any());
+		when(node).addOnWhisperPeersListener(any());
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -343,7 +343,7 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			protected void onSuggestPeers(SuggestPeersMessage message) {
+			protected void onWhisperPeers(WhisperPeersMessage message) {
 				// we must use containsAll since the suggested peers might include
 				// the public URI of the machine where the test is running
 				if (message.getPeers().collect(Collectors.toSet()).containsAll(peers))

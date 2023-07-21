@@ -395,7 +395,7 @@ public class NodePeers implements AutoCloseable {
 
 	private void storeRemote(RemotePublicNode remote, Peer peer) {
 		remotes.put(peer, remote);
-		remote.addOnPeersAddedListener(addPeersTask);
+		remote.addOnWhisperPeersListener(addPeersTask);
 		remote.addOnCloseListener(() -> peerDisconnected(remote, peer));
 	}
 
@@ -421,7 +421,7 @@ public class NodePeers implements AutoCloseable {
 
 	private void closeRemoteWithException(RemotePublicNode remote, Peer peer) throws IOException {
 		if (remote != null) {
-			remote.removeOnPeersAddedListener(addPeersTask); // probably useless
+			remote.removeOnWhisperPeersListener(addPeersTask); // probably useless
 			remotes.remove(peer);
 			remote.close();
 			LOGGER.info("closed connection to peer " + peer);

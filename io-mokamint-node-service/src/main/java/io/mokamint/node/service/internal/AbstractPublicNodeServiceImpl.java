@@ -54,7 +54,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
-import io.mokamint.node.messages.SuggestPeersMessages;
+import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -81,9 +81,9 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	private final Optional<URI> uri;
 
 	/**
-	 * The sessions connected to the {@link SuggestPeersEndpoint}.
+	 * The sessions connected to the {@link WhisperPeersEndpoint}.
 	 */
-	private final Set<Session> suggestPeersSessions = ConcurrentHashMap.newKeySet();
+	private final Set<Session> whisperPeersSessions = ConcurrentHashMap.newKeySet();
 
 	private final static Logger LOGGER = Logger.getLogger(AbstractPublicNodeServiceImpl.class.getName());
 
@@ -122,31 +122,31 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 				GetBlockEndpoint.config(this),
 				GetConfigEndpoint.config(this),
 				GetChainInfoEndpoint.config(this),
-				SuggestPeersEndpoint.config(this));
+				WhisperPeersEndpoint.config(this));
 
 		LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
-	protected void sendPeersSuggestion(Stream<Peer> peers) {
+	protected void whisperPeers(Stream<Peer> peers) {
 		// we add our own URL as a suggestion
 		if (uri.isPresent())
 			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get())));
 
 		var peersAsArray = peers.toArray(Peer[]::new);
 
-		LOGGER.info("broadcasting peers " + Arrays.toString(peersAsArray) + " to " + suggestPeersSessions.size() + " sessions");
+		LOGGER.info("whispering peers " + Arrays.toString(peersAsArray) + " to " + whisperPeersSessions.size() + " sessions");
 
-		suggestPeersSessions.stream()
+		whisperPeersSessions.stream()
 			.filter(Session::isOpen)
-			.forEach(openSession -> suggestPeersToSession(openSession, Stream.of(peersAsArray)));
+			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
 	}
 
-	private void suggestPeersToSession(Session session, Stream<Peer> peers) {
+	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
 		try {
-			sendObjectAsync(session, SuggestPeersMessages.of(peers));
+			sendObjectAsync(session, WhisperPeersMessages.of(peers));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot suggest peer to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
 		}
 	}
 
@@ -273,22 +273,22 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		}
 	}
 
-	public static class SuggestPeersEndpoint extends AbstractServerEndpoint<AbstractPublicNodeServiceImpl> {
+	public static class WhisperPeersEndpoint extends AbstractServerEndpoint<AbstractPublicNodeServiceImpl> {
 
 		@SuppressWarnings("resource")
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			getServer().suggestPeersSessions.add(session);
+			getServer().whisperPeersSessions.add(session);
 	    }
 
 		@SuppressWarnings("resource")
 		@Override
 		public void onClose(Session session, CloseReason closeReason) {
-			getServer().suggestPeersSessions.remove(session);
+			getServer().whisperPeersSessions.remove(session);
 		}
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
-			return simpleConfig(server, SuggestPeersEndpoint.class, SUGGEST_PEERS_ENDPOINT, SuggestPeersMessages.Encoder.class);
+			return simpleConfig(server, WhisperPeersEndpoint.class, WHISPER_PEERS_ENDPOINT, WhisperPeersMessages.Encoder.class);
 		}
 	}
 }
