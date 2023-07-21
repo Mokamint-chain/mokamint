@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.RestrictedNode;
-import io.mokamint.node.service.api.RestrictedNodeService;
 
 /**
  * The internal API of a restricted Mokamint node. It includes methods that are not
@@ -29,19 +28,18 @@ import io.mokamint.node.service.api.RestrictedNodeService;
 public interface RestrictedNodeInternals extends RestrictedNode, AutoCloseable {
 
 	/**
-	 * Takes note that the given service is wrapping this node.
-	 * For instance, when this node gets closed, it closes the service as well.
+	 * Takes note that the given code must be executed when this node gets closed.
 	 * 
-	 * @param service the service
+	 * @param what the code
 	 */
-	default void register(RestrictedNodeService service) {}
+	void addOnClosedHandler(Runnable what);
 
 	/**
-	 * Removes the given service from those that are wrapping this node.
+	 * Removes the given code from that executed when this node gets closed.
 	 * 
-	 * @param service the service
+	 * @param what the code
 	 */
-	default void unregister(RestrictedNodeService service) {}
+	void removeOnCloseHandler(Runnable what);
 
 	/**
 	 * Closes the node.

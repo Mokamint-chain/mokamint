@@ -22,7 +22,6 @@ import java.util.stream.Stream;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.service.api.PublicNodeService;
 
 /**
  * The internal API of a public Mokamint node. It includes methods that are not
@@ -31,19 +30,18 @@ import io.mokamint.node.service.api.PublicNodeService;
 public interface PublicNodeInternals extends PublicNode, AutoCloseable {
 
 	/**
-	 * Takes note that the given service is wrapping this node.
-	 * For instance, when this node gets closed, it closes the service as well.
+	 * Takes note that the given code must be executed when this node gets closed.
 	 * 
-	 * @param service the service
+	 * @param what the code
 	 */
-	default void register(PublicNodeService service) {}
+	void addOnClosedHandler(Runnable what);
 
 	/**
-	 * Removes the given service from those that are wrapping this node.
+	 * Removes the given code from that executed when this node gets closed.
 	 * 
-	 * @param service the service
+	 * @param what the code
 	 */
-	default void unregister(PublicNodeService service) {}
+	void removeOnCloseHandler(Runnable what);
 
 	/**
 	 * Closes the node.

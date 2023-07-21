@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -53,6 +54,11 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	private final Map<String, Session> sessions = new HashMap<>();
 
 	/**
+	 * The code to execute when this node gets closed.
+	 */
+	private final CopyOnWriteArrayList<Runnable> onCloseHandlers = new CopyOnWriteArrayList<>();
+
+	/**
 	 * The listeners called when this node is closed.
 	 */
 	private final VoidListenerManager onCloseListeners = VoidListenerManagers.mk();	
@@ -72,6 +78,14 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	 * @throws IOException if the remote node could not be created
 	 */
 	protected AbstractRemoteNode() throws DeploymentException, IOException {}
+
+	public void addOnClosedHandler(Runnable what) {
+		onCloseHandlers.add(what);
+	}
+
+	public void removeOnCloseHandler(Runnable what) {
+		onCloseHandlers.add(what);
+	}
 
 	public void addOnCloseListener(Runnable listener) {
 		onCloseListeners.add(listener);
@@ -124,6 +138,7 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient {
 	@Override
 	public void close() throws IOException {
 		if (!isClosed.getAndSet(true)) {
+			onCloseHandlers.forEach(Runnable::run);
 			onCloseListeners.notifyAllListeners();
 	
 			IOException exception = null;

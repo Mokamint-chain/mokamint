@@ -18,7 +18,7 @@ package io.mokamint.node.service;
 
 import java.io.IOException;
 
-import io.mokamint.node.api.RestrictedNode;
+import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
@@ -39,7 +39,7 @@ public class RestrictedNodeServices {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static RestrictedNodeService open(RestrictedNode node, int port) throws DeploymentException, IOException {
+	public static RestrictedNodeService open(RestrictedNodeInternals node, int port) throws DeploymentException, IOException {
 		return new RestrictedNodeServiceImpl(node, port);
 	}
 }

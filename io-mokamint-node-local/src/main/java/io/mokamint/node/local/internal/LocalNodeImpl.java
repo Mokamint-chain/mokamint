@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -119,6 +120,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
 
 	/**
+	 * The code to execute when this node gets closed.
+	 */
+	private final CopyOnWriteArrayList<Runnable> onCloseHandlers = new CopyOnWriteArrayList<>();
+
+	/**
 	 * The listeners called whenever this node whispers peers.
 	 */
 	private final ListenerManager<Stream<Peer>> onWhisperPeersListeners = ListenerManagers.mk();
@@ -169,6 +175,16 @@ public class LocalNodeImpl implements LocalNode {
 		addSeedsAsPeers();
 		this.startDateTime = db.getGenesis().map(GenesisBlock::getStartDateTimeUTC).orElse(LocalDateTime.now(ZoneId.of("UTC")));
 		startNextBlockMining();
+	}
+
+	@Override
+	public void addOnClosedHandler(Runnable what) {
+		onCloseHandlers.add(what);
+	}
+
+	@Override
+	public void removeOnCloseHandler(Runnable what) {
+		onCloseHandlers.add(what);
 	}
 
 	@Override
@@ -228,6 +244,7 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		if (!isClosed.getAndSet(true)) {
+			onCloseHandlers.stream().forEach(Runnable::run);
 			onCloseListeners.notifyAllListeners();
 
 			events.shutdownNow();

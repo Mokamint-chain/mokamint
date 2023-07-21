@@ -22,11 +22,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
-import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -46,13 +46,13 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	/**
 	 * The node whose API is published.
 	 */
-	private final RestrictedNode node;
+	private final RestrictedNodeInternals node;
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Runnable onCloseListener = this::close;
+	private final Runnable onCloseHandler = this::close;
 
 	private final static Logger LOGGER = Logger.getLogger(RestrictedNodeServiceImpl.class.getName());
 
@@ -64,20 +64,24 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws DeploymentException, IOException {
+	public RestrictedNodeServiceImpl(RestrictedNodeInternals node, int port) throws DeploymentException, IOException {
 		super(port);
 		this.node = node;
 
+		node.addOnClosedHandler(onCloseHandler);
+
 		if (node instanceof AutoCloseableNode acn)
-			acn.addOnCloseListener(onCloseListener);
+			acn.addOnCloseListener(onCloseHandler);
 
 		deploy();
 	}
 
 	@Override
 	public void close() {
+		node.removeOnCloseHandler(onCloseHandler);
+
 		if (node instanceof AutoCloseableNode acn)
-			acn.removeOnCloseListener(onCloseListener);
+			acn.removeOnCloseListener(onCloseHandler);
 
 		super.close();
 	}

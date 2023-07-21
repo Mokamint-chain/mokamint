@@ -70,7 +70,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Runnable onCloseListener = this::close;
+	private final Runnable onCloseHandler = this::close;
 
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
@@ -88,8 +88,10 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		super(port, uri);
 		this.node = node;
 
+		node.addOnClosedHandler(onCloseHandler);
+
 		if (node instanceof AutoCloseableNode acn)
-			acn.addOnCloseListener(onCloseListener);
+			acn.addOnCloseListener(onCloseHandler);
 
 		if (node instanceof WhisperingNode pnl)
 			pnl.addOnWhisperPeersListener(onWhisperedPeersListener);
@@ -99,8 +101,10 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 
 	@Override
 	public void close() {
+		node.removeOnCloseHandler(onCloseHandler);
+
 		if (node instanceof AutoCloseableNode acn)
-			acn.removeOnCloseListener(onCloseListener);
+			acn.removeOnCloseListener(onCloseHandler);
 
 		if (node instanceof WhisperingNode pnl)
 			pnl.removeOnWhisperPeersListener(onWhisperedPeersListener);
