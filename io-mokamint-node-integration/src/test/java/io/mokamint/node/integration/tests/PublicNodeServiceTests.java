@@ -54,7 +54,6 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.Versions;
-import io.mokamint.node.api.AutoCloseableNode;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -387,7 +386,7 @@ public class PublicNodeServiceTests {
 	public void serviceGetsClosedIfNodeGetsClosed() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		interface PublicNodeWithListeners extends PublicNodeInternals, AutoCloseableNode {};
+		interface PublicNodeWithListeners extends PublicNodeInternals {};
 
 		var listenerForClose = new AtomicReference<Runnable>();
 
