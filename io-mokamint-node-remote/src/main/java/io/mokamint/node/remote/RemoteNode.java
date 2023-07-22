@@ -18,10 +18,12 @@ package io.mokamint.node.remote;
 
 import java.io.IOException;
 
+import io.mokamint.node.api.Node;
+
 /**
  * A remote node of a Mokamint blockchain, just seen as a closeable object.
  */
-public interface AutoCloseableRemoteNode extends AutoCloseable {
+public interface RemoteNode extends Node, AutoCloseable {
 
 	/**
 	 * Closes the node.

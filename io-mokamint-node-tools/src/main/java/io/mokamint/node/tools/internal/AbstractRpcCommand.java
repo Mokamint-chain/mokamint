@@ -23,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.remote.AutoCloseableRemoteNode;
+import io.mokamint.node.remote.RemoteNode;
 import io.mokamint.tools.AbstractCommand;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Help.Ansi;
@@ -68,7 +68,7 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 * @param uri the uri where the remote service can be contacted
 	 * @param logger the logger to use for reporting
 	 */
-	protected <N extends AutoCloseableRemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri, Logger logger) {
+	protected <N extends RemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri, Logger logger) {
 		try (var remote = supplier.get(uri, timeout)) {
 			what.run(remote);
 		}
@@ -98,7 +98,7 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 *
 	 * @param <N> the type of the remote node
 	 */
-	protected interface RemoteSupplier<N extends AutoCloseableRemoteNode> {
+	protected interface RemoteSupplier<N extends RemoteNode> {
 		N get(URI uri, long timeout) throws IOException, DeploymentException;
 	}
 
@@ -107,7 +107,7 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 * 
 	 * @param <N> the type of the remote node used to execute the command
 	 */
-	protected interface RpcCommandBody<N extends AutoCloseableRemoteNode> {
+	protected interface RpcCommandBody<N extends RemoteNode> {
 
 		/**
 		 * Runs the body of the command.

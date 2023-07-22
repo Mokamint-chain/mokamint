@@ -21,5 +21,5 @@ import io.mokamint.node.PublicNodeInternals;
 /**
  * A remote public node of a Mokamint blockchain.
  */
-public interface RemotePublicNode extends PublicNodeInternals, AutoCloseableRemoteNode {
+public interface RemotePublicNode extends PublicNodeInternals, RemoteNode {
 }
