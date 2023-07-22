@@ -189,6 +189,8 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void whisperToPeers(Stream<Peer> peers) {
+		// we check if some peers is interesting for us
+		// and only in that case we forward it to our peers
 		executeAddPeersTask(peers, false);
 	}
 
@@ -709,8 +711,16 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
+			LocalNodeImpl.this.peers.get()
+				.filter(PeerInfo::isConnected)
+				.map(PeerInfo::getPeer)
+				.map(LocalNodeImpl.this.peers::getRemote)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.forEach(remote -> remote.whisperToPeers(getPeers()));
+
+			// also the nodes bound to the services using this node receive the whispering
 			whisperToServices(getPeers());
-			// TODO
 		}
 	}
 

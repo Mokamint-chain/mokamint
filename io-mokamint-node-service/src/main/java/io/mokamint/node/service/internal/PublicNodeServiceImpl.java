@@ -218,10 +218,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
 	}
 
-	protected void whisperPeersToWrappedNode(Stream<Peer> peers) {
-		node.whisperToPeers(peers);
-	}
-
 	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
 		try {
 			sendObjectAsync(session, WhisperPeersMessages.of(peers));
@@ -382,7 +378,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			getServer().whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> getServer().whisperPeersToWrappedNode(message.getPeers()));
+			addMessageHandler(session, (WhisperPeersMessage message) -> getServer().node.whisperToPeers(message.getPeers()));
 	    }
 
 		@SuppressWarnings("resource")
