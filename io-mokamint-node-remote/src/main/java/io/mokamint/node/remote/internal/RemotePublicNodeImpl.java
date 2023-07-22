@@ -47,7 +47,6 @@ import io.mokamint.node.messages.GetInfoResultMessage;
 import io.mokamint.node.messages.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
-import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -58,7 +57,7 @@ import jakarta.websocket.Session;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements RemotePublicNode {
+public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implements RemotePublicNode {
 
 	private final NodeMessageQueues queues;
 

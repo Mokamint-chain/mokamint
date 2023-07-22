@@ -64,7 +64,6 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.WhisperPeersMessage;
-import io.mokamint.node.remote.AbstractRemotePublicNode;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -93,10 +92,10 @@ public class PublicNodeServiceTests {
 		var node = mock(PublicNodeInternals.class);
 		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -122,10 +121,10 @@ public class PublicNodeServiceTests {
 	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -160,10 +159,10 @@ public class PublicNodeServiceTests {
 		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
 		var block = Blocks.of(13L, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -192,10 +191,10 @@ public class PublicNodeServiceTests {
 	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -225,10 +224,10 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var config = ConsensusConfigs.defaults().build();
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -257,10 +256,10 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -289,10 +288,10 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID());
 
-		class MyTestClient extends AbstractRemotePublicNode {
+		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
