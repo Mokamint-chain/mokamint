@@ -98,8 +98,6 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public void receiveWhisperedPeers(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
 	}
 
 	/**
@@ -246,7 +244,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, WhisperPeersMessages.Decoder.class);
+			return deployAt(uri, WhisperPeersMessages.Decoder.class, WhisperPeersMessages.Encoder.class);
 		}
 	}
 }

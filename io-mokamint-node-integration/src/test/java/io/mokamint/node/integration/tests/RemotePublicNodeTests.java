@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -81,6 +83,10 @@ public class RemotePublicNodeTests {
 		private PublicTestServer() throws DeploymentException, IOException {
 			super(PORT);
 			deploy();
+		}
+
+		@Override
+		protected void whisperPeersToWrappedNode(Stream<Peer> peers) {
 		}
 	}
 
@@ -485,7 +491,7 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			private void whisperPeers() {
-				super.whisperPeers(peers.stream());
+				super.whisperPeersToAllConnectedRemotes(peers.stream());
 			}
 		};
 

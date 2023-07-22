@@ -38,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -120,6 +121,10 @@ public class PeersTests {
 			}
 			catch (IOException e) {}
 		};
+
+		@Override
+		protected void whisperPeersToWrappedNode(Stream<Peer> peers) {
+		}
 	}
 
 	@BeforeAll

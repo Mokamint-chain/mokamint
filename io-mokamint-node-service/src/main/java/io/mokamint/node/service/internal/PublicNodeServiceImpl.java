@@ -62,7 +62,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Consumer<Stream<Peer>> this_whisperPeers = this::whisperPeers;
+	private final Consumer<Stream<Peer>> this_whisperPeersToAllConnectedRemotes = this::whisperPeersToAllConnectedRemotes;
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -88,17 +88,15 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
-
-		// if the node has some peers to whisper, then this service will execute whisperPeers
-		node.addOnWhisperPeersHandler(this_whisperPeers);
-
+		// if the node has some peers to whisper, this service will propagate them to all connected remotes
+		node.addOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
 		deploy();
 	}
 
 	@Override
 	public void close() {
 		node.removeOnCloseHandler(this_close);
-		node.removeOnWhisperPeersHandler(this_whisperPeers);
+		node.removeOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
 		super.close();
 	}
 
@@ -112,6 +110,11 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
+	}
+
+	@Override
+	protected void whisperPeersToWrappedNode(Stream<Peer> peers) {
+		node.receiveWhisperedPeers(peers);
 	}
 
 	@Override

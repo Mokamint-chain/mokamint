@@ -54,6 +54,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersMessages;
 import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
@@ -127,9 +128,14 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
-	protected void whisperPeers(Stream<Peer> peers) {
+	/**
+	 * Whisper some peers to all remotes connected to this service.
+	 * 
+	 * @param peers the peers to whisper
+	 */
+	protected final void whisperPeersToAllConnectedRemotes(Stream<Peer> peers) {
 		// we add our own URL as a suggestion
-		if (uri.isPresent())
+		if (uri.isPresent()) // TODO: maybe not here?
 			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get())));
 
 		var peersAsArray = peers.toArray(Peer[]::new);
@@ -140,6 +146,13 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 			.filter(Session::isOpen)
 			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
 	}
+
+	/**
+	 * Whisper some peers to the node wrapped inside this service.
+	 * 
+	 * @param peers the peers to whisper
+	 */
+	protected abstract void whisperPeersToWrappedNode(Stream<Peer> peers);
 
 	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
 		try {
@@ -279,6 +292,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			getServer().whisperPeersSessions.add(session);
+			addMessageHandler(session, (WhisperPeersMessage message) -> getServer().whisperPeersToWrappedNode(message.getPeers()));
 	    }
 
 		@SuppressWarnings("resource")
@@ -288,7 +302,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		}
 
 		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
-			return simpleConfig(server, WhisperPeersEndpoint.class, WHISPER_PEERS_ENDPOINT, WhisperPeersMessages.Encoder.class);
+			return simpleConfig(server, WhisperPeersEndpoint.class, WHISPER_PEERS_ENDPOINT, WhisperPeersMessages.Encoder.class, WhisperPeersMessages.Decoder.class);
 		}
 	}
 }
