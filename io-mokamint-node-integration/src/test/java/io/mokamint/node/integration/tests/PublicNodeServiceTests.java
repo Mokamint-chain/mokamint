@@ -99,14 +99,14 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			protected void onGetPeersResult(Stream<PeerInfo> received) {
+			protected void onGetPeerInfosResult(Stream<PeerInfo> received) {
 				var peerInfos = received.collect(Collectors.toList());
 				if (peerInfos.size() == 2 && peerInfos.contains(peerInfo1) && peerInfos.contains(peerInfo2))
 					semaphore.release();
 			}
 
 			private void sendGetPeers() throws ClosedNodeException {
-				sendGetPeers("id");
+				sendGetPeerInfos("id");
 			}
 		}
 

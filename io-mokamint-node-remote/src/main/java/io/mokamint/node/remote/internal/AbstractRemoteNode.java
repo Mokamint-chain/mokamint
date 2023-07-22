@@ -46,7 +46,7 @@ import jakarta.websocket.Session;
  * to a service for the public or restricted API of a Mokamint node.
  */
 @ThreadSafe
-public abstract class AbstractRemoteNode extends AbstractWebSocketClient implements RemoteNode, NodeInternals {
+abstract class AbstractRemoteNode extends AbstractWebSocketClient implements RemoteNode, NodeInternals {
 
 	/**
 	 * A map from path into the session listening to that path.
@@ -75,12 +75,12 @@ public abstract class AbstractRemoteNode extends AbstractWebSocketClient impleme
 	protected AbstractRemoteNode() throws DeploymentException, IOException {}
 
 	@Override
-	public void addOnClosedHandler(Runnable what) {
+	public final void addOnClosedHandler(Runnable what) {
 		onCloseHandlers.add(what);
 	}
 
 	@Override
-	public void removeOnCloseHandler(Runnable what) {
+	public final void removeOnCloseHandler(Runnable what) {
 		onCloseHandlers.add(what);
 	}
 

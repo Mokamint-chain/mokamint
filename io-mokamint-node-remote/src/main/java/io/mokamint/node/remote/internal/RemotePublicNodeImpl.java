@@ -16,6 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
+import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
 
 import java.io.IOException;
@@ -40,11 +45,22 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessage;
+import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessage;
+import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessage;
+import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessage;
+import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.remote.RemotePublicNode;
@@ -57,7 +73,7 @@ import jakarta.websocket.Session;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implements RemotePublicNode {
+public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePublicNode {
 
 	private final NodeMessageQueues queues;
 
@@ -78,8 +94,11 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemotePublicNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
-		super(uri);
-
+		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeersEndpoint::new);
+		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
+		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
+		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
+		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
 		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
 
 		this.queues = new NodeMessageQueues(timeout);
@@ -122,7 +141,27 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 
 	@Override
 	protected void notifyResult(RpcMessage message) {
-		super.notifyResult(message);
+		if (message instanceof GetInfoResultMessage girm)
+			onGetInfoResult(girm.get());
+		else if (message instanceof GetPeerInfosResultMessage gprm)
+			onGetPeerInfosResult(gprm.get());
+		else if (message instanceof GetBlockResultMessage gbrm)
+			onGetBlockResult(gbrm.get());
+		else if (message instanceof GetConfigResultMessage gcrm)
+			onGetConfigResult(gcrm.get());
+		else if (message instanceof GetChainInfoResultMessage gcirm)
+			onGetChainInfoResult(gcirm.get());
+		else if (message instanceof ExceptionMessage em)
+			onException(em);
+		else if (message == null) {
+			LOGGER.log(Level.SEVERE, "unexpected null message");
+			return;
+		}
+		else {
+			LOGGER.log(Level.SEVERE, "unexpected message of class " + message.getClass().getName());
+			return;
+		}
+
 		queues.notifyResult(message);
 	}
 
@@ -142,6 +181,15 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 		}
 	}
 
+	protected void sendGetInfo(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
 	private NodeInfo processGetInfoSuccess(RpcMessage message) {
 		return message instanceof GetInfoResultMessage girm ? girm.get() : null;
 	}
@@ -150,9 +198,9 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
-		sendGetPeers(id);
+		sendGetPeerInfos(id);
 		try {
-			return queues.waitForResult(id, this::processGetPeersSuccess, this::processStandardExceptions);
+			return queues.waitForResult(id, this::processGetPeerInfosSuccess, this::processStandardExceptions);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
 			throw e;
@@ -162,7 +210,16 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 		}
 	}
 
-	private Stream<PeerInfo> processGetPeersSuccess(RpcMessage message) {
+	protected void sendGetPeerInfos(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private Stream<PeerInfo> processGetPeerInfosSuccess(RpcMessage message) {
 		return message instanceof GetPeerInfosResultMessage gprm ? gprm.get() : null;
 	}
 
@@ -179,6 +236,15 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 		}
 		catch (Exception e) {
 			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendGetBlock(byte[] hash, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
 		}
 	}
 
@@ -209,6 +275,15 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 		}
 	}
 
+	protected void sendGetConfig(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
 	private ConsensusConfig processGetConfigSuccess(RpcMessage message) {
 		return message instanceof GetConfigResultMessage gcrm ? gcrm.get() : null;
 	}
@@ -229,6 +304,15 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 		}
 	}
 
+	protected void sendGetChainInfo(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
 	private ChainInfo processGetChainInfoSuccess(RpcMessage message) {
 		return message instanceof GetChainInfoResultMessage gcirm ? gcirm.get() : null;
 	}
@@ -238,6 +322,56 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNodeImpl implement
 		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
 			DatabaseException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
+	}
+
+	/**
+	 * Handlers that can be overridden in subclasses.
+	 */
+	protected void onGetPeerInfosResult(Stream<PeerInfo> peers) {}
+	protected void onGetBlockResult(Optional<Block> block) {}
+	protected void onGetConfigResult(ConsensusConfig config) {}
+	protected void onGetChainInfoResult(ChainInfo info) {}
+	protected void onGetInfoResult(NodeInfo info) {}
+	protected void onException(ExceptionMessage message) {}
+
+	private class GetPeersEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
+		}
+	}
+
+	private class GetBlockEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockMessages.Encoder.class);
+		}
+	}
+
+	private class GetConfigEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetConfigMessages.Encoder.class);
+		}
+	}
+
+	private class GetChainInfoEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
+		}
+	}
+
+	private class GetInfoEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInfoMessages.Encoder.class);
+		}
 	}
 
 	private class WhisperPeersEndpoint extends Endpoint {
