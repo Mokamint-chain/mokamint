@@ -63,7 +63,6 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessage;
-import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -320,7 +319,7 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
-		var peers = Set.of(peer1, peer2);
+		var allPeers = Set.of(peer1, peer2);
 		var handlerForWhisperedPeers = new AtomicReference<Consumer<Stream<Peer>>>();
 
 		var node = mock(PublicNodeInternals.class);
@@ -337,10 +336,10 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			protected void whisperPeersToServices(WhisperPeersMessage message) {
+			public void whisperToServices(Stream<Peer> peers) {
 				// we must use containsAll since the suggested peers might include
 				// the public URI of the machine where the test is running
-				if (message.getPeers().collect(Collectors.toSet()).containsAll(peers))
+				if (peers.collect(Collectors.toSet()).containsAll(allPeers))
 					semaphore.release();
 			}
 		}
@@ -382,7 +381,6 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 
 		var listenerForClose = new AtomicReference<Runnable>();
-
 		var node = mock(PublicNodeInternals.class);
 		doAnswer(listener -> {
 			listenerForClose.set(listener.getArgument(0));

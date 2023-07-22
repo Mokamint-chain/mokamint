@@ -115,7 +115,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void receiveWhisperedPeers(Stream<Peer> peers) {
+	public void whisperToPeers(Stream<Peer> peers) {
 		try {
 			sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), WhisperPeersMessages.of(peers));
 		}
@@ -124,14 +124,10 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	/**
-	 * Called when the bound service has whispered some peers to this node.
-	 * It whispers them to all registered handlers.
-	 * 
-	 * @param message the message containing the whispered peers
-	 */
-	protected void whisperPeersToServices(WhisperPeersMessage message) {
-		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(message.getPeers()));
+	@Override
+	public void whisperToServices(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -378,7 +374,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, RemotePublicNodeImpl.this::whisperPeersToServices);
+			addMessageHandler(session, (WhisperPeersMessage message) -> whisperToServices(message.getPeers()));
 		}
 
 		@Override

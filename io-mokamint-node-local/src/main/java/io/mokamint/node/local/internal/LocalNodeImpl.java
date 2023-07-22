@@ -61,7 +61,6 @@ import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
-import io.mokamint.node.local.internal.tasks.SuggestPeersTask;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -189,8 +188,14 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void receiveWhisperedPeers(Stream<Peer> peers) {
+	public void whisperToPeers(Stream<Peer> peers) {
 		executeAddPeersTask(peers, false);
+	}
+
+	@Override
+	public void whisperToServices(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
 	}
 
 	private void ensureIsOpen() throws ClosedNodeException {
@@ -704,7 +709,8 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
-			submit(new SuggestPeersTask(getPeers(), onWhisperPeersHandlers::stream, LocalNodeImpl.this));
+			whisperToServices(getPeers());
+			// TODO
 		}
 	}
 

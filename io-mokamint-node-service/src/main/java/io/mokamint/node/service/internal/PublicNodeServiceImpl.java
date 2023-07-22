@@ -219,7 +219,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	protected void whisperPeersToWrappedNode(Stream<Peer> peers) {
-		node.receiveWhisperedPeers(peers);
+		node.whisperToPeers(peers);
 	}
 
 	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
