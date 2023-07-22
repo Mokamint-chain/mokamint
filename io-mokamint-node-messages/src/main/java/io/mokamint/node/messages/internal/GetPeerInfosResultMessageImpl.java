@@ -23,12 +23,12 @@ import java.util.stream.Stream;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.GetPeersResultMessage;
+import io.mokamint.node.messages.GetPeerInfosResultMessage;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getPeerInfos()} method of a node.
  */
-public class GetPeersResultMessageImpl extends AbstractRpcMessage implements GetPeersResultMessage {
+public class GetPeerInfosResultMessageImpl extends AbstractRpcMessage implements GetPeerInfosResultMessage {
 
 	private final PeerInfo[] peers;
 
@@ -38,7 +38,7 @@ public class GetPeersResultMessageImpl extends AbstractRpcMessage implements Get
 	 * @param peers the peers in the message
 	 * @param id the identifier of the message
 	 */
-	public GetPeersResultMessageImpl(Stream<PeerInfo> peers, String id) {
+	public GetPeerInfosResultMessageImpl(Stream<PeerInfo> peers, String id) {
 		super(id);
 
 		this.peers = peers
@@ -53,11 +53,11 @@ public class GetPeersResultMessageImpl extends AbstractRpcMessage implements Get
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetPeersResultMessage gprm && super.equals(other) && Arrays.equals(peers, gprm.get().toArray(PeerInfo[]::new));
+		return other instanceof GetPeerInfosResultMessage gprm && super.equals(other) && Arrays.equals(peers, gprm.get().toArray(PeerInfo[]::new));
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetPeersResultMessage.class.getName();
+		return GetPeerInfosResultMessage.class.getName();
 	}
 }

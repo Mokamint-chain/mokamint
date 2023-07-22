@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +38,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
+import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
@@ -46,17 +46,23 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
+import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessage;
+import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetConfigMessage;
+import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessage;
+import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
-import io.mokamint.node.messages.GetPeersMessage;
-import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.GetPeerInfosMessage;
+import io.mokamint.node.messages.GetPeerInfosMessages;
+import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -68,12 +74,17 @@ import jakarta.websocket.server.ServerEndpointConfig;
  * where clients can connect to query the public API of a Mokamint node.
  */
 @ThreadSafe
-public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
+public class PublicNodeServiceImpl extends AbstractWebSocketServer implements PublicNodeService {
 
 	/**
 	 * The node whose API is published.
 	 */
 	private final PublicNodeInternals node;
+
+	/**
+	 * The port of localhost, where this service is published.
+	 */
+	private final int port;
 
 	/**
 	 * The public URI of the machine where this service is running. If this is missing,
@@ -111,36 +122,33 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public PublicNodeServiceImpl(PublicNodeInternals node, int port, Optional<URI> uri) throws DeploymentException, IOException {
-		super(port, uri);
-
 		this.node = node;
+		this.port = port;
 		this.uri = check(DeploymentException.class, () -> uri.or(this::determinePublicURI).map(uncheck(this::addPort)));
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 		// if the node has some peers to whisper, this service will propagate them to all connected remotes
 		node.addOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
-		deploy();
+
+		startContainer("", port,
+			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetBlockEndpoint.config(this),
+			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), WhisperPeersEndpoint.config(this));
+
+		LOGGER.info("published a public node service at ws://localhost:" + port);
 	}
 
 	@Override
 	public void close() {
 		node.removeOnCloseHandler(this_close);
 		node.removeOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
-		super.close();
-	}
-
-	@Override
-	protected List<ServerEndpointConfig> mkEndpointsConfigs() {
-		var result = super.mkEndpointsConfigs();
-		result.add(WhisperPeersEndpoint.config(this));
-
-		return result;
+		stopContainer();
+		LOGGER.info("closed the public node service at ws://localhost:" + port);
 	}
 
 	private URI addPort(URI uri) throws DeploymentException {
 		try {
-			return new URI(uri.toString() + ":" + getPort());
+			return new URI(uri.toString() + ":" + port);
 		}
 		catch (URISyntaxException e) {
 			throw new DeploymentException("The public URI of the machine seems incorrect", e);
@@ -210,7 +218,6 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
 	}
 
-	@Override
 	protected void whisperPeersToWrappedNode(Stream<Peer> peers) {
 		node.receiveWhisperedPeers(peers);
 	}
@@ -224,9 +231,8 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 		}
 	}
 
-	@Override
 	protected void onGetInfo(GetInfoMessage message, Session session) {
-		super.onGetInfo(message, session);
+		LOGGER.info("received a " + GET_INFO_ENDPOINT + " request");
 
 		try {
 			try {
@@ -241,13 +247,25 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 		}
 	};
 
-	@Override
-	protected void onGetPeers(GetPeersMessage message, Session session) {
-		super.onGetPeers(message, session);
+	public static class GetInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetInfoMessage message) -> getServer().onGetInfo(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetInfoEndpoint.class, GET_INFO_ENDPOINT,
+					GetInfoMessages.Decoder.class, GetInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
+		LOGGER.info("received a " + GET_PEER_INFOS_ENDPOINT + " request");
 
 		try {
 			try {
-				sendObjectAsync(session, GetPeersResultMessages.of(node.getPeerInfos(), message.getId()));
+				sendObjectAsync(session, GetPeerInfosResultMessages.of(node.getPeerInfos(), message.getId()));
 			}
 			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
 				sendExceptionAsync(session, e, message.getId());
@@ -258,9 +276,21 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 		}
 	};
 
-	@Override
+	public static class GetPeerInfosEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetPeerInfosMessage message) -> getServer().onGetPeerInfos(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetPeerInfosEndpoint.class, GET_PEER_INFOS_ENDPOINT,
+					GetPeerInfosMessages.Decoder.class, GetPeerInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
 	protected void onGetBlock(GetBlockMessage message, Session session) {
-		super.onGetBlock(message, session);
+		LOGGER.info("received a " + GET_BLOCK_ENDPOINT + " request");
 
 		try {
 			try {
@@ -275,9 +305,21 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 		}
 	};
 
-	@Override
+	public static class GetBlockEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetBlockMessage message) -> getServer().onGetBlock(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT,
+					GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
 	protected void onGetConfig(GetConfigMessage message, Session session) {
-		super.onGetConfig(message, session);
+		LOGGER.info("received a " + GET_CONFIG_ENDPOINT + " request");
 
 		try {
 			try {
@@ -292,9 +334,21 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 		}
 	};
 
-	@Override
+	public static class GetConfigEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetConfigMessage message) -> getServer().onGetConfig(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT,
+					GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
 	protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-		super.onGetChainInfo(message, session);
+		LOGGER.info("received a " + GET_CHAIN_INFO_ENDPOINT + " request");
 
 		try {
 			try {
@@ -308,6 +362,19 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
+
+	public static class GetChainInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetChainInfoMessage message) -> getServer().onGetChainInfo(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT,
+					GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
 
 	public static class WhisperPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 

@@ -21,7 +21,7 @@ import io.mokamint.node.messages.GetInfoResultMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
 
 /**
- * An encoder of {@code GetInfoResultMessage}.
+ * An encoder of {@link GetInfoResultMessage}.
  */
 public class GetInfoResultMessageEncoder extends MappedEncoder<GetInfoResultMessage, GetInfoResultMessages.Json> {
 

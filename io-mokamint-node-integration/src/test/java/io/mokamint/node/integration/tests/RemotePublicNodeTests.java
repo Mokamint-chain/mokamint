@@ -44,8 +44,8 @@ import io.mokamint.node.messages.GetConfigMessage;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
-import io.mokamint.node.messages.GetPeersMessage;
-import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.GetPeerInfosMessage;
+import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
@@ -94,9 +94,9 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeers(GetPeersMessage message, Session session) {
+			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 				try {
-					sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
+					sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()));
 				}
 				catch (IOException e) {}
 			}
@@ -118,7 +118,7 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeers(GetPeersMessage message, Session session) {
+			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 				try {
 					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
 				}
@@ -142,7 +142,7 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeers(GetPeersMessage message, Session session) {
+			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 				try {
 					sendObjectAsync(session, ExceptionMessages.of(new ClosedNodeException(exceptionMessage), message.getId()));
 				}
@@ -166,7 +166,7 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeers(GetPeersMessage message, Session session) {
+			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 				try {
 					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
 				}
@@ -190,14 +190,14 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeers(GetPeersMessage message, Session session) {
+			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 				try {
 					Thread.sleep(TIME_OUT * 4); // <----
 				}
 				catch (InterruptedException e) {}
 
 				try {
-					sendObjectAsync(session, GetPeersResultMessages.of(peerInfos1.stream(), message.getId()));
+					sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()));
 				}
 				catch (IOException e) {}
 			}
@@ -216,7 +216,7 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeers(GetPeersMessage message, Session session) {
+			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 				try {
 					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
 				}
@@ -237,7 +237,7 @@ public class RemotePublicNodeTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeers(GetPeersMessage message, Session session) {
+			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 				try {
 					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
 				}

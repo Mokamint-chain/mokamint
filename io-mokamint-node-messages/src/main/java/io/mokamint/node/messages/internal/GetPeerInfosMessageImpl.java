@@ -17,29 +17,30 @@ limitations under the License.
 package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.messages.GetPeersMessage;
+import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.messages.GetPeerInfosMessage;
 
 /**
- * Implementation of the network message corresponding to the {@code getPeers} method of a node.
+ * Implementation of the network message corresponding to the {@link PublicNode#getPeerInfos()} method of a node.
  */
-public class GetPeersMessageImpl extends AbstractRpcMessage implements GetPeersMessage {
+public class GetPeerInfosMessageImpl extends AbstractRpcMessage implements GetPeerInfosMessage {
 
 	/**
 	 * Creates the message.
 	 * 
 	 * @param id the identifier of the message
 	 */
-	public GetPeersMessageImpl(String id) {
+	public GetPeerInfosMessageImpl(String id) {
 		super(id);
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetPeersMessage && super.equals(other);
+		return other instanceof GetPeerInfosMessage && super.equals(other);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetPeersMessage.class.getName();
+		return GetPeerInfosMessage.class.getName();
 	}
 }

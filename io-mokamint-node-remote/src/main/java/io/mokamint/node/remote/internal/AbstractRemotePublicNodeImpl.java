@@ -51,9 +51,9 @@ import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
-import io.mokamint.node.messages.GetPeersMessages;
-import io.mokamint.node.messages.GetPeersResultMessage;
-import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.GetPeerInfosMessages;
+import io.mokamint.node.messages.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -85,7 +85,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof GetInfoResultMessage girm)
 			onGetInfoResult(girm.get());
-		else if (message instanceof GetPeersResultMessage gprm)
+		else if (message instanceof GetPeerInfosResultMessage gprm)
 			onGetPeersResult(gprm.get());
 		else if (message instanceof GetBlockResultMessage gbrm)
 			onGetBlockResult(gbrm.get());
@@ -112,7 +112,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 
 	protected void sendGetPeers(String id) throws ClosedNodeException {
 		try {
-			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeersMessages.of(id));
+			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id));
 		}
 		catch (IOException e) {
 			throw new ClosedNodeException(e);
@@ -160,7 +160,7 @@ public abstract class AbstractRemotePublicNodeImpl extends AbstractRemoteNode {
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetPeersResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPeersMessages.Encoder.class);
+			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
 		}
 	}
 

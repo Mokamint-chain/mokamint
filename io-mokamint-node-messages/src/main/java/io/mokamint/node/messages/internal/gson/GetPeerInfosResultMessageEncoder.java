@@ -14,15 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.RpcMessage;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.GetPeerInfosResultMessages;
 
 /**
- * The network message corresponding to the {@code getPeers} method of a node.
+ * An encoder of {@link GetPeerInfosResultMessage}.
  */
-public interface GetPeersMessage extends RpcMessage {
-	
-	@Override
-	boolean equals(Object obj);
+public class GetPeerInfosResultMessageEncoder extends MappedEncoder<GetPeerInfosResultMessage, GetPeerInfosResultMessages.Json> {
+
+	public GetPeerInfosResultMessageEncoder() {
+		super(GetPeerInfosResultMessages.Json::new);
+	}
 }

@@ -14,18 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.node.messages;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.GetPeersResultMessage;
-import io.mokamint.node.messages.GetPeersResultMessages;
+import java.util.stream.Stream;
+
+import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * An encoder of {@code GetPeersResultMessage}.
+ * The network message corresponding to the result of the {@link PublicNode#getPeerInfos()} method of a node.
  */
-public class GetPeersResultMessageEncoder extends MappedEncoder<GetPeersResultMessage, GetPeersResultMessages.Json> {
-
-	public GetPeersResultMessageEncoder() {
-		super(GetPeersResultMessages.Json::new);
-	}
+public interface GetPeerInfosResultMessage extends ResultMessage<Stream<PeerInfo>> {
 }

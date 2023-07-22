@@ -16,34 +16,34 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.mokamint.node.messages.internal.GetPeersMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetPeersMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetPeersMessageEncoder;
+import io.mokamint.node.messages.internal.GetPeerInfosMessageImpl;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosMessageDecoder;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosMessageEncoder;
 
 /**
- * A provider of {@link GetPeersMessage}.
+ * A provider of {@link GetPeerInfosMessage}.
  */
-public class GetPeersMessages {
+public class GetPeerInfosMessages {
 
-	private GetPeersMessages() {}
+	private GetPeerInfosMessages() {}
 
 	/**
-	 * Yields a {@link GetPeersMessage}.
+	 * Yields a {@link GetPeerInfosMessage}.
 	 * 
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPeersMessage of(String id) {
-		return new GetPeersMessageImpl(id);
+	public static GetPeerInfosMessage of(String id) {
+		return new GetPeerInfosMessageImpl(id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetPeersMessageEncoder {}
+	public static class Encoder extends GetPeerInfosMessageEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetPeersMessageDecoder {}
+	public static class Decoder extends GetPeerInfosMessageDecoder {}
 }

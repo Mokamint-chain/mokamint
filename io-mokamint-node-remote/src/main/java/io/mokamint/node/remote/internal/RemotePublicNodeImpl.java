@@ -44,7 +44,7 @@ import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetChainInfoResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetInfoResultMessage;
-import io.mokamint.node.messages.GetPeersResultMessage;
+import io.mokamint.node.messages.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.remote.AbstractRemotePublicNode;
@@ -164,7 +164,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	}
 
 	private Stream<PeerInfo> processGetPeersSuccess(RpcMessage message) {
-		return message instanceof GetPeersResultMessage gprm ? gprm.get() : null;
+		return message instanceof GetPeerInfosResultMessage gprm ? gprm.get() : null;
 	}
 
 	@Override

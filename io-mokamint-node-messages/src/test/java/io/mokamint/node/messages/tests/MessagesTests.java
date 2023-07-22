@@ -38,8 +38,8 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
-import io.mokamint.node.messages.GetPeersMessages;
-import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.GetPeerInfosMessages;
+import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -52,9 +52,9 @@ public class MessagesTests {
 	@Test
 	@DisplayName("getPeers messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetPeers() throws EncodeException, DecodeException {
-		var getPeersMessage1 = GetPeersMessages.of("id");
-		String encoded = new GetPeersMessages.Encoder().encode(getPeersMessage1);
-		var getPeersMessage2 = new GetPeersMessages.Decoder().decode(encoded);
+		var getPeersMessage1 = GetPeerInfosMessages.of("id");
+		String encoded = new GetPeerInfosMessages.Encoder().encode(getPeersMessage1);
+		var getPeersMessage2 = new GetPeerInfosMessages.Decoder().decode(encoded);
 		assertEquals(getPeersMessage1, getPeersMessage2);
 	}
 
@@ -64,9 +64,9 @@ public class MessagesTests {
 		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://google.com:8011")), 1234, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://amazon.it:8024")), 313, false);
 		var peerInfo3 = PeerInfos.of(Peers.of(new URI("ws://panarea.io:8025")), 112, true);
-		var getPeersResultMessage1 = GetPeersResultMessages.of(Stream.of(peerInfo1, peerInfo2, peerInfo3), "id");
-		String encoded = new GetPeersResultMessages.Encoder().encode(getPeersResultMessage1);
-		var getPeersResultMessage2 = new GetPeersResultMessages.Decoder().decode(encoded);
+		var getPeersResultMessage1 = GetPeerInfosResultMessages.of(Stream.of(peerInfo1, peerInfo2, peerInfo3), "id");
+		String encoded = new GetPeerInfosResultMessages.Encoder().encode(getPeersResultMessage1);
+		var getPeersResultMessage2 = new GetPeerInfosResultMessages.Decoder().decode(encoded);
 		assertEquals(getPeersResultMessage1, getPeersResultMessage2);
 	}
 

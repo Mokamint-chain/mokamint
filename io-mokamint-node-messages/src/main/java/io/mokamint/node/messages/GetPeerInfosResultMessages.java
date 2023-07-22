@@ -19,50 +19,50 @@ package io.mokamint.node.messages;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.messages.internal.GetPeersResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetPeersResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetPeersResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetPeersResultMessageJson;
+import io.mokamint.node.messages.internal.GetPeerInfosResultMessageImpl;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageDecoder;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageJson;
 
 /**
- * A provider of {@link GetPeersResultMessage}.
+ * A provider of {@link GetPeerInfosResultMessage}.
  */
-public class GetPeersResultMessages {
+public class GetPeerInfosResultMessages {
 
-	private GetPeersResultMessages() {}
+	private GetPeerInfosResultMessages() {}
 
 	/**
-	 * Yields a {@link GetPeersResultMessage}.
+	 * Yields a {@link GetPeerInfosResultMessage}.
 	 * 
 	 * @param peers the peers in the result
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPeersResultMessage of(Stream<PeerInfo> peers, String id) {
-		return new GetPeersResultMessageImpl(peers, id);
+	public static GetPeerInfosResultMessage of(Stream<PeerInfo> peers, String id) {
+		return new GetPeerInfosResultMessageImpl(peers, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetPeersResultMessageEncoder {}
+	public static class Encoder extends GetPeerInfosResultMessageEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetPeersResultMessageDecoder {}
+	public static class Decoder extends GetPeerInfosResultMessageDecoder {}
 
 	/**
      * Json representation.
      */
-    public static class Json extends GetPeersResultMessageJson {
+    public static class Json extends GetPeerInfosResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetPeersResultMessage message) {
+    	public Json(GetPeerInfosResultMessage message) {
     		super(message);
     	}
     }
