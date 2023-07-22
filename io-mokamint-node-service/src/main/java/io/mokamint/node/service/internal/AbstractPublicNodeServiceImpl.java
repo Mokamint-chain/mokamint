@@ -144,7 +144,6 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		result.add(GetBlockEndpoint.config(this));
 		result.add(GetConfigEndpoint.config(this));
 		result.add(GetChainInfoEndpoint.config(this));
-		result.add(WhisperPeersEndpoint.config(this));
 
 		return result;
 	}
@@ -322,7 +321,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 			getServer().whisperPeersSessions.remove(session);
 		}
 
-		private static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
+		static ServerEndpointConfig config(AbstractPublicNodeServiceImpl server) {
 			return simpleConfig(server, WhisperPeersEndpoint.class, WHISPER_PEERS_ENDPOINT, WhisperPeersMessages.Encoder.class, WhisperPeersMessages.Decoder.class);
 		}
 	}

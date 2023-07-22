@@ -52,6 +52,7 @@ import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
+import io.mokamint.node.service.internal.AbstractPublicNodeServiceImpl.WhisperPeersEndpoint;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -114,6 +115,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	@Override
 	protected List<ServerEndpointConfig> mkEndpointsConfigs() {
 		var result = super.mkEndpointsConfigs();
+		result.add(WhisperPeersEndpoint.config(this));
 
 		return result;
 	}

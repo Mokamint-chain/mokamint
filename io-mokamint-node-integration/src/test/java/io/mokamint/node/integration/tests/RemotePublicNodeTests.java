@@ -3,6 +3,7 @@ package io.mokamint.node.integration.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -48,7 +49,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
-import io.mokamint.node.service.AbstractPublicNodeService;
+import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
@@ -72,7 +73,7 @@ public class RemotePublicNodeTests {
 	 * Test server implementation.
 	 */
 	@ThreadSafe
-	private static class PublicTestServer extends AbstractPublicNodeService {
+	private static class PublicTestServer extends PublicNodeServiceImpl {
 
 		/**
 		 * Creates a new test server.
@@ -81,8 +82,7 @@ public class RemotePublicNodeTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private PublicTestServer() throws DeploymentException, IOException {
-			super(PORT);
-			deploy();
+			super(mock(), PORT, Optional.empty());
 		}
 
 		@Override

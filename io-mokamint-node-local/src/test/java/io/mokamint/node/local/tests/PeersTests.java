@@ -31,6 +31,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -64,7 +65,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
-import io.mokamint.node.service.AbstractPublicNodeService;
+import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -99,7 +100,7 @@ public class PeersTests {
 	 * Test server implementation.
 	 */
 	@ThreadSafe
-	private static class PublicTestServer extends AbstractPublicNodeService {
+	private static class PublicTestServer extends PublicNodeServiceImpl {
 
 		/**
 		 * Creates a new test server.
@@ -109,8 +110,7 @@ public class PeersTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private PublicTestServer(int port) throws DeploymentException, IOException {
-			super(port);
-			deploy();
+			super(mock(), port, Optional.empty());
 		}
 
 		@Override
