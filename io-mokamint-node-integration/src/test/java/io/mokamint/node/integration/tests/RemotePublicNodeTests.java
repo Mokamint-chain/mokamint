@@ -492,7 +492,7 @@ public class RemotePublicNodeTests {
 		var semaphore = new Semaphore(0);
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			remote.addOnWhisperPeersHandler(suggestedPeers -> {
+			remote.addOnWhisperPeersToServicesHandler(suggestedPeers -> {
 				// we use set inclusion since the suggestion might include the
 				// public URI of the machine where the service is running
 				if (suggestedPeers.collect(Collectors.toSet()).containsAll(peers))

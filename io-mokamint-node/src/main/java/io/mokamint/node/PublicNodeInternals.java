@@ -29,27 +29,20 @@ import io.mokamint.node.api.PublicNode;
 public interface PublicNodeInternals extends NodeInternals, PublicNode {
 
 	/**
-	 * Takes note that the given code must be executed when this node
-	 * has some peers to whisper.
+	 * Takes note that the given handler must be executed when this node
+	 * has some peers to whisper to the services using this node.
 	 * 
-	 * @param handler the code
+	 * @param handler the handler
 	 */
-	void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler);
+	void addOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler);
 
 	/**
-	 * Removes the given code from that executed when this node
-	 * has some peers to whisper.
+	 * Removes the given handler from that executed when this node
+	 * has some peers to whisper to the services using this node.
 	 * 
-	 * @param handler the code
+	 * @param handler the handler
 	 */
-	void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler);
-
-	/**
-	 * Called when some peers must be whispered to the peers of this node.
-	 * 
-	 * @param peers the peers to whisper
-	 */
-	void whisperToPeers(Stream<Peer> peers);
+	void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler);
 
 	/**
 	 * Called when some peers must be whispered to all services using this node.
@@ -57,4 +50,11 @@ public interface PublicNodeInternals extends NodeInternals, PublicNode {
 	 * @param peers the peers to whisper
 	 */
 	void whisperToServices(Stream<Peer> peers);
+
+	/**
+	 * Called when some peers must be whispered to the peers of this node.
+	 * 
+	 * @param peers the peers to whisper
+	 */
+	void whisperToPeers(Stream<Peer> peers);
 }

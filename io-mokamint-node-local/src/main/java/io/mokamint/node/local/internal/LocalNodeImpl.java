@@ -120,9 +120,9 @@ public class LocalNodeImpl implements LocalNode {
 	private final CopyOnWriteArrayList<Runnable> onCloseHandlers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * The code to execute when this node has some peers to whisper.
+	 * The code to execute when this node has some peers to whisper to the services using this node.
 	 */
-	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersHandlers = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersToServicesHandlers = new CopyOnWriteArrayList<>();
 
 	/**
 	 * True if and only if this node has been closed already.
@@ -178,13 +178,13 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersHandlers.add(handler);
+	public void addOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersToServicesHandlers.add(handler);
 	}
 
 	@Override
-	public void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersHandlers.remove(handler);
+	public void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersToServicesHandlers.remove(handler);
 	}
 
 	@Override
@@ -197,7 +197,7 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void whisperToServices(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
-		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
+		onWhisperPeersToServicesHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
 	}
 
 	private void ensureIsOpen() throws ClosedNodeException {

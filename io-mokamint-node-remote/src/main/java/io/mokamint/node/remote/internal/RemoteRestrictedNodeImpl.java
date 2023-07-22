@@ -114,7 +114,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	/**
-	 * Handlers that can be overridden in subclasses.
+	 * Hooks that can be overridden in subclasses.
 	 */
 	protected void onAddPeerResult() {}
 	protected void onRemovePeerResult() {}
@@ -153,9 +153,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		return IncompatiblePeerException.class.isAssignableFrom(clazz) ||
 			DatabaseException.class.isAssignableFrom(clazz) ||
 			IOException.class.isAssignableFrom(clazz) ||
-			TimeoutException.class.isAssignableFrom(clazz) ||
-			InterruptedException.class.isAssignableFrom(clazz) ||
-			ClosedNodeException.class.isAssignableFrom(clazz);
+			processStandardExceptions(message);
 	}
 
 	@Override
@@ -187,10 +185,6 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	private boolean processRemovePeerException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return DatabaseException.class.isAssignableFrom(clazz) ||
-			TimeoutException.class.isAssignableFrom(clazz) ||
-			InterruptedException.class.isAssignableFrom(clazz) ||
-			ClosedNodeException.class.isAssignableFrom(clazz);
+		return DatabaseException.class.isAssignableFrom(message.getExceptionClass()) || processStandardExceptions(message);
 	}
 }

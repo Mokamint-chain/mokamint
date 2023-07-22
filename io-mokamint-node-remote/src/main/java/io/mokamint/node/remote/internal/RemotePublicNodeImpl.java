@@ -78,9 +78,9 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private final NodeMessageQueues queues;
 
 	/**
-	 * The code to execute when this node has some peers to whisper.
+	 * The code to execute when this node has some peers to whisper to the services using this node.
 	 */
-	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersHandlers = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersToServicesHandlers = new CopyOnWriteArrayList<>();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
@@ -105,13 +105,13 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersHandlers.add(handler);
+	public void addOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersToServicesHandlers.add(handler);
 	}
 
 	@Override
-	public void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersHandlers.remove(handler);
+	public void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
+		onWhisperPeersToServicesHandlers.remove(handler);
 	}
 
 	@Override
@@ -127,7 +127,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	@Override
 	public void whisperToServices(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
-		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
+		onWhisperPeersToServicesHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -321,7 +321,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	/**
-	 * Handlers that can be overridden in subclasses.
+	 * Hooks that can be overridden in subclasses.
 	 */
 	protected void onGetPeerInfosResult(Stream<PeerInfo> peers) {}
 	protected void onGetBlockResult(Optional<Block> block) {}

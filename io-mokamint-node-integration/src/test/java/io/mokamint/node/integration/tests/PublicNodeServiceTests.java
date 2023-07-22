@@ -327,7 +327,7 @@ public class PublicNodeServiceTests {
 			handlerForWhisperedPeers.set(listener.getArgument(0));
 			return null;
 		}).
-		when(node).addOnWhisperPeersHandler(any());
+		when(node).addOnWhisperPeersToServicesHandler(any());
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

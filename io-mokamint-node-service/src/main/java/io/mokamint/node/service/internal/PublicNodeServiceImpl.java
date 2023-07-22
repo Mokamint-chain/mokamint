@@ -129,7 +129,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 		// if the node has some peers to whisper, this service will propagate them to all connected remotes
-		node.addOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
+		node.addOnWhisperPeersToServicesHandler(this_whisperPeersToAllConnectedRemotes);
 
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetBlockEndpoint.config(this),
@@ -141,7 +141,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	@Override
 	public void close() {
 		node.removeOnCloseHandler(this_close);
-		node.removeOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
+		node.removeOnWhisperPeersToServicesHandler(this_whisperPeersToAllConnectedRemotes);
 		stopContainer();
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
 	}
