@@ -22,29 +22,41 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.server.AbstractServerEndpoint;
+import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.messages.AddPeerMessage;
+import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
+import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
+import io.mokamint.node.service.api.RestrictedNodeService;
 import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 /**
  * The implementation of a restricted node service. It publishes endpoints at a URL,
  * where clients can connect to query the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeServiceImpl {
+public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implements RestrictedNodeService {
 
 	/**
 	 * The node whose API is published.
 	 */
 	private final RestrictedNodeInternals node;
+
+	/**
+	 * The port of localhost, where this service is published.
+	 */
+	private final int port;
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -63,19 +75,21 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeServiceImpl
 	 * @throws IOException if an I/O error occurs
 	 */
 	public RestrictedNodeServiceImpl(RestrictedNodeInternals node, int port) throws DeploymentException, IOException {
-		super(port);
 		this.node = node;
+		this.port = port;
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 
-		deploy();
+		startContainer("", port, AddPeersEndpoint.config(this), RemoveBlockEndpoint.config(this));
+		LOGGER.info("published a restricted node service at ws://localhost:" + port);
 	}
 
 	@Override
 	public void close() {
 		node.removeOnCloseHandler(this_close);
-		super.close();
+		stopContainer();
+		LOGGER.info("closed the restricted node service at ws://localhost:" + port);
 	}
 
 	/**
@@ -90,9 +104,8 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeServiceImpl
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
-	@Override
 	protected void onAddPeers(AddPeerMessage message, Session session) {
-		super.onAddPeers(message, session);
+		LOGGER.info("received an " + ADD_PEER_ENDPOINT + " request");
 
 		try {
 			try {
@@ -110,9 +123,8 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeServiceImpl
 		}
 	};
 
-	@Override
 	protected void onRemovePeer(RemovePeerMessage message, Session session) {
-		super.onRemovePeer(message, session);
+		LOGGER.info("received a " + REMOVE_PEER_ENDPOINT + " request");
 
 		try {
 			try {
@@ -127,4 +139,30 @@ public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeServiceImpl
 			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
+
+	public static class AddPeersEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (AddPeerMessage message) -> getServer().onAddPeers(message, session));
+	    }
+
+		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
+			return simpleConfig(server, AddPeersEndpoint.class, ADD_PEER_ENDPOINT,
+					AddPeerMessages.Decoder.class, AddPeerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	public static class RemoveBlockEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (RemovePeerMessage message) -> getServer().onRemovePeer(message, session));
+	    }
+
+		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
+			return simpleConfig(server, RemoveBlockEndpoint.class, REMOVE_PEER_ENDPOINT,
+					RemovePeerMessages.Decoder.class, RemovePeerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
 }
