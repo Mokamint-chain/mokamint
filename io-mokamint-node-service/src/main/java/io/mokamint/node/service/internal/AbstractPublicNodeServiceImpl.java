@@ -25,7 +25,9 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -101,9 +103,18 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 		this.uri = check(DeploymentException.class, () -> uri.or(this::determinePublicURI).map(uncheck(this::addPort)));
 	}
 
+	/**
+	 * Yields the network port of this service.
+	 * 
+	 * @return the network port
+	 */
+	protected final int getPort() {
+		return port;
+	}
+
 	private URI addPort(URI uri) throws DeploymentException {
 		try {
-			return new URI(uri.toString() + ":" + port);
+			return new URI(uri.toString() + ":" + getPort());
 		}
 		catch (URISyntaxException e) {
 			throw new DeploymentException("The public URI of the machine seems incorrect", e);
@@ -117,15 +128,25 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	 * @throws IOException if an I/O error occurs
 	 */
 	protected void deploy() throws DeploymentException, IOException {
-		startContainer("", port,
-				GetInfoEndpoint.config(this),
-				GetPeersEndpoint.config(this),
-				GetBlockEndpoint.config(this),
-				GetConfigEndpoint.config(this),
-				GetChainInfoEndpoint.config(this),
-				WhisperPeersEndpoint.config(this));
-
+		startContainer("", port, mkEndpointsConfigs().toArray(ServerEndpointConfig[]::new));
 		LOGGER.info("published a public node service at ws://localhost:" + port);
+	}
+
+	/**
+	 * Yields the configurations of the endpoints to deploy in this service.
+	 * 
+	 * @return the configurations of the endpoints
+	 */
+	protected List<ServerEndpointConfig> mkEndpointsConfigs() {
+		var result = new ArrayList<ServerEndpointConfig>();
+		result.add(GetInfoEndpoint.config(this));
+		result.add(GetPeersEndpoint.config(this));
+		result.add(GetBlockEndpoint.config(this));
+		result.add(GetConfigEndpoint.config(this));
+		result.add(GetChainInfoEndpoint.config(this));
+		result.add(WhisperPeersEndpoint.config(this));
+
+		return result;
 	}
 
 	/**
@@ -133,7 +154,7 @@ public abstract class AbstractPublicNodeServiceImpl extends AbstractWebSocketSer
 	 * 
 	 * @param peers the peers to whisper
 	 */
-	protected final void whisperPeersToAllConnectedRemotes(Stream<Peer> peers) {
+	protected void whisperPeersToAllConnectedRemotes(Stream<Peer> peers) {
 		// we add our own URL as a suggestion
 		if (uri.isPresent()) // TODO: maybe not here?
 			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get())));

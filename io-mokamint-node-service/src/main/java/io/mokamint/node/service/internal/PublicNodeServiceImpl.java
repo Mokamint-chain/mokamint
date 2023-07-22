@@ -16,9 +16,17 @@ limitations under the License.
 
 package io.mokamint.node.service.internal;
 
+import static io.hotmoka.exceptions.CheckSupplier.check;
+import static io.hotmoka.exceptions.UncheckFunction.uncheck;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -42,9 +50,11 @@ import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 /**
  * The implementation of a public node service. It publishes endpoints at a URL,
@@ -57,6 +67,12 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * The node whose API is published.
 	 */
 	private final PublicNodeInternals node;
+
+	/**
+	 * The public URI of the machine where this service is running. If this is missing,
+	 * the URI of the machine will not be suggested as a peer for the connected remotes.
+	 */
+	private final Optional<URI> uri;
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -84,13 +100,72 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 */
 	public PublicNodeServiceImpl(PublicNodeInternals node, int port, Optional<URI> uri) throws DeploymentException, IOException {
 		super(port, uri);
+
 		this.node = node;
+		this.uri = check(DeploymentException.class, () -> uri.or(this::determinePublicURI).map(uncheck(this::addPort)));
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 		// if the node has some peers to whisper, this service will propagate them to all connected remotes
 		node.addOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
 		deploy();
+	}
+
+	@Override
+	protected List<ServerEndpointConfig> mkEndpointsConfigs() {
+		var result = super.mkEndpointsConfigs();
+
+		return result;
+	}
+
+	private URI addPort(URI uri) throws DeploymentException {
+		try {
+			return new URI(uri.toString() + ":" + getPort());
+		}
+		catch (URISyntaxException e) {
+			throw new DeploymentException("The public URI of the machine seems incorrect", e);
+		}
+	}
+
+	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
+		try {
+			sendObjectAsync(session, WhisperPeersMessages.of(peers));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
+		}
+	}
+
+	/**
+	 * Tries to determine the public URI of the machine where this service is running.
+	 * It is the public IP of the machine, if determinable, with {@code ws://} as prefix.
+	 * 
+	 * @return the public IP address of the machine, if it could be determined
+	 */
+	private Optional<URI> determinePublicURI() {
+		LOGGER.info("trying to determine the public IP of this machine");
+
+		String[] urls = {
+				"http://checkip.amazonaws.com/",
+				"https://ipv4.icanhazip.com/",
+				"http://myexternalip.com/raw",
+				"http://ipecho.net/plain"
+		};
+	
+		for (var url: urls) {
+			try (var br = new BufferedReader(new InputStreamReader(new URL(url).openStream()))) {
+				String ip = br.readLine();
+				LOGGER.info(url + " provided " + ip + " as the IP of the local machine");
+				return Optional.of(new URI("ws://" + ip));
+			}
+			catch (IOException | URISyntaxException e) {
+				LOGGER.log(Level.WARNING, url + " failed to provide the IP of the local machine", e);
+			}
+		}
+	
+		LOGGER.warning("cannot determine the IP of the local machine: its IP won't be propagated to its peers");
+	
+		return Optional.empty();
 	}
 
 	@Override
