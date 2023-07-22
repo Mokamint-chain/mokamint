@@ -341,7 +341,7 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			protected void onWhisperPeers(WhisperPeersMessage message) {
+			protected void whisperPeersToServices(WhisperPeersMessage message) {
 				// we must use containsAll since the suggested peers might include
 				// the public URI of the machine where the test is running
 				if (message.getPeers().collect(Collectors.toSet()).containsAll(peers))

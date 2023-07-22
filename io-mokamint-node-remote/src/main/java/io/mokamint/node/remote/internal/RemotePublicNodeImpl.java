@@ -98,6 +98,12 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 	@Override
 	public void receiveWhisperedPeers(Stream<Peer> peers) {
+		try {
+			sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), WhisperPeersMessages.of(peers));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed", e);
+		}
 	}
 
 	/**
@@ -106,7 +112,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 	 * 
 	 * @param message the message containing the whispered peers
 	 */
-	protected void onWhisperPeers(WhisperPeersMessage message) {
+	protected void whisperPeersToServices(WhisperPeersMessage message) {
 		onWhisperPeersHandlers.stream().forEach(handler -> handler.accept(message.getPeers()));
 	}
 
@@ -239,7 +245,7 @@ public class RemotePublicNodeImpl extends AbstractRemotePublicNode implements Re
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, RemotePublicNodeImpl.this::onWhisperPeers);
+			addMessageHandler(session, RemotePublicNodeImpl.this::whisperPeersToServices);
 		}
 
 		@Override
