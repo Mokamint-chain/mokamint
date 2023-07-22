@@ -490,7 +490,7 @@ public class RemotePublicNodeTests {
 
 			private MyServer() throws DeploymentException, IOException {}
 
-			private void whisperPeers() {
+			private void whisperPeersToAllConnectedRemotes() {
 				super.whisperPeersToAllConnectedRemotes(peers.stream());
 			}
 		};
@@ -504,7 +504,7 @@ public class RemotePublicNodeTests {
 				if (suggestedPeers.collect(Collectors.toSet()).containsAll(peers))
 					semaphore.release();
 			});
-			service.whisperPeers();
+			service.whisperPeersToAllConnectedRemotes();
 			semaphore.acquire();
 		}
 	}

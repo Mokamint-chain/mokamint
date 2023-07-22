@@ -26,8 +26,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -35,6 +38,8 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.server.AbstractServerEndpoint;
+import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -50,10 +55,12 @@ import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
+import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.service.AbstractPublicNodeService;
-import io.mokamint.node.service.internal.AbstractPublicNodeServiceImpl.WhisperPeersEndpoint;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
 
@@ -74,6 +81,11 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 * the URI of the machine will not be suggested as a peer for the connected remotes.
 	 */
 	private final Optional<URI> uri;
+
+	/**
+	 * The sessions connected to the {@link WhisperPeersEndpoint}.
+	 */
+	private final Set<Session> whisperPeersSessions = ConcurrentHashMap.newKeySet();
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -113,6 +125,13 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	}
 
 	@Override
+	public void close() {
+		node.removeOnCloseHandler(this_close);
+		node.removeOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
+		super.close();
+	}
+
+	@Override
 	protected List<ServerEndpointConfig> mkEndpointsConfigs() {
 		var result = super.mkEndpointsConfigs();
 		result.add(WhisperPeersEndpoint.config(this));
@@ -129,15 +148,6 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		}
 	}
 
-	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
-		try {
-			sendObjectAsync(session, WhisperPeersMessages.of(peers));
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
-		}
-	}
-
 	/**
 	 * Tries to determine the public URI of the machine where this service is running.
 	 * It is the public IP of the machine, if determinable, with {@code ws://} as prefix.
@@ -146,7 +156,7 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 	 */
 	private Optional<URI> determinePublicURI() {
 		LOGGER.info("trying to determine the public IP of this machine");
-
+	
 		String[] urls = {
 				"http://checkip.amazonaws.com/",
 				"https://ipv4.icanhazip.com/",
@@ -170,13 +180,6 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		return Optional.empty();
 	}
 
-	@Override
-	public void close() {
-		node.removeOnCloseHandler(this_close);
-		node.removeOnWhisperPeersHandler(this_whisperPeersToAllConnectedRemotes);
-		super.close();
-	}
-
 	/**
 	 * Sends an exception message to the given session.
 	 * 
@@ -189,9 +192,37 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
+	/**
+	 * Whisper some peers to all remotes connected to this service.
+	 * 
+	 * @param peers the peers to whisper
+	 */
+	protected void whisperPeersToAllConnectedRemotes(Stream<Peer> peers) {
+		// we add our own URL as a suggestion
+		if (uri.isPresent()) // TODO: maybe not here?
+			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get())));
+
+		var peersAsArray = peers.toArray(Peer[]::new);
+
+		LOGGER.info("whispering peers " + Arrays.toString(peersAsArray) + " to " + whisperPeersSessions.size() + " sessions");
+
+		whisperPeersSessions.stream()
+			.filter(Session::isOpen)
+			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
+	}
+
 	@Override
 	protected void whisperPeersToWrappedNode(Stream<Peer> peers) {
 		node.receiveWhisperedPeers(peers);
+	}
+
+	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
+		try {
+			sendObjectAsync(session, WhisperPeersMessages.of(peers));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
+		}
 	}
 
 	@Override
@@ -278,4 +309,24 @@ public class PublicNodeServiceImpl extends AbstractPublicNodeService {
 			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
 		}
 	};
+
+	public static class WhisperPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@SuppressWarnings("resource")
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			getServer().whisperPeersSessions.add(session);
+			addMessageHandler(session, (WhisperPeersMessage message) -> getServer().whisperPeersToWrappedNode(message.getPeers()));
+	    }
+
+		@SuppressWarnings("resource")
+		@Override
+		public void onClose(Session session, CloseReason closeReason) {
+			getServer().whisperPeersSessions.remove(session);
+		}
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, WhisperPeersEndpoint.class, WHISPER_PEERS_ENDPOINT, WhisperPeersMessages.Encoder.class, WhisperPeersMessages.Decoder.class);
+		}
+	}
 }
