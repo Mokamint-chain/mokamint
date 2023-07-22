@@ -130,6 +130,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		onWhisperPeersToServicesHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
 	}
 
+	@Override
+	public void whisperItselfToPeers(Peer itself) {
+		whisperToPeers(Stream.of(itself));
+	}
+
 	private RuntimeException unexpectedException(Exception e) {
 		LOGGER.log(Level.SEVERE, "unexpected exception", e);
 		return new RuntimeException("unexpected exception", e);

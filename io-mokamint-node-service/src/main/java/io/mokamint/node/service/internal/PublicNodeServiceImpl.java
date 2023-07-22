@@ -30,6 +30,9 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -39,6 +42,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
+import io.mokamint.node.NodeInternals.CloseHandler;
 import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
@@ -93,6 +97,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private final Optional<URI> uri;
 
 	/**
+	 * A service used to schedule periodic tasks.
+	 */
+	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(1);
+
+	/**
 	 * The sessions connected to the {@link WhisperPeersEndpoint}.
 	 */
 	private final Set<Session> whisperPeersSessions = ConcurrentHashMap.newKeySet();
@@ -107,7 +116,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Runnable this_close = this::close;
+	private final CloseHandler this_close = this::close;
 
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
@@ -116,15 +125,22 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * 
 	 * @param node the node
 	 * @param port the port
-	 * @param uri the public URI of the machine where this service is running; if missing,
-	 *            the service will try to determine the public IP of the machine and use it as its URI
+	 * @param uri the public URI of the machine where this service is running
+	 *            (including {@code ws://} and the port number, if any);
+	 *            if missing, the service will try to determine the public IP of the machine and
+	 *            will use it as its URI, adding {@code port} as port number; note that
+	 *            the port in {@code uri} and {@code port} might be different, since the
+	 *            former is the port of the service as seen from the public Internet, while
+	 *            the latter is the port of the service in the local machine where it runs;
+	 *            these two might differ if the service runs inside a docker container
+	 *            that maps ports
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
 	public PublicNodeServiceImpl(PublicNodeInternals node, int port, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
 		this.port = port;
-		this.uri = check(DeploymentException.class, () -> uri.or(this::determinePublicURI).map(uncheck(this::addPort)));
+		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(this::addPort))));
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
@@ -135,15 +151,48 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetBlockEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), WhisperPeersEndpoint.config(this));
 
-		LOGGER.info("published a public node service at ws://localhost:" + port);
+		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, 2000, TimeUnit.MILLISECONDS);
+
+		if (uri.isEmpty())
+			LOGGER.info("published a public node service at ws://localhost:" + port);
+		else
+			LOGGER.info("published a public node service at ws://localhost:" + port + " and public URI: " + uri.get());
 	}
 
 	@Override
-	public void close() {
+	public void close() throws InterruptedException {
+		periodicTasks.shutdownNow();
 		node.removeOnCloseHandler(this_close);
 		node.removeOnWhisperPeersToServicesHandler(this_whisperPeersToAllConnectedRemotes);
 		stopContainer();
+		periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
+	}
+
+	public void whisperItself() {
+		if (uri.isEmpty())
+			LOGGER.warning("not whispering the service since its public URI is unknown");
+
+		var itself = Peers.of(uri.get());
+		node.whisperItselfToPeers(itself);
+	}
+
+	/**
+	 * Whisper some peers to all remotes connected to this service.
+	 * 
+	 * @param peers the peers to whisper
+	 */
+	protected void whisperPeersToAllConnectedRemotes(Stream<Peer> peers) {
+		if (uri.isPresent())
+			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get()))).distinct();
+	
+		var peersAsArray = peers.toArray(Peer[]::new);
+	
+		LOGGER.info("whispering peers " + Arrays.toString(peersAsArray) + " to " + whisperPeersSessions.size() + " sessions");
+
+		whisperPeersSessions.stream()
+			.filter(Session::isOpen)
+			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
 	}
 
 	private URI addPort(URI uri) throws DeploymentException {
@@ -197,25 +246,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
-	}
-
-	/**
-	 * Whisper some peers to all remotes connected to this service.
-	 * 
-	 * @param peers the peers to whisper
-	 */
-	protected void whisperPeersToAllConnectedRemotes(Stream<Peer> peers) {
-		// we add our own URL as a suggestion
-		if (uri.isPresent()) // TODO: maybe not here?
-			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get())));
-
-		var peersAsArray = peers.toArray(Peer[]::new);
-
-		LOGGER.info("whispering peers " + Arrays.toString(peersAsArray) + " to " + whisperPeersSessions.size() + " sessions");
-
-		whisperPeersSessions.stream()
-			.filter(Session::isOpen)
-			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
 	}
 
 	private void whisperPeersToSession(Session session, Stream<Peer> peers) {

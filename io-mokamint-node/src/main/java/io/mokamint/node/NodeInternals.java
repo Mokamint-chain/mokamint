@@ -28,18 +28,25 @@ import io.mokamint.node.api.Node;
 public interface NodeInternals extends Node, AutoCloseable {
 
 	/**
+	 * Code executed when the node gets closed.
+	 */
+	interface CloseHandler {
+		void close() throws InterruptedException;
+	}
+
+	/**
 	 * Takes note that the given code must be executed when this node gets closed.
 	 * 
 	 * @param handler the code
 	 */
-	void addOnClosedHandler(Runnable handler);
+	void addOnClosedHandler(CloseHandler handler);
 
 	/**
 	 * Removes the given code from that executed when this node gets closed.
 	 * 
 	 * @param handler the code
 	 */
-	void removeOnCloseHandler(Runnable handler);
+	void removeOnCloseHandler(CloseHandler handler);
 
 	/**
 	 * Closes the node.

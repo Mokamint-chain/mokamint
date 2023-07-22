@@ -117,7 +117,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The code to execute when this node gets closed.
 	 */
-	private final CopyOnWriteArrayList<Runnable> onCloseHandlers = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<CloseHandler> onCloseHandlers = new CopyOnWriteArrayList<>();
 
 	/**
 	 * The code to execute when this node has some peers to whisper to the services using this node.
@@ -168,12 +168,12 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addOnClosedHandler(Runnable handler) {
+	public void addOnClosedHandler(CloseHandler handler) {
 		onCloseHandlers.add(handler);
 	}
 
 	@Override
-	public void removeOnCloseHandler(Runnable handler) {
+	public void removeOnCloseHandler(CloseHandler handler) {
 		onCloseHandlers.add(handler);
 	}
 
@@ -198,6 +198,17 @@ public class LocalNodeImpl implements LocalNode {
 	public void whisperToServices(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		onWhisperPeersToServicesHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
+	}
+
+	@Override
+	public void whisperItselfToPeers(Peer itself) {
+		LocalNodeImpl.this.peers.get()
+			.filter(PeerInfo::isConnected)
+			.map(PeerInfo::getPeer)
+			.map(LocalNodeImpl.this.peers::getRemote)
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.forEach(remote -> remote.whisperToPeers(Stream.of(itself)));
 	}
 
 	private void ensureIsOpen() throws ClosedNodeException {
@@ -232,9 +243,19 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		if (!isClosed.getAndSet(true)) {
-			onCloseHandlers.stream().forEach(Runnable::run);
 			events.shutdownNow();
 			tasks.shutdownNow();
+
+			InterruptedException interruptedException = null;
+			
+			for (var handler: onCloseHandlers) {
+				try {
+					handler.close();
+				}
+				catch (InterruptedException e) {
+					interruptedException = e;
+				}
+			}
 
 			try {
 				events.awaitTermination(10, TimeUnit.SECONDS);
@@ -248,6 +269,9 @@ public class LocalNodeImpl implements LocalNode {
 					peers.close();
 				}
 			}
+
+			if (interruptedException != null)
+				throw interruptedException;
 		}
 	}
 

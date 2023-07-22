@@ -29,6 +29,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -139,7 +140,7 @@ public class PeerPropagationTests {
 	}
 
 	@Test
-	@DisplayName("a peer added to a node eventually propagates all its peers to that node")
+	@DisplayName("a peer added to a node eventually propagates all its peers")
 	@Timeout(10)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
@@ -191,7 +192,7 @@ public class PeerPropagationTests {
 			// at this point, node4 has still no peers
 			assertTrue(node4.getPeerInfos().count() == 0L);
 
-			// we add peer1 as peer of peer4 now
+			// we add peer1 as peer of node4 now
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node1
@@ -201,7 +202,7 @@ public class PeerPropagationTests {
 	}
 
 	@Test
-	@DisplayName("if a peer disconnects, the node remote gets removed")
+	@DisplayName("if a peer disconnects, its remote gets removed from the peers table")
 	@Timeout(10)
 	public void ifPeerDisconnectedThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
@@ -250,6 +251,49 @@ public class PeerPropagationTests {
 			assertTrue(node1.getPeerInfos().count() == 2);
 			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer3)));
 			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
+		}
+	}
+
+	@Test
+	@DisplayName("if a peer adds another peer, eventually to end up being a peer of each other")
+	public void peerAddPeerTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
+			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
+				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {
+
+		var port1 = 8032;
+		var port2 = 8034;
+		var uri1 = new URI("ws://localhost:" + port1);
+		var uri2 = new URI("ws://localhost:" + port2);
+		var peer1 = Peers.of(uri1);
+		var peer2 = Peers.of(uri2);
+		var config1 = Config.Builder.defaults().setDir(chain1).build();
+		var config2 = Config.Builder.defaults().setDir(chain2).build();
+
+		var semaphore = new Semaphore(0);
+
+		class MyLocalNode extends LocalNodeImpl {
+			private final Peer expected;
+
+			private MyLocalNode(Config config, Peer expected) throws NoSuchAlgorithmException, IOException, DatabaseException {
+				super(config, app);
+				
+				this.expected = expected;
+			}
+
+			@Override
+			protected void onComplete(Event event) {
+				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(expected::equals))
+					semaphore.release();
+			}
+		}
+
+		try (var node1 = new MyLocalNode(config1, peer2); var node2 = new MyLocalNode(config2, peer1);
+			 var service1 = PublicNodeServices.open(node1, port1, Optional.of(uri1));
+			 var service2 = PublicNodeServices.open(node2, port2, Optional.of(uri2))) {
+
+			node1.addPeer(peer2);
+
+			semaphore.tryAcquire(2, 5, TimeUnit.SECONDS);
 		}
 	}
 

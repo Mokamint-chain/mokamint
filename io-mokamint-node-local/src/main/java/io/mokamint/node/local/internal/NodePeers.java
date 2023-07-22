@@ -184,7 +184,8 @@ public class NodePeers implements AutoCloseable {
 
 	@Override
 	public void close() throws IOException, InterruptedException {
-		IOException exception = null;
+		IOException ioException = null;
+		InterruptedException interruptedException = null;
 
 		try {
 			periodicTasks.shutdownNow();
@@ -192,18 +193,24 @@ public class NodePeers implements AutoCloseable {
 		}
 		finally {
 			synchronized (lock) {
-				for (var entry: remotes.entrySet())
+				for (var entry: remotes.entrySet()) {
 					try {
 						closeRemoteWithException(entry.getValue(), entry.getKey());
 					}
-				catch (IOException e) {
-					exception = e;
+					catch (IOException e) {
+						ioException = e;
+					}
+					catch (InterruptedException e) {
+						interruptedException = e;
+					}
 				}
 			}
 		}
 
-		if (exception != null)
-			throw exception;
+		if (ioException != null)
+			throw ioException;
+		else if (interruptedException != null)
+			throw interruptedException;
 	}
 
 	/**
@@ -416,12 +423,12 @@ public class NodePeers implements AutoCloseable {
 		try {
 			closeRemoteWithException(remote, peer);
 		}
-		catch (IOException e) {
+		catch (IOException | InterruptedException e) {
 			LOGGER.log(Level.SEVERE, "cannot close the connection to peer " + peer, e);
 		}
 	}
 
-	private void closeRemoteWithException(RemotePublicNode remote, Peer peer) throws IOException {
+	private void closeRemoteWithException(RemotePublicNode remote, Peer peer) throws IOException, InterruptedException {
 		if (remote != null) {
 			remote.removeOnWhisperPeersToServicesHandler(addPeersTask); // probably useless
 			remotes.remove(peer);

@@ -29,7 +29,8 @@ public interface RemoteNode extends Node, AutoCloseable {
 	 * Closes the node.
 	 * 
 	 * @throws IOException if an I/O error occurred
+	 * @throws InterruptedException if the close operation get interrupted
 	 */
 	@Override
-	void close() throws IOException;
+	void close() throws IOException, InterruptedException;
 }

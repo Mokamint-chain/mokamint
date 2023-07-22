@@ -75,10 +75,10 @@ public class RestrictedNodeServiceTests {
 		public void removePeer(Peer peer) {}
 
 		@Override
-		public void addOnClosedHandler(Runnable what) {}
+		public void addOnClosedHandler(CloseHandler handler) {}
 
 		@Override
-		public void removeOnCloseHandler(Runnable what) {}
+		public void removeOnCloseHandler(CloseHandler handler) {}
 
 		@Override
 		public void close() {}
@@ -165,7 +165,7 @@ public class RestrictedNodeServiceTests {
 			}
 
 			@Override
-			public void close() throws IOException {
+			public void close() throws IOException, InterruptedException {
 				super.close();
 				semaphore.release();
 			}

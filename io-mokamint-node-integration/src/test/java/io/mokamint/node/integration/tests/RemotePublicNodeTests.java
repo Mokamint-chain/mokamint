@@ -110,7 +110,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() works if it throws TimeoutException")
-	public void getPeersWorksInCaseOfTimeoutException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	public void getPeersWorksInCaseOfTimeoutException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
 		var exceptionMessage = "time-out";
 
 		class MyServer extends PublicTestServer {
@@ -134,7 +134,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() works if it throws ClosedNodeException")
-	public void getPeersWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	public void getPeersWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
 		var exceptionMessage = "node is closed";
 
 		class MyServer extends PublicTestServer {
@@ -158,7 +158,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() works if it throws InterruptedException")
-	public void getPeersWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	public void getPeersWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
 		var exceptionMessage = "interrupted";
 
 		class MyServer extends PublicTestServer {
@@ -210,7 +210,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() ignores unexpected exceptions")
-	public void getPeersWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	public void getPeersWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -231,7 +231,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getPeers() ignores unexpected messages")
-	public void getPeersWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	public void getPeersWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -305,7 +305,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if it throws NoSuchAlgorithmException")
-	public void getBlockWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	public void getBlockWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "sha345";
 
@@ -331,7 +331,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if it throws DatabaseException")
-	public void getBlockWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException {
+	public void getBlockWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "corrupted database";
 

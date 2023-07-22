@@ -59,7 +59,7 @@ public class Start extends AbstractCommand {
 	@Option(names = "--config", description = { "the toml config file of the node;", "if missing, defaults are used"})
 	private Path config;
 
-	@Option(names = "--uri", description = { "the public URI of the node, such as \"ws://my.machine.com\";", "if missing, the node will try to use its public IP"})
+	@Option(names = "--uri", description = { "the public URI of the node, such as \"ws://my.machine.com:8030\";", "if missing, the node will try to use its public IP"})
 	private URI uri;
 
 	@Option(names = "--miner-port", description = { "network ports where a remote miner", "must be published" })
@@ -245,6 +245,10 @@ public class Start extends AbstractCommand {
 				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
 				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
 				publishPublicAndRestrictedNodeServices(pos + 1, node);
+			}
+			catch (InterruptedException e) {
+				System.out.println(Ansi.AUTO.string("@|red close interrupted!|@"));
+				LOGGER.log(Level.SEVERE, "the close operation of the service at port " + publicPorts[pos] + " got interrupted", e);
 			}
 		}
 		else

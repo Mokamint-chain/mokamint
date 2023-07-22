@@ -56,5 +56,5 @@ public interface PublicNodeService extends WebSocketServer {
 	String WHISPER_PEERS_ENDPOINT = "/whisper_peers";
 
 	@Override
-	void close();
+	void close() throws InterruptedException;
 }

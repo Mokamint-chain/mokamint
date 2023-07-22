@@ -50,6 +50,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.NodeInternals.CloseHandler;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
@@ -362,7 +363,7 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			public void close() throws IOException {
+			public void close() throws IOException, InterruptedException {
 				super.close();
 				semaphore.release();
 			}
@@ -380,7 +381,7 @@ public class PublicNodeServiceTests {
 	public void serviceGetsClosedIfNodeGetsClosed() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		var listenerForClose = new AtomicReference<Runnable>();
+		var listenerForClose = new AtomicReference<CloseHandler>();
 		var node = mock(PublicNodeInternals.class);
 		doAnswer(listener -> {
 			listenerForClose.set(listener.getArgument(0));
@@ -394,14 +395,14 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			public void close() {
+			public void close() throws InterruptedException {
 				super.close();
 				semaphore.release();
 			}
 		}
 
 		try (var service = new MyPublicNodeService()) {
-			listenerForClose.get().run();
+			listenerForClose.get().close();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

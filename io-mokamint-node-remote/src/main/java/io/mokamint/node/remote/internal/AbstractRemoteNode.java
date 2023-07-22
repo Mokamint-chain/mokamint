@@ -56,7 +56,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	/**
 	 * The code to execute when this node gets closed.
 	 */
-	private final CopyOnWriteArrayList<Runnable> onCloseHandlers = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<CloseHandler> onCloseHandlers = new CopyOnWriteArrayList<>();
 
 	/**
 	 * True if and only if this node has been closed already.
@@ -75,12 +75,12 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	protected AbstractRemoteNode() throws DeploymentException, IOException {}
 
 	@Override
-	public final void addOnClosedHandler(Runnable what) {
+	public final void addOnClosedHandler(CloseHandler what) {
 		onCloseHandlers.add(what);
 	}
 
 	@Override
-	public final void removeOnCloseHandler(Runnable what) {
+	public final void removeOnCloseHandler(CloseHandler what) {
 		onCloseHandlers.add(what);
 	}
 
@@ -125,11 +125,20 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() throws IOException, InterruptedException {
 		if (!isClosed.getAndSet(true)) {
-			onCloseHandlers.forEach(Runnable::run);
-	
-			IOException exception = null;
+			IOException ioException = null;
+			InterruptedException interruptedException = null;
+			
+			for (var handler: onCloseHandlers) {
+				try {
+					handler.close();
+				}
+				catch (InterruptedException e) {
+					interruptedException = e;
+				}
+			}
+
 			Collection<Session> sessions;
 
 			synchronized (this.sessions) {
@@ -141,13 +150,15 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 					session.close();
 				}
 				catch (IOException e) {
-					LOGGER.log(Level.WARNING, "cannot close the sessions", exception);
-					exception = e;
+					LOGGER.log(Level.WARNING, "cannot close the sessions", ioException);
+					ioException = e;
 				}
 			}
 
-			if (exception != null)
-				throw exception;
+			if (ioException != null)
+				throw ioException;
+			else if (interruptedException != null)
+				throw interruptedException;
 		}
 	}
 
@@ -178,9 +189,9 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 
 			try {
 				// we close the remote since it is bound to a service that seems to be closed
-				AbstractRemoteNode.this.close();
+				close();
 			}
-			catch (IOException e) {
+			catch (IOException | InterruptedException e) {
 				LOGGER.log(Level.SEVERE, "cannot close the remote node", e);
 			}
 		}
