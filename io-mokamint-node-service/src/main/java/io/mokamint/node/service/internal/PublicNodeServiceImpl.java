@@ -57,7 +57,6 @@ import io.mokamint.node.messages.GetPeersMessage;
 import io.mokamint.node.messages.GetPeersResultMessages;
 import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
-import io.mokamint.node.service.AbstractPublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -69,7 +68,7 @@ import jakarta.websocket.server.ServerEndpointConfig;
  * where clients can connect to query the public API of a Mokamint node.
  */
 @ThreadSafe
-public class PublicNodeServiceImpl extends AbstractPublicNodeService {
+public class PublicNodeServiceImpl extends AbstractPublicNodeServiceImpl {
 
 	/**
 	 * The node whose API is published.

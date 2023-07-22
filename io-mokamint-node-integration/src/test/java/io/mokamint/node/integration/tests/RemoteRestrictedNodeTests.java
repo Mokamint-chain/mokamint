@@ -2,6 +2,7 @@ package io.mokamint.node.integration.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.net.URI;
@@ -28,7 +29,7 @@ import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
-import io.mokamint.node.service.AbstractRestrictedNodeService;
+import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -51,7 +52,7 @@ public class RemoteRestrictedNodeTests {
 	 * Test server implementation.
 	 */
 	@ThreadSafe
-	private static class RestrictedTestServer extends AbstractRestrictedNodeService {
+	private static class RestrictedTestServer extends RestrictedNodeServiceImpl {
 
 		/**
 		 * Creates a new test server.
@@ -60,8 +61,7 @@ public class RemoteRestrictedNodeTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private RestrictedTestServer() throws DeploymentException, IOException {
-			super(PORT);
-			deploy();
+			super(mock(), PORT);
 		}
 	}
 

@@ -31,7 +31,6 @@ import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.RemovePeerResultMessages;
-import io.mokamint.node.service.AbstractRestrictedNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -40,7 +39,7 @@ import jakarta.websocket.Session;
  * where clients can connect to query the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeService {
+public class RestrictedNodeServiceImpl extends AbstractRestrictedNodeServiceImpl {
 
 	/**
 	 * The node whose API is published.
