@@ -39,7 +39,6 @@ import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.remote.AbstractRemoteRestrictedNode;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.DeploymentException;
@@ -95,10 +94,10 @@ public class RestrictedNodeServiceTests {
 
 		var node = new MyRestrictedNode(allPeers, semaphore);
 
-		class MyTestClient extends AbstractRemoteRestrictedNode {
+		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override
@@ -131,10 +130,10 @@ public class RestrictedNodeServiceTests {
 
 		var node = new MyRestrictedNode(allPeers, semaphore);
 
-		class MyTestClient extends AbstractRemoteRestrictedNode {
+		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI);
+				super(URI, 2000L);
 			}
 
 			@Override

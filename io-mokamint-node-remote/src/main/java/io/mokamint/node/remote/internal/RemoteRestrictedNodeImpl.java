@@ -31,7 +31,6 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerResultMessage;
 import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.RemovePeerResultMessage;
-import io.mokamint.node.remote.AbstractRemoteRestrictedNode;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
 
@@ -40,7 +39,7 @@ import jakarta.websocket.DeploymentException;
  * to a service for the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNode implements RemoteRestrictedNode {
+public class RemoteRestrictedNodeImpl extends AbstractRemoteRestrictedNodeImpl implements RemoteRestrictedNode {
 
 	private final NodeMessageQueues queues;
 
