@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local;
+package io.mokamint.node;
 
-import io.mokamint.node.FullNodeInternals;
+import io.mokamint.node.api.FullNode;
 
 /**
- * A local node of a Mokamint blockchain.
+ * The internal API of a public and restricted Mokamint node. It includes methods that are not
+ * exported to the general users, but only used in the implementations of the nodes.
  */
-public interface LocalNode extends FullNodeInternals {
+public interface FullNodeInternals extends PublicNodeInternals, RestrictedNodeInternals, FullNode {
 }

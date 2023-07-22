@@ -16,38 +16,11 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import java.io.IOException;
-
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The internal API of a restricted Mokamint node. It includes methods that are not
  * exported to the general users, but only used in the implementations of the nodes.
  */
-public interface RestrictedNodeInternals extends RestrictedNode, AutoCloseable {
-
-	/**
-	 * Takes note that the given code must be executed when this node gets closed.
-	 * 
-	 * @param what the code
-	 */
-	void addOnClosedHandler(Runnable what);
-
-	/**
-	 * Removes the given code from that executed when this node gets closed.
-	 * 
-	 * @param what the code
-	 */
-	void removeOnCloseHandler(Runnable what);
-
-	/**
-	 * Closes the node.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws DatabaseException if a database could not be closed correctly
-	 * @throws InterruptedException if some closing activity has been interrupted
-	 */
-	@Override
-	void close() throws IOException, DatabaseException, InterruptedException;
+public interface RestrictedNodeInternals extends NodeInternals, RestrictedNode {
 }

@@ -321,12 +321,9 @@ public class PublicNodeServiceTests {
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
 		var peers = Set.of(peer1, peer2);
-
-		interface PublicNodeWithListeners extends PublicNodeInternals {};
-
 		var handlerForWhisperedPeers = new AtomicReference<Consumer<Stream<Peer>>>();
 
-		var node = mock(PublicNodeWithListeners.class);
+		var node = mock(PublicNodeInternals.class);
 		doAnswer(listener -> {
 			handlerForWhisperedPeers.set(listener.getArgument(0));
 			return null;
@@ -384,11 +381,9 @@ public class PublicNodeServiceTests {
 	public void serviceGetsClosedIfNodeGetsClosed() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 
-		interface PublicNodeWithListeners extends PublicNodeInternals {};
-
 		var listenerForClose = new AtomicReference<Runnable>();
 
-		var node = mock(PublicNodeWithListeners.class);
+		var node = mock(PublicNodeInternals.class);
 		doAnswer(listener -> {
 			listenerForClose.set(listener.getArgument(0));
 			return null;

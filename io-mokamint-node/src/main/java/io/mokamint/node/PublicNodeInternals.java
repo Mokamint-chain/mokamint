@@ -16,11 +16,9 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
 
@@ -28,21 +26,7 @@ import io.mokamint.node.api.PublicNode;
  * The internal API of a public Mokamint node. It includes methods that are not
  * exported to the general users, but only used in the implementations of the nodes.
  */
-public interface PublicNodeInternals extends PublicNode, AutoCloseable {
-
-	/**
-	 * Takes note that the given code must be executed when this node gets closed.
-	 * 
-	 * @param handler the code
-	 */
-	void addOnClosedHandler(Runnable handler);
-
-	/**
-	 * Removes the given code from that executed when this node gets closed.
-	 * 
-	 * @param handler the code
-	 */
-	void removeOnCloseHandler(Runnable handler);
+public interface PublicNodeInternals extends NodeInternals, PublicNode {
 
 	/**
 	 * Takes note that the given code must be executed when this node
@@ -50,7 +34,7 @@ public interface PublicNodeInternals extends PublicNode, AutoCloseable {
 	 * 
 	 * @param handler the code
 	 */
-	default void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {}
+	void addOnWhisperPeersHandler(Consumer<Stream<Peer>> handler);
 
 	/**
 	 * Removes the given code from that executed when this node
@@ -58,17 +42,7 @@ public interface PublicNodeInternals extends PublicNode, AutoCloseable {
 	 * 
 	 * @param handler the code
 	 */
-	default void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler) {}
-
-	/**
-	 * Closes the node.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws DatabaseException if a database could not be closed correctly
-	 * @throws InterruptedException if some closing activity has been interrupted
-	 */
-	@Override
-	void close() throws IOException, DatabaseException, InterruptedException;
+	void removeOnWhisperPeersHandler(Consumer<Stream<Peer>> handler);
 
 	/**
 	 * Whisper some peers to the node.
