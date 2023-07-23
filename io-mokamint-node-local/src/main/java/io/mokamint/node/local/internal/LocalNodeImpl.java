@@ -231,17 +231,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void whisperItselfToPeers(Peer itself) {
-		peers.get()
-			.filter(PeerInfo::isConnected)
-			.map(PeerInfo::getPeer)
-			.map(peers::getRemote)
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.forEach(remote -> remote.whisperToPeers(Stream.of(itself)));
-	}
-
-	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
 		if (seen.test(this) || alreadySeen(message))
 			return;

@@ -190,8 +190,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			LOGGER.warning("not whispering the service since its public URI is unknown");
 
 		var itself = Peers.of(uri.get());
-		node.whisperItselfToPeers(itself);
-		node.whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), whisperer -> whisperer == this);
+		whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false);
 	}
 
 	/**

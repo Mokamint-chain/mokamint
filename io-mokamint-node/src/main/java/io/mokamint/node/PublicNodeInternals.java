@@ -70,14 +70,6 @@ public interface PublicNodeInternals extends NodeInternals, PublicNode, Whispere
 	void whisperToServices(Stream<Peer> peers);
 
 	/**
-	 * Called to let know all peers that a peer exists and is available
-	 * to become peer of other nodes.
-	 * 
-	 * @param itself the peer
-	 */
-	void whisperItselfToPeers(Peer itself);
-
-	/**
 	 * Called when some peers must be whispered to the peers of this node.
 	 * 
 	 * @param peers the peers to whisper

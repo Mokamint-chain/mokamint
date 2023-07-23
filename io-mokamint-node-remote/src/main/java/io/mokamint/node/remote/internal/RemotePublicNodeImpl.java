@@ -158,11 +158,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisperItselfToPeers(Peer itself) {
-		whisperToPeers(Stream.of(itself));
-	}
-
-	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
