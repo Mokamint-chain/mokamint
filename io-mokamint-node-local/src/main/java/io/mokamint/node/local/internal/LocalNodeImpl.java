@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -202,17 +203,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void whisperToPeers(Stream<Peer> peers) {
-		// we check if some peers is interesting for us
-		// and only in that case we forward it to our peers
-		executeAddPeersTask(peers, false, false);
-	}
-
-	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
 
+		LOGGER.info("received whispered peers " + message.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
+
+		// we check if this node needs any of the whispered peers
+		executeAddPeersTask(message.getPeers(), false, false);
+
+		// in any case, we forward the message to our peers
 		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
 
 		peers.get()

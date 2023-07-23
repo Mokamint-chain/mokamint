@@ -34,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -126,16 +127,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisperToPeers(Stream<Peer> peers) {
-		try {
-			sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), WhisperPeersMessages.of(peers, "id"));
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed", e);
-		}
-	}
-
-	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
 		whisper(message, seen, true);
 	}
@@ -143,6 +134,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
+
+		LOGGER.info("received whispered peers " + message.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
 
 		onWhisperPeers(message);
 

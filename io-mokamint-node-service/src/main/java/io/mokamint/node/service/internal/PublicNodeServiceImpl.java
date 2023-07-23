@@ -39,6 +39,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -51,6 +52,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -174,9 +176,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
 	}
 
+	@Override
+	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		whisperExcludingSession(message, seen, null);
+	}
+
 	private void whisperItself() {
 		if (uri.isEmpty())
-			LOGGER.warning("not whispering the service since its public URI is unknown");
+			LOGGER.warning("not whispering the service itself since its public URI is unknown");
 
 		var itself = Peers.of(uri.get());
 		whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false);
@@ -235,14 +242,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
-	@Override
-	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisperExcludingSession(message, seen, null);
-	}
-
 	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
+
+		LOGGER.info("received whispered peers " + message.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
 
 		whisperPeersSessions.stream()
 			.filter(Session::isOpen)
@@ -421,16 +425,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	public static class WhisperPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
-		@SuppressWarnings("resource")
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			getServer().whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> { 
-				var server = getServer();
-				server.node.whisperToPeers(message.getPeers()); // TODO
-
-				server.whisperExcludingSession(message, _whisperer -> false, session);
-			});
+			var server = getServer();
+			server.whisperPeersSessions.add(session);
+			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisperExcludingSession(message, _whisperer -> false, session));
 	    }
 
 		@SuppressWarnings("resource")
