@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,9 @@ import io.mokamint.node.messages.GetInfoMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessage;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
@@ -476,29 +480,23 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("if a service suggests some peers, a remote will inform its listeners")
-	public void ifServiceSuggestsPeersTheRemoteInformsTheListeners() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException {
+	@DisplayName("if a service suggests some peers, a remote will inform its bound whisperers")
+	public void ifServiceSuggestsPeersTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException {
 		var peers = Set.of(Peers.of(new URI("ws://my.machine:8032")), Peers.of(new URI("ws://her.machine:8033")));
+		var semaphore = new Semaphore(0);
 
-		class MyServer extends PublicTestServer {
+		var whisperer = new Whisperer() {
 
-			private MyServer() throws DeploymentException, IOException {}
-
-			private void whisperPeersToAllConnectedRemotes() {
-				super.whisperPeersToAllConnectedRemotes(peers.stream());
+			@Override
+			public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+				if (message.getPeers().collect(Collectors.toSet()).containsAll(peers))
+					semaphore.release();
 			}
 		};
 
-		var semaphore = new Semaphore(0);
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			remote.addOnWhisperPeersToServicesHandler(suggestedPeers -> {
-				// we use set inclusion since the suggestion might include the
-				// public URI of the machine where the service is running
-				if (suggestedPeers.collect(Collectors.toSet()).containsAll(peers))
-					semaphore.release();
-			});
-			service.whisperPeersToAllConnectedRemotes();
+		try (var service = new PublicTestServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			remote.bindWhisperer(whisperer);
+			service.whisper(WhisperPeersMessages.of(peers.stream(), UUID.randomUUID().toString()), _whisperer -> false);
 			semaphore.acquire();
 		}
 	}

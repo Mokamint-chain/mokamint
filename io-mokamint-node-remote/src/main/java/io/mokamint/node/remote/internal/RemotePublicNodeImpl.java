@@ -152,21 +152,23 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisperToServices(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		onWhisperPeersToServicesHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
+	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		whisper(message, seen, true);
 	}
 
-	@Override
-	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
 
-		try {
-			sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), message);
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed", e);
+		onWhisperPeers(message);
+
+		if (includeNetwork) {
+			try {
+				sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), message);
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed", e);
+			}
 		}
 
 		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
@@ -431,15 +433,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperPeersMessage message) -> {
-				onWhisperPeers(message);
-				whisperToServices(message.getPeers());
-
-				if (!alreadySeen(message)) {
-					Predicate<Whisperer> seen = whisperer -> whisperer == RemotePublicNodeImpl.this;
-					boundWhisperers.forEach(whisperer -> whisperer.whisper(message, seen));
-				}
-			});
+			addMessageHandler(session, (WhisperPeersMessage message) -> whisper(message, _whisperer -> false, false));
 		}
 
 		@Override

@@ -225,12 +225,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void whisperToServices(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		onWhisperPeersToServicesHandlers.stream().forEach(handler -> handler.accept(Stream.of(peersAsArray)));
-	}
-
-	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
@@ -797,7 +791,7 @@ public class LocalNodeImpl implements LocalNode {
 				.forEach(remote -> remote.whisperToPeers(getPeers()));
 
 			// also the nodes bound to the services using this node receive the whispering
-			whisperToServices(getPeers());
+			//whisperToServices(getPeers());
 
 			if (whisper)
 				whisper(WhisperPeersMessages.of(Stream.of(peers), UUID.randomUUID().toString()), _whisperer -> false);

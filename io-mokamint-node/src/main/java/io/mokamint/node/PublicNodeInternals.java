@@ -63,13 +63,6 @@ public interface PublicNodeInternals extends NodeInternals, PublicNode, Whispere
 	void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler);
 
 	/**
-	 * Called when some peers must be whispered to all services using this node.
-	 * 
-	 * @param peers the peers to whisper
-	 */
-	void whisperToServices(Stream<Peer> peers);
-
-	/**
 	 * Called when some peers must be whispered to the peers of this node.
 	 * 
 	 * @param peers the peers to whisper

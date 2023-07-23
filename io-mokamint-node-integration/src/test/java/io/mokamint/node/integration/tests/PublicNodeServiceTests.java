@@ -37,7 +37,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
@@ -61,9 +60,10 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -315,20 +315,13 @@ public class PublicNodeServiceTests {
 	}
 
 	@Test
-	@DisplayName("if a service receives added peers from its node, they get forwarded to the clients")
-	public void serviceSendsAddedPeersToClients() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	@DisplayName("if a service receives whispered peers from its node, they get whispered to the connected clients")
+	public void serviceSendsWhisperedPeersToClients() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
 		var allPeers = Set.of(peer1, peer2);
-		var handlerForWhisperedPeers = new AtomicReference<Consumer<Stream<Peer>>>();
-
 		var node = mock(PublicNodeInternals.class);
-		doAnswer(listener -> {
-			handlerForWhisperedPeers.set(listener.getArgument(0));
-			return null;
-		}).
-		when(node).addOnWhisperPeersToServicesHandler(any());
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -337,17 +330,17 @@ public class PublicNodeServiceTests {
 			}
 
 			@Override
-			public void whisperToServices(Stream<Peer> peers) {
+			protected void onWhisperPeers(WhisperPeersMessage message) {
 				// we must use containsAll since the suggested peers might include
 				// the public URI of the machine where the test is running
-				if (peers.collect(Collectors.toSet()).containsAll(allPeers))
+				if (message.getPeers().collect(Collectors.toSet()).containsAll(allPeers))
 					semaphore.release();
 			}
 		}
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			handlerForWhisperedPeers.get().accept(Stream.of(peer1, peer2));
-			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+			service.whisper(WhisperPeersMessages.of(allPeers.stream(), UUID.randomUUID().toString()), _whisperer -> false);
+			assertTrue(semaphore.tryAcquire(1, 5, TimeUnit.SECONDS));
 		}
 	}
 
