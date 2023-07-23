@@ -280,10 +280,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		if (alreadySeen(message))
+		if (seen.test(this) || alreadySeen(message))
 			return;
 
-		// TODO Auto-generated method stub
+		whisperPeersSessions.stream()
+			.filter(Session::isOpen)
+			.forEach(s -> whisperToSession(s, message));
+
+		node.whisper(message, seen.or(_whisperer -> _whisperer == this));
 	}
 
 	private boolean alreadySeen(RpcMessage message) {

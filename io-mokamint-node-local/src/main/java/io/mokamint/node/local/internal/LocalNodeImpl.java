@@ -232,10 +232,10 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void whisperItselfToPeers(Peer itself) {
-		LocalNodeImpl.this.peers.get()
+		peers.get()
 			.filter(PeerInfo::isConnected)
 			.map(PeerInfo::getPeer)
-			.map(LocalNodeImpl.this.peers::getRemote)
+			.map(peers::getRemote)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.forEach(remote -> remote.whisperToPeers(Stream.of(itself)));
@@ -243,10 +243,19 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		if (alreadySeen(message))
+		if (seen.test(this) || alreadySeen(message))
 			return;
 
-		// TODO Auto-generated method stub
+		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
+
+		peers.get()
+			.filter(PeerInfo::isConnected)
+			.map(PeerInfo::getPeer)
+			.map(peers::getRemote)
+			.flatMap(Optional::stream)
+			.forEach(remote -> remote.whisper(message, newSeen));
+
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
 	}
 
 	private boolean alreadySeen(RpcMessage message) {

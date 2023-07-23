@@ -164,10 +164,18 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		if (alreadySeen(message))
+		if (seen.test(this) || alreadySeen(message))
 			return;
 
-		// TODO Auto-generated method stub
+		try {
+			sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), message);
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed", e);
+		}
+
+		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
 	}
 
 	private boolean alreadySeen(RpcMessage message) {
@@ -434,8 +442,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 				if (!alreadySeen(message)) {
 					Predicate<Whisperer> seen = whisperer -> whisperer == RemotePublicNodeImpl.this;
-					boundWhisperers.stream()
-						.forEach(whisperer -> whisperer.whisper(message, seen));
+					boundWhisperers.forEach(whisperer -> whisperer.whisper(message, seen));
 				}
 			});
 		}
