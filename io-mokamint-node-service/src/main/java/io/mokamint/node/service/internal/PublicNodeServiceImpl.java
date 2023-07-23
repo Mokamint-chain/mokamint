@@ -279,11 +279,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		whisperExcludingSession(message, seen, null);
+	}
+
+	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
 
 		whisperPeersSessions.stream()
 			.filter(Session::isOpen)
+			.filter(session -> session != excluded)
 			.forEach(s -> whisperToSession(s, message));
 
 		node.whisper(message, seen.or(_whisperer -> _whisperer == this));
@@ -457,14 +462,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 				var server = getServer();
 				server.node.whisperToPeers(message.getPeers()); // TODO
 
-				if (!server.alreadySeen(message)) {
-					session.getOpenSessions().stream()
-						.filter(Session::isOpen)
-						.filter(s -> s != session)
-						.forEach(s -> server.whisperToSession(s, message));
-
-					server.node.whisper(message, whisperer -> whisperer == server);
-				}
+				server.whisperExcludingSession(message, _whisperer -> false, session);
 			});
 	    }
 

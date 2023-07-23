@@ -782,17 +782,6 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() {
-			LocalNodeImpl.this.peers.get()
-				.filter(PeerInfo::isConnected)
-				.map(PeerInfo::getPeer)
-				.map(LocalNodeImpl.this.peers::getRemote)
-				.filter(Optional::isPresent)
-				.map(Optional::get)
-				.forEach(remote -> remote.whisperToPeers(getPeers()));
-
-			// also the nodes bound to the services using this node receive the whispering
-			//whisperToServices(getPeers());
-
 			if (whisper)
 				whisper(WhisperPeersMessages.of(Stream.of(peers), UUID.randomUUID().toString()), _whisperer -> false);
 		}
