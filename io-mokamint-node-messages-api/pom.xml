@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-node</artifactId>
-  <name>io-mokamint-node</name>
+  <artifactId>io-mokamint-node-messages-api</artifactId>
+  <name>io-mokamint-node-messages-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements the classes shared by all implementations of a Mokamint node.</description>
+  <description>This module defines the API of the network messages exchanged between a node service and remote.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -20,29 +20,9 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-node-messages-api</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-nonce</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-   	<dependency>
-      <groupId>io.hotmoka</groupId>
-      <artifactId>io-hotmoka-crypto-api</artifactId>
-      <version>${hotmoka.version}</version>
-    </dependency>
-   	<dependency>
-      <groupId>io.hotmoka</groupId>
-      <artifactId>io-hotmoka-marshalling</artifactId>
-      <version>${hotmoka.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.hotmoka</groupId>
-      <artifactId>toml4j</artifactId>
-      <version>0.7.3</version>
+      <groupId>io.hotmoka.websockets</groupId>
+      <artifactId>io-hotmoka-websockets-beans-api</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
     </dependency>
   </dependencies>
 

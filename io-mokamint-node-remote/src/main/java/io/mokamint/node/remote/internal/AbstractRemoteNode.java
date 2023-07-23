@@ -29,7 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.beans.RpcMessage;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.NodeInternals;

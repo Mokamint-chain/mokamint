@@ -19,6 +19,7 @@ package io.mokamint.node.messages;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.internal.WhisperPeersMessageImpl;
 import io.mokamint.node.messages.internal.gson.WhisperPeersMessageDecoder;
 import io.mokamint.node.messages.internal.gson.WhisperPeersMessageEncoder;

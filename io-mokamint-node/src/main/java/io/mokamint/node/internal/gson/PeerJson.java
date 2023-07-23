@@ -19,7 +19,7 @@ package io.mokamint.node.internal.gson;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 

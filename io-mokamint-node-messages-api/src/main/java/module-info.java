@@ -14,24 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
-
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.RestrictedNode;
-
 /**
- * The network message corresponding to {@link RestrictedNode#addPeer(Peer)}.
+ * This module defines the API of the network messages exchanged between a node service and remote.
  */
-public interface AddPeerMessage extends RpcMessage {
+module io.mokamint.node.messages.api {
+	exports io.mokamint.node.messages.api;
 
-	/**
-	 * Yields the peer requested to add.
-	 * 
-	 * @return the peer
-	 */
-	Peer getPeer();
-
-	@Override
-	boolean equals(Object obj);
+	requires transitive io.mokamint.node.api;
+	requires io.hotmoka.websockets.beans.api;
 }

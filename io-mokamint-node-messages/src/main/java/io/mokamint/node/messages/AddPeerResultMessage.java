@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.RestrictedNode;
-import io.hotmoka.websockets.beans.RpcMessage;
 
 /**
  * The network message corresponding to the result of {@link RestrictedNode#addPeer(io.mokamint.node.api.Peer)} method of a node.

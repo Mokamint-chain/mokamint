@@ -70,6 +70,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-node-tools</module>
       <module>io-mokamint-node-service-api</module>
       <module>io-mokamint-node-service</module>
+      <module>io-mokamint-node-messages-api</module>
       <module>io-mokamint-node-messages</module>
       <module>io-mokamint-node-remote</module>
       <module>io-mokamint-node-integration</module>
@@ -321,6 +322,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
                 io-mokamint-node,
                 io-mokamint-node-local,
                 io-mokamint-node-tools,
+                io-mokamint-node-messages-api,
                 io-mokamint-node-messages,
                 io-mokamint-node-service-api,
                 io-mokamint-node-service,

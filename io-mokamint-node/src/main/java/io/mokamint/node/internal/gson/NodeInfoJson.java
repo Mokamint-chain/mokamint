@@ -18,7 +18,7 @@ package io.mokamint.node.internal.gson;
 
 import java.util.UUID;
 
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.NodeInfo;

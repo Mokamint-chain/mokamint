@@ -14,23 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
+
+import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to {@link RestrictedNode#addPeer(Peer)}.
+ * The network message sent between a public node service and its connected remotes,
+ * to whisper some peers that have been discovered.
  */
-public interface AddPeerMessage extends RpcMessage {
+public interface WhisperPeersMessage extends RpcMessage {
 
 	/**
-	 * Yields the peer requested to add.
+	 * Yields the whispered peers.
 	 * 
-	 * @return the peer
+	 * @return the peers
 	 */
-	Peer getPeer();
+	Stream<Peer> getPeers();
 
 	@Override
 	boolean equals(Object obj);

@@ -18,7 +18,7 @@ package io.mokamint.node.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.api.ConsensusConfig;
 

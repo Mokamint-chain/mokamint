@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.WhisperPeersMessage;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 
 /**
  * Implementation of the network message sent between a public node service and

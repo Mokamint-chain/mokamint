@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Version;
 

@@ -64,8 +64,8 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessage;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
-import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -146,6 +146,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		node.addOnClosedHandler(this_close);
 		// if the node has some peers to whisper, this service will propagate them to all connected remotes
 		node.addOnWhisperPeersToServicesHandler(this_whisperPeersToAllConnectedRemotes);
+		node.bindWhisperer(this);
 
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetBlockEndpoint.config(this),
@@ -164,6 +165,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		periodicTasks.shutdownNow();
 		node.removeOnCloseHandler(this_close);
 		node.removeOnWhisperPeersToServicesHandler(this_whisperPeersToAllConnectedRemotes);
+		node.unbindWhisperer(this);
 		stopContainer();
 		periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
@@ -249,8 +251,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
+		whisperToSession(session, WhisperPeersMessages.of(peers, "id"));
+	}
+
+	private void whisperToSession(Session session, WhisperPeersMessage message) {
 		try {
-			sendObjectAsync(session, WhisperPeersMessages.of(peers, "id"));
+			sendObjectAsync(session, message);
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
@@ -408,7 +414,17 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			getServer().whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> getServer().node.whisperToPeers(message.getPeers()));
+			addMessageHandler(session, (WhisperPeersMessage message) -> { 
+				var server = getServer();
+				server.node.whisperToPeers(message.getPeers()); // TODO
+
+				session.getOpenSessions().stream()
+					.filter(Session::isOpen)
+					.filter(s -> s != session)
+					.forEach(s -> server.whisperToSession(s, message));
+
+				server.node.whisper(message, whisperer -> whisperer == server);
+			});
 	    }
 
 		@SuppressWarnings("resource")

@@ -16,13 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.service.api;
 
-import io.mokamint.node.api.PublicNode;
 import io.hotmoka.websockets.server.api.WebSocketServer;
+import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.messages.api.Whisperer;
 
 /**
  * A websocket server for the public API of a Mokamint node.
  */
-public interface PublicNodeService extends WebSocketServer {
+public interface PublicNodeService extends WebSocketServer, Whisperer {
 	
 	/**
 	 * The network endpoint path where {@link PublicNode#getInfo()} is published.

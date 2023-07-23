@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 
 /**
  * A decoder for an {@link WhisperPeersMessage}.

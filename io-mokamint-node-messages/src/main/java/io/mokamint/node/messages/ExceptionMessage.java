@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.hotmoka.websockets.beans.RpcMessage;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 
 /**
  * A network message corresponding to an exception thrown by a method call.

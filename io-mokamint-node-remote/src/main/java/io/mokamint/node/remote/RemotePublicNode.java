@@ -17,10 +17,9 @@ limitations under the License.
 package io.mokamint.node.remote;
 
 import io.mokamint.node.PublicNodeInternals;
-import io.mokamint.node.api.PublicNode;
 
 /**
  * A remote public node of a Mokamint blockchain.
  */
-public interface RemotePublicNode extends PublicNode, PublicNodeInternals, RemoteNode {
+public interface RemotePublicNode extends PublicNodeInternals, RemoteNode {
 }

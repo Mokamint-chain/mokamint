@@ -21,7 +21,7 @@ import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 

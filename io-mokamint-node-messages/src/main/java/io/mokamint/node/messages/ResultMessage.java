@@ -18,7 +18,7 @@ package io.mokamint.node.messages;
 
 import java.util.function.Supplier;
 
-import io.hotmoka.websockets.beans.RpcMessage;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 
 /**
  * A network message corresponding to the result of method of a node.

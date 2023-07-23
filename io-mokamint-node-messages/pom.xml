@@ -15,14 +15,19 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.hotmoka.websockets</groupId>
-      <artifactId>io-hotmoka-websockets-beans</artifactId>
-      <version>${io.hotmoka.websockets.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-messages-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-node</artifactId>
       <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.hotmoka.websockets</groupId>
+      <artifactId>io-hotmoka-websockets-beans</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
     </dependency>
   </dependencies>
 

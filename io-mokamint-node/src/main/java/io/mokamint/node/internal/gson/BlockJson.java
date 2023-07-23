@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;

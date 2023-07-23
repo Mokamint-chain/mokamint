@@ -30,12 +30,13 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.beans.RpcMessage;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -61,8 +62,9 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
-import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.remote.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -81,6 +83,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * The code to execute when this node has some peers to whisper to the services using this node.
 	 */
 	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersToServicesHandlers = new CopyOnWriteArrayList<>();
+
+	/**
+	 * The whisperers bound to this node.
+	 */
+	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
@@ -112,6 +119,16 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	@Override
 	public void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
 		onWhisperPeersToServicesHandlers.remove(handler);
+	}
+
+	@Override
+	public void bindWhisperer(Whisperer whisperer) {
+		boundWhisperers.add(whisperer);
+	}
+
+	@Override
+	public void unbindWhisperer(Whisperer whisperer) {
+		boundWhisperers.remove(whisperer);
 	}
 
 	@Override
@@ -334,6 +351,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
+	protected void onWhisperPeers(WhisperPeersMessage message) {}
 
 	private class GetPeersEndpoint extends Endpoint {
 
@@ -379,7 +397,13 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperPeersMessage message) -> whisperToServices(message.getPeers()));
+			addMessageHandler(session, (WhisperPeersMessage message) -> {
+				onWhisperPeers(message);
+				whisperToServices(message.getPeers());
+				Predicate<Whisperer> seen = whisperer -> whisperer == RemotePublicNodeImpl.this;
+				boundWhisperers.stream()
+					.forEach(whisperer -> whisperer.whisper(message, seen));
+			});
 		}
 
 		@Override

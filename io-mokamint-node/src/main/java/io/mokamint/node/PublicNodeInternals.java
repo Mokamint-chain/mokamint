@@ -21,12 +21,30 @@ import java.util.stream.Stream;
 
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.messages.api.Whisperer;
 
 /**
  * The internal API of a public Mokamint node. It includes methods that are not
  * exported to the general users, but only used in the implementations of the nodes.
  */
-public interface PublicNodeInternals extends NodeInternals, PublicNode {
+public interface PublicNodeInternals extends NodeInternals, PublicNode, Whisperer {
+
+	/**
+	 * Binds a whisperer to this node. This means that whenever this node
+	 * has something to whisperer, it will whisper to {@code whisperer} as well.
+	 * Note that this method does not state the converse.
+	 * 
+	 * @param whisperer the whisperer to bind
+	 */
+	void bindWhisperer(Whisperer whisperer);
+
+	/**
+	 * Unbinds a whisperer to this node. This means that this node will stop
+	 * whispering to {@code whisperer}.
+	 * 
+	 * @param whisperer the whisperer to unbind
+	 */
+	void unbindWhisperer(Whisperer whisperer);
 
 	/**
 	 * Takes note that the given handler must be executed when this node

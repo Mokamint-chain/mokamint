@@ -14,26 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import java.util.stream.Stream;
-
-import io.hotmoka.websockets.beans.RpcMessage;
-import io.mokamint.node.api.Peer;
+import java.util.function.Predicate;
 
 /**
- * The network message sent between a public node service and its connected remotes,
- * to whisper some peers that have been discovered.
+ * An object that whispers peers, transactions and blocks.
+ * These are for instance local nodes, public remotes and public services.
  */
-public interface WhisperPeersMessage extends RpcMessage {
+public interface Whisperer {
 
 	/**
-	 * Yields the whispered peers.
+	 * Whisper the given message.
 	 * 
-	 * @return the peers
+	 * @param message the message
+	 * @param seen a predicate telling if a whisperer has already wispered the
+	 *             {@code message}. This is used in order to avoid infinite recursion
+	 *             if whisperers form a cycle
 	 */
-	Stream<Peer> getPeers();
-
-	@Override
-	boolean equals(Object obj);
+	default void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {}
 }

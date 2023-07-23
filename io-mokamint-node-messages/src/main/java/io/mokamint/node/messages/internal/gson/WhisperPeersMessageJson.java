@@ -24,8 +24,8 @@ import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 
 /**
  * The JSON representation of an {@link WhisperPeersMessage}.

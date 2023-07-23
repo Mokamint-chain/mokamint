@@ -61,6 +61,7 @@ import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
+import io.mokamint.node.messages.api.Whisperer;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -125,6 +126,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersToServicesHandlers = new CopyOnWriteArrayList<>();
 
 	/**
+	 * The whisperers bound to this node.
+	 */
+	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
+
+	/**
 	 * True if and only if this node has been closed already.
 	 */
 	private final AtomicBoolean isClosed = new AtomicBoolean();
@@ -185,6 +191,16 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
 		onWhisperPeersToServicesHandlers.remove(handler);
+	}
+
+	@Override
+	public void bindWhisperer(Whisperer whisperer) {
+		boundWhisperers.add(whisperer);
+	}
+
+	@Override
+	public void unbindWhisperer(Whisperer whisperer) {
+		boundWhisperers.remove(whisperer);
 	}
 
 	@Override
