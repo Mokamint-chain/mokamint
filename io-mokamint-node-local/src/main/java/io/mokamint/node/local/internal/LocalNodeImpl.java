@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,6 +62,7 @@ import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
+import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.Whisperer;
 
 /**
@@ -167,7 +169,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
 		this.miners = new NodeMiners(this, Stream.of(miners));
-		this.peers = new NodePeers(this, db, peers -> executeAddPeersTask(peers, false));
+		this.peers = new NodePeers(this, db, peers -> executeAddPeersTask(peers, false, true));
 		addSeedsAsPeers();
 		this.startDateTime = db.getGenesis().map(GenesisBlock::getStartDateTimeUTC).orElse(LocalDateTime.now(ZoneId.of("UTC")));
 		startNextBlockMining();
@@ -207,7 +209,7 @@ public class LocalNodeImpl implements LocalNode {
 	public void whisperToPeers(Stream<Peer> peers) {
 		// we check if some peers is interesting for us
 		// and only in that case we forward it to our peers
-		executeAddPeersTask(peers, false);
+		executeAddPeersTask(peers, false, false);
 	}
 
 	@Override
@@ -247,7 +249,7 @@ public class LocalNodeImpl implements LocalNode {
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
 		ensureIsOpen();
 		if (peers.add(peer, true))
-			submit(new PeersAddedEvent(Stream.of(peer)));
+			submit(new PeersAddedEvent(Stream.of(peer), true));
 	}
 
 	@Override
@@ -476,18 +478,20 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param peers the peers to add
 	 * @param force true if and only if the peers must be added also if the maximum number of peers
 	 *              for the node has been reached
+	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
+	 *                to all peers of this node
 	 */
-	private void executeAddPeersTask(Stream<Peer> peers, boolean force) {
+	private void executeAddPeersTask(Stream<Peer> peers, boolean force, boolean whisper) {
 		var peersAsArray = peers.distinct().toArray(Peer[]::new);
 		if (peersAsArray.length > 0)
-			submit(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this));
+			submit(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this, whisper));
 	}
 
 	/**
 	 * Adds the seeds as peers.
 	 */
 	private void addSeedsAsPeers() {
-		executeAddPeersTask(config.seeds().map(Peers::of), true);
+		executeAddPeersTask(config.seeds().map(Peers::of), true, true);
 	}
 
 	/**
@@ -730,9 +734,11 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public class PeersAddedEvent extends Event {
 		private final Peer[] peers;
+		private final boolean whisper;
 
-		public PeersAddedEvent(Stream<Peer> peers) {
+		public PeersAddedEvent(Stream<Peer> peers, boolean whisper) {
 			this.peers = peers.toArray(Peer[]::new);
+			this.whisper = whisper;
 		}
 
 		@Override
@@ -761,6 +767,9 @@ public class LocalNodeImpl implements LocalNode {
 
 			// also the nodes bound to the services using this node receive the whispering
 			whisperToServices(getPeers());
+
+			if (whisper)
+				whisper(WhisperPeersMessages.of(Stream.of(peers), UUID.randomUUID().toString()), _whisperer -> false);
 		}
 	}
 

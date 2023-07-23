@@ -45,6 +45,12 @@ public class AddPeersTask extends Task {
 	 */
 	private final PeerAddition adder;
 
+	/**
+	 * True if and only if the peers successfully added will be whispered
+	 * to all peers of the node at the end.
+	 */
+	private final boolean whisper;
+
 	private final static Logger LOGGER = Logger.getLogger(AddPeersTask.class.getName());
 
 	/**
@@ -72,12 +78,15 @@ public class AddPeersTask extends Task {
 	 * @param peers the peers to add
 	 * @param adder the code to execute to actually add a peer to the node
 	 * @param node the node for which this task is working
+	 * @param whisper true if and only if the peers successfully added will be whispered
+	 *                to all peers of the node at the end
 	 */
-	public AddPeersTask(Stream<Peer> peers, PeerAddition adder, LocalNodeImpl node) {
+	public AddPeersTask(Stream<Peer> peers, PeerAddition adder, LocalNodeImpl node, boolean whisper) {
 		node.super();
 
 		this.peers = peers.distinct().toArray(Peer[]::new);
 		this.adder = adder;
+		this.whisper = whisper;
 	}
 
 	@Override
@@ -90,7 +99,7 @@ public class AddPeersTask extends Task {
 		// TODO: could addPeer be spawned in parallel?
 		var added = Stream.of(peers).filter(this::addPeer).toArray(Peer[]::new);
 		if (added.length > 0) // just to avoid useless events
-			node.submit(node.new PeersAddedEvent(Stream.of(added)));
+			node.submit(node.new PeersAddedEvent(Stream.of(added), whisper));
 	}
 
 	private boolean addPeer(Peer peer) {

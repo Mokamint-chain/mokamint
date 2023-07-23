@@ -29,6 +29,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -177,6 +178,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		var itself = Peers.of(uri.get());
 		node.whisperItselfToPeers(itself);
+		node.whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), whisperer -> whisperer == this);
 	}
 
 	/**
