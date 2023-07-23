@@ -28,9 +28,24 @@ public interface Whisperer {
 	 * Whisper the given message.
 	 * 
 	 * @param message the message
-	 * @param seen a predicate telling if a whisperer has already wispered the
+	 * @param seen a predicate telling if a whisperer has already whispered the
 	 *             {@code message}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle
 	 */
 	void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen);
+
+	/**
+	 * Whisper the given message. This is a special case of {@link #whisper(WhisperPeersMessage, Predicate)}
+	 * when it is known that the whispered peers are all the same whisperer that
+	 * receives the call. In some cases, this can be useful for optimization. For instance,
+	 * if the whisperer is a local node, that it needn't try to add the peers
+	 * among its peers, since they would end up being rejected (a peer cannot be
+	 * added to itself).
+	 * 
+	 * @param message the message
+	 * @param seen a predicate telling if a whisperer has already whispered the
+	 *             {@code message}. This is used in order to avoid infinite recursion
+	 *             if whisperers form a cycle
+	 */
+	void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen);
 }

@@ -183,16 +183,14 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 
 		@Override
 		public void onClose(Session session, CloseReason closeReason) {
-			LOGGER.info("closing the remote node since its bound service is getting closed");
-
 			super.onClose(session, closeReason);
 
 			try {
-				// we close the remote since it is bound to a service that seems to be closed
+				// we close the remote since it is bound to a service that seems to be getting closed
 				close();
 			}
 			catch (IOException | InterruptedException e) {
-				LOGGER.log(Level.SEVERE, "cannot close the remote node", e);
+				LOGGER.log(Level.SEVERE, "cannot close " + getClass().getName(), e);
 			}
 		}
 

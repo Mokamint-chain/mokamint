@@ -224,7 +224,6 @@ public class NodePeers implements AutoCloseable {
 			pool.execute(() -> {
 				Stream<Peer> couldBeAdded = remotes.entrySet().parallelStream()
 					.flatMap(this::pingPeer)
-					//.sorted() // so that we try to add peers with highest score first
 					.map(PeerInfo::getPeer);
 	
 				addPeersTask.accept(couldBeAdded);
@@ -234,8 +233,8 @@ public class NodePeers implements AutoCloseable {
 
 	private Stream<PeerInfo> pingPeer(Entry<Peer, RemotePublicNode> entry) {
 		var peer = entry.getKey();
-
 		var remote = entry.getValue();
+
 		if (remote == null)
 			remote = tryToCreateRemote(peer);
 
@@ -247,6 +246,7 @@ public class NodePeers implements AutoCloseable {
 		RemotePublicNode remote = null;
 	
 		try {
+			LOGGER.info("trying to recreate a connection to peer " + peer);
 			remote = openRemote(peer);
 			RemotePublicNode remoteCopy = remote;
 			ensurePeerIsCompatible(remote);

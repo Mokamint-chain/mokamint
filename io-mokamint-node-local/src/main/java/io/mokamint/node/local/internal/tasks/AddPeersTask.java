@@ -17,10 +17,10 @@ limitations under the License.
 package io.mokamint.node.local.internal.tasks;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
@@ -91,7 +91,29 @@ public class AddPeersTask extends Task {
 
 	@Override
 	public String toString() {
-		return "addition of " + Arrays.toString(peers) + " as peers";
+		return "addition of " + peersAsString() + " as peers";
+	}
+
+	/**
+	 * Yields a string describing {@link #peers}. It truncates peers too long
+	 * or too many peers, in order to cope with potential log injections.
+	 * 
+	 * @return the string
+	 */
+	private String peersAsString() {
+		String result = Stream.of(peers).limit(20).map(this::truncate).collect(Collectors.joining(", "));
+		if (peers.length > 20)
+			result += ", ...";
+
+		return result;
+	}
+
+	private String truncate(Peer peer) {
+		String uri = peer.toString();
+		if (uri.length() > 50)
+			return uri.substring(0, 50) + "...";
+		else
+			return uri;
 	}
 
 	@Override @OnThread("tasks")

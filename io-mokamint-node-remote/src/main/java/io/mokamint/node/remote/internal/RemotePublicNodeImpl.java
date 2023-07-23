@@ -131,11 +131,16 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		whisper(message, seen, true);
 	}
 
+	@Override
+	public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		whisper(message, seen);
+	}
+
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
 
-		LOGGER.info("received whispered peers " + message.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
+		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
 
 		onWhisperPeers(message);
 
@@ -150,6 +155,30 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+	}
+
+	/**
+	 * Yields a string describing some peers. It truncates peers too long
+	 * or too many peers, in order to cope with potential log injections.
+	 * 
+	 * @param peers the peers
+	 * @return the string
+	 */
+	private String peersAsString(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		String result = Stream.of(peersAsArray).limit(20).map(this::truncate).collect(Collectors.joining(", "));
+		if (peersAsArray.length > 20)
+			result += ", ...";
+
+		return result;
+	}
+
+	private String truncate(Peer peer) {
+		String uri = peer.toString();
+		if (uri.length() > 50)
+			return uri.substring(0, 50) + "...";
+		else
+			return uri;
 	}
 
 	private boolean alreadySeen(RpcMessage message) {

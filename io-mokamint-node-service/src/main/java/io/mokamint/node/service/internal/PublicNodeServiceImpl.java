@@ -178,7 +178,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisperExcludingSession(message, seen, null);
+		whisperExcludingSession(message, seen, null, false);
+	}
+
+	@Override
+	public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		whisperExcludingSession(message, seen, null, true);
 	}
 
 	private void whisperItself() {
@@ -186,7 +191,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			LOGGER.warning("not whispering the service itself since its public URI is unknown");
 
 		var itself = Peers.of(uri.get());
-		whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false);
+		whisperItself(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false);
 	}
 
 	private URI addPort(URI uri) throws DeploymentException {
@@ -242,18 +247,45 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
-	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded) {
+	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded, boolean isItself) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
 
-		LOGGER.info("received whispered peers " + message.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
+		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
 
 		whisperPeersSessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
 			.forEach(s -> whisperToSession(s, message));
 
-		node.whisper(message, seen.or(_whisperer -> _whisperer == this));
+		if (isItself)
+			node.whisperItself(message, seen.or(_whisperer -> _whisperer == this));
+		else
+			node.whisper(message, seen.or(_whisperer -> _whisperer == this));
+	}
+
+	/**
+	 * Yields a string describing some peers. It truncates peers too long
+	 * or too many peers, in order to cope with potential log injections.
+	 * 
+	 * @param peers the peers
+	 * @return the string
+	 */
+	private String peersAsString(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		String result = Stream.of(peersAsArray).limit(20).map(this::truncate).collect(Collectors.joining(", "));
+		if (peersAsArray.length > 20)
+			result += ", ...";
+
+		return result;
+	}
+
+	private String truncate(Peer peer) {
+		String uri = peer.toString();
+		if (uri.length() > 50)
+			return uri.substring(0, 50) + "...";
+		else
+			return uri;
 	}
 
 	private void whisperToSession(Session session, WhisperPeersMessage message) {
@@ -429,7 +461,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisperExcludingSession(message, _whisperer -> false, session));
+			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisperExcludingSession(message, _whisperer -> false, session, false));
 	    }
 
 		@SuppressWarnings("resource")

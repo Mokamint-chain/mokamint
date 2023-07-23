@@ -204,13 +204,23 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		whisper(message, seen, true);
+	}
+
+	@Override
+	public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		whisper(message, seen, false);
+	}
+
+	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
 		if (seen.test(this) || alreadySeen(message))
 			return;
 
-		LOGGER.info("received whispered peers " + message.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
+		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
 
-		// we check if this node needs any of the whispered peers
-		executeAddPeersTask(message.getPeers(), false, false);
+		if (tryToAddToThePeers)
+			// we check if this node needs any of the whispered peers
+			executeAddPeersTask(message.getPeers(), false, false);
 
 		// in any case, we forward the message to our peers
 		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
@@ -223,6 +233,30 @@ public class LocalNodeImpl implements LocalNode {
 			.forEach(remote -> remote.whisper(message, newSeen));
 
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+	}
+
+	/**
+	 * Yields a string describing some peers. It truncates peers too long
+	 * or too many peers, in order to cope with potential log injections.
+	 * 
+	 * @param peers the peers
+	 * @return the string
+	 */
+	private String peersAsString(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		String result = Stream.of(peersAsArray).limit(20).map(this::truncate).collect(Collectors.joining(", "));
+		if (peersAsArray.length > 20)
+			result += ", ...";
+
+		return result;
+	}
+
+	private String truncate(Peer peer) {
+		String uri = peer.toString();
+		if (uri.length() > 50)
+			return uri.substring(0, 50) + "...";
+		else
+			return uri;
 	}
 
 	private boolean alreadySeen(RpcMessage message) {
