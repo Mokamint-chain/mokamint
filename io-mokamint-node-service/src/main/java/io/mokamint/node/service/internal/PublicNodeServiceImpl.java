@@ -250,7 +250,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
 		try {
-			sendObjectAsync(session, WhisperPeersMessages.of(peers));
+			sendObjectAsync(session, WhisperPeersMessages.of(peers, "id"));
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);

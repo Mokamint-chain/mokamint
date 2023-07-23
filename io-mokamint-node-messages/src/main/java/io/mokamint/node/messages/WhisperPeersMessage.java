@@ -18,13 +18,14 @@ package io.mokamint.node.messages;
 
 import java.util.stream.Stream;
 
+import io.hotmoka.websockets.beans.RpcMessage;
 import io.mokamint.node.api.Peer;
 
 /**
  * The network message sent between a public node service and its connected remotes,
  * to whisper some peers that have been discovered.
  */
-public interface WhisperPeersMessage {
+public interface WhisperPeersMessage extends RpcMessage {
 
 	/**
 	 * Yields the whispered peers.

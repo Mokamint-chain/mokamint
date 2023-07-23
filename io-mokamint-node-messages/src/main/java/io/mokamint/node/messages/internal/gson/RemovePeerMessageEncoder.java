@@ -21,7 +21,7 @@ import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.RemovePeerMessages;
 
 /**
- * An encoder of a {@code RemovePeersMessage}.
+ * An encoder of a {@link RemovePeerMessage}.
  */
 public class RemovePeerMessageEncoder extends MappedEncoder<RemovePeerMessage, RemovePeerMessages.Json> {
 

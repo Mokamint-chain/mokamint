@@ -22,7 +22,7 @@ import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
-import io.hotmoka.websockets.beans.JsonRepresentation;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.WhisperPeersMessage;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -30,16 +30,23 @@ import io.mokamint.node.messages.WhisperPeersMessages;
 /**
  * The JSON representation of an {@link WhisperPeersMessage}.
  */
-public abstract class WhisperPeersMessageJson implements JsonRepresentation<WhisperPeersMessage> {
+public abstract class WhisperPeersMessageJson extends AbstractRpcMessageJsonRepresentation<WhisperPeersMessage> {
 	private Peers.Json[] peers;
 
 	protected WhisperPeersMessageJson(WhisperPeersMessage message) {
+		super(message);
+
 		this.peers = message.getPeers().map(Peers.Json::new).toArray(Peers.Json[]::new);
 	}
 
 	@Override
 	public WhisperPeersMessage unmap() throws URISyntaxException {
 		// using Peers.Json::unmap below leads to a run-time error in the JVM!
-		return check(URISyntaxException.class, () -> WhisperPeersMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap()))));
+		return check(URISyntaxException.class, () -> WhisperPeersMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap())), getId()));
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return WhisperPeersMessage.class.getName();
 	}
 }

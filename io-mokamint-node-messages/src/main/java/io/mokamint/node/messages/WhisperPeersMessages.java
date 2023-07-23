@@ -35,10 +35,11 @@ public class WhisperPeersMessages {
 	 * Yields a {@link WhisperPeersMessage}.
 	 * 
 	 * @param peers the whispered peers
+	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static WhisperPeersMessage of(Stream<Peer> peers) {
-		return new WhisperPeersMessageImpl(peers);
+	public static WhisperPeersMessage of(Stream<Peer> peers, String id) {
+		return new WhisperPeersMessageImpl(peers, id);
 	}
 
 	/**

@@ -117,7 +117,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	@Override
 	public void whisperToPeers(Stream<Peer> peers) {
 		try {
-			sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), WhisperPeersMessages.of(peers));
+			sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), WhisperPeersMessages.of(peers, "id"));
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed", e);

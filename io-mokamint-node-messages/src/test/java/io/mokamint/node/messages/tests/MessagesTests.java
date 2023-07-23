@@ -208,7 +208,7 @@ public class MessagesTests {
 		var peer1 = Peers.of(new URI("ws://google.com:8011"));
 		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
 		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
-		var suggestPeersMessage1 = WhisperPeersMessages.of(Stream.of(peer1, peer2, peer3));
+		var suggestPeersMessage1 = WhisperPeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
 		String encoded = new WhisperPeersMessages.Encoder().encode(suggestPeersMessage1);
 		var suggestPeersMessage2 = new WhisperPeersMessages.Decoder().decode(encoded);
 		assertEquals(suggestPeersMessage1, suggestPeersMessage2);

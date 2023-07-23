@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.WhisperPeersMessage;
 
@@ -27,7 +28,7 @@ import io.mokamint.node.messages.WhisperPeersMessage;
  * Implementation of the network message sent between a public node service and
  * its connected remotes, to whisper some peers that have been discovered.
  */
-public class WhisperPeersMessageImpl implements WhisperPeersMessage {
+public class WhisperPeersMessageImpl extends AbstractRpcMessage implements WhisperPeersMessage {
 
 	private final Peer[] peers;
 
@@ -35,8 +36,11 @@ public class WhisperPeersMessageImpl implements WhisperPeersMessage {
 	 * Creates the message.
 	 * 
 	 * @param peers the peers suggested for addition
+	 * @param id the identifier of the message
 	 */
-	public WhisperPeersMessageImpl(Stream<Peer> peers) {
+	public WhisperPeersMessageImpl(Stream<Peer> peers, String id) {
+		super(id);
+
 		this.peers = peers.map(Objects::requireNonNull).toArray(Peer[]::new);
 	}
 
@@ -47,6 +51,11 @@ public class WhisperPeersMessageImpl implements WhisperPeersMessage {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof WhisperPeersMessage spm && Arrays.equals(peers, spm.getPeers().toArray(Peer[]::new));
+		return other instanceof WhisperPeersMessage spm && super.equals(other) && Arrays.equals(peers, spm.getPeers().toArray(Peer[]::new));
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return WhisperPeersMessage.class.getName();
 	}
 }
