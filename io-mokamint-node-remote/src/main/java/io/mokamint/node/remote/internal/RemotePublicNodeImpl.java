@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -35,6 +37,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.Block;
@@ -90,6 +93,13 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
+
+	/**
+	 * UUIDs of whispering messages that have already been seen in the past.
+	 * This is used to avoid forward already seen messages.
+	 */
+	@GuardedBy("itself")
+	private final SortedSet<String> seenMessageUUIDs = new TreeSet<>();
 
 	/**
 	 * Opens and yields a new remote node for the public API of a node.
@@ -150,6 +160,27 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	@Override
 	public void whisperItselfToPeers(Peer itself) {
 		whisperToPeers(Stream.of(itself));
+	}
+
+	@Override
+	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		if (alreadySeen(message))
+			return;
+
+		// TODO Auto-generated method stub
+	}
+
+	private boolean alreadySeen(RpcMessage message) {
+		synchronized (seenMessageUUIDs) {
+			if (seenMessageUUIDs.add(message.getId())) {
+				if (seenMessageUUIDs.size() > 1000) // TODO
+					seenMessageUUIDs.remove(seenMessageUUIDs.first());
+
+				return false;
+			}
+			else
+				return true;
+		}
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -400,9 +431,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			addMessageHandler(session, (WhisperPeersMessage message) -> {
 				onWhisperPeers(message);
 				whisperToServices(message.getPeers());
-				Predicate<Whisperer> seen = whisperer -> whisperer == RemotePublicNodeImpl.this;
-				boundWhisperers.stream()
-					.forEach(whisperer -> whisperer.whisper(message, seen));
+
+				if (!alreadySeen(message)) {
+					Predicate<Whisperer> seen = whisperer -> whisperer == RemotePublicNodeImpl.this;
+					boundWhisperers.stream()
+						.forEach(whisperer -> whisperer.whisper(message, seen));
+				}
 			});
 		}
 

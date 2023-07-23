@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -33,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -41,6 +44,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.ChainInfos;
@@ -63,6 +67,7 @@ import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 
 /**
@@ -150,6 +155,13 @@ public class LocalNodeImpl implements LocalNode {
 	@GuardedBy("orphans")
 	private int orphansPos;
 
+	/**
+	 * UUIDs of whispering messages that have already been seen in the past.
+	 * This is used to avoid forward already seen messages.
+	 */
+	@GuardedBy("itself")
+	private final SortedSet<String> seenMessageUUIDs = new TreeSet<>();
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -227,6 +239,27 @@ public class LocalNodeImpl implements LocalNode {
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.forEach(remote -> remote.whisperToPeers(Stream.of(itself)));
+	}
+
+	@Override
+	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
+		if (alreadySeen(message))
+			return;
+
+		// TODO Auto-generated method stub
+	}
+
+	private boolean alreadySeen(RpcMessage message) {
+		synchronized (seenMessageUUIDs) {
+			if (seenMessageUUIDs.add(message.getId())) {
+				if (seenMessageUUIDs.size() > 1000) // TODO
+					seenMessageUUIDs.remove(seenMessageUUIDs.first());
+
+				return false;
+			}
+			else
+				return true;
+		}
 	}
 
 	private void ensureIsOpen() throws ClosedNodeException {

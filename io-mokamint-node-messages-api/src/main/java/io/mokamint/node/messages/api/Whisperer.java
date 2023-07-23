@@ -32,5 +32,5 @@ public interface Whisperer {
 	 *             {@code message}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle
 	 */
-	default void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {}
+	void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen);
 }

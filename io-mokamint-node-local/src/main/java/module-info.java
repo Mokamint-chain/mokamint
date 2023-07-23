@@ -28,6 +28,7 @@ module io.mokamint.node.local {
 	requires io.mokamint.node.remote;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;
+	requires io.hotmoka.websockets.beans.api;
 	requires toml4j;
 	requires io.hotmoka.xodus;
 	requires java.logging;
