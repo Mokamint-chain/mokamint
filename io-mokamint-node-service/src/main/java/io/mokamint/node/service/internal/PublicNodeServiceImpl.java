@@ -37,7 +37,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -117,12 +116,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final Consumer<Stream<Peer>> this_whisperPeersToAllConnectedRemotes = this::whisperPeersToAllConnectedRemotes;
-
-	/**
-	 * We need this intermediate definition since two instances of a method reference
-	 * are not the same, nor equals.
-	 */
 	private final CloseHandler this_close = this::close;
 
 	/**
@@ -158,8 +151,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
-		// if the node has some peers to whisper, this service will propagate them to all connected remotes
-		node.addOnWhisperPeersToServicesHandler(this_whisperPeersToAllConnectedRemotes);
+
 		node.bindWhisperer(this);
 
 		startContainer("", port,
@@ -178,14 +170,13 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	public void close() throws InterruptedException {
 		periodicTasks.shutdownNow();
 		node.removeOnCloseHandler(this_close);
-		node.removeOnWhisperPeersToServicesHandler(this_whisperPeersToAllConnectedRemotes);
 		node.unbindWhisperer(this);
 		stopContainer();
 		periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
 		LOGGER.info("closed the public node service at ws://localhost:" + port);
 	}
 
-	public void whisperItself() {
+	private void whisperItself() {
 		if (uri.isEmpty())
 			LOGGER.warning("not whispering the service since its public URI is unknown");
 

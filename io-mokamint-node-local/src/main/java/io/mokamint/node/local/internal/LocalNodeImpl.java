@@ -34,7 +34,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -128,11 +127,6 @@ public class LocalNodeImpl implements LocalNode {
 	private final CopyOnWriteArrayList<CloseHandler> onCloseHandlers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * The code to execute when this node has some peers to whisper to the services using this node.
-	 */
-	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersToServicesHandlers = new CopyOnWriteArrayList<>();
-
-	/**
 	 * The whisperers bound to this node.
 	 */
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
@@ -195,16 +189,6 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void removeOnCloseHandler(CloseHandler handler) {
 		onCloseHandlers.add(handler);
-	}
-
-	@Override
-	public void addOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersToServicesHandlers.add(handler);
-	}
-
-	@Override
-	public void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersToServicesHandlers.remove(handler);
 	}
 
 	@Override

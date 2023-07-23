@@ -31,7 +31,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -83,11 +82,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private final NodeMessageQueues queues;
 
 	/**
-	 * The code to execute when this node has some peers to whisper to the services using this node.
-	 */
-	private final CopyOnWriteArrayList<Consumer<Stream<Peer>>> onWhisperPeersToServicesHandlers = new CopyOnWriteArrayList<>();
-
-	/**
 	 * The whisperers bound to this node.
 	 */
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
@@ -119,16 +113,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
 
 		this.queues = new NodeMessageQueues(timeout);
-	}
-
-	@Override
-	public void addOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersToServicesHandlers.add(handler);
-	}
-
-	@Override
-	public void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler) {
-		onWhisperPeersToServicesHandlers.remove(handler);
 	}
 
 	@Override

@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.Peer;
@@ -45,22 +44,6 @@ public interface PublicNodeInternals extends NodeInternals, PublicNode, Whispere
 	 * @param whisperer the whisperer to unbind
 	 */
 	void unbindWhisperer(Whisperer whisperer);
-
-	/**
-	 * Takes note that the given handler must be executed when this node
-	 * has some peers to whisper to the services using this node.
-	 * 
-	 * @param handler the handler
-	 */
-	void addOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler);
-
-	/**
-	 * Removes the given handler from that executed when this node
-	 * has some peers to whisper to the services using this node.
-	 * 
-	 * @param handler the handler
-	 */
-	void removeOnWhisperPeersToServicesHandler(Consumer<Stream<Peer>> handler);
 
 	/**
 	 * Called when some peers must be whispered to the peers of this node.
