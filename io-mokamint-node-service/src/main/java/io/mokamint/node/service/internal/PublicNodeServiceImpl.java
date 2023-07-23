@@ -26,7 +26,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -52,7 +51,6 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessage;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -158,7 +156,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetBlockEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), WhisperPeersEndpoint.config(this));
 
-		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, 2000, TimeUnit.MILLISECONDS);
+		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, 2000, TimeUnit.MILLISECONDS); // TODO
 
 		if (uri.isEmpty())
 			LOGGER.info("published a public node service at ws://localhost:" + port);
@@ -182,24 +180,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		var itself = Peers.of(uri.get());
 		whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false);
-	}
-
-	/**
-	 * Whisper some peers to all remotes connected to this service.
-	 * 
-	 * @param peers the peers to whisper
-	 */
-	protected void whisperPeersToAllConnectedRemotes(Stream<Peer> peers) {
-		if (uri.isPresent())
-			peers = Stream.concat(peers, Stream.of(Peers.of(uri.get()))).distinct();
-	
-		var peersAsArray = peers.toArray(Peer[]::new);
-	
-		LOGGER.info("whispering peers " + Arrays.toString(peersAsArray) + " to " + whisperPeersSessions.size() + " sessions");
-
-		whisperPeersSessions.stream()
-			.filter(Session::isOpen)
-			.forEach(openSession -> whisperPeersToSession(openSession, Stream.of(peersAsArray)));
 	}
 
 	private URI addPort(URI uri) throws DeploymentException {
@@ -255,19 +235,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
-	private void whisperPeersToSession(Session session, Stream<Peer> peers) {
-		whisperToSession(session, WhisperPeersMessages.of(peers, "id"));
-	}
-
-	private void whisperToSession(Session session, WhisperPeersMessage message) {
-		try {
-			sendObjectAsync(session, message);
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
-		}
-	}
-
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
 		whisperExcludingSession(message, seen, null);
@@ -283,6 +250,15 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			.forEach(s -> whisperToSession(s, message));
 
 		node.whisper(message, seen.or(_whisperer -> _whisperer == this));
+	}
+
+	private void whisperToSession(Session session, WhisperPeersMessage message) {
+		try {
+			sendObjectAsync(session, message);
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
+		}
 	}
 
 	private boolean alreadySeen(RpcMessage message) {
