@@ -153,7 +153,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final MessageMemory whisperedMessages = MessageMemories.of(1000);
+	private final MessageMemory whisperedMessages;
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -173,6 +173,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
+		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this, db, peers -> executeAddPeersTask(peers, false, true));
 		addSeedsAsPeers();

@@ -121,7 +121,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final MessageMemory whisperedMessages = MessageMemories.of(1000);
+	private final MessageMemory whisperedMessages;
 
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
@@ -134,6 +134,9 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 *                              broadcasts of the public IP of the service. Every such internal,
 	 *                              the service will whisper its IP to its connected peers,
 	 *                              in order to publish its willingness to become a peer
+	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
+	 *                              message again; higher numbers reduce the circulation of
+	 *                              spurious messages
 	 * @param uri the public URI of the machine where this service is running
 	 *            (including {@code ws://} and the port number, if any);
 	 *            if missing, the service will try to determine the public IP of the machine and
@@ -146,9 +149,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public PublicNodeServiceImpl(PublicNodeInternals node, int port, long peerBroadcastInterval, Optional<URI> uri) throws DeploymentException, IOException {
+	public PublicNodeServiceImpl(PublicNodeInternals node, int port, long peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
 		this.port = port;
+		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(this::addPort))));
 
 		// if the node gets closed, then this service will be closed as well
@@ -180,14 +184,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisperExcludingSession(message, seen, null, false);
+		whisper(message, seen, null, false);
 	}
 
 	private void whisperItself() {
 		if (uri.isEmpty())
 			LOGGER.warning("not whispering the service itself since its public URI is unknown");
-
-		try (var remote = RemotePublicNodes.of(uri.get(), 1000)) {
+	
+		try (var remote = RemotePublicNodes.of(uri.get(), 1000L)) {
 		}
 		catch (IOException | DeploymentException e) {
 			LOGGER.warning("not whispering the service itself since it cannot be reached");
@@ -196,12 +200,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, "cannot close the remote", e);
 		}
-
+	
 		var itself = Peers.of(uri.get());
-		whisperExcludingSession(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false, null, true);
+		whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false, null, true);
 	}
 
-	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded, boolean isItself) {
+	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded, boolean isItself) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 	
@@ -455,7 +459,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisperExcludingSession(message, _whisperer -> false, session, false));
+			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisper(message, _whisperer -> false, session, false));
 	    }
 
 		@SuppressWarnings("resource")

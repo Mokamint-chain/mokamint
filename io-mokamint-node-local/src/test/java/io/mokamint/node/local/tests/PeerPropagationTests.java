@@ -233,8 +233,8 @@ public class PeerPropagationTests {
 		}
 
 		try (var node1 = new MyLocalNode(config1, peer2); var node2 = new MyLocalNode(config2, peer1);
-			 var service1 = PublicNodeServices.open(node1, port1, 100L, Optional.of(uri1));
-			 var service2 = PublicNodeServices.open(node2, port2, 100L, Optional.of(uri2))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 100L, 1000, Optional.of(uri1));
+			 var service2 = PublicNodeServices.open(node2, port2, 100L, 1000, Optional.of(uri2))) {
 
 			node1.addPeer(peer2);
 

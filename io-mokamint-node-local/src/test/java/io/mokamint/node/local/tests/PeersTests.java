@@ -109,7 +109,7 @@ public class PeersTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private PublicTestServer(int port) throws DeploymentException, IOException {
-			super(mock(), port, 100000L, Optional.empty());
+			super(mock(), port, 180000L, 1000, Optional.empty());
 		}
 
 		@Override

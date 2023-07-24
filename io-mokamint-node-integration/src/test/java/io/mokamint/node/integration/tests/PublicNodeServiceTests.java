@@ -95,7 +95,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -124,7 +124,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -162,7 +162,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -194,7 +194,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -227,7 +227,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -259,7 +259,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -291,7 +291,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -326,7 +326,7 @@ public class PublicNodeServiceTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000L, 1000);
 			}
 
 			@Override
@@ -352,7 +352,7 @@ public class PublicNodeServiceTests {
 		
 		class MyRemotePublicNode extends RemotePublicNodeImpl {
 			MyRemotePublicNode() throws DeploymentException, IOException, URISyntaxException {
-				super(new URI("ws://localhost:8030"), 2000);
+				super(new URI("ws://localhost:8030"), 2000L, 1000);
 			}
 
 			@Override
@@ -384,7 +384,7 @@ public class PublicNodeServiceTests {
 
 		class MyPublicNodeService extends PublicNodeServiceImpl {
 			private MyPublicNodeService() throws DeploymentException, IOException {
-				super(node, PORT, 100000L, Optional.empty());
+				super(node, PORT, 180000L, 1000, Optional.empty());
 			}
 
 			@Override

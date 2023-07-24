@@ -127,6 +127,8 @@ public class Config extends AbstractConfig {
 	 */
 	public final long peerPingInterval;
 
+	public final int whisperingMemorySize = 1000; // TODO
+
 	/**
 	 * Full constructor for the builder pattern.
 	 */

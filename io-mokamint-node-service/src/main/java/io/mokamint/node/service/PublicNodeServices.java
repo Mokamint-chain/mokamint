@@ -39,7 +39,8 @@ public class PublicNodeServices {
 	 * Uses 30 minutes as interval, in milliseconds, between successive
 	 * broadcasts of the public IP of the service. Every such internal,
 	 * the service will whisper its IP to its connected peers,
-	 * in order to publish its willingness to become a peer.
+	 * in order to publish its willingness to become a peer. Uses 1000 as the size
+	 * of the memory used to avoid whispering the same message again.
 	 * 
 	 * @param node the node
 	 * @param port the port
@@ -48,7 +49,7 @@ public class PublicNodeServices {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public static PublicNodeService open(PublicNodeInternals node, int port) throws DeploymentException, IOException {
-		return new PublicNodeServiceImpl(node, port, 1800000L, Optional.empty());
+		return new PublicNodeServiceImpl(node, port, 1800000L, 1000, Optional.empty());
 	}
 
 	/**
@@ -68,27 +69,7 @@ public class PublicNodeServices {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static PublicNodeService open(PublicNodeInternals node, int port, long peerBroadcastInterval, Optional<URI> uri) throws DeploymentException, IOException {
-		return new PublicNodeServiceImpl(node, port, peerBroadcastInterval, uri);
-	}
-
-	/**
-	 * Opens and yields a new service for the given node, at the given network port.
-	 * It allows one to specify the public URL of the machine, which will be suggested as a peer
-	 * for the connected remotes. Uses 30 minutes as interval, in milliseconds, between successive
-	 * broadcasts of the public IP of the service. Every such internal,
-	 * the service will whisper its IP to its connected peers,
-	 * in order to publish its willingness to become a peer.
-	 * 
-	 * @param node the node
-	 * @param port the port
-	 * @param uri the URI that will be suggested as URL of the machine where the service is running; this might be
-	 *            empty, which means that the service will try to guess its public IP and use it as its public URI
-	 * @return the new service
-	 * @throws DeploymentException if the service cannot be deployed
-	 * @throws IOException if an I/O error occurs
-	 */
-	public static PublicNodeService open(PublicNodeInternals node, int port, Optional<URI> uri) throws DeploymentException, IOException {
-		return new PublicNodeServiceImpl(node, port, 1800000L, uri);
+	public static PublicNodeService open(PublicNodeInternals node, int port, long peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
+		return new PublicNodeServiceImpl(node, port, peerBroadcastInterval, whisperedMessagesSize, uri);
 	}
 }

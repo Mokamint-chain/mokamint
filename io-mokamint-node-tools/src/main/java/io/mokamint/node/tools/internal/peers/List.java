@@ -89,7 +89,7 @@ public class List extends AbstractPublicRpcCommand {
 			String version = "<unknown>";
 			String uuid = "<unknown>";
 
-			try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000)) {
+			try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000L)) {
 				var peerInfo = remote.getInfo();
 				version = peerInfo.getVersion().toString();
 				uuid = peerInfo.getUUID().toString();

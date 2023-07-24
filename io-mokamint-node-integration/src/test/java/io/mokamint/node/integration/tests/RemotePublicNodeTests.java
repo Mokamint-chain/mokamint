@@ -84,7 +84,7 @@ public class RemotePublicNodeTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private PublicTestServer() throws DeploymentException, IOException {
-			super(mock(), PORT, 100000L, Optional.empty());
+			super(mock(), PORT, 180000L, 1000, Optional.empty());
 		}
 	}
 

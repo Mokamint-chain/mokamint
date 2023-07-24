@@ -90,7 +90,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final MessageMemory whisperedMessages = MessageMemories.of(1000);
+	private final MessageMemory whisperedMessages;
 
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
@@ -100,10 +100,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
+	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
+	 *                              message again; higher numbers reduce the circulation of
+	 *                              spurious messages
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public RemotePublicNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
+	public RemotePublicNodeImpl(URI uri, long timeout, int whisperedMessagesSize) throws DeploymentException, IOException {
+		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
+
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeersEndpoint::new);
 		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
 		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
