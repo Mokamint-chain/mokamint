@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.AddPeerResultMessage;
 import io.mokamint.node.messages.AddPeerResultMessages;
+import io.mokamint.node.messages.api.AddPeerResultMessage;
 
 /**
  * The JSON representation of a {@link AddPeerResultMessage}.

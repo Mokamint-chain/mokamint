@@ -14,15 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import java.util.stream.Stream;
-
-import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.ConsensusConfig;
 
 /**
- * The network message corresponding to the result of the {@link PublicNode#getPeerInfos()} method of a node.
+ * The network message corresponding to the result of the {@code PublicNode#getConfig()} method of a node.
  */
-public interface GetPeerInfosResultMessage extends ResultMessage<Stream<PeerInfo>> {
+public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig> {
 }

@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.api.ExceptionMessage;
 
 /**
  * Implementation of the network message corresponding to an exception thrown by a method call.

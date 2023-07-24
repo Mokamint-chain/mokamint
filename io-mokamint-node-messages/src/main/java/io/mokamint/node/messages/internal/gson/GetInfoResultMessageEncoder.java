@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.GetInfoResultMessage;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.api.GetInfoResultMessage;
 
 /**
  * An encoder of {@link GetInfoResultMessage}.

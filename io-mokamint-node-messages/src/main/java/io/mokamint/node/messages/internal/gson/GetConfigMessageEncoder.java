@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.BaseEncoder;
-import io.mokamint.node.messages.GetConfigMessage;
+import io.mokamint.node.messages.api.GetConfigMessage;
 
 /**
  * An encoder of {@code GetConfigMessage}.

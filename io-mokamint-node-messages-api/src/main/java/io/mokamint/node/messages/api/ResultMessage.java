@@ -14,12 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.api.ChainInfo;
+import java.util.function.Supplier;
+
+import io.hotmoka.websockets.beans.api.RpcMessage;
 
 /**
- * The network message corresponding to the result of the {@code PublicNode#getChainInfo()} method of a node.
+ * A network message corresponding to the result of method of a node.
+ * 
+ * @param <T> the type of the result value of the method
  */
-public interface GetChainInfoResultMessage extends ResultMessage<ChainInfo> {
+public interface ResultMessage<T> extends Supplier<T>, RpcMessage {
+
+	@Override
+	boolean equals(Object obj);
 }

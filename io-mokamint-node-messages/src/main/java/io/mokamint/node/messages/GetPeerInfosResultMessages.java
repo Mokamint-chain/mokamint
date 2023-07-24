@@ -19,6 +19,7 @@ package io.mokamint.node.messages;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.internal.GetPeerInfosResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageEncoder;

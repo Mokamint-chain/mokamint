@@ -19,6 +19,7 @@ package io.mokamint.node.messages;
 import java.util.Optional;
 
 import io.mokamint.node.api.Block;
+import io.mokamint.node.messages.api.GetBlockResultMessage;
 import io.mokamint.node.messages.internal.GetBlockResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetBlockResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetBlockResultMessageEncoder;

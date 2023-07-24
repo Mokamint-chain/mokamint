@@ -14,22 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to the {@code getBlock} method of a node.
+ * The network message corresponding to the result of {@link RestrictedNode#addPeer(io.mokamint.node.api.Peer)} method of a node.
  */
-public interface GetBlockMessage extends RpcMessage {
-
-	/**
-	 * Yields the {@code hash} parameter of the method.
-	 * 
-	 * @return the parameter
-	 */
-	byte[] getHash();
-
-	@Override
-	boolean equals(Object obj);
+public interface AddPeerResultMessage extends RpcMessage {
 }

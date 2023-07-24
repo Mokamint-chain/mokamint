@@ -14,12 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.api.ConsensusConfig;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 
 /**
- * The network message corresponding to the result of the {@code PublicNode#getConfig()} method of a node.
+ * The network message corresponding to the {@code getBlock} method of a node.
  */
-public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig> {
+public interface GetBlockMessage extends RpcMessage {
+
+	/**
+	 * Yields the {@code hash} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
+	byte[] getHash();
+
+	@Override
+	boolean equals(Object obj);
 }

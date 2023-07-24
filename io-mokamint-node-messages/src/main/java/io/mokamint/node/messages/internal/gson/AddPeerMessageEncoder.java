@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.api.AddPeerMessage;
 
 /**
  * An encoder of an {@code AddPeersMessage}.

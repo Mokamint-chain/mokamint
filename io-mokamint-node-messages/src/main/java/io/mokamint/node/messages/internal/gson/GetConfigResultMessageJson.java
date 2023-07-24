@@ -20,8 +20,8 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.ConsensusConfigs;
-import io.mokamint.node.messages.GetConfigResultMessage;
 import io.mokamint.node.messages.GetConfigResultMessages;
+import io.mokamint.node.messages.api.GetConfigResultMessage;
 
 /**
  * The JSON representation of a {@link GetConfigResultMessage}.

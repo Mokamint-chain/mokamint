@@ -14,19 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
-
-import java.util.function.Supplier;
+package io.mokamint.node.messages.api;
 
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * A network message corresponding to the result of method of a node.
- * 
- * @param <T> the type of the result value of the method
+ * The network message corresponding to the {@link PublicNode#getPeerInfos()} method of a node.
  */
-public interface ResultMessage<T> extends Supplier<T>, RpcMessage {
-
+public interface GetPeerInfosMessage extends RpcMessage {
+	
 	@Override
 	boolean equals(Object obj);
 }

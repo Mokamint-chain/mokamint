@@ -18,8 +18,8 @@ package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.messages.GetChainInfoResultMessage;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 
 /**
  * The JSON representation of a {@link GetChainInfoResultMessage}.

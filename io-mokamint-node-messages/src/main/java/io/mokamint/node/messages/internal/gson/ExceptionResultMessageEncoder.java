@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.ExceptionMessage;
 import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.api.ExceptionMessage;
 
 /**
  * An encoder of {@code ExceptionResultMessage}.

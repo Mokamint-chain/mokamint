@@ -18,7 +18,7 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.ChainInfo;
-import io.mokamint.node.messages.GetChainInfoResultMessage;
+import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 
 /**
  * Implementation of the network message corresponding to the {@code PublicNode#getConfig()} method of a node.

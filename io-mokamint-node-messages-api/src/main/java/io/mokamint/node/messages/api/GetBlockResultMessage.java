@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.RestrictedNode;
+import java.util.Optional;
+
+import io.mokamint.node.api.Block;
 
 /**
- * The network message corresponding to the result of {@link RestrictedNode#addPeer(io.mokamint.node.api.Peer)} method of a node.
+ * The network message corresponding to the result of the {@code getBlock} method of a node.
  */
-public interface AddPeerResultMessage extends RpcMessage {
+public interface GetBlockResultMessage extends ResultMessage<Optional<Block>> {
 }

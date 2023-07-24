@@ -14,15 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to the {@code PublicNode#getConfig()} method of a node.
+ * The network message corresponding to {@link RestrictedNode#removePeer(Peer)}.
  */
-public interface GetConfigMessage extends RpcMessage {
-	
+public interface RemovePeerMessage extends RpcMessage {
+
+	/**
+	 * Yields the peer requested to remove.
+	 * 
+	 * @return the peer
+	 */
+	Peer getPeer();
+
 	@Override
 	boolean equals(Object obj);
 }

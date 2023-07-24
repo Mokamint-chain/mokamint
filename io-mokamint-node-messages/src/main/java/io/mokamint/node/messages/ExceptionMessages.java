@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.internal.ExceptionResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.ExceptionResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.ExceptionResultMessageEncoder;

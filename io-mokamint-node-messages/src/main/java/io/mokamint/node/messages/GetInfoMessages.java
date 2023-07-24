@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.internal.GetInfoMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetInfoMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetInfoMessageEncoder;

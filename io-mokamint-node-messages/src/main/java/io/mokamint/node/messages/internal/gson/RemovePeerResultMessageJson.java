@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.RemovePeerResultMessage;
 import io.mokamint.node.messages.RemovePeerResultMessages;
+import io.mokamint.node.messages.api.RemovePeerResultMessage;
 
 /**
  * The JSON representation of a {@link RemovePeerResultMessage}.

@@ -14,13 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.api.NodeInfo;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the result of the {@link PublicNode#getInfo()} method of a node.
+ * The network message corresponding to the {@link PublicNode#getInfo()} method of a node.
  */
-public interface GetInfoResultMessage extends ResultMessage<NodeInfo> {
+public interface GetInfoMessage extends RpcMessage {
+	
+	@Override
+	boolean equals(Object obj);
 }

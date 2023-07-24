@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getPeerInfos()} method of a node.

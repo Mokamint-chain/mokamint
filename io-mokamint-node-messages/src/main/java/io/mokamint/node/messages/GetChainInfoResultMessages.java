@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.messages;
 
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 import io.mokamint.node.messages.internal.GetChainInfoResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetChainInfoResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetChainInfoResultMessageEncoder;

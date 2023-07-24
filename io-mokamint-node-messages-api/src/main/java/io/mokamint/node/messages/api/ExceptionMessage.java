@@ -14,23 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to {@link RestrictedNode#addPeer(Peer)}.
+ * A network message corresponding to an exception thrown by a method call.
  */
-public interface AddPeerMessage extends RpcMessage {
+public interface ExceptionMessage extends RpcMessage {
 
 	/**
-	 * Yields the peer requested to add.
+	 * Yields the class of the exception.
 	 * 
-	 * @return the peer
+	 * @return the class of the exception
 	 */
-	Peer getPeer();
+	Class<? extends Exception> getExceptionClass();
+
+	/**
+	 * Yields the message of the exception.
+	 * 
+	 * @return the message
+	 */
+	String getMessage();
 
 	@Override
 	boolean equals(Object obj);

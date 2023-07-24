@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.RemovePeerMessages;
+import io.mokamint.node.messages.api.RemovePeerMessage;
 
 /**
  * A decoder for a {@link RemovePeerMessage}.

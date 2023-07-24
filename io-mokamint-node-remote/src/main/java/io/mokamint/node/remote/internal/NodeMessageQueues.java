@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.messages.ExceptionMessage;
+import io.mokamint.node.messages.api.ExceptionMessage;
 
 /**
  * Utility keeping queues of messages for each message id. When a message for that id arrives,

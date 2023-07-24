@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.api.GetBlockResultMessage;
 
 /**
  * An encoder of {@code GetBlockResultMessage}.

@@ -20,8 +20,8 @@ import java.net.URISyntaxException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.RemovePeerMessage;
 import io.mokamint.node.messages.RemovePeerMessages;
+import io.mokamint.node.messages.api.RemovePeerMessage;
 
 /**
  * The JSON representation of a {@link RemovePeerMessage}.

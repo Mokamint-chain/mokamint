@@ -18,7 +18,7 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.GetPeerInfosMessage;
+import io.mokamint.node.messages.api.GetPeerInfosMessage;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getPeerInfos()} method of a node.

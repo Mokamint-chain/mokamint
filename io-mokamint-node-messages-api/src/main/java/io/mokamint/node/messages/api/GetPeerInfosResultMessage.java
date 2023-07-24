@@ -14,16 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import io.hotmoka.websockets.beans.api.RpcMessage;
+import java.util.stream.Stream;
+
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the {@link PublicNode#getInfo()} method of a node.
+ * The network message corresponding to the result of the {@link PublicNode#getPeerInfos()} method of a node.
  */
-public interface GetInfoMessage extends RpcMessage {
-	
-	@Override
-	boolean equals(Object obj);
+public interface GetPeerInfosResultMessage extends ResultMessage<Stream<PeerInfo>> {
 }

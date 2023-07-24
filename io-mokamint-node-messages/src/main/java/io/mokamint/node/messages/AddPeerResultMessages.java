@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.mokamint.node.messages.api.AddPeerResultMessage;
 import io.mokamint.node.messages.internal.AddPeerResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.AddPeerResultMessageDecoder;
 import io.mokamint.node.messages.internal.gson.AddPeerResultMessageEncoder;

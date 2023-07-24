@@ -21,8 +21,8 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.messages.GetBlockResultMessage;
 import io.mokamint.node.messages.GetBlockResultMessages;
+import io.mokamint.node.messages.api.GetBlockResultMessage;
 
 /**
  * The JSON representation of a {@link GetBlockResultMessage}.

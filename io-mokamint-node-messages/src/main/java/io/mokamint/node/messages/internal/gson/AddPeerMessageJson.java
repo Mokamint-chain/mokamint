@@ -20,8 +20,8 @@ import java.net.URISyntaxException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.AddPeerMessage;
 import io.mokamint.node.messages.AddPeerMessages;
+import io.mokamint.node.messages.api.AddPeerMessage;
 
 /**
  * The JSON representation of an {@link AddPeerMessage}.

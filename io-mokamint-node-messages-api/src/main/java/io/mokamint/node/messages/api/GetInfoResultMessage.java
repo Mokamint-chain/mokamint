@@ -14,29 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node.messages.api;
 
-import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * A network message corresponding to an exception thrown by a method call.
+ * The network message corresponding to the result of the {@link PublicNode#getInfo()} method of a node.
  */
-public interface ExceptionMessage extends RpcMessage {
-
-	/**
-	 * Yields the class of the exception.
-	 * 
-	 * @return the class of the exception
-	 */
-	Class<? extends Exception> getExceptionClass();
-
-	/**
-	 * Yields the message of the exception.
-	 * 
-	 * @return the message
-	 */
-	String getMessage();
-
-	@Override
-	boolean equals(Object obj);
+public interface GetInfoResultMessage extends ResultMessage<NodeInfo> {
 }

@@ -18,7 +18,7 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.ConsensusConfig;
-import io.mokamint.node.messages.GetConfigResultMessage;
+import io.mokamint.node.messages.api.GetConfigResultMessage;
 
 /**
  * Implementation of the network message corresponding to the {@code getConfig} method of a node.

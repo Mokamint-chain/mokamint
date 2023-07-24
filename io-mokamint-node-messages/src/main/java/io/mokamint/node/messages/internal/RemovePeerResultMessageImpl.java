@@ -18,7 +18,7 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.RestrictedNode;
-import io.mokamint.node.messages.RemovePeerResultMessage;
+import io.mokamint.node.messages.api.RemovePeerResultMessage;
 
 /**
  * Implementation of the network message corresponding to the {@link RestrictedNode#removePeer(io.mokamint.node.api.Peer)} method of a node.

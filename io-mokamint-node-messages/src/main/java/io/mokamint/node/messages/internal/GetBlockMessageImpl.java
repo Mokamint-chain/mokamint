@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.messages.GetBlockMessage;
+import io.mokamint.node.messages.api.GetBlockMessage;
 
 /**
  * Implementation of the network message corresponding to the {@code getBlock} method of a node.

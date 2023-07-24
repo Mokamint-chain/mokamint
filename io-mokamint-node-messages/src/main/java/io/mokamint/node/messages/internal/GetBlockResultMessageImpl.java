@@ -21,7 +21,7 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.messages.GetBlockResultMessage;
+import io.mokamint.node.messages.api.GetBlockResultMessage;
 
 /**
  * Implementation of the network message corresponding to the result of the {@code getBlock} method of a node.

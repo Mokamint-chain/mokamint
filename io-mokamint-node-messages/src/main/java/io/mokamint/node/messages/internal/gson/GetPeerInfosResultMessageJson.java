@@ -24,8 +24,8 @@ import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.PeerInfos;
-import io.mokamint.node.messages.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 
 /**
  * The JSON representation of a {@link GetPeerInfosResultMessage}.

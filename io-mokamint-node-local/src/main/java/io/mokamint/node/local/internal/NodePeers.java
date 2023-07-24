@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -229,9 +228,7 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private void pingPeersAndRecreateRemotes() {
 		LOGGER.info("pinging all peers to create missing remotes and collect their peers");
-		try (var pool = new ForkJoinPool()) {
-			pool.execute(() -> addPeersTask.accept(peers.getElements().parallel().flatMap(this::pingPeerAndRecreateRemote)));
-		}
+		addPeersTask.accept(peers.getElements().parallel().flatMap(this::pingPeerAndRecreateRemote));
 	}
 
 	private Stream<Peer> pingPeerAndRecreateRemote(Peer peer) {
