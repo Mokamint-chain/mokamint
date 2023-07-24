@@ -72,6 +72,7 @@ import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
+import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -185,6 +186,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		if (uri.isEmpty())
 			LOGGER.warning("not whispering the service itself since its public URI is unknown");
 
+		try (var remote = RemotePublicNodes.of(uri.get(), 1000)) {
+		}
+		catch (IOException | DeploymentException e) {
+			LOGGER.warning("not whispering the service itself since it cannot be reached");
+			return;
+		}
+		catch (InterruptedException e) {
+			LOGGER.log(Level.SEVERE, "cannot close the remote", e);
+		}
+
 		var itself = Peers.of(uri.get());
 		whisperExcludingSession(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false, null, true);
 	}
@@ -288,7 +299,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, message);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed: " + e.getMessage());
 		}
 	}
 

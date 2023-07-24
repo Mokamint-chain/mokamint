@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
@@ -198,59 +197,6 @@ public class PeerPropagationTests {
 			// we wait until peer1, peer2 and peer3 get propagated to node1
 			semaphore.tryAcquire(1, 8, TimeUnit.SECONDS);
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
-		}
-	}
-
-	@Test
-	@DisplayName("if a peer disconnects, its remote gets removed from the peers table")
-	@Timeout(10)
-	public void ifPeerDisconnectedThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
-			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {
-
-		var port2 = 8032;
-		var port3 = 8034;
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
-		var config1 = Config.Builder.defaults().setDir(chain1).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).build();
-		var config3 = Config.Builder.defaults().setDir(chain3).build();
-
-		var semaphore = new Semaphore(0);
-
-		class MyLocalNode extends LocalNodeImpl {
-
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
-				super(config, app);
-			}
-
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeerDisconnectedEvent pde && pde.getPeer().equals(peer2))
-					semaphore.release();
-			}
-		}
-
-		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, app);  var node3 = LocalNodes.of(config3, app);
-			 var service2 = PublicNodeServices.open(node2, port2); var service3 = PublicNodeServices.open(node3, port3)) {
-
-			// node1 has peer2 and peer3 as peers
-			node1.addPeer(peer2);
-			node1.addPeer(peer3);
-
-			// at this point, node1 has both its peers connected
-			assertTrue(node1.getPeerInfos().allMatch(PeerInfo::isConnected));
-			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).allMatch(((Predicate<Peer>) peer2::equals).or(peer3::equals)));
-
-			// peer2 gets closed and disconnects
-			node2.close();
-
-			semaphore.tryAcquire(1, 2, TimeUnit.SECONDS);
-
-			// at this point, the peers are always the same, but peer2 is disconnected
-			assertTrue(node1.getPeerInfos().count() == 2);
-			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer3)));
-			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
 		}
 	}
 

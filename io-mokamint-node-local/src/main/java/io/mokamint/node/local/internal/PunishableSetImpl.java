@@ -67,7 +67,9 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 * @param actors the actors initially contained in the set
 	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
 	 *                      will be used also when adding a new actor to the set later
-	 *                      (see @link {@link PunishableSet#add(Object)})
+	 *                      (see @link {@link PunishableSet#add(Object)}); moreover, this is used
+	 *                      as maximal value in {@link PunishableSet#pardon(Object, long)}
+	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
 	 */
 	public PunishableSetImpl(Stream<A> actors, long initialPoints) {
 		this(actors, initialPoints, (_actor, _force) -> true, _actor -> true);
@@ -82,6 +84,7 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 *                      (see @link {@link PunishableSet#add(Object)})
 	 * @param onAdd a filter invoked when a new actor is added to the set
 	 * @param onRemove a filter invoked when an actor is removed from the set
+	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
 	 */
 	public PunishableSetImpl(Stream<A> actors, long initialPoints, OnAdd<A> onAdd, Predicate<A> onRemove) {
 		if (initialPoints <= 0L)
@@ -121,6 +124,9 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 
 	@Override
 	public boolean punish(A actor, long points) {
+		if (points < 0)
+			throw new IllegalArgumentException("points cannot be negative");
+
 		var result = new AtomicBoolean();
 
 		actors.computeIfPresent(actor, (a, oldPoints) -> {
@@ -136,6 +142,14 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		});
 
 		return result.get();
+	}
+
+	@Override
+	public void pardon(A actor, long points) {
+		if (points < 0)
+			throw new IllegalArgumentException("points cannot be negative");
+
+		actors.computeIfPresent(actor, (a, oldPoints) -> Math.min(initialPoints, oldPoints + points));
 	}
 
 	@Override

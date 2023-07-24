@@ -78,8 +78,20 @@ public interface PunishableSet<A> {
 	 * @param points how many points get removed
 	 * @return true if and only if the actor was present in this container,
 	 *         has reached zero points and has been removed
+	 * @throws IllegalArgumentException if {@code points} is negative
 	 */
 	boolean punish(A actor, long points);
+
+	/**
+	 * Pardons an actor, by increasing its points. There might be a maximal
+	 * value to the resulting points. If the actor was not present in this
+	 * container, nothing happens.
+	 * 
+	 * @param actor the actor to pardon
+	 * @param points how many points get pardoned
+	 * @throws IllegalArgumentException if {@code points} is negative
+	 */
+	void pardon(A actor, long points);
 
 	/**
 	 * Adds the given actor to this container, if it is not already there.

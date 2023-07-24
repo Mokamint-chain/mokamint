@@ -525,7 +525,7 @@ public class LocalNodeImpl implements LocalNode {
 	 *                to all peers of this node
 	 */
 	private void executeAddPeersTask(Stream<Peer> peers, boolean force, boolean whisper) {
-		var peersAsArray = peers.distinct().toArray(Peer[]::new);
+		var peersAsArray = peers.filter(peer -> !this.peers.contains(peer)).toArray(Peer[]::new);
 		if (peersAsArray.length > 0)
 			submit(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this, whisper));
 	}
