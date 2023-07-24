@@ -27,8 +27,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -37,7 +35,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.Block;
@@ -59,6 +56,8 @@ import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.MessageMemories;
+import io.mokamint.node.messages.MessageMemory;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
@@ -87,14 +86,13 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 */
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
 
-	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
-
 	/**
-	 * UUIDs of whispering messages that have already been seen in the past.
-	 * This is used to avoid forward already seen messages.
+	 * A memory of the last whispered messages,
+	 * This is used to avoid whispering already whispered messages again.
 	 */
-	@GuardedBy("itself")
-	private final SortedSet<String> seenMessageUUIDs = new TreeSet<>();
+	private final MessageMemory whisperedMessages = MessageMemories.of(1000);
+
+	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
 	/**
 	 * Opens and yields a new remote node for the public API of a node.
@@ -137,7 +135,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
-		if (seen.test(this) || alreadySeen(message))
+		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
 		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
@@ -179,19 +177,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			return uri.substring(0, 50) + "...";
 		else
 			return uri;
-	}
-
-	private boolean alreadySeen(RpcMessage message) {
-		synchronized (seenMessageUUIDs) {
-			if (seenMessageUUIDs.add(message.getId())) {
-				if (seenMessageUUIDs.size() > 1000) // TODO
-					seenMessageUUIDs.remove(seenMessageUUIDs.first());
-
-				return false;
-			}
-			else
-				return true;
-		}
 	}
 
 	private RuntimeException unexpectedException(Exception e) {

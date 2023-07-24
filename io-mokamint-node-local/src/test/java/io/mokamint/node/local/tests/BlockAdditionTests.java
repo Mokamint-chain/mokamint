@@ -61,10 +61,13 @@ public class BlockAdditionTests {
 		}
 
 		@Override
-		protected boolean isDisabled(Event event) {
+		public void submit(Event event) {
 			// we disable the events responsible for mining, so that they do not interfere with the tests
 			// that add blocks to the chain
-			return event instanceof BlockDiscoveryEvent || super.isDisabled(event);
+			if (event instanceof BlockDiscoveryEvent)
+				return;
+			else
+				super.submit(event);
 		}
 	}
 

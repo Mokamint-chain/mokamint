@@ -24,8 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +42,6 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.ChainInfos;
@@ -66,6 +63,8 @@ import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
+import io.mokamint.node.messages.MessageMemories;
+import io.mokamint.node.messages.MessageMemory;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
@@ -151,11 +150,10 @@ public class LocalNodeImpl implements LocalNode {
 	private int orphansPos;
 
 	/**
-	 * UUIDs of whispering messages that have already been seen in the past.
-	 * This is used to avoid forward already seen messages.
+	 * A memory of the last whispered messages,
+	 * This is used to avoid whispering already whispered messages again.
 	 */
-	@GuardedBy("itself")
-	private final SortedSet<String> seenUUIDs = new TreeSet<>();
+	private final MessageMemory whisperedMessages = MessageMemories.of(1000);
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -213,7 +211,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
-		if (seen.test(this) || alreadySeen(message))
+		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
 		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
@@ -257,19 +255,6 @@ public class LocalNodeImpl implements LocalNode {
 			return uri.substring(0, 50) + "...";
 		else
 			return uri;
-	}
-
-	private boolean alreadySeen(RpcMessage message) {
-		synchronized (seenUUIDs) {
-			if (seenUUIDs.add(message.getId())) {
-				if (seenUUIDs.size() > 1000) // TODO
-					seenUUIDs.remove(seenUUIDs.first());
-
-				return false;
-			}
-			else
-				return true;
-		}
 	}
 
 	private void ensureIsOpen() throws ClosedNodeException {
@@ -575,18 +560,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Determines if the given event is disabled, that is, if emitted
-	 * it won't be executed. By default, this method yields false,
-	 * but subclasses might redefine (typically, for testing).
-	 * 
-	 * @param event the event
-	 * @return true if and only if the event is disabled
-	 */
-	protected boolean isDisabled(Event event) {
-		return false;
-	}
-
-	/**
 	 * Callback called when an event is submitted.
 	 * It can be useful for testing or monitoring events.
 	 * 
@@ -629,15 +602,11 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param event the emitted event
 	 */
-	public final void submit(Event event) {
+	public void submit(Event event) {
 		try {
 			LOGGER.info("received " + event);
 			onSubmit(event);
-
-			if (isDisabled(event))
-				LOGGER.info("discarding disabled " + event);
-			else
-				events.execute(event);
+			events.execute(event);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(event + " rejected, probably because the node is shutting down");
@@ -688,18 +657,6 @@ public class LocalNodeImpl implements LocalNode {
 	protected void onSubmit(Task task) {}
 
 	/**
-	 * Determines if the given task is disabled, that is, if scheduled
-	 * it won't be executed. By default, this method yields false,
-	 * but subclasses might redefine (typically, for testing).
-	 * 
-	 * @param task the task
-	 * @return true if and only if the task is disabled
-	 */
-	protected boolean isDisabled(Task task) {
-		return false;
-	}
-
-	/**
 	 * Callback called when a task begins being executed.
 	 * It can be useful for testing or monitoring events.
 	 * 
@@ -735,11 +692,7 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			LOGGER.info("scheduling " + task);
 			onSubmit(task);
-
-			if (isDisabled(task))
-				LOGGER.info("discarding disabled " + task);
-			else
-				tasks.execute(task);
+			tasks.execute(task);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task + " rejected, probably because the node is shutting down");

@@ -28,8 +28,6 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -42,9 +40,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.NodeInternals.CloseHandler;
@@ -64,6 +60,8 @@ import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.MessageMemories;
+import io.mokamint.node.messages.MessageMemory;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
@@ -120,11 +118,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private final CloseHandler this_close = this::close;
 
 	/**
-	 * UUIDs of whispering messages that have already been seen in the past.
-	 * This is used to avoid forward already seen messages.
+	 * A memory of the last whispered messages,
+	 * This is used to avoid whispering already whispered messages again.
 	 */
-	@GuardedBy("itself")
-	private final SortedSet<String> seenMessageUUIDs = new TreeSet<>();
+	private final MessageMemory whisperedMessages = MessageMemories.of(1000);
 
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
@@ -205,7 +202,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded, boolean isItself) {
-		if (seen.test(this) || alreadySeen(message))
+		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 	
 		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
@@ -304,19 +301,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed: " + e.getMessage());
-		}
-	}
-
-	private boolean alreadySeen(RpcMessage message) {
-		synchronized (seenMessageUUIDs) {
-			if (seenMessageUUIDs.add(message.getId())) {
-				if (seenMessageUUIDs.size() > 1000) // TODO
-					seenMessageUUIDs.remove(seenMessageUUIDs.first());
-
-				return false;
-			}
-			else
-				return true;
 		}
 	}
 
