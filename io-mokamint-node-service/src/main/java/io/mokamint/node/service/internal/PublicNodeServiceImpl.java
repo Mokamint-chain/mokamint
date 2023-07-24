@@ -181,17 +181,29 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		whisperExcludingSession(message, seen, null, false);
 	}
 
-	@Override
-	public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisperExcludingSession(message, seen, null, true);
-	}
-
 	private void whisperItself() {
 		if (uri.isEmpty())
 			LOGGER.warning("not whispering the service itself since its public URI is unknown");
 
 		var itself = Peers.of(uri.get());
-		whisperItself(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false);
+		whisperExcludingSession(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false, null, true);
+	}
+
+	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded, boolean isItself) {
+		if (seen.test(this) || alreadySeen(message))
+			return;
+	
+		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
+	
+		whisperPeersSessions.stream()
+			.filter(Session::isOpen)
+			.filter(session -> session != excluded)
+			.forEach(s -> whisperToSession(s, message));
+	
+		if (isItself)
+			node.whisperItself(message, seen.or(_whisperer -> _whisperer == this));
+		else
+			node.whisper(message, seen.or(_whisperer -> _whisperer == this));
 	}
 
 	private URI addPort(URI uri) throws DeploymentException {
@@ -245,23 +257,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
-	}
-
-	private void whisperExcludingSession(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded, boolean isItself) {
-		if (seen.test(this) || alreadySeen(message))
-			return;
-
-		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
-
-		whisperPeersSessions.stream()
-			.filter(Session::isOpen)
-			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, message));
-
-		if (isItself)
-			node.whisperItself(message, seen.or(_whisperer -> _whisperer == this));
-		else
-			node.whisper(message, seen.or(_whisperer -> _whisperer == this));
 	}
 
 	/**

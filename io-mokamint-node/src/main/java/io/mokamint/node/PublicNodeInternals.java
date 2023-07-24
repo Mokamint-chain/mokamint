@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.util.function.Predicate;
+
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 
 /**
@@ -41,4 +44,19 @@ public interface PublicNodeInternals extends NodeInternals, PublicNode, Whispere
 	 * @param whisperer the whisperer to unbind
 	 */
 	void unbindWhisperer(Whisperer whisperer);
+
+	/**
+	 * Whisper the given message. This is a special case of {@link Whisperer#whisper(WhisperPeersMessage, Predicate)}
+	 * when it is known that the whispered peers are all the same whisperer that
+	 * receives the call. In some cases, this can be useful for optimization. For instance,
+	 * if the whisperer is a local node, that it needn't try to add the peers
+	 * among its peers, since they would end up being rejected (a peer cannot be
+	 * added to itself).
+	 * 
+	 * @param message the message
+	 * @param seen a predicate telling if a whisperer has already whispered the
+	 *             {@code message}. This is used in order to avoid infinite recursion
+	 *             if whisperers form a cycle
+	 */
+	void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen);
 }

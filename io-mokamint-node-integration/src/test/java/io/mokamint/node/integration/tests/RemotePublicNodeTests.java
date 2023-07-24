@@ -492,11 +492,6 @@ public class RemotePublicNodeTests {
 				if (message.getPeers().collect(Collectors.toSet()).containsAll(peers))
 					semaphore.release();
 			}
-
-			@Override
-			public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-				whisper(message, seen);
-			}
 		};
 
 		try (var service = new PublicTestServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
