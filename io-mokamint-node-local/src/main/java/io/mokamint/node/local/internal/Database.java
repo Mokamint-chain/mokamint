@@ -216,7 +216,6 @@ public class Database implements AutoCloseable {
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
 		Optional<byte[]> maybeHeadHash = getHeadHash();
 
-		// TODO: reuse the following code
 		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 			maybeHeadHash
 				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))

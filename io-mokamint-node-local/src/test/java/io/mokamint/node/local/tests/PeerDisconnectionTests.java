@@ -116,7 +116,7 @@ public class PeerDisconnectionTests {
 			// peer2 gets closed and disconnects
 			node2.close();
 
-			semaphore.tryAcquire(1, 2, TimeUnit.SECONDS);
+			assertTrue(semaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 
 			// at this point, the peers are always the same, but peer2 is disconnected
 			assertTrue(node1.getPeerInfos().count() == 2);

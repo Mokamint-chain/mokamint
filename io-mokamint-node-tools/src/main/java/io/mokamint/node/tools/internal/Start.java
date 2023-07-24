@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -233,7 +234,7 @@ public class Start extends AbstractCommand {
 	private void publishPublicAndRestrictedNodeServices(int pos, LocalNode node) {
 		if (pos < publicPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
-			try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, uri)) {
+			try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, Optional.ofNullable(uri))) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}

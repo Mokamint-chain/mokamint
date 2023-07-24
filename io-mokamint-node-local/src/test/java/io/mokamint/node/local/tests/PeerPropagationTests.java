@@ -130,7 +130,7 @@ public class PeerPropagationTests {
 			node1.addPeer(peer4);
 
 			// we wait to three events of addition of peer4 as peer
-			semaphore.tryAcquire(3, 2, TimeUnit.SECONDS);
+			assertTrue(semaphore.tryAcquire(3, 2, TimeUnit.SECONDS));
 
 			// peer4 is a peer of node1, node2 and node3 now
 			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer4::equals));
@@ -195,16 +195,16 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node1
-			semaphore.tryAcquire(1, 8, TimeUnit.SECONDS);
+			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS));
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
 
 	@Test
 	@DisplayName("if a peer adds another peer, eventually to end up being a peer of each other")
-	public void peerAddPeerTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
-			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {
+	public void ifPeerAddsPeerThenTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
+			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DatabaseException,
+				   IOException, DeploymentException, TimeoutException, ClosedNodeException, IncompatiblePeerException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -233,12 +233,12 @@ public class PeerPropagationTests {
 		}
 
 		try (var node1 = new MyLocalNode(config1, peer2); var node2 = new MyLocalNode(config2, peer1);
-			 var service1 = PublicNodeServices.open(node1, port1, Optional.of(uri1));
-			 var service2 = PublicNodeServices.open(node2, port2, Optional.of(uri2))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 100L, Optional.of(uri1));
+			 var service2 = PublicNodeServices.open(node2, port2, 100L, Optional.of(uri2))) {
 
 			node1.addPeer(peer2);
 
-			semaphore.tryAcquire(2, 5, TimeUnit.SECONDS);
+			assertTrue(semaphore.tryAcquire(2, 4, TimeUnit.SECONDS));
 		}
 	}
 
