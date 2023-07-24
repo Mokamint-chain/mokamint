@@ -127,7 +127,12 @@ public class Config extends AbstractConfig {
 	 */
 	public final long peerPingInterval;
 
-	public final int whisperingMemorySize = 1000; // TODO
+	/**
+	 * The size of the memory used to avoid whispering the same
+	 * message again; higher numbers reduce the circulation of spurious messages.
+	 * It defaults to 1000.
+	 */
+	public final long whisperingMemorySize;
 
 	/**
 	 * Full constructor for the builder pattern.
@@ -146,6 +151,7 @@ public class Config extends AbstractConfig {
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 		this.peerTimeout = builder.peerTimeout;
 		this.peerPingInterval = builder.peerPingInterval;
+		this.whisperingMemorySize = builder.whisperingMemorySize;
 	}
 
 	@Override
@@ -189,6 +195,9 @@ public class Config extends AbstractConfig {
 		sb.append("\n");
 		sb.append("# time, in milliseconds, between successive pings to a peer\n");
 		sb.append("peer_ping_interval = " + peerPingInterval + "\n");
+		sb.append("\n");
+		sb.append("# the size of the memory used to avoid whispering the same message again\n");
+		sb.append("whispering_memory_size = " + whisperingMemorySize + "\n");
 
 		return sb.toString();
 	}
@@ -207,7 +216,8 @@ public class Config extends AbstractConfig {
 				peerInitialPoints == otherConfig.peerInitialPoints &&
 				peerPunishmentForUnreachable == otherConfig.peerPunishmentForUnreachable &&
 				peerTimeout == otherConfig.peerTimeout &&
-				peerPingInterval == otherConfig.peerPingInterval;
+				peerPingInterval == otherConfig.peerPingInterval &&
+				whisperingMemorySize == otherConfig.whisperingMemorySize;
 		}
 		else
 			return false;
@@ -228,6 +238,7 @@ public class Config extends AbstractConfig {
 		private long peerPunishmentForUnreachable = 1L;
 		private long peerTimeout = 30000L;
 		private long peerPingInterval = 120000L;
+		private long whisperingMemorySize = 1000L;
 
 		private Builder() throws NoSuchAlgorithmException {
 		}
@@ -283,6 +294,10 @@ public class Config extends AbstractConfig {
 			var peerPingInterval = toml.getLong("peer_ping_interval");
 			if (peerPingInterval != null)
 				setPeerPingInterval(peerPingInterval);
+
+			var whisperingMemorySize = toml.getLong("whispering_memory_size");
+			if (whisperingMemorySize != null)
+				setWhisperingMemorySize(whisperingMemorySize);
 		}
 
 		/**
@@ -473,6 +488,23 @@ public class Config extends AbstractConfig {
 				throw new IllegalArgumentException("peerPingInterval must be non-negative");
 
 			this.peerPingInterval = peerPingInterval;
+			return this;
+		}
+
+		/**
+		 * Sets the time interval, in milliseconds, between successive pings to a peer.
+		 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
+		 * until they reach zero and the peer is removed.  During a successful ping, its peers are collected
+		 * if they are useful for the node (for instance, if the node has too few peers).
+		 * 
+		 * @param whisperingMemorySize the size
+		 * @return this builder
+		 */
+		public Builder setWhisperingMemorySize(long whisperingMemorySize) {
+			if (whisperingMemorySize < 0L)
+				throw new IllegalArgumentException("whisperingMemorySize must be non-negative");
+
+			this.whisperingMemorySize = whisperingMemorySize;
 			return this;
 		}
 

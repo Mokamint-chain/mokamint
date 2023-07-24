@@ -59,7 +59,7 @@ public class Start extends AbstractCommand {
 	@Option(names = "--config", description = { "the toml config file of the node; if missing, defaults are used"})
 	private Path config;
 
-	@Option(names = "--broadcast-interval", description = { "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers" }, defaultValue = "1800000L")
+	@Option(names = "--broadcast-interval", description = { "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers" }, defaultValue = "1800000")
 	private long broadcastInterval;
 
 	@Option(names = "--uri", description = { "the URI of the node, such as \"ws://my.machine.com:8030\"; if missing, the node will try to use its public IP"})

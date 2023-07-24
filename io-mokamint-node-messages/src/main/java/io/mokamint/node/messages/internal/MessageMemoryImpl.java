@@ -35,7 +35,7 @@ public class MessageMemoryImpl implements MessageMemory {
 	/**
 	 * The size of the memory (number of messages that can be stored).
 	 */
-	private final int size;
+	private final long size;
 
 	/**
 	 * UUIDs of the messages added to this container.
@@ -49,7 +49,7 @@ public class MessageMemoryImpl implements MessageMemory {
 	 * @param size the size (maximal number of stored messages)
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public MessageMemoryImpl(int size) {
+	public MessageMemoryImpl(long size) {
 		if (size < 0)
 			throw new IllegalArgumentException("size cannot be negative");
 

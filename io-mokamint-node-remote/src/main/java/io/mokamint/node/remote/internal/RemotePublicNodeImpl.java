@@ -106,7 +106,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public RemotePublicNodeImpl(URI uri, long timeout, int whisperedMessagesSize) throws DeploymentException, IOException {
+	public RemotePublicNodeImpl(URI uri, long timeout, long whisperedMessagesSize) throws DeploymentException, IOException {
 		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
 
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeersEndpoint::new);

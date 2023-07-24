@@ -49,7 +49,7 @@ public class PublicNodeServices {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public static PublicNodeService open(PublicNodeInternals node, int port) throws DeploymentException, IOException {
-		return new PublicNodeServiceImpl(node, port, 1800000L, 1000, Optional.empty());
+		return new PublicNodeServiceImpl(node, port, 1800000L, 1000L, Optional.empty());
 	}
 
 	/**
@@ -69,7 +69,7 @@ public class PublicNodeServices {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static PublicNodeService open(PublicNodeInternals node, int port, long peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
+	public static PublicNodeService open(PublicNodeInternals node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		return new PublicNodeServiceImpl(node, port, peerBroadcastInterval, whisperedMessagesSize, uri);
 	}
 }

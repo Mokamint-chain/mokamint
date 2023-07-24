@@ -149,7 +149,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public PublicNodeServiceImpl(PublicNodeInternals node, int port, long peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
+	public PublicNodeServiceImpl(PublicNodeInternals node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
 		this.port = port;
 		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);

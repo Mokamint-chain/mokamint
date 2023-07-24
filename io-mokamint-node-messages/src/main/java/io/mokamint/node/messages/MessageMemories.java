@@ -32,7 +32,7 @@ public abstract class MessageMemories {
 	 * @return the message memory
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public static MessageMemory of(int size) {
+	public static MessageMemory of(long size) {
 		return new MessageMemoryImpl(size);
 	}
 }
