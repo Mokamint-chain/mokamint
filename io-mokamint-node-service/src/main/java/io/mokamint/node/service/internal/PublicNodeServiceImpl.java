@@ -133,6 +133,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * 
 	 * @param node the node
 	 * @param port the port
+	 * @param peerBroadcastInterval the time interval, in milliseconds, between successive
+	 *                              broadcasts of the public IP of the service. Every such internal,
+	 *                              the service will whisper its IP to its connected peers,
+	 *                              in order to publish its willingness to become a peer
 	 * @param uri the public URI of the machine where this service is running
 	 *            (including {@code ws://} and the port number, if any);
 	 *            if missing, the service will try to determine the public IP of the machine and
@@ -145,7 +149,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public PublicNodeServiceImpl(PublicNodeInternals node, int port, Optional<URI> uri) throws DeploymentException, IOException {
+	public PublicNodeServiceImpl(PublicNodeInternals node, int port, long peerBroadcastInterval, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
 		this.port = port;
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(this::addPort))));
@@ -159,7 +163,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetBlockEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), WhisperPeersEndpoint.config(this));
 
-		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, 2000, TimeUnit.MILLISECONDS); // TODO
+		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
 		if (uri.isEmpty())
 			LOGGER.info("published a public node service at ws://localhost:" + port);

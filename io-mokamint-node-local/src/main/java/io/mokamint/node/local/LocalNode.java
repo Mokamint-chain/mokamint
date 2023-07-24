@@ -22,4 +22,7 @@ import io.mokamint.node.FullNodeInternals;
  * A local node of a Mokamint blockchain.
  */
 public interface LocalNode extends FullNodeInternals {
+
+	@Override
+	Config getConfig();
 }

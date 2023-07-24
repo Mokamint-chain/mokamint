@@ -77,26 +77,16 @@ public class Show extends AbstractPublicRpcCommand {
 			else if (head) {
 				var info = remote.getChainInfo();
 				var headHash = info.getHeadHash();
-				if (headHash.isPresent()) {
-					Optional<Block> result = remote.getBlock(headHash.get());
-					if (result.isPresent())
-						return result;
-					else
-						throw new DatabaseException("The node has a head hash but it is bound to no block!");
-				}
+				if (headHash.isPresent())
+					return Optional.of(remote.getBlock(headHash.get()).orElseThrow(() -> new DatabaseException("The node has a head hash but it is bound to no block!")));
 				else
 					System.out.println(Ansi.AUTO.string("@|red There is no chain head in the node!|@"));
 			}
 			else if (genesis) {
 				var info = remote.getChainInfo();
 				var genesisHash = info.getGenesisHash();
-				if (genesisHash.isPresent()) {
-					Optional<Block> result = remote.getBlock(genesisHash.get());
-					if (result.isPresent())
-						return result;
-					else
-						throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
-				}
+				if (genesisHash.isPresent())
+					return Optional.of(remote.getBlock(genesisHash.get()).orElseThrow(() -> new DatabaseException("The node has a genesis hash but it is bound to no block!")));
 				else
 					System.out.println(Ansi.AUTO.string("@|red There is no genesis block in the node!|@"));
 			}

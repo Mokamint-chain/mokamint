@@ -155,7 +155,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * This is used to avoid forward already seen messages.
 	 */
 	@GuardedBy("itself")
-	private final SortedSet<String> seenMessageUUIDs = new TreeSet<>();
+	private final SortedSet<String> seenUUIDs = new TreeSet<>();
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -260,10 +260,10 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	private boolean alreadySeen(RpcMessage message) {
-		synchronized (seenMessageUUIDs) {
-			if (seenMessageUUIDs.add(message.getId())) {
-				if (seenMessageUUIDs.size() > 1000) // TODO
-					seenMessageUUIDs.remove(seenMessageUUIDs.first());
+		synchronized (seenUUIDs) {
+			if (seenUUIDs.add(message.getId())) {
+				if (seenUUIDs.size() > 1000) // TODO
+					seenUUIDs.remove(seenUUIDs.first());
 
 				return false;
 			}

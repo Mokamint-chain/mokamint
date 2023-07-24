@@ -214,7 +214,6 @@ public class PeerPropagationTests {
 		var peer2 = Peers.of(uri2);
 		var config1 = Config.Builder.defaults().setDir(chain1).build();
 		var config2 = Config.Builder.defaults().setDir(chain2).build();
-
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {

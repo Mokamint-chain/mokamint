@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,25 +55,33 @@ public class Start extends AbstractCommand {
 	@Parameters(description = { "plot files that will be used for local mining" })
 	private Path[] plots;
 
-	@Option(names = "--config", description = { "the toml config file of the node;", "if missing, defaults are used"})
+	@Option(names = "--config", description = { "the toml config file of the node; if missing, defaults are used"})
 	private Path config;
 
-	@Option(names = "--uri", description = { "the public URI of the node, such as \"ws://my.machine.com:8030\";", "if missing, the node will try to use its public IP"})
+	@Option(names = "--broadcast-interval", description = { "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers" }, defaultValue = "1800000L")
+	private long broadcastInterval;
+
+	@Option(names = "--uri", description = { "the URI of the node, such as \"ws://my.machine.com:8030\"; if missing, the node will try to use its public IP"})
 	private URI uri;
 
-	@Option(names = "--miner-port", description = { "network ports where a remote miner", "must be published" })
+	@Option(names = "--miner-port", description = { "network ports where a remote miner must be published" })
 	private int[] minerPorts;
 
-	@Option(names = "--public-port", description = { "network ports where the public API", "of the node must be published" })
+	@Option(names = "--public-port", description = { "network ports where the public API of the node must be published" })
 	private int[] publicPorts;
 
-	@Option(names = "--restricted-port", description = { "network ports where the restricted API", "of the node must be published" })
+	@Option(names = "--restricted-port", description = { "network ports where the restricted API of the node must be published" })
 	private int[] restrictedPorts;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
 	@Override
 	protected void execute() {
+		if (broadcastInterval < 1000L) {
+			System.out.println(Ansi.AUTO.string("@|red broadcast-interval cannot be smaller than one second!|@"));
+			return;
+		}
+
 		if (plots == null)
 			plots = new Path[0];
 
@@ -226,7 +233,7 @@ public class Start extends AbstractCommand {
 	private void publishPublicAndRestrictedNodeServices(int pos, LocalNode node) {
 		if (pos < publicPorts.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
-			try (var service = PublicNodeServices.open(node, publicPorts[pos], Optional.ofNullable(uri))) {
+			try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, uri)) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}

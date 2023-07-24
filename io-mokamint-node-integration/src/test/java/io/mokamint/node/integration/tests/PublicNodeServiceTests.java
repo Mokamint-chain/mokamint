@@ -384,7 +384,7 @@ public class PublicNodeServiceTests {
 
 		class MyPublicNodeService extends PublicNodeServiceImpl {
 			private MyPublicNodeService() throws DeploymentException, IOException {
-				super(node, PORT, Optional.empty());
+				super(node, PORT, 100000L, Optional.empty());
 			}
 
 			@Override
