@@ -378,7 +378,7 @@ public class NodePeers implements AutoCloseable {
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
 			var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout, config.whisperingMemorySize);
-			LOGGER.info("opened connection to peer " + peer);
+			LOGGER.info("opened connection to peer " + peer); // TODO
 			return remote;
 		}
 		catch (DeploymentException e) {
@@ -392,7 +392,7 @@ public class NodePeers implements AutoCloseable {
 		UUID uuid1 = info1.getUUID();
 
 		if (uuid1.equals(info2.getUUID()))
-			throw new IncompatiblePeerException("a peer cannot be added as a peer of itself: same " + info1.getUUID() + " UUID");
+			throw new IncompatiblePeerException("a peer cannot be added as a peer of itself: same UUID " + info1.getUUID());
 
 		var version1 = info1.getVersion();
 		var version2 = info2.getVersion();
@@ -404,9 +404,9 @@ public class NodePeers implements AutoCloseable {
 	private void storeRemote(RemotePublicNode remote, Peer peer) {
 		remotes.put(peer, remote);
 		remote.bindWhisperer(node);
-
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnClosedHandler(() -> peerDisconnected(remote, peer));
+		node.submit(node.new PeerConnectedEvent(peer));
 	}
 
 	/**

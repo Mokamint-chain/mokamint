@@ -760,7 +760,35 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * An event fired to signal that a peer of the node disconnected.
+	 * An event fired to signal that a peer of the node has been connected.
+	 */
+	public class PeerConnectedEvent extends Event {
+		private final Peer peer;
+
+		public PeerConnectedEvent(Peer peer) {
+			this.peer = peer;
+		}
+
+		@Override
+		public String toString() {
+			return "connection event for peer " + peer;
+		}
+
+		/**
+		 * Yields the connected peer.
+		 * 
+		 * @return the connected peer
+		 */
+		public Peer getPeer() {
+			return peer;
+		}
+
+		@Override @OnThread("events")
+		protected void body() {}
+	}
+
+	/**
+	 * An event fired to signal that a peer of the node have been disconnected.
 	 */
 	public class PeerDisconnectedEvent extends Event {
 		private final Peer peer;
@@ -784,8 +812,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		@Override @OnThread("events")
-		protected void body() {
-		}
+		protected void body() {}
 	}
 
 	/**
