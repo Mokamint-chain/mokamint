@@ -642,10 +642,8 @@ public class Database implements AutoCloseable {
 		if (maybeHead.isEmpty())
 			throw new DatabaseException("the database of blocks is non-empty but the head is not set");
 
-		Block head = maybeHead.get();
-		long hh = head.getHeight(), bh = block.getHeight();
-
-		if (hh < bh || (hh == bh && head.getTotalWaitingTime() > block.getTotalWaitingTime())) {
+		// we choose the branch with more power
+		if (block.getPower().compareTo(maybeHead.get().getPower()) > 0) {
 			setHeadHash(txn, block, hashOfBlock);
 			return true;
 		}

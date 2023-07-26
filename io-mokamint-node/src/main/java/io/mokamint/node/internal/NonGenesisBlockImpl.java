@@ -44,6 +44,14 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	private final long height;
 
 	/**
+	 * The power of this block, computed as the sum, for each block from genesis to this
+	 * block, of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
+	 * forks and choose the one whose tip has the highest power. Intuitively, the power
+	 * expresses the space used to compute the chain leading to the block.
+	 */
+	private final BigInteger power;
+
+	/**
 	 * The total waiting time between the creation of the genesis block and the creation of this block.
 	 */
 	private final long totalWaitingTime;
@@ -56,7 +64,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	/**
 	 * A value used to divide the deadline to derive the time needed to wait for it.
 	 * The higher, the shorter the time. This value changes dynamically to cope with
-	 * varying mining power in the network. It is the inverse of Bitcoin's difficulty.
+	 * varying mining power in the network. It is similar to Bitcoin's difficulty.
 	 */
 	private final BigInteger acceleration;
 
@@ -73,12 +81,16 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	/**
 	 * Creates a new non-genesis block.
 	 */
-	public NonGenesisBlockImpl(long height, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
+	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(deadline, "deadline cannot be null");
 		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
 
+		if (height < 1)
+			throw new IllegalArgumentException("a non-genesis block must have positive height");
+
 		this.height = height;
+		this.power = power;
 		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
 		this.acceleration = acceleration;
@@ -97,12 +109,18 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 */
 	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		this.height = height;
+		this.power = context.readBigInteger();
 		this.totalWaitingTime = context.readLong();
 		this.weightedWaitingTime = context.readLong();
 		this.acceleration = context.readBigInteger();
 		this.deadline = Deadlines.from(context);
 		int hashOfPreviousBlockLength = context.readCompactInt();
 		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
+	}
+
+	@Override
+	public BigInteger getPower() {
+		return power;
 	}
 
 	@Override
@@ -146,6 +164,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	public boolean equals(Object other) {
 		return other instanceof NonGenesisBlock ngb &&
 			height == ngb.getHeight() &&
+			power.equals(ngb.getPower()) &&
 			totalWaitingTime == ngb.getTotalWaitingTime() &&
 			weightedWaitingTime == ngb.getWeightedWaitingTime() &&
 			acceleration.equals(ngb.getAcceleration()) &&
@@ -159,6 +178,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
 		context.writeLong(height);
+		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
 		context.writeLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
@@ -177,6 +197,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 
 	private void populate(StringBuilder builder) {
 		builder.append("* height: " + getHeight() + "\n");
+		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + "ms\n");
 		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + "ms\n");
 		builder.append("* acceleration: " + getAcceleration() + "\n");

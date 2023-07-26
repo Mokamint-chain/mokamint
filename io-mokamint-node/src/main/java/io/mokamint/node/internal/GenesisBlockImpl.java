@@ -66,6 +66,11 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
+	public BigInteger getPower() {
+		return BigInteger.ZERO; // just started
+	}
+
+	@Override
 	public long getTotalWaitingTime() {
 		return 0L; // just started
 	}

@@ -269,14 +269,23 @@ public class MineNewBlockTask extends Task {
 
 		private Block createNewBlock() {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
+			var powerForNewBlock = computePower(deadline);
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
 			var hashOfPreviousBlock = previous.getHash(node.getConfig().getHashingForBlocks());
 
-			return Blocks.of(heightOfNewBlock, totalWaitingTimeForNewBlock, weightedWaitingTimeForNewBlock,
-					accelerationForNewBlock, deadline, hashOfPreviousBlock);
+			return Blocks.of(heightOfNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
+				weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
+		}
+
+		private BigInteger computePower(Deadline deadline) {
+			byte[] valueAsBytes = deadline.getValue(); // TODO: should it return BigInteger?
+			var value = new BigInteger(1, valueAsBytes);
+			return previous.getPower().add
+				(BigInteger.TWO.shiftLeft(node.getConfig().getHashingForDeadlines().length())
+						.divide(value.add(BigInteger.ONE)));
 		}
 
 		private long computeTotalWaitingTime(long waitingTime) {

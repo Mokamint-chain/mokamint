@@ -84,7 +84,7 @@ public class MessagesTests {
 	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
-		var block = Blocks.of(13, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
+		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var getBlockResultMessage1 = GetBlockResultMessages.of(Optional.of(block), "id");
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
 		var getBlockResultMessage2 = new GetBlockResultMessages.Decoder().decode(encoded);

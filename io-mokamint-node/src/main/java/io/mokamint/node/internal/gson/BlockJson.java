@@ -35,6 +35,7 @@ import io.mokamint.nonce.Deadlines;
 public abstract class BlockJson implements JsonRepresentation<Block> {
 	private String startDateTimeUTC;
 	private Long height;
+	private BigInteger power;
 	private Long totalWaitingTime;
 	private Long weightedWaitingTime;
 	private BigInteger acceleration;
@@ -42,13 +43,12 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private String hashOfPreviousBlock;
 
 	protected BlockJson(Block block) {
-		if (block instanceof GenesisBlock) {
-			var gb = (GenesisBlock) block;
+		if (block instanceof GenesisBlock gb)
 			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gb.getStartDateTimeUTC());
-		}
 		else {
 			var ngb = (NonGenesisBlock) block;
 			this.height = ngb.getHeight();
+			this.power = ngb.getPower();
 			this.totalWaitingTime = ngb.getTotalWaitingTime();
 			this.weightedWaitingTime = ngb.getWeightedWaitingTime();
 			this.acceleration = ngb.getAcceleration();
@@ -60,7 +60,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException {
 		if (startDateTimeUTC == null)
-			return Blocks.of(height, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
+			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
 		else
 			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 	}

@@ -157,7 +157,7 @@ public class PublicNodeServiceTests {
 		var value = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
-		var block = Blocks.of(13L, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
+		var block = Blocks.of(13L, BigInteger.TEN, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

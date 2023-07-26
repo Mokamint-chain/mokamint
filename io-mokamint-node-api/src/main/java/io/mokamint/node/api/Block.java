@@ -31,6 +31,16 @@ import io.mokamint.nonce.api.DeadlineDescription;
 public sealed interface Block extends Marshallable permits GenesisBlock, NonGenesisBlock {
 
 	/**
+	 * Yields the power of this block, computed as the sum, for each block from genesis to this,
+	 * of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
+	 * forks and choose the one whose tip has the highest power. Intuitively, the power
+	 * expresses the space used to compute the chain leading to the block.
+	 * 
+	 * @return the power
+	 */
+	BigInteger getPower();
+
+	/**
 	 * Yields the total waiting time, in milliseconds, from the genesis block
 	 * until the creation of this block.
 	 * 
