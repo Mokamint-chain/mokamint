@@ -284,7 +284,7 @@ public class MineNewBlockTask extends Task {
 			byte[] valueAsBytes = deadline.getValue(); // TODO: should it return BigInteger?
 			var value = new BigInteger(1, valueAsBytes);
 			return previous.getPower().add
-				(BigInteger.TWO.shiftLeft(node.getConfig().getHashingForDeadlines().length())
+				(BigInteger.TWO.shiftLeft(node.getConfig().getHashingForDeadlines().length() * 8)
 						.divide(value.add(BigInteger.ONE)));
 		}
 
