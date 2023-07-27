@@ -211,7 +211,7 @@ public class NodePeers implements AutoCloseable {
 	 * 
 	 * @return the string
 	 */
-	public static String asSanitizedString(Stream<Peer> peers) { // TODO: should this be instance?
+	public String asSanitizedString(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		String result = Stream.of(peersAsArray).limit(20).map(NodePeers::truncate).collect(Collectors.joining(", "));
 		if (peersAsArray.length > 20)
@@ -252,7 +252,7 @@ public class NodePeers implements AutoCloseable {
 
 			@Override
 			public String toString() {
-				return "addition of " + NodePeers.asSanitizedString(Stream.of(newPeers)) + " as peers";
+				return "addition of " + asSanitizedString(Stream.of(newPeers)) + " as peers";
 			}
 
 			@Override @OnThread("tasks")

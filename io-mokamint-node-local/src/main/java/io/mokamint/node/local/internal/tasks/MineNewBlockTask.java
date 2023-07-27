@@ -78,8 +78,7 @@ public class MineNewBlockTask extends Task {
 			else {
 				var genesis = Blocks.genesis(node.getStartDateTime());
 				LOGGER.info("height 0: finished mining the genesis block " +
-						Hex.toHexString(genesis.getHash(node.getConfig().getHashingForBlocks())) +
-						": informing the node");
+					Hex.toHexString(genesis.getHash(node.getConfig().getHashingForBlocks())));
 				node.submit(node.new BlockDiscoveryEvent(genesis));
 			}
 		}

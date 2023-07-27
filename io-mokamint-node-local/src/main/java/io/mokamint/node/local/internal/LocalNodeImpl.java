@@ -206,7 +206,7 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("got whispered peers " + NodePeers.asSanitizedString(message.getPeers()));
+		LOGGER.info("got whispered peers " + peers.asSanitizedString(message.getPeers()));
 
 		if (tryToAddToThePeers)
 			// we check if this node needs any of the whispered peers
@@ -603,7 +603,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override
 		public String toString() {
-			return "addition event for peers " + NodePeers.asSanitizedString(Stream.of(peers));
+			return "addition event for peers " + LocalNodeImpl.this.peers.asSanitizedString(Stream.of(peers));
 		}
 
 		/**
@@ -618,7 +618,7 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() {
 			if (whisper)
-				whisper(WhisperPeersMessages.of(Stream.of(peers), UUID.randomUUID().toString()), _whisperer -> false);
+				whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
 		}
 	}
 
