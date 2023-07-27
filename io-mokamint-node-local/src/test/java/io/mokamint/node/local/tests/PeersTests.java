@@ -19,7 +19,6 @@ package io.mokamint.node.local.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,7 +35,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
@@ -61,7 +59,6 @@ import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -185,31 +182,21 @@ public class PeersTests {
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 		var allPeers = Set.of(peer1, peer2);
-		var allowAddPeers = new AtomicBoolean(false);
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
 				super(mkConfig(dir), app);
 			}
-
-			@Override
-			protected void onSubmit(Task task) {
-				if (!allowAddPeers.get() && task instanceof AddPeersTask)
-					fail();
-			}
 		}
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
 			try (var node = new MyLocalNode()) {
 				assertTrue(node.getPeerInfos().count() == 0L);
-				allowAddPeers.set(true);
 				node.addPeer(peer1);
 				node.addPeer(peer2);
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
-
-			allowAddPeers.set(false);
 
 			try (var node = new MyLocalNode()) {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
@@ -237,20 +224,12 @@ public class PeersTests {
 				.setDeadlineWaitTimeout(1000)
 				.build();
 
-		var allowAddPeers = new AtomicBoolean(true);
-
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
 				super(config, app);
-			}
-
-			@Override
-			protected void onSubmit(Task task) {
-				if (!allowAddPeers.get() && task instanceof AddPeersTask)
-					fail();
 			}
 
 			@Override
@@ -270,8 +249,6 @@ public class PeersTests {
 				allPeers.remove(peer1);
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
-
-			allowAddPeers.set(false);
 
 			try (var node = LocalNodes.of(mkConfig(dir), app)) {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));

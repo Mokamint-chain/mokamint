@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
@@ -42,7 +43,6 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
 import jakarta.websocket.DeploymentException;
@@ -220,7 +220,6 @@ public class NodePeers implements AutoCloseable {
 		return result;
 	}
 
-
 	/**
 	 * Try to add the given peers to the node. Peers might not be added because there
 	 * are already enough peers, or because a connection cannot be established to them,
@@ -238,11 +237,49 @@ public class NodePeers implements AutoCloseable {
 
 		// before scheduling a task, we check if there is some peer that we really need
 		var newPeers = Stream.of(peersAsArray)
+			.distinct()
 			.filter(peer -> !peers.contains(peer))
 			.toArray(Peer[]::new);
 
+		/**
+		 * A task that adds peers to a node.
+		 */
+		class AddPeersTask extends Task {
+
+			private AddPeersTask(LocalNodeImpl node) {
+				node.super();
+			}
+
+			@Override
+			public String toString() {
+				return "addition of " + NodePeers.asSanitizedString(Stream.of(newPeers)) + " as peers";
+			}
+
+			@Override @OnThread("tasks")
+			protected void body() {
+				var added = Stream.of(newPeers).parallel().filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
+				if (added.length > 0) // just to avoid useless events
+					node.submit(node.new PeersAddedEvent(Stream.of(added), whisper));
+			}
+
+			private boolean addPeer(Peer peer, boolean force) {
+				try {
+					return add(peer, force);
+				}
+				catch (InterruptedException e) {
+					LOGGER.log(Level.WARNING, "addition of " + peer + " as a peer interrupted");
+					Thread.currentThread().interrupt();
+					return false;
+				}
+				catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
+					LOGGER.log(Level.WARNING, "addition of " + peer + " as a peer failed: " + e.getMessage());
+					return false;
+				}
+			}
+		}
+
 		if (newPeers.length > 0 && (force || peers.getElements().count() < config.maxPeers))
-			node.submit(new AddPeersTask(Stream.of(newPeers), this, node, force, whisper));
+			node.submit(new AddPeersTask(node));
 	}
 
 	private static String truncate(Peer peer) {
@@ -253,6 +290,10 @@ public class NodePeers implements AutoCloseable {
 			return uri;
 	}
 
+	/**
+	 * A task that pings all peers, tries to recreate their remote (if missing)
+	 * and collects their peers, in case they might be useful for the node.
+	 */
 	private class PingPeersAndRecreateRemotesTask extends Task {
 
 		private PingPeersAndRecreateRemotesTask(LocalNodeImpl node) {
