@@ -60,11 +60,14 @@ public class BlocksManager {
 	private final HashingAlgorithm<byte[]> hashingForBlocks;
 
 	/**
+	 * Creates a blocks manager.
 	 * 
+	 * @param node the node whose blocks are being managed
+	 * @param db the database of the node
 	 */
-	public BlocksManager(LocalNodeImpl node) {
+	public BlocksManager(LocalNodeImpl node, Database db) {
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
-		this.db = node.getDatabase();
+		this.db = db;
 	}
 
 	/**

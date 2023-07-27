@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -33,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
@@ -43,7 +41,6 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.NodeInfos;
-import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
@@ -56,7 +53,6 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
-import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
 import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
 import io.mokamint.node.messages.MessageMemories;
@@ -161,11 +157,10 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
-		this.blocksManager = new BlocksManager(this);
+		this.blocksManager = new BlocksManager(this, db);
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
-		this.peers = new NodePeers(this, db, peers -> executeAddPeersTask(peers, false, true));
-		addSeedsAsPeers();
+		this.peers = new NodePeers(this, db);
 		this.startDateTime = db.getGenesis().map(GenesisBlock::getStartDateTimeUTC).orElse(LocalDateTime.now(ZoneId.of("UTC")));
 		startMining();
 	}
@@ -204,11 +199,11 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
+		LOGGER.info("got whispered peers " + NodePeers.peersAsString(message.getPeers()));
 
 		if (tryToAddToThePeers)
 			// we check if this node needs any of the whispered peers
-			executeAddPeersTask(message.getPeers(), false, false);
+			peers.tryToAdd(message.getPeers(), false, false);
 
 		// in any case, we forward the message to our peers
 		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
@@ -221,30 +216,6 @@ public class LocalNodeImpl implements LocalNode {
 			.forEach(remote -> remote.whisper(message, newSeen));
 
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
-	}
-
-	/**
-	 * Yields a string describing some peers. It truncates peers too long
-	 * or too many peers, in order to cope with potential log injections.
-	 * 
-	 * @param peers the peers
-	 * @return the string
-	 */
-	private String peersAsString(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		String result = Stream.of(peersAsArray).limit(20).map(this::truncate).collect(Collectors.joining(", "));
-		if (peersAsArray.length > 20)
-			result += ", ...";
-
-		return result;
-	}
-
-	private String truncate(Peer peer) {
-		String uri = peer.toString();
-		if (uri.length() > 50)
-			return uri.substring(0, 50) + "...";
-		else
-			return uri;
 	}
 
 	private void ensureIsOpen() throws ClosedNodeException {
@@ -392,37 +363,6 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public Stream<Miner> getMiners() {
 		return miners.get();
-	}
-
-	/**
-	 * Yields the database of this node.
-	 * 
-	 * @return the database
-	 */
-	Database getDatabase() { // TODO: eventually remove
-		return db;
-	}
-
-	/**
-	 * Schedules a task that will add the given peers to the node.
-	 * 
-	 * @param peers the peers to add
-	 * @param force true if and only if the peers must be added also if the maximum number of peers
-	 *              for the node has been reached
-	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
-	 *                to all peers of this node
-	 */
-	private void executeAddPeersTask(Stream<Peer> peers, boolean force, boolean whisper) {
-		var peersAsArray = peers.filter(peer -> !this.peers.contains(peer)).toArray(Peer[]::new);
-		if (peersAsArray.length > 0)
-			submit(new AddPeersTask(Stream.of(peersAsArray), peer -> this.peers.add(peer, force), this, whisper));
-	}
-
-	/**
-	 * Adds the seeds as peers.
-	 */
-	private void addSeedsAsPeers() {
-		executeAddPeersTask(config.seeds().map(Peers::of), true, true);
 	}
 
 	/**
@@ -591,7 +531,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param task the task to run
 	 */
-	private void submit(Task task) {
+	void submit(Task task) {
 		try {
 			LOGGER.info("scheduling " + task);
 			onSubmit(task);
@@ -642,7 +582,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override
 		public String toString() {
-			return "addition event for peers " + Arrays.toString(peers);
+			return "addition event for peers " + NodePeers.peersAsString(Stream.of(peers));
 		}
 
 		/**

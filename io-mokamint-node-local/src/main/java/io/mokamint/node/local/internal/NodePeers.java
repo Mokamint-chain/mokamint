@@ -27,14 +27,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
+import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
@@ -42,6 +43,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
 import jakarta.websocket.DeploymentException;
@@ -59,11 +61,6 @@ public class NodePeers implements AutoCloseable {
 	 * The node.
 	 */
 	private final LocalNodeImpl node;
-
-	/**
-	 * Code that can be invoked to try to add some peers to the node.
-	 */
-	private final Consumer<Stream<Peer>> addPeersTask;
 
 	/**
 	 * The configuration of the node.
@@ -94,7 +91,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * A service used to schedule periodic tasks.
 	 */
-	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(2);
+	private final ScheduledExecutorService tasks = Executors.newScheduledThreadPool(2);
 
 	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
@@ -103,16 +100,15 @@ public class NodePeers implements AutoCloseable {
 	 * 
 	 * @param node the node having these peers
 	 * @param db the database of {@code node}
-	 * @param addPeersTask code that can be invoked to try to add some peers to the node
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public NodePeers(LocalNodeImpl node, Database db, Consumer<Stream<Peer>> addPeersTask) throws DatabaseException {
+	public NodePeers(LocalNodeImpl node, Database db) throws DatabaseException {
 		this.node = node;
-		this.addPeersTask = addPeersTask;
 		this.config = node.getConfig();
 		this.db = db;
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
-		periodicTasks.scheduleWithFixedDelay(this::pingPeersAndRecreateRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
+		tryToAdd(config.seeds().map(Peers::of), true, true);
+		tasks.scheduleWithFixedDelay(this::pingPeersAndRecreateRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
 	
@@ -196,8 +192,8 @@ public class NodePeers implements AutoCloseable {
 		InterruptedException interruptedException = null;
 
 		try {
-			periodicTasks.shutdownNow();
-			periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
+			tasks.shutdownNow();
+			tasks.awaitTermination(10, TimeUnit.SECONDS);
 		}
 		finally {
 			synchronized (lock) {
@@ -222,13 +218,61 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
+	 * Yields a string describing some peers. It truncates peers too long
+	 * or too many peers, in order to cope with potential log injections.
+	 * 
+	 * @return the string
+	 */
+	public static String peersAsString(Stream<Peer> peers) { // TODO: should this be instance?
+		var peersAsArray = peers.toArray(Peer[]::new);
+		String result = Stream.of(peersAsArray).limit(20).map(NodePeers::truncate).collect(Collectors.joining(", "));
+		if (peersAsArray.length > 20)
+			result += ", ...";
+	
+		return result;
+	}
+
+
+	/**
+	 * Try to add the given peers to the node. Peers might not be added because there
+	 * are already enough peers, or because a connection cannot be established to them,
+	 * or because they are incompatible with the node.
+	 * 
+	 * @param toAdd the peers to add
+	 * @param force true if and only if the peers must be added also if the maximum number of peers
+	 *              for the node has been reached
+	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
+	 *                to all peers of this node
+	 */
+	public void tryToAdd(Stream<Peer> toAdd, boolean force, boolean whisper) {
+		var peersAsArray = toAdd.distinct().toArray(Peer[]::new);
+		LOGGER.info("trying to add " + peersAsString(Stream.of(peersAsArray)) + " as peers");
+
+		// before scheduling a task, we check if there is some peer that we really need
+		var newPeers = Stream.of(peersAsArray)
+			.filter(peer -> !peers.contains(peer))
+			.toArray(Peer[]::new);
+
+		if (newPeers.length > 0 && (force || peers.getElements().count() < config.maxPeers))
+			node.submit(new AddPeersTask(Stream.of(newPeers), this, node, force, whisper));
+	}
+
+	private static String truncate(Peer peer) {
+		String uri = peer.toString();
+		if (uri.length() > 50)
+			return uri.substring(0, 50) + "...";
+		else
+			return uri;
+	}
+
+	/**
 	 * Ping the peers of the node. If they miss a remote, it tries to create one.
 	 * For the peers that end up having a remote, if there are too few peers in the node, it asks
 	 * them about their peers and schedules the addition to the node of the resulting stream of peers.
 	 */
 	private void pingPeersAndRecreateRemotes() {
 		LOGGER.info("pinging all peers to create missing remotes and collect their peers");
-		addPeersTask.accept(peers.getElements().parallel().flatMap(this::pingPeerAndRecreateRemote));
+		tryToAdd(peers.getElements().parallel().flatMap(this::pingPeerAndRecreateRemote), false, true);
 	}
 
 	private Stream<Peer> pingPeerAndRecreateRemote(Peer peer) {
@@ -237,7 +281,6 @@ public class NodePeers implements AutoCloseable {
 
 		return remote.isPresent() ? askForPeers(peer, remote.get()) : Stream.empty();
 	}
-
 
 	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) {
 		RemotePublicNode remote = null;
@@ -326,7 +369,7 @@ public class NodePeers implements AutoCloseable {
 		try {
 			// optimization: this avoids opening a remote for an already existing peer
 			// or trying to add a peer if there are already enough peers for this node
-			if (peers.contains(peer) || (!force && peers.getElements().count() > config.maxPeers))
+			if (peers.contains(peer) || (!force && peers.getElements().count() >= config.maxPeers))
 				return false;
 
 			remote = openRemote(peer);

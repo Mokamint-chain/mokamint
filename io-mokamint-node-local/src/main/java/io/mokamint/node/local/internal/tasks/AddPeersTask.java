@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
@@ -29,6 +28,7 @@ import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.local.internal.NodePeers;
 
 /**
  * A task that adds peers to a node.
@@ -38,12 +38,18 @@ public class AddPeersTask extends Task {
 	/**
 	 * The peers to add.
 	 */
-	private final Peer[] peers;
+	private final Peer[] toAdd;
 
 	/**
-	 * The task to execute to actually add a peer to the database of the node.
+	 * The container of the peers of the node.
 	 */
-	private final PeerAddition adder;
+	private final NodePeers peers;
+
+	/**
+	 * True if and only if the peers must be added also if the node has already
+	 * enough peers.
+	 */
+	private final boolean force;
 
 	/**
 	 * True if and only if the peers successfully added will be whispered
@@ -54,87 +60,49 @@ public class AddPeersTask extends Task {
 	private final static Logger LOGGER = Logger.getLogger(AddPeersTask.class.getName());
 
 	/**
-	 * The type of the code to execute to actually add the peer to the database of the node.
-	 */
-	public interface PeerAddition {
-		
-		/**
-		 * Tries to add the given peer to the node.
-		 * 
-		 * @param peer the peer to add
-		 * @return true if and only if the peer has been added
-		 * @throws IOException if a connection to the peer cannot be established
-		 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of this node
-		 * @throws DatabaseException if the database is corrupted
-		 * @throws TimeoutException if no answer arrives before a time window
-		 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-		 */
-		boolean add(Peer peer) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException;
-	}
-
-	/**
 	 * Creates a task that adds peers to a node.
 	 * 
-	 * @param peers the peers to add
-	 * @param adder the code to execute to actually add a peer to the node
+	 * @param toAdd the peers to add
+	 * @param peers the manager of the peers of the node
 	 * @param node the node for which this task is working
+	 * @param force true if and only if the peers must be added also if the node has already
+	 *              enough peers
 	 * @param whisper true if and only if the peers successfully added will be whispered
 	 *                to all peers of the node at the end
 	 */
-	public AddPeersTask(Stream<Peer> peers, PeerAddition adder, LocalNodeImpl node, boolean whisper) {
+	public AddPeersTask(Stream<Peer> toAdd, NodePeers peers, LocalNodeImpl node, boolean force, boolean whisper) {
 		node.super();
 
-		this.peers = peers.distinct().toArray(Peer[]::new);
-		this.adder = adder;
+		this.toAdd = toAdd.distinct().toArray(Peer[]::new);
+		this.peers = peers;
+		this.force = force;
 		this.whisper = whisper;
 	}
 
 	@Override
 	public String toString() {
-		return "addition of " + peersAsString() + " as peers";
-	}
-
-	/**
-	 * Yields a string describing {@link #peers}. It truncates peers too long
-	 * or too many peers, in order to cope with potential log injections.
-	 * 
-	 * @return the string
-	 */
-	private String peersAsString() {
-		String result = Stream.of(peers).limit(20).map(this::truncate).collect(Collectors.joining(", "));
-		if (peers.length > 20)
-			result += ", ...";
-
-		return result;
-	}
-
-	private String truncate(Peer peer) {
-		String uri = peer.toString();
-		if (uri.length() > 50)
-			return uri.substring(0, 50) + "...";
-		else
-			return uri;
+		return "addition of " + NodePeers.peersAsString(Stream.of(toAdd)) + " as peers";
 	}
 
 	@Override @OnThread("tasks")
 	protected void body() {
 		// TODO: could addPeer be spawned in parallel?
-		var added = Stream.of(peers).filter(this::addPeer).toArray(Peer[]::new);
+		var added = Stream.of(toAdd).filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
 		if (added.length > 0) // just to avoid useless events
 			node.submit(node.new PeersAddedEvent(Stream.of(added), whisper));
 	}
 
-	private boolean addPeer(Peer peer) {
+	private boolean addPeer(Peer peer, boolean force) {
 		try {
-			return adder.add(peer);
+			return peers.add(peer, force);
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, this + " interrupted");
+			LOGGER.log(Level.WARNING, "addition of " + peer + " as a peer interrupted");
 			Thread.currentThread().interrupt();
 			return false;
 		}
 		catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
-			LOGGER.log(Level.WARNING, "giving up adding " + peer + " as a peer");
+			LOGGER.log(Level.WARNING, "addition of " + peer + " as a peer failed: " + e.getMessage());
 			return false;
 		}
 	}
