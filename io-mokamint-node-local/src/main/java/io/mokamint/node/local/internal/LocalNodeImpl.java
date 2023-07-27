@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -109,9 +110,15 @@ public class LocalNodeImpl implements LocalNode {
 	private final ExecutorService events = Executors.newSingleThreadExecutor();
 
 	/**
-	 * The executors of tasks. There might be more tasks in execution at the same time.
+	 * The executor of tasks. There might be more tasks in execution at the same time.
 	 */
 	private final ExecutorService tasks = Executors.newCachedThreadPool();
+
+	/**
+	 * The executor of periodic tasks. There might be more periodic tasks in execution
+	 * at the same time.
+	 */
+	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(5);
 
 	/**
 	 * The code to execute when this node gets closed.
@@ -129,9 +136,9 @@ public class LocalNodeImpl implements LocalNode {
 	private final AtomicBoolean isClosed = new AtomicBoolean();
 
 	/**
-	 * The manager of the blocks in this node.
+	 * The container of the blocks in this node.
 	 */
-	private final BlocksManager blocksManager;
+	private final NodeBlocks blocks;
 
 	/**
 	 * A memory of the last whispered messages,
@@ -157,7 +164,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
-		this.blocksManager = new BlocksManager(this, db);
+		this.blocks = new NodeBlocks(this, db);
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this, db);
@@ -199,7 +206,7 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("got whispered peers " + NodePeers.peersAsString(message.getPeers()));
+		LOGGER.info("got whispered peers " + NodePeers.asSanitizedString(message.getPeers()));
 
 		if (tryToAddToThePeers)
 			// we check if this node needs any of the whispered peers
@@ -252,6 +259,7 @@ public class LocalNodeImpl implements LocalNode {
 		if (!isClosed.getAndSet(true)) {
 			events.shutdownNow();
 			tasks.shutdownNow();
+			periodicTasks.shutdownNow();
 
 			InterruptedException interruptedException = null;
 			
@@ -267,6 +275,7 @@ public class LocalNodeImpl implements LocalNode {
 			try {
 				events.awaitTermination(10, TimeUnit.SECONDS);
 				tasks.awaitTermination(10, TimeUnit.SECONDS);
+				periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
 			}
 			finally {
 				try {
@@ -326,7 +335,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		return blocksManager.add(block, new AtomicBoolean()); // the AtomicBoolean is not used
+		return blocks.add(block, new AtomicBoolean()); // the AtomicBoolean is not used
 	}
 
 	/**
@@ -527,7 +536,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Runs the given task in one thread from the {@link #tasks} executors.
+	 * Runs the given task in one thread from the {@link #tasks} executor.
 	 * 
 	 * @param task the task to run
 	 */
@@ -540,6 +549,18 @@ public class LocalNodeImpl implements LocalNode {
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task + " rejected, probably because the node is shutting down");
 		}
+	}
+
+	/**
+	 * Runs the given task, periodically, with the {@link #periodicTasks} executor.
+	 * 
+	 * @param task the task to run
+	 * @param initialDelay the time to wait before running the task
+	 * @param delay the time interval between successive, iterated executions
+	 * @param unit the time interval unit
+	 */
+	void scheduleWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
+		periodicTasks.scheduleWithFixedDelay(task, initialDelay, delay, unit);
 	}
 
 	/**
@@ -562,7 +583,7 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() throws DatabaseException, NoSuchAlgorithmException {
 			var headChanged = new AtomicBoolean(false);
-			blocksManager.add(block, headChanged);
+			blocks.add(block, headChanged);
 			if (headChanged.get())
 				startMining();
 		}
@@ -582,7 +603,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override
 		public String toString() {
-			return "addition event for peers " + NodePeers.peersAsString(Stream.of(peers));
+			return "addition event for peers " + NodePeers.asSanitizedString(Stream.of(peers));
 		}
 
 		/**

@@ -81,13 +81,12 @@ public class AddPeersTask extends Task {
 
 	@Override
 	public String toString() {
-		return "addition of " + NodePeers.peersAsString(Stream.of(toAdd)) + " as peers";
+		return "addition of " + NodePeers.asSanitizedString(Stream.of(toAdd)) + " as peers";
 	}
 
 	@Override @OnThread("tasks")
 	protected void body() {
-		// TODO: could addPeer be spawned in parallel?
-		var added = Stream.of(toAdd).filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
+		var added = Stream.of(toAdd).parallel().filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
 		if (added.length > 0) // just to avoid useless events
 			node.submit(node.new PeersAddedEvent(Stream.of(added), whisper));
 	}

@@ -32,9 +32,9 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 
 /**
- * The manager of the blocks of a local node.
+ * The container of the blocks of a local node.
  */
-public class BlocksManager {
+public class NodeBlocks {
 
 	/**
 	 * The database of the node.
@@ -65,7 +65,7 @@ public class BlocksManager {
 	 * @param node the node whose blocks are being managed
 	 * @param db the database of the node
 	 */
-	public BlocksManager(LocalNodeImpl node, Database db) {
+	public NodeBlocks(LocalNodeImpl node, Database db) {
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.db = db;
 	}
@@ -89,7 +89,6 @@ public class BlocksManager {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
 	public boolean add(Block block, AtomicBoolean headChanged) throws DatabaseException, NoSuchAlgorithmException {
-		// TODO: do we really need the headChanged parameter?
 		boolean added = false, first = true;
 	
 		// we use a working set, since the addition of a single block might

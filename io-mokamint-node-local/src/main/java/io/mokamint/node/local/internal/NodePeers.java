@@ -23,8 +23,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -43,6 +41,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.tasks.AddPeersTask;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -88,11 +87,6 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private final ConcurrentMap<Peer, RemotePublicNode> remotes = new ConcurrentHashMap<>();
 
-	/**
-	 * A service used to schedule periodic tasks.
-	 */
-	private final ScheduledExecutorService tasks = Executors.newScheduledThreadPool(2);
-
 	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
 	/**
@@ -108,7 +102,7 @@ public class NodePeers implements AutoCloseable {
 		this.db = db;
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		tryToAdd(config.seeds().map(Peers::of), true, true);
-		tasks.scheduleWithFixedDelay(this::pingPeersAndRecreateRemotes, 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
+		node.scheduleWithFixedDelay(new PingPeersAndRecreateRemotesTask(node), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
 	
@@ -191,22 +185,16 @@ public class NodePeers implements AutoCloseable {
 		IOException ioException = null;
 		InterruptedException interruptedException = null;
 
-		try {
-			tasks.shutdownNow();
-			tasks.awaitTermination(10, TimeUnit.SECONDS);
-		}
-		finally {
-			synchronized (lock) {
-				for (var entry: remotes.entrySet()) {
-					try {
-						closeRemoteWithException(entry.getValue(), entry.getKey());
-					}
-					catch (IOException e) {
-						ioException = e;
-					}
-					catch (InterruptedException e) {
-						interruptedException = e;
-					}
+		synchronized (lock) {
+			for (var entry: remotes.entrySet()) {
+				try {
+					closeRemoteWithException(entry.getValue(), entry.getKey());
+				}
+				catch (IOException e) {
+					ioException = e;
+				}
+				catch (InterruptedException e) {
+					interruptedException = e;
 				}
 			}
 		}
@@ -223,7 +211,7 @@ public class NodePeers implements AutoCloseable {
 	 * 
 	 * @return the string
 	 */
-	public static String peersAsString(Stream<Peer> peers) { // TODO: should this be instance?
+	public static String asSanitizedString(Stream<Peer> peers) { // TODO: should this be instance?
 		var peersAsArray = peers.toArray(Peer[]::new);
 		String result = Stream.of(peersAsArray).limit(20).map(NodePeers::truncate).collect(Collectors.joining(", "));
 		if (peersAsArray.length > 20)
@@ -246,7 +234,7 @@ public class NodePeers implements AutoCloseable {
 	 */
 	public void tryToAdd(Stream<Peer> toAdd, boolean force, boolean whisper) {
 		var peersAsArray = toAdd.distinct().toArray(Peer[]::new);
-		LOGGER.info("trying to add " + peersAsString(Stream.of(peersAsArray)) + " as peers");
+		LOGGER.info("trying to add " + asSanitizedString(Stream.of(peersAsArray)) + " as peers");
 
 		// before scheduling a task, we check if there is some peer that we really need
 		var newPeers = Stream.of(peersAsArray)
@@ -265,66 +253,96 @@ public class NodePeers implements AutoCloseable {
 			return uri;
 	}
 
-	/**
-	 * Ping the peers of the node. If they miss a remote, it tries to create one.
-	 * For the peers that end up having a remote, if there are too few peers in the node, it asks
-	 * them about their peers and schedules the addition to the node of the resulting stream of peers.
-	 */
-	private void pingPeersAndRecreateRemotes() {
-		LOGGER.info("pinging all peers to create missing remotes and collect their peers");
-		tryToAdd(peers.getElements().parallel().flatMap(this::pingPeerAndRecreateRemote), false, true);
-	}
+	private class PingPeersAndRecreateRemotesTask extends Task {
 
-	private Stream<Peer> pingPeerAndRecreateRemote(Peer peer) {
-		Optional<RemotePublicNode> remote = getRemote(peer)
-			.or(() -> tryToCreateRemote(peer));
+		private PingPeersAndRecreateRemotesTask(LocalNodeImpl node) {
+			node.super();
+		}
 
-		return remote.isPresent() ? askForPeers(peer, remote.get()) : Stream.empty();
-	}
+		@Override
+		protected void body() {
+			tryToAdd(peers.getElements().parallel().flatMap(this::pingPeerAndRecreateRemote), false, true);
+		}
 
-	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) {
-		RemotePublicNode remote = null;
-	
-		try {
-			LOGGER.info("trying to recreate a connection to peer " + peer);
-			remote = openRemote(peer);
-			RemotePublicNode remoteCopy = remote;
-			ensurePeerIsCompatible(remote);
-	
-			synchronized (lock) {
-				// we check if the peer is actually contained in the set of peers,
-				// since it might have been removed in the meanwhile and we not not
-				// want to store remotes for peers not in the set of peers of this object
-				if (peers.contains(peer)) {
-					storeRemote(remote, peer);
-					remote = null; // so that it won't be closed in the finally clause
+		private Stream<Peer> pingPeerAndRecreateRemote(Peer peer) {
+			Optional<RemotePublicNode> remote = getRemote(peer)
+				.or(() -> tryToCreateRemote(peer));
+
+			return remote.isPresent() ? askForPeers(peer, remote.get()) : Stream.empty();
+		}
+
+		private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) {
+			RemotePublicNode remote = null;
+		
+			try {
+				LOGGER.info("trying to recreate a connection to peer " + peer);
+				remote = openRemote(peer);
+				RemotePublicNode remoteCopy = remote;
+				ensurePeerIsCompatible(remote);
+		
+				synchronized (lock) {
+					// we check if the peer is actually contained in the set of peers,
+					// since it might have been removed in the meanwhile and we not not
+					// want to store remotes for peers not in the set of peers of this object
+					if (peers.contains(peer)) {
+						storeRemote(remote, peer);
+						remote = null; // so that it won't be closed in the finally clause
+					}
+				}
+
+				return Optional.of(remoteCopy);
+			}
+			catch (IncompatiblePeerException e) {
+				LOGGER.log(Level.WARNING, e.getMessage());
+				try {
+					remove(peer);
+				}
+				catch (DatabaseException e1) {
+					LOGGER.log(Level.SEVERE, "cannot remove " + peer + " from the database", e);
 				}
 			}
+			catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, "interrupted while creating a remote for " + peer + ": " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (IOException | TimeoutException | ClosedNodeException e) {
+				LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
+				punishBecauseUnreachable(peer);
+			}
+			finally {
+				closeRemote(remote, peer);
+			}
 
-			return Optional.of(remoteCopy);
+			return Optional.empty();
 		}
-		catch (IncompatiblePeerException e) {
-			LOGGER.log(Level.WARNING, e.getMessage());
+
+		private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) {
 			try {
-				remove(peer);
+				Stream<PeerInfo> infos = remote.getPeerInfos();
+				pardonBecauseReachable(peer);
+
+				long numberOfPeers = peers.getElements().count();
+				if (numberOfPeers >= config.maxPeers)
+					return Stream.empty();
+				else
+					return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(p -> !peers.contains(p));
 			}
-			catch (DatabaseException e1) {
-				LOGGER.log(Level.SEVERE, "cannot remove " + peer + " from the database", e);
+			catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, "interrupted while asking the peers of " + peer + ": " + e.getMessage());
+				Thread.currentThread().interrupt();
+				return Stream.empty();
 			}
-		}
-		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "interrupted while creating a remote for " + peer + ": " + e.getMessage());
-			Thread.currentThread().interrupt();
-		}
-		catch (IOException | TimeoutException | ClosedNodeException e) {
-			LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
-			punishBecauseUnreachable(peer);
-		}
-		finally {
-			closeRemote(remote, peer);
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
+				punishBecauseUnreachable(peer);
+				return Stream.empty();
+			}
 		}
 
-		return Optional.empty();
+		@Override
+		public String toString() {
+			return "ping to all peers to create missing remotes and collect their peers";
+		}
 	}
 
 	private void punishBecauseUnreachable(Peer peer) {
@@ -338,29 +356,6 @@ public class NodePeers implements AutoCloseable {
 
 	private void pardonBecauseReachable(Peer peer) {
 		peers.pardon(peer, config.peerPunishmentForUnreachable);
-	}
-
-	private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) {
-		try {
-			Stream<PeerInfo> infos = remote.getPeerInfos();
-			pardonBecauseReachable(peer);
-
-			long numberOfPeers = peers.getElements().count();
-			if (numberOfPeers >= config.maxPeers)
-				return Stream.empty();
-			else
-				return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(p -> !peers.contains(p));
-		}
-		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "interrupted while asking the peers of " + peer + ": " + e.getMessage());
-			Thread.currentThread().interrupt();
-			return Stream.empty();
-		}
-		catch (TimeoutException | ClosedNodeException e) {
-			LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
-			punishBecauseUnreachable(peer);
-			return Stream.empty();
-		}
 	}
 
 	private boolean onAdd(Peer peer, boolean force) {
