@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -38,7 +36,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
@@ -55,7 +52,6 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
@@ -137,17 +133,9 @@ public class LocalNodeImpl implements LocalNode {
 	private final AtomicBoolean isClosed = new AtomicBoolean();
 
 	/**
-	 * A buffer where blocks without a known previous are parked, in case
-	 * their previous block arrives later.
+	 * The manager of the blocks in this node.
 	 */
-	@GuardedBy("itself")
-	private final NonGenesisBlock[] orphans = new NonGenesisBlock[20];
-
-	/**
-	 * The next insertion position inside the {@link #orphans} array.
-	 */
-	@GuardedBy("orphans")
-	private int orphansPos;
+	private final BlocksManager blocksManager;
 
 	/**
 	 * A memory of the last whispered messages,
@@ -173,12 +161,13 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
+		this.blocksManager = new BlocksManager(this);
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this, db, peers -> executeAddPeersTask(peers, false, true));
 		addSeedsAsPeers();
 		this.startDateTime = db.getGenesis().map(GenesisBlock::getStartDateTimeUTC).orElse(LocalDateTime.now(ZoneId.of("UTC")));
-		startNextBlockMining();
+		startMining();
 	}
 
 	@Override
@@ -354,62 +343,6 @@ public class LocalNodeImpl implements LocalNode {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
-	 * @param headChanged set to true if the head has been changed because of the addition
-	 *                    of {@code block}; otherwise it is left unchanged
-	 * @return true if the block has been actually added to the tree of blocks
-	 *         rooted at the genesis block, false otherwise.
-	 *         There are a few situations when the result can be false. For instance,
-	 *         if {@code block} was already in the tree, or if {@code block} is
-	 *         a genesis block but a genesis block is already present in the tree, or
-	 *         if {@code block} has no previous block already in the tree (it is orphaned),
-	 *         or if the block has a previous block in the tree but it cannot be
-	 *         correctly verified as a legal child of that previous block
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 */
-	public boolean add(Block block, AtomicBoolean headChanged) throws DatabaseException, NoSuchAlgorithmException {
-		boolean added = false, first = true;
-
-		// we use a working set, since the addition of a single block might
-		// trigger the further addition of orphan blocks, recursively
-		var ws = new ArrayList<Block>();
-		ws.add(block);
-
-		do {
-			Block cursor = ws.remove(ws.size() - 1);
-
-			if (!db.contains(cursor)) { // optimization check, to avoid repeated verification
-				if (cursor instanceof NonGenesisBlock ngb) {
-					Optional<Block> previous = db.getBlock(ngb.getHashOfPreviousBlock());
-					if (previous.isEmpty())
-						putAmongOrphans(ngb);
-					else {
-						if (verify(ngb, previous.get()) && db.add(cursor, headChanged)) {
-							getOrphansWithParent(cursor).forEach(ws::add);
-							if (first)
-								added = true;
-						}
-					}
-				}
-				else if (verify((GenesisBlock) block) && db.add(cursor, headChanged)) {
-					getOrphansWithParent(cursor).forEach(ws::add);
-					if (first)
-						added = true;
-				}
-			}
-
-			first = false;
-		}
-		while (!ws.isEmpty());
-
-		return added;
-	}
-
-	/**
-	 * Adds the given block to the database of blocks of this node.
-	 * If the block was already in the database, nothing happens.
-	 * 
-	 * @param block the block to add
 	 * @return true if the block has been actually added to the tree of blocks
 	 *         rooted at the genesis block, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
@@ -422,47 +355,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		return add(block, new AtomicBoolean()); // the AtomicBoolean is not used
-	}
-
-	private boolean verify(GenesisBlock block) {
-		return true;
-	}
-
-	private boolean verify(NonGenesisBlock block, Block previous) {
-		return true;
-	}
-
-	/**
-	 * Adds the given block to {@link #orphans}.
-	 * 
-	 * @param block the block to add
-	 */
-	private void putAmongOrphans(NonGenesisBlock block) {
-		synchronized (orphans) {
-			if (Stream.of(orphans).anyMatch(block::equals))
-				// it is already inside the array: it is better not to waste a slot
-				return;
-
-			orphansPos = (orphansPos + 1) % orphans.length;
-			orphans[orphansPos] = block;
-		}
-	}
-
-	/**
-	 * Yields the orphans having the given parent.
-	 * 
-	 * @param parent the parent
-	 * @return the orphans whose previous block is {@code parent}, if any
-	 */
-	private Stream<NonGenesisBlock> getOrphansWithParent(Block parent) {
-		byte[] hashOfParent = parent.getHash(config.getHashingForBlocks());
-
-		synchronized (orphans) {
-			return Stream.of(orphans)
-					.filter(Objects::nonNull)
-					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
-		}
+		return blocksManager.add(block, new AtomicBoolean()); // the AtomicBoolean is not used
 	}
 
 	/**
@@ -502,6 +395,15 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * Yields the database of this node.
+	 * 
+	 * @return the database
+	 */
+	Database getDatabase() { // TODO: eventually remove
+		return db;
+	}
+
+	/**
 	 * Schedules a task that will add the given peers to the node.
 	 * 
 	 * @param peers the peers to add
@@ -526,7 +428,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * Starts the mining.
 	 */
-	private void startNextBlockMining() {
+	private void startMining() {
 		submit(new MineNewBlockTask(this));
 	}
 
@@ -720,9 +622,9 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() throws DatabaseException, NoSuchAlgorithmException {
 			var headChanged = new AtomicBoolean(false);
-			add(block, headChanged);
+			blocksManager.add(block, headChanged);
 			if (headChanged.get())
-				startNextBlockMining();
+				startMining();
 		}
 	}
 

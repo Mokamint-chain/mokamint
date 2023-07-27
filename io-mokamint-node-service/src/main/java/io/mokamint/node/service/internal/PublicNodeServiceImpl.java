@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -123,6 +124,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 */
 	private final MessageMemory whisperedMessages;
 
+	/**
+	 * True if and only if this service has been closed already.
+	 */
+	private final AtomicBoolean isClosed = new AtomicBoolean();
+
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
 	/**
@@ -174,12 +180,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	@Override
 	public void close() throws InterruptedException {
-		periodicTasks.shutdownNow();
-		node.removeOnCloseHandler(this_close);
-		node.unbindWhisperer(this);
-		stopContainer();
-		periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
-		LOGGER.info("closed the public node service at ws://localhost:" + port);
+		if (!isClosed.getAndSet(true)) {
+			periodicTasks.shutdownNow();
+			node.removeOnCloseHandler(this_close);
+			node.unbindWhisperer(this);
+			stopContainer();
+			periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
+			LOGGER.info("closed the public node service at ws://localhost:" + port);
+		}
 	}
 
 	@Override

@@ -354,6 +354,7 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
 	public boolean add(Block block, AtomicBoolean headChanged) throws DatabaseException, NoSuchAlgorithmException {
+		// TODO: do we really need the headChanged parameter?
 		try {
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, headChanged))));
 		}
