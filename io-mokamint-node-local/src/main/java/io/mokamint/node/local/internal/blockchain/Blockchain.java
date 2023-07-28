@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -104,7 +104,7 @@ public class Blockchain {
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
 		boolean added = false, first = true;
-		var headChanged = new AtomicBoolean(false);
+		var updatedHead = new AtomicReference<Block>();
 	
 		// we use a working set, since the addition of a single block might
 		// trigger the further addition of orphan blocks, recursively
@@ -120,14 +120,14 @@ public class Blockchain {
 					if (previous.isEmpty())
 						putAmongOrphans(ngb);
 					else {
-						if (verify(ngb, previous.get()) && db.add(cursor, headChanged)) {
+						if (verify(ngb, previous.get()) && db.add(cursor, updatedHead)) {
 							getOrphansWithParent(cursor).forEach(ws::add);
 							if (first)
 								added = true;
 						}
 					}
 				}
-				else if (verify((GenesisBlock) block) && db.add(cursor, headChanged)) {
+				else if (verify((GenesisBlock) block) && db.add(cursor, updatedHead)) {
 					getOrphansWithParent(cursor).forEach(ws::add);
 					if (first)
 						added = true;
@@ -138,19 +138,22 @@ public class Blockchain {
 		}
 		while (!ws.isEmpty());
 	
-		if (headChanged.get())
-			mineNextBlock();
+		Block newHead = updatedHead.get();
+		if (newHead != null)
+			mineNextBlock(Optional.of(newHead));
 
 		return added;
 	}
 
 	/**
-	 * Starts a mining task for the next block, on top of the head of the chain. If the chain is empty,
-	 * the task will start mining a genesis block. If a mining task was already running when this method is
+	 * Starts a mining task for the next block, on top of a previous block.
+	 * If a mining task was already running when this method is
 	 * called, that previous mining task gets interrupted and replaced with this new mining task.
+	 * 
+	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
-	public void mineNextBlock() {
-		node.submit(new MineNewBlockTask(node, db));
+	public void mineNextBlock(Optional<Block> previous) {
+		node.submit(new MineNewBlockTask(node, db, previous));
 	}
 
 	private boolean verify(GenesisBlock block) {

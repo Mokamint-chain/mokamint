@@ -42,8 +42,8 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
- * A task that mines a new block, child of the head, if set, or otherwise
- * the genesis block of the chain. It requests a deadline to the miners of the node
+ * A task that mines a new block, above a previous block.
+ * It requests a deadline to the miners of the node
  * and waits for the best deadline to expire.
  * Once expired, it builds the block and signals a new block discovery to the node.
  */
@@ -58,30 +58,40 @@ public class MineNewBlockTask extends Task {
 	private final Database db;
 
 	/**
+	 * The block over which mining is performed.
+	 */
+	private Optional<Block> previous;
+
+	/**
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node for which this task is working
+	 * @param db the database of the node
+	 * @param previous the previous block, if any; otherwise a genesis block is mined
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Database db) {
+	public MineNewBlockTask(LocalNodeImpl node, Database db, Optional<Block> previous) {
 		node.super();
 
 		this.db = db;
+		this.previous = previous;
 	}
 
 	@Override
 	public String toString() {
-		return "mine next block";
+		if (previous.isEmpty())
+			return "height 0: mine genesis block";
+		else
+			return "height " + (previous.get().getHeight() + 1) + ": mine next block";
 	}
 
 	@Override @OnThread("tasks")
 	protected void body() {
 		try {
-			Optional<Block> head = db.getHead();
-			if (head.isPresent()) {
+			if (previous.isPresent()) {
 				if (node.getMiners().count() == 0L)
 					node.submit(node.new NoMinersAvailableEvent());
 				else
-					new Run(head.get());
+					new Run(previous.get());
 			}
 			else {
 				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
@@ -96,7 +106,7 @@ public class MineNewBlockTask extends Task {
 		}
 		catch (TimeoutException e) {
 			LOGGER.warning(this + ": timed out while waiting for a deadline");
-			node.submit(node.new NoDeadlineFoundEvent());
+			node.submit(node.new NoDeadlineFoundEvent(previous.get()));
 		}
 		catch (NoSuchAlgorithmException e) {
 			LOGGER.log(Level.SEVERE, this + ": the database contains a node that refers to an unknown hashing algorithm", e);

@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -343,8 +342,8 @@ public class Database implements AutoCloseable {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
-	 * @param headChanged set to true if the addition modified the head reference;
-	 *                    otherwise, it is left unchanged
+	 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head;
+	 *                    otherwise it is left unchanged
 	 * @return true if the block has been actually added to the database, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
 	 *         if {@code block} was already in the database, or if {@code block} is
@@ -353,10 +352,9 @@ public class Database implements AutoCloseable {
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	public boolean add(Block block, AtomicBoolean headChanged) throws DatabaseException, NoSuchAlgorithmException {
-		// TODO: do we really need the headChanged parameter?
+	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException {
 		try {
-			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, headChanged))));
+			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
@@ -377,7 +375,7 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		return add(block, new AtomicBoolean()); // the AtomicBoolean is not used
+		return add(block, new AtomicReference<>()); // the AtomicReference is not used
 	}
 
 	/**
@@ -659,8 +657,8 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param txn the transaction
 	 * @param block the block to add
-	 * @param headChanged set to true if the addition modified the head reference;
-	 *                    otherwise, it is left unchanged
+	 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head;
+	 *                    otherwise it is left unchanged
 	 * @return true if and only if the block has been added. False means that
 	 *         the block was already in the tree; or that {@code block} is a genesis
 	 *         block and there is already a genesis block in the tree; or that {@code block}
@@ -668,7 +666,7 @@ public class Database implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private boolean add(Transaction txn, Block block, AtomicBoolean headChanged) throws NoSuchAlgorithmException, DatabaseException {
+	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
 		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
 		if (isInStore(txn, hashOfBlock)) {
@@ -680,7 +678,7 @@ public class Database implements AutoCloseable {
 				putInStore(txn, block, hashOfBlock, bytesOfBlock);
 				addToForwards(txn, ngb, hashOfBlock);
 				if (updateHead(txn, ngb, hashOfBlock))
-					headChanged.set(true);
+					updatedHead.set(ngb);
 
 				return true;
 			}
@@ -694,7 +692,7 @@ public class Database implements AutoCloseable {
 				putInStore(txn, block, hashOfBlock, bytesOfBlock);
 				setGenesisHash(txn, (GenesisBlock) block, hashOfBlock);
 				setHeadHash(txn, block, hashOfBlock);
-				headChanged.set(true);
+				updatedHead.set(block);
 				return true;
 			}
 			else {

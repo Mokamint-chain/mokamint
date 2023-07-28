@@ -165,7 +165,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.blockchain = new Blockchain(this, db);
 
 		if (forceMining)
-			blockchain.mineNextBlock();
+			blockchain.mineNextBlock(db.getHead());
 	}
 
 	@Override
@@ -676,6 +676,12 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public class NoDeadlineFoundEvent extends Event {
 
+		private final Block previous;
+
+		public NoDeadlineFoundEvent(Block previous) {
+			this.previous = previous;
+		}
+
 		@Override
 		public String toString() {
 			return "no deadline found event";
@@ -685,7 +691,7 @@ public class LocalNodeImpl implements LocalNode {
 		protected void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
 			getMiners().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, db));
+			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, db, Optional.of(previous)));
 		}
 	}
 
