@@ -146,21 +146,26 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param config the configuration of the node
 	 * @param app the application
+	 * @param forceMining performs mining also if the node cannot be synchronized to a recent head;
+	 *                    this is useful to start a brand new blockchain, since in that case
+	 *                    there is no other blockchain, in any peer, to synchronize to
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public LocalNodeImpl(Config config, Application app, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
+	public LocalNodeImpl(Config config, Application app, boolean forceMining, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
 		this.app = app;
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
-		this.blockchain = new Blockchain(this, db);
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this, db);
-		blockchain.mineNextBlock();
+		this.blockchain = new Blockchain(this, db);
+
+		if (forceMining)
+			blockchain.mineNextBlock();
 	}
 
 	@Override

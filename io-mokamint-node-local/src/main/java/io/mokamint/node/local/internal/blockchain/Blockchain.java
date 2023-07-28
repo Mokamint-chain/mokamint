@@ -83,6 +83,7 @@ public class Blockchain {
 		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.db = db;
+		synchronize();
 	}
 
 	/**
@@ -190,5 +191,13 @@ public class Blockchain {
 					.filter(Objects::nonNull)
 					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
 		}
+	}
+
+	/**
+	 * Synchronizes this blockchain by contacting the peers and downloading the most
+	 * powerful chain among theirs.
+	 */
+	private void synchronize() {
+		
 	}
 }

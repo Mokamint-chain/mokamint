@@ -155,7 +155,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException {
-				super(config, app);
+				super(config, app, false);
 			}
 
 			@Override
@@ -186,7 +186,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(mkConfig(dir), app);
+				super(mkConfig(dir), app, false);
 			}
 		}
 
@@ -229,7 +229,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(config, app);
+				super(config, app, false);
 			}
 
 			@Override
@@ -250,7 +250,7 @@ public class PeersTests {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 
-			try (var node = LocalNodes.of(mkConfig(dir), app)) {
+			try (var node = LocalNodes.of(mkConfig(dir), app, false)) {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 		}
@@ -266,7 +266,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(mkConfig(dir), app);
+				super(mkConfig(dir), app, false);
 			}
 
 			@Override
@@ -291,7 +291,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(mkConfig(dir), app);
+				super(mkConfig(dir), app, false);
 			}
 
 			@Override
@@ -315,7 +315,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
-				super(mkConfig(dir), app);
+				super(mkConfig(dir), app, false);
 			}
 
 			@Override

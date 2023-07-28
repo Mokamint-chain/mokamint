@@ -90,7 +90,7 @@ public class PeerConnectDisconnectTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
-				super(config, app);
+				super(config, app, false);
 			}
 
 			@Override
@@ -100,7 +100,7 @@ public class PeerConnectDisconnectTests {
 			}
 		}
 
-		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, app);  var node3 = LocalNodes.of(config3, app);
+		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, app, false);  var node3 = LocalNodes.of(config3, app, false);
 			 var service2 = PublicNodeServices.open(node2, port2); var service3 = PublicNodeServices.open(node3, port3)) {
 
 			// node1 has peer2 and peer3 as peers
@@ -154,7 +154,7 @@ public class PeerConnectDisconnectTests {
 			private final Peer other;
 
 			private MyLocalNode(Config config, Peer other) throws NoSuchAlgorithmException, IOException, DatabaseException {
-				super(config, app);
+				super(config, app, false);
 
 				this.other = other;
 			}
