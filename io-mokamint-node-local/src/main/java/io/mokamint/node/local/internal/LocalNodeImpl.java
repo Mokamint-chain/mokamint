@@ -213,7 +213,7 @@ public class LocalNodeImpl implements LocalNode {
 			peers.tryToAdd(message.getPeers(), false, false);
 
 		// in any case, we forward the message to our peers
-		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
+		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
 
 		peers.get()
 			.filter(PeerInfo::isConnected)
