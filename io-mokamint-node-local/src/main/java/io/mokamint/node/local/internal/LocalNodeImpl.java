@@ -18,8 +18,6 @@ package io.mokamint.node.local.internal;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -47,15 +45,14 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
-import io.mokamint.node.local.internal.tasks.DelayedMineNewBlockTask;
-import io.mokamint.node.local.internal.tasks.MineNewBlockTask;
+import io.mokamint.node.local.internal.blockchain.Blockchain;
+import io.mokamint.node.local.internal.blockchain.DelayedMineNewBlockTask;
 import io.mokamint.node.messages.MessageMemories;
 import io.mokamint.node.messages.MessageMemory;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -89,6 +86,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final NodePeers peers;
 
 	/**
+	 * The blockchain of this node.
+	 */
+	private final Blockchain blockchain;
+
+	/**
 	 * The database containing the blockchain.
 	 */
 	private final Database db;
@@ -97,11 +99,6 @@ public class LocalNodeImpl implements LocalNode {
 	 * The non-consensus information about this node.
 	 */
 	private final NodeInfo info;
-
-	/**
-	 * The time of creation of the genesis block.
-	 */
-	private final LocalDateTime startDateTime;
 
 	/**
 	 * The single executor of the events. Events get queued into this queue and run in order
@@ -131,20 +128,15 @@ public class LocalNodeImpl implements LocalNode {
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * True if and only if this node has been closed already.
-	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean();
-
-	/**
-	 * The container of the blocks in this node.
-	 */
-	private final NodeBlocks blocks;
-
-	/**
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
 	private final MessageMemory whisperedMessages;
+
+	/**
+	 * True if and only if this node has been closed already.
+	 */
+	private final AtomicBoolean isClosed = new AtomicBoolean();
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -164,12 +156,11 @@ public class LocalNodeImpl implements LocalNode {
 		this.app = app;
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
-		this.blocks = new NodeBlocks(this, db);
+		this.blockchain = new Blockchain(this, db);
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this, db);
-		this.startDateTime = db.getGenesis().map(GenesisBlock::getStartDateTimeUTC).orElse(LocalDateTime.now(ZoneId.of("UTC")));
-		startMining();
+		blockchain.mineNextBlock();
 	}
 
 	@Override
@@ -200,34 +191,6 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
 		whisper(message, seen, false);
-	}
-
-	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
-		if (seen.test(this) || !whisperedMessages.add(message))
-			return;
-
-		LOGGER.info("got whispered peers " + peers.asSanitizedString(message.getPeers()));
-
-		if (tryToAddToThePeers)
-			// we check if this node needs any of the whispered peers
-			peers.tryToAdd(message.getPeers(), false, false);
-
-		// in any case, we forward the message to our peers
-		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
-
-		peers.get()
-			.filter(PeerInfo::isConnected)
-			.map(PeerInfo::getPeer)
-			.map(peers::getRemote)
-			.flatMap(Optional::stream)
-			.forEach(remote -> remote.whisper(message, newSeen));
-
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
-	}
-
-	private void ensureIsOpen() throws ClosedNodeException {
-		if (isClosed.get())
-			throw new ClosedNodeException("the node has been closed");
 	}
 
 	@Override
@@ -319,44 +282,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Adds the given block to the database of blocks of this node.
-	 * If the block was already in the database, nothing happens.
-	 * 
-	 * @param block the block to add
-	 * @return true if the block has been actually added to the tree of blocks
-	 *         rooted at the genesis block, false otherwise.
-	 *         There are a few situations when the result can be false. For instance,
-	 *         if {@code block} was already in the tree, or if {@code block} is
-	 *         a genesis block but a genesis block is already present in the tree, or
-	 *         if {@code block} has no previous block already in the tree (it is orphaned),
-	 *         or if the block has a previous block in the tree but it cannot be
-	 *         correctly verified as a legal child of that previous block
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		return blocks.add(block, new AtomicBoolean()); // the AtomicBoolean is not used
-	}
-
-	/**
-	 * The time of creation of the genesis block.
-	 */
-	public LocalDateTime getStartDateTime() {
-		return startDateTime;
-	}
-
-	/**
-	 * Yields the head block of the tree of blocks in the database, if it has been set already.
-	 * 
-	 * @return the head block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
-		return db.getHead();
-	}
-
-	/**
 	 * Yields the application this node is running.
 	 * 
 	 * @return the application
@@ -374,11 +299,32 @@ public class LocalNodeImpl implements LocalNode {
 		return miners.get();
 	}
 
-	/**
-	 * Starts the mining.
-	 */
-	private void startMining() {
-		submit(new MineNewBlockTask(this));
+	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
+		if (seen.test(this) || !whisperedMessages.add(message))
+			return;
+	
+		LOGGER.info("got whispered peers " + peers.asSanitizedString(message.getPeers()));
+	
+		if (tryToAddToThePeers)
+			// we check if this node needs any of the whispered peers
+			peers.tryToAdd(message.getPeers(), false, false);
+	
+		// in any case, we forward the message to our peers
+		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+	
+		peers.get()
+			.filter(PeerInfo::isConnected)
+			.map(PeerInfo::getPeer)
+			.map(peers::getRemote)
+			.flatMap(Optional::stream)
+			.forEach(remote -> remote.whisper(message, newSeen));
+	
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+	}
+
+	private void ensureIsOpen() throws ClosedNodeException {
+		if (isClosed.get())
+			throw new ClosedNodeException("the node has been closed");
 	}
 
 	/**
@@ -540,7 +486,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param task the task to run
 	 */
-	void submit(Task task) {
+	public void submit(Task task) {
 		try {
 			LOGGER.info("scheduling " + task);
 			onSubmit(task);
@@ -559,7 +505,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param delay the time interval between successive, iterated executions
 	 * @param unit the time interval unit
 	 */
-	void scheduleWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
+	public void scheduleWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
 		periodicTasks.scheduleWithFixedDelay(task, initialDelay, delay, unit);
 	}
 
@@ -582,10 +528,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		@Override @OnThread("events")
 		protected void body() throws DatabaseException, NoSuchAlgorithmException {
-			var headChanged = new AtomicBoolean(false);
-			blocks.add(block, headChanged);
-			if (headChanged.get())
-				startMining();
+			blockchain.add(block);
 		}
 	}
 
@@ -737,8 +680,7 @@ public class LocalNodeImpl implements LocalNode {
 		protected void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
 			getMiners().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-
-			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this));
+			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, db));
 		}
 	}
 

@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -37,13 +38,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.nonce.Deadlines;
 
 public class BlockAdditionTests {
@@ -52,23 +53,6 @@ public class BlockAdditionTests {
 		return Config.Builder.defaults()
 			.setDir(dir)
 			.build();
-	}
-
-	private static class MyLocalNode extends LocalNodeImpl {
-
-		public MyLocalNode(Config config) throws NoSuchAlgorithmException, DatabaseException, IOException {
-			super(config, mock(Application.class));
-		}
-
-		@Override
-		public void submit(Event event) {
-			// we disable the events responsible for mining, so that they do not interfere with the tests
-			// that add blocks to the chain
-			if (event instanceof BlockDiscoveryEvent)
-				return;
-			else
-				super.submit(event);
-		}
 	}
 
 	@Test
@@ -81,13 +65,15 @@ public class BlockAdditionTests {
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
 		var config = mkConfig(dir);
 
-		try (var node = new MyLocalNode(config)) {
-			assertTrue(node.add(genesis));
-			assertFalse(node.add(block));
-			ChainInfo info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(genesis, node.getBlock(info.getHeadHash().get()).get());
-		}
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var database = new Database(config);
+		var blockchain = new Blockchain(node, database);
+
+		assertTrue(blockchain.add(genesis));
+		assertFalse(blockchain.add(block));
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(genesis, database.getHead().get());
 	}
 
 	@Test
@@ -100,13 +86,15 @@ public class BlockAdditionTests {
 		byte[] previous = genesis.getHash(config.getHashingForBlocks());
 		var block = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
-		try (var node = new MyLocalNode(config)) {
-			assertTrue(node.add(genesis));
-			assertTrue(node.add(block));
-			ChainInfo info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block, node.getBlock(info.getHeadHash().get()).get());
-		}
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var database = new Database(config);
+		var blockchain = new Blockchain(node, database);
+
+		assertTrue(blockchain.add(genesis));
+		assertTrue(blockchain.add(block));
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block, database.getHead().get());
 	}
 
 	@Test
@@ -124,16 +112,18 @@ public class BlockAdditionTests {
 		previous = block2.getHash(config.getHashingForBlocks());
 		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
-		try (var node = new MyLocalNode(config)) {
-			assertTrue(node.add(genesis));
-			assertTrue(node.add(block1));
-			assertTrue(node.add(block2));
-			assertTrue(node.add(block3));
-			assertTrue(node.add(added));
-			ChainInfo info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block3, node.getBlock(info.getHeadHash().get()).get());
-		}
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var database = new Database(config);
+		var blockchain = new Blockchain(node, database);
+
+		assertTrue(blockchain.add(genesis));
+		assertTrue(blockchain.add(block1));
+		assertTrue(blockchain.add(block2));
+		assertTrue(blockchain.add(block3));
+		assertTrue(blockchain.add(added));
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block3, database.getHead().get());
 	}
 
 	@Test
@@ -151,39 +141,38 @@ public class BlockAdditionTests {
 		previous = block2.getHash(config.getHashingForBlocks());
 		var block3 = Blocks.of(3, BigInteger.valueOf(26), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
-		try (var node = new MyLocalNode(config)) {
-			assertTrue(node.add(genesis));
-			assertTrue(node.add(block0));
-			
-			// at this stage, block0 is the head of the current chain, of length 2
-			ChainInfo info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block0, node.getBlock(info.getHeadHash().get()).get());
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var database = new Database(config);
+		var blockchain = new Blockchain(node, database);
 
-			// we add an orphan (no previous in database)
-			assertFalse(node.add(block3));
+		assertTrue(blockchain.add(genesis));
+		assertTrue(blockchain.add(block0));
 
-			// nothing changes
-			info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block0, node.getBlock(info.getHeadHash().get()).get());
+		// at this stage, block0 is the head of the current chain, of length 2
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block0, database.getHead().get());
 
-			// we add an orphan (no previous in database)
-			assertFalse(node.add(block2));
+		// we add an orphan (no previous in database)
+		assertFalse(blockchain.add(block3));
 
-			// nothing changes
-			info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block0, node.getBlock(info.getHeadHash().get()).get());
+		// nothing changes
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block0, database.getHead().get());
 
-			// we add a block after the genesis, that creates a better chain of length 4
-			assertTrue(node.add(block1));
+		// we add an orphan (no previous in database)
+		assertFalse(blockchain.add(block2));
 
-			// the longer chain is the current chain now
-			info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block3, node.getBlock(info.getHeadHash().get()).get());
-		}
+		// nothing changes
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block0, database.getHead().get());
+
+		// we add a block after the genesis, that creates a better chain of length 4
+		assertTrue(blockchain.add(block1));
+
+		// the longer chain is the current chain now
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block3, database.getHead().get());
 	}
 
 	@Test
@@ -198,32 +187,32 @@ public class BlockAdditionTests {
 		var block2 = Blocks.of(1, BigInteger.valueOf(11), 1234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
 		var block3 = Blocks.of(1, BigInteger.valueOf(11), 2234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
 
-		try (var node = new MyLocalNode(config)) {
-			assertTrue(node.add(genesis));
-			assertTrue(node.add(block1));
-			
-			// at this stage, block1 is the head of the current chain, of length 2
-			ChainInfo info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block1, node.getBlock(info.getHeadHash().get()).get());
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var database = new Database(config);
+		var blockchain = new Blockchain(node, database);
 
-			// we create a chain with more power as the current chain (11 vs 10),
-			assertTrue(node.add(block2));
+		assertTrue(blockchain.add(genesis));
+		assertTrue(blockchain.add(block1));
 
-			// block2 is the new head now
-			info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block2, node.getBlock(info.getHeadHash().get()).get());
+		// at this stage, block1 is the head of the current chain, of length 2
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block1, database.getHead().get());
 
-			// we create a chain with the same length as the current chain (2 blocks),
-			// but same power as the current head (11 vs 11)
-			assertTrue(node.add(block3));
+		// we create a chain with more power as the current chain (11 vs 10),
+		assertTrue(blockchain.add(block2));
 
-			// block2 is still the head
-			info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block2, node.getBlock(info.getHeadHash().get()).get());
-		}
+		// block2 is the new head now
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block2, database.getHead().get());
+
+		// we create a chain with the same length as the current chain (2 blocks),
+		// but same power as the current head (11 vs 11)
+		assertTrue(blockchain.add(block3));
+
+		// block2 is still the head
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block2, database.getHead().get());
 	}
 
 	@Test
@@ -240,35 +229,34 @@ public class BlockAdditionTests {
 		previous = block2.getHash(config.getHashingForBlocks());
 		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
-		try (var node = new MyLocalNode(config)) {
-			assertFalse(node.add(block3));
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var database = new Database(config);
+		var blockchain = new Blockchain(node, database);
 
-			// no genesis and no head are set up to now
-			ChainInfo info = node.getChainInfo();
-			assertTrue(info.getGenesisHash().isEmpty());
-			assertTrue(info.getHeadHash().isEmpty());
+		assertFalse(blockchain.add(block3));
 
-			assertFalse(node.add(block2));
+		// no genesis and no head are set up to now
+		assertTrue(database.getGenesis().isEmpty());
+		assertTrue(database.getHead().isEmpty());
 
-			// no genesis and no head are set up to now
-			info = node.getChainInfo();
-			assertTrue(info.getGenesisHash().isEmpty());
-			assertTrue(info.getHeadHash().isEmpty());
+		assertFalse(blockchain.add(block2));
 
-			assertFalse(node.add(block1));
+		// no genesis and no head are set up to now
+		assertTrue(database.getGenesis().isEmpty());
+		assertTrue(database.getHead().isEmpty());
 
-			// no genesis and no head are set up to now
-			info = node.getChainInfo();
-			assertTrue(info.getGenesisHash().isEmpty());
-			assertTrue(info.getHeadHash().isEmpty());
+		assertFalse(blockchain.add(block1));
 
-			assertTrue(node.add(genesis));
+		// no genesis and no head are set up to now
+		assertTrue(database.getGenesis().isEmpty());
+		assertTrue(database.getHead().isEmpty());
 
-			// genesis and head are set now
-			info = node.getChainInfo();
-			assertEquals(genesis, node.getBlock(info.getGenesisHash().get()).get());
-			assertEquals(block3, node.getBlock(info.getHeadHash().get()).get());
-		}
+		assertTrue(blockchain.add(genesis));
+
+		// genesis and head are set now
+		assertEquals(genesis, database.getGenesis().get());
+		assertEquals(block3, database.getHead().get());
 	}
 
 	static {

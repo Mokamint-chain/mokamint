@@ -26,6 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -71,21 +72,24 @@ public class List extends AbstractPublicRpcCommand {
 				return;
 
 			Optional<LocalDateTime> startDateTimeUTC;
-			int slotsForHeight = 0;
+			int slotsForHeight;
 
-			if (json())
+			if (json()) {
 				startDateTimeUTC = Optional.empty();
+				slotsForHeight = 0;
+			}
 			else {
 				var maybeGenesis = remote.getBlock(maybeGenesisHash.get());
 				if (maybeGenesis.isEmpty())
 					throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
 
 				Block genesis = maybeGenesis.get();
-				if (!(genesis instanceof GenesisBlock))
+				if (genesis instanceof GenesisBlock gb) {
+					slotsForHeight = String.valueOf(head.getHeight()).length();
+					startDateTimeUTC = Optional.of(gb.getStartDateTimeUTC());
+				}
+				else
 					throw new DatabaseException("The type of the genesisi block is inconsistent!");
-
-				slotsForHeight = String.valueOf(head.getHeight()).length();
-				startDateTimeUTC = Optional.of(((GenesisBlock) genesis).getStartDateTimeUTC());
 			}
 
 			if (json())
@@ -119,13 +123,11 @@ public class List extends AbstractPublicRpcCommand {
      * @throws ClosedNodeException if the remote node is closed
      */
 	private void backwards(Block cursor, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
-		long counter = 0;
+		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
 
-		while (true) {
-			if (counter >= max)
-				return;
+		for (long counter = 0; counter < max; counter++) {
+			String hash = Hex.toHexString(cursor.getHash(hashingForBlocks));
 
-			String hash = Hex.toHexString(cursor.getHash(config.getHashingForBlocks()));
 			if (json()) {
 				if (counter > 0)
 					System.out.print(", ");

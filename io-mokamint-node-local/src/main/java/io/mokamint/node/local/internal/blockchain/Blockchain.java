@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal;
+package io.mokamint.node.local.internal.blockchain;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -25,16 +25,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
+import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.local.internal.Database;
+import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
- * The container of the blocks of a local node.
+ * The blockchain of a local node. It contains blocks rooted at a genesis block.
+ * It is a tree rather than necessarily a list of blocks, since a node might
+ * have more children, but only one child can lead to the head of the blockchain,
+ * which is the most powerful block in the chain.
  */
-public class NodeBlocks {
+@ThreadSafe
+public class Blockchain {
+
+	/**
+	 * The node.
+	 */
+	private final LocalNodeImpl node;
 
 	/**
 	 * The database of the node.
@@ -60,12 +72,15 @@ public class NodeBlocks {
 	private final HashingAlgorithm<byte[]> hashingForBlocks;
 
 	/**
-	 * Creates a blocks manager.
+	 * Creates the container of the blocks of a node.
 	 * 
-	 * @param node the node whose blocks are being managed
+	 * @param node the node
 	 * @param db the database of the node
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public NodeBlocks(LocalNodeImpl node, Database db) {
+	public Blockchain(LocalNodeImpl node, Database db) throws NoSuchAlgorithmException, DatabaseException {
+		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.db = db;
 	}
@@ -75,8 +90,6 @@ public class NodeBlocks {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
-	 * @param headChanged set to true if the head has been changed because of the addition
-	 *                    of {@code block}; otherwise it is left unchanged
 	 * @return true if the block has been actually added to the tree of blocks
 	 *         rooted at the genesis block, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
@@ -88,8 +101,9 @@ public class NodeBlocks {
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
-	public boolean add(Block block, AtomicBoolean headChanged) throws DatabaseException, NoSuchAlgorithmException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
 		boolean added = false, first = true;
+		var headChanged = new AtomicBoolean(false);
 	
 		// we use a working set, since the addition of a single block might
 		// trigger the further addition of orphan blocks, recursively
@@ -123,7 +137,19 @@ public class NodeBlocks {
 		}
 		while (!ws.isEmpty());
 	
+		if (headChanged.get())
+			mineNextBlock();
+
 		return added;
+	}
+
+	/**
+	 * Starts a mining task for the next block, on top of the head of the chain. If the chain is empty,
+	 * the task will start mining a genesis block. If a mining task was already running when this method is
+	 * called, that previous mining task gets interrupted and replaced with this new mining task.
+	 */
+	public void mineNextBlock() {
+		node.submit(new MineNewBlockTask(node, db));
 	}
 
 	private boolean verify(GenesisBlock block) {

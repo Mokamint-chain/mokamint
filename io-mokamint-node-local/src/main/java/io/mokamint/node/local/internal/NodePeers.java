@@ -226,19 +226,15 @@ public class NodePeers implements AutoCloseable {
 	 * are already enough peers, or because a connection cannot be established to them,
 	 * or because they are incompatible with the node.
 	 * 
-	 * @param toAdd the peers to add
+	 * @param peers the peers to add
 	 * @param force true if and only if the peers must be added also if the maximum number of peers
 	 *              for the node has been reached
 	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
 	 *                to all peers of this node
 	 */
-	public void tryToAdd(Stream<Peer> toAdd, boolean force, boolean whisper) {
-		var peersAsArray = toAdd.distinct().toArray(Peer[]::new);
-
-		// before scheduling a task, we check if there is some peer that we really need
-		var newPeers = Stream.of(peersAsArray)
-			.distinct()
-			.filter(not(peers::contains))
+	public void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) {
+		var toAdd = peers.distinct()
+			.filter(not(this.peers::contains))
 			.toArray(Peer[]::new);
 
 		/**
@@ -252,12 +248,12 @@ public class NodePeers implements AutoCloseable {
 
 			@Override
 			public String toString() {
-				return "addition of " + asSanitizedString(Stream.of(newPeers)) + " as peers";
+				return "addition of " + asSanitizedString(Stream.of(toAdd)) + " as peers";
 			}
 
 			@Override @OnThread("tasks")
 			protected void body() {
-				var added = Stream.of(newPeers).parallel().filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
+				var added = Stream.of(toAdd).parallel().filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
 				if (added.length > 0) // just to avoid useless events
 					node.submit(node.new PeersAddedEvent(Stream.of(added), whisper));
 			}
@@ -277,7 +273,8 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 
-		if (newPeers.length > 0 && (force || peers.getElements().count() < config.maxPeers))
+		// before scheduling a task, we check if there is some peer that we really need
+		if (toAdd.length > 0 && (force || this.peers.getElements().count() < config.maxPeers))
 			node.submit(new AddPeersTask(node));
 	}
 

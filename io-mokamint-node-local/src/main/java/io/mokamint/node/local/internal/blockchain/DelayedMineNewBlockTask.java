@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.tasks;
+package io.mokamint.node.local.internal.blockchain;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
+import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DelayedMineNewBlockTask extends MineNewBlockTask {
@@ -27,8 +28,8 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node) {
-		super(node);
+	public DelayedMineNewBlockTask(LocalNodeImpl node, Database db) {
+		super(node, db);
 
 		this.delay = node.getConfig().deadlineWaitTimeout;
 	}

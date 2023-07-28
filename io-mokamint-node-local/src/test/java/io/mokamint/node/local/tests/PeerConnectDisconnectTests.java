@@ -186,7 +186,8 @@ public class PeerConnectDisconnectTests {
 
 			// at this point, node1 is connected to node2 and vice versa
 			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(node1.other)));
-			assertTrue(node2.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(node2.other)));
+			assertTrue(node2.getPeerInfos().filter(info -> info.getPeer().equals(node2.other)).anyMatch(info -> info.isConnected()));
+			assertTrue(node2.getPeerInfos().anyMatch(info -> info.getPeer().equals(node2.other)));
 
 			phase.set(2);
 

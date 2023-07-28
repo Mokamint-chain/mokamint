@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.tasks;
+package io.mokamint.node.local.internal.blockchain;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -35,6 +35,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.nonce.api.Deadline;
@@ -52,12 +53,19 @@ public class MineNewBlockTask extends Task {
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
 	/**
+	 * The database of the node.
+	 */
+	private final Database db;
+
+	/**
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node for which this task is working
 	 */
-	public MineNewBlockTask(LocalNodeImpl node) {
+	public MineNewBlockTask(LocalNodeImpl node, Database db) {
 		node.super();
+
+		this.db = db;
 	}
 
 	@Override
@@ -68,7 +76,7 @@ public class MineNewBlockTask extends Task {
 	@Override @OnThread("tasks")
 	protected void body() {
 		try {
-			Optional<Block> head = node.getHead();
+			Optional<Block> head = db.getHead();
 			if (head.isPresent()) {
 				if (node.getMiners().count() == 0L)
 					node.submit(node.new NoMinersAvailableEvent());
@@ -76,7 +84,7 @@ public class MineNewBlockTask extends Task {
 					new Run(head.get());
 			}
 			else {
-				var genesis = Blocks.genesis(node.getStartDateTime());
+				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 				LOGGER.info("height 0: finished mining the genesis block " +
 					Hex.toHexString(genesis.getHash(node.getConfig().getHashingForBlocks())));
 				node.submit(node.new BlockDiscoveryEvent(genesis));
@@ -152,11 +160,6 @@ public class MineNewBlockTask extends Task {
 		private final Waker waker = new Waker();
 
 		/**
-		 * The new block that will be mined at the end.
-		 */
-		private final Block block;
-
-		/**
 		 * Set to true when the task has completed, also in the case when
 		 * it could not find any deadline.
 		 */
@@ -167,7 +170,7 @@ public class MineNewBlockTask extends Task {
 			this.heightOfNewBlock = previous.getHeight() + 1;
 			this.logIntro = "height " + heightOfNewBlock + ": ";
 			this.previousHex = Hex.toHexString(previous.getHash(node.getConfig().getHashingForBlocks()));
-			this.startTime = node.getStartDateTime().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			this.startTime = db.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.targetBlockCreationTime = BigInteger.valueOf(node.getConfig().getTargetBlockCreationTime());
 			var hashingForGenerations = node.getConfig().getHashingForGenerations();
 			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().getHashingForDeadlines());
@@ -177,8 +180,7 @@ public class MineNewBlockTask extends Task {
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
-				this.block = createNewBlock();
-				informNodeAboutNewBlock();
+				informNodeAboutNewBlock(createNewBlock());
 			}
 			finally {
 				turnWakerOff();
@@ -210,8 +212,8 @@ public class MineNewBlockTask extends Task {
 			currentDeadline.await(node.getConfig().deadlineWaitTimeout, MILLISECONDS);
 		}
 
-		private void informNodeAboutNewBlock() {
-			LOGGER.info(logIntro + "finished mining new block on top of " + previousHex + ": informing the node");
+		private void informNodeAboutNewBlock(Block block) {
+			LOGGER.info(logIntro + "finished mining new block on top of " + previousHex);
 			node.submit(node.new BlockDiscoveryEvent(block));
 		}
 
@@ -280,7 +282,7 @@ public class MineNewBlockTask extends Task {
 		}
 
 		private BigInteger computePower(Deadline deadline) {
-			byte[] valueAsBytes = deadline.getValue(); // TODO: should it return BigInteger?
+			byte[] valueAsBytes = deadline.getValue();
 			var value = new BigInteger(1, valueAsBytes);
 			return previous.getPower().add
 				(BigInteger.TWO.shiftLeft(node.getConfig().getHashingForDeadlines().length() * 8)
