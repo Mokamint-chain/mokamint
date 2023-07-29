@@ -174,23 +174,6 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the first genesis block that has been added to this database, if any.
-	 * 
-	 * @return the genesis block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
-		Optional<byte[]> maybeGenesisHash = getGenesisHash();
-
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeGenesisHash
-				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
-				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database"))))
-		);
-	}
-
-	/**
 	 * Yields the hash of the head block of the blockchain in the database, if it has been set already.
 	 * 
 	 * @return the hash of the head block, if any
@@ -203,40 +186,6 @@ public class Database implements AutoCloseable {
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-	}
-
-	/**
-	 * Yields the head block of the blockchain in the database, if it has been set already.
-	 * 
-	 * @return the head block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
-		Optional<byte[]> maybeHeadHash = getHeadHash();
-
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeHeadHash
-				.map(uncheck(hash -> getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
-		);
-	}
-
-	/**
-	 * Yields the head block of the blockchain in the database, if it has been set already,
-	 * running inside the given transaction.
-	 * 
-	 * @param txn the transaction
-	 * @return the head block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private Optional<Block> getHead(Transaction txn) throws NoSuchAlgorithmException, DatabaseException {
-		Optional<byte[]> maybeHeadHash = getHeadHash(txn);
-
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeHeadHash
-				.map(uncheck(hash -> getBlock(txn, hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
-		);
 	}
 
 	/**
@@ -326,18 +275,6 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
-	 * Checks if the given block is in the database.
-	 * 
-	 * @param block the block
-	 * @return true if and only if {@code block} is in the database
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public boolean contains(Block block) throws NoSuchAlgorithmException, DatabaseException {
-		return getBlock(block.getHash(hashingForBlocks)).isPresent();
-	}
-
-	/**
 	 * Adds the given block to the database of blocks.
 	 * If the block was already in the database, nothing happens.
 	 * 
@@ -359,23 +296,6 @@ public class Database implements AutoCloseable {
 		catch (ExodusException e) {
 			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
 		}
-	}
-
-	/**
-	 * Adds the given block to the database of blocks.
-	 * If the block was already in the database, nothing happens.
-	 * 
-	 * @param block the block to add
-	 * @return true if the block has been actually added to the database, false otherwise.
-	 *         There are a few situations when the result can be false. For instance,
-	 *         if {@code block} was already in the database, or if {@code block} is
-	 *         a genesis block but the genesis block is already set in the database, or
-	 *         if {@code block} ...
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
-		return add(block, new AtomicReference<>()); // the AtomicReference is not used
 	}
 
 	/**
@@ -406,6 +326,24 @@ public class Database implements AutoCloseable {
 				return new MarshallableUUID(new UUID(context.readLong(), context.readLong()));
 			}
 		}
+	}
+
+	/**
+	 * Yields the head block of the blockchain in the database, if it has been set already,
+	 * running inside the given transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<Block> getHead(Transaction txn) throws NoSuchAlgorithmException, DatabaseException {
+		Optional<byte[]> maybeHeadHash = getHeadHash(txn);
+	
+		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+			maybeHeadHash
+				.map(uncheck(hash -> getBlock(txn, hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
+		);
 	}
 
 	private void ensureNodeUUID() throws DatabaseException {
@@ -445,10 +383,6 @@ public class Database implements AutoCloseable {
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-	}
-
-	private static Optional<GenesisBlock> castToGenesis(Block block) {
-		return block instanceof GenesisBlock gb ? Optional.of(gb) : Optional.empty();
 	}
 
 	/**

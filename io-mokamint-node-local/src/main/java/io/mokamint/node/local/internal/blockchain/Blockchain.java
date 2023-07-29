@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
+import static io.hotmoka.exceptions.CheckSupplier.check;
+import static io.hotmoka.exceptions.UncheckFunction.uncheck;
+
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,6 +90,39 @@ public class Blockchain {
 	}
 
 	/**
+	 * Yields the first genesis block of this blockchain, if any.
+	 * 
+	 * @return the genesis block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
+		Optional<byte[]> maybeGenesisHash = db.getGenesisHash();
+
+		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+			maybeGenesisHash
+				.map(uncheck(hash -> db.getBlock(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
+				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database"))))
+		);
+	}
+
+	/**
+	 * Yields the head block of this blockchain, if any.
+	 * 
+	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
+		Optional<byte[]> maybeHeadHash = db.getHeadHash();
+	
+		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+			maybeHeadHash
+				.map(uncheck(hash -> db.getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
+		);
+	}
+
+	/**
 	 * Adds the given block to the database of blocks of this node.
 	 * If the block was already in the database, nothing happens.
 	 * 
@@ -114,7 +150,7 @@ public class Blockchain {
 		do {
 			Block cursor = ws.remove(ws.size() - 1);
 	
-			if (!db.contains(cursor)) { // optimization check, to avoid repeated verification
+			if (db.getBlock(cursor.getHash(hashingForBlocks)).isEmpty()) { // optimization check, to avoid repeated verification
 				if (cursor instanceof NonGenesisBlock ngb) {
 					Optional<Block> previous = db.getBlock(ngb.getHashOfPreviousBlock());
 					if (previous.isEmpty())
@@ -153,7 +189,7 @@ public class Blockchain {
 	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
 	public void mineNextBlock(Optional<Block> previous) {
-		node.submit(new MineNewBlockTask(node, db, previous));
+		node.submit(new MineNewBlockTask(node, this, previous));
 	}
 
 	private boolean verify(GenesisBlock block) {
@@ -194,6 +230,10 @@ public class Blockchain {
 					.filter(Objects::nonNull)
 					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
 		}
+	}
+
+	private static Optional<GenesisBlock> castToGenesis(Block block) {
+		return block instanceof GenesisBlock gb ? Optional.of(gb) : Optional.empty();
 	}
 
 	/**

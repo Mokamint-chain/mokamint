@@ -35,7 +35,6 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.nonce.api.Deadline;
@@ -53,9 +52,9 @@ public class MineNewBlockTask extends Task {
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
 	/**
-	 * The database of the node.
+	 * The blockchain of the node.
 	 */
-	private final Database db;
+	private final Blockchain blockchain;
 
 	/**
 	 * The block over which mining is performed.
@@ -66,13 +65,13 @@ public class MineNewBlockTask extends Task {
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node for which this task is working
-	 * @param db the database of the node
+	 * @param blockchain the blockchain of the node
 	 * @param previous the previous block, if any; otherwise a genesis block is mined
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Database db, Optional<Block> previous) {
+	public MineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous) {
 		node.super();
 
-		this.db = db;
+		this.blockchain = blockchain;
 		this.previous = previous;
 	}
 
@@ -180,7 +179,7 @@ public class MineNewBlockTask extends Task {
 			this.heightOfNewBlock = previous.getHeight() + 1;
 			this.logIntro = "height " + heightOfNewBlock + ": ";
 			this.previousHex = Hex.toHexString(previous.getHash(node.getConfig().getHashingForBlocks()));
-			this.startTime = db.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.targetBlockCreationTime = BigInteger.valueOf(node.getConfig().getTargetBlockCreationTime());
 			var hashingForGenerations = node.getConfig().getHashingForGenerations();
 			this.description = previous.getNextDeadlineDescription(hashingForGenerations, node.getConfig().getHashingForDeadlines());

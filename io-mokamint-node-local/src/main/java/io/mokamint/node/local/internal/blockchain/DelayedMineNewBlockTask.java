@@ -22,7 +22,6 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DelayedMineNewBlockTask extends MineNewBlockTask {
@@ -30,8 +29,8 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node, Database db, Optional<Block> previous) {
-		super(node, db, previous);
+	public DelayedMineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous) {
+		super(node, blockchain, previous);
 
 		this.delay = node.getConfig().deadlineWaitTimeout;
 	}

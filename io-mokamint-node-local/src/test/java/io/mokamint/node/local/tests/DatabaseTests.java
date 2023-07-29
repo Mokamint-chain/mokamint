@@ -26,9 +26,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
@@ -37,7 +34,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.mokamint.node.Blocks;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
@@ -104,34 +100,6 @@ public class DatabaseTests {
 			assertFalse(db.add(peer1, true));
 			assertFalse(db.add(peer2, true));
 			assertEquals(Set.of(peer1, peer2), db.getPeers().collect(Collectors.toSet()));
-		}
-	}
-
-	@Test
-	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
-	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var config = mkConfig(dir);
-
-		try (var db = new Database(config)) {
-			db.add(genesis);
-			assertEquals(genesis, db.getGenesis().get());
-			assertEquals(genesis, db.getHead().get());
-		}
-	}
-
-	@Test
-	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
-	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
-		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES));
-		var config = mkConfig(dir);
-
-		try (var db = new Database(config)) {
-			assertTrue(db.add(genesis1));
-			assertFalse(db.add(genesis2));
-			assertEquals(genesis1, db.getGenesis().get());
-			assertEquals(genesis1, db.getHead().get());
 		}
 	}
 

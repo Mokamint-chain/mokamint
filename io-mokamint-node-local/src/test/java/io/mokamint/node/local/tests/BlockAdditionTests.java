@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 
@@ -56,6 +57,38 @@ public class BlockAdditionTests {
 	}
 
 	@Test
+	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
+	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var config = mkConfig(dir);
+
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var blockchain = new Blockchain(node, new Database(config));
+
+		assertTrue(blockchain.add(genesis));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+	}
+
+	@Test
+	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
+	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES));
+		var config = mkConfig(dir);
+
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		var blockchain = new Blockchain(node, new Database(config));
+
+		assertTrue(blockchain.add(genesis1));
+		assertFalse(blockchain.add(genesis2));
+		assertEquals(genesis1, blockchain.getGenesis().get());
+		assertEquals(genesis1, blockchain.getHead().get());
+	}
+
+	@Test
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
 	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException {
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
@@ -67,13 +100,12 @@ public class BlockAdditionTests {
 
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		var database = new Database(config);
-		var blockchain = new Blockchain(node, database);
+		var blockchain = new Blockchain(node, new Database(config));
 
 		assertTrue(blockchain.add(genesis));
 		assertFalse(blockchain.add(block));
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(genesis, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
 	}
 
 	@Test
@@ -88,13 +120,12 @@ public class BlockAdditionTests {
 
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		var database = new Database(config);
-		var blockchain = new Blockchain(node, database);
+		var blockchain = new Blockchain(node, new Database(config));
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block));
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block, blockchain.getHead().get());
 	}
 
 	@Test
@@ -114,16 +145,15 @@ public class BlockAdditionTests {
 
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		var database = new Database(config);
-		var blockchain = new Blockchain(node, database);
+		var blockchain = new Blockchain(node, new Database(config));
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
 		assertTrue(blockchain.add(block2));
 		assertTrue(blockchain.add(block3));
 		assertTrue(blockchain.add(added));
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block3, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block3, blockchain.getHead().get());
 	}
 
 	@Test
@@ -143,36 +173,35 @@ public class BlockAdditionTests {
 
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		var database = new Database(config);
-		var blockchain = new Blockchain(node, database);
+		var blockchain = new Blockchain(node, new Database(config));
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block0));
 
 		// at this stage, block0 is the head of the current chain, of length 2
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block0, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block0, blockchain.getHead().get());
 
 		// we add an orphan (no previous in database)
 		assertFalse(blockchain.add(block3));
 
 		// nothing changes
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block0, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block0, blockchain.getHead().get());
 
 		// we add an orphan (no previous in database)
 		assertFalse(blockchain.add(block2));
 
 		// nothing changes
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block0, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block0, blockchain.getHead().get());
 
 		// we add a block after the genesis, that creates a better chain of length 4
 		assertTrue(blockchain.add(block1));
 
 		// the longer chain is the current chain now
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block3, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block3, blockchain.getHead().get());
 	}
 
 	@Test
@@ -189,30 +218,29 @@ public class BlockAdditionTests {
 
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		var database = new Database(config);
-		var blockchain = new Blockchain(node, database);
+		var blockchain = new Blockchain(node, new Database(config));
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
 
 		// at this stage, block1 is the head of the current chain, of length 2
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block1, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block1, blockchain.getHead().get());
 
 		// we create a chain with more power as the current chain (11 vs 10),
 		assertTrue(blockchain.add(block2));
 
 		// block2 is the new head now
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block2, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block2, blockchain.getHead().get());
 
 		// we create a chain with the same length as the current chain (2 blocks),
 		// but same power as the current head (11 vs 11)
 		assertTrue(blockchain.add(block3));
 
 		// block2 is still the head
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block2, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block2, blockchain.getHead().get());
 	}
 
 	@Test
@@ -231,32 +259,31 @@ public class BlockAdditionTests {
 
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		var database = new Database(config);
-		var blockchain = new Blockchain(node, database);
+		var blockchain = new Blockchain(node, new Database(config));
 
 		assertFalse(blockchain.add(block3));
 
 		// no genesis and no head are set up to now
-		assertTrue(database.getGenesis().isEmpty());
-		assertTrue(database.getHead().isEmpty());
+		assertTrue(blockchain.getGenesis().isEmpty());
+		assertTrue(blockchain.getHead().isEmpty());
 
 		assertFalse(blockchain.add(block2));
 
 		// no genesis and no head are set up to now
-		assertTrue(database.getGenesis().isEmpty());
-		assertTrue(database.getHead().isEmpty());
+		assertTrue(blockchain.getGenesis().isEmpty());
+		assertTrue(blockchain.getHead().isEmpty());
 
 		assertFalse(blockchain.add(block1));
 
 		// no genesis and no head are set up to now
-		assertTrue(database.getGenesis().isEmpty());
-		assertTrue(database.getHead().isEmpty());
+		assertTrue(blockchain.getGenesis().isEmpty());
+		assertTrue(blockchain.getHead().isEmpty());
 
 		assertTrue(blockchain.add(genesis));
 
 		// genesis and head are set now
-		assertEquals(genesis, database.getGenesis().get());
-		assertEquals(block3, database.getHead().get());
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(block3, blockchain.getHead().get());
 	}
 
 	static {

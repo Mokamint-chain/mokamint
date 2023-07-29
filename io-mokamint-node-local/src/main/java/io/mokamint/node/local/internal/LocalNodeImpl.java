@@ -165,7 +165,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.blockchain = new Blockchain(this, db);
 
 		if (forceMining)
-			blockchain.mineNextBlock(db.getHead());
+			blockchain.mineNextBlock(blockchain.getHead());
 	}
 
 	@Override
@@ -691,7 +691,7 @@ public class LocalNodeImpl implements LocalNode {
 		protected void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
 			getMiners().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, db, Optional.of(previous)));
+			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, blockchain, Optional.of(previous)));
 		}
 	}
 
