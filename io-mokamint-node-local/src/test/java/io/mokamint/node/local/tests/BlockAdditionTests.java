@@ -30,7 +30,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
@@ -38,34 +37,31 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodeMiners;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.nonce.Deadlines;
 
 public class BlockAdditionTests {
 
-	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
-		return Config.Builder.defaults()
+	private static Blockchain mkTestBlockchain(Path dir) throws NoSuchAlgorithmException, DatabaseException {
+		var config = Config.Builder.defaults()
 			.setDir(dir)
 			.build();
+
+		return new Blockchain(new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 	}
 
 	@Test
 	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
 	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var config = mkConfig(dir);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
+		var blockchain = mkTestBlockchain(dir);
 
 		assertTrue(blockchain.add(genesis));
 		assertEquals(genesis, blockchain.getGenesis().get());
@@ -77,10 +73,7 @@ public class BlockAdditionTests {
 	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
 		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES));
-		var config = mkConfig(dir);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
+		var blockchain = mkTestBlockchain(dir);
 
 		assertTrue(blockchain.add(genesis1));
 		assertFalse(blockchain.add(genesis2));
@@ -91,15 +84,12 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
 	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException {
+		var blockchain = mkTestBlockchain(dir);
+		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
-		var config = mkConfig(dir);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertFalse(blockchain.add(block));
@@ -110,15 +100,13 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
 	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException {
+		var blockchain = mkTestBlockchain(dir);
+		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
+		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
-		var config = mkConfig(dir);
-		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block));
@@ -129,20 +117,18 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
 	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException {
+		var blockchain = mkTestBlockchain(dir);
+		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
+		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
-		var config = mkConfig(dir);
-		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 		var added = Blocks.of(1, BigInteger.valueOf(15), 4321L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block1.getHash(config.getHashingForBlocks());
+		previous = block1.getHash(hashingForBlocks);
 		var block2 = Blocks.of(2, BigInteger.valueOf(20), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block2.getHash(config.getHashingForBlocks());
+		previous = block2.getHash(hashingForBlocks);
 		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
@@ -156,20 +142,18 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
 	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, ClosedNodeException, InterruptedException, IOException {
+		var blockchain = mkTestBlockchain(dir);
+		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
+		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
-		var config = mkConfig(dir);
-		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.valueOf(11), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 		var block0 = Blocks.of(1, BigInteger.TEN, 4321L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block1.getHash(config.getHashingForBlocks());
+		previous = block1.getHash(hashingForBlocks);
 		var block2 = Blocks.of(2, BigInteger.valueOf(18), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block2.getHash(config.getHashingForBlocks());
+		previous = block2.getHash(hashingForBlocks);
 		var block3 = Blocks.of(3, BigInteger.valueOf(26), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block0));
@@ -203,17 +187,15 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("if more children of the head are added, the one with higher power becomes head")
 	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, ClosedNodeException, InterruptedException, IOException {
+		var blockchain = mkTestBlockchain(dir);
+		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
+		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
-		var config = mkConfig(dir);
-		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.TEN, 4321L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 		var block2 = Blocks.of(1, BigInteger.valueOf(11), 1234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
 		var block3 = Blocks.of(1, BigInteger.valueOf(11), 2234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
@@ -241,19 +223,17 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
 	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, ClosedNodeException, InterruptedException, IOException {
+		var blockchain = mkTestBlockchain(dir);
+		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
+		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
-		var config = mkConfig(dir);
-		byte[] previous = genesis.getHash(config.getHashingForBlocks());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block1.getHash(config.getHashingForBlocks());
+		previous = block1.getHash(hashingForBlocks);
 		var block2 = Blocks.of(2, BigInteger.valueOf(20), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block2.getHash(config.getHashingForBlocks());
+		previous = block2.getHash(hashingForBlocks);
 		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-
-		var node = mock(LocalNodeImpl.class);
-		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 
 		assertFalse(blockchain.add(block3));
 

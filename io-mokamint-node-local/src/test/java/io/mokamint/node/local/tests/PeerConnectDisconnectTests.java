@@ -127,7 +127,6 @@ public class PeerConnectDisconnectTests {
 
 	@Test
 	@DisplayName("if a peer disconnects and reconnects, its network is reconstructed")
-	@Timeout(100) // TODO
 	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {

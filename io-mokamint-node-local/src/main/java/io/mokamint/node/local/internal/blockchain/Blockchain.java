@@ -38,7 +38,6 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodeMiners;
@@ -51,11 +50,6 @@ import io.mokamint.node.local.internal.NodeMiners;
  */
 @ThreadSafe
 public class Blockchain {
-
-	/**
-	 * The node.
-	 */
-	private final LocalNodeImpl node;
 
 	/**
 	 * The configuration of the node having this blockchain.
@@ -108,17 +102,15 @@ public class Blockchain {
 	/**
 	 * Creates the container of the blocks of a node.
 	 * 
-	 * @param node the node
 	 * @param db the database of the node
 	 * @param app the application running in the node
 	 * @param miners the miners of the node
-	 * @param taskSpawner code that can be used to spawn new tasks
+	 * @param taskSpawner code that can be used to spawn tasks
 	 * @param eventSpawner code that can be used to spawn events
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(LocalNodeImpl node, Database db, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
-		this.node = node;
+	public Blockchain(Database db, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
 		this.config = db.getConfig();
 		this.hashingForBlocks = config.getHashingForBlocks();
 		this.db = db;
@@ -238,7 +230,7 @@ public class Blockchain {
 	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
 	public void mineNextBlock(Optional<Block> previous) {
-		taskSpawner.accept(new MineNewBlockTask(node, this, previous, app, miners, taskSpawner, eventSpawner));
+		taskSpawner.accept(new MineNewBlockTask(this, previous, app, miners, taskSpawner, eventSpawner));
 	}
 
 	private boolean verify(GenesisBlock block) {

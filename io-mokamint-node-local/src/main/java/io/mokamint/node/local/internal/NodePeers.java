@@ -111,15 +111,15 @@ public class NodePeers implements AutoCloseable {
 	 * @param taskSpawner code that can be used to spawn new tasks
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public NodePeers(LocalNodeImpl node, Database db, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws DatabaseException {
+	NodePeers(LocalNodeImpl node, Database db, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws DatabaseException {
 		this.node = node;
-		this.config = node.getConfig();
+		this.config = db.getConfig();
 		this.db = db;
 		this.taskSpawner = taskSpawner;
 		this.eventSpawner = eventSpawner;
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		tryToAdd(config.seeds().map(Peers::of), true, true);
-		node.scheduleWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(node), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
+		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS); // TODO
 	}
 
 	
@@ -256,11 +256,7 @@ public class NodePeers implements AutoCloseable {
 		/**
 		 * A task that adds peers to a node.
 		 */
-		class AddPeersTask extends Task {
-
-			private AddPeersTask(LocalNodeImpl node) {
-				node.super();
-			}
+		class AddPeersTask implements Task {
 
 			@Override
 			public String toString() {
@@ -268,7 +264,7 @@ public class NodePeers implements AutoCloseable {
 			}
 
 			@Override @OnThread("tasks")
-			protected void body() {
+			public void body() {
 				var added = Stream.of(toAdd).parallel().filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
 				if (added.length > 0) // just to avoid useless events
 					eventSpawner.accept(new PeersAddedEvent(Stream.of(added), whisper));
@@ -291,7 +287,7 @@ public class NodePeers implements AutoCloseable {
 
 		// before scheduling a task, we check if there is some peer that we really need
 		if (toAdd.length > 0 && (force || this.peers.getElements().count() < config.maxPeers))
-			taskSpawner.accept(new AddPeersTask(node));
+			taskSpawner.accept(new AddPeersTask());
 	}
 
 	/**
@@ -339,14 +335,10 @@ public class NodePeers implements AutoCloseable {
 	 * A task that pings all peers, tries to recreate their remote (if missing)
 	 * and collects their peers, in case they might be useful for the node.
 	 */
-	private class PingPeersRecreateRemotesAndCollectPeersTask extends Task {
-
-		private PingPeersRecreateRemotesAndCollectPeersTask(LocalNodeImpl node) {
-			node.super();
-		}
+	private class PingPeersRecreateRemotesAndCollectPeersTask implements Task {
 
 		@Override
-		protected void body() {
+		public void body() {
 			tryToAdd(peers.getElements().parallel().flatMap(this::pingPeerRecreateRemoteAndCollectPeers), false, true);
 		}
 

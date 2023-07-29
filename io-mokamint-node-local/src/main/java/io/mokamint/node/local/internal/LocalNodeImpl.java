@@ -152,7 +152,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(config, Stream.of(miners));
 		this.peers = new NodePeers(this, db, this::submit, this::submit);
-		this.blockchain = new Blockchain(this, db, app, this.miners, this::submit, this::submit);
+		this.blockchain = new Blockchain(db, app, this.miners, this::submit, this::submit);
 
 		if (forceMining)
 			blockchain.mineNextBlock(blockchain.getHead());
@@ -361,7 +361,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param event the emitted event
 	 */
-	public void submit(Event event) {
+	private void submit(Event event) {
 		var runnable = new Runnable() {
 
 			@Override @OnThread("events")
@@ -394,27 +394,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * A task is a complex activity that can be run in its own thread. Once it completes,
 	 * it typically fires some events to signal something to the node.
 	 */
-	public abstract class Task implements Runnable {
-
-		/**
-		 * The node running this task.
-		 */
-		protected final LocalNodeImpl node = LocalNodeImpl.this;
-
-		@Override @OnThread("tasks")
-		public final void run() {
-			onStart(this);
-
-			try {
-				body();
-			}
-			catch (Exception e) {
-				onFail(this, e);
-				return;
-			}
-
-			onComplete(this);
-		}
+	public interface Task {
 
 		/**
 		 * Main body of the task execution.
@@ -422,7 +402,7 @@ public class LocalNodeImpl implements LocalNode {
 		 * @throws Exception if the execution fails
 		 */
 		@OnThread("tasks")
-		protected abstract void body() throws Exception;
+		void body() throws Exception;
 	}
 
 	/**
@@ -461,15 +441,41 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * An adapter of a task into a runnable with logs.
+	 */
+	private class RunnableTask implements Runnable {
+		private final Task task;
+
+		private RunnableTask(Task task) {
+			this.task = task;
+		}
+
+		@Override @OnThread("events")
+		public final void run() {
+			onStart(task);
+
+			try {
+				task.body();
+			}
+			catch (Exception e) {
+				onFail(task, e);
+				return;
+			}
+
+			onComplete(task);
+		}
+	};
+
+	/**
 	 * Runs the given task in one thread from the {@link #tasks} executor.
 	 * 
 	 * @param task the task to run
 	 */
-	public void submit(Task task) {
+	private void submit(Task task) {
 		try {
 			LOGGER.info("scheduling " + task);
 			onSubmit(task);
-			tasks.execute(task);
+			tasks.execute(new RunnableTask(task));
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task + " rejected, probably because the node is shutting down");
@@ -484,7 +490,14 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param delay the time interval between successive, iterated executions
 	 * @param unit the time interval unit
 	 */
-	public void scheduleWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
-		periodicTasks.scheduleWithFixedDelay(task, initialDelay, delay, unit);
+	public void submitWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
+		try {
+			LOGGER.info("scheduling periodic " + task);
+			onSubmit(task);
+			periodicTasks.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
+		}
+		catch (RejectedExecutionException e) {
+			LOGGER.warning(task + " rejected, probably because the node is shutting down");
+		}
 	}
 }

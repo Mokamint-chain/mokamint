@@ -38,7 +38,6 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodeMiners;
@@ -51,7 +50,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * and waits for the best deadline to expire.
  * Once expired, it builds the block and signals a new block discovery to the node.
  */
-public class MineNewBlockTask extends Task {
+public class MineNewBlockTask implements Task {
 	private final static Logger LOGGER = Logger.getLogger(MineNewBlockTask.class.getName());
 	private final static BigInteger _20 = BigInteger.valueOf(20L);
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
@@ -92,7 +91,6 @@ public class MineNewBlockTask extends Task {
 	/**
 	 * Creates a task that mines a new block.
 	 * 
-	 * @param node the node for which this task is working
 	 * @param blockchain the blockchain of the node
 	 * @param previous the previous block, if any; otherwise a genesis block is mined
 	 * @param app the application running in the node
@@ -100,9 +98,7 @@ public class MineNewBlockTask extends Task {
 	 * @param taskSpawner code that can be used to spawn tasks
 	 * @param eventSpawner code that can be used to spawn events
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) {
-		node.super();
-
+	public MineNewBlockTask(Blockchain blockchain, Optional<Block> previous, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) {
 		this.blockchain = blockchain;
 		this.config = blockchain.getConfig();
 		this.previous = previous;
@@ -121,7 +117,7 @@ public class MineNewBlockTask extends Task {
 	}
 
 	@Override @OnThread("tasks")
-	protected void body() {
+	public void body() {
 		try {
 			if (previous.isPresent()) {
 				if (miners.get().count() == 0L)
@@ -187,7 +183,7 @@ public class MineNewBlockTask extends Task {
 		public void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
 			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-			taskSpawner.accept(new DelayedMineNewBlockTask(node, blockchain, Optional.of(previous), app, miners, taskSpawner, eventSpawner));
+			taskSpawner.accept(new DelayedMineNewBlockTask(blockchain, Optional.of(previous), app, miners, taskSpawner, eventSpawner));
 		}
 	}
 

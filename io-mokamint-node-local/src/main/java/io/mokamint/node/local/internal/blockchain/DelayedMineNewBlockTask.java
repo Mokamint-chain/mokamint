@@ -24,7 +24,6 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.OnThread;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodeMiners;
@@ -34,10 +33,10 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) {
-		super(node, blockchain, previous, app, miners, taskSpawner, eventSpawner);
+	public DelayedMineNewBlockTask(Blockchain blockchain, Optional<Block> previous, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) {
+		super(blockchain, previous, app, miners, taskSpawner, eventSpawner);
 
-		this.delay = node.getConfig().deadlineWaitTimeout;
+		this.delay = blockchain.getConfig().deadlineWaitTimeout;
 	}
 
 	@Override
@@ -46,7 +45,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	}
 
 	@Override @OnThread("tasks")
-	protected void body() {
+	public void body() {
 		try {
 			LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
 			Thread.sleep(delay);
