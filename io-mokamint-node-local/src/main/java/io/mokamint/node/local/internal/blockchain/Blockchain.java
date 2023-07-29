@@ -25,17 +25,24 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.mokamint.application.api.Application;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.LocalNodeImpl.Event;
+import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -52,9 +59,34 @@ public class Blockchain {
 	private final LocalNodeImpl node;
 
 	/**
+	 * The configuration of the node having this blockchain.
+	 */
+	private final Config config;
+
+	/**
 	 * The database of the node.
 	 */
 	private final Database db;
+
+	/**
+	 * The application running in the node.
+	 */
+	private final Application app;
+
+	/**
+	 * A supplier of the miners of the node.
+	 */
+	private final Supplier<Stream<Miner>> miners;
+
+	/**
+	 * Code that can be used to spawn new tasks.
+	 */
+	private final Consumer<Task> taskSpawner;
+
+	/**
+	 * Code that can be used to spawn new events.
+	 */
+	private final Consumer<Event> eventSpawner;
 
 	/**
 	 * A buffer where blocks without a known previous block are parked, in case
@@ -79,16 +111,34 @@ public class Blockchain {
 	 * 
 	 * @param node the node
 	 * @param db the database of the node
+	 * @param app the application running in the node
+	 * @param miners a supplier of the miners of the node
+	 * @param taskSpawner code that can be used to spawn new tasks
+	 * @param eventSpawner code that can be used to spawn events
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(LocalNodeImpl node, Database db) throws NoSuchAlgorithmException, DatabaseException {
+	public Blockchain(LocalNodeImpl node, Database db, Application app, Supplier<Stream<Miner>> miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
 		this.node = node;
-		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
+		this.config = db.getConfig();
+		this.hashingForBlocks = config.getHashingForBlocks();
 		this.db = db;
+		this.app = app;
+		this.miners = miners;
+		this.taskSpawner = taskSpawner;
+		this.eventSpawner = eventSpawner;
 		synchronize();
 	}
 
+	/**
+	 * Yields the configuration of the node having this blockchain.
+	 * 
+	 * @return the configuration
+	 */
+	public Config getConfig() {
+		return config;
+	}
+	
 	/**
 	 * Yields the first genesis block of this blockchain, if any.
 	 * 
@@ -150,7 +200,7 @@ public class Blockchain {
 		do {
 			Block cursor = ws.remove(ws.size() - 1);
 	
-			if (db.getBlock(cursor.getHash(hashingForBlocks)).isEmpty()) { // optimization check, to avoid repeated verification
+			if (!db.containsBlock(cursor.getHash(hashingForBlocks))) { // optimization check, to avoid repeated verification
 				if (cursor instanceof NonGenesisBlock ngb) {
 					Optional<Block> previous = db.getBlock(ngb.getHashOfPreviousBlock());
 					if (previous.isEmpty())
@@ -189,7 +239,7 @@ public class Blockchain {
 	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
 	public void mineNextBlock(Optional<Block> previous) {
-		node.submit(new MineNewBlockTask(node, this, previous));
+		taskSpawner.accept(new MineNewBlockTask(node, this, previous, app, miners, eventSpawner));
 	}
 
 	private boolean verify(GenesisBlock block) {

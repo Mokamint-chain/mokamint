@@ -161,8 +161,8 @@ public class LocalNodeImpl implements LocalNode {
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
-		this.peers = new NodePeers(this, db);
-		this.blockchain = new Blockchain(this, db);
+		this.peers = new NodePeers(this, db, this::submit, this::submit);
+		this.blockchain = new Blockchain(this, db, app, this.miners::get, this::submit, this::submit);
 
 		if (forceMining)
 			blockchain.mineNextBlock(blockchain.getHead());
@@ -286,24 +286,6 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	/**
-	 * Yields the application this node is running.
-	 * 
-	 * @return the application
-	 */
-	public Application getApplication() {
-		return app;
-	}
-
-	/**
-	 * Yields miners of this node.
-	 * 
-	 * @return the miners
-	 */
-	public Stream<Miner> getMiners() {
-		return miners.get();
-	}
-
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
@@ -336,7 +318,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * Partial implementation of events. It weaves the monitoring call-backs
 	 * and delegates to its {@link Event#body()} method.
 	 */
-	protected abstract class Event implements Runnable {
+	public abstract class Event implements Runnable {
 
 		@Override @OnThread("events")
 		public final void run() {
@@ -690,8 +672,8 @@ public class LocalNodeImpl implements LocalNode {
 		@Override @OnThread("events")
 		protected void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
-			getMiners().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, blockchain, Optional.of(previous)));
+			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
+			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, blockchain, Optional.of(previous), app, miners::get, LocalNodeImpl.this::submit));
 		}
 	}
 

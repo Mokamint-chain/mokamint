@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -33,12 +32,14 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.function.Function;
 import java.util.logging.LogManager;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -63,8 +64,7 @@ public class BlockAdditionTests {
 		var config = mkConfig(dir);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertEquals(genesis, blockchain.getGenesis().get());
@@ -79,8 +79,7 @@ public class BlockAdditionTests {
 		var config = mkConfig(dir);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis1));
 		assertFalse(blockchain.add(genesis2));
@@ -99,8 +98,7 @@ public class BlockAdditionTests {
 		var config = mkConfig(dir);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertFalse(blockchain.add(block));
@@ -119,8 +117,7 @@ public class BlockAdditionTests {
 		var block = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block));
@@ -144,8 +141,7 @@ public class BlockAdditionTests {
 		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
@@ -172,8 +168,7 @@ public class BlockAdditionTests {
 		var block3 = Blocks.of(3, BigInteger.valueOf(26), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block0));
@@ -217,8 +212,7 @@ public class BlockAdditionTests {
 		var block3 = Blocks.of(1, BigInteger.valueOf(11), 2234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
@@ -258,8 +252,7 @@ public class BlockAdditionTests {
 		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
 		var node = mock(LocalNodeImpl.class);
-		when(node.getConfig()).thenReturn(config);
-		var blockchain = new Blockchain(node, new Database(config));
+		var blockchain = new Blockchain(node, new Database(config), mock(Application.class), () -> Stream.empty(), task -> {}, event -> {});
 
 		assertFalse(blockchain.add(block3));
 

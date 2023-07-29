@@ -34,7 +34,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -59,9 +58,9 @@ import io.mokamint.node.local.Config;
 public class Database implements AutoCloseable {
 
 	/**
-	 * The hashing algorithm used for hashing the blocks.
+	 * The configuration of the node having this database.
 	 */
-	private final HashingAlgorithm<byte[]> hashingForBlocks;
+	private final Config config;
 
 	/**
 	 * The maximal number of non-forced peers kept in the database.
@@ -118,7 +117,7 @@ public class Database implements AutoCloseable {
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
 	 */
 	public Database(Config config) throws DatabaseException {
-		this.hashingForBlocks = config.getHashingForBlocks();
+		this.config = config;
 		this.maxPeers = config.maxPeers;
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStore("blocks");
@@ -137,6 +136,15 @@ public class Database implements AutoCloseable {
 			LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
 			throw new DatabaseException("cannot close the database", e);
 		}
+	}
+
+	/**
+	 * Yields the configuration of the node having this database.
+	 * 
+	 * @return the configuration
+	 */
+	public Config getConfig() {
+		return config;
 	}
 
 	/**
@@ -256,6 +264,24 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
+	 * Determines if this database contains a block with the given hash.
+	 * This is more efficient than checking the outcome of {@link #getBlock(byte[])},
+	 * since it does not construct the block.
+	 * 
+	 * @param hash the hash of the block
+	 * @return true if and only if that condition holds
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public boolean containsBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			return environment.computeInReadonlyTransaction(txn -> isInStore(txn, hash));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
 	 * Yields the block with the given hash, if it is contained in this database.
 	 * 
 	 * @param hash the hash
@@ -294,7 +320,7 @@ public class Database implements AutoCloseable {
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(hashingForBlocks)) + " in the database", e);
+			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(config.getHashingForBlocks())) + " in the database", e);
 		}
 	}
 
@@ -423,7 +449,7 @@ public class Database implements AutoCloseable {
 		if (forwards == null)
 			return Stream.empty();
 		else {
-			int size = hashingForBlocks.length();
+			int size = config.getHashingForBlocks().length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
 				throw new DatabaseException("the forward map has been corrupted");
@@ -601,14 +627,14 @@ public class Database implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
-		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
+		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = config.getHashingForBlocks().hash(bytesOfBlock);
 
 		if (isInStore(txn, hashOfBlock)) {
 			LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
-			if (getBlock(ngb.getHashOfPreviousBlock()).isPresent()) {
+			if (containsBlock(ngb.getHashOfPreviousBlock())) {
 				putInStore(txn, block, hashOfBlock, bytesOfBlock);
 				addToForwards(txn, ngb, hashOfBlock);
 				if (updateHead(txn, ngb, hashOfBlock))
