@@ -52,11 +52,6 @@ import io.mokamint.node.local.internal.NodeMiners;
 public class Blockchain {
 
 	/**
-	 * The configuration of the node having this blockchain.
-	 */
-	private final Config config;
-
-	/**
 	 * The database of the node.
 	 */
 	private final Database db;
@@ -111,8 +106,7 @@ public class Blockchain {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public Blockchain(Database db, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
-		this.config = db.getConfig();
-		this.hashingForBlocks = config.getHashingForBlocks();
+		this.hashingForBlocks = db.getConfig().getHashingForBlocks();
 		this.db = db;
 		this.app = app;
 		this.miners = miners;
@@ -127,7 +121,7 @@ public class Blockchain {
 	 * @return the configuration
 	 */
 	public Config getConfig() {
-		return config;
+		return db.getConfig();
 	}
 	
 	/**

@@ -165,18 +165,6 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Punishes a peer by reducing its points. If they reach zero (or below),
-	 * the peer is removed.
-	 * 
-	 * @param peer the peer
-	 * @param points the points to remove
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	public void punish(Peer peer, long points) throws DatabaseException {
-		check(DatabaseException.class, () -> peers.punish(peer, points));
-	}
-
-	/**
 	 * Removes a peer.
 	 * 
 	 * @param peer the peer to remove
@@ -228,7 +216,7 @@ public class NodePeers implements AutoCloseable {
 	 * 
 	 * @return the string
 	 */
-	public String asSanitizedString(Stream<Peer> peers) {
+	String asSanitizedString(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		String result = Stream.of(peersAsArray).limit(20).map(NodePeers::truncate).collect(Collectors.joining(", "));
 		if (peersAsArray.length > 20)
@@ -248,7 +236,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
 	 *                to all peers of this node
 	 */
-	public void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) {
+	void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) {
 		var toAdd = peers.distinct()
 			.filter(not(this.peers::contains))
 			.toArray(Peer[]::new);
@@ -422,7 +410,7 @@ public class NodePeers implements AutoCloseable {
 
 	private void punishBecauseUnreachable(Peer peer) {
 		try {
-			punish(peer, config.peerPunishmentForUnreachable);
+			check(DatabaseException.class, () -> peers.punish(peer, config.peerPunishmentForUnreachable));
 		}
 		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot reduce the points of " + peer, e);
