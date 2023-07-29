@@ -59,6 +59,7 @@ import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;

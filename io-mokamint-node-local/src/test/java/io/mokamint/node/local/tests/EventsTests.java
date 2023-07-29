@@ -45,6 +45,10 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.BlockDiscoveryEvent;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.IllegalDeadlineEvent;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoDeadlineFoundEvent;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 

@@ -29,11 +29,6 @@ import io.mokamint.node.local.Config;
 public class NodeMiners {
 
 	/**
-	 * The configuration of the node.
-	 */
-	private final Config config;
-
-	/**
 	 * The miners of the node.
 	 */
 	private final PunishableSet<Miner> miners;
@@ -41,11 +36,10 @@ public class NodeMiners {
 	/**
 	 * Creates a container for the miners of a local node.
 	 * 
-	 * @param node the node having the miners
+	 * @param config the configuration of the node
 	 * @param the miners that go into this container
 	 */
-	public NodeMiners(LocalNodeImpl node, Stream<Miner> miners) {
-		this.config = node.getConfig();
+	public NodeMiners(Config config, Stream<Miner> miners) {
 		this.miners = PunishableSets.of(miners, config.minerInitialPoints);
 	}
 

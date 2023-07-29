@@ -26,14 +26,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
-import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
@@ -43,6 +41,7 @@ import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.local.internal.NodeMiners;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -74,9 +73,9 @@ public class Blockchain {
 	private final Application app;
 
 	/**
-	 * A supplier of the miners of the node.
+	 * The miners of the node.
 	 */
-	private final Supplier<Stream<Miner>> miners;
+	private final NodeMiners miners;
 
 	/**
 	 * Code that can be used to spawn new tasks.
@@ -112,13 +111,13 @@ public class Blockchain {
 	 * @param node the node
 	 * @param db the database of the node
 	 * @param app the application running in the node
-	 * @param miners a supplier of the miners of the node
+	 * @param miners the miners of the node
 	 * @param taskSpawner code that can be used to spawn new tasks
 	 * @param eventSpawner code that can be used to spawn events
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(LocalNodeImpl node, Database db, Application app, Supplier<Stream<Miner>> miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
+	public Blockchain(LocalNodeImpl node, Database db, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
 		this.node = node;
 		this.config = db.getConfig();
 		this.hashingForBlocks = config.getHashingForBlocks();
@@ -239,7 +238,7 @@ public class Blockchain {
 	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
 	public void mineNextBlock(Optional<Block> previous) {
-		taskSpawner.accept(new MineNewBlockTask(node, this, previous, app, miners, eventSpawner));
+		taskSpawner.accept(new MineNewBlockTask(node, this, previous, app, miners, taskSpawner, eventSpawner));
 	}
 
 	private boolean verify(GenesisBlock block) {

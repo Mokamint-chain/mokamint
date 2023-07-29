@@ -19,7 +19,6 @@ package io.mokamint.node.local.internal;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,7 +34,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.ChainInfos;
@@ -52,10 +50,8 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
-import io.mokamint.node.local.internal.blockchain.DelayedMineNewBlockTask;
 import io.mokamint.node.messages.MessageMemories;
 import io.mokamint.node.messages.MessageMemory;
-import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 
@@ -69,11 +65,6 @@ public class LocalNodeImpl implements LocalNode {
 	 * The configuration of the node.
 	 */
 	private final Config config;
-
-	/**
-	 * The application executed by the blockchain.
-	 */
-	private final Application app;
 
 	/**
 	 * The miners connected to the node.
@@ -156,13 +147,12 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public LocalNodeImpl(Config config, Application app, boolean forceMining, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
-		this.app = app;
 		this.db = new Database(config);
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
-		this.miners = new NodeMiners(this, Stream.of(miners));
+		this.miners = new NodeMiners(config, Stream.of(miners));
 		this.peers = new NodePeers(this, db, this::submit, this::submit);
-		this.blockchain = new Blockchain(this, db, app, this.miners::get, this::submit, this::submit);
+		this.blockchain = new Blockchain(this, db, app, this.miners, this::submit, this::submit);
 
 		if (forceMining)
 			blockchain.mineNextBlock(blockchain.getHead());
@@ -213,7 +203,7 @@ public class LocalNodeImpl implements LocalNode {
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
 		ensureIsOpen();
 		if (peers.add(peer, true))
-			submit(new PeersAddedEvent(Stream.of(peer), true));
+			submit(peers.new PeersAddedEvent(Stream.of(peer), true)); // TODO
 	}
 
 	@Override
@@ -315,25 +305,9 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Partial implementation of events. It weaves the monitoring call-backs
-	 * and delegates to its {@link Event#body()} method.
+	 * An event.
 	 */
-	public abstract class Event implements Runnable {
-
-		@Override @OnThread("events")
-		public final void run() {
-			onStart(this);
-
-			try {
-				body();
-			}
-			catch (Exception e) {
-				onFail(this, e);
-				return;
-			}
-
-			onComplete(this);
-		}
+	public interface Event {
 
 		/**
 		 * Main body of the event execution.
@@ -341,7 +315,7 @@ public class LocalNodeImpl implements LocalNode {
 		 * @throws Exception if the execution fails
 		 */
 		@OnThread("events")
-		protected abstract void body() throws Exception;
+		void body() throws Exception;
 	}
 
 	/**
@@ -388,10 +362,28 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param event the emitted event
 	 */
 	public void submit(Event event) {
+		var runnable = new Runnable() {
+
+			@Override @OnThread("events")
+			public final void run() {
+				onStart(event);
+
+				try {
+					event.body();
+				}
+				catch (Exception e) {
+					onFail(event, e);
+					return;
+				}
+
+				onComplete(event);
+			}
+		};
+
 		try {
 			LOGGER.info("received " + event);
 			onSubmit(event);
-			events.execute(event);
+			events.execute(runnable);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(event + " rejected, probably because the node is shutting down");
@@ -494,200 +486,5 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public void scheduleWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
 		periodicTasks.scheduleWithFixedDelay(task, initialDelay, delay, unit);
-	}
-
-	/**
-	 * An event fired to signal that a block has been discovered. This might come
-	 * from the node itself, if it finds a deadline and a new block by using its own miners,
-	 * but also from a peer, that fund a block and whispers it to us.
-	 */
-	public class BlockDiscoveryEvent extends Event {
-		public final Block block;
-
-		public BlockDiscoveryEvent(Block block) {
-			this.block = block;
-		}
-
-		@Override
-		public String toString() {
-			return "discovery event for block " + Hex.toHexString(block.getHash(config.getHashingForBlocks())) + " at height " + block.getHeight();
-		}
-
-		@Override @OnThread("events")
-		protected void body() throws DatabaseException, NoSuchAlgorithmException {
-			blockchain.add(block);
-		}
-	}
-
-	/**
-	 * An event fired to signal that some peers have been added to the node.
-	 */
-	public class PeersAddedEvent extends Event {
-		private final Peer[] peers;
-		private final boolean whisper;
-
-		public PeersAddedEvent(Stream<Peer> peers, boolean whisper) {
-			this.peers = peers.toArray(Peer[]::new);
-			this.whisper = whisper;
-		}
-
-		@Override
-		public String toString() {
-			return "addition event for peers " + LocalNodeImpl.this.peers.asSanitizedString(Stream.of(peers));
-		}
-
-		/**
-		 * Yields the added peers.
-		 * 
-		 * @return the added peers
-		 */
-		public Stream<Peer> getPeers() {
-			return Stream.of(peers);
-		}
-
-		@Override @OnThread("events")
-		protected void body() {
-			if (whisper)
-				whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
-		}
-	}
-
-	/**
-	 * An event fired to signal that a peer of the node has been connected.
-	 */
-	public class PeerConnectedEvent extends Event {
-		private final Peer peer;
-
-		public PeerConnectedEvent(Peer peer) {
-			this.peer = peer;
-		}
-
-		@Override
-		public String toString() {
-			return "connection event for peer " + peer;
-		}
-
-		/**
-		 * Yields the connected peer.
-		 * 
-		 * @return the connected peer
-		 */
-		public Peer getPeer() {
-			return peer;
-		}
-
-		@Override @OnThread("events")
-		protected void body() {}
-	}
-
-	/**
-	 * An event fired to signal that a peer of the node have been disconnected.
-	 */
-	public class PeerDisconnectedEvent extends Event {
-		private final Peer peer;
-
-		public PeerDisconnectedEvent(Peer peer) {
-			this.peer = peer;
-		}
-
-		@Override
-		public String toString() {
-			return "disconnection event for peer " + peer;
-		}
-
-		/**
-		 * Yields the disconnected peer.
-		 * 
-		 * @return the disconnected peer
-		 */
-		public Peer getPeer() {
-			return peer;
-		}
-
-		@Override @OnThread("events")
-		protected void body() {}
-	}
-
-	/**
-	 * An event fired to signal that a miner misbehaved.
-	 */
-	public class MinerMisbehaviorEvent extends Event {
-		public final Miner miner;
-		public final long points;
-
-		/**
-		 * Creates an event that expresses a miner's misbehavior.
-		 * 
-		 * @param miner the miner that misbehaved
-		 * @param points how many points should be removed for this misbehavior
-		 */
-		public MinerMisbehaviorEvent(Miner miner, long points) {
-			this.miner = miner;
-			this.points = points;
-		}
-
-		@Override
-		public String toString() {
-			return "miner misbehavior event [-" + points + " points] for miner " + miner.toString();
-		}
-
-		@Override @OnThread("events")
-		protected void body() {
-			miners.punish(miner, points);
-		}
-	}
-
-	/**
-	 * An event fired to signal that the connection to a miner timed-out.
-	 */
-	public class IllegalDeadlineEvent extends MinerMisbehaviorEvent {
-
-		public IllegalDeadlineEvent(Miner miner) {
-			super(miner, config.minerPunishmentForIllegalDeadline);
-		}
-
-		@Override
-		public String toString() {
-			return "miner computed illegal deadline event [-" + points + " points] for miner " + miner.toString();
-		}
-	}
-
-	/**
-	 * An event fired when a new block task timed-out without finding a single deadline,
-	 * despite having at least a miner available.
-	 */
-	public class NoDeadlineFoundEvent extends Event {
-
-		private final Block previous;
-
-		public NoDeadlineFoundEvent(Block previous) {
-			this.previous = previous;
-		}
-
-		@Override
-		public String toString() {
-			return "no deadline found event";
-		}
-
-		@Override @OnThread("events")
-		protected void body() throws NoSuchAlgorithmException, DatabaseException {
-			// all miners timed-out
-			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-			submit(new DelayedMineNewBlockTask(LocalNodeImpl.this, blockchain, Optional.of(previous), app, miners::get, LocalNodeImpl.this::submit));
-		}
-	}
-
-	/**
-	 * An event fired when a new block task failed because there are no miners.
-	 */
-	public class NoMinersAvailableEvent extends Event {
-
-		@Override
-		public String toString() {
-			return "no miners available event";
-		}
-
-		@Override @OnThread("events")
-		protected void body() {}
 	}
 }

@@ -27,10 +27,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.crypto.Hex;
@@ -43,6 +41,7 @@ import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.local.internal.NodeMiners;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
@@ -77,15 +76,19 @@ public class MineNewBlockTask extends Task {
 	private final Application app;
 
 	/**
-	 * A supplier of the miners of the node.
+	 * The miners of the node.
 	 */
-	private final Supplier<Stream<Miner>> miners;
+	private final NodeMiners miners;
+
+	/**
+	 * Code that can be used to spawn tasks.
+	 */
+	private final Consumer<Task> taskSpawner;
 
 	/**
 	 * Code that can be used to spawn events.
 	 */
 	private final Consumer<Event> eventSpawner;
-
 	/**
 	 * Creates a task that mines a new block.
 	 * 
@@ -93,10 +96,11 @@ public class MineNewBlockTask extends Task {
 	 * @param blockchain the blockchain of the node
 	 * @param previous the previous block, if any; otherwise a genesis block is mined
 	 * @param app the application running in the node
-	 * @param miners a supplier of the miners of the node
+	 * @param miners the miners of the node
+	 * @param taskSpawner code that can be used to spawn tasks
 	 * @param eventSpawner code that can be used to spawn events
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous, Application app, Supplier<Stream<Miner>> miners, Consumer<Event> eventSpawner) {
+	public MineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) {
 		node.super();
 
 		this.blockchain = blockchain;
@@ -104,6 +108,7 @@ public class MineNewBlockTask extends Task {
 		this.previous = previous;
 		this.app = app;
 		this.miners = miners;
+		this.taskSpawner = taskSpawner;
 		this.eventSpawner = eventSpawner;
 	}
 
@@ -120,7 +125,7 @@ public class MineNewBlockTask extends Task {
 		try {
 			if (previous.isPresent()) {
 				if (miners.get().count() == 0L)
-					eventSpawner.accept(node.new NoMinersAvailableEvent());
+					eventSpawner.accept(new NoMinersAvailableEvent());
 				else
 					new Run(previous.get());
 			}
@@ -128,7 +133,7 @@ public class MineNewBlockTask extends Task {
 				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 				LOGGER.info("height 0: finished mining the genesis block " +
 					Hex.toHexString(genesis.getHash(config.getHashingForBlocks())));
-				eventSpawner.accept(node.new BlockDiscoveryEvent(genesis));
+				eventSpawner.accept(new BlockDiscoveryEvent(genesis));
 			}
 		}
 		catch (InterruptedException e) {
@@ -137,13 +142,119 @@ public class MineNewBlockTask extends Task {
 		}
 		catch (TimeoutException e) {
 			LOGGER.warning(this + ": timed out while waiting for a deadline");
-			eventSpawner.accept(node.new NoDeadlineFoundEvent(previous.get()));
+			eventSpawner.accept(new NoDeadlineFoundEvent(previous.get()));
 		}
 		catch (NoSuchAlgorithmException e) {
 			LOGGER.log(Level.SEVERE, this + ": the database contains a node that refers to an unknown hashing algorithm", e);
 		}
 		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, this + ": the database seems corrupted", e);
+		}
+	}
+
+	/**
+	 * An event fired when a new block task failed because there are no miners.
+	 */
+	public static class NoMinersAvailableEvent implements Event {
+
+		@Override
+		public String toString() {
+			return "no miners available event";
+		}
+
+		@Override @OnThread("events")
+		public void body() {}
+	}
+
+	/**
+	 * An event fired when a new block task timed-out without finding a single deadline,
+	 * despite having at least a miner available.
+	 */
+	public class NoDeadlineFoundEvent implements Event {
+
+		private final Block previous;
+
+		public NoDeadlineFoundEvent(Block previous) {
+			this.previous = previous;
+		}
+
+		@Override
+		public String toString() {
+			return "no deadline found event";
+		}
+
+		@Override @OnThread("events")
+		public void body() throws NoSuchAlgorithmException, DatabaseException {
+			// all miners timed-out
+			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
+			taskSpawner.accept(new DelayedMineNewBlockTask(node, blockchain, Optional.of(previous), app, miners, taskSpawner, eventSpawner));
+		}
+	}
+
+	/**
+	 * An event fired to signal that a miner misbehaved.
+	 */
+	public class MinerMisbehaviorEvent implements Event {
+		public final Miner miner;
+		public final long points;
+
+		/**
+		 * Creates an event that expresses a miner's misbehavior.
+		 * 
+		 * @param miner the miner that misbehaved
+		 * @param points how many points should be removed for this misbehavior
+		 */
+		public MinerMisbehaviorEvent(Miner miner, long points) {
+			this.miner = miner;
+			this.points = points;
+		}
+
+		@Override
+		public String toString() {
+			return "miner misbehavior event [-" + points + " points] for miner " + miner.toString();
+		}
+
+		@Override @OnThread("events")
+		public void body() {
+			miners.punish(miner, points);
+		}
+	}
+
+	/**
+	 * An event fired to signal that the connection to a miner timed-out.
+	 */
+	public class IllegalDeadlineEvent extends MinerMisbehaviorEvent {
+
+		public IllegalDeadlineEvent(Miner miner) {
+			super(miner, config.minerPunishmentForIllegalDeadline);
+		}
+
+		@Override
+		public String toString() {
+			return "miner computed illegal deadline event [-" + points + " points] for miner " + miner.toString();
+		}
+	}
+
+	/**
+	 * An event fired to signal that a block has been discovered. This might come
+	 * from the node itself, if it finds a deadline and a new block by using its own miners,
+	 * but also from a peer, that fund a block and whispers it to us.
+	 */
+	public class BlockDiscoveryEvent implements Event {
+		public final Block block;
+
+		public BlockDiscoveryEvent(Block block) {
+			this.block = block;
+		}
+
+		@Override
+		public String toString() {
+			return "discovery event for block " + Hex.toHexString(block.getHash(config.getHashingForBlocks())) + " at height " + block.getHeight();
+		}
+
+		@Override @OnThread("events")
+		public void body() throws DatabaseException, NoSuchAlgorithmException {
+			blockchain.add(block);
 		}
 	}
 
@@ -255,7 +366,7 @@ public class MineNewBlockTask extends Task {
 
 		private void informNodeAboutNewBlock(Block block) {
 			LOGGER.info(logIntro + "finished mining new block on top of " + previousHex);
-			eventSpawner.accept(node.new BlockDiscoveryEvent(block));
+			eventSpawner.accept(new BlockDiscoveryEvent(block));
 		}
 
 		/**
@@ -283,7 +394,7 @@ public class MineNewBlockTask extends Task {
 				}
 				else {
 					LOGGER.info(logIntro + "discarding deadline " + deadline + " since it's illegal");
-					eventSpawner.accept(node.new IllegalDeadlineEvent(miner));
+					eventSpawner.accept(new IllegalDeadlineEvent(miner));
 				}
 			}
 			else

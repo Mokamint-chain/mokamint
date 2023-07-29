@@ -46,6 +46,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
 import jakarta.websocket.DeploymentException;
@@ -270,7 +271,7 @@ public class NodePeers implements AutoCloseable {
 			protected void body() {
 				var added = Stream.of(toAdd).parallel().filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
 				if (added.length > 0) // just to avoid useless events
-					eventSpawner.accept(node.new PeersAddedEvent(Stream.of(added), whisper));
+					eventSpawner.accept(new PeersAddedEvent(Stream.of(added), whisper));
 			}
 
 			private boolean addPeer(Peer peer, boolean force) {
@@ -291,6 +292,39 @@ public class NodePeers implements AutoCloseable {
 		// before scheduling a task, we check if there is some peer that we really need
 		if (toAdd.length > 0 && (force || this.peers.getElements().count() < config.maxPeers))
 			taskSpawner.accept(new AddPeersTask(node));
+	}
+
+	/**
+	 * An event fired to signal that some peers have been added to the node.
+	 */
+	public class PeersAddedEvent implements Event {
+		private final Peer[] peers;
+		private final boolean whisper;
+
+		public PeersAddedEvent(Stream<Peer> peers, boolean whisper) {
+			this.peers = peers.toArray(Peer[]::new);
+			this.whisper = whisper;
+		}
+
+		@Override
+		public String toString() {
+			return "addition event for peers " + asSanitizedString(Stream.of(peers));
+		}
+
+		/**
+		 * Yields the added peers.
+		 * 
+		 * @return the added peers
+		 */
+		public Stream<Peer> getPeers() {
+			return Stream.of(peers);
+		}
+
+		@Override @OnThread("events")
+		public void body() {
+			if (whisper)
+				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
+		}
 	}
 
 	private static String truncate(Peer peer) {
@@ -493,7 +527,35 @@ public class NodePeers implements AutoCloseable {
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnClosedHandler(() -> peerDisconnected(remote, peer));
-		node.submit(node.new PeerConnectedEvent(peer));
+		eventSpawner.accept(new PeerConnectedEvent(peer));
+	}
+
+	/**
+	 * An event fired to signal that a peer of the node has been connected.
+	 */
+	public static class PeerConnectedEvent implements Event {
+		private final Peer peer;
+
+		public PeerConnectedEvent(Peer peer) {
+			this.peer = peer;
+		}
+
+		@Override
+		public String toString() {
+			return "connection event for peer " + peer;
+		}
+
+		/**
+		 * Yields the connected peer.
+		 * 
+		 * @return the connected peer
+		 */
+		public Peer getPeer() {
+			return peer;
+		}
+
+		@Override
+		public void body() {}
 	}
 
 	/**
@@ -505,7 +567,35 @@ public class NodePeers implements AutoCloseable {
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) {
 		closeRemote(remote, peer);
 		punishBecauseUnreachable(peer);
-		node.submit(node.new PeerDisconnectedEvent(peer));
+		eventSpawner.accept(new PeerDisconnectedEvent(peer));
+	}
+
+	/**
+	 * An event fired to signal that a peer of the node have been disconnected.
+	 */
+	public static class PeerDisconnectedEvent implements Event {
+		private final Peer peer;
+
+		public PeerDisconnectedEvent(Peer peer) {
+			this.peer = peer;
+		}
+
+		@Override
+		public String toString() {
+			return "disconnection event for peer " + peer;
+		}
+
+		/**
+		 * Yields the disconnected peer.
+		 * 
+		 * @return the disconnected peer
+		 */
+		public Peer getPeer() {
+			return peer;
+		}
+
+		@Override
+		public void body() {}
 	}
 
 	private void closeRemote(RemotePublicNode remote, Peer peer) {

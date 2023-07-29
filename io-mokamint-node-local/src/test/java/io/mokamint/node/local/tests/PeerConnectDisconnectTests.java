@@ -51,6 +51,8 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
+import io.mokamint.node.local.internal.NodePeers.PeerDisconnectedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
 
