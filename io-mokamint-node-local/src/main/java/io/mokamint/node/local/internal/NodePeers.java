@@ -32,7 +32,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
@@ -150,12 +149,34 @@ public class NodePeers implements AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
 	public boolean add(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
-		return check(TimeoutException.class,
+		return add(peer, force, true);
+	}
+
+	/**
+	 * Adds the given peer and spawns an event at the end, if required.
+	 * 
+	 * @param peer the peer to add
+	 * @param force true if the peer must be added also if the maximum number of peers has been reached
+	 * @param spawnEvent true if and the end of a successful addition of a peer a {@link PeersAddedEvent} must be spawned
+	 * @return true if and only if the peer was not present and has been added
+	 * @throws IOException if a connection to the peer cannot be established
+	 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of the node
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws TimeoutException if no answer arrives within a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	private boolean add(Peer peer, boolean force, boolean spawnEvent) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
+		boolean result = check(TimeoutException.class,
 					 InterruptedException.class,
 					 IOException.class,
 					 IncompatiblePeerException.class,
 					 DatabaseException.class,
 			() -> peers.add(peer, force));
+
+		if (spawnEvent && result)
+			eventSpawner.accept(new PeersAddedEvent(Stream.of(peer), true));
+
+		return result;
 	}
 
 	/**
@@ -262,7 +283,7 @@ public class NodePeers implements AutoCloseable {
 				return "addition of " + SanitizedStrings.of(Stream.of(toAdd)) + " as peers";
 			}
 
-			@Override @OnThread("tasks")
+			@Override
 			public void body() {
 				var added = Stream.of(toAdd).parallel()
 					.filter(peer -> addPeer(peer, force))
@@ -274,7 +295,8 @@ public class NodePeers implements AutoCloseable {
 
 			private boolean addPeer(Peer peer, boolean force) {
 				try {
-					return add(peer, force);
+					// we do not spawn an event since we will spawn one at the end for all peers
+					return add(peer, force, false);
 				}
 				catch (InterruptedException e) {
 					LOGGER.log(Level.WARNING, "addition of " + peer + " as a peer interrupted");
@@ -299,7 +321,7 @@ public class NodePeers implements AutoCloseable {
 		private final Peer[] peers;
 		private final boolean whisper;
 
-		public PeersAddedEvent(Stream<Peer> peers, boolean whisper) { // TODO: should be private
+		private PeersAddedEvent(Stream<Peer> peers, boolean whisper) {
 			this.peers = peers.toArray(Peer[]::new);
 			this.whisper = whisper;
 		}
@@ -318,7 +340,7 @@ public class NodePeers implements AutoCloseable {
 			return Stream.of(peers);
 		}
 
-		@Override @OnThread("events")
+		@Override
 		public void body() {
 			if (whisper)
 				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
@@ -486,7 +508,7 @@ public class NodePeers implements AutoCloseable {
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
 			var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout, config.whisperingMemorySize);
-			LOGGER.info("opened connection to peer " + peer); // TODO
+			LOGGER.info("opened connection to peer " + peer);
 			return remote;
 		}
 		catch (DeploymentException e) {

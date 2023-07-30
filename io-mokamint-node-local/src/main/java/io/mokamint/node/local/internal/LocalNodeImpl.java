@@ -202,8 +202,7 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
 		ensureIsOpen();
-		if (peers.add(peer, true))
-			submit(peers.new PeersAddedEvent(Stream.of(peer), true)); // TODO
+		peers.add(peer, true);
 	}
 
 	@Override
