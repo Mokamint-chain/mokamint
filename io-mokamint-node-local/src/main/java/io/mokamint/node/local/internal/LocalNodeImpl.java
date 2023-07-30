@@ -279,23 +279,9 @@ public class LocalNodeImpl implements LocalNode {
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
-	
-		LOGGER.info("got whispered peers " + peers.asSanitizedString(message.getPeers()));
-	
-		if (tryToAddToThePeers)
-			// we check if this node needs any of the whispered peers
-			peers.tryToAdd(message.getPeers(), false, false);
-	
-		// in any case, we forward the message to our peers
+
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
-	
-		peers.get()
-			.filter(PeerInfo::isConnected)
-			.map(PeerInfo::getPeer)
-			.map(peers::getRemote)
-			.flatMap(Optional::stream)
-			.forEach(remote -> remote.whisper(message, newSeen));
-	
+		peers.whisper(message, newSeen, tryToAddToThePeers);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
 	}
 

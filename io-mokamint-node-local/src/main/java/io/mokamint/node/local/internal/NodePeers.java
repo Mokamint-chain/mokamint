@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -47,6 +48,8 @@ import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
 import jakarta.websocket.DeploymentException;
@@ -185,6 +188,32 @@ public class NodePeers implements AutoCloseable {
 		return peers.contains(peer);
 	}
 
+	/**
+	 * Whispers some peers to this container of peers. It forwards the message
+	 * to the peers in this container and adds the peers in the message to this
+	 * container, if requested.
+	 * 
+	 * @param message the message containing the whispered peers
+	 * @param seen the whisperers already seen during whispering
+	 * @param tryToAdd if the peers must be added to those in this container
+	 */
+	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAdd) {
+		LOGGER.info("got whispered peers " + asSanitizedString(message.getPeers()));
+		
+		if (tryToAdd)
+			// we check if this node needs any of the whispered peers
+			tryToAdd(message.getPeers(), false, false);
+	
+		// in any case, we forward the message to our peers
+		get() // TODO
+			.filter(PeerInfo::isConnected)
+			.map(PeerInfo::getPeer)
+			.map(this::getRemote)
+			.flatMap(Optional::stream)
+			.forEach(remote -> remote.whisper(message, seen));
+	}
+
+
 	@Override
 	public void close() throws IOException, InterruptedException {
 		IOException ioException = null;
@@ -216,7 +245,7 @@ public class NodePeers implements AutoCloseable {
 	 * 
 	 * @return the string
 	 */
-	String asSanitizedString(Stream<Peer> peers) {
+	private static String asSanitizedString(Stream<Peer> peers) {
 		var peersAsArray = peers.toArray(Peer[]::new);
 		String result = Stream.of(peersAsArray).limit(20).map(NodePeers::truncate).collect(Collectors.joining(", "));
 		if (peersAsArray.length > 20)
@@ -224,6 +253,15 @@ public class NodePeers implements AutoCloseable {
 	
 		return result;
 	}
+
+	private static String truncate(Peer peer) {
+		String uri = peer.toString();
+		if (uri.length() > 50)
+			return uri.substring(0, 50) + "...";
+		else
+			return uri;
+	}
+
 
 	/**
 	 * Try to add the given peers to the node. Peers might not be added because there
@@ -236,7 +274,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
 	 *                to all peers of this node
 	 */
-	void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) {
+	private void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) {
 		var toAdd = peers.distinct()
 			.filter(not(this.peers::contains))
 			.toArray(Peer[]::new);
@@ -285,7 +323,7 @@ public class NodePeers implements AutoCloseable {
 		private final Peer[] peers;
 		private final boolean whisper;
 
-		public PeersAddedEvent(Stream<Peer> peers, boolean whisper) {
+		public PeersAddedEvent(Stream<Peer> peers, boolean whisper) { // TODO: should be private
 			this.peers = peers.toArray(Peer[]::new);
 			this.whisper = whisper;
 		}
@@ -309,14 +347,6 @@ public class NodePeers implements AutoCloseable {
 			if (whisper)
 				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
 		}
-	}
-
-	private static String truncate(Peer peer) {
-		String uri = peer.toString();
-		if (uri.length() > 50)
-			return uri.substring(0, 50) + "...";
-		else
-			return uri;
 	}
 
 	/**
@@ -516,7 +546,7 @@ public class NodePeers implements AutoCloseable {
 	public static class PeerConnectedEvent implements Event {
 		private final Peer peer;
 
-		public PeerConnectedEvent(Peer peer) {
+		private PeerConnectedEvent(Peer peer) {
 			this.peer = peer;
 		}
 
@@ -556,7 +586,7 @@ public class NodePeers implements AutoCloseable {
 	public static class PeerDisconnectedEvent implements Event {
 		private final Peer peer;
 
-		public PeerDisconnectedEvent(Peer peer) {
+		private PeerDisconnectedEvent(Peer peer) {
 			this.peer = peer;
 		}
 
