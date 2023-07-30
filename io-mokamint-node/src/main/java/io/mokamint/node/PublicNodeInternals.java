@@ -30,7 +30,7 @@ public interface PublicNodeInternals extends NodeInternals, PublicNode, Whispere
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node
-	 * has something to whisperer, it will whisper to {@code whisperer} as well.
+	 * has something to whisper, it will whisper to {@code whisperer} as well.
 	 * Note that this method does not state the converse.
 	 * 
 	 * @param whisperer the whisperer to bind

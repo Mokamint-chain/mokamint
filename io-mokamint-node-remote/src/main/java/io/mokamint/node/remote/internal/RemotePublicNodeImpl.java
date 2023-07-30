@@ -32,18 +32,17 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -143,7 +142,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("got whispered peers " + peersAsString(message.getPeers()));
+		LOGGER.info("got whispered peers " + SanitizedStrings.of(message.getPeers()));
 
 		onWhisperPeers(message);
 
@@ -158,30 +157,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
-	}
-
-	/**
-	 * Yields a string describing some peers. It truncates peers too long
-	 * or too many peers, in order to cope with potential log injections.
-	 * 
-	 * @param peers the peers
-	 * @return the string
-	 */
-	private String peersAsString(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		String result = Stream.of(peersAsArray).limit(20).map(this::truncate).collect(Collectors.joining(", "));
-		if (peersAsArray.length > 20)
-			result += ", ...";
-
-		return result;
-	}
-
-	private String truncate(Peer peer) {
-		String uri = peer.toString();
-		if (uri.length() > 50)
-			return uri.substring(0, 50) + "...";
-		else
-			return uri;
 	}
 
 	private RuntimeException unexpectedException(Exception e) {

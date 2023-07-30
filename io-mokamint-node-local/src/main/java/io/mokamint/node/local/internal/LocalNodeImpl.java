@@ -151,7 +151,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.info = NodeInfos.of(Versions.current(), db.getUUID());
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(config, Stream.of(miners));
-		this.peers = new NodePeers(this, db, this::submit, this::submit);
+		this.peers = new NodePeers(this, db, this::submit, this::submit, this::submitWithFixedDelay);
 		this.blockchain = new Blockchain(db, app, this.miners, this::submit, this::submit);
 
 		if (forceMining)
@@ -469,6 +469,22 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * A periodic spawner of a task.
+	 */
+	public interface TaskSpawnerWithFixedDelay {
+
+		/**
+		 * Spawns the given task after the {@code initialDelay} and then every {@code delay}.
+		 * 
+		 * @param task the task
+		 * @param initialDelay the initial delay
+		 * @param delay the periodic delay
+		 * @param unit the time unit of the delays
+		 */
+		void spawnWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit);
+	}
+
+	/**
 	 * Runs the given task, periodically, with the {@link #periodicTasks} executor.
 	 * 
 	 * @param task the task to run
@@ -476,7 +492,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param delay the time interval between successive, iterated executions
 	 * @param unit the time interval unit
 	 */
-	public void submitWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
+	private void submitWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
 		try {
 			LOGGER.info("scheduling periodic " + task);
 			onSubmit(task);

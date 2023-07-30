@@ -30,7 +30,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
@@ -38,6 +37,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
@@ -45,8 +45,10 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.local.internal.LocalNodeImpl.TaskSpawnerWithFixedDelay;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
@@ -66,7 +68,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * The node.
 	 */
-	private final LocalNodeImpl node;
+	private final LocalNode node;
 
 	/**
 	 * The configuration of the node.
@@ -77,6 +79,16 @@ public class NodePeers implements AutoCloseable {
 	 * The database of the node.
 	 */
 	private final Database db;
+
+	/**
+	 * Code to execute to spawn new tasks.
+	 */
+	private final Consumer<Task> taskSpawner;
+
+	/**
+	 * Code to execute to spawn new events.
+	 */
+	private final Consumer<Event> eventSpawner;
 
 	/**
 	 * The peers of the node.
@@ -94,16 +106,6 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private final ConcurrentMap<Peer, RemotePublicNode> remotes = new ConcurrentHashMap<>();
 
-	/**
-	 * Code that can be used to spawn new tasks.
-	 */
-	private final Consumer<Task> taskSpawner;
-
-	/**
-	 * Code that can be used to spawn new events.
-	 */
-	private final Consumer<Event> eventSpawner;
-
 	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
 	/**
@@ -114,7 +116,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param taskSpawner code that can be used to spawn new tasks
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	NodePeers(LocalNodeImpl node, Database db, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws DatabaseException {
+	NodePeers(LocalNode node, Database db, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner, TaskSpawnerWithFixedDelay periodicSpawner) throws DatabaseException {
 		this.node = node;
 		this.config = db.getConfig();
 		this.db = db;
@@ -122,7 +124,7 @@ public class NodePeers implements AutoCloseable {
 		this.eventSpawner = eventSpawner;
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		tryToAdd(config.seeds().map(Peers::of), true, true);
-		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS); // TODO
+		periodicSpawner.spawnWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
 	
@@ -133,17 +135,6 @@ public class NodePeers implements AutoCloseable {
 	 */
 	public Stream<PeerInfo> get() {
 		return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey())));
-	}
-
-	/**
-	 * Yields the remote note that can be used to interact with the given peer.
-	 * 
-	 * @param peer the peer
-	 * @return the remote, if any. This might be missing if, for instance, the
-	 *         peer is currently unreachable
-	 */
-	public Optional<RemotePublicNode> getRemote(Peer peer) {
-		return Optional.ofNullable(remotes.get(peer));
 	}
 
 	/**
@@ -198,19 +189,14 @@ public class NodePeers implements AutoCloseable {
 	 * @param tryToAdd if the peers must be added to those in this container
 	 */
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAdd) {
-		LOGGER.info("got whispered peers " + asSanitizedString(message.getPeers()));
+		LOGGER.info("got whispered peers " + SanitizedStrings.of(message.getPeers()));
 		
 		if (tryToAdd)
 			// we check if this node needs any of the whispered peers
 			tryToAdd(message.getPeers(), false, false);
 	
 		// in any case, we forward the message to our peers
-		get() // TODO
-			.filter(PeerInfo::isConnected)
-			.map(PeerInfo::getPeer)
-			.map(this::getRemote)
-			.flatMap(Optional::stream)
-			.forEach(remote -> remote.whisper(message, seen));
+		remotes.values().forEach(remote -> remote.whisper(message, seen));
 	}
 
 
@@ -240,28 +226,15 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Yields a string describing some peers. It truncates peers too long
-	 * or too many peers, in order to cope with potential log injections.
+	 * Yields the remote note that can be used to interact with the given peer.
 	 * 
-	 * @return the string
+	 * @param peer the peer
+	 * @return the remote, if any. This might be missing if, for instance, the
+	 *         peer is currently unreachable
 	 */
-	private static String asSanitizedString(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		String result = Stream.of(peersAsArray).limit(20).map(NodePeers::truncate).collect(Collectors.joining(", "));
-		if (peersAsArray.length > 20)
-			result += ", ...";
-	
-		return result;
+	private Optional<RemotePublicNode> getRemote(Peer peer) {
+		return Optional.ofNullable(remotes.get(peer));
 	}
-
-	private static String truncate(Peer peer) {
-		String uri = peer.toString();
-		if (uri.length() > 50)
-			return uri.substring(0, 50) + "...";
-		else
-			return uri;
-	}
-
 
 	/**
 	 * Try to add the given peers to the node. Peers might not be added because there
@@ -286,12 +259,15 @@ public class NodePeers implements AutoCloseable {
 
 			@Override
 			public String toString() {
-				return "addition of " + asSanitizedString(Stream.of(toAdd)) + " as peers";
+				return "addition of " + SanitizedStrings.of(Stream.of(toAdd)) + " as peers";
 			}
 
 			@Override @OnThread("tasks")
 			public void body() {
-				var added = Stream.of(toAdd).parallel().filter(peer -> addPeer(peer, force)).toArray(Peer[]::new);
+				var added = Stream.of(toAdd).parallel()
+					.filter(peer -> addPeer(peer, force))
+					.toArray(Peer[]::new);
+
 				if (added.length > 0) // just to avoid useless events
 					eventSpawner.accept(new PeersAddedEvent(Stream.of(added), whisper));
 			}
@@ -330,7 +306,7 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public String toString() {
-			return "addition event for peers " + asSanitizedString(Stream.of(peers));
+			return "addition event for peers " + SanitizedStrings.of(Stream.of(peers));
 		}
 
 		/**
@@ -362,7 +338,8 @@ public class NodePeers implements AutoCloseable {
 
 		private Stream<Peer> pingPeerRecreateRemoteAndCollectPeers(Peer peer) {
 			return getRemote(peer).or(() -> tryToCreateRemote(peer))
-				.map(r -> askForPeers(peer, r)).orElse(Stream.empty());
+				.map(remote -> askForPeers(peer, remote))
+				.orElse(Stream.empty());
 		}
 
 		private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) {
