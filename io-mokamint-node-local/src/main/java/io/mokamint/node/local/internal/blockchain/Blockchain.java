@@ -20,6 +20,9 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -77,6 +80,12 @@ public class Blockchain {
 	private final Consumer<Event> eventSpawner;
 
 	/**
+	 * A cache for the genesis block, if it has been set already.
+	 * Otherwise it holds {@code null}.
+	 */
+	private volatile GenesisBlock genesis;
+
+	/**
 	 * A buffer where blocks without a known previous block are parked, in case
 	 * their previous block arrives later.
 	 */
@@ -132,13 +141,22 @@ public class Blockchain {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
+		// we use a cache to avoid repeated access for reading the genesis block
+		if (genesis != null)
+			return Optional.of(genesis);
+
 		Optional<byte[]> maybeGenesisHash = db.getGenesisHash();
 
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+		Optional<GenesisBlock> result = check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 			maybeGenesisHash
 				.map(uncheck(hash -> db.getBlock(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
 				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database"))))
 		);
+
+		if (result.isPresent())
+			genesis = result.get();
+
+		return result;
 	}
 
 	/**
@@ -210,10 +228,16 @@ public class Blockchain {
 		while (!ws.isEmpty());
 	
 		Block newHead = updatedHead.get();
-		if (newHead != null)
+		if (newHead != null && isRecent(newHead))
 			mineNextBlock(Optional.of(newHead));
 
 		return added;
+	}
+
+	private boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
+		var creationTimeOfTheBlock = block.getCreationTime(getGenesis().get());
+		var now = LocalDateTime.now(ZoneId.of("UTC")); // TODO: we should use the network time
+		return ChronoUnit.MILLIS.between(creationTimeOfTheBlock, now) < db.getConfig().getTargetBlockCreationTime() * 4;
 	}
 
 	/**

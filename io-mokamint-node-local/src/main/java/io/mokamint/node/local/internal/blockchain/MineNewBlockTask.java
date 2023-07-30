@@ -23,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -111,9 +110,9 @@ public class MineNewBlockTask implements Task {
 	@Override
 	public String toString() {
 		if (previous.isEmpty())
-			return "height 0: mine genesis block";
+			return "height 0: mining of genesis block";
 		else
-			return "height " + (previous.get().getHeight() + 1) + ": mine next block";
+			return "height " + (previous.get().getHeight() + 1) + ": mining of block";
 	}
 
 	@Override @OnThread("tasks")
@@ -153,6 +152,8 @@ public class MineNewBlockTask implements Task {
 	 */
 	public static class NoMinersAvailableEvent implements Event {
 
+		private NoMinersAvailableEvent() {}
+
 		@Override
 		public String toString() {
 			return "no miners available event";
@@ -170,7 +171,7 @@ public class MineNewBlockTask implements Task {
 
 		private final Block previous;
 
-		public NoDeadlineFoundEvent(Block previous) {
+		private NoDeadlineFoundEvent(Block previous) {
 			this.previous = previous;
 		}
 
@@ -200,7 +201,7 @@ public class MineNewBlockTask implements Task {
 		 * @param miner the miner that misbehaved
 		 * @param points how many points should be removed for this misbehavior
 		 */
-		public MinerMisbehaviorEvent(Miner miner, long points) {
+		private MinerMisbehaviorEvent(Miner miner, long points) {
 			this.miner = miner;
 			this.points = points;
 		}
@@ -221,7 +222,7 @@ public class MineNewBlockTask implements Task {
 	 */
 	public class IllegalDeadlineEvent extends MinerMisbehaviorEvent {
 
-		public IllegalDeadlineEvent(Miner miner) {
+		private IllegalDeadlineEvent(Miner miner) {
 			super(miner, config.minerPunishmentForIllegalDeadline);
 		}
 
@@ -239,7 +240,7 @@ public class MineNewBlockTask implements Task {
 	public class BlockDiscoveryEvent implements Event {
 		public final Block block;
 
-		public BlockDiscoveryEvent(Block block) {
+		private BlockDiscoveryEvent(Block block) {
 			this.block = block;
 		}
 
@@ -318,10 +319,9 @@ public class MineNewBlockTask implements Task {
 			this.heightOfNewBlock = previous.getHeight() + 1;
 			this.logIntro = "height " + heightOfNewBlock + ": ";
 			this.previousHex = Hex.toHexString(previous.getHash(config.getHashingForBlocks()));
-			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			this.startTime = previous.getCreationTime(blockchain.getGenesis().get());
 			this.targetBlockCreationTime = BigInteger.valueOf(config.getTargetBlockCreationTime());
-			var hashingForGenerations = config.getHashingForGenerations();
-			this.description = previous.getNextDeadlineDescription(hashingForGenerations, config.getHashingForDeadlines());
+			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 			LOGGER.info(logIntro + "started mining new block on top of " + previousHex);
 
 			try {
@@ -456,9 +456,9 @@ public class MineNewBlockTask implements Task {
 		private BigInteger computeAcceleration(long weightedWaitingTimeForNewBlock) {
 			var oldAcceleration = previous.getAcceleration();
 			var delta = oldAcceleration
-					.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
-					.divide(targetBlockCreationTime)
-					.subtract(oldAcceleration);
+				.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
+				.divide(targetBlockCreationTime)
+				.subtract(oldAcceleration);
 
 			var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
 			if (acceleration.signum() == 0)
