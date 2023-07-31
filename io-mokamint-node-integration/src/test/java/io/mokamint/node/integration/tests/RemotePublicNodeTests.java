@@ -93,8 +93,8 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("getPeers() works")
 	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException {
-		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true, LocalDateTime.now(ZoneId.of("UTC"))),
-				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false, LocalDateTime.now(ZoneId.of("UTC"))));
+		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
+				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
 		class MyServer extends PublicTestServer {
 
@@ -190,8 +190,8 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("if getPeers() is slow, it leads to a time-out")
 	public void getPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true, LocalDateTime.now(ZoneId.of("UTC"))),
-				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false, LocalDateTime.now(ZoneId.of("UTC"))));
+		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
+				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
 		class MyServer extends PublicTestServer {
 

@@ -19,10 +19,10 @@ target_block_creation_time = 240000
 ## Local parameters
 
 # the path where the node's data will be persisted
-dir = "mokamint-chain"
+dir = "/tmp/junit8672529830539765086"
 
 # maximal milliseconds to wait between deadline request to the miners and first deadline reception
-deadline_wait_timeout = 20000
+deadline_wait_timeout = 1000
 
 # the initial points of a miner, freshly connected to a node
 miner_initial_points = 1000
@@ -35,7 +35,7 @@ miner_punishment_for_illegal_deadline = 500
 
 # the URIs of the initial peers, that will always get added to the previous set of peers
 # (if any) and contacted at start-up
-seeds = ["ws://mymachine.com:8026","ws://hermachine.de:8028"]
+seeds = []
 
 # the maximum amount of peers of a node; their actual number can be larger
 # only if peers are explicitly added as seeds or through the addPeer() method
@@ -45,11 +45,14 @@ max_peers = 20
 # the initial points of a peer, freshly added to a node
 peer_initial_points = 1000
 
+# the maximal time difference (in milliseconds) between a node and each of its peers
+peer_max_time_difference = 15000
+
 # the points that a peer loses as punishment for not answering a ping
 peer_punishment_for_unreachable = 1
 
 # the time (in milliseconds) for communications to the peers
-peer_timeout = 10000
+peer_timeout = 30000
 
 # time, in milliseconds, between successive pings to a peer
 peer_ping_interval = 120000

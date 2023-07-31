@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -325,6 +326,29 @@ public class PeersTests {
 			public NodeInfo getInfo() {
 				var version = info.getVersion();
 				return NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
+			}
+		}
+
+		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+			assertThrows(IncompatiblePeerException.class, () -> node.addPeer(peer));
+		}
+	}
+
+	@Test
+	@DisplayName("two peers whose local times are too far away cannot work together")
+	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
+		var port = 8032;
+		var peer = Peers.of(new URI("ws://localhost:" + port));
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
+				super(mkConfig(dir), app, false);
+			}
+
+			@Override
+			public NodeInfo getInfo() {
+				return NodeInfos.of(info.getVersion(), UUID.randomUUID(), info.getLocalDateTimeUTC().plus(getConfig().peerMaxTimeDifference + 1000L, ChronoUnit.MILLIS));
 			}
 		}
 

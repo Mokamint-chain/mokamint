@@ -107,6 +107,12 @@ public class Config extends AbstractConfig {
 	public final long peerInitialPoints;
 
 	/**
+	 * The maximal difference (in milliseconds) between the local time of a node
+	 * and of one of its peers. It defaults to 15,000 (15 seconds).
+	 */
+	public final long peerMaxTimeDifference;
+
+	/**
 	 * The points lost for punishment by a peer that does not answer to a ping request.
 	 * It defaults to 1.
 	 */
@@ -148,6 +154,7 @@ public class Config extends AbstractConfig {
 		this.seeds = builder.seeds;
 		this.maxPeers = builder.maxPeers;
 		this.peerInitialPoints = builder.peerInitialPoints;
+		this.peerMaxTimeDifference = builder.peerMaxTimeDifference;
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 		this.peerTimeout = builder.peerTimeout;
 		this.peerPingInterval = builder.peerPingInterval;
@@ -187,6 +194,9 @@ public class Config extends AbstractConfig {
 		sb.append("# the initial points of a peer, freshly added to a node\n");
 		sb.append("peer_initial_points = " + peerInitialPoints + "\n");
 		sb.append("\n");
+		sb.append("# the maximal time difference (in milliseconds) between a node and each of its peers\n");
+		sb.append("peer_max_time_difference = " + peerMaxTimeDifference + "\n");
+		sb.append("\n");
 		sb.append("# the points that a peer loses as punishment for not answering a ping\n");
 		sb.append("peer_punishment_for_unreachable = " + peerPunishmentForUnreachable + "\n");
 		sb.append("\n");
@@ -214,6 +224,7 @@ public class Config extends AbstractConfig {
 				seeds.equals(otherConfig.seeds) &&
 				maxPeers == otherConfig.maxPeers &&
 				peerInitialPoints == otherConfig.peerInitialPoints &&
+				peerMaxTimeDifference == otherConfig.peerMaxTimeDifference &&
 				peerPunishmentForUnreachable == otherConfig.peerPunishmentForUnreachable &&
 				peerTimeout == otherConfig.peerTimeout &&
 				peerPingInterval == otherConfig.peerPingInterval &&
@@ -235,6 +246,7 @@ public class Config extends AbstractConfig {
 		private final Set<URI> seeds = new HashSet<>();
 		private long maxPeers = 20L;
 		private long peerInitialPoints = 1000L;
+		private long peerMaxTimeDifference = 15000L;
 		private long peerPunishmentForUnreachable = 1L;
 		private long peerTimeout = 30000L;
 		private long peerPingInterval = 120000L;
@@ -282,6 +294,10 @@ public class Config extends AbstractConfig {
 			var peerInitialPoints = toml.getLong("peer_initial_points");
 			if (peerInitialPoints != null)
 				setPeerInitialPoints(peerInitialPoints);
+
+			var peerMaxTimeDifference = toml.getLong("peer_max_time_difference");
+			if (peerMaxTimeDifference != null)
+				setPeerMaxTimeDifference(peerMaxTimeDifference);
 
 			var peerPunishmentForUnreachable = toml.getLong("peer_punishment_for_unreachable");
 			if (peerPunishmentForUnreachable != null)
@@ -442,6 +458,21 @@ public class Config extends AbstractConfig {
 				throw new IllegalArgumentException("peerInitialPoints must be positive");
 
 			this.peerInitialPoints = peerInitialPoints;
+			return this;
+		}
+
+		/**
+		 * Sets the maximal difference (in milliseconds) between the local time of a node
+		 * and of one of its peers. This defaults to 15,000 (15 seconds).
+		 * 
+		 * @param peerMaxTimeDifference the maximal time difference (in milliseconds)
+		 * @return this builder
+		 */
+		public Builder setPeerMaxTimeDifference(long peerMaxTimeDifference) {
+			if (peerMaxTimeDifference < 0L)
+				throw new IllegalArgumentException("peerMaxTimeDifference must be non-negative");
+
+			this.peerMaxTimeDifference = peerMaxTimeDifference;
 			return this;
 		}
 

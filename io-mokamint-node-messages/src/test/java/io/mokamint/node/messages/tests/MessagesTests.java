@@ -63,9 +63,9 @@ public class MessagesTests {
 	@Test
 	@DisplayName("getPeersResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetPeersResult() throws EncodeException, DecodeException, URISyntaxException {
-		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://google.com:8011")), 1234, true, LocalDateTime.now(ZoneId.of("UTC")));
-		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://amazon.it:8024")), 313, false, LocalDateTime.now(ZoneId.of("UTC")));
-		var peerInfo3 = PeerInfos.of(Peers.of(new URI("ws://panarea.io:8025")), 112, true, LocalDateTime.now(ZoneId.of("UTC")));
+		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://google.com:8011")), 1234, true);
+		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://amazon.it:8024")), 313, false);
+		var peerInfo3 = PeerInfos.of(Peers.of(new URI("ws://panarea.io:8025")), 112, true);
 		var getPeersResultMessage1 = GetPeerInfosResultMessages.of(Stream.of(peerInfo1, peerInfo2, peerInfo3), "id");
 		String encoded = new GetPeerInfosResultMessages.Encoder().encode(getPeersResultMessage1);
 		var getPeersResultMessage2 = new GetPeerInfosResultMessages.Decoder().decode(encoded);

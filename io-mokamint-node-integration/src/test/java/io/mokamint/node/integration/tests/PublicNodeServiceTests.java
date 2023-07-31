@@ -89,8 +89,8 @@ public class PublicNodeServiceTests {
 	@DisplayName("if a getPeers() request reaches the service, it sends back the peers of the node")
 	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
-		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true, LocalDateTime.now(ZoneId.of("UTC")));
-		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false, LocalDateTime.now(ZoneId.of("UTC")));
+		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
+		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
 		var node = mock(PublicNodeInternals.class);
 		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 

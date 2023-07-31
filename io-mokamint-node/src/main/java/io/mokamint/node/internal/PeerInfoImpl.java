@@ -16,12 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
@@ -41,7 +38,6 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 	private final Peer peer;
 	private final long points;
 	private final boolean connected;
-	private final LocalDateTime localDateTimeUTC;
 
 	/**
 	 * Creates a peer information object.
@@ -49,15 +45,12 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 	 * @param peer the peer described by the peer information
 	 * @param points the points of the peer
 	 * @param connected the connection status of the peer
-	 * @param localDateTimeUTC the local date and time of the peer, in UTC
 	 */
-	public PeerInfoImpl(Peer peer, long points, boolean connected, LocalDateTime localDateTimeUTC) {
+	public PeerInfoImpl(Peer peer, long points, boolean connected) {
 		Objects.requireNonNull(peer);
-		Objects.requireNonNull(localDateTimeUTC);
 		this.peer = peer;
 		this.points = points;
 		this.connected = connected;
-		this.localDateTimeUTC = localDateTimeUTC;
 	}
 
 	@Override
@@ -76,17 +69,11 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 	}
 
 	@Override
-	public LocalDateTime getLocalDateTimeUTC() {
-		return localDateTimeUTC;
-	}
-
-	@Override
 	public boolean equals(Object other) {
 		return other instanceof PeerInfo info &&
 			peer.equals(info.getPeer()) &&
 			points == info.getPoints() &&
-			connected == info.isConnected() &&
-			localDateTimeUTC.equals(info.getLocalDateTimeUTC());
+			connected == info.isConnected();
 	}
 
 	@Override
@@ -104,16 +91,12 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 		if (diff != 0)
 			return diff;
 
-		diff = peer.compareTo(other.getPeer());
-		if (diff != 0)
-			return diff;
-
-		return localDateTimeUTC.compareTo(other.getLocalDateTimeUTC());
+		return peer.compareTo(other.getPeer());
 	}
 
 	@Override
 	public String toString() {
-		return peer + ", points = " + points + ", connected: " + connected + ", local date time: " + localDateTimeUTC;
+		return peer + ", points = " + points + ", connected: " + connected;
 	}
 
 	@Override
@@ -121,7 +104,6 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 		peer.into(context);
 		context.writeLong(points);
 		context.writeBoolean(connected);
-		context.writeUTF(ISO_LOCAL_DATE_TIME.format(localDateTimeUTC));
 	}
 
 	/**
@@ -147,6 +129,6 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 	 * @throws URISyntaxException if the context contains a URI with illegal syntax
 	 */
 	public static PeerInfoImpl from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return new PeerInfoImpl(Peers.from(context), context.readLong(), context.readBoolean(), LocalDateTime.parse(context.readUTF(), ISO_LOCAL_DATE_TIME));
+		return new PeerInfoImpl(Peers.from(context), context.readLong(), context.readBoolean());
 	}
 }

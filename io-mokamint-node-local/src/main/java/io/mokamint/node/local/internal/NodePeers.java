@@ -20,7 +20,7 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 import static java.util.function.Predicate.not;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,8 +96,8 @@ public class NodePeers implements AutoCloseable {
 	private final PunishableSet<Peer> peers;
 
 	/**
-	 * Lock used to guarantee that the peers in the database are
-	 * consistent with the peers having a remote in this container.
+	 * Lock used to guarantee that if there is a peer among the keys of the {@link #remotes}
+	 * map than the peer is in the {@link #peers} set (the converse might well not hold).
 	 */
 	private final Object lock = new Object();
 
@@ -134,7 +134,7 @@ public class NodePeers implements AutoCloseable {
 	 * @return the peers information
 	 */
 	public Stream<PeerInfo> get() {
-		return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey()), LocalDateTime.now())); // TODO
+		return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey())));
 	}
 
 	/**
@@ -520,14 +520,17 @@ public class NodePeers implements AutoCloseable {
 	private void ensurePeerIsCompatible(RemotePublicNode remote) throws IncompatiblePeerException, TimeoutException, InterruptedException, ClosedNodeException {
 		NodeInfo info1 = remote.getInfo();
 		NodeInfo info2 = node.getInfo();
-		UUID uuid1 = info1.getUUID();
 
+		long timeDifference = Math.abs(ChronoUnit.MILLIS.between(info1.getLocalDateTimeUTC(), info2.getLocalDateTimeUTC()));
+		if (timeDifference > config.peerMaxTimeDifference)
+			throw new IncompatiblePeerException("the time of the peer is more than " + config.peerMaxTimeDifference + "ms away from the time of this node");
+			
+		UUID uuid1 = info1.getUUID();
 		if (uuid1.equals(info2.getUUID()))
-			throw new IncompatiblePeerException("a peer cannot be added as a peer of itself: same UUID " + info1.getUUID());
+			throw new IncompatiblePeerException("a peer cannot be added as a peer of itself: same UUID " + uuid1);
 
 		var version1 = info1.getVersion();
 		var version2 = info2.getVersion();
-	
 		if (!version1.canWorkWith(version2))
 			throw new IncompatiblePeerException("peer version " + version1 + " is incompatible with this node's version " + version2);
 	}
