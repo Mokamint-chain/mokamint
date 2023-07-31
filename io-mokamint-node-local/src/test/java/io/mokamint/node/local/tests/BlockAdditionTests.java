@@ -19,6 +19,9 @@ package io.mokamint.node.local.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
@@ -44,6 +47,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.NodeMiners;
+import io.mokamint.node.local.internal.NodePeers;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.nonce.Deadlines;
 
@@ -54,7 +58,13 @@ public class BlockAdditionTests {
 			.setDir(dir)
 			.build();
 
-		return new Blockchain(new Database(config), mock(Application.class), new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
+		var peers = mock(NodePeers.class);
+		
+		doAnswer(returnsFirstArg())
+			.when(peers)
+			.asNetworkDateTime(any());
+
+		return new Blockchain(new Database(config), mock(Application.class), peers, new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 	}
 
 	@Test

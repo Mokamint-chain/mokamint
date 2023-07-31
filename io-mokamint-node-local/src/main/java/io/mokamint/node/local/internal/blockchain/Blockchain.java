@@ -44,6 +44,7 @@ import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodeMiners;
+import io.mokamint.node.local.internal.NodePeers;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -63,6 +64,11 @@ public class Blockchain {
 	 * The application running in the node.
 	 */
 	private final Application app;
+
+	/**
+	 * The peers of the node.
+	 */
+	private final NodePeers peers;
 
 	/**
 	 * The miners of the node.
@@ -108,16 +114,18 @@ public class Blockchain {
 	 * 
 	 * @param db the database of the node
 	 * @param app the application running in the node
+	 * @param peers the peers of the node
 	 * @param miners the miners of the node
 	 * @param taskSpawner code that can be used to spawn tasks
 	 * @param eventSpawner code that can be used to spawn events
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(Database db, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
+	public Blockchain(Database db, Application app, NodePeers peers, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
 		this.hashingForBlocks = db.getConfig().getHashingForBlocks();
 		this.db = db;
 		this.app = app;
+		this.peers = peers;
 		this.miners = miners;
 		this.taskSpawner = taskSpawner;
 		this.eventSpawner = eventSpawner;
@@ -228,15 +236,26 @@ public class Blockchain {
 		while (!ws.isEmpty());
 	
 		Block newHead = updatedHead.get();
+		// if the head changed, then the genesis is definitely set and we can call {@link #isRecent()}
 		if (newHead != null && isRecent(newHead))
 			mineNextBlock(Optional.of(newHead));
 
 		return added;
 	}
 
+	/**
+	 * Checks if the given block can be considered as recent, that is, if it has been
+	 * created sufficiently close to the current network time. This method assumes that
+	 * the genesis has been already set in this blockchain.
+	 * 
+	 * @param block the block
+	 * @return true if and only if {@code block} is recent
+	 * @throws NoSuchAlgorithmException if some node uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	private boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
 		var creationTimeOfTheBlock = block.getCreationTime(getGenesis().get());
-		var now = LocalDateTime.now(ZoneId.of("UTC")); // TODO: we should use the network time
+		var now = peers.asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 		return ChronoUnit.MILLIS.between(creationTimeOfTheBlock, now) < db.getConfig().getTargetBlockCreationTime() * 4;
 	}
 

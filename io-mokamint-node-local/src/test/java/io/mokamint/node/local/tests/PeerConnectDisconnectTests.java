@@ -75,7 +75,7 @@ public class PeerConnectDisconnectTests {
 	@Test
 	@DisplayName("if a peer disconnects, its remote gets removed from the peers table")
 	@Timeout(10)
-	public void ifPeerDisconnectedThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
+	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {
 
@@ -111,7 +111,7 @@ public class PeerConnectDisconnectTests {
 
 			// at this point, node1 has both its peers connected
 			assertTrue(node1.getPeerInfos().allMatch(PeerInfo::isConnected));
-			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).allMatch(((Predicate<Peer>) peer2::equals).or(peer3::equals)));
+			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).allMatch(Predicate.isEqual(peer2).or(Predicate.isEqual(peer3))));
 
 			// peer2 gets closed and disconnects
 			node2.close();

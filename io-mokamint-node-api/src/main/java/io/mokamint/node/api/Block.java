@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.annotations.Immutable;
@@ -89,10 +88,8 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 * 
 	 * @param genesis the genesis block
 	 * @return the creation time of this block
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the database contains a block using an unknown hashing algorithm
 	 */
-	LocalDateTime getCreationTime(GenesisBlock genesis) throws DatabaseException, NoSuchAlgorithmException;
+	LocalDateTime getCreationTime(GenesisBlock genesis);
 
 	/**
 	 * Yields the description of the deadline that must be computed for the next block.

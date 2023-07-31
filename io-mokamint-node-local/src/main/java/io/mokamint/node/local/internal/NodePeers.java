@@ -123,7 +123,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param taskSpawner code that can be used to spawn new tasks
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	NodePeers(LocalNode node, Database db, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner, TaskSpawnerWithFixedDelay periodicSpawner) throws DatabaseException {
+	public NodePeers(LocalNode node, Database db, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner, TaskSpawnerWithFixedDelay periodicSpawner) throws DatabaseException {
 		this.node = node;
 		this.config = db.getConfig();
 		this.db = db;

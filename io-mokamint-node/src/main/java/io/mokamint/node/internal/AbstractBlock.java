@@ -100,7 +100,7 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 */
 	public abstract long getTotalWaitingTime();
 
-	public LocalDateTime getCreationTime(GenesisBlock genesis) throws DatabaseException, NoSuchAlgorithmException {
+	public LocalDateTime getCreationTime(GenesisBlock genesis) {
 		return genesis.getStartDateTimeUTC().plus(getTotalWaitingTime(), ChronoUnit.MILLIS);
 	}
 

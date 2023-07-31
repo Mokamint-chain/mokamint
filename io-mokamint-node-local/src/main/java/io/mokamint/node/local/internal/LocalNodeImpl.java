@@ -162,7 +162,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(config, Stream.of(miners));
 		this.peers = new NodePeers(this, db, this::submit, this::submit, this::submitWithFixedDelay);
-		this.blockchain = new Blockchain(db, app, this.miners, this::submit, this::submit);
+		this.blockchain = new Blockchain(db, app, peers, this.miners, this::submit, this::submit);
 
 		if (forceMining)
 			blockchain.mineNextBlock(blockchain.getHead());
