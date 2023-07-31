@@ -20,6 +20,7 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 import static java.util.function.Predicate.not;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
@@ -97,14 +98,20 @@ public class NodePeers implements AutoCloseable {
 
 	/**
 	 * Lock used to guarantee that if there is a peer among the keys of the {@link #remotes}
-	 * map than the peer is in the {@link #peers} set (the converse might well not hold).
+	 * map or among the keys of the {@link #timeDifferences} map then the peer is
+	 * in the {@link #peers} set (the converse might well not hold).
 	 */
 	private final Object lock = new Object();
 
 	/**
-	 * The remote nodes connected to each peer.
+	 * The remote nodes connected to each peer of {@link #node}.
 	 */
 	private final ConcurrentMap<Peer, RemotePublicNode> remotes = new ConcurrentHashMap<>();
+
+	/**
+	 * The time difference (in milliseconds) between the {@link #node} and each of its peers.
+	 */
+	private final ConcurrentMap<Peer, Long> timeDifferences = new ConcurrentHashMap<>();
 
 	private final static Logger LOGGER = Logger.getLogger(NodePeers.class.getName());
 
@@ -221,6 +228,23 @@ public class NodePeers implements AutoCloseable {
 		remotes.values().forEach(remote -> remote.whisper(message, seen));
 	}
 
+	/**
+	 * Yields the given date and time, normalized wrt the network time, ie,
+	 * the average time among that of each connected peers and of the node itself.
+	 * 
+	 * @param ldt the date and time to normalize
+	 * @return the normalized {@code ldt}. If there are no peers, this will be {@code ldt} itself
+	 */
+	public LocalDateTime asNetworkDateTime(LocalDateTime ldt) {
+		long averageTimeDifference = (long)
+			// we add the difference of the time of the node with itself: 0L
+			Stream.concat(timeDifferences.values().stream(), Stream.of(0L))
+				.mapToLong(Long::valueOf)
+				.average()
+				.getAsDouble(); // we know there is at least an element (0L) hence the average exists
+
+		return ldt.plus(averageTimeDifference, ChronoUnit.MILLIS);
+	}
 
 	@Override
 	public void close() throws IOException, InterruptedException {
@@ -230,7 +254,7 @@ public class NodePeers implements AutoCloseable {
 		synchronized (lock) {
 			for (var entry: remotes.entrySet()) {
 				try {
-					closeRemoteWithException(entry.getValue(), entry.getKey());
+					deletePeerWithExceptions(entry.getKey(), entry.getValue());
 				}
 				catch (IOException e) {
 					ioException = e;
@@ -372,14 +396,14 @@ public class NodePeers implements AutoCloseable {
 				LOGGER.info("trying to recreate a connection to peer " + peer);
 				remote = openRemote(peer);
 				RemotePublicNode remoteCopy = remote;
-				ensurePeerIsCompatible(remote);
+				long timeDifference = ensurePeerIsCompatible(remote);
 		
 				synchronized (lock) {
 					// we check if the peer is actually contained in the set of peers,
 					// since it might have been removed in the meanwhile and we not not
 					// want to store remotes for peers not in the set of peers of this object
 					if (peers.contains(peer)) {
-						storeRemote(remote, peer);
+						storePeer(peer, remote, timeDifference);
 						remote = null; // so that it won't be closed in the finally clause
 					}
 				}
@@ -404,7 +428,7 @@ public class NodePeers implements AutoCloseable {
 				punishBecauseUnreachable(peer);
 			}
 			finally {
-				closeRemote(remote, peer);
+				deletePeer(peer, remote);
 			}
 
 			return Optional.empty();
@@ -461,12 +485,12 @@ public class NodePeers implements AutoCloseable {
 				return false;
 
 			remote = openRemote(peer);
-			ensurePeerIsCompatible(remote);
+			long timeDifference = ensurePeerIsCompatible(remote);
 
 			synchronized (lock) {
 				if (db.add(peer, force)) {
 					LOGGER.info("added peer " + peer + " to the database");
-					storeRemote(remote, peer);
+					storePeer(peer, remote, timeDifference);
 					remote = null; // so that it won't be closed in the finally clause
 					return true;
 				}
@@ -484,7 +508,7 @@ public class NodePeers implements AutoCloseable {
 			throw new UncheckedException(e);
 		}
 		finally {
-			closeRemote(remote, peer);
+			deletePeer(peer, remote);
 		}
 	}
 
@@ -493,7 +517,7 @@ public class NodePeers implements AutoCloseable {
 			synchronized (lock) {
 				if (db.remove(peer)) {
 					LOGGER.info("removed peer " + peer + " from the database");
-					closeRemote(remotes.get(peer), peer);
+					deletePeer(peer, remotes.get(peer));
 					return true;
 				}
 				else
@@ -517,12 +541,24 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private void ensurePeerIsCompatible(RemotePublicNode remote) throws IncompatiblePeerException, TimeoutException, InterruptedException, ClosedNodeException {
+	/**
+	 * Checks if the peer whose remote is provided is compatible with {@link #node}.
+	 * 
+	 * @param remote the remote of the peer
+	 * @return the time difference (in milliseconds) between the local time of {@link #node}
+	 *         and the local time of the peer (this is positive if the clock of the peer is
+	 *         in the future wrt the clock of this node; it is positive in the opposite case)
+	 * @throws IncompatiblePeerException if the peers are incompatible
+	 * @throws TimeoutException if the peer could not be contacted through the {@code remote}
+	 * @throws InterruptedException if the connection to the peer though {@code remote} was interrupted
+	 * @throws ClosedNodeException if the peer is closed
+	 */
+	private long ensurePeerIsCompatible(RemotePublicNode remote) throws IncompatiblePeerException, TimeoutException, InterruptedException, ClosedNodeException {
 		NodeInfo info1 = remote.getInfo();
 		NodeInfo info2 = node.getInfo();
 
-		long timeDifference = Math.abs(ChronoUnit.MILLIS.between(info1.getLocalDateTimeUTC(), info2.getLocalDateTimeUTC()));
-		if (timeDifference > config.peerMaxTimeDifference)
+		long timeDifference = ChronoUnit.MILLIS.between(info2.getLocalDateTimeUTC(), info1.getLocalDateTimeUTC());
+		if (Math.abs(timeDifference) > config.peerMaxTimeDifference)
 			throw new IncompatiblePeerException("the time of the peer is more than " + config.peerMaxTimeDifference + "ms away from the time of this node");
 			
 		UUID uuid1 = info1.getUUID();
@@ -533,10 +569,13 @@ public class NodePeers implements AutoCloseable {
 		var version2 = info2.getVersion();
 		if (!version1.canWorkWith(version2))
 			throw new IncompatiblePeerException("peer version " + version1 + " is incompatible with this node's version " + version2);
+
+		return timeDifference;
 	}
 
-	private void storeRemote(RemotePublicNode remote, Peer peer) {
+	private void storePeer(Peer peer, RemotePublicNode remote, long timeDifference) {
 		remotes.put(peer, remote);
+		timeDifferences.put(peer, timeDifference);
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnClosedHandler(() -> peerDisconnected(remote, peer));
@@ -578,7 +617,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param peer the peer
 	 */
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) {
-		closeRemote(remote, peer);
+		deletePeer(peer, remote);
 		punishBecauseUnreachable(peer);
 		eventSpawner.accept(new PeerDisconnectedEvent(peer));
 	}
@@ -611,20 +650,21 @@ public class NodePeers implements AutoCloseable {
 		public void body() {}
 	}
 
-	private void closeRemote(RemotePublicNode remote, Peer peer) {
+	private void deletePeer(Peer peer, RemotePublicNode remote) {
 		try {
-			closeRemoteWithException(remote, peer);
+			deletePeerWithExceptions(peer, remote);
 		}
 		catch (IOException | InterruptedException e) {
 			LOGGER.log(Level.SEVERE, "cannot close the connection to peer " + peer, e);
 		}
 	}
 
-	private void closeRemoteWithException(RemotePublicNode remote, Peer peer) throws IOException, InterruptedException {
+	private void deletePeerWithExceptions(Peer peer, RemotePublicNode remote) throws IOException, InterruptedException {
 		if (remote != null) {
 			remote.unbindWhisperer(node);
 			remotes.remove(peer);
 			remote.close();
+			timeDifferences.remove(peer);
 			LOGGER.info("closed connection to peer " + peer);
 		}
 	}
