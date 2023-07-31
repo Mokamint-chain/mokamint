@@ -18,7 +18,10 @@ package io.mokamint.node.local.internal;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,6 +50,7 @@ import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
@@ -87,9 +91,14 @@ public class LocalNodeImpl implements LocalNode {
 	private final Database db;
 
 	/**
-	 * The non-consensus information about this node.
+	 * The version of this node.
 	 */
-	private final NodeInfo info;
+	private final Version version;
+
+	/**
+	 * The UUID of this node.
+	 */
+	private final UUID uuid;
 
 	/**
 	 * The single executor of the events. Events get queued into this queue and run in order
@@ -148,7 +157,8 @@ public class LocalNodeImpl implements LocalNode {
 	public LocalNodeImpl(Config config, Application app, boolean forceMining, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
 		this.db = new Database(config);
-		this.info = NodeInfos.of(Versions.current(), db.getUUID());
+		this.version = Versions.current();
+		this.uuid = db.getUUID();
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(config, Stream.of(miners));
 		this.peers = new NodePeers(this, db, this::submit, this::submit, this::submitWithFixedDelay);
@@ -250,7 +260,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public NodeInfo getInfo() {
-		return info;
+		return NodeInfos.of(version, uuid, LocalDateTime.now(ZoneId.of("UTC")));
 	}
 
 	/**

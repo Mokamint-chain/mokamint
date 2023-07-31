@@ -11,6 +11,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
@@ -91,7 +93,8 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("getPeers() works")
 	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException {
-		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true), PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
+		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true, LocalDateTime.now(ZoneId.of("UTC"))),
+				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false, LocalDateTime.now(ZoneId.of("UTC"))));
 
 		class MyServer extends PublicTestServer {
 
@@ -187,7 +190,8 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("if getPeers() is slow, it leads to a time-out")
 	public void getPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
-		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true), PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
+		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true, LocalDateTime.now(ZoneId.of("UTC"))),
+				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false, LocalDateTime.now(ZoneId.of("UTC"))));
 
 		class MyServer extends PublicTestServer {
 
@@ -458,7 +462,7 @@ public class RemotePublicNodeTests {
 	@Test
 	@DisplayName("getInfo() works")
 	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
-		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID());
+		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 	
 		class MyServer extends PublicTestServer {
 	

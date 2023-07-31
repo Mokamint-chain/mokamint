@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import io.hotmoka.annotations.Immutable;
@@ -40,7 +41,14 @@ public interface NodeInfo {
 	 * @return the UUID
 	 */
 	UUID getUUID();
-	
+
+	/**
+	 * Yields the date and time of the node.
+	 * 
+	 * @return the date and time of the node, in UTC
+	 */
+	LocalDateTime getLocalDateTimeUTC();
+
 	@Override
 	boolean equals(Object other);
 

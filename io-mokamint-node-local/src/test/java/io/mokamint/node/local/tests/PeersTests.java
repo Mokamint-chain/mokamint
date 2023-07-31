@@ -29,6 +29,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -71,7 +73,7 @@ public class PeersTests {
 	/**
 	 * The node information of the nodes used in the tests.
 	 */
-	private static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID());
+	private static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 
 	/**
 	 * The application of the node used for testing.
@@ -273,7 +275,7 @@ public class PeersTests {
 			@Override
 			public NodeInfo getInfo() {
 				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3), UUID.randomUUID());
+				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3), UUID.randomUUID(), info.getLocalDateTimeUTC());
 			}
 		}
 
@@ -298,7 +300,7 @@ public class PeersTests {
 			@Override
 			public NodeInfo getInfo() {
 				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()), UUID.randomUUID());
+				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
 			}
 		}
 
@@ -322,7 +324,7 @@ public class PeersTests {
 			@Override
 			public NodeInfo getInfo() {
 				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID());
+				return NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
 			}
 		}
 

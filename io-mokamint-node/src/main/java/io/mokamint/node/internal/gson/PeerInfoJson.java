@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.PeerInfos;
@@ -30,15 +33,17 @@ public abstract class PeerInfoJson implements JsonRepresentation<PeerInfo> {
 	private Peers.Json peer;
 	private long points;
 	private boolean connected;
+	private String localDateTimeUTC;
 
 	protected PeerInfoJson(PeerInfo info) {
 		this.peer = new Peers.Json(info.getPeer());
 		this.points = info.getPoints();
 		this.connected = info.isConnected();
+		this.localDateTimeUTC = ISO_LOCAL_DATE_TIME.format(info.getLocalDateTimeUTC());
 	}
 
 	@Override
 	public PeerInfo unmap() throws URISyntaxException {
-		return PeerInfos.of(peer.unmap(), points, connected);
+		return PeerInfos.of(peer.unmap(), points, connected, LocalDateTime.parse(localDateTimeUTC, ISO_LOCAL_DATE_TIME));
 	}
 }

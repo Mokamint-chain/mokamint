@@ -9,6 +9,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -61,9 +63,9 @@ public class MessagesTests {
 	@Test
 	@DisplayName("getPeersResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetPeersResult() throws EncodeException, DecodeException, URISyntaxException {
-		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://google.com:8011")), 1234, true);
-		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://amazon.it:8024")), 313, false);
-		var peerInfo3 = PeerInfos.of(Peers.of(new URI("ws://panarea.io:8025")), 112, true);
+		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://google.com:8011")), 1234, true, LocalDateTime.now(ZoneId.of("UTC")));
+		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://amazon.it:8024")), 313, false, LocalDateTime.now(ZoneId.of("UTC")));
+		var peerInfo3 = PeerInfos.of(Peers.of(new URI("ws://panarea.io:8025")), 112, true, LocalDateTime.now(ZoneId.of("UTC")));
 		var getPeersResultMessage1 = GetPeerInfosResultMessages.of(Stream.of(peerInfo1, peerInfo2, peerInfo3), "id");
 		String encoded = new GetPeerInfosResultMessages.Encoder().encode(getPeersResultMessage1);
 		var getPeersResultMessage2 = new GetPeerInfosResultMessages.Decoder().decode(encoded);
@@ -159,7 +161,7 @@ public class MessagesTests {
 	@Test
 	@DisplayName("getInfoResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetInfoResult() throws EncodeException, DecodeException {
-		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID());
+		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
 		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
 		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);

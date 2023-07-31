@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
@@ -29,14 +32,16 @@ import io.mokamint.node.api.NodeInfo;
 public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
 	private Versions.Json version;
 	private String uuid;
+	private String localDateTimeUTC;
 
 	protected NodeInfoJson(NodeInfo info) {
 		this.version = new Versions.Json(info.getVersion());
 		this.uuid = info.getUUID().toString();
+		this.localDateTimeUTC = ISO_LOCAL_DATE_TIME.format(info.getLocalDateTimeUTC());
 	}
 
 	@Override
 	public NodeInfo unmap() {
-		return NodeInfos.of(version.unmap(), UUID.fromString(uuid));
+		return NodeInfos.of(version.unmap(), UUID.fromString(uuid), LocalDateTime.parse(localDateTimeUTC, ISO_LOCAL_DATE_TIME));
 	}
 }

@@ -30,6 +30,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -87,8 +89,8 @@ public class PublicNodeServiceTests {
 	@DisplayName("if a getPeers() request reaches the service, it sends back the peers of the node")
 	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
-		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
-		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
+		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true, LocalDateTime.now(ZoneId.of("UTC")));
+		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false, LocalDateTime.now(ZoneId.of("UTC")));
 		var node = mock(PublicNodeInternals.class);
 		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
@@ -286,7 +288,7 @@ public class PublicNodeServiceTests {
 	@DisplayName("if a getInfo() request reaches the service, it sends back its node information")
 	public void serviceGetInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
-		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID());
+		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

@@ -16,13 +16,15 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.time.LocalDateTime;
+
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * Information about a peer of a node. Peer information is ordered first
  * by connection (connected peers before disconnected peers), then
- * by points (decreasing) and finally by peer.
+ * by points (decreasing), then by peer and finally by local date and time.
  */
 @Immutable
 public interface PeerInfo extends Marshallable, Comparable<PeerInfo> {
@@ -48,6 +50,13 @@ public interface PeerInfo extends Marshallable, Comparable<PeerInfo> {
 	 * @return true if and only if the node is connected to the peer
 	 */
 	boolean isConnected();
+
+	/**
+	 * Yields the date and time of the peer.
+	 * 
+	 * @return the date and time of the peer, in UTC
+	 */
+	LocalDateTime getLocalDateTimeUTC();
 
 	@Override
 	boolean equals(Object obj);

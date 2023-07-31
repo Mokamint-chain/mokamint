@@ -20,6 +20,7 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 import static java.util.function.Predicate.not;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -133,7 +134,7 @@ public class NodePeers implements AutoCloseable {
 	 * @return the peers information
 	 */
 	public Stream<PeerInfo> get() {
-		return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey())));
+		return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey()), LocalDateTime.now())); // TODO
 	}
 
 	/**

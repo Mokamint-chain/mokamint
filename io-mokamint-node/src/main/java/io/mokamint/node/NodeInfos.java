@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import io.mokamint.node.api.NodeInfo;
@@ -37,10 +38,11 @@ public abstract class NodeInfos {
 	 * 
 	 * @param version the version of the node
 	 * @param uuid the UUID of the node
+	 * @param localDateTimeUTC the local date and time UTC of the node
 	 * @return the node information object
 	 */
-	public static NodeInfo of(Version version, UUID uuid) {
-		return new NodeInfoImpl(version, uuid);
+	public static NodeInfo of(Version version, UUID uuid, LocalDateTime localDateTimeUTC) {
+		return new NodeInfoImpl(version, uuid, localDateTimeUTC);
 	}
 
 	/**

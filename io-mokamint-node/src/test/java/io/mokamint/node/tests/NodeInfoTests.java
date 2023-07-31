@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 import java.util.logging.LogManager;
 
@@ -20,7 +22,7 @@ public class NodeInfoTests {
 	@Test
 	@DisplayName("node informations are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForNodeInfo() throws EncodeException, DecodeException {
-		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID());
+		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 		String encoded = new NodeInfos.Encoder().encode(info1);
 		var info2 = new NodeInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);

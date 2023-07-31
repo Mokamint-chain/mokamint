@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import io.mokamint.node.api.NodeInfo;
@@ -37,14 +39,24 @@ public class NodeInfoImpl implements NodeInfo {
 	private final UUID uuid;
 
 	/**
+	 * The local date and time of the node, in UTC.
+	 */
+	private final LocalDateTime localDateTimeUTC;
+
+	/**
 	 * Yields a new node information object.
 	 * 
 	 * @param version the version of the node
 	 * @param uuid the UUID of the node
+	 * @param localDateTimeUTC the local date and time UTC of the node
 	 */
-	public NodeInfoImpl(Version version, UUID uuid) {
+	public NodeInfoImpl(Version version, UUID uuid, LocalDateTime localDateTimeUTC) {
+		Objects.requireNonNull(version);
+		Objects.requireNonNull(uuid);
+		Objects.requireNonNull(localDateTimeUTC);
 		this.version = version;
 		this.uuid = uuid;
+		this.localDateTimeUTC = localDateTimeUTC;
 	}
 
 	@Override
@@ -58,12 +70,18 @@ public class NodeInfoImpl implements NodeInfo {
 	}
 
 	@Override
+	public LocalDateTime getLocalDateTimeUTC() {
+		return localDateTimeUTC;
+	}
+
+	@Override
 	public boolean equals(Object other) {
-		return other instanceof NodeInfo otherAsNI && uuid.equals(otherAsNI.getUUID()) && version.equals(otherAsNI.getVersion());
+		return other instanceof NodeInfo ni &&
+			uuid.equals(ni.getUUID()) && version.equals(ni.getVersion()) && localDateTimeUTC.equals(ni.getLocalDateTimeUTC());
 	}
 
 	@Override
 	public String toString() {
-		return "version: " + version + ", UUID: " + uuid;
+		return "version: " + version + ", UUID: " + uuid + ", local date and time: " + localDateTimeUTC;
 	}
 }

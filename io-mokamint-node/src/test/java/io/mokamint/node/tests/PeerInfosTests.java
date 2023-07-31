@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +24,7 @@ public class PeerInfosTests {
 	@DisplayName("peer informations are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorks() throws EncodeException, URISyntaxException, DecodeException {
 		var peer = Peers.of(new URI("ws://mygreatsite.org:2090"));
-		var peerInfo1 = PeerInfos.of(peer, 1234, true);
+		var peerInfo1 = PeerInfos.of(peer, 1234, true, LocalDateTime.now(ZoneId.of("UTC")));
 		String encoded = new PeerInfos.Encoder().encode(peerInfo1);
 		var peerInfo2 = new PeerInfos.Decoder().decode(encoded);
 		assertEquals(peerInfo1, peerInfo2);
