@@ -28,22 +28,18 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
-import io.mokamint.node.local.internal.LocalNodeImpl.Event;
-import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.NodeMiners;
+import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers;
 
 /**
@@ -56,10 +52,15 @@ import io.mokamint.node.local.internal.NodePeers;
 public class Blockchain {
 
 	/**
+	 * The node having this blockchain.
+	 */
+	private final LocalNodeImpl node;
+
+	/**
 	 * True if and only if mining works also when synchronization is not possible;
 	 * this is ignored if the node has at least a peer.
 	 */
-	private boolean singleNode;
+	private final boolean singleNode;
 
 	/**
 	 * The database of the node.
@@ -67,29 +68,9 @@ public class Blockchain {
 	private final Database db;
 
 	/**
-	 * The application running in the node.
-	 */
-	private final Application app;
-
-	/**
 	 * The peers of the node.
 	 */
 	private final NodePeers peers;
-
-	/**
-	 * The miners of the node.
-	 */
-	private final NodeMiners miners;
-
-	/**
-	 * Code that can be used to spawn new tasks.
-	 */
-	private final Consumer<Task> taskSpawner;
-
-	/**
-	 * Code that can be used to spawn new events.
-	 */
-	private final Consumer<Event> eventSpawner;
 
 	/**
 	 * A cache for the genesis block, if it has been set already.
@@ -118,27 +99,27 @@ public class Blockchain {
 	/**
 	 * Creates the container of the blocks of a node.
 	 * 
+	 * @param node the node
 	 * @param singleNode true if and only if mining works also when synchronization is not possible; this is
 	 *                   ignored if the node has at least a peer
-	 * @param db the database of the node
-	 * @param app the application running in the node
-	 * @param peers the peers of the node
-	 * @param miners the miners of the node
-	 * @param taskSpawner code that can be used to spawn tasks
-	 * @param eventSpawner code that can be used to spawn events
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(boolean singleNode, Database db, Application app, NodePeers peers, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
+	public Blockchain(LocalNodeImpl node, boolean singleNode) throws NoSuchAlgorithmException, DatabaseException {
+		this.node = node;
 		this.singleNode = singleNode;
-		this.hashingForBlocks = db.getConfig().getHashingForBlocks();
-		this.db = db;
-		this.app = app;
-		this.peers = peers;
-		this.miners = miners;
-		this.taskSpawner = taskSpawner;
-		this.eventSpawner = eventSpawner;
-		
+		this.db = node.getDatabase();
+		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
+		this.peers = node.getPeers();
+	}
+
+	/**
+	 * Starts mining blocks on top of the current blockchain head.
+	 * 
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public void startMining() throws NoSuchAlgorithmException, DatabaseException {
 		mineBlockOnTopOf(getHead());
 	}
 
@@ -148,7 +129,7 @@ public class Blockchain {
 	 * @return the configuration
 	 */
 	public Config getConfig() {
-		return db.getConfig();
+		return node.getConfig();
 	}
 	
 	/**
@@ -266,7 +247,7 @@ public class Blockchain {
 	public boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
 		var creationTimeOfBlock = getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
 		var now = peers.asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		return ChronoUnit.MILLIS.between(creationTimeOfBlock, now) < db.getConfig().getTargetBlockCreationTime() * 4;
+		return ChronoUnit.MILLIS.between(creationTimeOfBlock, now) < node.getConfig().getTargetBlockCreationTime() * 4;
 	}
 
 	/**
@@ -287,7 +268,7 @@ public class Blockchain {
 	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
 	private void mineBlockOnTopOf(Optional<Block> previous) {
-		taskSpawner.accept(new MineNewBlockTask(this, previous, app, miners, taskSpawner, eventSpawner));
+		node.submit(new MineNewBlockTask(node, this, previous));
 	}
 
 	private boolean verify(GenesisBlock block) {

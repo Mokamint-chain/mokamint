@@ -19,6 +19,8 @@ package io.mokamint.node.local.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,13 +40,19 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
+import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DatabaseTests {
 
-	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
-		return Config.Builder.defaults()
+	private static Database mkDatabase(Path dir) throws NoSuchAlgorithmException, DatabaseException {
+		var config = Config.Builder.defaults()
 			.setDir(dir)
 			.build();
+
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+
+		return new Database(node);
 	}
 
 	@Test
@@ -52,15 +60,14 @@ public class DatabaseTests {
 	public void peersAreKeptForNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
-		var config = mkConfig(dir);
 
-		try (var db = new Database(config)) {
+		try (var db = mkDatabase(dir)) {
 			assertTrue(db.getPeers().count() == 0);
 			assertTrue(db.add(peer1, true));
 			assertTrue(db.add(peer2, true));
 		}
 
-		try (var db = new Database(config)) {
+		try (var db = mkDatabase(dir)) {
 			assertEquals(Set.of(peer1, peer2), db.getPeers().collect(Collectors.toSet()));
 		}
 	}
@@ -71,9 +78,8 @@ public class DatabaseTests {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
 		var peer3 = Peers.of(new URI("ws://www.amazon.com:8032"));
-		var config = mkConfig(dir);
 
-		try (var db = new Database(config)) {
+		try (var db = mkDatabase(dir)) {
 			assertTrue(db.getPeers().count() == 0);
 			assertTrue(db.add(peer1, true));
 			assertTrue(db.add(peer2, true));
@@ -81,7 +87,7 @@ public class DatabaseTests {
 			assertTrue(db.remove(peer2));
 		}
 
-		try (var db = new Database(config)) {
+		try (var db = mkDatabase(dir)) {
 			assertEquals(Set.of(peer1, peer3), db.getPeers().collect(Collectors.toSet()));
 		}
 	}
@@ -91,9 +97,8 @@ public class DatabaseTests {
 	public void peersHaveNoDuplicates(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
-		var config = mkConfig(dir);
 
-		try (var db = new Database(config)) {
+		try (var db = mkDatabase(dir)) {
 			assertTrue(db.getPeers().count() == 0);
 			assertTrue(db.add(peer1, true));
 			assertTrue(db.add(peer2, true));

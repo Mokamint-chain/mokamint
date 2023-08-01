@@ -20,7 +20,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.node.local.Config;
 
 /**
  * The set of miners of a local node.
@@ -36,11 +35,11 @@ public class NodeMiners {
 	/**
 	 * Creates a container for the miners of a local node.
 	 * 
-	 * @param config the configuration of the node
+	 * @param node the node
 	 * @param the miners that go into this container
 	 */
-	public NodeMiners(Config config, Stream<Miner> miners) {
-		this.miners = PunishableSets.of(miners, config.minerInitialPoints);
+	public NodeMiners(LocalNodeImpl node, Stream<Miner> miners) {
+		this.miners = PunishableSets.of(miners, node.getConfig().minerInitialPoints);
 	}
 
 	/**

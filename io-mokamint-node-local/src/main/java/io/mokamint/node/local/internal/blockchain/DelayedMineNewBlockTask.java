@@ -17,26 +17,22 @@ limitations under the License.
 package io.mokamint.node.local.internal.blockchain;
 
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
-import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.local.internal.LocalNodeImpl.Event;
-import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.NodeMiners;
+import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	private final long delay;
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(Blockchain blockchain, Optional<Block> previous, Application app, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) {
-		super(blockchain, previous, app, miners, taskSpawner, eventSpawner);
+	public DelayedMineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous) {
+		super(node, blockchain, previous);
 
-		this.delay = blockchain.getConfig().deadlineWaitTimeout;
+		this.delay = node.getConfig().deadlineWaitTimeout;
 	}
 
 	@Override

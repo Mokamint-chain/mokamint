@@ -71,6 +71,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final Config config;
 
 	/**
+	 * The application running over this node.
+	 */
+	private final Application app;
+
+	/**
 	 * The miners connected to the node.
 	 */
 	private final NodeMiners miners;
@@ -84,6 +89,11 @@ public class LocalNodeImpl implements LocalNode {
 	 * The database containing the blockchain.
 	 */
 	private final Database db;
+
+	/**
+	 * The blockchain of this node.
+	 */
+	private final Blockchain blockchain;
 
 	/**
 	 * The version of this node.
@@ -152,13 +162,15 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public LocalNodeImpl(Config config, Application app, boolean singleNode, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
-		this.db = new Database(config);
+		this.app = app;
+		this.db = new Database(this);
 		this.version = Versions.current();
 		this.uuid = db.getUUID();
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
-		this.miners = new NodeMiners(config, Stream.of(miners));
-		this.peers = new NodePeers(this, db, this::submit, this::submit, this::submitWithFixedDelay);
-		new Blockchain(singleNode, db, app, peers, this.miners, this::submit, this::submit);
+		this.miners = new NodeMiners(this, Stream.of(miners));
+		this.peers = new NodePeers(this);
+		this.blockchain = new Blockchain(this, singleNode);
+		blockchain.startMining();
 	}
 
 	@Override
@@ -278,7 +290,52 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
+	/**
+	 * Yields the application running over this node.
+	 * 
+	 * @return the application
+	 */
+	public Application getApplication() {
+		return app;
+	}
+
+	/**
+	 * Yields the database in this node.
+	 * 
+	 * @return the database
+	 */
+	public Database getDatabase() {
+		return db;
+	}
+
+	/**
+	 * Yields the peers of this node.
+	 * 
+	 * @return the peers
+	 */
+	public NodePeers getPeers() {
+		return peers;
+	}
+
+	/**
+	 * Yields the miners of this node.
+	 * 
+	 * @return the miners
+	 */
+	public NodeMiners getMiners() {
+		return miners;
+	}
+
+	/**
+	 * Yields the blockchain of this node.
+	 * 
+	 * @return the blockchain
+	 */
+	public Blockchain getBlockchain() {
+		return blockchain;
+	}
+
+	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
@@ -359,7 +416,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param event the emitted event
 	 */
-	private void submit(Event event) {
+	public void submit(Event event) {
 		var runnable = new Runnable() {
 
 			@Override @OnThread("events")
@@ -479,7 +536,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param task the task to run
 	 */
-	private void submit(Task task) {
+	public void submit(Task task) {
 		try {
 			LOGGER.info(task.logPrefix() + "scheduling " + task);
 			onSubmit(task);
@@ -514,7 +571,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param delay the time interval between successive, iterated executions
 	 * @param unit the time interval unit
 	 */
-	private void submitWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
+	public void submitWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
 		try {
 			LOGGER.info(task.logPrefix() + "scheduling periodic " + task);
 			onSubmit(task);

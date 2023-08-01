@@ -111,13 +111,13 @@ public class Database implements AutoCloseable {
 	private final static Logger LOGGER = Logger.getLogger(Database.class.getName());
 
 	/**
-	 * Creates the database.
+	 * Creates the database of a node.
 	 * 
-	 * @param config the configuration of the node using this database
+	 * @param node the node
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
 	 */
-	public Database(Config config) throws DatabaseException {
-		this.config = config;
+	public Database(LocalNodeImpl node) throws DatabaseException {
+		this.config = node.getConfig();
 		this.maxPeers = config.maxPeers;
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStore("blocks");
@@ -136,15 +136,6 @@ public class Database implements AutoCloseable {
 			LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
 			throw new DatabaseException("cannot close the database", e);
 		}
-	}
-
-	/**
-	 * Yields the configuration of the node having this database.
-	 * 
-	 * @return the configuration
-	 */
-	public Config getConfig() {
-		return config;
 	}
 
 	/**

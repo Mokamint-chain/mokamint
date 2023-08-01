@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,10 +45,8 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
-import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.LocalNodeImpl.TaskSpawnerWithFixedDelay;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
@@ -69,7 +66,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * The node.
 	 */
-	private final LocalNode node;
+	private final LocalNodeImpl node;
 
 	/**
 	 * The configuration of the node.
@@ -80,16 +77,6 @@ public class NodePeers implements AutoCloseable {
 	 * The database of the node.
 	 */
 	private final Database db;
-
-	/**
-	 * Code to execute to spawn new tasks.
-	 */
-	private final Consumer<Task> taskSpawner;
-
-	/**
-	 * Code to execute to spawn new events.
-	 */
-	private final Consumer<Event> eventSpawner;
 
 	/**
 	 * The peers of the node.
@@ -119,19 +106,15 @@ public class NodePeers implements AutoCloseable {
 	 * Creates the set of peers of a local node.
 	 * 
 	 * @param node the node having these peers
-	 * @param db the database of {@code node}
-	 * @param taskSpawner code that can be used to spawn new tasks
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public NodePeers(LocalNode node, Database db, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner, TaskSpawnerWithFixedDelay periodicSpawner) throws DatabaseException {
+	public NodePeers(LocalNodeImpl node) throws DatabaseException {
 		this.node = node;
-		this.config = db.getConfig();
-		this.db = db;
-		this.taskSpawner = taskSpawner;
-		this.eventSpawner = eventSpawner;
+		this.config = node.getConfig();
+		this.db = node.getDatabase();
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		tryToAdd(config.seeds().map(Peers::of), true, true);
-		periodicSpawner.spawnWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
+		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
 	
@@ -182,7 +165,7 @@ public class NodePeers implements AutoCloseable {
 			() -> peers.add(peer, force));
 
 		if (spawnEvent && result)
-			eventSpawner.accept(new PeersAddedEvent(Stream.of(peer), true));
+			node.submit(new PeersAddedEvent(Stream.of(peer), true));
 
 		return result;
 	}
@@ -315,7 +298,7 @@ public class NodePeers implements AutoCloseable {
 					.toArray(Peer[]::new);
 
 				if (added.length > 0) // just to avoid useless events
-					eventSpawner.accept(new PeersAddedEvent(Stream.of(added), whisper));
+					node.submit(new PeersAddedEvent(Stream.of(added), whisper));
 			}
 
 			private boolean addPeer(Peer peer, boolean force) {
@@ -341,7 +324,7 @@ public class NodePeers implements AutoCloseable {
 
 		// before scheduling a task, we check if there is some peer that we really need
 		if (toAdd.length > 0 && (force || this.peers.getElements().count() < config.maxPeers))
-			taskSpawner.accept(new AddPeersTask());
+			node.submit(new AddPeersTask());
 	}
 
 	/**
@@ -386,7 +369,9 @@ public class NodePeers implements AutoCloseable {
 	 * A task that pings all peers, tries to recreate their remote (if missing)
 	 * and collects their peers, in case they might be useful for the node.
 	 */
-	private class PingPeersRecreateRemotesAndCollectPeersTask implements Task {
+	public class PingPeersRecreateRemotesAndCollectPeersTask implements Task {
+
+		private PingPeersRecreateRemotesAndCollectPeersTask() {}
 
 		@Override
 		public void body() {
@@ -594,7 +579,7 @@ public class NodePeers implements AutoCloseable {
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnClosedHandler(() -> peerDisconnected(remote, peer));
-		eventSpawner.accept(new PeerConnectedEvent(peer));
+		node.submit(new PeerConnectedEvent(peer));
 	}
 
 	/**
@@ -639,7 +624,7 @@ public class NodePeers implements AutoCloseable {
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) {
 		deletePeer(peer, remote);
 		punishBecauseUnreachable(peer);
-		eventSpawner.accept(new PeerDisconnectedEvent(peer));
+		node.submit(new PeerDisconnectedEvent(peer));
 	}
 
 	/**

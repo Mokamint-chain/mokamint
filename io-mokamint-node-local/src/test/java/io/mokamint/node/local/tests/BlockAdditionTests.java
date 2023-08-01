@@ -23,6 +23,7 @@ import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -46,6 +47,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
+import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodeMiners;
 import io.mokamint.node.local.internal.NodePeers;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
@@ -59,12 +61,20 @@ public class BlockAdditionTests {
 			.build();
 
 		var peers = mock(NodePeers.class);
-		
 		doAnswer(returnsFirstArg())
 			.when(peers)
 			.asNetworkDateTime(any());
 
-		return new Blockchain(true, new Database(config), mock(Application.class), peers, new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
+		var node = mock(LocalNodeImpl.class);
+		when(node.getConfig()).thenReturn(config);
+		when(node.getApplication()).thenReturn(mock(Application.class));
+		when(node.getPeers()).thenReturn(peers);
+		var database = new Database(node);
+		when(node.getDatabase()).thenReturn(database);
+		var miners = new NodeMiners(node, Stream.empty());
+		when(node.getMiners()).thenReturn(miners);
+
+		return new Blockchain(node, true);
 	}
 
 	@Test
@@ -98,7 +108,7 @@ public class BlockAdditionTests {
 		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
-		byte[] unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
+		var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
 
 		assertTrue(blockchain.add(genesis));
