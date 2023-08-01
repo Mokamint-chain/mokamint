@@ -19,7 +19,7 @@ target_block_creation_time = 240000
 ## Local parameters
 
 # the path where the node's data will be persisted
-dir = "/tmp/junit8672529830539765086"
+dir = "mokamint-chain"
 
 # maximal milliseconds to wait between deadline request to the miners and first deadline reception
 deadline_wait_timeout = 1000

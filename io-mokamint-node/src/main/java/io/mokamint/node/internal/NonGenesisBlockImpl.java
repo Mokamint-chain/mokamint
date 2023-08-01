@@ -198,8 +198,8 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	private void populate(StringBuilder builder) {
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
-		builder.append("* total waiting time: " + getTotalWaitingTime() + "ms\n");
-		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + "ms\n");
+		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
+		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
 		builder.append("* acceleration: " + getAcceleration() + "\n");
 		builder.append("* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + "\n");
 		builder.append("* deadline: " + deadline);

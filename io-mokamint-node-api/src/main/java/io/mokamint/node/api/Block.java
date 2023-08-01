@@ -84,14 +84,6 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	byte[] getHash(HashingAlgorithm<byte[]> hashing);
 
 	/**
-	 * Yields the creation time of this block wrt a genesis block.
-	 * 
-	 * @param genesis the genesis block
-	 * @return the creation time of this block
-	 */
-	LocalDateTime getCreationTime(GenesisBlock genesis);
-
-	/**
 	 * Yields the description of the deadline that must be computed for the next block.
 	 * 
 	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature

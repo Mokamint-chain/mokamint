@@ -56,6 +56,12 @@ import io.mokamint.node.local.internal.NodePeers;
 public class Blockchain {
 
 	/**
+	 * True if and only if mining works also when synchronization is not possible;
+	 * this is ignored if the node has at least a peer.
+	 */
+	private boolean singleNode;
+
+	/**
 	 * The database of the node.
 	 */
 	private final Database db;
@@ -112,6 +118,8 @@ public class Blockchain {
 	/**
 	 * Creates the container of the blocks of a node.
 	 * 
+	 * @param singleNode true if and only if mining works also when synchronization is not possible; this is
+	 *                   ignored if the node has at least a peer
 	 * @param db the database of the node
 	 * @param app the application running in the node
 	 * @param peers the peers of the node
@@ -121,7 +129,8 @@ public class Blockchain {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(Database db, Application app, NodePeers peers, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
+	public Blockchain(boolean singleNode, Database db, Application app, NodePeers peers, NodeMiners miners, Consumer<Task> taskSpawner, Consumer<Event> eventSpawner) throws NoSuchAlgorithmException, DatabaseException {
+		this.singleNode = singleNode;
 		this.hashingForBlocks = db.getConfig().getHashingForBlocks();
 		this.db = db;
 		this.app = app;
@@ -129,7 +138,8 @@ public class Blockchain {
 		this.miners = miners;
 		this.taskSpawner = taskSpawner;
 		this.eventSpawner = eventSpawner;
-		synchronize();
+		
+		mineBlockOnTopOf(getHead());
 	}
 
 	/**
@@ -237,8 +247,8 @@ public class Blockchain {
 	
 		Block newHead = updatedHead.get();
 		// if the head changed, then the genesis is definitely set and we can call {@link #isRecent()}
-		if (newHead != null && isRecent(newHead))
-			mineNextBlock(Optional.of(newHead));
+		if (newHead != null)
+			mineBlockOnTopOf(Optional.of(newHead));
 
 		return added;
 	}
@@ -253,10 +263,19 @@ public class Blockchain {
 	 * @throws NoSuchAlgorithmException if some node uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
-		var creationTimeOfTheBlock = block.getCreationTime(getGenesis().get());
+	public boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
+		var creationTimeOfBlock = getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
 		var now = peers.asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		return ChronoUnit.MILLIS.between(creationTimeOfTheBlock, now) < db.getConfig().getTargetBlockCreationTime() * 4;
+		return ChronoUnit.MILLIS.between(creationTimeOfBlock, now) < db.getConfig().getTargetBlockCreationTime() * 4;
+	}
+
+	/**
+	 * Determines if synchronization is required before mining on a non-recent block.
+	 * 
+	 * @return true if and only if synchronization is required
+	 */
+	public boolean requiresSynchronizationForNonRecentBlocks() {
+		return !singleNode || peers.get().count() > 0L;
 	}
 
 	/**
@@ -264,9 +283,10 @@ public class Blockchain {
 	 * If a mining task was already running when this method is
 	 * called, that previous mining task gets interrupted and replaced with this new mining task.
 	 * 
+	 * @param force performs mining also if the head of the blockchain is not recent
 	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
-	public void mineNextBlock(Optional<Block> previous) {
+	private void mineBlockOnTopOf(Optional<Block> previous) {
 		taskSpawner.accept(new MineNewBlockTask(this, previous, app, miners, taskSpawner, eventSpawner));
 	}
 
@@ -312,13 +332,5 @@ public class Blockchain {
 
 	private static Optional<GenesisBlock> castToGenesis(Block block) {
 		return block instanceof GenesisBlock gb ? Optional.of(gb) : Optional.empty();
-	}
-
-	/**
-	 * Synchronizes this blockchain by contacting the peers and downloading the most
-	 * powerful chain among theirs.
-	 */
-	private void synchronize() {
-		
 	}
 }

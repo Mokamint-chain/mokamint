@@ -64,7 +64,7 @@ public class BlockAdditionTests {
 			.when(peers)
 			.asNetworkDateTime(any());
 
-		return new Blockchain(new Database(config), mock(Application.class), peers, new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
+		return new Blockchain(true, new Database(config), mock(Application.class), peers, new NodeMiners(config, Stream.empty()), task -> {}, event -> {});
 	}
 
 	@Test

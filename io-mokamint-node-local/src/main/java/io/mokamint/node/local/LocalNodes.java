@@ -35,9 +35,10 @@ public interface LocalNodes {
 	 * 
 	 * @param config the configuration of the node
 	 * @param app the application
-	 * @param forceMining performs mining also if the node cannot be synchronized to a recent head;
-	 *                    this is useful to start a brand new blockchain, since in that case
-	 *                    there is no other blockchain, in any peer, to synchronize to
+	 * @param singleNode works in single node mode, that is, it mines over an old head that cannot be
+	 *                   synchronized. This is useful to start a brand new chain or to restart a chain
+	 *                   after some time, when there are no peers; this option is ignored if the database
+	 *                   contains at least a peer
 	 * @param miners the miners
 	 * @return the local node
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
@@ -45,9 +46,9 @@ public interface LocalNodes {
 	 * @throws IOException if the database is corrupted
 	 * @throws URISyntaxException if some URI in the database has an illegal syntax
 	 */
-	static LocalNode of(Config config, Application app, boolean forceMining, Miner... miners)
+	static LocalNode of(Config config, Application app, boolean singleNode, Miner... miners)
 			throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 
-		return new LocalNodeImpl(config, app, forceMining, miners);
+		return new LocalNodeImpl(config, app, singleNode, miners);
 	}
 }

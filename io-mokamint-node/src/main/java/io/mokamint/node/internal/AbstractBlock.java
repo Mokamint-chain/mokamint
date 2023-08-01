@@ -20,16 +20,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -99,10 +95,6 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 * @return the total waiting time
 	 */
 	public abstract long getTotalWaitingTime();
-
-	public LocalDateTime getCreationTime(GenesisBlock genesis) {
-		return genesis.getStartDateTimeUTC().plus(getTotalWaitingTime(), ChronoUnit.MILLIS);
-	}
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {
 		var generationHash = hashing.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));

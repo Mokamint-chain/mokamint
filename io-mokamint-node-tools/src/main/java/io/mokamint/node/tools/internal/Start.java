@@ -62,8 +62,8 @@ public class Start extends AbstractCommand {
 	@Option(names = "--broadcast-interval", description = { "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers" }, defaultValue = "1800000")
 	private long broadcastInterval;
 
-	@Option(names = { "--force-mining", "--init" }, description = { "starts mining also if the initial synchronization with the peers does not manage to download a recent blockchain head" }, defaultValue = "false")
-	private boolean forceMining;
+	@Option(names = { "--single-node" }, description = { "requires to mine also when synchronization is not possible; this is ignored if the database contains at least a peer" }, defaultValue = "false")
+	private boolean singleNode;
 
 	@Option(names = "--uri", description = { "the URI of the node, such as \"ws://my.machine.com:8030\"; if missing, the node will try to use its public IP"})
 	private URI uri;
@@ -211,7 +211,7 @@ public class Start extends AbstractCommand {
 		}
 
 		System.out.print(Ansi.AUTO.string("@|blue Starting a local node... |@"));
-		try (var node = LocalNodes.of(config, new TestApplication(), forceMining, miners.toArray(Miner[]::new))) {
+		try (var node = LocalNodes.of(config, new TestApplication(), singleNode, miners.toArray(Miner[]::new))) {
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 			publishPublicAndRestrictedNodeServices(0, node);
 		}

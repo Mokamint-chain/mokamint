@@ -218,7 +218,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param tryToAdd if the peers must be added to those in this container
 	 */
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAdd) {
-		LOGGER.info("got whispered peers " + SanitizedStrings.of(message.getPeers()));
+		LOGGER.info("peers: got whispered peers " + SanitizedStrings.of(message.getPeers()));
 		
 		if (tryToAdd)
 			// we check if this node needs any of the whispered peers
@@ -324,13 +324,18 @@ public class NodePeers implements AutoCloseable {
 					return add(peer, force, false);
 				}
 				catch (InterruptedException e) {
-					LOGGER.log(Level.WARNING, "addition of " + peer + " as a peer interrupted");
+					LOGGER.log(Level.WARNING, "peers: addition of " + peer + " as a peer interrupted");
 					Thread.currentThread().interrupt();
 					return false;
 				}
 				catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
 					return false;
 				}
+			}
+
+			@Override
+			public String logPrefix() {
+				return "peers: ";
 			}
 		}
 
@@ -370,6 +375,11 @@ public class NodePeers implements AutoCloseable {
 			if (whisper)
 				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
 		}
+
+		@Override
+		public String logPrefix() {
+			return "peers: ";
+		}
 	}
 
 	/**
@@ -393,7 +403,7 @@ public class NodePeers implements AutoCloseable {
 			RemotePublicNode remote = null;
 		
 			try {
-				LOGGER.info("trying to recreate a connection to peer " + peer);
+				LOGGER.info("peers: trying to recreate a connection to peer " + peer);
 				remote = openRemote(peer);
 				RemotePublicNode remoteCopy = remote;
 				long timeDifference = ensurePeerIsCompatible(remote);
@@ -411,20 +421,20 @@ public class NodePeers implements AutoCloseable {
 				return Optional.of(remoteCopy);
 			}
 			catch (IncompatiblePeerException e) {
-				LOGGER.log(Level.WARNING, e.getMessage());
+				LOGGER.log(Level.WARNING, "peers: " + e.getMessage());
 				try {
 					remove(peer);
 				}
 				catch (DatabaseException e1) {
-					LOGGER.log(Level.SEVERE, "cannot remove " + peer + " from the database", e);
+					LOGGER.log(Level.SEVERE, "peers: cannot remove " + peer + " from the database", e);
 				}
 			}
 			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, "interrupted while creating a remote for " + peer + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, "peers: interrupted while creating a remote for " + peer + ": " + e.getMessage());
 				Thread.currentThread().interrupt();
 			}
 			catch (IOException | TimeoutException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, "peers: cannot contact peer " + peer + ": " + e.getMessage());
 				punishBecauseUnreachable(peer);
 			}
 			finally {
@@ -445,15 +455,20 @@ public class NodePeers implements AutoCloseable {
 					return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(not(peers::contains));
 			}
 			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, "interrupted while asking the peers of " + peer + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, "peers: interrupted while asking the peers of " + peer + ": " + e.getMessage());
 				Thread.currentThread().interrupt();
 				return Stream.empty();
 			}
 			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, "cannot contact peer " + peer + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, "peers: cannot contact peer " + peer + ": " + e.getMessage());
 				punishBecauseUnreachable(peer);
 				return Stream.empty();
 			}
+		}
+
+		@Override
+		public String logPrefix() {
+			return "peers: ";
 		}
 
 		@Override
@@ -467,7 +482,7 @@ public class NodePeers implements AutoCloseable {
 			check(DatabaseException.class, () -> peers.punish(peer, config.peerPunishmentForUnreachable));
 		}
 		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, "cannot reduce the points of " + peer, e);
+			LOGGER.log(Level.SEVERE, "peers: cannot reduce the points of " + peer, e);
 		}
 	}
 
@@ -489,7 +504,7 @@ public class NodePeers implements AutoCloseable {
 
 			synchronized (lock) {
 				if (db.add(peer, force)) {
-					LOGGER.info("added peer " + peer + " to the database");
+					LOGGER.info("peers: added peer " + peer + " to the database");
 					storePeer(peer, remote, timeDifference);
 					remote = null; // so that it won't be closed in the finally clause
 					return true;
@@ -499,12 +514,12 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "interrupted while adding " + peer + " to the peers: " + e.getMessage());
+			LOGGER.log(Level.WARNING, "peers: interrupted while adding " + peer + " to the peers: " + e.getMessage());
 			Thread.currentThread().interrupt();
 			throw new UncheckedException(e);
 		}
 		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | IncompatiblePeerException e) {
-			LOGGER.log(Level.SEVERE, "cannot add peer " + peer + ": " + e.getMessage());
+			LOGGER.log(Level.SEVERE, "peers: cannot add peer " + peer + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
 		finally {
@@ -516,7 +531,7 @@ public class NodePeers implements AutoCloseable {
 		try {
 			synchronized (lock) {
 				if (db.remove(peer)) {
-					LOGGER.info("removed peer " + peer + " from the database");
+					LOGGER.info("peers: removed peer " + peer + " from the database");
 					deletePeer(peer, remotes.get(peer));
 					return true;
 				}
@@ -525,7 +540,7 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, "cannot remove peer " + peer, e);
+			LOGGER.log(Level.SEVERE, "peers: cannot remove peer " + peer, e);
 			throw new UncheckedException(e);
 		}
 	}
@@ -533,7 +548,7 @@ public class NodePeers implements AutoCloseable {
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
 			var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout, config.whisperingMemorySize);
-			LOGGER.info("opened connection to peer " + peer);
+			LOGGER.info("peers: opened connection to peer " + peer);
 			return remote;
 		}
 		catch (DeploymentException e) {
@@ -608,6 +623,11 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public void body() {}
+
+		@Override
+		public String logPrefix() {
+			return "peers: ";
+		}
 	}
 
 	/**
@@ -648,6 +668,11 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public void body() {}
+
+		@Override
+		public String logPrefix() {
+			return "peers: ";
+		}
 	}
 
 	private void deletePeer(Peer peer, RemotePublicNode remote) {
@@ -655,7 +680,7 @@ public class NodePeers implements AutoCloseable {
 			deletePeerWithExceptions(peer, remote);
 		}
 		catch (IOException | InterruptedException e) {
-			LOGGER.log(Level.SEVERE, "cannot close the connection to peer " + peer, e);
+			LOGGER.log(Level.SEVERE, "peers: cannot close the connection to peer " + peer, e);
 		}
 	}
 
@@ -665,7 +690,7 @@ public class NodePeers implements AutoCloseable {
 			remotes.remove(peer);
 			remote.close();
 			timeDifferences.remove(peer);
-			LOGGER.info("closed connection to peer " + peer);
+			LOGGER.info("peers: closed connection to peer " + peer);
 		}
 	}
 }

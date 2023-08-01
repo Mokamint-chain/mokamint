@@ -81,11 +81,6 @@ public class LocalNodeImpl implements LocalNode {
 	private final NodePeers peers;
 
 	/**
-	 * The blockchain of this node.
-	 */
-	private final Blockchain blockchain;
-
-	/**
 	 * The database containing the blockchain.
 	 */
 	private final Database db;
@@ -146,15 +141,16 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param config the configuration of the node
 	 * @param app the application
-	 * @param forceMining performs mining also if the node cannot be synchronized to a recent head;
-	 *                    this is useful to start a brand new blockchain, since in that case
-	 *                    there is no other blockchain, in any peer, to synchronize to
+	 * @param singleNode works in single node mode, that is, it mines over an old head that cannot be
+	 *                   synchronized. This is useful to start a brand new chain or to restart a chain
+	 *                   after some time, when there are no peers; this option is ignored if the database
+	 *                   contains at least a peer
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public LocalNodeImpl(Config config, Application app, boolean forceMining, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
+	public LocalNodeImpl(Config config, Application app, boolean singleNode, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
 		this.db = new Database(config);
 		this.version = Versions.current();
@@ -162,10 +158,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(config, Stream.of(miners));
 		this.peers = new NodePeers(this, db, this::submit, this::submit, this::submitWithFixedDelay);
-		this.blockchain = new Blockchain(db, app, peers, this.miners, this::submit, this::submit);
-
-		if (forceMining)
-			blockchain.mineNextBlock(blockchain.getHead());
+		new Blockchain(singleNode, db, app, peers, this.miners, this::submit, this::submit);
 	}
 
 	@Override
@@ -240,9 +233,9 @@ public class LocalNodeImpl implements LocalNode {
 			}
 
 			try {
-				events.awaitTermination(10, TimeUnit.SECONDS);
-				tasks.awaitTermination(10, TimeUnit.SECONDS);
-				periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
+				events.awaitTermination(3, TimeUnit.SECONDS);
+				tasks.awaitTermination(3, TimeUnit.SECONDS);
+				periodicTasks.awaitTermination(3, TimeUnit.SECONDS);
 			}
 			finally {
 				try {
@@ -311,6 +304,16 @@ public class LocalNodeImpl implements LocalNode {
 		 */
 		@OnThread("events")
 		void body() throws Exception;
+
+		/**
+		 * Yields a prefix to be reported in the logs in front of the {@link #toString()} message.
+		 * 
+		 * @return the prefix
+		 */
+		String logPrefix();
+
+		@Override
+		String toString();
 	}
 
 	/**
@@ -376,12 +379,12 @@ public class LocalNodeImpl implements LocalNode {
 		};
 
 		try {
-			LOGGER.info("received " + event);
+			LOGGER.info(event.logPrefix() + "received " + event);
 			onSubmit(event);
 			events.execute(runnable);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning(event + " rejected, probably because the node is shutting down");
+			LOGGER.warning(event.logPrefix() + event + " rejected, probably because the node is shutting down");
 		}
 	}
 
@@ -398,6 +401,16 @@ public class LocalNodeImpl implements LocalNode {
 		 */
 		@OnThread("tasks")
 		void body() throws Exception;
+
+		/**
+		 * Yields a prefix to be reported in the logs in front of the {@link #toString()} message.
+		 * 
+		 * @return the prefix
+		 */
+		String logPrefix();
+
+		@Override
+		String toString();
 	}
 
 	/**
@@ -432,7 +445,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param exception the failure cause
 	 */
 	protected void onFail(Task task, Exception e) {
-		LOGGER.log(Level.SEVERE, "failed execution of " + task, e);
+		LOGGER.log(Level.SEVERE, task.logPrefix() + "failed execution of " + task, e);
 	}
 
 	/**
@@ -468,12 +481,12 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private void submit(Task task) {
 		try {
-			LOGGER.info("scheduling " + task);
+			LOGGER.info(task.logPrefix() + "scheduling " + task);
 			onSubmit(task);
 			tasks.execute(new RunnableTask(task));
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning(task + " rejected, probably because the node is shutting down");
+			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
 		}
 	}
 
@@ -503,12 +516,12 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private void submitWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
 		try {
-			LOGGER.info("scheduling periodic " + task);
+			LOGGER.info(task.logPrefix() + "scheduling periodic " + task);
 			onSubmit(task);
 			periodicTasks.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning(task + " rejected, probably because the node is shutting down");
+			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
 		}
 	}
 }
