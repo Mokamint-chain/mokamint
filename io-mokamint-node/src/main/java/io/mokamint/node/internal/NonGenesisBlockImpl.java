@@ -209,7 +209,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	public String toString(ConsensusConfig config, LocalDateTime startDateTimeUTC) {
 		var builder = new StringBuilder("Block:\n");
 		builder.append("* creation date and time UTC: " + startDateTimeUTC.plus(totalWaitingTime, ChronoUnit.MILLIS) + "\n");
-		builder.append("* hash: " + Hex.toHexString(getHash(config.getHashingForBlocks())) + "\n");
+		builder.append("* hash: " + getHexHash(config.getHashingForBlocks()) + "\n");
 		populate(builder);
 		builder.append("\n");
 		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(config.getHashingForGenerations())));

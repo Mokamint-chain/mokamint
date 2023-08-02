@@ -19,7 +19,6 @@ package io.mokamint.node.local.internal.blockchain;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
-import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -58,7 +57,7 @@ public class SynchronizationTask implements Task {
 	public SynchronizationTask(LocalNodeImpl node, Block start) {
 		this.node = node;
 		this.start = start;
-		this.hexStartHash = Hex.toHexString(start.getHash(node.getConfig().getHashingForBlocks()));
+		this.hexStartHash = start.getHexHash(node.getConfig().getHashingForBlocks());
 	}
 
 	@Override

@@ -220,7 +220,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param seen the whisperers already seen during whispering
 	 */
 	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
-		LOGGER.info("peers: got whispered block");
+		LOGGER.info("peers: got whispered block " + message.getBlock().getHexHash(config.getHashingForBlocks()));
 		
 		// in any case, we forward the message to our peers
 		remotes.values().forEach(remote -> remote.whisper(message, seen));

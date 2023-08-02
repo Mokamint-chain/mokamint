@@ -26,7 +26,6 @@ module io.mokamint.node.local {
 	requires transitive io.mokamint.miner.api;
 	requires io.mokamint.nonce;
 	requires io.mokamint.node.remote;
-	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans.api;
 	requires toml4j;
@@ -35,6 +34,7 @@ module io.mokamint.node.local {
 	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
 
 	// only used for testing
+	requires static io.hotmoka.crypto;
 	requires static io.mokamint.node.messages;
 	requires static io.mokamint.node.service.api;
 }

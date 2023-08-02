@@ -20,7 +20,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 
+import io.hotmoka.annotations.GuardedBy;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -34,6 +37,23 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * Shared code of all classes implementing blocks.
  */
 public abstract class AbstractBlock extends AbstractMarshallable {
+
+	/**
+	 * A lock for the {@link #lastHash} and {@link #lastHashingName} fields.
+	 */
+	private final Object lock = new Object();
+
+	/**
+	 * The name of the hashing algorithm used for the last call to {@link #getHash(HashingAlgorithm)}, if any.
+	 */
+	@GuardedBy("lock")
+	private String lastHashingName;
+
+	/**
+	 * The result of the last call to {@link #getHash(HashingAlgorithm)}.
+	 */
+	@GuardedBy("lock")
+	private byte[] lastHash;
 
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
 
@@ -78,7 +98,27 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	}
 
 	public final byte[] getHash(HashingAlgorithm<byte[]> hashing) {
-		return hashing.hash(toByteArray());
+		// it uses a cache for optimization, since the computation might be expensive
+
+		String name = hashing.getName();
+
+		synchronized (lock) {
+			if (Objects.equals(lastHashingName, name))
+				return lastHash.clone();
+		}
+
+		byte[] result = hashing.hash(toByteArray());
+
+		synchronized (lock) {
+			lastHashingName = name;
+			lastHash = result.clone();
+		}
+
+		return result;
+	}
+
+	public final String getHexHash(HashingAlgorithm<byte[]> hashing) {
+		return Hex.toHexString(getHash(hashing));
 	}
 
 	/**

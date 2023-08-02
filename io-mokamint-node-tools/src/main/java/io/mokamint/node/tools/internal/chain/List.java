@@ -25,7 +25,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
@@ -126,7 +125,7 @@ public class List extends AbstractPublicRpcCommand {
 		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
 
 		for (long counter = 0; counter < max; counter++) {
-			String hash = Hex.toHexString(cursor.getHash(hashingForBlocks));
+			String hash = cursor.getHexHash(hashingForBlocks);
 
 			if (json()) {
 				if (counter > 0)

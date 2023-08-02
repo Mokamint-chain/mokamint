@@ -48,6 +48,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -91,6 +92,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * The node whose API is published.
 	 */
 	private final PublicNodeInternals node;
+
+	/**
+	 * The configuration of {@link #node}.
+	 */
+	private final ConsensusConfig config;
 
 	/**
 	 * The port of localhost, where this service is published.
@@ -163,6 +169,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 */
 	public PublicNodeServiceImpl(PublicNodeInternals node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
+
+		try {
+			this.config = node.getConfig();
+		}
+		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			throw new IOException(e);
+		}
+
 		this.port = port;
 		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(this::addPort))));
@@ -180,9 +194,9 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
 		if (uri.isEmpty())
-			LOGGER.info("published a public node service at ws://localhost:" + port);
+			LOGGER.info("service: published a public node service at ws://localhost:" + port);
 		else
-			LOGGER.info("published a public node service at ws://localhost:" + port + " and public URI: " + uri.get());
+			LOGGER.info("service: published a public node service at ws://localhost:" + port + " and public URI: " + uri.get());
 	}
 
 	@Override
@@ -193,7 +207,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			node.unbindWhisperer(this);
 			stopContainer();
 			periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
-			LOGGER.info("closed the public node service at ws://localhost:" + port);
+			LOGGER.info("service: closed the public node service at ws://localhost:" + port);
 		}
 	}
 
@@ -209,16 +223,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	private void whisperItself() {
 		if (uri.isEmpty())
-			LOGGER.warning("not whispering the service itself since its public URI is unknown");
+			LOGGER.warning("service: not whispering the service itself since its public URI is unknown");
 	
 		try (var remote = RemotePublicNodes.of(uri.get(), 1000L)) {
 		}
 		catch (IOException | DeploymentException e) {
-			LOGGER.warning("not whispering the service itself since it cannot be reached");
+			LOGGER.warning("service: not whispering the service itself since it cannot be reached");
 			return;
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.SEVERE, "cannot close the remote", e);
+			LOGGER.log(Level.SEVERE, "service: cannot close the remote", e);
 		}
 	
 		var itself = Peers.of(uri.get());
@@ -229,7 +243,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 	
-		LOGGER.info("got whispered peers " + SanitizedStrings.of(message.getPeers()));
+		LOGGER.info("service: got whispered peers " + SanitizedStrings.of(message.getPeers()));
 	
 		whisperPeersSessions.stream()
 			.filter(Session::isOpen)
@@ -245,8 +259,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen, Session excluded) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
-	
-		LOGGER.info("got whispered block");
+
+		LOGGER.info("service: got whispered block " + message.getBlock().getHexHash(config.getHashingForBlocks()));
 	
 		whisperBlockSessions.stream()
 			.filter(Session::isOpen)
@@ -272,7 +286,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @return the public IP address of the machine, if it could be determined
 	 */
 	private Optional<URI> determinePublicURI() {
-		LOGGER.info("trying to determine the public IP of this machine");
+		LOGGER.info("service: trying to determine the public IP of this machine");
 	
 		String[] urls = {
 				"http://checkip.amazonaws.com/",
@@ -284,15 +298,15 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		for (var url: urls) {
 			try (var br = new BufferedReader(new InputStreamReader(new URL(url).openStream()))) {
 				String ip = br.readLine();
-				LOGGER.info(url + " provided " + ip + " as the IP of the local machine");
+				LOGGER.info("service: " + url + " provided " + ip + " as the IP of the local machine");
 				return Optional.of(new URI("ws://" + ip));
 			}
 			catch (IOException | URISyntaxException e) {
-				LOGGER.log(Level.WARNING, url + " failed to provide the IP of the local machine", e);
+				LOGGER.log(Level.WARNING, "service: " + url + " failed to provide an IP for the local machine", e);
 			}
 		}
 	
-		LOGGER.warning("cannot determine the IP of the local machine: its IP won't be propagated to its peers");
+		LOGGER.warning("service: cannot determine the IP of the local machine: its IP won't be propagated to its peers");
 	
 		return Optional.empty();
 	}
@@ -314,7 +328,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, message);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot whisper peers to session: it might be closed: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, "service: cannot whisper peers to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -323,12 +337,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, message);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot whisper block to session: it might be closed: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, "service: cannot whisper block to session: it might be closed: " + e.getMessage());
 		}
 	}
 
 	protected void onGetInfo(GetInfoMessage message, Session session) {
-		LOGGER.info("received a " + GET_INFO_ENDPOINT + " request");
+		LOGGER.info("service: received a " + GET_INFO_ENDPOINT + " request");
 
 		try {
 			try {
@@ -339,7 +353,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -357,7 +371,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-		LOGGER.info("received a " + GET_PEER_INFOS_ENDPOINT + " request");
+		LOGGER.info("service: received a " + GET_PEER_INFOS_ENDPOINT + " request");
 
 		try {
 			try {
@@ -368,7 +382,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -386,7 +400,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	protected void onGetBlock(GetBlockMessage message, Session session) {
-		LOGGER.info("received a " + GET_BLOCK_ENDPOINT + " request");
+		LOGGER.info("service: received a " + GET_BLOCK_ENDPOINT + " request");
 
 		try {
 			try {
@@ -397,7 +411,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -415,7 +429,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	protected void onGetConfig(GetConfigMessage message, Session session) {
-		LOGGER.info("received a " + GET_CONFIG_ENDPOINT + " request");
+		LOGGER.info("service: received a " + GET_CONFIG_ENDPOINT + " request");
 
 		try {
 			try {
@@ -426,7 +440,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
 		}
 	};
 
@@ -444,7 +458,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-		LOGGER.info("received a " + GET_CHAIN_INFO_ENDPOINT + " request");
+		LOGGER.info("service: received a " + GET_CHAIN_INFO_ENDPOINT + " request");
 
 		try {
 			try {
@@ -455,7 +469,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
 		}
 	};
 

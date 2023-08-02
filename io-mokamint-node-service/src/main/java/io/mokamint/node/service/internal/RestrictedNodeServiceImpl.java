@@ -89,7 +89,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		node.addOnClosedHandler(this_close);
 
 		startContainer("", port, AddPeersEndpoint.config(this), RemoveBlockEndpoint.config(this));
-		LOGGER.info("published a restricted node service at ws://localhost:" + port);
+		LOGGER.info("service: published a restricted node service at ws://localhost:" + port);
 	}
 
 	@Override
@@ -97,7 +97,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		if (!isClosed.getAndSet(true)) {
 			node.removeOnCloseHandler(this_close);
 			stopContainer();
-			LOGGER.info("closed the restricted node service at ws://localhost:" + port);
+			LOGGER.info("service: closed the restricted node service at ws://localhost:" + port);
 		}
 	}
 
@@ -114,7 +114,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	}
 
 	protected void onAddPeers(AddPeerMessage message, Session session) {
-		LOGGER.info("received an " + ADD_PEER_ENDPOINT + " request");
+		LOGGER.info("service: received an " + ADD_PEER_ENDPOINT + " request");
 
 		try {
 			try {
@@ -128,12 +128,12 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
 		}
 	};
 
 	protected void onRemovePeer(RemovePeerMessage message, Session session) {
-		LOGGER.info("received a " + REMOVE_PEER_ENDPOINT + " request");
+		LOGGER.info("service: received a " + REMOVE_PEER_ENDPOINT + " request");
 
 		try {
 			try {
@@ -145,7 +145,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
 		}
 	};
 

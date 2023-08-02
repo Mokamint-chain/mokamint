@@ -33,7 +33,6 @@ import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -311,7 +310,7 @@ public class Database implements AutoCloseable {
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException("cannot write block " + Hex.toHexString(block.getHash(config.getHashingForBlocks())) + " in the database", e);
+			throw new DatabaseException("cannot write block " + block.getHexHash(config.getHashingForBlocks()) + " in the database", e);
 		}
 	}
 
@@ -580,7 +579,7 @@ public class Database implements AutoCloseable {
 
 	private void putInStore(Transaction txn, Block block, byte[] hashOfBlock, byte[] bytesOfBlock) {
 		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-		LOGGER.info("height " + block.getHeight() + ": block " + Hex.toHexString(hashOfBlock) + " added to the database");
+		LOGGER.info("height " + block.getHeight() + ": block " + block.getHexHash(config.getHashingForBlocks()) + " added to the database");
 	}
 
 	private boolean isInStore(Transaction txn, byte[] hashOfBlock) {
@@ -621,7 +620,7 @@ public class Database implements AutoCloseable {
 		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = config.getHashingForBlocks().hash(bytesOfBlock);
 
 		if (isInStore(txn, hashOfBlock)) {
-			LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
+			LOGGER.warning("not adding block " + block.getHexHash(config.getHashingForBlocks()) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
@@ -634,7 +633,7 @@ public class Database implements AutoCloseable {
 				return true;
 			}
 			else {
-				LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
+				LOGGER.warning("not adding block " + block.getHexHash(config.getHashingForBlocks()) + " since its previous block is not in the database");
 				return false;
 			}
 		}
@@ -647,7 +646,7 @@ public class Database implements AutoCloseable {
 				return true;
 			}
 			else {
-				LOGGER.warning("not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
+				LOGGER.warning("not adding genesis block " + block.getHexHash(config.getHashingForBlocks()) + " since the database already contains a genesis block");
 				return false;
 			}
 		}
@@ -655,12 +654,12 @@ public class Database implements AutoCloseable {
 
 	private void setGenesisHash(Transaction txn, GenesisBlock newGenesis, byte[] newGenesisHash) {
 		storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
-		LOGGER.info("height " + newGenesis.getHeight() + ": block " + Hex.toHexString(newGenesisHash) + " set as genesis");
+		LOGGER.info("height " + newGenesis.getHeight() + ": block " + newGenesis.getHexHash(config.getHashingForBlocks()) + " set as genesis");
 	}
 
 	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) {
 		storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
-		LOGGER.info("height " + newHead.getHeight() + ": block " + Hex.toHexString(newHeadHash) + " set as head");
+		LOGGER.info("height " + newHead.getHeight() + ": block " + newHead.getHexHash(config.getHashingForBlocks()) + " set as head");
 	}
 
 	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) {

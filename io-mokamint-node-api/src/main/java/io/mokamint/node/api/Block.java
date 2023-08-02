@@ -84,6 +84,15 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	byte[] getHash(HashingAlgorithm<byte[]> hashing);
 
 	/**
+	 * Yields the hash of this block, by using the given hashing algorithm,
+	 * as an hexadecimal string.
+	 * 
+	 * @param hashing the hashing algorithm
+	 * @return the hash of this block, as a hexadecimal string
+	 */
+	String getHexHash(HashingAlgorithm<byte[]> hashing);
+
+	/**
 	 * Yields the description of the deadline that must be computed for the next block.
 	 * 
 	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature

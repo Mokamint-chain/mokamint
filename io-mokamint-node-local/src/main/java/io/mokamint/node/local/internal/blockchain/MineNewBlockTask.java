@@ -31,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
-import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -116,7 +115,7 @@ public class MineNewBlockTask implements Task {
 		this.previous = previous;
 		this.heightOfNewBlock = previous.isEmpty() ? 0L : (previous.get().getHeight() + 1);
 		this.logPrefix = "height " + heightOfNewBlock + ": ";
-		this.previousHex = previous.isEmpty() ? "" : Hex.toHexString(previous.get().getHash(config.getHashingForBlocks()));
+		this.previousHex = previous.isEmpty() ? "" : previous.get().getHexHash(config.getHashingForBlocks());
 		this.app = node.getApplication();
 		this.miners = node.getMiners();
 	}
@@ -129,9 +128,9 @@ public class MineNewBlockTask implements Task {
 	@Override
 	public String toString() {
 		if (previous.isEmpty())
-			return "mining of genesis block";
+			return "mining a genesis block";
 		else
-			return "mining of block on top of " + previousHex;
+			return "mining a block on top of " + previousHex;
 	}
 
 	@Override @OnThread("tasks")
@@ -145,8 +144,7 @@ public class MineNewBlockTask implements Task {
 			}
 			else {
 				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-				LOGGER.info(logPrefix + "finished mining the genesis block " +
-					Hex.toHexString(genesis.getHash(config.getHashingForBlocks())));
+				LOGGER.info(logPrefix + "finished mining the genesis block " + genesis.getHexHash(config.getHashingForBlocks()));
 				node.submit(new BlockMinedEvent(genesis));
 			}
 		}
@@ -276,7 +274,7 @@ public class MineNewBlockTask implements Task {
 
 		private BlockMinedEvent(Block block) {
 			this.block = block;
-			this.hexBlockHash = Hex.toHexString(block.getHash(config.getHashingForBlocks()));
+			this.hexBlockHash = block.getHexHash(config.getHashingForBlocks());
 		}
 
 		@Override

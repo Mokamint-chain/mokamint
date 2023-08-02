@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -37,6 +38,7 @@ import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -90,7 +92,20 @@ public class RemotePublicNodeTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private PublicTestServer() throws DeploymentException, IOException {
-			super(mock(), PORT, 180000L, 1000, Optional.empty());
+			super(mockedNode(), PORT, 180000L, 1000, Optional.empty());
+		}
+
+		private static PublicNodeInternals mockedNode() throws IOException {
+			PublicNodeInternals result = mock();
+			
+			try {
+				var config = ConsensusConfigs.defaults().build();
+				when(result.getConfig()).thenReturn(config);
+				return result;
+			}
+			catch (InterruptedException | NoSuchAlgorithmException | TimeoutException | ClosedNodeException e) {
+				throw new IOException(e);
+			}
 		}
 	}
 

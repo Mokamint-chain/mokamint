@@ -82,6 +82,6 @@ public class NodeInfoImpl implements NodeInfo {
 
 	@Override
 	public String toString() {
-		return "version: " + version + ", UUID: " + uuid + ", local date and time: " + localDateTimeUTC;
+		return "version: " + version + ", UUID: " + uuid + ", UTC date and time: " + localDateTimeUTC;
 	}
 }
