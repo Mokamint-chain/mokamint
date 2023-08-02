@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.ChainInfos;
@@ -208,6 +209,15 @@ public class LocalNodeImpl implements LocalNode {
 	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
+
+		try {
+			blockchain.add(message.getBlock());
+		}
+		catch (NoSuchAlgorithmException | DatabaseException e) {
+			LOGGER.log(Level.SEVERE, "the whispered block " +
+				Hex.toHexString(message.getBlock().getHash(config.getHashingForBlocks())) +
+				" could not be added to the blockchain: " + e.getMessage());
+		}
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
 		peers.whisper(message, newSeen);

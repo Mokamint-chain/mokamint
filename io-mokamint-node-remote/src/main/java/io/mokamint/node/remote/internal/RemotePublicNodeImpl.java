@@ -147,7 +147,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("got whispered block");
+		LOGGER.info("got whispered block"); // TODO
 
 		onWhisperBlock(message);
 

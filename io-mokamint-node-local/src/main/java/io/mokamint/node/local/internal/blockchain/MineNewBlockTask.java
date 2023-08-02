@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,6 +42,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodeMiners;
+import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
@@ -145,7 +147,7 @@ public class MineNewBlockTask implements Task {
 				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
 				LOGGER.info(logPrefix + "finished mining the genesis block " +
 					Hex.toHexString(genesis.getHash(config.getHashingForBlocks())));
-				node.submit(new BlockDiscoveryEvent(genesis));
+				node.submit(new BlockMinedEvent(genesis));
 			}
 		}
 		catch (InterruptedException e) {
@@ -265,25 +267,29 @@ public class MineNewBlockTask implements Task {
 	}
 
 	/**
-	 * An event fired to signal that a block has been discovered. This might come
-	 * from the node itself, if it finds a deadline and a new block by using its own miners,
-	 * but also from a peer, that fund a block and whispers it to us.
+	 * An event fired to signal that a block has been mined.
+	 * It adds it to the blockchain and whispers it to all peers.
 	 */
-	public class BlockDiscoveryEvent implements Event {
+	public class BlockMinedEvent implements Event {
 		public final Block block;
+		public final String hexBlockHash;
 
-		private BlockDiscoveryEvent(Block block) {
+		private BlockMinedEvent(Block block) {
 			this.block = block;
+			this.hexBlockHash = Hex.toHexString(block.getHash(config.getHashingForBlocks()));
 		}
 
 		@Override
 		public String toString() {
-			return "discovery event for block " + Hex.toHexString(block.getHash(config.getHashingForBlocks()));
+			return "block mined event for block " + hexBlockHash;
 		}
 
 		@Override @OnThread("events")
 		public void body() throws DatabaseException, NoSuchAlgorithmException {
-			blockchain.add(block);
+			if (blockchain.add(block)) {
+				LOGGER.info(logPrefix + "whispering block " + hexBlockHash + " to all peers");
+				node.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false);
+			}
 		}
 
 		@Override
@@ -380,7 +386,7 @@ public class MineNewBlockTask implements Task {
 
 		private void informNodeAboutNewBlock(Block block) {
 			LOGGER.info(logPrefix + "finished mining new block on top of " + previousHex);
-			node.submit(new BlockDiscoveryEvent(block));
+			node.submit(new BlockMinedEvent(block));
 		}
 
 		/**
