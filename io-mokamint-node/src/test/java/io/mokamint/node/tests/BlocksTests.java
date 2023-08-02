@@ -23,7 +23,7 @@ public class BlocksTests {
 	@Test
 	@DisplayName("genesis blocks are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException {
-		var block1 = Blocks.genesis(LocalDateTime.now());
+		var block1 = Blocks.genesis(LocalDateTime.now(), BigInteger.ONE);
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);

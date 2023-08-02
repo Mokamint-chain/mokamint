@@ -143,7 +143,7 @@ public class MineNewBlockTask implements Task {
 					new Run(previous.get());
 			}
 			else {
-				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.initialAcceleration));
 				LOGGER.info(logPrefix + "finished mining the genesis block " + genesis.getHexHash(config.getHashingForBlocks()));
 				node.submit(new BlockMinedEvent(genesis));
 			}

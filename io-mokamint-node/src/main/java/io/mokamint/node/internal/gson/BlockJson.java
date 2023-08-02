@@ -43,8 +43,10 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private String hashOfPreviousBlock;
 
 	protected BlockJson(Block block) {
-		if (block instanceof GenesisBlock gb)
+		if (block instanceof GenesisBlock gb) {
 			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gb.getStartDateTimeUTC());
+			this.acceleration = gb.getAcceleration();
+		}
 		else {
 			var ngb = (NonGenesisBlock) block;
 			this.height = ngb.getHeight();
@@ -62,6 +64,6 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 		if (startDateTimeUTC == null)
 			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
 		else
-			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME), acceleration);
 	}
 }

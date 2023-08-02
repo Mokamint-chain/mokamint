@@ -77,8 +77,18 @@ public class BlockPropagationTests {
 
 		var port2 = 8034;
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var config1 = Config.Builder.defaults().setDir(chain1).setTargetBlockCreationTime(2000L).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).setTargetBlockCreationTime(2000L).build();
+
+		var config1 = Config.Builder.defaults()
+			.setDir(chain1)
+			.setTargetBlockCreationTime(2000L)
+			.setInitialAcceleration(1000000000000000L)
+			.build();
+
+		var config2 = Config.Builder.defaults()
+			.setDir(chain2)
+			.setTargetBlockCreationTime(2000L)
+			.setInitialAcceleration(1000000000000000L)
+			.build();
 
 		class MyLocalNode extends LocalNodeImpl {
 
@@ -101,7 +111,7 @@ public class BlockPropagationTests {
 
 		var prolog = new byte[] { 11, 13, 24, 88 };
 		long start = 65536L;
-		long length = 100L;
+		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 
 		try (var node1 = new MyLocalNode(config1);

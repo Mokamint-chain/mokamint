@@ -13,6 +13,10 @@ hashing_for_generations = "sha256"
 # the hashing algorithm used for the blocks of the blockchain
 hashing_for_blocks = "sha256"
 
+# the initial acceleration of the blockchain, at the genesis block;
+# this might be increased if the network starts with very little mining power
+initial_acceleration = 100000000000
+
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
 target_block_creation_time = 240000
 

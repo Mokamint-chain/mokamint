@@ -66,10 +66,13 @@ public abstract class Blocks {
 	 * Yields a new genesis block.
 	 * 
 	 * @param startDateTimeUTC the moment when the block has been created
+	 * @param acceleration a value used to divide the deadline to derive the time needed to wait for it.
+	 *                     The higher, the shorter the time. This value changes dynamically to cope with
+	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @return the genesis block
 	 */
-	public static GenesisBlock genesis(LocalDateTime startDateTimeUTC) {
-		return new GenesisBlockImpl(startDateTimeUTC);
+	public static GenesisBlock genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration) {
+		return new GenesisBlockImpl(startDateTimeUTC, acceleration);
 	}
 
 	/**

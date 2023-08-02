@@ -80,7 +80,7 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
 	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var blockchain = mkTestBlockchain(dir);
 
 		assertTrue(blockchain.add(genesis));
@@ -91,8 +91,8 @@ public class BlockAdditionTests {
 	@Test
 	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
 	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
-		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
-		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES));
+		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES), BigInteger.ONE);
 		var blockchain = mkTestBlockchain(dir);
 
 		assertTrue(blockchain.add(genesis1));
@@ -106,7 +106,7 @@ public class BlockAdditionTests {
 	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException {
 		var blockchain = mkTestBlockchain(dir);
 		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
@@ -123,7 +123,7 @@ public class BlockAdditionTests {
 		var blockchain = mkTestBlockchain(dir);
 		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
 		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
@@ -140,7 +140,7 @@ public class BlockAdditionTests {
 		var blockchain = mkTestBlockchain(dir);
 		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
 		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
@@ -165,7 +165,7 @@ public class BlockAdditionTests {
 		var blockchain = mkTestBlockchain(dir);
 		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
 		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.valueOf(11), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
@@ -210,7 +210,7 @@ public class BlockAdditionTests {
 		var blockchain = mkTestBlockchain(dir);
 		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
 		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.TEN, 4321L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
@@ -246,7 +246,7 @@ public class BlockAdditionTests {
 		var blockchain = mkTestBlockchain(dir);
 		var hashingForDeadlines = blockchain.getConfig().getHashingForDeadlines();
 		var hashingForBlocks = blockchain.getConfig().getHashingForBlocks();
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")));
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block1 = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);

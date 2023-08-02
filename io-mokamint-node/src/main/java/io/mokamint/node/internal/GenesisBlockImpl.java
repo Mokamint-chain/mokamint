@@ -37,14 +37,23 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	private final LocalDateTime startDateTimeUTC;
 
 	/**
+	 * A value used to divide the deadline to derive the time needed to wait for it.
+	 * The higher, the shorter the time. This value changes dynamically to cope with
+	 * varying mining power in the network. It is similar to Bitcoin's difficulty.
+	 */
+	private final BigInteger acceleration;
+
+	/**
 	 * The generation signature for the block on top of the genesis block. This is arbitrary.
 	 */
 	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
-	public GenesisBlockImpl(LocalDateTime startDateTimeUTC) {
+	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration) {
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
+		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 
 		this.startDateTimeUTC = startDateTimeUTC;
+		this.acceleration = acceleration;
 	}
 
 	/**
@@ -58,6 +67,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	GenesisBlockImpl(UnmarshallingContext context) throws IOException {
 		String startDateTimeUTC = context.readUTF();
 		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		this.acceleration = context.readBigInteger();
 	}
 
 	@Override
@@ -82,7 +92,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	@Override
 	public BigInteger getAcceleration() {
-		return BigInteger.valueOf(100000000000L); // big enough to start easily
+		return acceleration; //BigInteger.valueOf(100000000000L); // big enough to start easily
 	}
 
 	@Override
@@ -102,11 +112,13 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		// and a non-genesis block (height > 0)
 		context.writeLong(0L);
 		context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
+		context.writeBigInteger(acceleration);
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GenesisBlock gb && startDateTimeUTC.equals(gb.getStartDateTimeUTC());
+		return other instanceof GenesisBlock gb && startDateTimeUTC.equals(gb.getStartDateTimeUTC())
+			&& acceleration.equals(gb.getAcceleration());
 	}
 
 	@Override

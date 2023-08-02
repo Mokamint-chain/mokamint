@@ -39,19 +39,28 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	 * The hashing algorithm used for computing the deadlines, hence
 	 * also in the plot files used by the miners. It defaults to {@code shabal256}.
 	 */
-	private final HashingAlgorithm<byte[]> hashingForDeadlines;
+	public final HashingAlgorithm<byte[]> hashingForDeadlines;
 
 	/**
 	 * The hashing algorithm used for computing the next generation signature
 	 * and the new scoop number from the previous block. It defaults to {@code sha256}.
 	 */
-	private final HashingAlgorithm<byte[]> hashingForGenerations;
+	public final HashingAlgorithm<byte[]> hashingForGenerations;
 
 	/**
 	 * The hashing algorithm used for the identifying the blocks of
 	 * the Mokamint blockchain. It defaults to {@code sha256}.
 	 */
-	private final HashingAlgorithm<byte[]> hashingForBlocks;
+	public final HashingAlgorithm<byte[]> hashingForBlocks;
+
+	/**
+	 * The acceleration for the genesis block. This specifies how
+	 * quickly get blocks generated at the beginning of a chain. The less
+	 * mining power has the network at the beginning, the higher the
+	 * initial acceleration should be, or otherwise the creation of the first blocks
+	 * might take a long time. It defaults to 100000000000.
+	 */
+	public final long initialAcceleration;
 
 	/**
 	 * The target time interval, in milliseconds, between the creation of a block
@@ -59,7 +68,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	 * to this time. The higher the hashing power of the network, the more precise
 	 * this will be.
 	 */
-	private final long targetBlockCreationTime;
+	public final long targetBlockCreationTime;
 
 	/**
 	 * Full constructor for the builder pattern.
@@ -70,6 +79,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
 		this.hashingForBlocks = builder.hashingForBlocks;
+		this.initialAcceleration = builder.initialAcceleration;
 		this.targetBlockCreationTime = builder.targetBlockCreationTime;
 	}
 
@@ -78,6 +88,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		if (other != null && getClass() == other.getClass()) {
 			var otherConfig = (ConsensusConfigImpl) other;
 			return targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
+				initialAcceleration == otherConfig.initialAcceleration &&
 				hashingForDeadlines.getName().equals(otherConfig.hashingForDeadlines.getName()) &&
 				hashingForGenerations.getName().equals(otherConfig.hashingForGenerations.getName()) &&
 				hashingForBlocks.getName().equals(otherConfig.hashingForBlocks.getName());
@@ -109,6 +120,10 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
 		sb.append("hashing_for_blocks = \"" + hashingForBlocks.getName() + "\"\n");
 		sb.append("\n");
+		sb.append("# the initial acceleration of the blockchain, at the genesis block;\n");
+		sb.append("# this might be increased if the network starts with very little mining power\n");
+		sb.append("initial_acceleration = " + initialAcceleration + "\n");
+		sb.append("\n");
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
 
@@ -135,6 +150,11 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		return targetBlockCreationTime;
 	}
 
+	@Override
+	public long getInitialAcceleration() {
+		return initialAcceleration;
+	}
+
 	/**
 	 * The builder of a configuration object.
 	 * 
@@ -144,6 +164,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		private HashingAlgorithm<byte[]> hashingForDeadlines;
 		private HashingAlgorithm<byte[]> hashingForGenerations;
 		private HashingAlgorithm<byte[]> hashingForBlocks;
+		private long initialAcceleration = 100000000000L;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 
 		protected AbstractBuilder() throws NoSuchAlgorithmException {
@@ -171,6 +192,10 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 			var hashingForBlocks = toml.getString("hashing_for_blocks");
 			if (hashingForBlocks != null)
 				setHashingForBlocks(hashingForBlocks);
+
+			var initialAcceleration = toml.getLong("initial_acceleration");
+			if (initialAcceleration != null)
+				setInitialAcceleration(initialAcceleration);
 
 			var targetBlockCreationTime = toml.getLong("target_block_creation_time");
 			if (targetBlockCreationTime != null)
@@ -212,6 +237,24 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 */
 		public T setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
 			this.hashingForBlocks = HashingAlgorithms.mk(hashingForBlocks, Function.identity());
+			return getThis();
+		}
+
+		/**
+		 * Sets the acceleration for the genesis block. This specifies how
+		 * quickly get blocks generated at the beginning of a chain. The less
+		 * mining power has the network at the beginning, the higher the
+		 * initial acceleration should be, or otherwise the creation of the first blocks
+		 * might take a long time.
+		 * 
+		 * @param initialAcceleration the initial acceleration
+		 * @return this builder
+		 */
+		public T setInitialAcceleration(long initialAcceleration) {
+			if (initialAcceleration < 1L)
+				throw new IllegalArgumentException("The initial acceleration must be positive");
+
+			this.initialAcceleration = initialAcceleration;
 			return getThis();
 		}
 

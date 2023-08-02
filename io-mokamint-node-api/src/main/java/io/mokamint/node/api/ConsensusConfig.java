@@ -51,6 +51,17 @@ public interface ConsensusConfig {
 	HashingAlgorithm<byte[]> getHashingForBlocks();
 
 	/**
+	 * Yields the acceleration for the genesis block. This specifies how
+	 * quickly get blocks generated at the beginning of a chain. The less
+	 * mining power has the network at the beginning, the higher the
+	 * initial acceleration should be, or otherwise the creation of the first blocks
+	 * might take a long time.
+	 * 
+	 * @return the initial acceleration
+	 */
+	long getInitialAcceleration();
+
+	/**
 	 * Yields the target time interval, in milliseconds, between the creation of a block
 	 * and the creation of a next block. The network will strive to get close
 	 * to this time. The higher the hashing power of the network, the more precise
