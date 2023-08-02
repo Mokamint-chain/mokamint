@@ -33,4 +33,15 @@ public interface Whisperer {
 	 *             for network connections among whisperers)
 	 */
 	void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen);
+
+	/**
+	 * Whisper the given message.
+	 * 
+	 * @param message the message
+	 * @param seen a predicate telling if a whisperer has already whispered the
+	 *             {@code message}. This is used in order to avoid infinite recursion
+	 *             if whisperers form a cycle inside the same machine (this does not account
+	 *             for network connections among whisperers)
+	 */
+	void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen);
 }

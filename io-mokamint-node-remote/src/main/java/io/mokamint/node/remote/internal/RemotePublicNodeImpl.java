@@ -21,6 +21,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDP
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
 
 import java.io.IOException;
@@ -57,6 +58,7 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.MessageMemories;
 import io.mokamint.node.messages.MessageMemory;
+import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
@@ -64,6 +66,7 @@ import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.remote.RemotePublicNode;
@@ -114,6 +117,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
 		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
+		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
 
 		this.queues = new NodeMessageQueues(timeout);
 	}
@@ -138,6 +142,19 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		whisper(message, seen);
 	}
 
+	@Override
+	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
+		if (seen.test(this) || !whisperedMessages.add(message))
+			return;
+
+		LOGGER.info("got whispered block");
+
+		onWhisperBlock(message);
+
+		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+	}
+
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
@@ -155,7 +172,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			}
 		}
 
-		Predicate<Whisperer> newSeen = seen.or(_whisperer -> _whisperer == this);
+		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
 	}
 
@@ -359,6 +376,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhisperPeers(WhisperPeersMessage message) {}
+	protected void onWhisperBlock(WhisperBlockMessage message) {}
 
 	private class GetPeersEndpoint extends Endpoint {
 
@@ -410,6 +428,19 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, WhisperPeersMessages.Decoder.class, WhisperPeersMessages.Encoder.class);
+		}
+	}
+
+	private class WhisperBlockEndpoint extends Endpoint {
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (WhisperBlockMessage message) -> whisper(message, _whisperer -> false));
+		}
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, WhisperBlockMessages.Decoder.class, WhisperBlockMessages.Encoder.class);
 		}
 	}
 }

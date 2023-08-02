@@ -56,6 +56,7 @@ import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.messages.MessageMemories;
 import io.mokamint.node.messages.MessageMemory;
+import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 
@@ -204,6 +205,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
+		if (seen.test(this) || !whisperedMessages.add(message))
+			return;
+
+		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		peers.whisper(message, newSeen);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+	}
+
+	@Override
 	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
 		ensureIsOpen();
 		return db.getBlock(hash);
@@ -335,7 +346,7 @@ public class LocalNodeImpl implements LocalNode {
 		return blockchain;
 	}
 
-	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
+	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
