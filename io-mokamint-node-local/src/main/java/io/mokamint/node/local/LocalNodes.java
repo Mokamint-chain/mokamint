@@ -35,10 +35,8 @@ public interface LocalNodes {
 	 * 
 	 * @param config the configuration of the node
 	 * @param app the application
-	 * @param singleNode works in single node mode, that is, it mines over an old head that cannot be
-	 *                   synchronized. This is useful to start a brand new chain or to restart a chain
-	 *                   after some time, when there are no peers; this option is ignored if the database
-	 *                   contains at least a peer
+	 * @param init if the blockchain database is empty, it requires to initialize the blockchain
+	 *             by mining a genesis block. Otherwise, it is ignored
 	 * @param miners the miners
 	 * @return the local node
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
@@ -46,9 +44,9 @@ public interface LocalNodes {
 	 * @throws IOException if the database is corrupted
 	 * @throws URISyntaxException if some URI in the database has an illegal syntax
 	 */
-	static LocalNode of(Config config, Application app, boolean singleNode, Miner... miners)
+	static LocalNode of(Config config, Application app, boolean init, Miner... miners)
 			throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
 
-		return new LocalNodeImpl(config, app, singleNode, miners);
+		return new LocalNodeImpl(config, app, init, miners);
 	}
 }

@@ -105,12 +105,11 @@ public class MineNewBlockTask implements Task {
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node performing the mining
-	 * @param blockchain the blockchain of the node
 	 * @param previous the previous block, if any; otherwise a genesis block is mined
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous) {
+	MineNewBlockTask(LocalNodeImpl node, Optional<Block> previous) {
 		this.node = node;
-		this.blockchain = blockchain;
+		this.blockchain = node.getBlockchain();
 		this.config = node.getConfig();
 		this.previous = previous;
 		this.heightOfNewBlock = previous.isEmpty() ? 0L : (previous.get().getHeight() + 1);
@@ -136,16 +135,6 @@ public class MineNewBlockTask implements Task {
 	@Override @OnThread("tasks")
 	public void body() {
 		try {
-			if (blockchain.requiresSynchronizationForNonRecentBlocks())
-				if (previous.isEmpty()) {
-					LOGGER.warning(logPrefix + "paused mining since the blockchain is empty and needs synchronizing");
-					return;
-				}
-				else if (!blockchain.isRecent(previous.get())) {
-					LOGGER.warning(logPrefix + "paused mining since the blockchain has an old head and needs synchronizing");
-					return;
-				}
-
 			if (previous.isPresent()) {
 				if (miners.get().count() == 0L)
 					node.submit(new NoMinersAvailableEvent());
@@ -217,7 +206,7 @@ public class MineNewBlockTask implements Task {
 		public void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
 			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-			node.submit(new DelayedMineNewBlockTask(node, blockchain, Optional.of(previous)));
+			node.submit(new DelayedMineNewBlockTask(node, Optional.of(previous)));
 		}
 
 		@Override

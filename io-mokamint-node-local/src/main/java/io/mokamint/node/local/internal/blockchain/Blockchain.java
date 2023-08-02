@@ -57,12 +57,6 @@ public class Blockchain {
 	private final LocalNodeImpl node;
 
 	/**
-	 * True if and only if mining works also when synchronization is not possible;
-	 * this is ignored if the node has at least a peer.
-	 */
-	private final boolean singleNode;
-
-	/**
 	 * The database of the node.
 	 */
 	private final Database db;
@@ -100,14 +94,11 @@ public class Blockchain {
 	 * Creates the container of the blocks of a node.
 	 * 
 	 * @param node the node
-	 * @param singleNode true if and only if mining works also when synchronization is not possible; this is
-	 *                   ignored if the node has at least a peer
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(LocalNodeImpl node, boolean singleNode) throws NoSuchAlgorithmException, DatabaseException {
+	public Blockchain(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException {
 		this.node = node;
-		this.singleNode = singleNode;
 		this.db = node.getDatabase();
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.peers = node.getPeers();
@@ -227,9 +218,16 @@ public class Blockchain {
 		while (!ws.isEmpty());
 	
 		Block newHead = updatedHead.get();
-		// if the head changed, then the genesis is definitely set and we can call {@link #isRecent()}
 		if (newHead != null)
 			mineBlockOnTopOf(Optional.of(newHead));
+		else if (!added) {
+			var head = getHead();
+			if (head.isEmpty() || head.get().getPower().compareTo(block.getPower()) < 0)
+				// the block was better than our current head, but misses a previous block:
+				// we synchronize from that block asking our peers if they know a chain from
+				// that block towards a known block
+				node.submit(new SynchronizationTask(node, block));
+		}
 
 		return added;
 	}
@@ -251,24 +249,14 @@ public class Blockchain {
 	}
 
 	/**
-	 * Determines if synchronization is required before mining on a non-recent block.
-	 * 
-	 * @return true if and only if synchronization is required
-	 */
-	public boolean requiresSynchronizationForNonRecentBlocks() {
-		return !singleNode || peers.get().count() > 0L;
-	}
-
-	/**
 	 * Starts a mining task for the next block, on top of a previous block.
 	 * If a mining task was already running when this method is
 	 * called, that previous mining task gets interrupted and replaced with this new mining task.
 	 * 
-	 * @param force performs mining also if the head of the blockchain is not recent
 	 * @param previous the previous block; if missing, the genesis block is mined
 	 */
 	private void mineBlockOnTopOf(Optional<Block> previous) {
-		node.submit(new MineNewBlockTask(node, this, previous));
+		node.submit(new MineNewBlockTask(node, previous));
 	}
 
 	private boolean verify(GenesisBlock block) {

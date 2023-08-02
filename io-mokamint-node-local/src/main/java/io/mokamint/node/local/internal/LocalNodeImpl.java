@@ -151,16 +151,14 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param config the configuration of the node
 	 * @param app the application
-	 * @param singleNode works in single node mode, that is, it mines over an old head that cannot be
-	 *                   synchronized. This is useful to start a brand new chain or to restart a chain
-	 *                   after some time, when there are no peers; this option is ignored if the database
-	 *                   contains at least a peer
+	 * @param init if the blockchain database is empty, it requires to initialize the blockchain
+	 *             by mining a genesis block. Otherwise, it is ignored
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public LocalNodeImpl(Config config, Application app, boolean singleNode, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
+	public LocalNodeImpl(Config config, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
 		this.config = config;
 		this.app = app;
 		this.db = new Database(this);
@@ -169,8 +167,10 @@ public class LocalNodeImpl implements LocalNode {
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this);
-		this.blockchain = new Blockchain(this, singleNode);
-		blockchain.startMining();
+		this.blockchain = new Blockchain(this);
+
+		if (blockchain.getGenesis().isPresent() || init)
+			blockchain.startMining();
 	}
 
 	@Override

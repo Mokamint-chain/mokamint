@@ -29,8 +29,8 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node, Blockchain blockchain, Optional<Block> previous) {
-		super(node, blockchain, previous);
+	public DelayedMineNewBlockTask(LocalNodeImpl node, Optional<Block> previous) {
+		super(node, previous);
 
 		this.delay = node.getConfig().deadlineWaitTimeout;
 	}
