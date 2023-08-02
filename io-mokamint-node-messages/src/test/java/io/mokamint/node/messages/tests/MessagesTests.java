@@ -43,6 +43,7 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
+import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.nonce.Deadlines;
@@ -205,15 +206,27 @@ public class MessagesTests {
 	}
 
 	@Test
-	@DisplayName("suggestPeers messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForSuggestPeers() throws EncodeException, DecodeException, URISyntaxException {
+	@DisplayName("whisperPeers messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForWhisperPeers() throws EncodeException, DecodeException, URISyntaxException {
 		var peer1 = Peers.of(new URI("ws://google.com:8011"));
 		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
 		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
-		var suggestPeersMessage1 = WhisperPeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
-		String encoded = new WhisperPeersMessages.Encoder().encode(suggestPeersMessage1);
-		var suggestPeersMessage2 = new WhisperPeersMessages.Decoder().decode(encoded);
-		assertEquals(suggestPeersMessage1, suggestPeersMessage2);
+		var whisperPeersMessage1 = WhisperPeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
+		String encoded = new WhisperPeersMessages.Encoder().encode(whisperPeersMessage1);
+		var whisperPeersMessage2 = new WhisperPeersMessages.Decoder().decode(encoded);
+		assertEquals(whisperPeersMessage1, whisperPeersMessage2);
+	}
+
+	@Test
+	@DisplayName("whisperBlock messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, URISyntaxException {
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
+		var whisperBlockMessage1 = WhisperBlockMessages.of(block, "id");
+		String encoded = new WhisperBlockMessages.Encoder().encode(whisperBlockMessage1);
+		var whisperBlockMessage2 = new WhisperBlockMessages.Decoder().decode(encoded);
+		assertEquals(whisperBlockMessage1, whisperBlockMessage2);
 	}
 
 	@Test

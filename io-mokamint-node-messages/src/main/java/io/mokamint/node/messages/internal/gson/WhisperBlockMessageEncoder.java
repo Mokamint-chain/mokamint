@@ -14,25 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.messages.internal.gson;
 
-import java.util.stream.Stream;
-
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.Peer;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.WhisperBlockMessages;
+import io.mokamint.node.messages.api.WhisperBlockMessage;
 
 /**
- * The network message sent to whisper some peers between whisperers.
+ * An encoder of an {@link WhisperBlockMessage}.
  */
-public interface WhisperPeersMessage extends RpcMessage {
+public class WhisperBlockMessageEncoder extends MappedEncoder<WhisperBlockMessage, WhisperBlockMessages.Json> {
 
-	/**
-	 * Yields the whispered peers.
-	 * 
-	 * @return the peers
-	 */
-	Stream<Peer> getPeers();
-
-	@Override
-	boolean equals(Object obj);
+	public WhisperBlockMessageEncoder() {
+		super(WhisperBlockMessages.Json::new);
+	}
 }

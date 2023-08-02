@@ -20,9 +20,6 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -40,7 +37,6 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.NodePeers;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -60,11 +56,6 @@ public class Blockchain {
 	 * The database of the node.
 	 */
 	private final Database db;
-
-	/**
-	 * The peers of the node.
-	 */
-	private final NodePeers peers;
 
 	/**
 	 * A cache for the genesis block, if it has been set already.
@@ -101,7 +92,6 @@ public class Blockchain {
 		this.node = node;
 		this.db = node.getDatabase();
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
-		this.peers = node.getPeers();
 	}
 
 	/**
@@ -111,7 +101,7 @@ public class Blockchain {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public void startMining() throws NoSuchAlgorithmException, DatabaseException {
-		mineBlockOnTopOf(getHead());
+		node.submit(new MineNewBlockTask(node, getHead()));
 	}
 
 	/**
@@ -216,10 +206,10 @@ public class Blockchain {
 			first = false;
 		}
 		while (!ws.isEmpty());
-	
+
 		Block newHead = updatedHead.get();
 		if (newHead != null)
-			mineBlockOnTopOf(Optional.of(newHead));
+			node.submit(new MineNewBlockTask(node, Optional.of(newHead)));
 		else if (!added) {
 			var head = getHead();
 			if (head.isEmpty() || head.get().getPower().compareTo(block.getPower()) < 0)
@@ -242,22 +232,11 @@ public class Blockchain {
 	 * @throws NoSuchAlgorithmException if some node uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
+	/*public boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
 		var creationTimeOfBlock = getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
 		var now = peers.asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 		return ChronoUnit.MILLIS.between(creationTimeOfBlock, now) < node.getConfig().getTargetBlockCreationTime() * 4;
-	}
-
-	/**
-	 * Starts a mining task for the next block, on top of a previous block.
-	 * If a mining task was already running when this method is
-	 * called, that previous mining task gets interrupted and replaced with this new mining task.
-	 * 
-	 * @param previous the previous block; if missing, the genesis block is mined
-	 */
-	private void mineBlockOnTopOf(Optional<Block> previous) {
-		node.submit(new MineNewBlockTask(node, previous));
-	}
+	}*/
 
 	private boolean verify(GenesisBlock block) {
 		return true;

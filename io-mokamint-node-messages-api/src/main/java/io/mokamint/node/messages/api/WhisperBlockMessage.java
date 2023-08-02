@@ -16,22 +16,20 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
-import java.util.stream.Stream;
-
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.Block;
 
 /**
- * The network message sent to whisper some peers between whisperers.
+ * The network message sent to whisper a block between whisperers.
  */
-public interface WhisperPeersMessage extends RpcMessage {
+public interface WhisperBlockMessage extends RpcMessage {
 
 	/**
-	 * Yields the whispered peers.
+	 * Yields the whispered block.
 	 * 
-	 * @return the peers
+	 * @return the block
 	 */
-	Stream<Peer> getPeers();
+	Block getBlock();
 
 	@Override
 	boolean equals(Object obj);
