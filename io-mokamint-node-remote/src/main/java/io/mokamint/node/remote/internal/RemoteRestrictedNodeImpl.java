@@ -79,11 +79,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
-			LOGGER.log(Level.SEVERE, "unexpected null message");
+			LOGGER.log(Level.SEVERE, "remote: unexpected null message");
 			return;
 		}
 		else {
-			LOGGER.log(Level.SEVERE, "unexpected message of class " + message.getClass().getName());
+			LOGGER.log(Level.SEVERE, "remote: unexpected message of class " + message.getClass().getName());
 			return;
 		}
 
@@ -109,7 +109,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "unexpected exception", e);
+		LOGGER.log(Level.SEVERE, "remote: unexpected exception", e);
 		return new RuntimeException("unexpected exception", e);
 	}
 

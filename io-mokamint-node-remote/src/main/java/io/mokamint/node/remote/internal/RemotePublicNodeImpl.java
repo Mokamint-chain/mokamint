@@ -147,7 +147,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("got whispered block"); // TODO
+		LOGGER.info("remote: got whispered block"); // TODO
 
 		onWhisperBlock(message);
 
@@ -159,7 +159,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("got whispered peers " + SanitizedStrings.of(message.getPeers()));
+		LOGGER.info("remote: got whispered peers " + SanitizedStrings.of(message.getPeers()));
 
 		onWhisperPeers(message);
 
@@ -177,7 +177,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "unexpected exception", e);
+		LOGGER.log(Level.SEVERE, "remote: unexpected exception", e);
 		return new RuntimeException("unexpected exception", e);
 	}
 
@@ -196,11 +196,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
-			LOGGER.log(Level.SEVERE, "unexpected null message");
+			LOGGER.log(Level.SEVERE, "remote: unexpected null message");
 			return;
 		}
 		else {
-			LOGGER.log(Level.SEVERE, "unexpected message of class " + message.getClass().getName());
+			LOGGER.log(Level.SEVERE, "remote: unexpected message of class " + message.getClass().getName());
 			return;
 		}
 

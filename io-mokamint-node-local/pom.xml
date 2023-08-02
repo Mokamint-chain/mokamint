@@ -65,6 +65,18 @@
       <version>${mokamint.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-plotter</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-local</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>

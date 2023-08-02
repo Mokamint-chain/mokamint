@@ -150,7 +150,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 					session.close();
 				}
 				catch (IOException e) {
-					LOGGER.log(Level.WARNING, "cannot close the sessions", ioException);
+					LOGGER.log(Level.WARNING, "remote: cannot close the sessions", ioException);
 					ioException = e;
 				}
 			}
@@ -190,7 +190,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 				close();
 			}
 			catch (IOException | InterruptedException e) {
-				LOGGER.log(Level.SEVERE, "cannot close " + getClass().getName(), e);
+				LOGGER.log(Level.SEVERE, "remote: cannot close " + getClass().getName(), e);
 			}
 		}
 

@@ -18,14 +18,14 @@ package io.mokamint.plotter.tests;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -37,22 +37,16 @@ public class PlotTests {
 
 	@Test
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
-	public void testDeadlineRecomputation() throws IOException {
-		var path = Paths.get("pippo.plot");
-		Files.deleteIfExists(path);
+	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException {
 		var prolog = new byte[] { 11, 13, 24, 88 };
-		long start = 65536L;
-		long length = 100L;
+		long start = 65536L, length = 100L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
-		try (var plot = Plots.create(path, prolog, start, length, hashing, __ -> {})) {
+		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
 			Deadline deadline1 = plot.getSmallestDeadline(description);
 			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description);
 			Assertions.assertEquals(deadline1, deadline2);
-		}
-		finally {
-			Files.deleteIfExists(path);
 		}
 	}
 

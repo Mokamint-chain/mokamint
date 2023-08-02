@@ -473,7 +473,7 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public String toString() {
-			return "ping to all peers to create missing remotes and collect their peers";
+			return "pinging all peers to create missing remotes and collect their peers";
 		}
 	}
 
