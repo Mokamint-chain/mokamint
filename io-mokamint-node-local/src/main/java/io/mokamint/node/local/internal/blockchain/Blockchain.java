@@ -257,7 +257,8 @@ public class Blockchain {
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from that block asking our peers if they know a chain from
 				// that block towards a known block
-				node.submit(new SynchronizationTask(node, block));
+				if (block instanceof NonGenesisBlock ngb)
+					node.submit(new SynchronizationTask(node, ngb));
 		}
 
 		return added;

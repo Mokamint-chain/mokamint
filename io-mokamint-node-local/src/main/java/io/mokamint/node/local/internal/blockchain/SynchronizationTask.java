@@ -26,10 +26,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
+import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -59,7 +59,7 @@ public class SynchronizationTask implements Task {
 	/**
 	 * The block from which the synchronization starts.
 	 */
-	private final Block top;
+	private final NonGenesisBlock top;
 
 	/**
 	 * The hash of {@link #top}, as a hexadecimal string.
@@ -75,7 +75,7 @@ public class SynchronizationTask implements Task {
 	 * @param node the node requesting the synchronization
 	 * @param top the block from which synchronization starts
 	 */
-	public SynchronizationTask(LocalNodeImpl node, Block top) {
+	public SynchronizationTask(LocalNodeImpl node, NonGenesisBlock top) {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.top = top;
@@ -109,56 +109,96 @@ public class SynchronizationTask implements Task {
 		 */
 		private final List<Block> chain = new ArrayList<>();
 
-		private final Set<Peer> alreadyTried = new HashSet<Peer>();
+		private final Set<Peer> alreadyTried = new HashSet<>();
+
+		private Peer peer;
+
+		private RemotePublicNode remote;
 
 		private Run() throws DatabaseException, NoSuchAlgorithmException {
 			chain.add(top);
 
+			if (!moveToNextAvailablePeer()) {
+				node.submit(new MissingBlockEvent(Hex.toHexString(top.getHashOfPreviousBlock())));
+				return;
+			}
+
 			do {
 				Block cursor = chain.get(chain.size() - 1);
-				if (cursor instanceof GenesisBlock) {
+
+				Optional<byte[]> hashOfPreviousBlock = getHashOfPreviousBlockToDownload(cursor);
+				if (hashOfPreviousBlock.isEmpty()) {
 					addChain();
 					return;
 				}
 
-				byte[] hashOfPreviousBlock = ((NonGenesisBlock) cursor).getHashOfPreviousBlock();
-				if (blockchain.containsBlock(hashOfPreviousBlock)) {
-					addChain();
+				Optional<Block> previous = downloadFromPeers(hashOfPreviousBlock.get());
+				if (previous.isEmpty()) {
+					node.submit(new MissingBlockEvent(Hex.toHexString(hashOfPreviousBlock.get())));
 					return;
 				}
-
-				Optional<Block> previous;
-
-				do {
-					Optional<RemotePublicNode> remote = selectNextPeer();
-					if (remote.isEmpty()) {
-						node.submit(new MissingBlockEvent(cursor.getHexHash(node.getConfig().hashingForBlocks)));
-						return;
-					}
-
-					try {
-						previous = remote.get().getBlock(hashOfPreviousBlock);
-					}
-					catch (ClosedNodeException | TimeoutException | InterruptedException e) {
-						previous = Optional.empty();
-					}
-				}
-				while (previous.isEmpty());
 
 				chain.add(previous.get());
+
 				alreadyTried.clear();
+				alreadyTried.add(peer);
 			}
 			while (true);
 		}
 
-		private Optional<RemotePublicNode> selectNextPeer() {
+		private Optional<Peer> selectNextPeer() {
 			return peers.get()
 				.filter(PeerInfo::isConnected)
 				.map(PeerInfo::getPeer)
 				.filter(alreadyTried::add)
-				.map(peers::getRemote)
-				.flatMap(Optional::stream)
 				.findAny();
+		}
+
+		private boolean moveToNextAvailablePeer() {
+			Optional<Peer> maybePeer = selectNextPeer();
+			if (maybePeer.isEmpty())
+				return false;
+
+			peer = maybePeer.get();
+
+			Optional<RemotePublicNode> maybeRemote = peers.getRemote(peer);
+			if (maybeRemote.isEmpty())
+				return false;
+
+			remote = maybeRemote.get();
+
+			return true;
+		}
+
+		private Optional<Block> downloadFromPeers(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+			Optional<Block> previous;
+
+			do {
+				try {
+					previous = remote.getBlock(hash);
+					peers.pardonBecauseReachable(peer);
+				}
+				catch (ClosedNodeException | TimeoutException | InterruptedException e) {
+					previous = Optional.empty();
+					peers.punishBecauseUnreachable(peer);
+				}
+
+				if (previous.isEmpty() && !moveToNextAvailablePeer())
+					return Optional.empty();
+			}
+			while (previous.isEmpty());
+
+			return previous;
+		}
+
+		private Optional<byte[]> getHashOfPreviousBlockToDownload(Block cursor) throws NoSuchAlgorithmException, DatabaseException {
+			if (cursor instanceof NonGenesisBlock ngb) {
+				byte[] hashOfPreviousBlock = ngb.getHashOfPreviousBlock();
+				if (!blockchain.containsBlock(hashOfPreviousBlock))
+					return Optional.of(hashOfPreviousBlock);
+			}
+
+			return Optional.empty();
 		}
 
 		private void addChain() throws NoSuchAlgorithmException, DatabaseException {
@@ -179,7 +219,7 @@ public class SynchronizationTask implements Task {
 	public static class MissingBlockEvent implements Event {
 
 		/**
-		 * The hexadecimal hash of the block whose previous could not be downloaded from the peers.
+		 * The hexadecimal hash of the block that could not be downloaded from the peers.
 		 */
 		public final String hexHashOfBlock;
 
@@ -192,7 +232,7 @@ public class SynchronizationTask implements Task {
 
 		@Override
 		public String toString() {
-			return "synchronization failed at block " + hexHashOfBlock + ": cannot download its previous block";
+			return "synchronization failed: cannot download block " + hexHashOfBlock;
 		}
 
 		@Override

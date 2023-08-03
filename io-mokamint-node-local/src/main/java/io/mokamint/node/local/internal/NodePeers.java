@@ -477,7 +477,7 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private void punishBecauseUnreachable(Peer peer) {
+	public void punishBecauseUnreachable(Peer peer) {
 		try {
 			check(DatabaseException.class, () -> peers.punish(peer, config.peerPunishmentForUnreachable));
 		}
@@ -486,7 +486,7 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private void pardonBecauseReachable(Peer peer) {
+	public void pardonBecauseReachable(Peer peer) {
 		peers.pardon(peer, config.peerPunishmentForUnreachable);
 	}
 
