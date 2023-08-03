@@ -276,7 +276,7 @@ public class NodePeers implements AutoCloseable {
 	 * @return the remote, if any. This might be missing if, for instance, the
 	 *         peer is currently unreachable
 	 */
-	private Optional<RemotePublicNode> getRemote(Peer peer) {
+	public Optional<RemotePublicNode> getRemote(Peer peer) {
 		return Optional.ofNullable(remotes.get(peer));
 	}
 

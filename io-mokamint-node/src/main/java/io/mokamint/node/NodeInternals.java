@@ -31,6 +31,12 @@ public interface NodeInternals extends Node, AutoCloseable {
 	 * Code executed when the node gets closed.
 	 */
 	interface CloseHandler {
+
+		/**
+		 * Closes the node.
+		 * 
+		 * @throws InterruptedException if the closure has been interrupted
+		 */
 		void close() throws InterruptedException;
 	}
 

@@ -111,6 +111,9 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	boolean equals(Object other);
 
 	@Override
+	int hashCode();
+
+	@Override
 	String toString();
 
 	/**

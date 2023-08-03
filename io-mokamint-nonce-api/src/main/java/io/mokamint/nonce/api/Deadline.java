@@ -58,13 +58,11 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 */
 	byte[] getValue();
 
-	/**
-	 * Checks if this deadline is equal to another object (same progressive, same value).
-	 * 
-	 * @param other the other object
-	 * @return true if and only if {@code other} is a {@link Deadline} with the same data
-	 */
+	@Override
 	boolean equals(Object other);
+
+	@Override
+	int hashCode();
 
 	/**
 	 * Compares the value of this deadline with that of another deadline.

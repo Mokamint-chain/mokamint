@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -37,6 +38,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -80,6 +82,8 @@ public class Blockchain {
 	 * The hashing used for the blocks in the node.
 	 */
 	private final HashingAlgorithm<byte[]> hashingForBlocks;
+
+	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
 	/**
 	 * Creates the container of the blocks of a node.
@@ -156,6 +160,17 @@ public class Blockchain {
 	}
 
 	/**
+	 * Determines if this blockchain contains a block with the given hash.
+	 * 
+	 * @param hash the hash of the block
+	 * @return true if and only if that condition holds
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public boolean containsBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+		return db.containsBlock(hash);
+	}
+
+	/**
 	 * Adds the given block to the database of blocks of this node.
 	 * If the block was already in the database, nothing happens.
 	 * 
@@ -170,8 +185,10 @@ public class Blockchain {
 	 *         correctly verified as a legal child of that previous block
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws VerificationException if {@code block} cannot be added since it does not respect all
+	 *                               consensus rules
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException {
 		boolean added = false, first = true;
 		var updatedHead = new AtomicReference<Block>();
 	
@@ -189,17 +206,41 @@ public class Blockchain {
 					if (previous.isEmpty())
 						putAmongOrphans(ngb);
 					else {
-						if (verify(ngb, previous.get()) && db.add(cursor, updatedHead)) {
+						try {
+							verify(ngb, previous.get());
+						}
+						catch (VerificationException e) {
+							if (first)
+								throw e;
+							else
+								LOGGER.warning("discarding orphan block " + ngb.getHexHash(hashingForBlocks) + " since does not pass verification: " + e.getMessage());
+						}
+	
+						if (db.add(cursor, updatedHead)) {
 							getOrphansWithParent(cursor).forEach(ws::add);
+							node.submit(new BlockAddedEvent(cursor));
 							if (first)
 								added = true;
 						}
 					}
 				}
-				else if (verify((GenesisBlock) block) && db.add(cursor, updatedHead)) {
-					getOrphansWithParent(cursor).forEach(ws::add);
-					if (first)
-						added = true;
+				else {
+					try {
+						verify((GenesisBlock) block);
+					}
+					catch (VerificationException e) {
+						if (first)
+							throw e;
+						else
+							LOGGER.warning("discarding orphan block " + block.getHexHash(hashingForBlocks) + " since does not pass verification: " + e.getMessage());
+					}
+
+					if (db.add(cursor, updatedHead)) {
+						getOrphansWithParent(cursor).forEach(ws::add);
+						node.submit(new BlockAddedEvent(cursor));
+						if (first)
+							added = true;
+					}
 				}
 			}
 	
@@ -223,27 +264,38 @@ public class Blockchain {
 	}
 
 	/**
-	 * Checks if the given block can be considered as recent, that is, if it has been
-	 * created sufficiently close to the current network time. This method assumes that
-	 * the genesis has been already set in this blockchain.
-	 * 
-	 * @param block the block
-	 * @return true if and only if {@code block} is recent
-	 * @throws NoSuchAlgorithmException if some node uses an unknown hashing algorithm
-	 * @throws DatabaseException if the database is corrupted
+	 * An event triggered when a block gets added to the blockchain, not necessarily
+	 * to the main chain, but definitely connected to the genesis block.
 	 */
-	/*public boolean isRecent(Block block) throws NoSuchAlgorithmException, DatabaseException {
-		var creationTimeOfBlock = getGenesis().get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-		var now = peers.asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		return ChronoUnit.MILLIS.between(creationTimeOfBlock, now) < node.getConfig().getTargetBlockCreationTime() * 4;
-	}*/
+	public class BlockAddedEvent implements Event {
 
-	private boolean verify(GenesisBlock block) {
-		return true;
+		/**
+		 * The block that has been added.
+		 */
+		public final Block block;
+
+		private BlockAddedEvent(Block block) {
+			this.block = block;
+		}
+
+		@Override
+		public void body() throws Exception {}
+
+		@Override
+		public String toString() {
+			return "block added event " + block.getHexHash(node.getConfig().hashingForBlocks);
+		}
+
+		@Override
+		public String logPrefix() {
+			return "height " + block.getHeight() + ": ";
+		}
 	}
 
-	private boolean verify(NonGenesisBlock block, Block previous) {
-		return true;
+	private void verify(GenesisBlock block) throws VerificationException {
+	}
+
+	private void verify(NonGenesisBlock block, Block previous) throws VerificationException {
 	}
 
 	/**

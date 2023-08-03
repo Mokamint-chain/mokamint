@@ -300,8 +300,7 @@ public class Database implements AutoCloseable {
 	 * @return true if the block has been actually added to the database, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
 	 *         if {@code block} was already in the database, or if {@code block} is
-	 *         a genesis block but the genesis block is already set in the database, or
-	 *         if {@code block} ...
+	 *         a genesis block but the genesis block is already set in the database
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 */
@@ -579,7 +578,6 @@ public class Database implements AutoCloseable {
 
 	private void putInStore(Transaction txn, Block block, byte[] hashOfBlock, byte[] bytesOfBlock) {
 		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-		LOGGER.info("height " + block.getHeight() + ": block " + block.getHexHash(config.getHashingForBlocks()) + " added to the database");
 	}
 
 	private boolean isInStore(Transaction txn, byte[] hashOfBlock) {

@@ -173,6 +173,11 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
+	public int hashCode() {
+		return ((int) height) ^ power.hashCode() ^ ((int) totalWaitingTime) ^ ((int) weightedWaitingTime) ^ acceleration.hashCode() ^ deadline.hashCode();
+	}
+
+	@Override
 	public void into(MarshallingContext context) throws IOException {
 		// we write the height of the block first, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)

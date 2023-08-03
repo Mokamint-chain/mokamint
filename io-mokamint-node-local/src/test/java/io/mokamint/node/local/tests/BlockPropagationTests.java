@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.local.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -26,27 +28,31 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
 import io.mokamint.node.local.Config;
-import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.plotter.Plots;
 import jakarta.websocket.DeploymentException;
@@ -68,44 +74,72 @@ public class BlockPropagationTests {
 	}
 
 	@Test
-	@Disabled
-	@DisplayName("a node without mining capacity follows the blocks of a peer")
-	@Timeout(1000) // TODO
+	@DisplayName("a node without mining capacity synchronizes from its peer")
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {
+
+		// how many blocks must be mined by node2 and whispered into node1
+		final var howMany = 10;
 
 		var port2 = 8034;
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 
 		var config1 = Config.Builder.defaults()
 			.setDir(chain1)
-			.setTargetBlockCreationTime(2000L)
+			.setTargetBlockCreationTime(500L)
 			.setInitialAcceleration(1000000000000000L)
 			.build();
 
 		var config2 = Config.Builder.defaults()
 			.setDir(chain2)
-			.setTargetBlockCreationTime(2000L)
+			.setTargetBlockCreationTime(500L)
 			.setInitialAcceleration(1000000000000000L)
 			.build();
 
-		class MyLocalNode extends LocalNodeImpl {
+		var semaphore = new Semaphore(0);
+		var blocksOfNode1 = new HashSet<Block>();
 
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
+		class MyLocalNode1 extends LocalNodeImpl {
+
+			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
 				super(config, app, false); // <--- does not start mining by itself
 			}
 
 			@Override
-			protected void onStart(Task task) {
-				System.out.println(task);
-				super.onStart(task);
+			protected void onComplete(Event event) {
+				if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
+					blocksOfNode1.add(bae.block);
+					semaphore.release();
+				}
+
+				super.onComplete(event);
+			}
+		}
+
+		var blocksOfNode2 = new HashSet<Block>();
+
+		class MyLocalNode2 extends LocalNodeImpl {
+
+			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException {
+				super(config, app, true, miners); // <--- starts mining by itself
 			}
 
 			@Override
-			protected void onStart(Event event) {
-				System.out.println(event);
-				super.onStart(event);
+			public void submit(Task task) {
+				// node2 stops mining at height 10
+				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= howMany)
+					return;
+
+				super.submit(task);
+			}
+
+			@Override
+			protected void onComplete(Event event) {
+				if (event instanceof BlockAddedEvent bae)
+					blocksOfNode2.add(bae.block);
+
+				super.onComplete(event);
 			}
 		}
 
@@ -114,15 +148,16 @@ public class BlockPropagationTests {
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 
-		try (var node1 = new MyLocalNode(config1);
-			 var plot2 = Plots.create(chain2.resolve("plot2.plot"), prolog, start, length, hashing, __ -> {});
+		try (var plot2 = Plots.create(chain2.resolve("plot2.plot"), prolog, start, length, hashing, __ -> {});
 			 var miner2 = LocalMiners.of(plot2);
-			 var node2 = LocalNodes.of(config2, app, true, miner2);
+			 var node1 = new MyLocalNode1(config1);
+			 var node2 = new MyLocalNode2(config2, miner2);  // we open node2 at the end so that it does not start mining too early
 			 var service2 = PublicNodeServices.open(node2, port2)) {
 
 			node1.addPeer(peer2);
 
-			Thread.sleep(10000000L);
+			assertTrue(semaphore.tryAcquire(howMany, 30, TimeUnit.SECONDS));
+			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
 

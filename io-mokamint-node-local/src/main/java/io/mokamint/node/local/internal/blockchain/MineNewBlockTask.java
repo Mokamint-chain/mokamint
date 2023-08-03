@@ -57,6 +57,11 @@ public class MineNewBlockTask implements Task {
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
 	/**
+	 * The block over which mining is performed; this is empty if the genesis
+	 * block is being mined.
+	 */
+	public final Optional<Block> previous;
+	/**
 	 * The node performing the mining.
 	 */
 	private final LocalNodeImpl node;
@@ -70,11 +75,6 @@ public class MineNewBlockTask implements Task {
 	 * The configuration of the node running this task.
 	 */
 	private final Config config;
-
-	/**
-	 * The block over which mining is performed.
-	 */
-	private final Optional<Block> previous;
 
 	/**
 	 * The height of the new block that is being mined.
@@ -128,9 +128,9 @@ public class MineNewBlockTask implements Task {
 	@Override
 	public String toString() {
 		if (previous.isEmpty())
-			return "mining a genesis block";
+			return "genesis block mining";
 		else
-			return "mining a block on top of " + previousHex;
+			return "block mining on top of " + previousHex;
 	}
 
 	@Override @OnThread("tasks")
@@ -144,7 +144,6 @@ public class MineNewBlockTask implements Task {
 			}
 			else {
 				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.initialAcceleration));
-				LOGGER.info(logPrefix + "finished mining the genesis block " + genesis.getHexHash(config.getHashingForBlocks()));
 				node.submit(new BlockMinedEvent(genesis));
 			}
 		}
@@ -283,7 +282,7 @@ public class MineNewBlockTask implements Task {
 		}
 
 		@Override @OnThread("events")
-		public void body() throws DatabaseException, NoSuchAlgorithmException {
+		public void body() throws DatabaseException, NoSuchAlgorithmException, VerificationException {
 			if (blockchain.add(block)) {
 				LOGGER.info(logPrefix + "whispering block " + hexBlockHash + " to all peers");
 				node.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false);
@@ -344,7 +343,6 @@ public class MineNewBlockTask implements Task {
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.targetBlockCreationTime = BigInteger.valueOf(config.getTargetBlockCreationTime());
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
-			LOGGER.info(logPrefix + "started " + MineNewBlockTask.this);
 
 			try {
 				requestDeadlineToEveryMiner();
@@ -383,7 +381,6 @@ public class MineNewBlockTask implements Task {
 		}
 
 		private void informNodeAboutNewBlock(Block block) {
-			LOGGER.info(logPrefix + "finished mining new block on top of " + previousHex);
 			node.submit(new BlockMinedEvent(block));
 		}
 

@@ -54,6 +54,7 @@ import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
+import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.messages.MessageMemories;
 import io.mokamint.node.messages.MessageMemory;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
@@ -212,7 +213,7 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			blockchain.add(message.getBlock());
 		}
-		catch (NoSuchAlgorithmException | DatabaseException e) {
+		catch (NoSuchAlgorithmException | DatabaseException | VerificationException e) {
 			LOGGER.log(Level.SEVERE, "the whispered block " +
 				message.getBlock().getHexHash(config.getHashingForBlocks()) +
 				" could not be added to the blockchain: " + e.getMessage());

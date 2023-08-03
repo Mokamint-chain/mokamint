@@ -122,6 +122,11 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
+	public int hashCode() {
+		return startDateTimeUTC.hashCode() ^ acceleration.hashCode();
+	}
+
+	@Override
 	public String toString() {
 		var builder = new StringBuilder("Genesis Block:\n");
 		builder.append("* creation date and time UTC: " + startDateTimeUTC + "\n");
