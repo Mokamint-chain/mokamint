@@ -464,7 +464,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}

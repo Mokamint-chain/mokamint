@@ -331,14 +331,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetChainInfo(id);
 		try {
 			return queues.waitForResult(id, this::processGetChainInfoSuccess, this::processGetChainInfoException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -361,8 +361,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private boolean processGetChainInfoException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
-			DatabaseException.class.isAssignableFrom(clazz) ||
+		return DatabaseException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 

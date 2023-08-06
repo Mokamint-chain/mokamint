@@ -66,13 +66,12 @@ public interface PublicNode extends Node {
 	 * Yields information about the current chain of this node.
 	 * 
 	 * @return the information
-	 * @throws NoSuchAlgorithmException if the head block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the hashes of the blocks in the current best chain, starting at height {@code start}

@@ -46,8 +46,10 @@ import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -211,6 +213,21 @@ public class Database implements AutoCloseable, tBestChain {
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException {
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields information about the current best chain.
+	 * 
+	 * @return the information
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public ChainInfo getChainInfo() throws DatabaseException {
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChainInfo(txn))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -754,6 +771,27 @@ public class Database implements AutoCloseable, tBestChain {
 	    return result;
 	}
 
+	private ChainInfo getChainInfo(Transaction txn) throws DatabaseException {
+		var maybeGenesisHash = getGenesisHash(txn);
+		if (maybeGenesisHash.isEmpty())
+			return ChainInfos.of(0L, Optional.empty(), Optional.empty());
+		else {
+			var maybeHeadHash = getHeadHash(txn);
+			if (maybeHeadHash.isEmpty())
+				throw new DatabaseException("The hash of the genesis is set but there is no head hash set in the database");
+
+			ByteIterable heightBI = storeOfChain.get(txn, Database.height);
+			if (heightBI == null)
+				throw new DatabaseException("The hash of the genesis is set but the height of the current best chain is missing");
+
+			long chainHeight = bytesToLong(heightBI.getBytes());
+			if (chainHeight < 0L)
+				throw new DatabaseException("The database contains a negative chain length");
+
+			return ChainInfos.of(chainHeight, maybeGenesisHash, maybeHeadHash);
+		}
+	}
+
 	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws DatabaseException {
 		if (start < 0L || count <= 0L)
 			return Stream.empty();
@@ -764,7 +802,7 @@ public class Database implements AutoCloseable, tBestChain {
 
 		long chainHeight = bytesToLong(heightBI.getBytes());
 		if (chainHeight < 0L)
-			throw new DatabaseException("the database contains a negative chain length");
+			throw new DatabaseException("The database contains a negative chain length");
 
 		ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight + 1))
 			.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))

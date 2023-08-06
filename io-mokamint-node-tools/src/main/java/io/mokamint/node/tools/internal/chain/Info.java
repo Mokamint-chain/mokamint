@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.chain;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,10 +46,6 @@ public class Info extends AbstractPublicRpcCommand {
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
 			LOGGER.log(Level.SEVERE, "cannot encode the chain info of the node at \"" + publicUri() + "\" in JSON format.", e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red The head of the chain uses an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\".", e);
 		}
 		catch (DatabaseException e) {
 			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));

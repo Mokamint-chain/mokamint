@@ -32,6 +32,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -147,6 +148,16 @@ public class Blockchain {
 			maybeHeadHash
 				.map(uncheck(hash -> db.getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
 		);
+	}
+
+	/**
+	 * Yields information about the current best chain.
+	 * 
+	 * @return the information
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public ChainInfo getChainInfo() throws DatabaseException {
+		return db.getChainInfo();
 	}
 
 	/**

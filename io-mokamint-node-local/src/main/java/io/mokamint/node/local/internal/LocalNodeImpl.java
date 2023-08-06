@@ -39,7 +39,6 @@ import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Versions;
@@ -302,15 +301,9 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, ClosedNodeException { // TODO: remove NoSuchAlgorithmException
+	public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
 		ensureIsOpen();
-		var maybeHeadHash = db.getHeadHash();
-		if (maybeHeadHash.isEmpty())
-			return ChainInfos.of(0L, Optional.empty(), Optional.empty());
-		else {
-			var head = db.getBlock(maybeHeadHash.get()).orElseThrow(() -> new DatabaseException("The hash of the head is set but the head block is not in the database"));
-			return ChainInfos.of(head.getHeight(), db.getGenesisHash(), maybeHeadHash);
-		}
+		return blockchain.getChainInfo();
 	}
 
 	@Override

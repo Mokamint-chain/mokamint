@@ -455,30 +455,6 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getChainInfo() works in case of NoSuchAlgorithmException")
-	public void getChainInfoWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
-		var exceptionMessage = "exception message";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws DeploymentException, IOException {}
-
-			@Override
-			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getChainInfo());
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("getInfo() works")
 	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
