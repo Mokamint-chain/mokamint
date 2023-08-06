@@ -16,36 +16,24 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.util.Optional;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 
 /**
- * Information about the current best chain of a Mokamint node.
+ * Information about the hashes of a sequential portion of the
+ * current best chain of a Mokamint node.
  */
 @Immutable
-public interface ChainInfo {
+public interface Chain {
 
 	/**
-	 * Yields the height of the chain (number of blocks from genesis to head).
+	 * Yields the hashes of the sequential portion of the chain, starting
+	 * from blocks with lower height.
 	 * 
-	 * @return the height of the chain
+	 * @return the hashes
 	 */
-	long getHeight();
-
-	/**
-	 * Yields the hash of the genesis block of the chain, if any.
-	 * 
-	 * @return the hash, if any
-	 */
-	Optional<byte[]> getGenesisHash();
-
-	/**
-	 * Yields the hash of the head block of the chain, if any.
-	 * 
-	 * @return the hash, if any
-	 */
-	Optional<byte[]> getHeadHash();
+	Stream<byte[]> getHashes();
 
 	@Override
 	boolean equals(Object other);

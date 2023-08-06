@@ -18,7 +18,7 @@ import io.mokamint.nonce.Deadlines;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class BlocksTests {
+public class BlockTests {
 
 	@Test
 	@DisplayName("genesis blocks are correctly encoded into Json and decoded from Json")
@@ -44,7 +44,7 @@ public class BlocksTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = BlocksTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = BlockTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

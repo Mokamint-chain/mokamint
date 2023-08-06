@@ -25,14 +25,17 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -54,7 +57,7 @@ import io.mokamint.node.local.Config;
 /**
  * The database where the blockchain is persisted.
  */
-public class Database implements AutoCloseable {
+public class Database implements AutoCloseable, tBestChain {
 
 	/**
 	 * The configuration of the node having this database.
@@ -79,7 +82,13 @@ public class Database implements AutoCloseable {
 	/**
 	 * The Xodus store that maps each block to its immediate successor(s).
 	 */
-	private final Store storeOfForwards;
+	private final Store storeOfForwards; // TODO: maybe useless?
+
+	/**
+	 * The Xodus store that holds the list of hashes of the blocks in the main chain.
+	 * It maps 0 to the genesis block, 1 to the block at height 1 in the main chain and so on.
+	 */
+	private final Store storeOfMainChain;
 
 	/**
 	 * The Xodus store that contains the set of peers of the node.
@@ -121,6 +130,7 @@ public class Database implements AutoCloseable {
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
+		this.storeOfMainChain = openStore("main-chain");
 		this.storeOfPeers = openStore("peers");
 		ensureNodeUUID();
 	}
@@ -194,7 +204,32 @@ public class Database implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException {
-		return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the hashes of the blocks in the best chain, starting at height {@code start}
+	 * (inclusive) and ending at height {@code start + count} (exclusive). The result
+	 * might actually be shorter if the best chain is shorter than {@code start + count} blocks.
+	 * 
+	 * @param start the height of the first block whose hash is returned
+	 * @param count how many hashes (maximum) must be reported
+	 * @return the hashes, in order
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Stream<byte[]> getChain(long start, long count) throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	/**
@@ -655,9 +690,66 @@ public class Database implements AutoCloseable {
 		LOGGER.info("height " + newGenesis.getHeight() + ": block " + newGenesis.getHexHash(config.getHashingForBlocks()) + " set as genesis");
 	}
 
-	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) {
+	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
 		storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
+		updateMainChain(txn, newHead, newHeadHash);
 		LOGGER.info("height " + newHead.getHeight() + ": block " + newHead.getHexHash(config.getHashingForBlocks()) + " set as head");
+	}
+
+	private void updateMainChain(Transaction txn, Block block, byte[] blockHash) throws NoSuchAlgorithmException, DatabaseException {
+		long height = block.getHeight();
+		var index = ByteIterable.fromBytes(longToBytes(height));
+		var _new = ByteIterable.fromBytes(blockHash);
+		var old = storeOfMainChain.get(txn, index);
+
+		do {
+			storeOfMainChain.put(txn, index, _new);
+
+			if (block instanceof NonGenesisBlock ngb) {
+				if (height <= 0L)
+					throw new DatabaseException("The main chain contains the non-genesis block " + Hex.toHexString(blockHash) + " at height " + height);
+
+				byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
+				Optional<Block> previous = getBlock(txn, hashOfPrevious);
+				if (previous.isEmpty())
+					throw new DatabaseException("Block " + Hex.toHexString(blockHash) + " has no previous block in the database");
+
+				blockHash = hashOfPrevious;
+				block = previous.get();
+				height--;
+				index = ByteIterable.fromBytes(longToBytes(height));
+				_new = ByteIterable.fromBytes(blockHash);
+				old = storeOfMainChain.get(txn, index);
+			}
+			else if (height > 0L)
+				throw new DatabaseException("The main chain contains the genesis block " + Hex.toHexString(blockHash) + " at height " + height);
+		}
+		while (block instanceof NonGenesisBlock && !_new.equals(old));
+	}
+
+	private static byte[] longToBytes(long l) {
+	    var result = new byte[8];
+	    for (int i = 7; i >= 0; i--) {
+	        result[i] = (byte) (l & 0xFF);
+	        l >>= 8;
+	    }
+
+	    return result;
+	}
+
+	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws NoSuchAlgorithmException, DatabaseException {
+		Optional<Block> head = getHead(txn);
+		if (head.isEmpty())
+			return Stream.empty();
+
+		ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, head.get().getHeight() + 1))
+			.mapToObj(height -> storeOfMainChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
+			.toArray(ByteIterable[]::new);
+
+		if (Stream.of(hashes).anyMatch(Objects::isNull))
+			throw new DatabaseException("The main chain contains a missing element");
+
+		return Stream.of(hashes).map(ByteIterable::getBytes);
 	}
 
 	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) {

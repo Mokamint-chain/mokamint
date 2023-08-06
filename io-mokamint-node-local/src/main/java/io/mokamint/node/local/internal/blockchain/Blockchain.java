@@ -35,7 +35,6 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
@@ -107,15 +106,6 @@ public class Blockchain {
 	public void startMining() throws NoSuchAlgorithmException, DatabaseException {
 		node.submit(new MineNewBlockTask(node, getHead()));
 	}
-
-	/**
-	 * Yields the configuration of the node having this blockchain.
-	 * 
-	 * @return the configuration
-	 */
-	public Config getConfig() {
-		return node.getConfig();
-	}
 	
 	/**
 	 * Yields the first genesis block of this blockchain, if any.
@@ -157,6 +147,21 @@ public class Blockchain {
 			maybeHeadHash
 				.map(uncheck(hash -> db.getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
 		);
+	}
+
+	/**
+	 * Yields the hashes of the blocks in the best chain, starting at height {@code start}
+	 * (inclusive) and ending at height {@code start + count} (exclusive). The result
+	 * might actually be shorter if the best chain is shorter than {@code start + count} blocks.
+	 * 
+	 * @param start the height of the first block whose hash is returned
+	 * @param count how many hashes (maximum) must be reported
+	 * @return the hashes, in order
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public Stream<byte[]> getChain(long start, long count) throws NoSuchAlgorithmException, DatabaseException {
+		return db.getChain(start, count);
 	}
 
 	/**

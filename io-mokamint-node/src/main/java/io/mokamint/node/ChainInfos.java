@@ -61,10 +61,10 @@ public abstract class ChainInfos {
     	/**
     	 * Creates the Json representation for the given chain info.
     	 * 
-    	 * @param config the configuration
+    	 * @param info the chain info
     	 */
-    	public Json(ChainInfo config) {
-    		super(config);
+    	public Json(ChainInfo info) {
+    		super(info);
     	}
     }
 }

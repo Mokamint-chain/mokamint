@@ -15,7 +15,7 @@ import io.mokamint.node.ChainInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class ChainInfosTests {
+public class ChainInfoTests {
 
 	@Test
 	@DisplayName("chain infos with non-empty hashes are correctly encoded into Json and decoded from Json")
@@ -57,7 +57,7 @@ public class ChainInfosTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = ChainInfosTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = ChainInfoTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);
