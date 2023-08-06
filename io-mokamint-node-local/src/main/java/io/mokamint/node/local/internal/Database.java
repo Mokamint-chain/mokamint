@@ -85,10 +85,10 @@ public class Database implements AutoCloseable, tBestChain {
 	private final Store storeOfForwards; // TODO: maybe useless?
 
 	/**
-	 * The Xodus store that holds the list of hashes of the blocks in the main chain.
-	 * It maps 0 to the genesis block, 1 to the block at height 1 in the main chain and so on.
+	 * The Xodus store that holds the list of hashes of the blocks in the current best chain.
+	 * It maps 0 to the genesis block, 1 to the block at height 1 in the current best chain and so on.
 	 */
-	private final Store storeOfMainChain;
+	private final Store storeOfChain;
 
 	/**
 	 * The Xodus store that contains the set of peers of the node.
@@ -104,6 +104,11 @@ public class Database implements AutoCloseable, tBestChain {
 	 * The key mapped in the {@link #storeOfBlocks} to the head block.
 	 */
 	private final static ByteIterable head = fromByte((byte) 19);
+
+	/**
+	 * The key mapped in the {@link #storeOfChain} to the height of the current best chain.
+	 */
+	private final static ByteIterable height = fromByte((byte) 29);
 
 	/**
 	 * The key mapped in the {@link #storeOfPeers} to the sequence of peers.
@@ -130,7 +135,7 @@ public class Database implements AutoCloseable, tBestChain {
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
-		this.storeOfMainChain = openStore("main-chain");
+		this.storeOfChain = openStore("chain");
 		this.storeOfPeers = openStore("peers");
 		ensureNodeUUID();
 	}
@@ -220,12 +225,11 @@ public class Database implements AutoCloseable, tBestChain {
 	 * @param start the height of the first block whose hash is returned
 	 * @param count how many hashes (maximum) must be reported
 	 * @return the hashes, in order
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Stream<byte[]> getChain(long start, long count) throws NoSuchAlgorithmException, DatabaseException {
+	public Stream<byte[]> getChain(long start, long count) throws DatabaseException {
 		try {
-			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -692,22 +696,23 @@ public class Database implements AutoCloseable, tBestChain {
 
 	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
 		storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
-		updateMainChain(txn, newHead, newHeadHash);
+		updateChain(txn, newHead, newHeadHash);
 		LOGGER.info("height " + newHead.getHeight() + ": block " + newHead.getHexHash(config.getHashingForBlocks()) + " set as head");
 	}
 
-	private void updateMainChain(Transaction txn, Block block, byte[] blockHash) throws NoSuchAlgorithmException, DatabaseException {
+	private void updateChain(Transaction txn, Block block, byte[] blockHash) throws NoSuchAlgorithmException, DatabaseException {
 		long height = block.getHeight();
-		var index = ByteIterable.fromBytes(longToBytes(height));
+		var heightBI = ByteIterable.fromBytes(longToBytes(height));
+		storeOfChain.put(txn, Database.height, heightBI);
 		var _new = ByteIterable.fromBytes(blockHash);
-		var old = storeOfMainChain.get(txn, index);
+		var old = storeOfChain.get(txn, heightBI);
 
 		do {
-			storeOfMainChain.put(txn, index, _new);
+			storeOfChain.put(txn, heightBI, _new);
 
 			if (block instanceof NonGenesisBlock ngb) {
 				if (height <= 0L)
-					throw new DatabaseException("The main chain contains the non-genesis block " + Hex.toHexString(blockHash) + " at height " + height);
+					throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(blockHash) + " at height " + height);
 
 				byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
 				Optional<Block> previous = getBlock(txn, hashOfPrevious);
@@ -717,37 +722,56 @@ public class Database implements AutoCloseable, tBestChain {
 				blockHash = hashOfPrevious;
 				block = previous.get();
 				height--;
-				index = ByteIterable.fromBytes(longToBytes(height));
+				heightBI = ByteIterable.fromBytes(longToBytes(height));
 				_new = ByteIterable.fromBytes(blockHash);
-				old = storeOfMainChain.get(txn, index);
+				old = storeOfChain.get(txn, heightBI);
 			}
 			else if (height > 0L)
-				throw new DatabaseException("The main chain contains the genesis block " + Hex.toHexString(blockHash) + " at height " + height);
+				throw new DatabaseException("The current best chain contains the genesis block " + Hex.toHexString(blockHash) + " at height " + height);
 		}
 		while (block instanceof NonGenesisBlock && !_new.equals(old));
 	}
 
 	private static byte[] longToBytes(long l) {
-	    var result = new byte[8];
-	    for (int i = 7; i >= 0; i--) {
+		var result = new byte[Long.BYTES];
+
+		for (int i = Long.BYTES - 1; i >= 0; i--) {
 	        result[i] = (byte) (l & 0xFF);
-	        l >>= 8;
+	        l >>= Byte.SIZE;
 	    }
 
 	    return result;
 	}
 
-	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws NoSuchAlgorithmException, DatabaseException {
-		Optional<Block> head = getHead(txn);
-		if (head.isEmpty())
+	private static long bytesToLong(final byte[] b) {
+	    long result = 0;
+
+	    for (int i = 0; i < Long.BYTES; i++) {
+	        result <<= Byte.SIZE;
+	        result |= (b[i] & 0xFF);
+	    }
+
+	    return result;
+	}
+
+	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws DatabaseException {
+		if (start < 0L || count <= 0L)
 			return Stream.empty();
 
-		ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, head.get().getHeight() + 1))
-			.mapToObj(height -> storeOfMainChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
+		ByteIterable heightBI = storeOfChain.get(txn, Database.height);
+		if (heightBI == null)
+			return Stream.empty();
+
+		long chainHeight = bytesToLong(heightBI.getBytes());
+		if (chainHeight < 0L)
+			throw new DatabaseException("the database contains a negative chain length");
+
+		ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight + 1))
+			.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
 			.toArray(ByteIterable[]::new);
 
 		if (Stream.of(hashes).anyMatch(Objects::isNull))
-			throw new DatabaseException("The main chain contains a missing element");
+			throw new DatabaseException("The current best chain contains a missing element");
 
 		return Stream.of(hashes).map(ByteIterable::getBytes);
 	}
@@ -767,7 +791,7 @@ public class Database implements AutoCloseable, tBestChain {
 	}
 
 	private Environment createBlockchainEnvironment(Config config) {
-		var env = new Environment(config.dir + "/blockchain");
+		var env = new Environment(config.dir.resolve("blockchain").toString());
 		LOGGER.info("opened the blockchain database");
 		return env;
 	}

@@ -35,6 +35,7 @@ import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.messages.GetChainMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
@@ -101,6 +102,15 @@ public class MessagesTests {
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
 		var getBlockResultMessage2 = new GetBlockResultMessages.Decoder().decode(encoded);
 		assertEquals(getBlockResultMessage1, getBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getChain messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetChain() throws EncodeException, DecodeException {
+		var getChainMessage1 = GetChainMessages.of(13, 20, "id");
+		String encoded = new GetChainMessages.Encoder().encode(getChainMessage1);
+		var getChainMessage2 = new GetChainMessages.Decoder().decode(encoded);
+		assertEquals(getChainMessage1, getChainMessage2);
 	}
 
 	@Test

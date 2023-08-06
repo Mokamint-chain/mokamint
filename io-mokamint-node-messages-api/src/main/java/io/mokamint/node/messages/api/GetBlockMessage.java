@@ -17,9 +17,10 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the {@code getBlock} method of a node.
+ * The network message corresponding to the {@link PublicNode#getBlock(byte[])} method.
  */
 public interface GetBlockMessage extends RpcMessage {
 

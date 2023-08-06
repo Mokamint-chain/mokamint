@@ -17,9 +17,10 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the result of the {@code PublicNode#getChainInfo()} method of a node.
+ * The network message corresponding to the result of the {@link PublicNode#getChainInfo()} method.
  */
 public interface GetChainInfoResultMessage extends ResultMessage<ChainInfo> {
 }

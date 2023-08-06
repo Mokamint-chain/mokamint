@@ -19,9 +19,10 @@ package io.mokamint.node.messages.api;
 import java.util.Optional;
 
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the result of the {@code getBlock} method of a node.
+ * The network message corresponding to the result of the {@link PublicNode#getBlock(byte[])} method.
  */
 public interface GetBlockResultMessage extends ResultMessage<Optional<Block>> {
 }

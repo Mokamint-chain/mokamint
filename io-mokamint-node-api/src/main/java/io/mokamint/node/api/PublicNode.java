@@ -75,6 +75,23 @@ public interface PublicNode extends Node {
 	ChainInfo getChainInfo() throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
+	 * Yields the hashes of the blocks in the current best chain, starting at height {@code start}
+	 * (inclusive) and ending at height {@code start + count} (exclusive). The result
+	 * might actually be shorter if the current best chain is shorter than {@code start + count} blocks.
+	 * 
+	 * @param start the height of the first block whose hash is returned
+	 * @param count how many hashes (at most) must be reported
+	 * @return the hashes, in order
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	default Chain getChain(long start, long count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		return null; // TODO
+	}
+
+	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
 	 * 
 	 * @param hash the hash of the block

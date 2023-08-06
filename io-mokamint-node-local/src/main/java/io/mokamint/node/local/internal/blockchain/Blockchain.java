@@ -157,10 +157,9 @@ public class Blockchain {
 	 * @param start the height of the first block whose hash is returned
 	 * @param count how many hashes (maximum) must be reported
 	 * @return the hashes, in order
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Stream<byte[]> getChain(long start, long count) throws NoSuchAlgorithmException, DatabaseException {
+	public Stream<byte[]> getChain(long start, long count) throws DatabaseException {
 		return db.getChain(start, count);
 	}
 

@@ -16,11 +16,28 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
-import io.mokamint.node.api.ConsensusConfig;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the result of the {@link PublicNode#getConfig()} method.
+ * The network message corresponding to the {@link PublicNode#getChain(long, long)} method.
  */
-public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig> {
+public interface GetChainMessage extends RpcMessage {
+
+	/**
+	 * Yields the {@code start} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
+	long getStart();
+
+	/**
+	 * Yields the {@code count} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
+	long getCount();
+
+	@Override
+	boolean equals(Object obj);
 }
