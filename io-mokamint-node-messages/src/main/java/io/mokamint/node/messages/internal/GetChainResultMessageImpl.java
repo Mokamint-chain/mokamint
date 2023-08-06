@@ -16,42 +16,45 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.util.Objects;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetConfigResultMessage;
+import io.mokamint.node.messages.api.GetChainResultMessage;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#getConfig()} method.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getChain(long, long)} method.
  */
-public class GetConfigResultMessageImpl extends AbstractRpcMessage implements GetConfigResultMessage {
+public class GetChainResultMessageImpl extends AbstractRpcMessage implements GetChainResultMessage {
 
-	private final ConsensusConfig config;
+	private final Chain chain;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param config the configuration in the message
+	 * @param chain the chain hashes
 	 * @param id the identifier of the message
 	 */
-	public GetConfigResultMessageImpl(ConsensusConfig config, String id) {
+	public GetChainResultMessageImpl(Chain chain, String id) {
 		super(id);
 
-		this.config = config;
+		Objects.requireNonNull(chain, "chain cannot be null");
+		this.chain = chain;
 	}
 
 	@Override
-	public ConsensusConfig get() {
-		return config;
+	public Chain get() {
+		return chain;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetConfigResultMessage gcrm && super.equals(other) && config.equals(gcrm.get());
+		return other instanceof GetChainResultMessage gcrm && super.equals(other) && Objects.equals(get(), gcrm.get());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetConfigResultMessage.class.getName();
+		return GetChainResultMessage.class.getName();
 	}
 }

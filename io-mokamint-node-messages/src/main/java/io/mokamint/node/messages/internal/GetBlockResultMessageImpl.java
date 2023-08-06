@@ -21,10 +21,11 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
 
 /**
- * Implementation of the network message corresponding to the result of the {@code getBlock} method of a node.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getBlock(byte[])} method.
  */
 public class GetBlockResultMessageImpl extends AbstractRpcMessage implements GetBlockResultMessage {
 

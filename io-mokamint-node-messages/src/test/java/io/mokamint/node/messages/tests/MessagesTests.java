@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.Chains;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -36,6 +37,7 @@ import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetChainMessages;
+import io.mokamint.node.messages.GetChainResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
@@ -111,6 +113,16 @@ public class MessagesTests {
 		String encoded = new GetChainMessages.Encoder().encode(getChainMessage1);
 		var getChainMessage2 = new GetChainMessages.Decoder().decode(encoded);
 		assertEquals(getChainMessage1, getChainMessage2);
+	}
+
+	@Test
+	@DisplayName("getChainResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetChainResult() throws EncodeException, DecodeException {
+		var chain = Chains.of(Stream.of(new byte[] { 1, 2, 3 }, new byte[] { 20, 50, 70, 88 }));
+		var getChainResultMessage1 = GetChainResultMessages.of(chain, "id");
+		String encoded = new GetChainResultMessages.Encoder().encode(getChainResultMessage1);
+		var getChainResultMessage2 = new GetChainResultMessages.Decoder().decode(encoded);
+		assertEquals(getChainResultMessage1, getChainResultMessage2);
 	}
 
 	@Test

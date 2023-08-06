@@ -22,7 +22,7 @@ import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
 
 /**
- * Implementation of the network message corresponding to the {@link PublicNode#getInfo()} method of a node.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getInfo()} method.
  */
 public class GetInfoResultMessageImpl extends AbstractRpcMessage implements GetInfoResultMessage {
 

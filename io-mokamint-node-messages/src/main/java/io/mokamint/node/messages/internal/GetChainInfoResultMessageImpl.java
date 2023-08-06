@@ -16,12 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import io.mokamint.node.api.PublicNode;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 
 /**
- * Implementation of the network message corresponding to the {@code PublicNode#getConfig()} method of a node.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getChainInfo()} method.
  */
 public class GetChainInfoResultMessageImpl extends AbstractRpcMessage implements GetChainInfoResultMessage {
 
