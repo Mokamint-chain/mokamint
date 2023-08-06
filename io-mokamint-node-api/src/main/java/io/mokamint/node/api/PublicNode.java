@@ -86,9 +86,7 @@ public interface PublicNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	default Chain getChain(long start, long count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
-		return null; // TODO
-	}
+	Chain getChain(long start, long count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.

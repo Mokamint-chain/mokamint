@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Test;
 
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.Chains;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.NodeInternals.CloseHandler;
@@ -57,6 +58,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
@@ -254,7 +256,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getChainInfo() request reaches the service, it sends back its chain information")
-	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
 
@@ -280,6 +282,38 @@ public class PublicNodeServiceTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetChainInfo();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getChain() request reaches the service, it sends back its chain hashes")
+	public void serviceGetChainWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
+		var chain = Chains.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 13, 17, 19 }));
+
+		class MyTestClient extends RemotePublicNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+
+			@Override
+			protected void onGetChainResult(Chain received) {
+				if (chain.equals(received))
+					semaphore.release();
+			}
+
+			private void sendGetChain() throws ClosedNodeException {
+				sendGetChain(5, 10, "id");
+			}
+		}
+
+		var node = mock(PublicNodeInternals.class);
+		when(node.getChain(5, 10)).thenReturn(chain);
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetChain();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

@@ -51,6 +51,11 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String GET_CHAIN_INFO_ENDPOINT = "/get_chain_info";
 
 	/**
+	 * The network endpoint path where {@link PublicNode#getChain(long, long)} is published.
+	 */
+	String GET_CHAIN_ENDPOINT = "/get_chain";
+
+	/**
 	 * The network endpoint path used to whisper peers between a public node service
 	 * and its connected remotes.
 	 */

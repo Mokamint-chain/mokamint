@@ -55,6 +55,8 @@ import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.messages.GetChainMessages;
+import io.mokamint.node.messages.GetChainResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
@@ -67,6 +69,7 @@ import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
+import io.mokamint.node.messages.api.GetChainMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
@@ -188,8 +191,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetBlockEndpoint.config(this),
-			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), WhisperPeersEndpoint.config(this),
-			WhisperBlockEndpoint.config(this));
+			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainEndpoint.config(this),
+			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
@@ -483,6 +486,35 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT,
 					GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetChain(GetChainMessage message, Session session) {
+		LOGGER.info("service: received a " + GET_CHAIN_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, GetChainResultMessages.of(node.getChain(message.getStart(), message.getCount()), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+		}
+	};
+
+	public static class GetChainEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetChainMessage message) -> getServer().onGetChain(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetChainEndpoint.class, GET_CHAIN_ENDPOINT,
+					GetChainMessages.Decoder.class, GetChainResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

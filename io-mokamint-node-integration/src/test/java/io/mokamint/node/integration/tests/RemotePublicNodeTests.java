@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.Chains;
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -45,6 +47,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
+import io.mokamint.node.messages.GetChainResultMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
@@ -52,6 +55,7 @@ import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
+import io.mokamint.node.messages.api.GetChainMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
@@ -408,7 +412,7 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getChainInfo() works")
-	public void getChainInfoWorks() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getChainInfoWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }));
 
 		class MyServer extends PublicTestServer {
@@ -434,11 +438,11 @@ public class RemotePublicNodeTests {
 	@DisplayName("getChainInfo() works in case of DatabaseException")
 	public void getChainInfoWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
 		var exceptionMessage = "exception message";
-
+	
 		class MyServer extends PublicTestServer {
-
+	
 			private MyServer() throws DeploymentException, IOException {}
-
+	
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
 				try {
@@ -447,9 +451,57 @@ public class RemotePublicNodeTests {
 				catch (IOException e) {}
 			}
 		};
-
+	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(DatabaseException.class, () -> remote.getChainInfo());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getChain() works")
+	public void getChainWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		var chain1 = Chains.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 17, 13, 19 }));
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetChain(GetChainMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetChainResultMessages.of(chain1, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var chain2 = remote.getChain(10, 20);
+			assertEquals(chain1, chain2);
+		}
+	}
+
+	@Test
+	@DisplayName("getChain() works in case of DatabaseException")
+	public void getChainWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+		var exceptionMessage = "exception message";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetChain(GetChainMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.getChain(10, 20));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
