@@ -59,7 +59,7 @@ import io.mokamint.node.local.Config;
 /**
  * The database where the blockchain is persisted.
  */
-public class Database implements AutoCloseable, tBestChain {
+public class Database implements AutoCloseable {
 
 	/**
 	 * The configuration of the node having this database.
