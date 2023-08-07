@@ -303,7 +303,7 @@ public class SynchronizationTask implements Task {
 			semaphores = new Semaphore[chosenGroup.length];
 			Arrays.setAll(semaphores, _index -> new Semaphore(1));
 
-			LOGGER.info(logPrefix() + "downloading from the peers the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
+			LOGGER.info(logPrefix() + "downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
 
 			check(InterruptedException.class, DatabaseException.class, () -> {
 				peers.get().parallel()

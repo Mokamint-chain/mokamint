@@ -97,7 +97,7 @@ public class ChainSynchronizationTests {
 			.setInitialAcceleration(1000000000000000L)
 			.build();
 
-		var semaphore = new Semaphore(0);
+		var semaphore1 = new Semaphore(0);
 		var blocksOfNode1 = new HashSet<Block>();
 
 		class MyLocalNode1 extends LocalNodeImpl {
@@ -110,13 +110,14 @@ public class ChainSynchronizationTests {
 			protected void onComplete(Event event) {
 				if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
 					blocksOfNode1.add(bae.block);
-					semaphore.release();
+					semaphore1.release();
 				}
 
 				super.onComplete(event);
 			}
 		}
 
+		var semaphore2 = new Semaphore(0);
 		var blocksOfNode2 = new HashSet<Block>();
 
 		class MyLocalNode2 extends LocalNodeImpl {
@@ -127,7 +128,7 @@ public class ChainSynchronizationTests {
 
 			@Override
 			public void submit(Task task) {
-				// node2 stops mining at height 10
+				// node2 stops mining at height howMany
 				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= howMany)
 					return;
 
@@ -136,8 +137,10 @@ public class ChainSynchronizationTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof BlockAddedEvent bae)
+				if (event instanceof BlockAddedEvent bae) {
+					semaphore2.release();
 					blocksOfNode2.add(bae.block);
+				}
 
 				super.onComplete(event);
 			}
@@ -154,14 +157,14 @@ public class ChainSynchronizationTests {
 			 var node2 = new MyLocalNode2(config2, miner2);
 			 var service2 = PublicNodeServices.open(node2, port2)) {
 
-			// we give node2 the time to mine some blocks
-			Thread.sleep(4000L);
+			// we give node2 the time to mine howMany / 2 blocks
+			assertTrue(semaphore2.tryAcquire(howMany / 2, 20, TimeUnit.SECONDS));
 
 			// by adding node2 as peer of node1, the latter will synchronize and then follow
-			// the other blocks by whispering
+			// the other howMany / 2 blocks by whispering
 			node1.addPeer(peer2);
 
-			assertTrue(semaphore.tryAcquire(howMany, 20, TimeUnit.SECONDS));
+			assertTrue(semaphore1.tryAcquire(howMany, 20, TimeUnit.SECONDS));
 			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
