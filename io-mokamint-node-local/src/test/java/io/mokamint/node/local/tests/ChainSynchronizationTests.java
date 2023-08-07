@@ -58,9 +58,9 @@ import io.mokamint.plotter.Plots;
 import jakarta.websocket.DeploymentException;
 
 /**
- * Tests about the propagation of the peers in a network of nodes.
+ * Tests about the synchronization of the chain from the peers.
  */
-public class BlockPropagationTests {
+public class ChainSynchronizationTests {
 
 	/**
 	 * The application of the node used for testing.
@@ -79,8 +79,8 @@ public class BlockPropagationTests {
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {
 
-		// how many blocks must be mined by node2 and whispered into node1
-		final var howMany = 10;
+		// how many blocks must be mined by node2 and synchronized/whispered into node1
+		final var howMany = 20;
 
 		var port2 = 8034;
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
@@ -151,12 +151,17 @@ public class BlockPropagationTests {
 		try (var plot2 = Plots.create(chain2.resolve("plot2.plot"), prolog, start, length, hashing, __ -> {});
 			 var miner2 = LocalMiners.of(plot2);
 			 var node1 = new MyLocalNode1(config1);
-			 var node2 = new MyLocalNode2(config2, miner2);  // we open node2 at the end so that it does not start mining too early
+			 var node2 = new MyLocalNode2(config2, miner2);
 			 var service2 = PublicNodeServices.open(node2, port2)) {
 
+			// we give node2 the time to mine some blocks
+			Thread.sleep(4000L);
+
+			// by adding node2 as peer of node1, the latter will synchronize and then follow
+			// the other blocks by whispering
 			node1.addPeer(peer2);
 
-			assertTrue(semaphore.tryAcquire(howMany, 30, TimeUnit.SECONDS));
+			assertTrue(semaphore.tryAcquire(howMany, 20, TimeUnit.SECONDS));
 			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
@@ -165,7 +170,7 @@ public class BlockPropagationTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = BlockPropagationTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = ChainSynchronizationTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

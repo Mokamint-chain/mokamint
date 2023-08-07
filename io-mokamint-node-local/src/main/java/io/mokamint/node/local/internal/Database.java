@@ -318,7 +318,7 @@ public class Database implements AutoCloseable, tBestChain {
 	 * @return true if and only if that condition holds
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean containsBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+	public boolean containsBlock(byte[] hash) throws DatabaseException {
 		try {
 			return environment.computeInReadonlyTransaction(txn -> isInStore(txn, hash));
 		}

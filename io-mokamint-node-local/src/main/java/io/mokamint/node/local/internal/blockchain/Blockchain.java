@@ -181,7 +181,7 @@ public class Blockchain {
 	 * @return true if and only if that condition holds
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public boolean containsBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+	public boolean containsBlock(byte[] hash) throws DatabaseException {
 		return db.containsBlock(hash);
 	}
 
@@ -273,7 +273,7 @@ public class Blockchain {
 				// we synchronize from that block asking our peers if they know a chain from
 				// that block towards a known block
 				if (block instanceof NonGenesisBlock ngb)
-					node.submit(new SynchronizationTask(node, ngb));
+					node.submit(new SynchronizationTask(node));
 		}
 
 		return added;
