@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.tools;
 
-import io.mokamint.node.tools.internal.Blocks;
 import io.mokamint.node.tools.internal.Chain;
 import io.mokamint.node.tools.internal.Config;
 import io.mokamint.node.tools.internal.Info;
@@ -37,7 +36,6 @@ import picocli.CommandLine.Command;
 	header = "This is the command-line tool for controlling Mokamint nodes.",
 	footer = "Copyright (c) 2023 Fausto Spoto",
 	subcommands = {
-		Blocks.class,
 		Chain.class,
 		Config.class,
 		Info.class,

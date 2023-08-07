@@ -18,6 +18,7 @@ package io.mokamint.node.tools.internal;
 
 import io.mokamint.node.tools.internal.chain.Info;
 import io.mokamint.node.tools.internal.chain.List;
+import io.mokamint.node.tools.internal.chain.Show;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
@@ -26,7 +27,8 @@ import picocli.CommandLine.HelpCommand;
 	subcommands = {
 		HelpCommand.class,
 		Info.class,
-		List.class
+		List.class,
+		Show.class
 	})
 public class Chain {
 }

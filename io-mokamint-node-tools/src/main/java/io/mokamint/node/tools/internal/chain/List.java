@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.chain;
 
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -25,31 +24,39 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
-import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(name = "ls", description = "List the blocks in the chain of a node.")
 public class List extends AbstractPublicRpcCommand {
 
-	@Option(names = "--max", description = "the maximum number of blocks that can be listed", defaultValue = "100")
-	private long max;
+	@Parameters(description = "the number of blocks that must be listed", defaultValue = "100")
+	private int count;
+
+	@Option(names = "from", description = "the height of the first block that must be reported (-1 to list the topmost count blocks)", defaultValue = "-1")
+	private long from;
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
-		if (max < 0) {
-			System.out.println(Ansi.AUTO.string("@|red max cannot be negative!|@"));
+		if (count < 0) {
+			System.out.println(Ansi.AUTO.string("@|red count cannot be negative!|@"));
+			return;
+		}
+
+		if (from < -1L) {
+			System.out.println(Ansi.AUTO.string("@|red from cannot be smaller than -1!|@"));
 			return;
 		}
 
@@ -65,6 +72,12 @@ public class List extends AbstractPublicRpcCommand {
 				throw new DatabaseException("The node has a head hash but it is bound to no block!");
 
 			Block head = maybeHead.get();
+			long height = head.getHeight();
+			if (from == -1L)
+				from = Math.max(0L, height - count + 1);
+
+			System.out.println("showing [" + from + ", " + (from + count) + ")");
+			LOGGER.info("requesting hashes in the height interval [" + from + ", " + (from + count) + ")");
 
 			var maybeGenesisHash = info.getGenesisHash();
 			if (maybeGenesisHash.isEmpty())
@@ -93,7 +106,9 @@ public class List extends AbstractPublicRpcCommand {
 
 			if (json())
 				System.out.print("[");
-			backwards(head, slotsForHeight, startDateTimeUTC, remote.getConfig(), remote);
+			
+			Chain chain = remote.getChain(from, count);
+			list(chain, from + chain.getHashes().count() - 1, slotsForHeight, startDateTimeUTC, remote);
 			if (json())
 				System.out.println("]");
 		}
@@ -107,50 +122,36 @@ public class List extends AbstractPublicRpcCommand {
 		}
 	}
 
-    /**
-     * Goes {@code depth} blocks backwards from the given cursor, printing the hashes of the blocks on the way.
+	/**
+     * Lists the hashes in {@code chain}, reporting the time of creation of each block.
      * 
-     * @param cursor the starting block
+     * @param chain the segment of the current chain to list
+     * @param height the height of the current chain
      * @param slotsForHeight the number of characters reserved for printing the height of each hash; this is used only if json() is false
      * @param startDateTimeUTC the starting moment of the chain; this is used only if json() is false
-     * @param config the configuration of the remote node
      * @param the remote node
+	 * @throws DatabaseException if the database of the node is corrupted
      * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
-     * @throws IOException if the database of the remote node is corrupted
      * @throws TimeoutException if some connection timed-out
      * @throws InterruptedException if some connection was interrupted while waiting
      * @throws ClosedNodeException if the remote node is closed
      */
-	private void backwards(Block cursor, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, ConsensusConfig config, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
-		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+	private void list(Chain chain, long height, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		var hashes = chain.getHashes().toArray(byte[][]::new);
 
-		for (long counter = 0; counter < max; counter++) {
-			String hash = cursor.getHexHash(hashingForBlocks);
+		for (int counter = hashes.length - 1; counter >= 0; counter--, height--) {
+			String hash = Hex.toHexString(hashes[counter]);
 
 			if (json()) {
-				if (counter > 0)
+				if (counter != hashes.length - 1)
 					System.out.print(", ");
 
 				System.out.print("\"" + hash + "\"");
 			}
-			else
-				System.out.println(String.format("%" + slotsForHeight + "d: %s [%s]", cursor.getHeight(), hash, startDateTimeUTC.get().plus(cursor.getTotalWaitingTime(), ChronoUnit.MILLIS)));
-
-			if (cursor.getHeight() == 0)
-				return;
-			else if (cursor instanceof NonGenesisBlock ngb) {
-				var previousHash = ngb.getHashOfPreviousBlock();
-				var maybePrevious = remote.getBlock(previousHash);
-				if (maybePrevious.isPresent()) {
-					cursor = maybePrevious.get();
-					counter++;
-				}
-				else {
-					throw new DatabaseException("Block " + hash + " has a previous hash that does not refer to any existing block!");
-				}
-			}
 			else {
-				throw new DatabaseException("Block " + hash + " is a genesis block but its is not at height 0!");
+				var maybeBlock = remote.getBlock(hashes[counter]); // TODO: in the future, maybe a getBlockHeader() ?
+				String creationTime = maybeBlock.isEmpty() ? "unknown" : startDateTimeUTC.get().plus(maybeBlock.get().getTotalWaitingTime(), ChronoUnit.MILLIS).toString();
+				System.out.println(String.format("%" + slotsForHeight + "d: %s [%s]", height, hash, creationTime));
 			}
 		}
 	}
