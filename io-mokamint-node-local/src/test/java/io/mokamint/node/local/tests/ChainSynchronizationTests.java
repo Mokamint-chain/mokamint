@@ -165,6 +165,7 @@ public class ChainSynchronizationTests {
 			node1.addPeer(peer2);
 
 			assertTrue(semaphore1.tryAcquire(howMany, 20, TimeUnit.SECONDS));
+			assertTrue(semaphore2.tryAcquire(howMany - howMany / 2, 20, TimeUnit.SECONDS));
 			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
