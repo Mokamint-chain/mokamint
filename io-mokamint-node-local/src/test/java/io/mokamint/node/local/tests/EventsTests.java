@@ -102,7 +102,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException {
 				super(mkConfig(dir), app, true, myMiner);
 			}
 
@@ -150,7 +150,7 @@ public class EventsTests {
 	
 		class MyLocalNode extends LocalNodeImpl {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException {
 				super(mkConfig(dir), app, true, myMiner);
 			}
 	
@@ -176,7 +176,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException {
+			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException {
 				super(mkConfig(dir), app, true, new Miner[0]);
 			}
 
@@ -203,7 +203,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException, InterruptedException {
 				super(mkConfig(dir), app, true, myMiner);
 			}
 
@@ -259,7 +259,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException, InterruptedException {
 				super(config, app, true, myMiner);
 			}
 

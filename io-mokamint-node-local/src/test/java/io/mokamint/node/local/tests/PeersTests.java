@@ -51,6 +51,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -63,11 +64,8 @@ import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
-import io.mokamint.node.messages.GetInfoResultMessages;
-import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.Session;
 
 public class PeersTests {
 
@@ -96,6 +94,12 @@ public class PeersTests {
 		}
 	}
 
+	private static PublicNodeInternals mkNode() throws TimeoutException, InterruptedException, ClosedNodeException {
+		PublicNodeInternals result = mock();
+		when(result.getInfo()).thenReturn(info);
+		return result;
+	}
+
 	/**
 	 * Test server implementation.
 	 */
@@ -107,20 +111,10 @@ public class PeersTests {
 		 * 
 		 * @param port the port where the server is published
 		 * @throws DeploymentException if the service cannot be deployed
-		 * @throws IOException if an I/O error occurs
 		 */
-		private PublicTestServer(int port) throws DeploymentException, IOException {
-			super(mock(), port, 180000L, 1000, Optional.empty());
+		private PublicTestServer(int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+			super(mkNode(), port, 180000L, 1000, Optional.empty());
 		}
-
-		@Override
-		protected void onGetInfo(GetInfoMessage message, Session session) {
-			super.onGetInfo(message, session);
-			try {
-				sendObjectAsync(session, GetInfoResultMessages.of(info, message.getId()));
-			}
-			catch (IOException e) {}
-		};
 	}
 
 	@BeforeAll
@@ -139,7 +133,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("seeds are used as peers")
 	@Timeout(10)
-	public void seedsAreUsedAsPeers(@TempDir Path dir) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, DatabaseException {
+	public void seedsAreUsedAsPeers(@TempDir Path dir) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -158,7 +152,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, false);
 			}
 
@@ -189,7 +183,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 				super(mkConfig(dir), app, false);
 			}
 		}
@@ -232,7 +226,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 				super(config, app, false);
 			}
 
@@ -269,7 +263,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 				super(mkConfig(dir), app, false);
 			}
 
@@ -288,13 +282,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the minor version cannot work together")
-	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
+	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 				super(mkConfig(dir), app, false);
 			}
 
@@ -312,13 +306,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the major version cannot work together")
-	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
+	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 				super(mkConfig(dir), app, false);
 			}
 
@@ -336,13 +330,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers whose local times are too far away cannot work together")
-	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException {
+	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 				super(mkConfig(dir), app, false);
 			}
 

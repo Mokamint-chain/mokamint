@@ -101,7 +101,7 @@ public class PeerPropagationTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, false);
 			}
 
@@ -166,7 +166,7 @@ public class PeerPropagationTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, false);
 			}
 
@@ -220,7 +220,7 @@ public class PeerPropagationTests {
 		class MyLocalNode extends LocalNodeImpl {
 			private final Peer expected;
 
-			private MyLocalNode(Config config, Peer expected) throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode(Config config, Peer expected) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, false);
 				
 				this.expected = expected;

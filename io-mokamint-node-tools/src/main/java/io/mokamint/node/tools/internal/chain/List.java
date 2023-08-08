@@ -76,7 +76,6 @@ public class List extends AbstractPublicRpcCommand {
 			if (from == -1L)
 				from = Math.max(0L, height - count + 1);
 
-			System.out.println("showing [" + from + ", " + (from + count) + ")");
 			LOGGER.info("requesting hashes in the height interval [" + from + ", " + (from + count) + ")");
 
 			var maybeGenesisHash = info.getGenesisHash();

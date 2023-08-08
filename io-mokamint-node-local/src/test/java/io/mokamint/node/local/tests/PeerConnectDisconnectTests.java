@@ -46,7 +46,6 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
@@ -91,7 +90,7 @@ public class PeerConnectDisconnectTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, false);
 			}
 
@@ -151,31 +150,44 @@ public class PeerConnectDisconnectTests {
 		var reconnections = new Semaphore(0);
 		var phase = new AtomicInteger(0);
 
-		class MyLocalNode extends LocalNodeImpl {
-			private final Peer other;
+		class MyLocalNode1 extends LocalNodeImpl {
 
-			private MyLocalNode(Config config, Peer other) throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, false);
-
-				this.other = other;
 			}
 
 			@Override
 			protected void onComplete(Event event) {
-				if (phase.get() == 1 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(other))
+				if (phase.get() == 1 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer2))
 					connections.release();
 
 				if (phase.get() == 2 && event instanceof PeerDisconnectedEvent pde && pde.getPeer().equals(peer2))
 					disconnections.release();
 
-				if (phase.get() == 3 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(other))
+				if (phase.get() == 3 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer2))
+					reconnections.release();
+			}
+		}
+
+		class MyLocalNode2 extends LocalNodeImpl {
+
+			private MyLocalNode2(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
+				super(config, app, false);
+			}
+
+			@Override
+			protected void onComplete(Event event) {
+				if (phase.get() == 1 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer1))
+					connections.release();
+
+				if (phase.get() == 3 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer1))
 					reconnections.release();
 			}
 		}
 
 		phase.set(1);
 
-		try (var node1 = new MyLocalNode(config1, peer2); var node2 = new MyLocalNode(config2, peer1);
+		try (var node1 = new MyLocalNode1(config1); var node2 = new MyLocalNode2(config2);
 			 var service1 = PublicNodeServices.open(node1, port1, 500, 1000, Optional.of(uri1));
 			 var service2 = PublicNodeServices.open(node2, port2, 500, 1000, Optional.of(uri2))) {
 
@@ -186,9 +198,9 @@ public class PeerConnectDisconnectTests {
 			assertTrue(connections.tryAcquire(2, 5, TimeUnit.SECONDS));
 
 			// at this point, node1 is connected to node2 and vice versa
-			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(node1.other)));
-			assertTrue(node2.getPeerInfos().filter(info -> info.getPeer().equals(node2.other)).anyMatch(info -> info.isConnected()));
-			assertTrue(node2.getPeerInfos().anyMatch(info -> info.getPeer().equals(node2.other)));
+			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer2)));
+			assertTrue(node2.getPeerInfos().filter(info -> info.getPeer().equals(peer1)).anyMatch(PeerInfo::isConnected));
+			assertTrue(node2.getPeerInfos().anyMatch(info -> info.getPeer().equals(peer1)));
 
 			phase.set(2);
 
@@ -199,18 +211,18 @@ public class PeerConnectDisconnectTests {
 			assertTrue(disconnections.tryAcquire(1, 3, TimeUnit.SECONDS));
 
 			// at this point, node1 has still node2 as peer but marked as disconnected
-			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(node1.other) && info.getPoints() < config1.peerInitialPoints));
+			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2) && info.getPoints() < config1.peerInitialPoints));
 
 			phase.set(3);
 
-			// node2 resurrects as node3
-			try (var node2bis = new MyLocalNode(config2, peer1); var service2bis = PublicNodeServices.open(node2bis, port2, 500, 1000, Optional.of(uri2))) {
+			// node2 resurrects as node2bis
+			try (var node2bis = new MyLocalNode2(config2); var service2bis = PublicNodeServices.open(node2bis, port2, 500, 1000, Optional.of(uri2))) {
 				// eventually, both know each other
 				assertTrue(reconnections.tryAcquire(2, 5, TimeUnit.SECONDS));
 
 				// at this point, node1 is connected to node2 and vice versa
-				assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(node1.other)));
-				assertTrue(node2bis.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(node2bis.other)));
+				assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer2)));
+				assertTrue(node2bis.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer1)));
 			}
 		}
 	}

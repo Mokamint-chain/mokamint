@@ -114,11 +114,35 @@ public class NodePeers implements AutoCloseable {
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
-		tryToAdd(config.seeds().map(Peers::of), true, true);
+		openConnectionToPeers();
 		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
+	/**
+	 * Tries to add the seeds to the peers of the node, if they are not already added.
+	 * Seeds might not be added because a connection cannot be established to them,
+	 * or because they are incompatible with the node.
+	 * It waits until the addition is terminated or a timeout occurs.
+	 * 
+	 * @throw InterruptedException if the execution is interrupted while waiting for the addition
+	 */
+	public void addSeeds() throws InterruptedException {
+		var usefulToAdd = config.seeds().map(Peers::of).distinct()
+			.filter(not(peers::contains))
+			.toArray(Peer[]::new);
 	
+		// before scheduling a task, we check if there is some peer that could be useful for the node
+		if (usefulToAdd.length > 0) {
+			try {
+				node.submitAndWait(new AddPeersTask(usefulToAdd, true, true), config.peerTimeout * 2, TimeUnit.MILLISECONDS);
+			}
+			catch (TimeoutException e) {
+				LOGGER.log(Level.SEVERE, "peers: the addition of the seeds timed out: " + e.getMessage());
+			}
+		}
+	}
+
+
 	/**
 	 * Yields information about the peers.
 	 * 
@@ -285,61 +309,70 @@ public class NodePeers implements AutoCloseable {
 	 * are already enough peers, or because a connection cannot be established to them,
 	 * or because they are incompatible with the node.
 	 * 
-	 * @param peers the peers to add
+	 * @param toAdd the peers to add
 	 * @param force true if and only if the peers must be added also if the maximum number of peers
 	 *              for the node has been reached
 	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
 	 *                to all peers of this node
 	 */
-	private void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) {
-		var toAdd = peers.distinct()
-			.filter(not(this.peers::contains))
+	private void tryToAdd(Stream<Peer> toAdd, boolean force, boolean whisper) {
+		var usefulToAdd = toAdd.distinct()
+			.filter(not(peers::contains))
 			.toArray(Peer[]::new);
 
-		/**
-		 * A task that adds peers to a node.
-		 */
-		class AddPeersTask implements Task {
+		// before scheduling a task, we check if there is some peer that could be useful for the node
+		if (usefulToAdd.length > 0 && (force || peers.getElements().count() < config.maxPeers))
+			node.submit(new AddPeersTask(usefulToAdd, force, whisper));
+	}
 
-			@Override
-			public String toString() {
-				return "addition of " + SanitizedStrings.of(Stream.of(toAdd)) + " as peers";
-			}
+	/**
+	 * A task that adds peers to the node.
+	 */
+	private class AddPeersTask implements Task {
+		private final Peer[] toAdd;
+		private final boolean force;
+		private final boolean whisper;
 
-			@Override
-			public void body() {
-				var added = Stream.of(toAdd).parallel()
-					.filter(peer -> addPeer(peer, force))
-					.toArray(Peer[]::new);
-
-				if (added.length > 0) // just to avoid useless events
-					node.submit(new PeersAddedEvent(Stream.of(added), whisper));
-			}
-
-			private boolean addPeer(Peer peer, boolean force) {
-				try {
-					// we do not spawn an event since we will spawn one at the end for all peers
-					return add(peer, force, false);
-				}
-				catch (InterruptedException e) {
-					LOGGER.log(Level.WARNING, "peers: addition of " + peer + " as a peer interrupted");
-					Thread.currentThread().interrupt();
-					return false;
-				}
-				catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
-					return false;
-				}
-			}
-
-			@Override
-			public String logPrefix() {
-				return "peers: ";
-			}
+		private AddPeersTask(Peer[] toAdd, boolean force, boolean whisper) {
+			this.toAdd = toAdd;
+			this.force = force;
+			this.whisper = whisper;
 		}
 
-		// before scheduling a task, we check if there is some peer that we really need
-		if (toAdd.length > 0 && (force || this.peers.getElements().count() < config.maxPeers))
-			node.submit(new AddPeersTask());
+		@Override
+		public String toString() {
+			return "addition of " + SanitizedStrings.of(Stream.of(toAdd)) + " as peers";
+		}
+
+		@Override
+		public void body() {
+			var added = Stream.of(toAdd).parallel()
+				.filter(peer -> addPeer(peer, force))
+				.toArray(Peer[]::new);
+
+			if (added.length > 0) // just to avoid useless events
+				node.submit(new PeersAddedEvent(Stream.of(added), whisper));
+		}
+
+		@Override
+		public String logPrefix() {
+			return "peers: ";
+		}
+
+		private boolean addPeer(Peer peer, boolean force) {
+			try {
+				// we do not spawn an event since we will spawn one at the end for all peers
+				return add(peer, force, false);
+			}
+			catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, logPrefix() + "addition of " + peer + " as a peer interrupted");
+				Thread.currentThread().interrupt();
+				return false;
+			}
+			catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
+				return false;
+			}
+		}
 	}
 
 	/**
@@ -393,55 +426,20 @@ public class NodePeers implements AutoCloseable {
 			tryToAdd(peers.getElements().parallel().flatMap(this::pingPeerRecreateRemoteAndCollectPeers), false, true);
 		}
 
+		@Override
+		public String logPrefix() {
+			return "peers: ";
+		}
+
+		@Override
+		public String toString() {
+			return "pinging to all peers to create missing remotes and collect their peers";
+		}
+
 		private Stream<Peer> pingPeerRecreateRemoteAndCollectPeers(Peer peer) {
 			return getRemote(peer).or(() -> tryToCreateRemote(peer))
 				.map(remote -> askForPeers(peer, remote))
 				.orElse(Stream.empty());
-		}
-
-		private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) {
-			RemotePublicNode remote = null;
-		
-			try {
-				LOGGER.info("peers: trying to recreate a connection to peer " + peer);
-				remote = openRemote(peer);
-				RemotePublicNode remoteCopy = remote;
-				long timeDifference = ensurePeerIsCompatible(remote);
-		
-				synchronized (lock) {
-					// we check if the peer is actually contained in the set of peers,
-					// since it might have been removed in the meanwhile and we not not
-					// want to store remotes for peers not in the set of peers of this object
-					if (peers.contains(peer)) {
-						storePeer(peer, remote, timeDifference);
-						remote = null; // so that it won't be closed in the finally clause
-					}
-				}
-
-				return Optional.of(remoteCopy);
-			}
-			catch (IncompatiblePeerException e) {
-				LOGGER.log(Level.WARNING, "peers: " + e.getMessage());
-				try {
-					remove(peer);
-				}
-				catch (DatabaseException e1) {
-					LOGGER.log(Level.SEVERE, "peers: cannot remove " + peer + " from the database", e);
-				}
-			}
-			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, "peers: interrupted while creating a remote for " + peer + ": " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (IOException | TimeoutException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, "peers: cannot contact peer " + peer + ": " + e.getMessage());
-				punishBecauseUnreachable(peer);
-			}
-			finally {
-				deletePeer(peer, remote);
-			}
-
-			return Optional.empty();
 		}
 
 		private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) {
@@ -455,25 +453,15 @@ public class NodePeers implements AutoCloseable {
 					return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(not(peers::contains));
 			}
 			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, "peers: interrupted while asking the peers of " + peer + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, logPrefix() + "interrupted while asking the peers of " + peer + ": " + e.getMessage());
 				Thread.currentThread().interrupt();
 				return Stream.empty();
 			}
 			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, "peers: cannot contact peer " + peer + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, logPrefix() + "cannot contact peer " + peer + ": " + e.getMessage());
 				punishBecauseUnreachable(peer);
 				return Stream.empty();
 			}
-		}
-
-		@Override
-		public String logPrefix() {
-			return "peers: ";
-		}
-
-		@Override
-		public String toString() {
-			return "pinging all peers to create missing remotes and collect their peers";
 		}
 	}
 
@@ -488,6 +476,10 @@ public class NodePeers implements AutoCloseable {
 
 	public void pardonBecauseReachable(Peer peer) {
 		peers.pardon(peer, config.peerPunishmentForUnreachable);
+	}
+
+	private void openConnectionToPeers() {
+		get().parallel().filter(not(PeerInfo::isConnected)).map(PeerInfo::getPeer).forEach(this::tryToCreateRemote);
 	}
 
 	private boolean onAdd(Peer peer, boolean force) {
@@ -543,6 +535,51 @@ public class NodePeers implements AutoCloseable {
 			LOGGER.log(Level.SEVERE, "peers: cannot remove peer " + peer, e);
 			throw new UncheckedException(e);
 		}
+	}
+
+	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) {
+		RemotePublicNode remote = null;
+	
+		try {
+			LOGGER.info("peers: trying to create a connection to peer " + peer);
+			remote = openRemote(peer);
+			RemotePublicNode remoteCopy = remote;
+			long timeDifference = ensurePeerIsCompatible(remote);
+	
+			synchronized (lock) {
+				// we check if the peer is actually contained in the set of peers,
+				// since it might have been removed in the meanwhile and we not not
+				// want to store remotes for peers not in the set of peers of this object
+				if (peers.contains(peer)) {
+					storePeer(peer, remote, timeDifference);
+					remote = null; // so that it won't be closed in the finally clause
+				}
+			}
+
+			return Optional.of(remoteCopy);
+		}
+		catch (IncompatiblePeerException e) {
+			LOGGER.log(Level.WARNING, "peers: " + e.getMessage());
+			try {
+				remove(peer);
+			}
+			catch (DatabaseException e1) {
+				LOGGER.log(Level.SEVERE, "peers: cannot remove " + peer + " from the database", e);
+			}
+		}
+		catch (InterruptedException e) {
+			LOGGER.log(Level.WARNING, "peers: interrupted while creating a remote for " + peer + ": " + e.getMessage());
+			Thread.currentThread().interrupt();
+		}
+		catch (IOException | TimeoutException | ClosedNodeException e) {
+			LOGGER.log(Level.WARNING, "peers: cannot contact peer " + peer + ": " + e.getMessage());
+			punishBecauseUnreachable(peer);
+		}
+		finally {
+			deletePeer(peer, remote);
+		}
+
+		return Optional.empty();
 	}
 
 	private RemotePublicNode openRemote(Peer peer) throws IOException {

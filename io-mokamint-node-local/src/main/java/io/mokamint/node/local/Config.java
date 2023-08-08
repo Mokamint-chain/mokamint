@@ -120,7 +120,7 @@ public class Config extends AbstractConfig {
 
 	/**
 	 * The time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request timeouts.
-	 * It defaults to 30,000 (ie, 30 seconds).
+	 * It defaults to 10,000 (ie, 10 seconds).
 	 */
 	public final long peerTimeout;
 
@@ -248,7 +248,7 @@ public class Config extends AbstractConfig {
 		private long peerInitialPoints = 1000L;
 		private long peerMaxTimeDifference = 15000L;
 		private long peerPunishmentForUnreachable = 1L;
-		private long peerTimeout = 30000L;
+		private long peerTimeout = 10000L;
 		private long peerPingInterval = 120000L;
 		private long whisperingMemorySize = 1000L;
 

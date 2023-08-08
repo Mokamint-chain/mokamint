@@ -102,7 +102,7 @@ public class ChainSynchronizationTests {
 
 		class MyLocalNode1 extends LocalNodeImpl {
 
-			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, false); // <--- does not start mining by itself
 			}
 
@@ -122,7 +122,7 @@ public class ChainSynchronizationTests {
 
 		class MyLocalNode2 extends LocalNodeImpl {
 
-			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException {
+			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
 				super(config, app, true, miners); // <--- starts mining by itself
 			}
 

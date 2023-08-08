@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -160,8 +161,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws InterruptedException if the initialization of the node was interrupted
 	 */
-	public LocalNodeImpl(Config config, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException {
+	public LocalNodeImpl(Config config, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 		this.config = config;
 		this.app = app;
 		this.db = new Database(this);
@@ -171,6 +173,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.peers = new NodePeers(this);
 		this.blockchain = new Blockchain(this);
+		peers.addSeeds();
 
 		if (blockchain.getGenesis().isPresent() || init)
 			blockchain.startMining();
@@ -554,7 +557,7 @@ public class LocalNodeImpl implements LocalNode {
 	};
 
 	/**
-	 * Runs the given task in one thread from the {@link #tasks} executor.
+	 * Runs the given task, asynchronously, in one thread from the {@link #tasks} executor.
 	 * 
 	 * @param task the task to run
 	 */
@@ -566,6 +569,32 @@ public class LocalNodeImpl implements LocalNode {
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
+		}
+	}
+
+	/**
+	 * Runs the given task, synchronously, in one thread from the {@link #tasks} executor.
+	 * This call will block until the task is over.
+	 * 
+	 * @param task the task to run
+	 * @param timeout the time to wait for the completion of the task, at most
+	 * @param unit the time unit of {@code timeout}
+	 * @throws InterruptedException if the computation was interrupted while waiting for its result
+	 * @throws TimeoutException if the timeout expired
+	 */
+	public void submitAndWait(Task task, long timeout, TimeUnit unit) throws TimeoutException, InterruptedException {
+		try {
+			LOGGER.info(task.logPrefix() + "scheduling " + task);
+			onSubmit(task);
+			tasks.submit(new RunnableTask(task)).get(timeout, unit);
+		}
+		catch (RejectedExecutionException e) {
+			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
+		}
+		catch (ExecutionException e) {
+			// the RunnableTask already deals with task exceptions; hence, if we reach this place,
+			// then something unusual is happening
+			LOGGER.log(Level.SEVERE, task.logPrefix() + task + " threw an unexpected exception", e);
 		}
 	}
 

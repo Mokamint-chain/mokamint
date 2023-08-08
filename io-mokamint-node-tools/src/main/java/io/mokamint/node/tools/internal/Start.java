@@ -215,10 +215,6 @@ public class Start extends AbstractCommand {
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 			publishPublicAndRestrictedNodeServices(0, node);
 		}
-		catch (URISyntaxException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database refers to an illegal URI!|@"));
-			LOGGER.log(Level.SEVERE, "the database refers to an illegal URI", e);
-		}
 		catch (NoSuchAlgorithmException e) {
 			System.out.println(Ansi.AUTO.string("@|red The database refers to an unknown hashing algorithm!|@"));
 			LOGGER.log(Level.SEVERE, "the database refers to an unknown hashing algorithm", e);

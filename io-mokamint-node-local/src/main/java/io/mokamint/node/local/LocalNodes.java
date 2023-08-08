@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.application.api.Application;
@@ -42,10 +41,10 @@ public interface LocalNodes {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws IOException if the database is corrupted
-	 * @throws URISyntaxException if some URI in the database has an illegal syntax
+	 * @throws InterruptedException if the initialization of the node was interrupted
 	 */
 	static LocalNode of(Config config, Application app, boolean init, Miner... miners)
-			throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException {
+			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
 
 		return new LocalNodeImpl(config, app, init, miners);
 	}
