@@ -105,7 +105,7 @@ public class Blockchain {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public void startMining() throws NoSuchAlgorithmException, DatabaseException {
-		node.submit(new MineNewBlockTask(node, getHead()));
+		node.submit(new MineNewBlockTask(node));
 	}
 	
 	/**
@@ -265,15 +265,17 @@ public class Blockchain {
 
 		Block newHead = updatedHead.get();
 		if (newHead != null)
-			node.submit(new MineNewBlockTask(node, Optional.of(newHead)));
+			startMining();
 		else if (!added) {
 			var head = getHead();
 			if (head.isEmpty() || head.get().getPower().compareTo(block.getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from that block asking our peers if they know a chain from
 				// that block towards a known block
-				if (block instanceof NonGenesisBlock ngb)
+				if (block instanceof NonGenesisBlock ngb) {
+					// TODO: probably not synchronization, but something else...
 					node.submit(new SynchronizationTask(node));
+				}
 		}
 
 		return added;

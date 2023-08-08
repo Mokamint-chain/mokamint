@@ -77,8 +77,10 @@ public class BlockAdditionTests {
 		when(node.getDatabase()).thenReturn(database);
 		var miners = new NodeMiners(node, Stream.empty());
 		when(node.getMiners()).thenReturn(miners);
+		var blockchain = new Blockchain(node);
+		when(node.getBlockchain()).thenReturn(blockchain);
 
-		return new Blockchain(node);
+		return blockchain;
 	}
 
 	@Test

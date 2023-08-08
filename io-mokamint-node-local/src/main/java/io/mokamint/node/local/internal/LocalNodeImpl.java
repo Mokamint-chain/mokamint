@@ -56,6 +56,7 @@ import io.mokamint.node.api.Version;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
+import io.mokamint.node.local.internal.blockchain.SynchronizationTask;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.messages.MessageMemories;
 import io.mokamint.node.messages.MessageMemory;
@@ -175,8 +176,14 @@ public class LocalNodeImpl implements LocalNode {
 		this.blockchain = new Blockchain(this);
 		peers.addSeeds();
 
-		if (blockchain.getGenesis().isPresent() || init)
+		if (init && blockchain.getGenesis().isEmpty())
 			blockchain.startMining();
+		else
+			synchronize();
+	}
+
+	private void synchronize() {
+		submit(new SynchronizationTask(this));
 	}
 
 	@Override

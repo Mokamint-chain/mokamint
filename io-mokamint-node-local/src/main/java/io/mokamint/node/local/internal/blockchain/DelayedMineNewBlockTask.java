@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
-import java.util.Optional;
+import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
-import io.mokamint.node.api.Block;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DelayedMineNewBlockTask extends MineNewBlockTask {
@@ -29,8 +29,8 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node, Optional<Block> previous) {
-		super(node, previous);
+	public DelayedMineNewBlockTask(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException {
+		super(node);
 
 		this.delay = node.getConfig().deadlineWaitTimeout;
 	}

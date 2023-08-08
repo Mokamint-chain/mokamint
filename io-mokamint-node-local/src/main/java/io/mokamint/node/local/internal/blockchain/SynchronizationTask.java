@@ -137,15 +137,17 @@ public class SynchronizationTask implements Task {
 		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException {
 			do {
 				if (!downloadNextGroups()) {
-					LOGGER.info(logPrefix() + "synchronization stopped since the peers did not provide more block hashes to download");
+					LOGGER.info(logPrefix() + "synchronization stops here since the peers do not provide more block hashes to download");
 					break;
 				}
 
 				chooseMostReliableGroup();
 				downloadBlocks();
 
-				if (!addBlocksToBlockchain())
+				if (!addBlocksToBlockchain()) {
+					LOGGER.info(logPrefix() + "synchronization stops here since nomore verifiable blocks can be downloaded");
 					break;
+				}
 
 				keepOnlyPeersAgreeingOnChosenGroup();
 				
@@ -154,6 +156,12 @@ public class SynchronizationTask implements Task {
 				height += GROUP_SIZE - 1;
 			}
 			while (chosenGroup.length == GROUP_SIZE);
+
+			// after synchronization, we let the blockchain starts to mine its blocks
+			if (blockchain.getHead().isPresent())
+				node.getBlockchain().startMining();
+			else
+				LOGGER.log(Level.SEVERE, "the blockchain is empty after synchronization: I cannot start mining");
 		}
 
 		/**

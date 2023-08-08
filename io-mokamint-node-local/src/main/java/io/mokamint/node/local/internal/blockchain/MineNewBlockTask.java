@@ -106,13 +106,14 @@ public class MineNewBlockTask implements Task {
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node performing the mining
-	 * @param previous the previous block, if any; otherwise a genesis block is mined
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the node contains some block referring to an unknown hashing algorithm
 	 */
-	MineNewBlockTask(LocalNodeImpl node, Optional<Block> previous) {
+	MineNewBlockTask(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.config = node.getConfig();
-		this.previous = previous;
+		this.previous = blockchain.getHead();
 		this.heightOfNewBlock = previous.isEmpty() ? 0L : (previous.get().getHeight() + 1);
 		this.logPrefix = "height " + heightOfNewBlock + ": ";
 		this.previousHex = previous.isEmpty() ? "" : previous.get().getHexHash(config.getHashingForBlocks());
@@ -153,7 +154,7 @@ public class MineNewBlockTask implements Task {
 		}
 		catch (TimeoutException e) {
 			LOGGER.warning(logPrefix + this + ": timed out while waiting for a deadline");
-			node.submit(new NoDeadlineFoundEvent(previous.get()));
+			node.submit(new NoDeadlineFoundEvent());
 		}
 		catch (NoSuchAlgorithmException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + this + ": the database contains a node that refers to an unknown hashing algorithm", e);
@@ -190,11 +191,7 @@ public class MineNewBlockTask implements Task {
 	 */
 	public class NoDeadlineFoundEvent implements Event {
 
-		private final Block previous;
-
-		private NoDeadlineFoundEvent(Block previous) {
-			this.previous = previous;
-		}
+		private NoDeadlineFoundEvent() {}
 
 		@Override
 		public String toString() {
@@ -205,7 +202,7 @@ public class MineNewBlockTask implements Task {
 		public void body() throws NoSuchAlgorithmException, DatabaseException {
 			// all miners timed-out
 			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
-			node.submit(new DelayedMineNewBlockTask(node, Optional.of(previous)));
+			node.submit(new DelayedMineNewBlockTask(node));
 		}
 
 		@Override

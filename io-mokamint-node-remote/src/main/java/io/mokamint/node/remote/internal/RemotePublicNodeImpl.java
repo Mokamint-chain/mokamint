@@ -150,12 +150,25 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
+		whisper(message, seen, true);
+	}
+
+	private void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
 		LOGGER.info("remote: got whispered block"); // TODO
 
 		onWhisperBlock(message);
+
+		if (includeNetwork) {
+			try {
+				sendObjectAsync(getSession(WHISPER_BLOCK_ENDPOINT), message);
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, "cannot whisper a block to the connected service: the connection might be closed", e);
+			}
+		}
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
@@ -486,7 +499,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperBlockMessage message) -> whisper(message, _whisperer -> false));
+			addMessageHandler(session, (WhisperBlockMessage message) -> whisper(message, _whisperer -> false, false));
 		}
 
 		@Override
