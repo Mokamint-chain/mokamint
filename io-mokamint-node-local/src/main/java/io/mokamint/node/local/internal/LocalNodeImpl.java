@@ -23,7 +23,6 @@ import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -42,6 +41,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Chain;
@@ -112,8 +112,7 @@ public class LocalNodeImpl implements LocalNode {
 	private final UUID uuid;
 
 	/**
-	 * The single executor of the events. Events get queued into this queue and run in order
-	 * on that executor, called the event thread.
+	 * The executor of events. There might be more events in execution at the same time.
 	 */
 	private final ExecutorService events = Executors.newCachedThreadPool();
 
@@ -177,7 +176,7 @@ public class LocalNodeImpl implements LocalNode {
 		this.miners = new NodeMiners(this, Stream.of(miners));
 		this.blockchain = new Blockchain(this);
 		this.peers = new NodePeers(this);
-		peers.addSeeds();
+		peers.add(config.seeds().map(Peers::of), true, true);
 
 		if (init)
 			blockchain.startMining();
@@ -248,7 +247,7 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
 		ensureIsOpen();
-		peers.add(peer, true);
+		peers.add(peer, true, true);
 	}
 
 	@Override
@@ -584,32 +583,6 @@ public class LocalNodeImpl implements LocalNode {
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
-		}
-	}
-
-	/**
-	 * Runs the given task, synchronously, in one thread from the {@link #tasks} executor.
-	 * This call will block until the task is over.
-	 * 
-	 * @param task the task to run
-	 * @param timeout the time to wait for the completion of the task, at most
-	 * @param unit the time unit of {@code timeout}
-	 * @throws InterruptedException if the computation was interrupted while waiting for its result
-	 * @throws TimeoutException if the timeout expired
-	 */
-	public void submitAndWait(Task task, long timeout, TimeUnit unit) throws TimeoutException, InterruptedException {
-		try {
-			LOGGER.info(task.logPrefix() + "scheduling " + task);
-			onSubmit(task);
-			tasks.submit(new RunnableTask(task)).get(timeout, unit);
-		}
-		catch (RejectedExecutionException e) {
-			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
-		}
-		catch (ExecutionException e) {
-			// the RunnableTask already deals with task exceptions; hence, if we reach this place,
-			// then something unusual is happening
-			LOGGER.log(Level.SEVERE, task.logPrefix() + task + " threw an unexpected exception", e);
 		}
 	}
 

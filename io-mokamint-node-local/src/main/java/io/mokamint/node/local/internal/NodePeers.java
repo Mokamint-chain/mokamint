@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
-import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -115,33 +114,10 @@ public class NodePeers implements AutoCloseable {
 		this.db = node.getDatabase();
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		openConnectionToPeers();
-		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
+		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, 1000L,
+				// TODO config.peerPingInterval
+				TimeUnit.MILLISECONDS);
 	}
-
-	/**
-	 * Tries to add the seeds to the peers of the node, if they are not already added.
-	 * Seeds might not be added because a connection cannot be established to them,
-	 * or because they are incompatible with the node.
-	 * It waits until the addition is terminated or a timeout occurs.
-	 * 
-	 * @throw InterruptedException if the execution is interrupted while waiting for the addition
-	 */
-	public void addSeeds() throws InterruptedException {
-		var usefulToAdd = config.seeds().map(Peers::of).distinct()
-			.filter(not(peers::contains))
-			.toArray(Peer[]::new);
-	
-		// before scheduling a task, we check if there is some peer that could be useful for the node
-		if (usefulToAdd.length > 0) {
-			try {
-				node.submitAndWait(new AddPeersTask(usefulToAdd, true, true), config.peerTimeout * 2, TimeUnit.MILLISECONDS);
-			}
-			catch (TimeoutException e) {
-				LOGGER.log(Level.SEVERE, "peers: the addition of the seeds timed out: " + e.getMessage());
-			}
-		}
-	}
-
 
 	/**
 	 * Yields information about the peers.
@@ -153,48 +129,58 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Adds the given peer.
+	 * Add some peers to the node. Peers might not be added because
+	 * they are already present in the node, or because a connection cannot be established
+	 * to them, or because they are incompatible with the node. In such cases, the peers are
+	 * simply ignored and no exception is thrown.
 	 * 
-	 * @param peer the peer to add
-	 * @param force true if the peer must be added also if the maximum number of peers has been reached
-	 * @return true if and only if the peer was not present and has been added
-	 * @throws IOException if a connection to the peer cannot be established
-	 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of the node
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws TimeoutException if no answer arrives within a time window
-	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @param peers the peers to add
+	 * @param force true if and only if the peers must be added also when the maximal number of peers
+	 *              for the node has been reached
+	 * @param whisper true if and only if the added peers must be whispered to all peers
+	 *                after the addition
 	 */
-	public boolean add(Peer peer, boolean force) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
-		return add(peer, force, true);
+	public void add(Stream<Peer> peers, boolean force, boolean whisper) {
+		var added = peers
+			.parallel()
+			.distinct()
+			.filter(not(this.peers::contains))
+			.filter(peer -> addNoException(peer, force))
+			.toArray(Peer[]::new);
+	
+		if (added.length > 0) // just to avoid useless events
+			node.submit(new PeersAddedEvent(Stream.of(added), whisper));
 	}
 
 	/**
-	 * Adds the given peer and spawns an event at the end, if required.
+	 * Adds the given peer. This might fail because
+	 * the peer is already present in the node, or because a connection to the peer
+	 * cannot be established, or because the peer is incompatible with the node.
 	 * 
 	 * @param peer the peer to add
-	 * @param force true if the peer must be added also if the maximum number of peers has been reached
-	 * @param spawnEvent true if and the end of a successful addition of a peer a {@link PeersAddedEvent} must be spawned
-	 * @return true if and only if the peer was not present and has been added
+	 * @param force true if the peer must be added also if the maximum number of peers for the node has been reached
+	 * @param whisper true if and only if the added peer must be whispered to all peers after the addition
+	 * @return true if and only if the peer has been added
 	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of the node
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws TimeoutException if no answer arrives within a time window
-	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws TimeoutException if the addition does not complete in time
+	 * @throws InterruptedException if the current thread is interrupted while waiting for the addition to complete
 	 */
-	private boolean add(Peer peer, boolean force, boolean spawnEvent) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
+	public boolean add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
 		boolean result = check(TimeoutException.class,
-					 InterruptedException.class,
-					 IOException.class,
-					 IncompatiblePeerException.class,
-					 DatabaseException.class,
-			() -> peers.add(peer, force));
+				 InterruptedException.class,
+				 IOException.class,
+				 IncompatiblePeerException.class,
+				 DatabaseException.class,
+				 () -> peers.add(peer, force));
 
-		if (spawnEvent && result)
-			node.submit(new PeersAddedEvent(Stream.of(peer), true));
+		if (result)
+			node.submit(new PeersAddedEvent(Stream.of(peer), whisper));
 
 		return result;
 	}
-
+	
 	/**
 	 * Removes a peer.
 	 * 
@@ -230,7 +216,7 @@ public class NodePeers implements AutoCloseable {
 		
 		if (tryToAdd)
 			// we check if this node needs any of the whispered peers
-			tryToAdd(message.getPeers(), false, false);
+			addWhisperedAsync(message.getPeers());
 	
 		// in any case, we forward the message to our peers
 		remotes.values().forEach(remote -> remote.whisper(message, seen));
@@ -305,73 +291,78 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Try to add the given peers to the node. Peers might not be added because there
+	 * Add the given peers to the node, asynchronously. Peers might not be added because there
 	 * are already enough peers, or because a connection cannot be established to them,
-	 * or because they are incompatible with the node.
+	 * or because they are incompatible with the node. In such cases, this method
+	 * does not add the peer and nothing happens.
 	 * 
-	 * @param toAdd the peers to add
-	 * @param force true if and only if the peers must be added also if the maximum number of peers
-	 *              for the node has been reached
-	 * @param whisper true if and only if the peers actually added, at the end, must be whispered
-	 *                to all peers of this node
+	 * @param peers the peers to add
 	 */
-	private void tryToAdd(Stream<Peer> toAdd, boolean force, boolean whisper) {
-		var usefulToAdd = toAdd.distinct()
-			.filter(not(peers::contains))
-			.toArray(Peer[]::new);
+	private void addWhisperedAsync(Stream<Peer> peers) {
+		if (this.peers.getElements().count() < config.maxPeers) {
+			var usefulToAdd = peers.distinct()
+					.filter(not(this.peers::contains))
+					.toArray(Peer[]::new);
 
-		// before scheduling a task, we check if there is some peer that could be useful for the node
-		if (usefulToAdd.length > 0 && (force || peers.getElements().count() < config.maxPeers))
-			node.submit(new AddPeersTask(usefulToAdd, force, whisper));
+			if (usefulToAdd.length > 0)
+				node.submit(new AddWhisperedPeersTask(usefulToAdd));
+		}
 	}
 
 	/**
-	 * A task that adds peers to the node.
+	 * A task that adds whispered peers to the node.
 	 */
-	private class AddPeersTask implements Task {
+	public class AddWhisperedPeersTask implements Task {
 		private final Peer[] toAdd;
-		private final boolean force;
-		private final boolean whisper;
 
-		private AddPeersTask(Peer[] toAdd, boolean force, boolean whisper) {
+		private AddWhisperedPeersTask(Peer[] toAdd) {
 			this.toAdd = toAdd;
-			this.force = force;
-			this.whisper = whisper;
 		}
 
 		@Override
 		public String toString() {
-			return "addition of " + SanitizedStrings.of(Stream.of(toAdd)) + " as peers";
+			return "addition of whispered peers " + SanitizedStrings.of(Stream.of(toAdd));
 		}
 
 		@Override
 		public void body() {
-			var added = Stream.of(toAdd).parallel()
-				.filter(peer -> addPeer(peer, force))
-				.toArray(Peer[]::new);
-
-			if (added.length > 0) // just to avoid useless events
-				node.submit(new PeersAddedEvent(Stream.of(added), whisper));
+			add(Stream.of(toAdd), false, false);
 		}
 
 		@Override
 		public String logPrefix() {
 			return "peers: ";
 		}
+	}
 
-		private boolean addPeer(Peer peer, boolean force) {
-			try {
-				// we do not spawn an event since we will spawn one at the end for all peers
-				return add(peer, force, false);
-			}
-			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, logPrefix() + "addition of " + peer + " as a peer interrupted");
-				Thread.currentThread().interrupt();
-				return false;
-			}
-			catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
-				return false;
-			}
+	/**
+	 * Adds the given peer, if possible. This might fail if the peer was already
+	 * present, or a connection to the peer cannot be established, or the peer
+	 * is incompatible with the node. In such cases, this method just ignores
+	 * the addition and nothing happens.
+	 * 
+	 * @param peer the peer to add
+	 * @param force true if and only if the addition must be performed also if
+	 *              the maximal number of peers for the node has been reached
+	 * @return true if and only if the peer has been added
+	 */
+	private boolean addNoException(Peer peer, boolean force) {
+		try {
+			// we do not spawn an event since we will spawn one at the end for all peers
+			return check(TimeoutException.class,
+					 InterruptedException.class,
+					 IOException.class,
+					 IncompatiblePeerException.class,
+					 DatabaseException.class,
+					 () -> peers.add(peer, force));
+		}
+		catch (InterruptedException e) {
+			LOGGER.log(Level.WARNING, "peers: addition of " + peer + " as a peer interrupted");
+			Thread.currentThread().interrupt();
+			return false;
+		}
+		catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
+			return false;
 		}
 	}
 
@@ -427,7 +418,8 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public void body() {
-			tryToAdd(peers.getElements().parallel().flatMap(this::pingPeerRecreateRemoteAndCollectPeers), false, true);
+			var allPeers = peers.getElements().parallel().flatMap(this::pingPeerRecreateRemoteAndCollectPeers);
+			add(allPeers, false, true);
 		}
 
 		@Override
