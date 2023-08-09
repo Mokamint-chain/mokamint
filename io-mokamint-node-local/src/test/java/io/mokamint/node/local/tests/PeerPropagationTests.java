@@ -110,9 +110,11 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onSubmit(Event event) {
-				synchronized (events) {
-					events.add(event);
-				}
+				if (event instanceof PeersAddedEvent)
+					synchronized (events) {
+						events.add(event);
+					}
+
 				super.onSubmit(event);
 			}
 

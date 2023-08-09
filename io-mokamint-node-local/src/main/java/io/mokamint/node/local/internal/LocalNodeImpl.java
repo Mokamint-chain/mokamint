@@ -115,7 +115,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * The single executor of the events. Events get queued into this queue and run in order
 	 * on that executor, called the event thread.
 	 */
-	private final ExecutorService events = Executors.newSingleThreadExecutor();
+	private final ExecutorService events = Executors.newCachedThreadPool();
 
 	/**
 	 * The executor of tasks. There might be more tasks in execution at the same time.
