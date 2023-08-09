@@ -114,9 +114,7 @@ public class NodePeers implements AutoCloseable {
 		this.db = node.getDatabase();
 		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		openConnectionToPeers();
-		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, 1000L,
-				// TODO config.peerPingInterval
-				TimeUnit.MILLISECONDS);
+		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -398,7 +396,7 @@ public class NodePeers implements AutoCloseable {
 				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
 
 			// if the blockchain is empty, the addition of a new peer might be the right moment for attempting a synchronization
-			if (node.getDatabase().getHeadHash().isEmpty())
+			if (node.getDatabase().getGenesisHash().isEmpty())
 				node.getBlockchain().startSynchronization();
 		}
 

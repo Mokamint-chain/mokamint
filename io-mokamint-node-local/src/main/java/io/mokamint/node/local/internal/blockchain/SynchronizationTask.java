@@ -86,7 +86,7 @@ public class SynchronizationTask implements Task {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() throws NoSuchAlgorithmException, DatabaseException, InterruptedException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException {
 		new Run();
 	}
 
@@ -141,7 +141,7 @@ public class SynchronizationTask implements Task {
 
 		private final static int GROUP_SIZE = 500;
 
-		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException {
+		private Run() throws DatabaseException, NoSuchAlgorithmException {
 			try {
 				do {
 					if (!downloadNextGroups()) {
@@ -164,6 +164,10 @@ public class SynchronizationTask implements Task {
 					height += GROUP_SIZE - 1;
 				}
 				while (chosenGroup.length == GROUP_SIZE);
+			}
+			catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, logPrefix() + SynchronizationTask.this + " interrupted");
+				Thread.currentThread().interrupt();
 			}
 			finally {
 				atTheEnd.run();

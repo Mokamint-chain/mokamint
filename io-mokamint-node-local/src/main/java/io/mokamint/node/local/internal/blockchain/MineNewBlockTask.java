@@ -135,7 +135,7 @@ public class MineNewBlockTask implements Task {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() {
+	public void body() throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			if (previous.isPresent()) {
 				if (miners.get().count() == 0L)
@@ -155,12 +155,6 @@ public class MineNewBlockTask implements Task {
 		catch (TimeoutException e) {
 			LOGGER.warning(logPrefix + this + ": timed out while waiting for a deadline");
 			node.submit(new NoDeadlineFoundEvent());
-		}
-		catch (NoSuchAlgorithmException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + this + ": the database contains a node that refers to an unknown hashing algorithm", e);
-		}
-		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + this + ": the database seems corrupted", e);
 		}
 	}
 

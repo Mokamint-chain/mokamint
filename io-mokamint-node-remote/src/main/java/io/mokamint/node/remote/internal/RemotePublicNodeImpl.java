@@ -166,7 +166,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 				sendObjectAsync(getSession(WHISPER_BLOCK_ENDPOINT), message);
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "cannot whisper a block to the connected service: the connection might be closed", e);
+				LOGGER.log(Level.SEVERE, "cannot whisper a block to the connected service: the connection might be closed: " + e.getMessage());
 			}
 		}
 
@@ -187,7 +187,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 				sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), message);
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed", e);
+				LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed: " + e.getMessage());
 			}
 		}
 

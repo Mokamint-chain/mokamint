@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +41,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +51,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
@@ -95,9 +98,10 @@ public class PeersTests {
 		}
 	}
 
-	private static PublicNodeInternals mkNode() throws TimeoutException, InterruptedException, ClosedNodeException {
+	private static PublicNodeInternals mkNode() throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
 		PublicNodeInternals result = mock();
 		when(result.getInfo()).thenReturn(info);
+		when(result.getChain(anyLong(), anyLong())).thenReturn(Chains.of(Stream.empty()));
 		return result;
 	}
 
@@ -113,7 +117,7 @@ public class PeersTests {
 		 * @param port the port where the server is published
 		 * @throws DeploymentException if the service cannot be deployed
 		 */
-		private PublicTestServer(int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+		private PublicTestServer(int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
 			super(mkNode(), port, 180000L, 1000, Optional.empty());
 		}
 	}

@@ -128,7 +128,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -145,7 +145,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 

@@ -386,7 +386,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -415,7 +415,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -444,7 +444,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -473,7 +473,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -502,7 +502,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed", e);
+			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
