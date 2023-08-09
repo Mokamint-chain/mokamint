@@ -54,6 +54,7 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
@@ -99,7 +100,7 @@ public class PeerPropagationTests {
 		var config4 = Config.Builder.defaults().setDir(chain4).build();
 
 		var semaphore = new Semaphore(0);
-		var events = new HashSet<PeersAddedEvent>();
+		var events = new HashSet<Event>();
 
 		class MyLocalNode extends LocalNodeImpl {
 
@@ -109,8 +110,7 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeersAddedEvent pae)
-					events.add(pae);
+				events.add(event);
 
 				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(peer4::equals))
 					semaphore.release();

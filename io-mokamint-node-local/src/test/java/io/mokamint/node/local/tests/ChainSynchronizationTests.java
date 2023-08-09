@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -168,8 +167,8 @@ public class ChainSynchronizationTests {
 
 			assertTrue(semaphore1.tryAcquire(howMany, 20, TimeUnit.SECONDS));
 			assertTrue(semaphore2.tryAcquire(howMany - howMany / 2, 20, TimeUnit.SECONDS));
-			System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-			System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+			//System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+			//System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
 			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
