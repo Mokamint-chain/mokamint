@@ -109,17 +109,12 @@ public class PeerPropagationTests {
 			}
 
 			@Override
-			protected void onSubmit(Event event) {
+			protected void onComplete(Event event) {
 				if (event instanceof PeersAddedEvent)
 					synchronized (events) {
 						events.add(event);
 					}
 
-				super.onSubmit(event);
-			}
-
-			@Override
-			protected void onComplete(Event event) {
 				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(peer4::equals))
 					semaphore.release();
 			}
@@ -148,9 +143,7 @@ public class PeerPropagationTests {
 			}
 
 			// we wait for three events of addition of peer4 as peer
-			//assertTrue(
-			semaphore.tryAcquire(3, 5, TimeUnit.SECONDS);
-			//);
+			assertTrue(semaphore.tryAcquire(3, 5, TimeUnit.SECONDS));
 
 			synchronized (events) {
 				System.out.println("after: " + events);
