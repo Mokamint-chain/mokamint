@@ -142,6 +142,7 @@ public class ChainSynchronizationTests {
 				if (event instanceof BlockAddedEvent bae) {
 					semaphore2.release();
 					blocksOfNode2.add(bae.block);
+					System.out.println("blocksOfNode2 added " + bae.block.getHeight());
 				}
 
 				super.onComplete(event);
