@@ -402,9 +402,13 @@ public class NodePeers implements AutoCloseable {
 		}
 
 		@Override
-		public void body() {
+		public void body() throws DatabaseException {
 			if (whisper)
 				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
+
+			// if the blockchain is empty, the addition of a new peer might be the right moment for attempting a synchronization
+			if (node.getDatabase().getHeadHash().isEmpty())
+				node.getBlockchain().startSynchronization();
 		}
 
 		@Override
@@ -637,7 +641,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * An event fired to signal that a peer of the node has been connected.
 	 */
-	public static class PeerConnectedEvent implements Event {
+	public class PeerConnectedEvent implements Event {
 		private final Peer peer;
 
 		private PeerConnectedEvent(Peer peer) {
@@ -659,7 +663,9 @@ public class NodePeers implements AutoCloseable {
 		}
 
 		@Override
-		public void body() {}
+		public void body() {
+			node.whisperItself();
+		}
 
 		@Override
 		public String logPrefix() {

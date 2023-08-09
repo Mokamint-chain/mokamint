@@ -224,7 +224,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		whisper(message, seen, null);
 	}
 
-	private void whisperItself() {
+	@Override
+	public void whisperItself() {
 		if (uri.isEmpty())
 			LOGGER.warning("service: not whispering the service itself since its public URI is unknown");
 	
@@ -525,7 +526,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			var server = getServer();
 			server.whisperPeersSessions.add(session);
 			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisper(message, _whisperer -> false, session, false));
-	    }
+		}
 
 		@SuppressWarnings("resource")
 		@Override

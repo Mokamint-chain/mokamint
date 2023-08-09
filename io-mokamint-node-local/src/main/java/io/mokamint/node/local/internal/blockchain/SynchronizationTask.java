@@ -57,15 +57,22 @@ public class SynchronizationTask implements Task {
 	 */
 	private final LocalNodeImpl node;
 
+	/**
+	 * Code to execute at the end of the synchronization, also if it fails.
+	 */
+	private final Runnable atTheEnd;
+
 	private final static Logger LOGGER = Logger.getLogger(SynchronizationTask.class.getName());
 
 	/**
 	 * Creates a task that synchronizes the blockchain from the peers.
 	 * 
 	 * @param node the node for which synchronization is performed
+	 * @param atTheEnd code to execute at the end of the synchronization, also if it fails
 	 */
-	public SynchronizationTask(LocalNodeImpl node) {
+	SynchronizationTask(LocalNodeImpl node, Runnable atTheEnd) {
 		this.node = node;
+		this.atTheEnd = atTheEnd;
 	}
 
 	@Override
@@ -135,33 +142,38 @@ public class SynchronizationTask implements Task {
 		private final static int GROUP_SIZE = 500;
 
 		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException {
-			do {
-				if (!downloadNextGroups()) {
-					LOGGER.info(logPrefix() + "synchronization stops here since the peers do not provide more block hashes to download");
-					break;
+			try {
+				do {
+					if (!downloadNextGroups()) {
+						LOGGER.info(logPrefix() + "synchronization stops here since the peers do not provide more block hashes to download");
+						break;
+					}
+
+					chooseMostReliableGroup();
+					downloadBlocks();
+
+					if (!addBlocksToBlockchain()) {
+						LOGGER.info(logPrefix() + "synchronization stops here since nomore verifiable blocks can be downloaded");
+						break;
+					}
+
+					keepOnlyPeersAgreeingOnChosenGroup();
+
+					// -1 is used in order the link the next group with the previous one:
+					// they must coincide for the first (respectively, last) block hash
+					height += GROUP_SIZE - 1;
 				}
-
-				chooseMostReliableGroup();
-				downloadBlocks();
-
-				if (!addBlocksToBlockchain()) {
-					LOGGER.info(logPrefix() + "synchronization stops here since nomore verifiable blocks can be downloaded");
-					break;
-				}
-
-				keepOnlyPeersAgreeingOnChosenGroup();
-				
-				// -1 is used in order the link the next group with the previous one:
-				// they must coincide for the first (respectively, last) block hash
-				height += GROUP_SIZE - 1;
+				while (chosenGroup.length == GROUP_SIZE);
 			}
-			while (chosenGroup.length == GROUP_SIZE);
+			finally {
+				atTheEnd.run();
+			}
 
-			// after synchronization, we let the blockchain starts to mine its blocks
-			if (blockchain.getHead().isPresent())
-				node.getBlockchain().startMining();
+			// after synchronization, we let the blockchain start to mine its blocks
+			if (node.getDatabase().getGenesisHash().isPresent())
+				blockchain.startMining();
 			else
-				LOGGER.log(Level.SEVERE, "the blockchain is empty after synchronization: I cannot start mining");
+				LOGGER.log(Level.SEVERE, logPrefix() + "the blockchain is empty after synchronization: I cannot start mining");
 		}
 
 		/**

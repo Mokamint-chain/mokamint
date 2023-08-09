@@ -36,6 +36,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.LocalNodes;
@@ -62,7 +63,7 @@ public class Start extends AbstractCommand {
 	@Option(names = "--broadcast-interval", description = { "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers" }, defaultValue = "1800000")
 	private long broadcastInterval;
 
-	@Option(names = { "--init" }, description = { "requires to mine a genesis block if the chain is empty; otheriwse, it is ignored" }, defaultValue = "false")
+	@Option(names = { "--init" }, description = { "create a genesis block at start-up and start mining" }, defaultValue = "false")
 	private boolean init;
 
 	@Option(names = "--uri", description = { "the URI of the node, such as \"ws://my.machine.com:8030\"; if missing, the node will try to use its public IP"})
@@ -192,12 +193,12 @@ public class Start extends AbstractCommand {
 		}
 		catch (FileNotFoundException e) {
 			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" does not exist!|@"));
-			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" does not exist", e);
+			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" does not exist: " + e.getMessage());
 			return;
 		}
 		catch (URISyntaxException e) {
 			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" refers to a URI with wrong syntax!|@"));
-			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" refers to a URI with wrong syntax", e);
+			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" refers to a URI with wrong syntax: " + e.getMessage());
 			return;
 		}
 
@@ -206,7 +207,7 @@ public class Start extends AbstractCommand {
 		}
 		catch (IOException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot create the directory " + config.dir + "|@"));
-			LOGGER.log(Level.SEVERE, "cannot create the directory " + config.dir, e);
+			LOGGER.log(Level.SEVERE, "cannot create the directory " + config.dir + ": " + e.getMessage());
 			return;
 		}
 
@@ -227,6 +228,10 @@ public class Start extends AbstractCommand {
 			// unexpected: who could interrupt this process?
 			System.out.println(Ansi.AUTO.string("@|red The process has been interrupted!|@"));
 			LOGGER.log(Level.SEVERE, "unexpected interruption", e);
+		}
+		catch (AlreadyInitializedException e) {
+			System.out.println(Ansi.AUTO.string("@|red the node is already initialized: delete \"" + config.dir + "\" and start again with --init|@"));
+			LOGGER.log(Level.SEVERE, "the node is already initialized");
 		}
 	}
 
@@ -300,7 +305,7 @@ public class Start extends AbstractCommand {
 	private void ensureExists(Path dir) throws IOException {
 		if (Files.exists(dir)) {
 			System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the blockchain from the old database.|@"));
-			System.out.println(Ansi.AUTO.string("@|yellow If you want to start the blockchain from scratch, delete that path and start again this node.|@"));
+			System.out.println(Ansi.AUTO.string("@|yellow If you want to start a blockchain from scratch, delete \"" + dir + "\" and start again this node with --init.|@"));
 		}
 
 		Files.createDirectories(dir);

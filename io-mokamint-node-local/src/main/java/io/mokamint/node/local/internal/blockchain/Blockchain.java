@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -38,7 +39,6 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -83,6 +83,12 @@ public class Blockchain {
 	 */
 	private final HashingAlgorithm<byte[]> hashingForBlocks;
 
+	/**
+	 * True if and only if the blockchain is currently performing
+	 * a synchronization from the peers of the node.
+	 */
+	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
+
 	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
 	/**
@@ -99,15 +105,27 @@ public class Blockchain {
 	}
 
 	/**
-	 * Starts mining blocks on top of the current blockchain head.
+	 * Triggers block mining on top of the current head, if this blockchain
+	 * is not performing a synchronization. Otherwise, nothing happens.
 	 * 
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public void startMining() throws NoSuchAlgorithmException, DatabaseException {
-		node.submit(new MineNewBlockTask(node));
+		if (!isSynchronizing.get())
+			node.submit(new MineNewBlockTask(node));
 	}
-	
+
+	/**
+	 * Triggers a synchronization of this blockchain from the peers of the node,
+	 * if this blockchain is not already performing a synchronization.
+	 * Otherwise, nothing happens.
+	 */
+	public void startSynchronization() {
+		if (!isSynchronizing.getAndSet(true))
+			node.submit(new SynchronizationTask(node, () -> isSynchronizing.set(false)));
+	}
+
 	/**
 	 * Yields the first genesis block of this blockchain, if any.
 	 * 
@@ -233,7 +251,6 @@ public class Blockchain {
 	
 						if (db.add(cursor, updatedHead)) {
 							getOrphansWithParent(cursor).forEach(ws::add);
-							node.submit(new BlockAddedEvent(cursor));
 							if (first)
 								added = true;
 						}
@@ -252,7 +269,6 @@ public class Blockchain {
 
 					if (db.add(cursor, updatedHead)) {
 						getOrphansWithParent(cursor).forEach(ws::add);
-						node.submit(new BlockAddedEvent(cursor));
 						if (first)
 							added = true;
 					}
@@ -274,40 +290,10 @@ public class Blockchain {
 				// that block towards a known block
 				if (block instanceof NonGenesisBlock ngb) {
 					// TODO: probably not synchronization, but something else...
-					node.submit(new SynchronizationTask(node));
 				}
 		}
 
 		return added;
-	}
-
-	/**
-	 * An event triggered when a block gets added to the blockchain, not necessarily
-	 * to the main chain, but definitely connected to the genesis block.
-	 */
-	public class BlockAddedEvent implements Event {
-
-		/**
-		 * The block that has been added.
-		 */
-		public final Block block;
-
-		private BlockAddedEvent(Block block) {
-			this.block = block;
-		}
-
-		@Override
-		public void body() throws Exception {}
-
-		@Override
-		public String toString() {
-			return "block added event " + block.getHexHash(node.getConfig().hashingForBlocks);
-		}
-
-		@Override
-		public String logPrefix() {
-			return "height " + block.getHeight() + ": ";
-		}
 	}
 
 	private void verify(GenesisBlock block) throws VerificationException {

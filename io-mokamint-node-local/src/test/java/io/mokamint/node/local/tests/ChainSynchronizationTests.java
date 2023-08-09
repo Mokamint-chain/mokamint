@@ -49,9 +49,10 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.internal.Database.BlockAddedEvent;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.plotter.Plots;
@@ -77,7 +78,7 @@ public class ChainSynchronizationTests {
 	@DisplayName("a node without mining capacity synchronizes from its peer")
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
 
 		// how many blocks must be mined by node2 and synchronized/whispered into node1
 		final var howMany = 20;
@@ -87,13 +88,13 @@ public class ChainSynchronizationTests {
 
 		var config1 = Config.Builder.defaults()
 			.setDir(chain1)
-			.setTargetBlockCreationTime(500L)
+			.setTargetBlockCreationTime(300L)
 			.setInitialAcceleration(1000000000000000L)
 			.build();
 
 		var config2 = Config.Builder.defaults()
 			.setDir(chain2)
-			.setTargetBlockCreationTime(500L)
+			.setTargetBlockCreationTime(300L)
 			.setInitialAcceleration(1000000000000000L)
 			.build();
 
@@ -102,7 +103,7 @@ public class ChainSynchronizationTests {
 
 		class MyLocalNode1 extends LocalNodeImpl {
 
-			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
+			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, app, false); // <--- does not start mining by itself
 			}
 
@@ -122,7 +123,7 @@ public class ChainSynchronizationTests {
 
 		class MyLocalNode2 extends LocalNodeImpl {
 
-			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
+			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, app, true, miners); // <--- starts mining by itself
 			}
 

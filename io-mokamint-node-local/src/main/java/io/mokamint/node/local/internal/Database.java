@@ -23,8 +23,11 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,12 +57,19 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 
 /**
  * The database where the blockchain is persisted.
  */
 public class Database implements AutoCloseable {
+
+	/**
+	 * The node having this database.
+	 */
+	private final LocalNodeImpl node;
 
 	/**
 	 * The configuration of the node having this database.
@@ -132,6 +142,7 @@ public class Database implements AutoCloseable {
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
 	 */
 	public Database(LocalNodeImpl node) throws DatabaseException {
+		this.node = node;
 		this.config = node.getConfig();
 		this.maxPeers = config.maxPeers;
 		this.environment = createBlockchainEnvironment(config);
@@ -140,6 +151,21 @@ public class Database implements AutoCloseable {
 		this.storeOfChain = openStore("chain");
 		this.storeOfPeers = openStore("peers");
 		ensureNodeUUID();
+	}
+
+	/**
+	 * Creates the database of a node, allowing to require initialization with a new genesis block.
+	 * 
+	 * @param node the node
+	 * @param init if the database must be initialized with a genesis block (if empty)
+	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
+	 * @throws AlreadyInitializedException if {@code init} is true but the database already contains a genesis block
+	 */
+	public Database(LocalNodeImpl node, boolean init) throws DatabaseException, AlreadyInitializedException {
+		this(node);
+
+		if (init)
+			initialize();
 	}
 
 	@Override
@@ -370,6 +396,35 @@ public class Database implements AutoCloseable {
 	}
 
 	/**
+	 * An event triggered when a block gets added to the database, not necessarily
+	 * to the main chain, but definitely connected to the genesis block.
+	 */
+	public class BlockAddedEvent implements Event {
+
+		/**
+		 * The block that has been added.
+		 */
+		public final Block block;
+
+		private BlockAddedEvent(Block block) {
+			this.block = block;
+		}
+
+		@Override
+		public void body() throws Exception {}
+
+		@Override
+		public String toString() {
+			return "block added event for block " + block.getHexHash(node.getConfig().hashingForBlocks);
+		}
+
+		@Override
+		public String logPrefix() {
+			return "height " + block.getHeight() + ": ";
+		}
+	}
+
+	/**
 	 * A marshallable UUID.
 	 */
 	private static class MarshallableUUID extends AbstractMarshallable {
@@ -396,6 +451,22 @@ public class Database implements AutoCloseable {
 			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				return new MarshallableUUID(new UUID(context.readLong(), context.readLong()));
 			}
+		}
+	}
+
+	private void initialize() throws DatabaseException, AlreadyInitializedException {
+		if (getGenesisHash().isPresent())
+			throw new AlreadyInitializedException("init cannot be required for an already initialized node");
+
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.initialAcceleration));
+
+		try {
+			add(genesis, new AtomicReference<>());
+		}
+		catch (NoSuchAlgorithmException e) {
+			// if the database is empty, there is no way it contains a non-genesis block (that contains a hashing algorithm)
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
 		}
 	}
 
@@ -684,6 +755,7 @@ public class Database implements AutoCloseable {
 				if (updateHead(txn, ngb, hashOfBlock))
 					updatedHead.set(ngb);
 
+				node.submit(new BlockAddedEvent(ngb));
 				return true;
 			}
 			else {
@@ -697,6 +769,7 @@ public class Database implements AutoCloseable {
 				setGenesisHash(txn, (GenesisBlock) block, hashOfBlock);
 				setHeadHash(txn, block, hashOfBlock);
 				updatedHead.set(block);
+				node.submit(new BlockAddedEvent(block));
 				return true;
 			}
 			else {

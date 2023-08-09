@@ -34,17 +34,19 @@ public interface LocalNodes {
 	 * 
 	 * @param config the configuration of the node
 	 * @param app the application
-	 * @param init if the blockchain database is empty, it requires to initialize the blockchain
-	 *             by mining a genesis block. Otherwise, it is ignored
+	 * @param init if true, creates a genesis block and starts mining on top
+	 *             (initial synchronization is consequently skipped)
 	 * @param miners the miners
 	 * @return the local node
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws IOException if the database is corrupted
 	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
+	 *                                     contains a genesis block already
 	 */
 	static LocalNode of(Config config, Application app, boolean init, Miner... miners)
-			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 
 		return new LocalNodeImpl(config, app, init, miners);
 	}

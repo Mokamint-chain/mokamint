@@ -53,16 +53,17 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.Version;
+import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
-import io.mokamint.node.local.internal.blockchain.SynchronizationTask;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.messages.MessageMemories;
 import io.mokamint.node.messages.MessageMemory;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
+import io.mokamint.node.service.api.PublicNodeService;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -156,34 +157,32 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param config the configuration of the node
 	 * @param app the application
-	 * @param init if the blockchain database is empty, it requires to initialize the blockchain
-	 *             by mining a genesis block. Otherwise, it is ignored
+	 * @param init if true, creates a genesis block and starts mining on top
+	 *             (initial synchronization is consequently skipped)
 	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
+	 *                                     contains a genesis block already
 	 */
-	public LocalNodeImpl(Config config, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+	public LocalNodeImpl(Config config, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 		this.config = config;
 		this.app = app;
-		this.db = new Database(this);
+		this.db = new Database(this, init);
 		this.version = Versions.current();
 		this.uuid = db.getUUID();
 		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 		this.miners = new NodeMiners(this, Stream.of(miners));
-		this.peers = new NodePeers(this);
 		this.blockchain = new Blockchain(this);
+		this.peers = new NodePeers(this);
 		peers.addSeeds();
 
-		if (init && blockchain.getGenesis().isEmpty())
+		if (init)
 			blockchain.startMining();
 		else
-			synchronize();
-	}
-
-	private void synchronize() {
-		submit(new SynchronizationTask(this));
+			blockchain.startSynchronization();
 	}
 
 	@Override
@@ -365,6 +364,15 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public Blockchain getBlockchain() {
 		return blockchain;
+	}
+
+	/**
+	 * Adverts itself to its peers, if it has a public IP.
+	 */
+	public void whisperItself() {
+		for (var whisperer: boundWhisperers)
+			if (whisperer instanceof PublicNodeService service)
+				service.whisperItself();
 	}
 
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {

@@ -60,6 +60,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.Version;
+import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -133,7 +134,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("seeds are used as peers")
 	@Timeout(10)
-	public void seedsAreUsedAsPeers(@TempDir Path dir) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
+	public void seedsAreUsedAsPeers(@TempDir Path dir) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -152,7 +153,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, app, false);
 			}
 
@@ -174,7 +175,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("if peers are added to a node, they are saved into the database and used at the next start-up")
 	@Timeout(10)
-	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException {
+	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -183,7 +184,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), app, false);
 			}
 		}
@@ -205,7 +206,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at the next start-up")
 	@Timeout(10)
-	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
+	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -226,7 +227,7 @@ public class PeersTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(config, app, false);
 			}
 
@@ -256,14 +257,14 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the patch version only can work together")
-	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException {
+	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, IncompatiblePeerException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 		var allPeers = Set.of(peer);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), app, false);
 			}
 
@@ -282,13 +283,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the minor version cannot work together")
-	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
+	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), app, false);
 			}
 
@@ -306,13 +307,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the major version cannot work together")
-	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
+	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), app, false);
 			}
 
@@ -330,13 +331,13 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers whose local times are too far away cannot work together")
-	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException {
+	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), app, false);
 			}
 

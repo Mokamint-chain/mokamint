@@ -67,6 +67,11 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	 */
 	String WHISPER_BLOCK_ENDPOINT = "/whisper_block";
 
+	/**
+	 * Adverts itself to its peers.
+	 */
+	void whisperItself();
+
 	@Override
 	void close() throws InterruptedException;
 }

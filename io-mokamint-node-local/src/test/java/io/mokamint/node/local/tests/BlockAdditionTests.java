@@ -73,7 +73,7 @@ public class BlockAdditionTests {
 		when(node.getConfig()).thenReturn(config);
 		when(node.getApplication()).thenReturn(mock(Application.class));
 		when(node.getPeers()).thenReturn(peers);
-		var database = new Database(node);
+		Database database = new Database(node);
 		when(node.getDatabase()).thenReturn(database);
 		var miners = new NodeMiners(node, Stream.empty());
 		when(node.getMiners()).thenReturn(miners);
