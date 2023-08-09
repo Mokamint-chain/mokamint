@@ -54,7 +54,6 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
@@ -100,7 +99,6 @@ public class PeerPropagationTests {
 		var config4 = Config.Builder.defaults().setDir(chain4).build();
 
 		var semaphore = new Semaphore(0);
-		var events = new HashSet<Event>();
 
 		class MyLocalNode extends LocalNodeImpl {
 
@@ -110,11 +108,6 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (event instanceof PeersAddedEvent)
-					synchronized (events) {
-						events.add(event);
-					}
-
 				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(peer4::equals))
 					semaphore.release();
 			}
@@ -138,16 +131,8 @@ public class PeerPropagationTests {
 			// we add peer4 as peer of peer1 now
 			node1.addPeer(peer4);
 
-			synchronized (events) {
-				System.out.println("before: " + events);
-			}
-
 			// we wait for three events of addition of peer4 as peer
 			assertTrue(semaphore.tryAcquire(3, 5, TimeUnit.SECONDS));
-
-			synchronized (events) {
-				System.out.println("after: " + events);
-			}
 
 			// peer4 is a peer of node1, node2 and node3 now
 			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer4::equals));
