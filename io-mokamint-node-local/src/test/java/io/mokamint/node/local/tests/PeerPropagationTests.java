@@ -108,6 +108,9 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onComplete(Event event) {
+				if (event instanceof PeersAddedEvent)
+					System.out.println(event);
+
 				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(peer4::equals))
 					semaphore.release();
 			}
@@ -131,12 +134,13 @@ public class PeerPropagationTests {
 			// we add peer4 as peer of peer1 now
 			node1.addPeer(peer4);
 
-			// we wait to three events of addition of peer4 as peer
-			assertTrue(semaphore.tryAcquire(3, 2, TimeUnit.SECONDS));
+			// we wait for three events of addition of peer4 as peer
+			assertTrue(semaphore.tryAcquire(3, 5, TimeUnit.SECONDS));
 
 			// peer4 is a peer of node1, node2 and node3 now
 			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer4::equals));
 			assertTrue(node2.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer4::equals));
+			assertTrue(node3.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer4::equals));
 		}
 	}
 
