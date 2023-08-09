@@ -140,9 +140,8 @@ public class ChainSynchronizationTests {
 			@Override
 			protected void onComplete(Event event) {
 				if (event instanceof BlockAddedEvent bae) {
-					semaphore2.release();
 					blocksOfNode2.add(bae.block);
-					System.out.println("blocksOfNode2 added " + bae.block.getHeight());
+					semaphore2.release();
 				}
 
 				super.onComplete(event);
@@ -171,7 +170,7 @@ public class ChainSynchronizationTests {
 			assertTrue(semaphore2.tryAcquire(howMany - howMany / 2, 20, TimeUnit.SECONDS));
 			System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
 			System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-			//assertEquals(blocksOfNode1, blocksOfNode2);
+			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
 
