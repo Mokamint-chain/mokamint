@@ -52,6 +52,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	private final NodeMessageQueues queues;
 
+	/**
+	 * The prefix used in the log messages;
+	 */
+	private final String logPrefix;
+
 	private final static Logger LOGGER = Logger.getLogger(RemoteRestrictedNodeImpl.class.getName());
 
 	/**
@@ -64,6 +69,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
+		this.logPrefix = "remote to restricted service at " + uri + ": ";
 		this.queues = new NodeMessageQueues(timeout);
 		
 		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
@@ -79,11 +85,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
-			LOGGER.log(Level.SEVERE, "remote: unexpected null message");
+			LOGGER.log(Level.SEVERE, logPrefix + "unexpected null message");
 			return;
 		}
 		else {
-			LOGGER.log(Level.SEVERE, "remote: unexpected message of class " + message.getClass().getName());
+			LOGGER.log(Level.SEVERE, logPrefix + "unexpected message of class " + message.getClass().getName());
 			return;
 		}
 
@@ -109,7 +115,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "remote: unexpected exception", e);
+		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
 		return new RuntimeException("unexpected exception", e);
 	}
 

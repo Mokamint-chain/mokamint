@@ -56,11 +56,6 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	private final RestrictedNodeInternals node;
 
 	/**
-	 * The port of localhost, where this service is published.
-	 */
-	private final int port;
-
-	/**
 	 * True if and only if this service has been closed already.
 	 */
 	private final AtomicBoolean isClosed = new AtomicBoolean();
@@ -70,6 +65,11 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	 * are not the same, nor equals.
 	 */
 	private final CloseHandler this_close = this::close;
+
+	/**
+	 * The prefix used in the log messages;
+	 */
+	private final String logPrefix;
 
 	private final static Logger LOGGER = Logger.getLogger(RestrictedNodeServiceImpl.class.getName());
 
@@ -83,13 +83,13 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	 */
 	public RestrictedNodeServiceImpl(RestrictedNodeInternals node, int port) throws DeploymentException, IOException {
 		this.node = node;
-		this.port = port;
+		this.logPrefix = "restricted service at ws://localhost:" + port + ": ";
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 
 		startContainer("", port, AddPeersEndpoint.config(this), RemoveBlockEndpoint.config(this));
-		LOGGER.info("service: published a restricted node service at ws://localhost:" + port);
+		LOGGER.info(logPrefix + "published");
 	}
 
 	@Override
@@ -97,7 +97,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		if (!isClosed.getAndSet(true)) {
 			node.removeOnCloseHandler(this_close);
 			stopContainer();
-			LOGGER.info("service: closed the restricted node service at ws://localhost:" + port);
+			LOGGER.info(logPrefix + "closed");
 		}
 	}
 
@@ -114,7 +114,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	}
 
 	protected void onAddPeers(AddPeerMessage message, Session session) {
-		LOGGER.info("service: received an " + ADD_PEER_ENDPOINT + " request");
+		LOGGER.info(logPrefix + "received an " + ADD_PEER_ENDPOINT + " request");
 
 		try {
 			try {
@@ -128,12 +128,12 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
 	protected void onRemovePeer(RemovePeerMessage message, Session session) {
-		LOGGER.info("service: received a " + REMOVE_PEER_ENDPOINT + " request");
+		LOGGER.info(logPrefix + "received a " + REMOVE_PEER_ENDPOINT + " request");
 
 		try {
 			try {
@@ -145,7 +145,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "service: cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 

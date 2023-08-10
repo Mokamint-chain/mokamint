@@ -99,6 +99,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 */
 	private final MessageMemory whisperedMessages;
 
+	/**
+	 * The prefix used in the log messages;
+	 */
+	private final String logPrefix;
+
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
 	/**
@@ -114,6 +119,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemotePublicNodeImpl(URI uri, long timeout, long whisperedMessagesSize) throws DeploymentException, IOException {
+		this.logPrefix = "remote to public service at " + uri + ": ";
 		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
 
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeersEndpoint::new);
@@ -157,7 +163,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("remote: got whispered block"); // TODO
+		LOGGER.info(logPrefix + "got whispered block"); // TODO
 
 		onWhisperBlock(message);
 
@@ -166,7 +172,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 				sendObjectAsync(getSession(WHISPER_BLOCK_ENDPOINT), message);
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "cannot whisper a block to the connected service: the connection might be closed: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper a block to the connected service: the connection might be closed: " + e.getMessage());
 			}
 		}
 
@@ -178,7 +184,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 
-		LOGGER.info("remote: got whispered peers " + SanitizedStrings.of(message.getPeers()));
+		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(message.getPeers()));
 
 		onWhisperPeers(message);
 
@@ -187,7 +193,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 				sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), message);
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "cannot whisper peers to the connected service: the connection might be closed: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper peers to the connected service: the connection might be closed: " + e.getMessage());
 			}
 		}
 
@@ -196,7 +202,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "remote: unexpected exception", e);
+		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
 		return new RuntimeException("unexpected exception", e);
 	}
 
@@ -217,11 +223,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
-			LOGGER.log(Level.SEVERE, "remote: unexpected null message");
+			LOGGER.log(Level.SEVERE, logPrefix + "unexpected null message");
 			return;
 		}
 		else {
-			LOGGER.log(Level.SEVERE, "remote: unexpected message of class " + message.getClass().getName());
+			LOGGER.log(Level.SEVERE, logPrefix + "unexpected message of class " + message.getClass().getName());
 			return;
 		}
 

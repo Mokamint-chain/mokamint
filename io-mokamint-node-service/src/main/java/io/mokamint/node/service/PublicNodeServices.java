@@ -63,6 +63,9 @@ public class PublicNodeServices {
 	 *                              broadcasts of the public IP of the service. Every such internal,
 	 *                              the service will whisper its IP to its connected peers,
 	 *                              in order to publish its willingness to become a peer
+	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
+	 *                              message again; higher numbers reduce the circulation of
+	 *                              spurious messages
 	 * @param uri the URI that will be suggested as URL of the machine where the service is running; this might be
 	 *            empty, which means that the service will try to guess its public IP and use it as its public URI
 	 * @return the new service

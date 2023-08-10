@@ -127,7 +127,8 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Add some peers to the node. Peers might not be added because
+	 * Add some peers to the node. If the peer was already present but was disconnected,
+	 * it tries to open a connection to the peer. Peers might not be added because
 	 * they are already present in the node, or because a connection cannot be established
 	 * to them, or because they are incompatible with the node. In such cases, the peers are
 	 * simply ignored and no exception is thrown.
@@ -139,11 +140,12 @@ public class NodePeers implements AutoCloseable {
 	 *                after the addition
 	 */
 	public void add(Stream<Peer> peers, boolean force, boolean whisper) {
-		var added = peers
+		Peer[] peersAsArray = peers.toArray(Peer[]::new);
+
+		var added = Stream.of(peersAsArray)
 			.parallel()
 			.distinct()
-			.filter(not(this.peers::contains))
-			.filter(peer -> addNoException(peer, force))
+			.filter(peer -> reconnectOrAdd(peer, force))
 			.toArray(Peer[]::new);
 	
 		if (added.length > 0) // just to avoid useless events
@@ -154,6 +156,7 @@ public class NodePeers implements AutoCloseable {
 	 * Adds the given peer. This might fail because
 	 * the peer is already present in the node, or because a connection to the peer
 	 * cannot be established, or because the peer is incompatible with the node.
+	 * If the peer was present but was disconnected, it tries to reconnect it.
 	 * 
 	 * @param peer the peer to add
 	 * @param force true if the peer must be added also if the maximum number of peers for the node has been reached
@@ -166,17 +169,23 @@ public class NodePeers implements AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the addition to complete
 	 */
 	public boolean add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
-		boolean result = check(TimeoutException.class,
-				 InterruptedException.class,
-				 IOException.class,
-				 IncompatiblePeerException.class,
-				 DatabaseException.class,
-				 () -> peers.add(peer, force));
+		if (containsDisconnected(peer)) {
+			tryToRecreateRemote(peer);
+			return false;
+		}
+		else {
+			boolean result = check(TimeoutException.class,
+					InterruptedException.class,
+					IOException.class,
+					IncompatiblePeerException.class,
+					DatabaseException.class,
+					() -> peers.add(peer, force));
 
-		if (result)
-			node.submit(new PeersAddedEvent(Stream.of(peer), whisper));
+			if (result)
+				node.submit(new PeersAddedEvent(Stream.of(peer), whisper));
 
-		return result;
+			return result;
+		}
 	}
 	
 	/**
@@ -191,16 +200,6 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Determines if this container contains a given peer.
-	 * 
-	 * @param peer the peer
-	 * @return true if and only if this container contains {@code peer}
-	 */
-	public boolean contains(Peer peer) {
-		return peers.contains(peer);
-	}
-
-	/**
 	 * Whispers some peers to this container of peers. It forwards the message
 	 * to the peers in this container and adds the peers in the message to this
 	 * container, if requested.
@@ -210,11 +209,12 @@ public class NodePeers implements AutoCloseable {
 	 * @param tryToAdd if the peers must be added to those in this container
 	 */
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAdd) {
-		LOGGER.info("peers: got whispered peers " + SanitizedStrings.of(message.getPeers()));
-		
-		if (tryToAdd)
-			// we check if this node needs any of the whispered peers
-			addWhisperedAsync(message.getPeers());
+		if (tryToAdd) {
+			// we check if the node needs any of the whispered peers
+			var usefulToAdd = message.getPeers().distinct().toArray(Peer[]::new);
+			if (usefulToAdd.length > 0)
+				node.submit(new AddWhisperedPeersTask(usefulToAdd));
+		}
 	
 		// in any case, we forward the message to our peers
 		remotes.values().forEach(remote -> remote.whisper(message, seen));
@@ -228,9 +228,7 @@ public class NodePeers implements AutoCloseable {
 	 * @param seen the whisperers already seen during whispering
 	 */
 	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
-		LOGGER.info("peers: got whispered block " + message.getBlock().getHexHash(config.getHashingForBlocks()));
-		
-		// in any case, we forward the message to our peers
+		// we forward the message to our peers
 		remotes.values().forEach(remote -> remote.whisper(message, seen));
 	}
 
@@ -289,78 +287,28 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Add the given peers to the node, asynchronously. Peers might not be added because there
-	 * are already enough peers, or because a connection cannot be established to them,
-	 * or because they are incompatible with the node. In such cases, this method
-	 * does not add the peer and nothing happens.
-	 * 
-	 * @param peers the peers to add
-	 */
-	private void addWhisperedAsync(Stream<Peer> peers) {
-		if (this.peers.getElements().count() < config.maxPeers) {
-			var usefulToAdd = peers.distinct()
-					.filter(not(this.peers::contains))
-					.toArray(Peer[]::new);
-
-			if (usefulToAdd.length > 0)
-				node.submit(new AddWhisperedPeersTask(usefulToAdd));
-		}
-	}
-
-	/**
 	 * A task that adds whispered peers to the node.
 	 */
 	public class AddWhisperedPeersTask implements Task {
-		private final Peer[] toAdd;
+		private final Peer[] peers;
 
-		private AddWhisperedPeersTask(Peer[] toAdd) {
-			this.toAdd = toAdd;
+		private AddWhisperedPeersTask(Peer[] peers) {
+			this.peers = peers;
 		}
 
 		@Override
 		public String toString() {
-			return "addition of whispered peers " + SanitizedStrings.of(Stream.of(toAdd));
+			return "addition of whispered peers " + SanitizedStrings.of(Stream.of(peers));
 		}
 
 		@Override
 		public void body() {
-			add(Stream.of(toAdd), false, false);
+			add(Stream.of(peers), false, false);
 		}
 
 		@Override
 		public String logPrefix() {
 			return "peers: ";
-		}
-	}
-
-	/**
-	 * Adds the given peer, if possible. This might fail if the peer was already
-	 * present, or a connection to the peer cannot be established, or the peer
-	 * is incompatible with the node. In such cases, this method just ignores
-	 * the addition and nothing happens.
-	 * 
-	 * @param peer the peer to add
-	 * @param force true if and only if the addition must be performed also if
-	 *              the maximal number of peers for the node has been reached
-	 * @return true if and only if the peer has been added
-	 */
-	private boolean addNoException(Peer peer, boolean force) {
-		try {
-			// we do not spawn an event since we will spawn one at the end for all peers
-			return check(TimeoutException.class,
-					 InterruptedException.class,
-					 IOException.class,
-					 IncompatiblePeerException.class,
-					 DatabaseException.class,
-					 () -> peers.add(peer, force));
-		}
-		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "peers: addition of " + peer + " as a peer interrupted");
-			Thread.currentThread().interrupt();
-			return false;
-		}
-		catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
-			return false;
 		}
 	}
 
@@ -431,7 +379,7 @@ public class NodePeers implements AutoCloseable {
 		}
 
 		private Stream<Peer> pingPeerRecreateRemoteAndCollectPeers(Peer peer) {
-			return getRemote(peer).or(() -> tryToCreateRemote(peer))
+			return getRemote(peer).or(() -> tryToRecreateRemote(peer))
 				.map(remote -> askForPeers(peer, remote))
 				.orElse(Stream.empty());
 		}
@@ -472,17 +420,65 @@ public class NodePeers implements AutoCloseable {
 		peers.pardon(peer, config.peerPunishmentForUnreachable);
 	}
 
+	/**
+	 * If the peer is not in this container, adds it, if possible.
+	 * This might fail if the peer was already
+	 * present, or a connection to the peer cannot be established, or the peer
+	 * is incompatible with the node. In such cases, this method just ignores
+	 * the addition and nothing happens. If the peer was already in this container,
+	 * but was disconnected, tries to reconnect to it.
+	 * 
+	 * @param peer the peer to add
+	 * @param force true if and only if the addition must be performed also if
+	 *              the maximal number of peers for the node has been reached
+	 * @return true if and only if the peer has been added
+	 */
+	private boolean reconnectOrAdd(Peer peer, boolean force) {
+		if (containsDisconnected(peer)) {
+			tryToRecreateRemote(peer);
+			return false;
+		}
+		else {
+			try {
+				// we do not spawn an event since we will spawn one at the end for all peers
+				return check(TimeoutException.class,
+						InterruptedException.class,
+						IOException.class,
+						IncompatiblePeerException.class,
+						DatabaseException.class,
+						() -> peers.add(peer, force));
+			}
+			catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, "peers: addition of " + peer + " as a peer interrupted");
+				Thread.currentThread().interrupt();
+				return false;
+			}
+			catch (IncompatiblePeerException | DatabaseException | IOException | TimeoutException e) {
+				return false;
+			}
+		}
+	}
+
+	/**
+	 * Determines if this container contains a given peer, but disconnected.
+	 * 
+	 * @param peer the peer
+	 * @return true if and only if this container contains {@code peer}, but disconnected
+	 */
+	private boolean containsDisconnected(Peer peer) {
+		return peers.contains(peer) && remotes.get(peer) == null;
+	}
+
 	private void openConnectionToPeers() {
-		get().parallel().filter(not(PeerInfo::isConnected)).map(PeerInfo::getPeer).forEach(this::tryToCreateRemote);
+		get().parallel().filter(not(PeerInfo::isConnected)).map(PeerInfo::getPeer).forEach(this::tryToRecreateRemote);
 	}
 
 	private boolean onAdd(Peer peer, boolean force) {
 		RemotePublicNode remote = null;
 
 		try {
-			// optimization: this avoids opening a remote for an already existing peer
-			// or trying to add a peer if there are already enough peers for this node
-			if (peers.contains(peer) || (!force && peers.getElements().count() >= config.maxPeers))
+			// optimization: this avoids opening a remote for a peer that would not be added anyway
+			if (!force && peers.getElements().count() >= config.maxPeers)
 				return false;
 
 			remote = openRemote(peer);
@@ -531,7 +527,7 @@ public class NodePeers implements AutoCloseable {
 		}
 	}
 
-	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) {
+	private Optional<RemotePublicNode> tryToRecreateRemote(Peer peer) {
 		RemotePublicNode remote = null;
 	
 		try {
@@ -544,7 +540,7 @@ public class NodePeers implements AutoCloseable {
 				// we check if the peer is actually contained in the set of peers,
 				// since it might have been removed in the meanwhile and we not not
 				// want to store remotes for peers not in the set of peers of this object
-				if (peers.contains(peer)) {
+				if (containsDisconnected(peer)) {
 					storePeer(peer, remote, timeDifference);
 					remote = null; // so that it won't be closed in the finally clause
 				}

@@ -139,11 +139,9 @@ public class PeerConnectDisconnectTests {
 		var peer2 = Peers.of(uri2);
 		var config1 = Config.Builder.defaults()
 				.setDir(chain1)
-				.setPeerPingInterval(500)
 				.build();
 		var config2 = Config.Builder.defaults()
 				.setDir(chain2)
-				.setPeerPingInterval(500)
 				.build();
 
 		var connections = new Semaphore(0);
@@ -188,25 +186,23 @@ public class PeerConnectDisconnectTests {
 
 		phase.set(1);
 
-		try (var node1 = new MyLocalNode1(config1); var node2 = new MyLocalNode2(config2);
-			 var service1 = PublicNodeServices.open(node1, port1, 500, 1000, Optional.of(uri1));
-			 var service2 = PublicNodeServices.open(node2, port2, 500, 1000, Optional.of(uri2))) {
+		try (var node1 = new MyLocalNode1(config1); var service1 = PublicNodeServices.open(node1, port1, 500, 1000, Optional.of(uri1))) {
 
-			// node1 has node2 as peer
-			node1.addPeer(peer2);
+			try (var node2 = new MyLocalNode2(config2); var service2 = PublicNodeServices.open(node2, port2, 500, 1000, Optional.of(uri2))) {
+				// node1 has node2 as peer
+				node1.addPeer(peer2);
 
-			// eventually, both know each other
-			assertTrue(connections.tryAcquire(2, 5, TimeUnit.SECONDS));
+				// eventually, both know each other
+				assertTrue(connections.tryAcquire(2, 5, TimeUnit.SECONDS));
 
-			// at this point, node1 is connected to node2 and vice versa
-			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer2)));
-			assertTrue(node2.getPeerInfos().filter(info -> info.getPeer().equals(peer1)).anyMatch(PeerInfo::isConnected));
-			assertTrue(node2.getPeerInfos().anyMatch(info -> info.getPeer().equals(peer1)));
+				// at this point, node1 is connected to node2 and vice versa
+				assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer2)));
+				assertTrue(node2.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer1)));
 
-			phase.set(2);
+				phase.set(2);
 
-			// node2 gets closed and disconnects
-			node2.close();
+				// node2 gets closed and disconnects
+			}
 
 			// eventually, node1 sees node2 disconnected
 			assertTrue(disconnections.tryAcquire(1, 3, TimeUnit.SECONDS));
@@ -216,14 +212,14 @@ public class PeerConnectDisconnectTests {
 
 			phase.set(3);
 
-			// node2 resurrects as node2bis
-			try (var node2bis = new MyLocalNode2(config2); var service2bis = PublicNodeServices.open(node2bis, port2, 500, 1000, Optional.of(uri2))) {
-				// eventually, both know each other
+			// node2 resurrects
+			try (var node2 = new MyLocalNode2(config2); var service2 = PublicNodeServices.open(node2, port2, 500, 1000, Optional.of(uri2))) {
+				// eventually, both know each other again
 				assertTrue(reconnections.tryAcquire(2, 5, TimeUnit.SECONDS));
 
 				// at this point, node1 is connected to node2 and vice versa
 				assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer2)));
-				assertTrue(node2bis.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer1)));
+				assertTrue(node2.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer1)));
 			}
 		}
 	}
