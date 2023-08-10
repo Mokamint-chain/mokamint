@@ -74,14 +74,14 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 		}
 		catch (IOException e) {
 			System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			logger.log(Level.SEVERE, "I/O error while accessing \"" + uri + "\"", e);
+			logger.log(Level.SEVERE, "I/O error while accessing \"" + uri + "\": " + e.getMessage());
 		}
 		catch (ClosedNodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red The connection to " + uri + " has been closed!|@"));
 		}
 		catch (DeploymentException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot contact the remote service! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			logger.log(Level.SEVERE, "failed deployment a remote node for \"" + uri + "\"", e);
+			logger.log(Level.SEVERE, "failed deployment of a remote node for \"" + uri + "\": " + e.getMessage());
 		}
 		catch (TimeoutException e) {
 			System.out.println(Ansi.AUTO.string("@|red Timeout: I waited for " + timeout + "ms but the remote service didn't answer.|@"));
