@@ -40,6 +40,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodePeers;
@@ -86,7 +87,7 @@ public class SynchronizationTask implements Task {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() throws NoSuchAlgorithmException, DatabaseException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		new Run();
 	}
 
@@ -141,7 +142,7 @@ public class SynchronizationTask implements Task {
 
 		private final static int GROUP_SIZE = 500;
 
-		private Run() throws DatabaseException, NoSuchAlgorithmException {
+		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 			try {
 				do {
 					if (!downloadNextGroups()) {
@@ -338,7 +339,7 @@ public class SynchronizationTask implements Task {
 			});
 		}
 
-		private void downloadBlocks(Peer peer) throws InterruptedException, DatabaseException {
+		private void downloadBlocks(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException {
 			byte[][] ownGroup = groups.get(peer);
 			if (ownGroup != null) {
 				var alreadyTried = new boolean[chosenGroup.length];
@@ -370,8 +371,9 @@ public class SynchronizationTask implements Task {
 		 * @param alreadyTried information about which hashes have already been tried with this same peer
 		 * @return true if and only if it is sensible to use {@code peer} to download the block
 		 * @throws DatabaseException of the database of the node is corrupted
+		 * @throws ClosedDatabaseException if the database is already closed
 		 */
-		private boolean canDownload(Peer peer, int h, byte[][] ownGroup, boolean[] alreadyTried) throws DatabaseException {
+		private boolean canDownload(Peer peer, int h, byte[][] ownGroup, boolean[] alreadyTried) throws DatabaseException, ClosedDatabaseException {
 			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h]) && !blockchain.containsBlock(chosenGroup[h]) && blocks.get(h) == null;
 		}
 
@@ -419,8 +421,9 @@ public class SynchronizationTask implements Task {
 		 *         successfully verified; if false, synchronization must stop here
 		 * @throws DatabaseException if the database of the node is corrupted
 		 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
+		 * @throws ClosedDatabaseException if the database is already closed
 		 */
-		private boolean addBlocksToBlockchain() throws DatabaseException, NoSuchAlgorithmException {
+		private boolean addBlocksToBlockchain() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 			for (int h = 0; h < chosenGroup.length; h++)
 				if (!blockchain.containsBlock(chosenGroup[h])) {
 					Block block = blocks.get(h);

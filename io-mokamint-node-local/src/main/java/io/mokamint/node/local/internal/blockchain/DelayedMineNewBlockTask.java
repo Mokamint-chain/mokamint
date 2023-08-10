@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DelayedMineNewBlockTask extends MineNewBlockTask {
@@ -29,7 +30,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException {
+	public DelayedMineNewBlockTask(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		super(node);
 
 		this.delay = node.getConfig().deadlineWaitTimeout;
@@ -41,7 +42,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() throws NoSuchAlgorithmException, DatabaseException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		try {
 			LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
 			Thread.sleep(delay);

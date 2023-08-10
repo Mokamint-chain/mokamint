@@ -107,8 +107,9 @@ public class NodePeers implements AutoCloseable {
 	 * 
 	 * @param node the node having these peers
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public NodePeers(LocalNodeImpl node) throws DatabaseException {
+	public NodePeers(LocalNodeImpl node) throws DatabaseException, ClosedDatabaseException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
@@ -339,12 +340,12 @@ public class NodePeers implements AutoCloseable {
 		}
 
 		@Override
-		public void body() throws DatabaseException {
+		public void body() throws DatabaseException, ClosedDatabaseException {
 			if (whisper)
 				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
 
 			// if the blockchain is empty, the addition of a new peer might be the right moment for attempting a synchronization
-			if (node.getDatabase().getGenesisHash().isEmpty())
+			if (db.getGenesisHash().isEmpty())
 				node.getBlockchain().startSynchronization();
 		}
 
@@ -500,7 +501,7 @@ public class NodePeers implements AutoCloseable {
 			Thread.currentThread().interrupt();
 			throw new UncheckedException(e);
 		}
-		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | IncompatiblePeerException e) {
+		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | ClosedDatabaseException | IncompatiblePeerException e) {
 			LOGGER.log(Level.SEVERE, "peers: cannot add peer " + peer + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
@@ -521,7 +522,7 @@ public class NodePeers implements AutoCloseable {
 					return false;
 			}
 		}
-		catch (DatabaseException e) {
+		catch (DatabaseException | ClosedDatabaseException e) {
 			LOGGER.log(Level.SEVERE, "peers: cannot remove peer " + peer, e);
 			throw new UncheckedException(e);
 		}

@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -133,6 +134,14 @@ public class Database implements AutoCloseable {
 	 */
 	private final static ByteIterable uuid = fromByte((byte) 23);
 
+	private final Object lock = new Object();
+
+	@GuardedBy("lock")
+	private boolean isClosed;
+
+	@GuardedBy("lock")
+	private int currentTransactionsCount;
+
 	private final static Logger LOGGER = Logger.getLogger(Database.class.getName());
 
 	/**
@@ -169,14 +178,16 @@ public class Database implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws DatabaseException {
-		try {
-			environment.close();
-			LOGGER.info("closed the blockchain database");
-		}
-		catch (ExodusException e) {
-			LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
-			throw new DatabaseException("cannot close the database", e);
+	public void close() throws DatabaseException, InterruptedException {
+		if (stopNewTransactions()) {
+			try {
+				environment.close(); // TODO: this throws ExodusException if there are unfinished transactions
+				LOGGER.info("closed the blockchain database");
+			}
+			catch (ExodusException e) {
+				LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
+				throw new DatabaseException("cannot close the database", e);
+			}
 		}
 	}
 
@@ -185,8 +196,11 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the UUID
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public UUID getUUID() throws DatabaseException {
+	public UUID getUUID() throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, uuid));
 			if (bi == null)
@@ -197,6 +211,9 @@ public class Database implements AutoCloseable {
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
 		}
+		finally {
+			afterTransaction();
+		}
 	}
 
 	/**
@@ -204,13 +221,19 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the hash of the genesis block, if any
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<byte[]> getGenesisHash() throws DatabaseException {
+	public Optional<byte[]> getGenesisHash() throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -219,13 +242,19 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the hash of the head block, if any
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<byte[]> getHeadHash() throws DatabaseException {
+	public Optional<byte[]> getHeadHash() throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -235,13 +264,19 @@ public class Database implements AutoCloseable {
 	 * @param hash the hash of the parent block
 	 * @return the hashes
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException {
+	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -250,13 +285,19 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the information
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public ChainInfo getChainInfo() throws DatabaseException {
+	public ChainInfo getChainInfo() throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChainInfo(txn))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -269,13 +310,19 @@ public class Database implements AutoCloseable {
 	 * @param count how many hashes (maximum) must be reported
 	 * @return the hashes, in order
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Stream<byte[]> getChain(long start, long count) throws DatabaseException {
+	public Stream<byte[]> getChain(long start, long count) throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -284,14 +331,20 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @return the peers
 	 * @throws DatabaseException of the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Stream<Peer> getPeers() throws DatabaseException {
+	public Stream<Peer> getPeers() throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -306,14 +359,20 @@ public class Database implements AutoCloseable {
 	 *         that the peer was already present or that it was not forced
 	 *         and there are already {@link maxPeers} peers
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Peer peer, boolean force) throws DatabaseException {
+	public boolean add(Peer peer, boolean force) throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(URISyntaxException.class, IOException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -324,14 +383,20 @@ public class Database implements AutoCloseable {
 	 * @return true if the peer has been actually removed; false otherwise, which means
 	 *         that the peer was not in the database
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean remove(Peer peer) throws DatabaseException {
+	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(URISyntaxException.class, IOException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -343,13 +408,19 @@ public class Database implements AutoCloseable {
 	 * @param hash the hash of the block
 	 * @return true if and only if that condition holds
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean containsBlock(byte[] hash) throws DatabaseException {
+	public boolean containsBlock(byte[] hash) throws DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return environment.computeInReadonlyTransaction(txn -> isInStore(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -360,8 +431,11 @@ public class Database implements AutoCloseable {
 	 * @return the block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
@@ -369,6 +443,9 @@ public class Database implements AutoCloseable {
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -385,13 +462,19 @@ public class Database implements AutoCloseable {
 	 *         a genesis block but the genesis block is already set in the database
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException {
+	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+		beforeTransaction();
+
 		try {
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException("cannot write block " + block.getHexHash(config.getHashingForBlocks()) + " in the database", e);
+		}
+		finally {
+			afterTransaction();
 		}
 	}
 
@@ -454,17 +537,64 @@ public class Database implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Guarantees that the database is open if a transaction starts.
+	 * 
+	 * @throws ClosedDatabaseException if the database was closed
+	 */
+	private void beforeTransaction() throws ClosedDatabaseException {
+		synchronized (lock) {
+			if (isClosed)
+				throw new ClosedDatabaseException();
+			
+			currentTransactionsCount++;
+		}
+	}
+
+	/**
+	 * If this was the last transaction, it signals every thread waiting for this event.
+	 */
+	private void afterTransaction() {
+		synchronized (lock) {
+			if (--currentTransactionsCount == 0)
+				lock.notifyAll();
+		}
+	}
+
+	/**
+	 * Stops future new transactions and waits for all unfinished transactions to complete.
+	 * 
+	 * @return true if and only if it actually stopped new transactions, false if
+	 *         this situation already held, because another call already did it
+	 * @throws InterruptedException if the execution gets interrupted while
+	 *                              waiting for unfinished transactions to complete
+	 */
+	private boolean stopNewTransactions() throws InterruptedException {
+		synchronized (lock) {
+			if (isClosed)
+				return false;
+	
+			isClosed = true;
+	
+			if (currentTransactionsCount > 0)
+				lock.wait();
+	
+			return true;
+		}
+	}
+
 	private void initialize() throws DatabaseException, AlreadyInitializedException {
-		if (getGenesisHash().isPresent())
-			throw new AlreadyInitializedException("init cannot be required for an already initialized node");
-
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.initialAcceleration));
-
 		try {
+			if (getGenesisHash().isPresent())
+				throw new AlreadyInitializedException("init cannot be required for an already initialized node");
+
+			var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.initialAcceleration));
+
 			add(genesis, new AtomicReference<>());
 		}
-		catch (NoSuchAlgorithmException e) {
-			// if the database is empty, there is no way it contains a non-genesis block (that contains a hashing algorithm)
+		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
+			// the database cannot be closed at this moment
+			// moreover, if the database is empty, there is no way it can contain a non-genesis block (that contains a hashing algorithm)
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
 			throw new RuntimeException("unexpected exception", e);
 		}
@@ -740,8 +870,9 @@ public class Database implements AutoCloseable {
 	 *         is a non-genesis block whose previous is not in the tree
 	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
+	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = config.getHashingForBlocks().hash(bytesOfBlock);
 
 		if (isInStore(txn, hashOfBlock)) {

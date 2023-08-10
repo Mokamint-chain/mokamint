@@ -39,6 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
@@ -57,7 +58,7 @@ public class DatabaseTests {
 
 	@Test
 	@DisplayName("peers added to the database are still there at next opening")
-	public void peersAreKeptForNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+	public void peersAreKeptForNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, ClosedDatabaseException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
 
@@ -74,7 +75,7 @@ public class DatabaseTests {
 
 	@Test
 	@DisplayName("peers removed from the database are not there at next opening")
-	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, ClosedDatabaseException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
 		var peer3 = Peers.of(new URI("ws://www.amazon.com:8032"));
@@ -94,7 +95,7 @@ public class DatabaseTests {
 
 	@Test
 	@DisplayName("duplicate peers are kept only once")
-	public void peersHaveNoDuplicates(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException {
+	public void peersHaveNoDuplicates(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, ClosedDatabaseException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
 

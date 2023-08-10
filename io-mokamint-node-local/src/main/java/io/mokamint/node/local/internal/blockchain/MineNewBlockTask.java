@@ -37,6 +37,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
+import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -108,8 +109,9 @@ public class MineNewBlockTask implements Task {
 	 * @param node the node performing the mining
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if the node contains some block referring to an unknown hashing algorithm
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	MineNewBlockTask(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException {
+	MineNewBlockTask(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.config = node.getConfig();
@@ -135,7 +137,7 @@ public class MineNewBlockTask implements Task {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() throws NoSuchAlgorithmException, DatabaseException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		try {
 			if (previous.isPresent()) {
 				if (miners.get().count() == 0L)
@@ -193,7 +195,7 @@ public class MineNewBlockTask implements Task {
 		}
 
 		@Override @OnThread("events")
-		public void body() throws NoSuchAlgorithmException, DatabaseException {
+		public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 			// all miners timed-out
 			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
 			node.submit(new DelayedMineNewBlockTask(node));
@@ -273,7 +275,7 @@ public class MineNewBlockTask implements Task {
 		}
 
 		@Override @OnThread("events")
-		public void body() throws DatabaseException, NoSuchAlgorithmException, VerificationException {
+		public void body() throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 			if (blockchain.add(block)) {
 				LOGGER.info(logPrefix + "whispering block " + hexBlockHash + " to all peers");
 				node.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false);
@@ -329,7 +331,7 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private Run(Block previous) throws InterruptedException, TimeoutException, DatabaseException, NoSuchAlgorithmException {
+		private Run(Block previous) throws InterruptedException, TimeoutException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 			this.previous = previous;
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.targetBlockCreationTime = BigInteger.valueOf(config.getTargetBlockCreationTime());

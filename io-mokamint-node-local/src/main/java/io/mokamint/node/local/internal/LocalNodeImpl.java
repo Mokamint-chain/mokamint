@@ -167,21 +167,28 @@ public class LocalNodeImpl implements LocalNode {
 	 *                                     contains a genesis block already
 	 */
 	public LocalNodeImpl(Config config, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-		this.config = config;
-		this.app = app;
-		this.db = new Database(this, init);
-		this.version = Versions.current();
-		this.uuid = db.getUUID();
-		this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
-		this.miners = new NodeMiners(this, Stream.of(miners));
-		this.blockchain = new Blockchain(this);
-		this.peers = new NodePeers(this);
-		peers.add(config.seeds().map(Peers::of), true, true);
+		try {
+			this.config = config;
+			this.app = app;
+			this.db = new Database(this, init);
+			this.version = Versions.current();
+			this.uuid = db.getUUID();
+			this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
+			this.miners = new NodeMiners(this, Stream.of(miners));
+			this.blockchain = new Blockchain(this);
+			this.peers = new NodePeers(this);
+			peers.add(config.seeds().map(Peers::of), true, true);
 
-		if (init)
-			blockchain.startMining();
-		else
-			blockchain.startSynchronization();
+			if (init)
+				blockchain.startMining();
+			else
+				blockchain.startSynchronization();
+		}
+		catch (ClosedDatabaseException e) {
+			// the database cannot be closed already
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
+		}
 	}
 
 	@Override
@@ -222,7 +229,7 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			blockchain.add(message.getBlock());
 		}
-		catch (NoSuchAlgorithmException | DatabaseException | VerificationException e) {
+		catch (NoSuchAlgorithmException | DatabaseException | VerificationException | ClosedDatabaseException e) {
 			LOGGER.log(Level.SEVERE, "the whispered block " +
 				message.getBlock().getHexHash(config.getHashingForBlocks()) +
 				" could not be added to the blockchain: " + e.getMessage());
@@ -236,7 +243,13 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
 		ensureIsOpen();
-		return db.getBlock(hash);
+
+		try {
+			return db.getBlock(hash);
+		}
+		catch (ClosedDatabaseException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
 	@Override
@@ -311,13 +324,25 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
 		ensureIsOpen();
-		return blockchain.getChainInfo();
+
+		try {
+			return blockchain.getChainInfo();
+		}
+		catch (ClosedDatabaseException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
 	@Override
 	public Chain getChain(long start, long count) throws DatabaseException, ClosedNodeException {
 		ensureIsOpen();
-		return Chains.of(blockchain.getChain(start, count));
+		
+		try {
+			return Chains.of(blockchain.getChain(start, count));
+		}
+		catch (ClosedDatabaseException e) {
+			throw new ClosedNodeException(e);
+		}
 	}
 
 	/**

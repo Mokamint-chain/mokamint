@@ -37,6 +37,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
@@ -110,8 +111,9 @@ public class Blockchain {
 	 * 
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void startMining() throws NoSuchAlgorithmException, DatabaseException {
+	public void startMining() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		if (!isSynchronizing.get())
 			node.submit(new MineNewBlockTask(node));
 	}
@@ -132,8 +134,9 @@ public class Blockchain {
 	 * @return the genesis block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException {
+	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		// we use a cache to avoid repeated access for reading the genesis block
 		if (genesis != null)
 			return Optional.of(genesis);
@@ -158,8 +161,9 @@ public class Blockchain {
 	 * @return the head block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException {
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		Optional<byte[]> maybeHeadHash = db.getHeadHash();
 	
 		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
@@ -173,8 +177,9 @@ public class Blockchain {
 	 * 
 	 * @return the information
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public ChainInfo getChainInfo() throws DatabaseException {
+	public ChainInfo getChainInfo() throws DatabaseException, ClosedDatabaseException {
 		return db.getChainInfo();
 	}
 
@@ -187,8 +192,9 @@ public class Blockchain {
 	 * @param count how many hashes (maximum) must be reported
 	 * @return the hashes, in order
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Stream<byte[]> getChain(long start, long count) throws DatabaseException {
+	public Stream<byte[]> getChain(long start, long count) throws DatabaseException, ClosedDatabaseException {
 		return db.getChain(start, count);
 	}
 
@@ -198,8 +204,9 @@ public class Blockchain {
 	 * @param hash the hash of the block
 	 * @return true if and only if that condition holds
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean containsBlock(byte[] hash) throws DatabaseException {
+	public boolean containsBlock(byte[] hash) throws DatabaseException, ClosedDatabaseException {
 		return db.containsBlock(hash);
 	}
 
@@ -220,8 +227,9 @@ public class Blockchain {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all
 	 *                               consensus rules
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 		boolean added = false, first = true;
 		var updatedHead = new AtomicReference<Block>();
 	

@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -270,11 +269,18 @@ public class ChainSynchronizationTests {
 
 			// we wait until node2 has mined howMany / 2 blocks
 			assertTrue(semaphore2.tryAcquire(howMany / 2 - howMany / 8, 20, TimeUnit.SECONDS));
-		}
 
-		System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-		System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-		//assertEquals(blocksOfNode1, blocksOfNode2);
+			// we turn node1 on again
+			try (var node1 = new MyLocalNode1(config1)) {
+				// we wait until node1 has received all blocks
+				assertTrue(semaphore1.tryAcquire(howMany - howMany / 4, 20, TimeUnit.SECONDS));
+			}
+
+			assertEquals(blocksOfNode1, blocksOfNode2);
+
+			//System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+			//System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+		}
 	}
 
 	static {
