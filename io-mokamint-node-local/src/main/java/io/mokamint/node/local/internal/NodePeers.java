@@ -650,7 +650,7 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public void body() {
-			node.whisperItself();
+			node.whisperItsServices();
 		}
 
 		@Override

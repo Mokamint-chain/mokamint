@@ -366,9 +366,9 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Adverts itself to its peers, if it has a public IP.
+	 * Adverts to its peers the services published on this node.
 	 */
-	public void whisperItself() {
+	void whisperItsServices() {
 		for (var whisperer: boundWhisperers)
 			if (whisperer instanceof PublicNodeService service)
 				service.whisperItself();
