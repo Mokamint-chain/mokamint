@@ -29,12 +29,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
@@ -143,10 +143,16 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final MessageMemory whisperedMessages;
 
+	private final Object lock = new Object();
+
 	/**
 	 * True if and only if this node has been closed already.
 	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean();
+	@GuardedBy("lock")
+	private boolean isClosed;
+
+	@GuardedBy("lock")
+	private int currentCallsCount;
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -242,36 +248,60 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
-		ensureIsOpen();
+		beforeCall();
 
 		try {
 			return db.getBlock(hash);
 		}
 		catch (ClosedDatabaseException e) {
-			throw new ClosedNodeException(e);
+			// the database cannot be closed because this node is open
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
+		}
+		finally {
+			afterCall();
 		}
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeerInfos() {
-		return peers.get();
+	public Stream<PeerInfo> getPeerInfos() throws ClosedNodeException {
+		beforeCall();
+
+		try {
+			return peers.get();
+		}
+		finally {
+			afterCall();
+		}
 	}
 
 	@Override
 	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
-		ensureIsOpen();
-		peers.add(peer, true, true);
+		beforeCall();
+
+		try {
+			peers.add(peer, true, true);
+		}
+		finally {
+			afterCall();
+		}
 	}
 
 	@Override
 	public void removePeer(Peer peer) throws DatabaseException, ClosedNodeException {
-		ensureIsOpen();
-		peers.remove(peer);
+		beforeCall();
+
+		try {
+			peers.remove(peer);
+		}
+		finally {
+			afterCall();
+		}
 	}
 
 	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
-		if (!isClosed.getAndSet(true)) {
+		if (stopNewCalls()) {
 			events.shutdownNow();
 			tasks.shutdownNow();
 			periodicTasks.shutdownNow();
@@ -307,8 +337,15 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public NodeInfo getInfo() {
-		return NodeInfos.of(version, uuid, LocalDateTime.now(ZoneId.of("UTC")));
+	public NodeInfo getInfo() throws ClosedNodeException {
+		beforeCall();
+
+		try {
+			return NodeInfos.of(version, uuid, LocalDateTime.now(ZoneId.of("UTC")));
+		}
+		finally {
+			afterCall();
+		}
 	}
 
 	/**
@@ -323,25 +360,35 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
-		ensureIsOpen();
+		beforeCall();
 
 		try {
 			return blockchain.getChainInfo();
 		}
 		catch (ClosedDatabaseException e) {
-			throw new ClosedNodeException(e);
+			// the database cannot be closed because this node is open
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
+		}
+		finally {
+			afterCall();
 		}
 	}
 
 	@Override
 	public Chain getChain(long start, long count) throws DatabaseException, ClosedNodeException {
-		ensureIsOpen();
+		beforeCall();
 		
 		try {
 			return Chains.of(blockchain.getChain(start, count));
 		}
 		catch (ClosedDatabaseException e) {
-			throw new ClosedNodeException(e);
+			// the database cannot be closed because this node is open
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
+		}
+		finally {
+			afterCall();
 		}
 	}
 
@@ -399,6 +446,52 @@ public class LocalNodeImpl implements LocalNode {
 				service.whisperItself();
 	}
 
+	/**
+	 * Guarantees that the node is open if a call starts.
+	 * 
+	 * @throws ClosedNodeException if the node was closed
+	 */
+	private void beforeCall() throws ClosedNodeException {
+		synchronized (lock) {
+			if (isClosed)
+				throw new ClosedNodeException();
+			
+			currentCallsCount++;
+		}
+	}
+
+	/**
+	 * At the end of the last call, it signals every thread waiting for this event.
+	 */
+	private void afterCall() {
+		synchronized (lock) {
+			if (--currentCallsCount == 0)
+				lock.notifyAll();
+		}
+	}
+
+	/**
+	 * Stops future new calls to this object and waits for all unfinished calls to complete.
+	 * 
+	 * @return true if and only if it actually stopped new calls, false if
+	 *         this situation already held, because another already did it
+	 * @throws InterruptedException if the execution gets interrupted while
+	 *                              waiting for unfinished calls to complete
+	 */
+	private boolean stopNewCalls() throws InterruptedException {
+		synchronized (lock) {
+			if (isClosed)
+				return false;
+	
+			isClosed = true;
+	
+			if (currentCallsCount > 0)
+				lock.wait();
+	
+			return true;
+		}
+	}
+
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
@@ -406,11 +499,6 @@ public class LocalNodeImpl implements LocalNode {
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
 		peers.whisper(message, newSeen, tryToAddToThePeers);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
-	}
-
-	private void ensureIsOpen() throws ClosedNodeException {
-		if (isClosed.get())
-			throw new ClosedNodeException("the node has been closed");
 	}
 
 	/**
