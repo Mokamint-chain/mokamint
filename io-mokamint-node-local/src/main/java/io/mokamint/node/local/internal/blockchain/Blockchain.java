@@ -122,10 +122,12 @@ public class Blockchain {
 	 * Triggers a synchronization of this blockchain from the peers of the node,
 	 * if this blockchain is not already performing a synchronization.
 	 * Otherwise, nothing happens.
+	 * 
+	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
-	public void startSynchronization() {
+	public void startSynchronization(long initialHeight) {
 		if (!isSynchronizing.getAndSet(true))
-			node.submit(new SynchronizationTask(node, () -> isSynchronizing.set(false)));
+			node.submit(new SynchronizationTask(node, initialHeight, () -> isSynchronizing.set(false)));
 	}
 
 	/**
@@ -265,9 +267,8 @@ public class Blockchain {
 			var head = getHead();
 			if (head.isEmpty() || head.get().getPower().compareTo(block.getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
-				// we synchronize from that block asking our peers if they know a chain from
-				// that block towards a known block
-				{} // System.out.println("dovrei chiedere i predecessori di " + block.getHeight());
+				// we synchronize from the upper portion (1000 blocks deep) of the blockchain upwards
+				startSynchronization(Math.max(0L, head.get().getHeight() - 1000L));
 		}
 
 		return added;

@@ -34,10 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -51,8 +49,6 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.IncompatiblePeerException;
-import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database.BlockAddedEvent;
@@ -72,6 +68,9 @@ public class ChainSynchronizationTests {
 	 */
 	private static Application app;
 
+	// how many blocks must be mined
+	private final static int HOW_MANY = 20;
+
 	@BeforeAll
 	public static void beforeAll() {
 		app = mock(Application.class);
@@ -83,9 +82,6 @@ public class ChainSynchronizationTests {
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
-
-		// how many blocks must be mined by node2 and synchronized/whispered into node1
-		final var howMany = 20;
 
 		var port2 = 8034;
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
@@ -134,7 +130,7 @@ public class ChainSynchronizationTests {
 			@Override
 			public void submit(Task task) {
 				// node2 stops mining at height howMany
-				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= howMany - 1)
+				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1)
 					return;
 
 				super.submit(task);
@@ -162,15 +158,15 @@ public class ChainSynchronizationTests {
 			 var node2 = new MyLocalNode2(config2, miner2);
 			 var service2 = PublicNodeServices.open(node2, port2)) {
 
-			// we give node2 the time to mine howMany / 2 blocks
-			assertTrue(semaphore2.tryAcquire(howMany / 2, 20, TimeUnit.SECONDS));
+			// we give node2 the time to mine HOW_MANY / 2 blocks
+			assertTrue(semaphore2.tryAcquire(HOW_MANY / 2, 20, TimeUnit.SECONDS));
 
 			// by adding node2 as peer of node1, the latter will synchronize and then follow
 			// the other howMany / 2 blocks by whispering
 			node1.addPeer(peer2);
 
-			assertTrue(semaphore1.tryAcquire(howMany, 20, TimeUnit.SECONDS));
-			assertTrue(semaphore2.tryAcquire(howMany - howMany / 2, 20, TimeUnit.SECONDS));
+			assertTrue(semaphore1.tryAcquire(HOW_MANY, 20, TimeUnit.SECONDS));
+			assertTrue(semaphore2.tryAcquire(HOW_MANY - HOW_MANY / 2, 20, TimeUnit.SECONDS));
 			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
@@ -180,9 +176,6 @@ public class ChainSynchronizationTests {
 	public void nodeWithoutMinerStopRestartFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
-
-		// how many blocks must be mined by node2 and synchronized/whispered into node1
-		final var howMany = 20;
 
 		var port2 = 8034;
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
@@ -231,7 +224,7 @@ public class ChainSynchronizationTests {
 			@Override
 			public void submit(Task task) {
 				// node2 stops mining at height howMany
-				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= howMany - 1)
+				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1)
 					return;
 
 				super.submit(task);
@@ -259,43 +252,39 @@ public class ChainSynchronizationTests {
 			 var service2 = PublicNodeServices.open(node2, port2)) {
 
 			try (var node1 = new MyLocalNode1(config1)) {
-				// we give node2 the time to mine howMany / 8 blocks
-				assertTrue(semaphore2.tryAcquire(howMany / 8, 20, TimeUnit.SECONDS));
+				// we give node2 the time to mine HOW_MANY / 8 blocks
+				assertTrue(semaphore2.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 				// by adding node2 as peer of node1, the latter will synchronize and then follow the other blocks by whispering
 				node1.addPeer(peer2);
 
-				// we wait until node1 has received howMany / 4 blocks
-				assertTrue(semaphore1.tryAcquire(howMany / 4, 20, TimeUnit.SECONDS));
+				// we wait until node1 has received HOW_MANY / 4 blocks
+				assertTrue(semaphore1.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
 
 				// then we turn node1 off
 			}
 
-			// we wait until node2 has mined howMany / 2 blocks
-			assertTrue(semaphore2.tryAcquire(howMany / 2 - howMany / 8, 20, TimeUnit.SECONDS));
+			// we wait until node2 has mined HOW_MANY / 2 blocks
+			assertTrue(semaphore2.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 			// we turn node1 on again
 			try (var node1 = new MyLocalNode1(config1)) {
 				// we wait until node1 has received all blocks
-				assertTrue(semaphore1.tryAcquire(howMany - howMany / 4, 20, TimeUnit.SECONDS));
+				assertTrue(semaphore1.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
 			}
 
 			// we wait until node2 has received all blocks
-			assertTrue(semaphore2.tryAcquire(howMany - howMany / 2 - howMany / 8, 20, TimeUnit.SECONDS));
+			assertTrue(semaphore2.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 			assertEquals(blocksOfNode1, blocksOfNode2);
 		}
 	}
 
 	@Test
-	@Disabled
 	@DisplayName("a node without mining capacity, once disconnected and reconnected, synchronizes from its peer")
 	public void nodeWithoutMinerDisconnectConnectFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
-
-		// how many blocks must be mined by node2 and synchronized/whispered into node1
-		final var howMany = 20;
 
 		var port2 = 8034;
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
@@ -325,7 +314,6 @@ public class ChainSynchronizationTests {
 			protected void onComplete(Event event) {
 				if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
 					blocksOfNode1.add(bae.block);
-					System.out.println("node1 " + bae.block.getHeight());
 					semaphore1.release();
 				}
 
@@ -345,7 +333,7 @@ public class ChainSynchronizationTests {
 			@Override
 			public void submit(Task task) {
 				// node2 stops mining at height howMany
-				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= howMany - 1)
+				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1)
 					return;
 
 				super.submit(task);
@@ -355,7 +343,6 @@ public class ChainSynchronizationTests {
 			protected void onComplete(Event event) {
 				if (event instanceof BlockAddedEvent bae) {
 					blocksOfNode2.add(bae.block);
-					System.out.println("node2 " + bae.block.getHeight());
 					semaphore2.release();
 				}
 
@@ -373,38 +360,33 @@ public class ChainSynchronizationTests {
 			 var node2 = new MyLocalNode2(config2, miner2);
 			 var service2 = PublicNodeServices.open(node2, port2);
 			 var node1 = new MyLocalNode1(config1)) {
-				// we give node2 the time to mine howMany / 8 blocks
-				assertTrue(semaphore2.tryAcquire(howMany / 8, 20, TimeUnit.SECONDS));
+				// we give node2 the time to mine HOW_MANY / 8 blocks
+				assertTrue(semaphore2.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 				// by adding node2 as peer of node1, the latter will synchronize and then follow the other blocks by whispering
 				node1.addPeer(peer2);
 
-				// we wait until node1 has received howMany / 4 blocks
-				assertTrue(semaphore1.tryAcquire(howMany / 4, 20, TimeUnit.SECONDS));
+				// we wait until node1 has received HOW_MANY / 4 blocks
+				assertTrue(semaphore1.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
 
 				// then we disconnect the two peers
 				node1.removePeer(peer2);
 
-				System.out.println("peers of node1: "  + node1.getPeerInfos().map(PeerInfo::getPeer).map(Peer::toString).collect(Collectors.joining(", ")));
-				System.out.println("peers of node2: "  + node2.getPeerInfos().map(PeerInfo::getPeer).map(Peer::toString).collect(Collectors.joining(", ")));
-
-				// we wait until node2 has mined howMany / 2 blocks
-				assertTrue(semaphore2.tryAcquire(howMany / 2 - howMany / 8, 20, TimeUnit.SECONDS));
+				// we wait until node2 has mined HOW_MANY / 2 blocks
+				assertTrue(semaphore2.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 				// we reconnect node1 to peer2
 				node1.addPeer(peer2);
-				System.out.println("peers of node1: "  + node1.getPeerInfos().map(PeerInfo::getPeer).map(Peer::toString).collect(Collectors.joining(", ")));
-				System.out.println("peers of node2: "  + node2.getPeerInfos().map(PeerInfo::getPeer).map(Peer::toString).collect(Collectors.joining(", ")));
 
 				// we wait until node1 has received all blocks
-				assertTrue(semaphore1.tryAcquire(howMany - howMany / 4, 20, TimeUnit.SECONDS));
+				assertTrue(semaphore1.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
 
 			// we wait until node2 has received all blocks
-			assertTrue(semaphore2.tryAcquire(howMany - howMany / 2 - howMany / 8, 20, TimeUnit.SECONDS));
+			assertTrue(semaphore2.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 		}
 
-		System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-		System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+		//System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+		//	System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
 		assertEquals(blocksOfNode1, blocksOfNode2);
 	}
 

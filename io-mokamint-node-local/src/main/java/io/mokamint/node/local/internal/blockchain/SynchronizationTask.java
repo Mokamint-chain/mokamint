@@ -59,6 +59,11 @@ public class SynchronizationTask implements Task {
 	private final LocalNodeImpl node;
 
 	/**
+	 * The height of the chain from where synchronization is applied.
+	 */
+	private final long initialHeight;
+
+	/**
 	 * Code to execute at the end of the synchronization, also if it fails.
 	 */
 	private final Runnable atTheEnd;
@@ -69,10 +74,12 @@ public class SynchronizationTask implements Task {
 	 * Creates a task that synchronizes the blockchain from the peers.
 	 * 
 	 * @param node the node for which synchronization is performed
+	 * @param initialHeight the height of the blockchain from where synchronization is applied
 	 * @param atTheEnd code to execute at the end of the synchronization, also if it fails
 	 */
-	SynchronizationTask(LocalNodeImpl node, Runnable atTheEnd) {
+	SynchronizationTask(LocalNodeImpl node, long initialHeight, Runnable atTheEnd) {
 		this.node = node;
+		this.initialHeight = initialHeight;
 		this.atTheEnd = atTheEnd;
 	}
 
@@ -117,7 +124,7 @@ public class SynchronizationTask implements Task {
 		/**
 		 * The height of the next block whose hash must be downloaded.
 		 */
-		private long height = 0L;
+		private long height = initialHeight;
 
 		/**
 		 * The last groups of hashes downloaded, for each peer.
@@ -211,8 +218,9 @@ public class SynchronizationTask implements Task {
 		 * @param peer the peer
 		 * @throws InterruptedException if the execution has been interrupted
 		 * @throws DatabaseException if the database of {@link SynchronizationTask#node} is corrupted
+		 * @throws ClosedDatabaseException if the database is already closed
 		 */
-		private void downloadNextGroup(Peer peer) throws InterruptedException, DatabaseException {
+		private void downloadNextGroup(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException {
 			Optional<RemotePublicNode> maybeRemote = peers.getRemote(peer);
 			if (maybeRemote.isEmpty())
 				return;
@@ -229,6 +237,15 @@ public class SynchronizationTask implements Task {
 				// or otherwise the peer is cheating or there has been a change in the best chain
 				// and we must anyway stop downloading blocks here from this peer
 				else if (hashes.length > 0 && chosenGroup != null && !Arrays.equals(hashes[0], chosenGroup[chosenGroup.length - 1]))
+					unusable.add(peer);
+				// if synchronization occurs from the genesis and the genesis of the blockchain is set,
+				// then the first hash must be that genesis' hash
+				else if (hashes.length > 0 && height == 0L && node.getDatabase().getGenesisHash().isPresent()
+						&& !Arrays.equals(hashes[0], node.getDatabase().getGenesisHash().get()))
+					unusable.add(peer);
+				// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or
+				// otherwise the hashes are useless
+				else if (hashes.length > 0 && chosenGroup == null && height > 0L && !blockchain.containsBlock(hashes[0]))
 					unusable.add(peer);
 				else
 					groups.put(peer, hashes);

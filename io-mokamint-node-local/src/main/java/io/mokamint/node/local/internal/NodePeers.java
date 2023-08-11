@@ -346,7 +346,7 @@ public class NodePeers implements AutoCloseable {
 
 			// if the blockchain is empty, the addition of a new peer might be the right moment for attempting a synchronization
 			if (db.getGenesisHash().isEmpty())
-				node.getBlockchain().startSynchronization();
+				node.getBlockchain().startSynchronization(0L);
 		}
 
 		@Override

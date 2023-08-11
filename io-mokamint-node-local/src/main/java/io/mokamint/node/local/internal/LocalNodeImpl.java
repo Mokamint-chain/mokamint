@@ -188,7 +188,7 @@ public class LocalNodeImpl implements LocalNode {
 			if (init)
 				blockchain.startMining();
 			else
-				blockchain.startSynchronization();
+				blockchain.startSynchronization(0L);
 		}
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed already
