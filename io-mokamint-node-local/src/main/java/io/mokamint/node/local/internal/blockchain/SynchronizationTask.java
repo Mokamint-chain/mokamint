@@ -233,19 +233,7 @@ public class SynchronizationTask implements Task {
 				// if a peer sends inconsistent information, we ban it
 				if (hashes.length > GROUP_SIZE)
 					markAsMisbehaving(peer);
-				// the first hash must coincide with the last hash of the previous group,
-				// or otherwise the peer is cheating or there has been a change in the best chain
-				// and we must anyway stop downloading blocks here from this peer
-				else if (hashes.length > 0 && chosenGroup != null && !Arrays.equals(hashes[0], chosenGroup[chosenGroup.length - 1]))
-					unusable.add(peer);
-				// if synchronization occurs from the genesis and the genesis of the blockchain is set,
-				// then the first hash must be that genesis' hash
-				else if (hashes.length > 0 && height == 0L && node.getDatabase().getGenesisHash().isPresent()
-						&& !Arrays.equals(hashes[0], node.getDatabase().getGenesisHash().get()))
-					unusable.add(peer);
-				// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or
-				// otherwise the hashes are useless
-				else if (hashes.length > 0 && chosenGroup == null && height > 0L && !blockchain.containsBlock(hashes[0]))
+				else if (groupIsUseless(hashes))
 					unusable.add(peer);
 				else
 					groups.put(peer, hashes);
@@ -257,6 +245,34 @@ public class SynchronizationTask implements Task {
 			catch (TimeoutException | ClosedNodeException e) {
 				markAsUnreachable(peer);
 			}
+		}
+
+		/**
+		 * Determines if the given group of hashes can be discarded since it does not firt with some
+		 * expected constraints.
+		 * 
+		 * @param hashes the group of hashes
+		 * @return true if and only if it can be discarded
+		 * @throws DatabaseException if the database is corrupted
+		 * @throws ClosedDatabaseException if the database is already closed
+		 */
+		private boolean groupIsUseless(byte[][] hashes) throws DatabaseException, ClosedDatabaseException {
+			// the first hash must coincide with the last hash of the previous group,
+			// or otherwise the peer is cheating or there has been a change in the best chain
+			// and we must anyway stop downloading blocks here from this peer
+			if (hashes.length > 0 && chosenGroup != null && !Arrays.equals(hashes[0], chosenGroup[chosenGroup.length - 1]))
+				return true;
+			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
+			// then the first hash must be that genesis' hash
+			else if (hashes.length > 0 && height == 0L && node.getDatabase().getGenesisHash().isPresent()
+					&& !Arrays.equals(hashes[0], node.getDatabase().getGenesisHash().get()))
+				return true;
+			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or
+			// otherwise the hashes are useless
+			else if (hashes.length > 0 && chosenGroup == null && height > 0L && !blockchain.containsBlock(hashes[0]))
+				return true;
+			else
+				return false;
 		}
 
 		private void markAsMisbehaving(Peer peer) throws DatabaseException {

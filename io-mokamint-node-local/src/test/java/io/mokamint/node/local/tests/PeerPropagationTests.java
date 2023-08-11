@@ -198,7 +198,7 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
-			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed once
+			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed twice
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}

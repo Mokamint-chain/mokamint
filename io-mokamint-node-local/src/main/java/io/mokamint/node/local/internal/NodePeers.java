@@ -343,10 +343,6 @@ public class NodePeers implements AutoCloseable {
 		public void body() throws DatabaseException, ClosedDatabaseException {
 			if (whisper)
 				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
-
-			// if the blockchain is empty, the addition of a new peer might be the right moment for attempting a synchronization
-			if (db.getGenesisHash().isEmpty())
-				node.getBlockchain().startSynchronization(0L);
 		}
 
 		@Override

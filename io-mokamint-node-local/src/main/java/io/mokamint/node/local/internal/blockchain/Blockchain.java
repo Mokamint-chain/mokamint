@@ -265,9 +265,11 @@ public class Blockchain {
 			startMining();
 		else if (addedToOrphans) {
 			var head = getHead();
-			if (head.isEmpty() || head.get().getPower().compareTo(block.getPower()) < 0)
+			if (head.isEmpty())
+				startSynchronization(0L);
+			else if (head.get().getPower().compareTo(block.getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
-				// we synchronize from the upper portion (1000 blocks deep) of the blockchain upwards
+				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
 				startSynchronization(Math.max(0L, head.get().getHeight() - 1000L));
 		}
 
