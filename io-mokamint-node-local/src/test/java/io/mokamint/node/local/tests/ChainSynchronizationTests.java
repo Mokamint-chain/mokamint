@@ -28,14 +28,17 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,6 +59,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
 /**
@@ -68,13 +72,101 @@ public class ChainSynchronizationTests {
 	 */
 	private static Application app;
 
-	// how many blocks must be mined
+	/**
+	 * The plot used by the mining node.
+	 */
+	private static Plot plot;
+
+	/**
+	 * The miner used by the mining node.
+	 */
+	private static Miner miner;
+
+	/**
+	 * The number of blocks that must be mined.
+	 */
 	private final static int HOW_MANY = 20;
 
+	private volatile Semaphore miningSemaphore;
+	private volatile Set<Block> miningBlocks;
+	private volatile Semaphore nonMiningSemaphore;
+	private volatile Set<Block> nonMiningBlocks;
+
 	@BeforeAll
-	public static void beforeAll() {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException {
 		app = mock(Application.class);
 		when(app.prologIsValid(any())).thenReturn(true);
+		
+		var prolog = new byte[] { 11, 13, 24, 88 };
+		long start = 65536L;
+		long length = 50L;
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+
+		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, hashing, __ -> {});
+		miner = LocalMiners.of(plot);
+	}
+
+	@AfterAll
+	public static void afterAll() throws IOException {
+		miner.close();
+		plot.close();
+	}
+
+	@BeforeEach
+	public void beforeEach() {
+		miningSemaphore = new Semaphore(0);
+		miningBlocks = ConcurrentHashMap.newKeySet();
+		nonMiningSemaphore = new Semaphore(0);
+		nonMiningBlocks = ConcurrentHashMap.newKeySet();
+	}
+
+	private Config mkConfig(Path chainDir) throws NoSuchAlgorithmException {
+		return Config.Builder.defaults()
+			.setDir(chainDir)
+			.setTargetBlockCreationTime(300L)
+			.setInitialAcceleration(1000000000000000L)
+			.build();
+	}
+
+	private class MiningNode extends LocalNodeImpl {
+
+		private MiningNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			super(config, app, true, miner);
+		}
+
+		@Override
+		public void submit(Task task) {
+			// node2 stops mining at height howMany
+			if (!(task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1))
+				super.submit(task);
+		}
+
+		@Override
+		protected void onComplete(Event event) {
+			if (event instanceof BlockAddedEvent bae) {
+				miningBlocks.add(bae.block);
+				miningSemaphore.release();
+			}
+
+			super.onComplete(event);
+		}
+	}
+
+	private class NonMiningNode extends LocalNodeImpl {
+
+		private NonMiningNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			super(config, app, false); // <--- does not start mining by itself
+		}
+
+		@Override
+		protected void onComplete(Event event) {
+			if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
+				nonMiningBlocks.add(bae.block);
+				nonMiningSemaphore.release();
+			}
+
+			super.onComplete(event);
+		}
 	}
 
 	@Test
@@ -84,90 +176,21 @@ public class ChainSynchronizationTests {
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
 
 		var port2 = 8034;
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
 
-		var config1 = Config.Builder.defaults()
-			.setDir(chain1)
-			.setTargetBlockCreationTime(300L)
-			.setInitialAcceleration(1000000000000000L)
-			.build();
+		try (var nonMiningNode = new NonMiningNode(mkConfig(chain1));
+			 var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2)) {
 
-		var config2 = Config.Builder.defaults()
-			.setDir(chain2)
-			.setTargetBlockCreationTime(300L)
-			.setInitialAcceleration(1000000000000000L)
-			.build();
+			// we give miningNode the time to mine HOW_MANY / 2 blocks
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2, 20, TimeUnit.SECONDS));
 
-		var semaphore1 = new Semaphore(0);
-		var blocksOfNode1 = new HashSet<Block>();
-
-		class MyLocalNode1 extends LocalNodeImpl {
-
-			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false); // <--- does not start mining by itself
-			}
-
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
-					blocksOfNode1.add(bae.block);
-					semaphore1.release();
-				}
-
-				super.onComplete(event);
-			}
-		}
-
-		var semaphore2 = new Semaphore(0);
-		var blocksOfNode2 = new HashSet<Block>();
-
-		class MyLocalNode2 extends LocalNodeImpl {
-
-			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, true, miners); // <--- starts mining by itself
-			}
-
-			@Override
-			public void submit(Task task) {
-				// node2 stops mining at height howMany
-				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1)
-					return;
-
-				super.submit(task);
-			}
-
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof BlockAddedEvent bae) {
-					blocksOfNode2.add(bae.block);
-					semaphore2.release();
-				}
-
-				super.onComplete(event);
-			}
-		}
-
-		var prolog = new byte[] { 11, 13, 24, 88 };
-		long start = 65536L;
-		long length = 50L;
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-
-		try (var plot2 = Plots.create(chain2.resolve("plot2.plot"), prolog, start, length, hashing, __ -> {});
-			 var miner2 = LocalMiners.of(plot2);
-			 var node1 = new MyLocalNode1(config1);
-			 var node2 = new MyLocalNode2(config2, miner2);
-			 var service2 = PublicNodeServices.open(node2, port2)) {
-
-			// we give node2 the time to mine HOW_MANY / 2 blocks
-			assertTrue(semaphore2.tryAcquire(HOW_MANY / 2, 20, TimeUnit.SECONDS));
-
-			// by adding node2 as peer of node1, the latter will synchronize and then follow
+			// by adding miningPeer as peer of nonMiningNode, the latter will synchronize and then follow
 			// the other howMany / 2 blocks by whispering
-			node1.addPeer(peer2);
+			nonMiningNode.addPeer(miningPeer);
 
-			assertTrue(semaphore1.tryAcquire(HOW_MANY, 20, TimeUnit.SECONDS));
-			assertTrue(semaphore2.tryAcquire(HOW_MANY - HOW_MANY / 2, 20, TimeUnit.SECONDS));
-			assertEquals(blocksOfNode1, blocksOfNode2);
+			assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY, 20, TimeUnit.SECONDS));
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2, 20, TimeUnit.SECONDS));
+			assertEquals(nonMiningBlocks, miningBlocks);
 		}
 	}
 
@@ -178,105 +201,35 @@ public class ChainSynchronizationTests {
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
 
 		var port2 = 8034;
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
 
-		var config1 = Config.Builder.defaults()
-			.setDir(chain1)
-			.setTargetBlockCreationTime(300L)
-			.setInitialAcceleration(1000000000000000L)
-			.build();
+		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningNodeService = PublicNodeServices.open(miningNode, port2)) {
+			try (var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
+				// we give miningNode the time to mine HOW_MANY / 8 blocks
+				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
-		var config2 = Config.Builder.defaults()
-			.setDir(chain2)
-			.setTargetBlockCreationTime(300L)
-			.setInitialAcceleration(1000000000000000L)
-			.build();
+				// by adding miningNode as peer of nonMiningNode, the latter will synchronize and then follow the other blocks by whispering
+				nonMiningNode.addPeer(miningPeer);
 
-		var semaphore1 = new Semaphore(0);
-		var blocksOfNode1 = new HashSet<Block>();
+				// we wait until nonMiningNode has received HOW_MANY / 4 blocks
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
 
-		class MyLocalNode1 extends LocalNodeImpl {
-
-			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false); // <--- does not start mining by itself
+				// then we turn nonMiningNode off
 			}
 
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
-					blocksOfNode1.add(bae.block);
-					semaphore1.release();
-				}
+			// we wait until miningNode has mined HOW_MANY / 2 blocks
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
-				super.onComplete(event);
-			}
-		}
-
-		var semaphore2 = new Semaphore(0);
-		var blocksOfNode2 = new HashSet<Block>();
-
-		class MyLocalNode2 extends LocalNodeImpl {
-
-			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, true, miners); // <--- starts mining by itself
+			// we turn nonMiningNode on again
+			try (var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
+				// we wait until nonMiningNode has received all blocks
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
 			}
 
-			@Override
-			public void submit(Task task) {
-				// node2 stops mining at height howMany
-				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1)
-					return;
+			// we wait until miningNode has received all blocks
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
-				super.submit(task);
-			}
-
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof BlockAddedEvent bae) {
-					blocksOfNode2.add(bae.block);
-					semaphore2.release();
-				}
-
-				super.onComplete(event);
-			}
-		}
-
-		var prolog = new byte[] { 11, 13, 24, 88 };
-		long start = 65536L;
-		long length = 50L;
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-
-		try (var plot2 = Plots.create(chain2.resolve("plot2.plot"), prolog, start, length, hashing, __ -> {});
-			 var miner2 = LocalMiners.of(plot2);
-			 var node2 = new MyLocalNode2(config2, miner2);
-			 var service2 = PublicNodeServices.open(node2, port2)) {
-
-			try (var node1 = new MyLocalNode1(config1)) {
-				// we give node2 the time to mine HOW_MANY / 8 blocks
-				assertTrue(semaphore2.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
-
-				// by adding node2 as peer of node1, the latter will synchronize and then follow the other blocks by whispering
-				node1.addPeer(peer2);
-
-				// we wait until node1 has received HOW_MANY / 4 blocks
-				assertTrue(semaphore1.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
-
-				// then we turn node1 off
-			}
-
-			// we wait until node2 has mined HOW_MANY / 2 blocks
-			assertTrue(semaphore2.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
-
-			// we turn node1 on again
-			try (var node1 = new MyLocalNode1(config1)) {
-				// we wait until node1 has received all blocks
-				assertTrue(semaphore1.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
-			}
-
-			// we wait until node2 has received all blocks
-			assertTrue(semaphore2.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
-
-			assertEquals(blocksOfNode1, blocksOfNode2);
+			assertEquals(nonMiningBlocks, miningBlocks);
 		}
 	}
 
@@ -287,107 +240,38 @@ public class ChainSynchronizationTests {
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
 
 		var port2 = 8034;
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
 
-		var config1 = Config.Builder.defaults()
-			.setDir(chain1)
-			.setTargetBlockCreationTime(300L)
-			.setInitialAcceleration(1000000000000000L)
-			.build();
+		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2);
+			 var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
+				// we give miningNode the time to mine HOW_MANY / 8 blocks
+				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
-		var config2 = Config.Builder.defaults()
-			.setDir(chain2)
-			.setTargetBlockCreationTime(300L)
-			.setInitialAcceleration(1000000000000000L)
-			.build();
+				// by adding miningNode as peer of nonMiningNode, the latter will synchronize and then follow the other blocks by whispering
+				nonMiningNode.addPeer(miningPeer);
 
-		var semaphore1 = new Semaphore(0);
-		var blocksOfNode1 = new HashSet<Block>();
-
-		class MyLocalNode1 extends LocalNodeImpl {
-
-			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false); // <--- does not start mining by itself
-			}
-
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
-					blocksOfNode1.add(bae.block);
-					semaphore1.release();
-				}
-
-				super.onComplete(event);
-			}
-		}
-
-		var semaphore2 = new Semaphore(0);
-		var blocksOfNode2 = new HashSet<Block>();
-
-		class MyLocalNode2 extends LocalNodeImpl {
-
-			private MyLocalNode2(Config config, Miner... miners) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, true, miners); // <--- starts mining by itself
-			}
-
-			@Override
-			public void submit(Task task) {
-				// node2 stops mining at height howMany
-				if (task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1)
-					return;
-
-				super.submit(task);
-			}
-
-			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof BlockAddedEvent bae) {
-					blocksOfNode2.add(bae.block);
-					semaphore2.release();
-				}
-
-				super.onComplete(event);
-			}
-		}
-
-		var prolog = new byte[] { 11, 13, 24, 88 };
-		long start = 65536L;
-		long length = 50L;
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-
-		try (var plot2 = Plots.create(chain2.resolve("plot2.plot"), prolog, start, length, hashing, __ -> {});
-			 var miner2 = LocalMiners.of(plot2);
-			 var node2 = new MyLocalNode2(config2, miner2);
-			 var service2 = PublicNodeServices.open(node2, port2);
-			 var node1 = new MyLocalNode1(config1)) {
-				// we give node2 the time to mine HOW_MANY / 8 blocks
-				assertTrue(semaphore2.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
-
-				// by adding node2 as peer of node1, the latter will synchronize and then follow the other blocks by whispering
-				node1.addPeer(peer2);
-
-				// we wait until node1 has received HOW_MANY / 4 blocks
-				assertTrue(semaphore1.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
+				// we wait until nonMiningNode has received HOW_MANY / 4 blocks
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
 
 				// then we disconnect the two peers
-				node1.removePeer(peer2);
+				nonMiningNode.removePeer(miningPeer);
 
-				// we wait until node2 has mined HOW_MANY / 2 blocks
-				assertTrue(semaphore2.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
+				// we wait until miningNode has mined HOW_MANY / 2 blocks
+				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
-				// we reconnect node1 to peer2
-				node1.addPeer(peer2);
+				// we reconnect nonMiningNode to miningNode
+				nonMiningNode.addPeer(miningPeer);
 
-				// we wait until node1 has received all blocks
-				assertTrue(semaphore1.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
+				// we wait until nonMiningNode has received all blocks
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
 
-			// we wait until node2 has received all blocks
-			assertTrue(semaphore2.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
+			// we wait until miningNode has received all blocks
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 		}
 
-		//System.out.println("blocksOfNode1: " + blocksOfNode1.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-		//	System.out.println("blocksOfNode2: " + blocksOfNode2.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-		assertEquals(blocksOfNode1, blocksOfNode2);
+		//System.out.println("nonMiningBlocks: " + nonMiningBlocks.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+		//	System.out.println("miningBlocks: " + miningBlocks.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
+		assertEquals(nonMiningBlocks, miningBlocks);
 	}
 
 	static {
