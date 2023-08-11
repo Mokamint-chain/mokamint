@@ -229,10 +229,10 @@ public class Blockchain {
 	 *                               consensus rules
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
-		boolean added = false, first = true;
+	public boolean add(final Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
+		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
-	
+
 		// we use a working set, since the addition of a single block might
 		// trigger the further addition of orphan blocks, recursively
 		var ws = new ArrayList<Block>();
@@ -244,64 +244,62 @@ public class Blockchain {
 			if (!db.containsBlock(cursor.getHash(hashingForBlocks))) { // optimization check, to avoid repeated verification
 				if (cursor instanceof NonGenesisBlock ngb) {
 					Optional<Block> previous = db.getBlock(ngb.getHashOfPreviousBlock());
-					if (previous.isEmpty())
+					if (previous.isEmpty()) {
 						putAmongOrphans(ngb);
-					else {
-						try {
-							verify(ngb, previous.get());
-						}
-						catch (VerificationException e) {
-							if (first)
-								throw e;
-							else
-								LOGGER.warning("discarding orphan block " + ngb.getHexHash(hashingForBlocks) + " since does not pass verification: " + e.getMessage());
-						}
-	
-						if (db.add(cursor, updatedHead)) {
-							getOrphansWithParent(cursor).forEach(ws::add);
-							if (first)
-								added = true;
-						}
+						if (block == ngb)
+							addedToOrphans = true;
 					}
+					else
+						added |= add(ngb, previous, block == ngb, ws, updatedHead);
 				}
-				else {
-					try {
-						verify((GenesisBlock) block);
-					}
-					catch (VerificationException e) {
-						if (first)
-							throw e;
-						else
-							LOGGER.warning("discarding orphan block " + block.getHexHash(hashingForBlocks) + " since does not pass verification: " + e.getMessage());
-					}
-
-					if (db.add(cursor, updatedHead)) {
-						getOrphansWithParent(cursor).forEach(ws::add);
-						if (first)
-							added = true;
-					}
-				}
+				else
+					added |= add(cursor, Optional.empty(), block == cursor, ws, updatedHead);
 			}
-	
-			first = false;
 		}
 		while (!ws.isEmpty());
 
 		Block newHead = updatedHead.get();
 		if (newHead != null)
 			startMining();
-		else if (!added) {
+		else if (addedToOrphans) {
 			var head = getHead();
 			if (head.isEmpty() || head.get().getPower().compareTo(block.getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from that block asking our peers if they know a chain from
 				// that block towards a known block
-				if (block instanceof NonGenesisBlock ngb) {
-					// TODO: probably not synchronization, but something else...
-				}
+				{} // System.out.println("dovrei chiedere i predecessori di " + block.getHeight());
 		}
 
 		return added;
+	}
+
+	private boolean add(Block block, Optional<Block> previous, boolean first, ArrayList<Block> ws, AtomicReference<Block> updatedHead)
+			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
+
+		try {
+			verify(block, previous);
+
+			if (db.add(block, updatedHead)) {
+				getOrphansWithParent(block).forEach(ws::add);
+				if (first)
+					return true;
+			}
+		}
+		catch (VerificationException e) {
+			if (first)
+				throw e;
+			else
+				LOGGER.warning("discarding orphan block " + block.getHexHash(hashingForBlocks) + " since does not pass verification: " + e.getMessage());
+		}
+
+		return false;
+	}
+
+	private void verify(Block block, Optional<Block> previous) throws VerificationException {
+		if (block instanceof GenesisBlock gb)
+			verify(gb);
+		else
+			verify((NonGenesisBlock) block, previous.get());
 	}
 
 	private void verify(GenesisBlock block) throws VerificationException {
