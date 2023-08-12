@@ -155,10 +155,10 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 				}
 			}
 
-			if (ioException != null)
-				throw ioException;
-			else if (interruptedException != null)
+			if (interruptedException != null)
 				throw interruptedException;
+			else if (ioException != null)
+				throw ioException;
 		}
 	}
 

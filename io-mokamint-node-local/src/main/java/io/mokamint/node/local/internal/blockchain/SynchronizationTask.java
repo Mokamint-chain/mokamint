@@ -275,12 +275,12 @@ public class SynchronizationTask implements Task {
 				return false;
 		}
 
-		private void markAsMisbehaving(Peer peer) throws DatabaseException, ClosedDatabaseException {
+		private void markAsMisbehaving(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
 			unusable.add(peer);
 			peers.remove(peer);
 		}
 
-		private void markAsUnreachable(Peer peer) {
+		private void markAsUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
 			unusable.add(peer);
 			peers.punishBecauseUnreachable(peer);
 		}

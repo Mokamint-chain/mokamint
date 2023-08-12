@@ -176,7 +176,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.miners = new NodeMiners(this, Stream.of(miners));
 			this.blockchain = new Blockchain(this);
 			this.peers = new NodePeers(this);
-			peers.add(config.seeds().map(Peers::of), true, true);
+			peers.tryToAdd(config.seeds().map(Peers::of), true, true);
 
 			if (init)
 				blockchain.startMining();
@@ -286,7 +286,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void removePeer(Peer peer) throws DatabaseException, ClosedNodeException {
+	public void removePeer(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
