@@ -80,7 +80,7 @@ public class PeerPropagationTests {
 
 	@Test
 	@DisplayName("a peer added to a clique is broadcast to all nodes in the clique")
-	@Timeout(10)
+	@Timeout(20)
 	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
@@ -129,7 +129,7 @@ public class PeerPropagationTests {
 			assertTrue(node3.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer1::equals));
 
 			// we add peer4 as peer of peer1 now
-			node1.addPeer(peer4);
+			node1.addPeer(peer4); // TODO: failed once at NodePeers.openRemote(NodePeers.java:579) (DeploymentException: Connection Failed)
 
 			// we wait for three events of addition of peer4 as peer
 			assertTrue(semaphore.tryAcquire(3, 5, TimeUnit.SECONDS));

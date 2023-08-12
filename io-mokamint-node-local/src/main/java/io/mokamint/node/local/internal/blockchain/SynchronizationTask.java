@@ -275,7 +275,7 @@ public class SynchronizationTask implements Task {
 				return false;
 		}
 
-		private void markAsMisbehaving(Peer peer) throws DatabaseException {
+		private void markAsMisbehaving(Peer peer) throws DatabaseException, ClosedDatabaseException {
 			unusable.add(peer);
 			peers.remove(peer);
 		}
@@ -418,8 +418,9 @@ public class SynchronizationTask implements Task {
 		 * @param h the height of the hash
 		 * @throws InterruptedException if the executed was interrupted
 		 * @throws DatabaseException if the database of the node is corrupted
+		 * @throws ClosedDatabaseException if the database of the node is already closed
 		 */
-		private void tryToDownloadBlock(Peer peer, int h) throws InterruptedException, DatabaseException {
+		private void tryToDownloadBlock(Peer peer, int h) throws InterruptedException, DatabaseException, ClosedDatabaseException {
 			var maybeRemote = peers.getRemote(peer);
 			if (maybeRemote.isEmpty())
 				unusable.add(peer);
@@ -427,7 +428,16 @@ public class SynchronizationTask implements Task {
 				var remote = maybeRemote.get();
 
 				try {
-					Optional<Block> maybeBlock = remote.getBlock(chosenGroup[h]);
+					Optional<Block> maybeBlock;
+
+					try {
+						maybeBlock = remote.getBlock(chosenGroup[h]);
+					}
+					catch (DatabaseException e) {
+						markAsMisbehaving(peer);
+						return;
+					}
+
 					if (maybeBlock.isPresent()) {
 						Block block = maybeBlock.get();
 						if (!Arrays.equals(chosenGroup[h], block.getHash(hashingForBlocks)))
@@ -440,7 +450,7 @@ public class SynchronizationTask implements Task {
 				catch (TimeoutException | ClosedNodeException e) {
 					markAsUnreachable(peer);
 				}
-				catch (NoSuchAlgorithmException | DatabaseException e) {
+				catch (NoSuchAlgorithmException e) {
 					markAsMisbehaving(peer);
 				}
 			}

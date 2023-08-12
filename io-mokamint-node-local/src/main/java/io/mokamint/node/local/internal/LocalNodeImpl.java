@@ -282,6 +282,11 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			peers.add(peer, true, true);
 		}
+		catch (ClosedDatabaseException e) {
+			// the database cannot be closed because this node is open
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
+		}
 		finally {
 			afterCall();
 		}
@@ -293,6 +298,11 @@ public class LocalNodeImpl implements LocalNode {
 
 		try {
 			peers.remove(peer);
+		}
+		catch (ClosedDatabaseException e) {
+			// the database cannot be closed because this node is open
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("unexpected exception", e);
 		}
 		finally {
 			afterCall();

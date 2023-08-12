@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -168,18 +169,22 @@ public class NodePeers implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if the addition does not complete in time
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the addition to complete
+	 * @throws ClosedNodeException if the peer is closed
+	 * @throws ClosedDatabaseException if the database of the node is closed
 	 */
-	public boolean add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException {
+	public boolean add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, IncompatiblePeerException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
 		if (containsDisconnected(peer)) {
 			tryToRecreateRemote(peer);
 			return false;
 		}
 		else {
-			boolean result = check(TimeoutException.class,
+			boolean result = check2(TimeoutException.class,
 					InterruptedException.class,
 					IOException.class,
 					IncompatiblePeerException.class,
 					DatabaseException.class,
+					ClosedNodeException.class,
+					ClosedDatabaseException.class,
 					() -> peers.add(peer, force));
 
 			if (result)
@@ -188,16 +193,47 @@ public class NodePeers implements AutoCloseable {
 			return result;
 		}
 	}
-	
+
+	// TODO: remove after pushing the new hotmoka jars to Maven Central
+	@SuppressWarnings("unchecked")
+	private static <R, T1 extends Throwable, T2 extends Throwable, T3 extends Throwable, T4 extends Throwable, T5 extends Throwable, T6 extends Throwable, T7 extends Throwable>
+			R check2(Class<T1> exception1, Class<T2> exception2, Class<T3> exception3, Class<T4> exception4, Class<T5> exception5, Class<T6> exception6, Class<T7> exception7,
+					Supplier<R> supplier) throws T1, T2, T3, T4, T5, T6, T7 {
+
+		try {
+			return supplier.get();
+		}
+		catch (UncheckedException e) {
+			var cause = e.getCause();
+			if (exception1.isInstance(cause))
+				throw (T1) cause;
+			else if (exception2.isInstance(cause))
+				throw (T2) cause;
+			else if (exception3.isInstance(cause))
+				throw (T3) cause;
+			else if (exception4.isInstance(cause))
+				throw (T4) cause;
+			else if (exception5.isInstance(cause))
+				throw (T5) cause;
+			else if (exception6.isInstance(cause))
+				throw (T6) cause;
+			else if (exception7.isInstance(cause))
+				throw (T7) cause;
+			else
+				throw e;
+		}
+	}
+
 	/**
 	 * Removes a peer.
 	 * 
 	 * @param peer the peer to remove
 	 * @return true if and only if the peer has been removed
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean remove(Peer peer) throws DatabaseException {
-		return check(DatabaseException.class, () -> peers.remove(peer));
+	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException {
+		return check(DatabaseException.class, ClosedDatabaseException.class, () -> peers.remove(peer));
 	}
 
 	/**
@@ -498,7 +534,7 @@ public class NodePeers implements AutoCloseable {
 			throw new UncheckedException(e);
 		}
 		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | ClosedDatabaseException | IncompatiblePeerException e) {
-			LOGGER.log(Level.SEVERE, "peers: cannot add peer " + peer + ": " + e.getMessage());
+			LOGGER.log(Level.WARNING, "peers: cannot add peer " + peer + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
 		finally {
@@ -550,7 +586,7 @@ public class NodePeers implements AutoCloseable {
 			try {
 				remove(peer);
 			}
-			catch (DatabaseException e1) {
+			catch (DatabaseException | ClosedDatabaseException e1) {
 				LOGGER.log(Level.SEVERE, "peers: cannot remove " + peer + " from the database", e);
 			}
 		}
