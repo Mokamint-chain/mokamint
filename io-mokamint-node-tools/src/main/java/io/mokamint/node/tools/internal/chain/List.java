@@ -18,6 +18,7 @@ package io.mokamint.node.tools.internal.chain;
 
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
@@ -48,6 +49,11 @@ public class List extends AbstractPublicRpcCommand {
 	private long from;
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
+
+	/**
+	 * The formatter used to print the creation time of the blocks.
+	 */
+	private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		if (count < 0) {
@@ -100,7 +106,7 @@ public class List extends AbstractPublicRpcCommand {
 					startDateTimeUTC = Optional.of(gb.getStartDateTimeUTC());
 				}
 				else
-					throw new DatabaseException("The type of the genesisi block is inconsistent!");
+					throw new DatabaseException("The type of the genesis block is inconsistent!");
 			}
 
 			if (json())
@@ -149,7 +155,7 @@ public class List extends AbstractPublicRpcCommand {
 			}
 			else {
 				var maybeBlock = remote.getBlock(hashes[counter]); // TODO: in the future, maybe a getBlockHeader() ?
-				String creationTime = maybeBlock.isEmpty() ? "unknown" : startDateTimeUTC.get().plus(maybeBlock.get().getTotalWaitingTime(), ChronoUnit.MILLIS).toString();
+				String creationTime = maybeBlock.isEmpty() ? "unknown" : startDateTimeUTC.get().plus(maybeBlock.get().getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
 				System.out.println(String.format("%" + slotsForHeight + "d: %s [%s]", height, hash, creationTime));
 			}
 		}

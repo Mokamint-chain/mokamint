@@ -108,12 +108,16 @@ public class Blockchain {
 	/**
 	 * Triggers block mining on top of the current head, if this blockchain
 	 * is not performing a synchronization. Otherwise, nothing happens.
+	 * This method requires the blockchain to be non-empty.
 	 * 
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public void startMining() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		if (db.getHeadHash().isEmpty())
+			throw new IllegalStateException("Cannot mine on an empty blockchain");
+
 		if (!isSynchronizing.get())
 			node.submit(new MineNewBlockTask(node));
 	}

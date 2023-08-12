@@ -646,8 +646,12 @@ public class NodePeers implements AutoCloseable {
 		}
 
 		@Override
-		public void body() {
+		public void body() throws DatabaseException, ClosedDatabaseException {
 			node.whisperItsServices();
+
+			// if the blockchain was empty, it might be the right moment to attempt a synchronization
+			if (db.getGenesisHash().isEmpty())
+				node.getBlockchain().startSynchronization(0L);
 		}
 
 		@Override

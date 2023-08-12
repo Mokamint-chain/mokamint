@@ -18,7 +18,7 @@ hashing_for_blocks = "sha256"
 initial_acceleration = 100000000000
 
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
-target_block_creation_time = 240000
+target_block_creation_time = 20000
 
 ## Local parameters
 

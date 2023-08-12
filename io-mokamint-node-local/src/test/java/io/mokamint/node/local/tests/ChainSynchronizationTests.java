@@ -137,7 +137,7 @@ public class ChainSynchronizationTests {
 		@Override
 		public void submit(Task task) {
 			// node2 stops mining at height howMany
-			if (!(task instanceof MineNewBlockTask mnbt && mnbt.previous.isPresent() && mnbt.previous.get().getHeight() >= HOW_MANY - 1))
+			if (!(task instanceof MineNewBlockTask mnbt && mnbt.previous.getHeight() >= HOW_MANY - 1))
 				super.submit(task);
 		}
 

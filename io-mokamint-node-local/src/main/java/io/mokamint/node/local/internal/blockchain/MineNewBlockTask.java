@@ -58,10 +58,9 @@ public class MineNewBlockTask implements Task {
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
 	/**
-	 * The block over which mining is performed; this is empty if the genesis
-	 * block is being mined.
+	 * The block over which mining is performed.
 	 */
-	public final Optional<Block> previous;
+	public final Block previous;
 	/**
 	 * The node performing the mining.
 	 */
@@ -115,10 +114,10 @@ public class MineNewBlockTask implements Task {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.config = node.getConfig();
-		this.previous = blockchain.getHead();
-		this.heightOfNewBlock = previous.isEmpty() ? 0L : (previous.get().getHeight() + 1);
+		this.previous = blockchain.getHead().get();
+		this.heightOfNewBlock = previous.getHeight() + 1;
 		this.logPrefix = "height " + heightOfNewBlock + ": ";
-		this.previousHex = previous.isEmpty() ? "" : previous.get().getHexHash(config.getHashingForBlocks());
+		this.previousHex = previous.getHexHash(config.getHashingForBlocks());
 		this.app = node.getApplication();
 		this.miners = node.getMiners();
 	}
@@ -130,25 +129,16 @@ public class MineNewBlockTask implements Task {
 
 	@Override
 	public String toString() {
-		if (previous.isEmpty())
-			return "genesis block mining";
-		else
-			return "block mining on top of " + previousHex;
+		return "block mining on top of " + previousHex;
 	}
 
 	@Override @OnThread("tasks")
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		try {
-			if (previous.isPresent()) {
-				if (miners.get().count() == 0L)
-					node.submit(new NoMinersAvailableEvent());
-				else
-					new Run(previous.get());
-			}
-			else {
-				var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.initialAcceleration));
-				node.submit(new BlockMinedEvent(genesis));
-			}
+			if (miners.get().count() == 0L)
+				node.submit(new NoMinersAvailableEvent());
+			else
+				new Run();
 		}
 		catch (InterruptedException e) {
 			LOGGER.log(Level.WARNING, logPrefix + this + " interrupted");
@@ -299,11 +289,6 @@ public class MineNewBlockTask implements Task {
 		private final BigInteger targetBlockCreationTime;
 
 		/**
-		 * The block for which a subsequent block is being mined.
-		 */
-		private final Block previous;
-
-		/**
 		 * The moment when the previous block has been mined. From that moment we
 		 * count the time to wait for the deadline.
 		 */
@@ -331,8 +316,7 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private Run(Block previous) throws InterruptedException, TimeoutException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
-			this.previous = previous;
+		private Run() throws InterruptedException, TimeoutException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.targetBlockCreationTime = BigInteger.valueOf(config.getTargetBlockCreationTime());
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
@@ -341,7 +325,7 @@ public class MineNewBlockTask implements Task {
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
-				informNodeAboutNewBlock(createNewBlock());
+				createNewBlock().ifPresent(this::informNodeAboutNewBlock);
 			}
 			finally {
 				turnWakerOff();
@@ -428,17 +412,33 @@ public class MineNewBlockTask implements Task {
 				&& app.prologIsValid(deadline.getProlog());
 		}
 
-		private Block createNewBlock() {
+		/**
+		 * Creates the new block. This might be missing if it realizes that it would be worse
+		 * than the current head of the blockchain: useless to execute and verify the transactions
+		 * if it does not win the race.
+		 * 
+		 * @return the block, if any
+		 * @throws NoSuchAlgorithmException if the blockchain contains a block with an unknown hashing algorithm
+		 * @throws DatabaseException if the database is corrupted
+		 * @throws ClosedDatabaseException if the database is already closed
+		 */
+		private Optional<Block> createNewBlock() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var powerForNewBlock = computePower(deadline);
+
+			if (blockchain.getHead().get().getPower().compareTo(powerForNewBlock) >= 0) {
+				LOGGER.info(logPrefix + "not creating block on top of " + previousHex + " since it would not improve the head");
+				return Optional.empty();
+			}
+
 			var waitingTimeForNewBlock = millisecondsToWaitFor(deadline);
 			var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 			var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 			var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
 			var hashOfPreviousBlock = previous.getHash(config.getHashingForBlocks());
 
-			return Blocks.of(heightOfNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
-				weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
+			return Optional.of(Blocks.of(heightOfNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
+				weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock));
 		}
 
 		private BigInteger computePower(Deadline deadline) {
