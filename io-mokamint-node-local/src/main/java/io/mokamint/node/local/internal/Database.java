@@ -38,7 +38,6 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -134,13 +133,10 @@ public class Database implements AutoCloseable {
 	 */
 	private final static ByteIterable uuid = fromByte((byte) 23);
 
-	private final Object lock = new Object();
-
-	@GuardedBy("lock")
-	private boolean isClosed;
-
-	@GuardedBy("lock")
-	private int currentTransactionsCount;
+	/**
+	 * The lock used to block new calls when the database has been requested to close.
+	 */
+	private final ClosureLock closureLock = new ClosureLock();
 
 	private final static Logger LOGGER = Logger.getLogger(Database.class.getName());
 
@@ -179,9 +175,9 @@ public class Database implements AutoCloseable {
 
 	@Override
 	public void close() throws DatabaseException, InterruptedException {
-		if (stopNewTransactions()) {
+		if (closureLock.stopNewCalls()) {
 			try {
-				environment.close(); // TODO: this throws ExodusException if there are unfinished transactions
+				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
 				LOGGER.info("closed the blockchain database");
 			}
 			catch (ExodusException e) {
@@ -199,7 +195,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public UUID getUUID() throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, uuid));
@@ -212,7 +208,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -224,7 +220,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getGenesisHash() throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
@@ -233,7 +229,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -245,7 +241,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getHeadHash() throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
@@ -254,7 +250,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -267,7 +263,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
@@ -276,7 +272,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -288,7 +284,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public ChainInfo getChainInfo() throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChainInfo(txn))));
@@ -297,7 +293,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -313,7 +309,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<byte[]> getChain(long start, long count) throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
@@ -322,7 +318,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -334,7 +330,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<Peer> getPeers() throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
@@ -344,7 +340,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -362,7 +358,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(Peer peer, boolean force) throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(URISyntaxException.class, IOException.class,
@@ -372,7 +368,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -386,7 +382,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(URISyntaxException.class, IOException.class,
@@ -396,7 +392,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -411,7 +407,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean containsBlock(byte[] hash) throws DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return environment.computeInReadonlyTransaction(txn -> isInStore(txn, hash));
@@ -420,7 +416,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -434,7 +430,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
@@ -445,7 +441,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -465,7 +461,7 @@ public class Database implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
-		beforeTransaction();
+		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
@@ -474,7 +470,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException("cannot write block " + block.getHexHash(config.getHashingForBlocks()) + " in the database", e);
 		}
 		finally {
-			afterTransaction();
+			closureLock.afterCall();
 		}
 	}
 
@@ -534,52 +530,6 @@ public class Database implements AutoCloseable {
 			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				return new MarshallableUUID(new UUID(context.readLong(), context.readLong()));
 			}
-		}
-	}
-
-	/**
-	 * Guarantees that the database is open if a transaction starts.
-	 * 
-	 * @throws ClosedDatabaseException if the database was closed
-	 */
-	private void beforeTransaction() throws ClosedDatabaseException {
-		synchronized (lock) {
-			if (isClosed)
-				throw new ClosedDatabaseException();
-			
-			currentTransactionsCount++;
-		}
-	}
-
-	/**
-	 * If this was the last transaction, it signals every thread waiting for this event.
-	 */
-	private void afterTransaction() {
-		synchronized (lock) {
-			if (--currentTransactionsCount == 0)
-				lock.notifyAll();
-		}
-	}
-
-	/**
-	 * Stops future new transactions and waits for all unfinished transactions to complete.
-	 * 
-	 * @return true if and only if it actually stopped new transactions, false if
-	 *         this situation already held, because another call already did it
-	 * @throws InterruptedException if the execution gets interrupted while
-	 *                              waiting for unfinished transactions to complete
-	 */
-	private boolean stopNewTransactions() throws InterruptedException {
-		synchronized (lock) {
-			if (isClosed)
-				return false;
-	
-			isClosed = true;
-	
-			if (currentTransactionsCount > 0)
-				lock.wait();
-	
-			return true;
 		}
 	}
 
