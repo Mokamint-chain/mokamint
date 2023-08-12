@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.local.internal.PunishableSets.OnAdd;
 
 /**
  * A set of actors that can be punished and potentially removed from the set
@@ -36,7 +35,7 @@ import io.mokamint.node.local.internal.PunishableSets.OnAdd;
  * @param <A> the type of the actors
  */
 @ThreadSafe
-public class PunishableSetImpl<A> implements PunishableSet<A> {
+public class PunishableSetImpl<A> {
 
 	/**
 	 * The container of the actors. Each actor is mapped to its points. When an actor
@@ -60,6 +59,23 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 	 * 
 	 */
 	private final Predicate<A> onRemove;
+
+	/**
+	 * The filter applied when trying to add an actor to a set.
+	 *
+	 * @param <A> the type of the actors
+	 */
+	public interface OnAdd<A> {
+
+		/**
+		 * Determines if the given actor must be added.
+		 * 
+		 * @param actor the actor
+		 * @param force true if and only if the addition is strongly required (which is implementation-dependent)
+		 * @return true if and only if the addition is allowed
+		 */
+		boolean apply(A actor, boolean force);
+	}
 
 	/**
 	 * Creates a new punishable set of actors.
@@ -97,32 +113,65 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		actors.forEach(actor -> this.actors.put(actor, initialPoints));
 	}
 
-	@Override
+	/**
+	 * Checks if the given actor is among those of this container.
+	 * 
+	 * @param actor the actor
+	 * @return true if and only if that condition holds
+	 */
 	public boolean contains(A actor) {
 		return actors.containsKey(actor);
 	}
 
-	@Override
+	/**
+	 * Checks is this set is empty.
+	 * 
+	 * @return true if and only if this set is empty
+	 */
 	public boolean isEmpty() {
 		return actors.isEmpty();
 	}
 
-	@Override
+	/**
+	 * Yields the elements in this container.
+	 * 
+	 * @return the elements
+	 */
 	public Stream<A> getElements() {
 		return actors.keySet().stream();
 	}
 
-	@Override
+	/**
+	 * Yields the entries in this container: actors with associated points.
+	 * 
+	 * @return the entries
+	 */
 	public Stream<Entry<A, Long>> getActorsWithPoints() {
 		return actors.entrySet().stream();
 	}
 
-	@Override
+	/**
+	 * Runs some code on each actor in this set. This is weakly consistent,
+	 * in the sense that the set of actors can be modified in the meantime and there is
+	 * no guarantee that the code will be run for such newly added actors.
+	 * 
+	 * @param action the code to execute for each actor
+	 */
 	public void forEach(Consumer<A> action) {
 		getElements().forEach(action::accept);
 	}
 
-	@Override
+	/**
+	 * Punishes an actor, by reducing its points. If the actor reaches zero points,
+	 * it gets removed from this set of actors. If the actor was not present in this
+	 * container, nothing happens.
+	 * 
+	 * @param actor the actor to punish
+	 * @param points how many points get removed
+	 * @return true if and only if the actor was present in this container,
+	 *         has reached zero points and has been removed
+	 * @throws IllegalArgumentException if {@code points} is negative
+	 */
 	public boolean punish(A actor, long points) {
 		if (points < 0)
 			throw new IllegalArgumentException("points cannot be negative");
@@ -144,7 +193,15 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		return result.get();
 	}
 
-	@Override
+	/**
+	 * Pardons an actor, by increasing its points. There might be a maximal
+	 * value to the resulting points. If the actor was not present in this
+	 * container, nothing happens.
+	 * 
+	 * @param actor the actor to pardon
+	 * @param points how many points get pardoned
+	 * @throws IllegalArgumentException if {@code points} is negative
+	 */
 	public void pardon(A actor, long points) {
 		if (points < 0)
 			throw new IllegalArgumentException("points cannot be negative");
@@ -152,7 +209,13 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		actors.computeIfPresent(actor, (a, oldPoints) -> Math.min(initialPoints, oldPoints + points));
 	}
 
-	@Override
+	/**
+	 * Removes the given actor from this container, if it is there.
+	 * Otherwise, nothing happens.
+	 * 
+	 * @param actor the actor to remove
+	 * @return true if and only if the actor was present and has been consequently removed
+	 */
 	public boolean remove(A actor) {
 		var result = new AtomicBoolean();
 
@@ -168,7 +231,16 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		return result.get();
 	}
 
-	@Override
+	/**
+	 * Adds the given actor to this container, if it is not already there.
+	 * Otherwise, nothing happens. The initial points of a new actor get reset
+	 * with an implementation specific policy. It allows to specify
+	 * an implementation-specific {@code force} parameter.
+	 * 
+	 * @param actor the actor to add
+	 * @param force forces the addition, if this means something to the implementation
+	 * @return true if and only if the actor was not present and has been added
+	 */
 	public boolean add(A actor, boolean force) {
 		var result = new AtomicBoolean();
 
@@ -184,7 +256,15 @@ public class PunishableSetImpl<A> implements PunishableSet<A> {
 		return result.get();
 	}
 
-	@Override
+	/**
+	 * Adds the given actor to this container, if it is not already there.
+	 * Otherwise, nothing happens. The initial points of a new actor get reset
+	 * with an implementation specific policy. This is equivalent to
+	 * {@link #add(Object, boolean)} where {@code force} is false.
+	 * 
+	 * @param actor the actor to add
+	 * @return true if and only if the actor was not present and has been added
+	 */
 	public final boolean add(A actor) {
 		return add(actor, false);
 	}

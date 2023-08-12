@@ -82,7 +82,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * The peers of the node.
 	 */
-	private final PunishableSet<Peer> peers;
+	private final PunishableSetImpl<Peer> peers;
 
 	/**
 	 * Lock used to guarantee that if there is a peer among the keys of the {@link #remotes}
@@ -114,7 +114,7 @@ public class NodePeers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = node.getDatabase();
-		this.peers = PunishableSets.of(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
+		this.peers = new PunishableSetImpl<>(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
 		openConnectionToPeers();
 		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
