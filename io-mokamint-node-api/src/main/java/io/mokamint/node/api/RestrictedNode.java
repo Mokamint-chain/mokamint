@@ -45,10 +45,11 @@ public interface RestrictedNode extends Node {
 	 * Removes the given peer from the set of peers of this node.
 	 * 
 	 * @param peer the peer to remove
+	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	void removePeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException;
+	void removePeer(Peer peer) throws TimeoutException, IOException, InterruptedException, ClosedNodeException, DatabaseException;
 }

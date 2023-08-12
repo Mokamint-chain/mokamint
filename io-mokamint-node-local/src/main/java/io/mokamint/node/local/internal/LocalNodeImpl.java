@@ -286,7 +286,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void removePeer(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException {
+	public void removePeer(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
@@ -310,6 +310,7 @@ public class LocalNodeImpl implements LocalNode {
 			periodicTasks.shutdownNow();
 
 			InterruptedException interruptedException = null;
+			IOException ioException = null;
 			
 			for (var handler: onCloseHandlers) {
 				try {
@@ -317,6 +318,9 @@ public class LocalNodeImpl implements LocalNode {
 				}
 				catch (InterruptedException e) {
 					interruptedException = e;
+				}
+				catch (IOException e) {
+					ioException = e;
 				}
 			}
 
@@ -336,6 +340,8 @@ public class LocalNodeImpl implements LocalNode {
 
 			if (interruptedException != null)
 				throw interruptedException;
+			else if (ioException != null)
+				throw ioException;
 		}
 	}
 

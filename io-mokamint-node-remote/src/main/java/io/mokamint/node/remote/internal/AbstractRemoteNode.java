@@ -137,6 +137,9 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 				catch (InterruptedException e) {
 					interruptedException = e;
 				}
+				catch (IOException e) {
+					ioException = e;
+				}
 			}
 
 			Collection<Session> sessions;

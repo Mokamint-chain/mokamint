@@ -163,14 +163,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public void removePeer(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void removePeer(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, IOException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendRemovePeer(peer, id);
 		try {
 			queues.waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
 		}
-		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -191,6 +191,9 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	private boolean processRemovePeerException(ExceptionMessage message) {
-		return DatabaseException.class.isAssignableFrom(message.getExceptionClass()) || processStandardExceptions(message);
+		var exception = message.getExceptionClass();
+		return DatabaseException.class.isAssignableFrom(exception) ||
+			IOException.class.isAssignableFrom(exception) ||
+			processStandardExceptions(message);
 	}
 }

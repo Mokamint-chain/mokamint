@@ -323,6 +323,31 @@ public class RemoteRestrictedNodeTests {
 		}
 	}
 
+	@Test
+	@DisplayName("removePeer() works in case of IOException")
+	public void removePeerWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+		var peer = Peers.of(new URI("ws://my.machine:1024"));
+		var exceptionMessage = "I/O exception";
+
+		class MyServer extends RestrictedTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onRemovePeer(RemovePeerMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(IOException.class, () -> remote.removePeer(peer));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
 	static {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {

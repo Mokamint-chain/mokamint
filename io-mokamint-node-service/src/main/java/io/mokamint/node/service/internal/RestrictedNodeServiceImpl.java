@@ -138,11 +138,12 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		try {
 			try {
 				node.removePeer(message.getPeer());
-				sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException e) {
+			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
+
+			sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());

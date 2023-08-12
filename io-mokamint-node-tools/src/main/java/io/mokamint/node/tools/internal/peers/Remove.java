@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.peers;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
@@ -29,8 +30,8 @@ import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Help.Ansi;
+import picocli.CommandLine.Parameters;
 
 @Command(name = "rm", description = "Remove peers from a node.")
 public class Remove extends AbstractRestrictedRpcCommand {
@@ -54,6 +55,9 @@ public class Remove extends AbstractRestrictedRpcCommand {
 		}
 		catch (ClosedNodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red The connection to " + peer + " has been closed!|@"));
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red I/O error in the connection to " + peer + "!|@"));
 		}
 		catch (TimeoutException e) {
 			System.out.println(Ansi.AUTO.string("@|red Connection time-out while removing peer " + peer + "!|@"));

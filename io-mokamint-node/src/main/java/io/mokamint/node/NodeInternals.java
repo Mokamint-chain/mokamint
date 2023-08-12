@@ -35,9 +35,10 @@ public interface NodeInternals extends Node, AutoCloseable {
 		/**
 		 * Closes the node.
 		 * 
+		 * @throws IOException if the closure failed for an I/O exception
 		 * @throws InterruptedException if the closure has been interrupted
 		 */
-		void close() throws InterruptedException;
+		void close() throws IOException, InterruptedException;
 	}
 
 	/**

@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal.blockchain;
 import static io.hotmoka.exceptions.CheckRunnable.check;
 import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -219,8 +220,9 @@ public class SynchronizationTask implements Task {
 		 * @throws InterruptedException if the execution has been interrupted
 		 * @throws DatabaseException if the database of {@link SynchronizationTask#node} is corrupted
 		 * @throws ClosedDatabaseException if the database is already closed
+		 * @throws IOException 
 		 */
-		private void downloadNextGroup(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException {
+		private void downloadNextGroup(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
 			Optional<RemotePublicNode> maybeRemote = peers.getRemote(peer);
 			if (maybeRemote.isEmpty())
 				return;
@@ -275,12 +277,12 @@ public class SynchronizationTask implements Task {
 				return false;
 		}
 
-		private void markAsMisbehaving(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
+		private void markAsMisbehaving(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 			unusable.add(peer);
 			peers.remove(peer);
 		}
 
-		private void markAsUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
+		private void markAsUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 			unusable.add(peer);
 			peers.punishBecauseUnreachable(peer);
 		}
@@ -372,7 +374,7 @@ public class SynchronizationTask implements Task {
 			});
 		}
 
-		private void downloadBlocks(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException {
+		private void downloadBlocks(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
 			byte[][] ownGroup = groups.get(peer);
 			if (ownGroup != null) {
 				var alreadyTried = new boolean[chosenGroup.length];
@@ -419,8 +421,9 @@ public class SynchronizationTask implements Task {
 		 * @throws InterruptedException if the executed was interrupted
 		 * @throws DatabaseException if the database of the node is corrupted
 		 * @throws ClosedDatabaseException if the database of the node is already closed
+		 * @throws IOException if an I/O error occurs
 		 */
-		private void tryToDownloadBlock(Peer peer, int h) throws InterruptedException, DatabaseException, ClosedDatabaseException {
+		private void tryToDownloadBlock(Peer peer, int h) throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
 			var maybeRemote = peers.getRemote(peer);
 			if (maybeRemote.isEmpty())
 				unusable.add(peer);
