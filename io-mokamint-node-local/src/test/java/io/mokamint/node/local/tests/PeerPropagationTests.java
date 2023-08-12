@@ -47,7 +47,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.api.PeerAdditionRejectedException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -83,7 +83,7 @@ public class PeerPropagationTests {
 	@Timeout(20)
 	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerAdditionRejectedException, ClosedNodeException, AlreadyInitializedException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -146,7 +146,7 @@ public class PeerPropagationTests {
 	@Timeout(10)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerAdditionRejectedException, ClosedNodeException, AlreadyInitializedException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -207,7 +207,7 @@ public class PeerPropagationTests {
 	@DisplayName("if a peer adds another peer, eventually to end up being a peer of each other")
 	public void ifPeerAddsPeerThenTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DatabaseException,
-				   IOException, DeploymentException, TimeoutException, ClosedNodeException, IncompatiblePeerException, AlreadyInitializedException {
+				   IOException, DeploymentException, TimeoutException, ClosedNodeException, PeerAdditionRejectedException, AlreadyInitializedException {
 
 		var port1 = 8032;
 		var port2 = 8034;

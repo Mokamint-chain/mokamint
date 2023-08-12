@@ -29,7 +29,7 @@ import io.mokamint.node.NodeInternals.CloseHandler;
 import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.api.PeerAdditionRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -120,7 +120,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				node.addPeer(message.getPeer());
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | IncompatiblePeerException e) {
+			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerAdditionRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}

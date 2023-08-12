@@ -33,22 +33,22 @@ public interface RestrictedNode extends Node {
 	 * 
 	 * @param peer the peer to add
 	 * @throws IOException if a connection to the peer cannot be established
-	 * @throws IncompatiblePeerException if the version of {@code peer} is incompatible with that of this node or if they look to be the same node
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws PeerAdditionRejectedException if {@code peer} was rejected for some reason
+	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws ClosedNodeException if this node is closed
 	 */
-	void addPeer(Peer peer) throws IncompatiblePeerException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	void addPeer(Peer peer) throws PeerAdditionRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node.
 	 * 
 	 * @param peer the peer to remove
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws ClosedNodeException if this node is closed
 	 */
 	void removePeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException;
 }

@@ -17,22 +17,23 @@ limitations under the License.
 package io.mokamint.node.api;
 
 /**
- * An exception stating that a peer is incompatible with another peer.
+ * An exception stating that the addition of a peer has been rejected for some reason,
+ * for instance, it is closed or it is incompatible with another peer.
  */
 @SuppressWarnings("serial")
-public class IncompatiblePeerException extends Exception {
+public class PeerAdditionRejectedException extends Exception {
 
 	/**
 	 * Creates a new exception.
 	 */
-	public IncompatiblePeerException() {}
+	public PeerAdditionRejectedException() {}
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public IncompatiblePeerException(String message) {
+	public PeerAdditionRejectedException(String message) {
 		super(message);
 	}
 
@@ -41,7 +42,7 @@ public class IncompatiblePeerException extends Exception {
 	 * 
 	 * @param cause the cause
 	 */
-	public IncompatiblePeerException(Throwable cause) {
+	public PeerAdditionRejectedException(Throwable cause) {
 		super(cause);
 	}
 
@@ -51,7 +52,7 @@ public class IncompatiblePeerException extends Exception {
 	 * @param message the message
 	 * @param cause the cause
 	 */
-	public IncompatiblePeerException(String message, Throwable cause) {
+	public PeerAdditionRejectedException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }

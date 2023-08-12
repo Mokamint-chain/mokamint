@@ -118,6 +118,7 @@ public class Blockchain {
 		if (db.getHeadHash().isEmpty())
 			throw new IllegalStateException("Cannot mine on an empty blockchain");
 
+		// if synchronization is in progress, mining will be triggered at its end
 		if (!isSynchronizing.get())
 			node.submit(new MineNewBlockTask(node));
 	}

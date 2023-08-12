@@ -47,7 +47,7 @@ import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.api.PeerAdditionRejectedException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -183,8 +183,8 @@ public class LocalNodeImpl implements LocalNode {
 			else
 				blockchain.startSynchronization(0L);
 		}
-		catch (ClosedDatabaseException e) {
-			// the database cannot be closed already
+		catch (ClosedDatabaseException | ClosedNodeException e) {
+			// the database and the node itself cannot be closed already
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
 			throw new RuntimeException("unexpected exception", e);
 		}
@@ -269,7 +269,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, IncompatiblePeerException, DatabaseException {
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerAdditionRejectedException, DatabaseException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
@@ -535,6 +535,11 @@ public class LocalNodeImpl implements LocalNode {
 				try {
 					event.body();
 				}
+				catch (InterruptedException e) {
+					LOGGER.log(Level.WARNING, event.logPrefix() + event + " interrupted");
+					Thread.currentThread().interrupt();
+					return;
+				}
 				catch (Exception e) {
 					onFail(event, e);
 					return;
@@ -630,6 +635,11 @@ public class LocalNodeImpl implements LocalNode {
 
 			try {
 				task.body();
+			}
+			catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, task.logPrefix() + task + " interrupted");
+				Thread.currentThread().interrupt();
+				return;
 			}
 			catch (Exception e) {
 				onFail(task, e);

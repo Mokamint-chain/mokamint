@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local.internal.blockchain;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
@@ -42,15 +41,9 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		try {
-			LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
-			Thread.sleep(delay);
-		}
-		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, this + " interrupted");
-			Thread.currentThread().interrupt();
-		}
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
+		LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
+		Thread.sleep(delay);
 
 		super.body();
 	}

@@ -45,7 +45,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.api.PeerAdditionRejectedException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
@@ -77,7 +77,7 @@ public class PeerConnectDisconnectTests {
 	@Timeout(10)
 	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerAdditionRejectedException, ClosedNodeException, AlreadyInitializedException {
 
 		var port2 = 8032;
 		var port3 = 8034;
@@ -129,7 +129,7 @@ public class PeerConnectDisconnectTests {
 	@DisplayName("if a peer disconnects and reconnects, its network is reconstructed")
 	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerAdditionRejectedException, ClosedNodeException, AlreadyInitializedException {
 
 		var port1 = 8030;
 		var port2 = 8032;

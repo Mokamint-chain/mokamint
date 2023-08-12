@@ -35,7 +35,7 @@ import io.hotmoka.annotations.ThreadSafe;
  * @param <A> the type of the actors
  */
 @ThreadSafe
-public class PunishableSetImpl<A> {
+public class PunishableSet<A> {
 
 	/**
 	 * The container of the actors. Each actor is mapped to its points. When an actor
@@ -87,7 +87,7 @@ public class PunishableSetImpl<A> {
 	 *                      as maximal value in {@link PunishableSet#pardon(Object, long)}
 	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
 	 */
-	public PunishableSetImpl(Stream<A> actors, long initialPoints) {
+	public PunishableSet(Stream<A> actors, long initialPoints) {
 		this(actors, initialPoints, (_actor, _force) -> true, _actor -> true);
 	}
 
@@ -102,7 +102,7 @@ public class PunishableSetImpl<A> {
 	 * @param onRemove a filter invoked when an actor is removed from the set
 	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
 	 */
-	public PunishableSetImpl(Stream<A> actors, long initialPoints, OnAdd<A> onAdd, Predicate<A> onRemove) {
+	public PunishableSet(Stream<A> actors, long initialPoints, OnAdd<A> onAdd, Predicate<A> onRemove) {
 		if (initialPoints <= 0L)
 			throw new IllegalArgumentException("initialPoints must be positive");
 

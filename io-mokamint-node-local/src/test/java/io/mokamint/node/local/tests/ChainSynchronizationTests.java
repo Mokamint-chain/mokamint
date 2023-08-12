@@ -51,7 +51,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.api.PeerAdditionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database.BlockAddedEvent;
@@ -173,7 +173,7 @@ public class ChainSynchronizationTests {
 	@DisplayName("a node without mining capacity synchronizes from its peer")
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerAdditionRejectedException, ClosedNodeException, AlreadyInitializedException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
@@ -198,7 +198,7 @@ public class ChainSynchronizationTests {
 	@DisplayName("a node without mining capacity, once stopped and restarted, synchronizes from its peer")
 	public void nodeWithoutMinerStopRestartFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerAdditionRejectedException, ClosedNodeException, AlreadyInitializedException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
@@ -237,7 +237,7 @@ public class ChainSynchronizationTests {
 	@DisplayName("a node without mining capacity, once disconnected and reconnected, synchronizes from its peer")
 	public void nodeWithoutMinerDisconnectConnectFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, IncompatiblePeerException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerAdditionRejectedException, ClosedNodeException, AlreadyInitializedException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));

@@ -27,7 +27,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.OnThread;
@@ -133,16 +132,12 @@ public class MineNewBlockTask implements Task {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		try {
 			if (miners.get().count() == 0L)
 				node.submit(new NoMinersAvailableEvent());
 			else
 				new Run();
-		}
-		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, logPrefix + this + " interrupted");
-			Thread.currentThread().interrupt();
 		}
 		catch (TimeoutException e) {
 			LOGGER.warning(logPrefix + this + ": timed out while waiting for a deadline");

@@ -29,7 +29,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.IncompatiblePeerException;
+import io.mokamint.node.api.PeerAdditionRejectedException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -127,14 +127,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onException(ExceptionMessage message) {}
 
 	@Override
-	public void addPeer(Peer peer) throws IncompatiblePeerException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void addPeer(Peer peer) throws PeerAdditionRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddPeer(peer, id);
 		try {
 			queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | IncompatiblePeerException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerAdditionRejectedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -156,7 +156,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	private boolean processAddPeerException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return IncompatiblePeerException.class.isAssignableFrom(clazz) ||
+		return PeerAdditionRejectedException.class.isAssignableFrom(clazz) ||
 			DatabaseException.class.isAssignableFrom(clazz) ||
 			IOException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);

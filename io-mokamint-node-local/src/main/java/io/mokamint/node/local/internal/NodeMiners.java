@@ -30,7 +30,7 @@ public class NodeMiners {
 	/**
 	 * The miners of the node.
 	 */
-	private final PunishableSetImpl<Miner> miners;
+	private final PunishableSet<Miner> miners;
 
 	/**
 	 * Creates a container for the miners of a local node.
@@ -39,7 +39,7 @@ public class NodeMiners {
 	 * @param the miners that go into this container
 	 */
 	public NodeMiners(LocalNodeImpl node, Stream<Miner> miners) {
-		this.miners = new PunishableSetImpl<>(miners, node.getConfig().minerInitialPoints);
+		this.miners = new PunishableSet<>(miners, node.getConfig().minerInitialPoints);
 	}
 
 	/**
