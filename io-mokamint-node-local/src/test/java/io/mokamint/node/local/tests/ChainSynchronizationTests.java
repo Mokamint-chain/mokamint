@@ -56,7 +56,6 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.Database.BlockAddedEvent;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -135,15 +134,8 @@ public class ChainSynchronizationTests {
 		}
 
 		@Override
-		public void submit(Task task) {
-			// node2 stops mining at height howMany
-			if (!(task instanceof MineNewBlockTask mnbt && mnbt.previous.getHeight() >= HOW_MANY - 1))
-				super.submit(task);
-		}
-
-		@Override
 		protected void onComplete(Event event) {
-			if (event instanceof BlockAddedEvent bae) {
+			if (event instanceof BlockAddedEvent bae && bae.block.getHeight() < HOW_MANY) {
 				miningBlocks.add(bae.block);
 				miningSemaphore.release();
 			}
@@ -160,7 +152,7 @@ public class ChainSynchronizationTests {
 
 		@Override
 		protected void onComplete(Event event) {
-			if (event instanceof BlockAddedEvent bae) { // these can only come by whispering from node2
+			if (event instanceof BlockAddedEvent bae && bae.block.getHeight() < HOW_MANY) { // these can only come by whispering from the mining node
 				nonMiningBlocks.add(bae.block);
 				nonMiningSemaphore.release();
 			}

@@ -28,7 +28,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 
 	private final static Logger LOGGER = Logger.getLogger(DelayedMineNewBlockTask.class.getName());
 	
-	public DelayedMineNewBlockTask(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	public DelayedMineNewBlockTask(LocalNodeImpl node) {
 		super(node);
 
 		this.delay = node.getConfig().deadlineWaitTimeout;

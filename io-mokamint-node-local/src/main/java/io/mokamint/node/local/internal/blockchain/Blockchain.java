@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal.blockchain;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -104,16 +105,10 @@ public class Blockchain {
 	 * Triggers block mining on top of the current head, if this blockchain
 	 * is not performing a synchronization. Otherwise, nothing happens.
 	 * This method requires the blockchain to be non-empty.
-	 * 
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void startMining() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		if (db.getHeadHash().isEmpty())
-			LOGGER.warning("cannot mine on an empty blockchain");
+	public void startMining() {
 		// if synchronization is in progress, mining will be triggered at its end
-		else if (!isSynchronizing.get())
+		if (!isSynchronizing.get())
 			node.submit(new MineNewBlockTask(node));
 	}
 
@@ -233,7 +228,7 @@ public class Blockchain {
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(final Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
@@ -262,23 +257,22 @@ public class Blockchain {
 		}
 		while (!ws.isEmpty());
 
-		Block newHead = updatedHead.get();
-		if (newHead != null)
+		if (updatedHead.get() != null)
 			startMining();
 		else if (addedToOrphans) {
-			var head = getHead();
-			if (head.isEmpty())
+			var powerOfHead = db.getPowerOfHead();
+			if (powerOfHead.isEmpty())
 				startSynchronization(0L);
-			else if (head.get().getPower().compareTo(block.getPower()) < 0)
+			else if (powerOfHead.get().compareTo(block.getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-				startSynchronization(Math.max(0L, head.get().getHeight() - 1000L));
+				startSynchronization(Math.max(0L, db.getHeightOfHead().getAsLong() - 1000L));
 		}
 
 		return added;
 	}
 
-	private boolean add(Block block, Optional<Block> previous, boolean first, ArrayList<Block> ws, AtomicReference<Block> updatedHead)
+	private boolean add(Block block, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
@@ -294,7 +288,7 @@ public class Blockchain {
 			if (first)
 				throw e;
 			else
-				LOGGER.warning("discarding orphan block " + block.getHexHash(hashingForBlocks) + " since does not pass verification: " + e.getMessage());
+				LOGGER.warning("discarding orphan block " + block.getHexHash(hashingForBlocks) + " since it does not pass verification: " + e.getMessage());
 		}
 
 		return false;

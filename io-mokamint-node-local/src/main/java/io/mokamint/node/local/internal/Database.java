@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -118,7 +119,12 @@ public class Database implements AutoCloseable {
 	private final static ByteIterable head = fromByte((byte) 19);
 
 	/**
-	 * The key mapped in the {@link #storeOfChain} to the height of the current best chain.
+	 * The key mapped in the {@link #storeOfBlocks} to the power of the head block.
+	 */
+	private final static ByteIterable power = fromByte((byte) 11);
+
+	/**
+	 * The key mapped in the {@link #storeOfBlocks} to the height of the current best chain.
 	 */
 	private final static ByteIterable height = fromByte((byte) 29);
 
@@ -164,7 +170,7 @@ public class Database implements AutoCloseable {
 	 * @param node the node
 	 * @param init if the database must be initialized with a genesis block (if empty)
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
-	 * @throws AlreadyInitializedException if {@code init} is true but the database already contains a genesis block
+	 * @throws AlreadyInitializedException if {@code init} is true but the database already a genesis block already
 	 */
 	public Database(LocalNodeImpl node, boolean init) throws DatabaseException, AlreadyInitializedException {
 		this(node);
@@ -224,6 +230,34 @@ public class Database implements AutoCloseable {
 
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, ClosedDatabaseException {
+		closureLock.beforeCall(ClosedDatabaseException::new);
+
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
+		closureLock.beforeCall(ClosedDatabaseException::new);
+
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -410,7 +444,7 @@ public class Database implements AutoCloseable {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
-			return environment.computeInReadonlyTransaction(txn -> isInStore(txn, hash));
+			return environment.computeInReadonlyTransaction(txn -> containsBlock(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -425,7 +459,7 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the head is unknown
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
@@ -539,7 +573,6 @@ public class Database implements AutoCloseable {
 				throw new AlreadyInitializedException("init cannot be required for an already initialized node");
 
 			var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.initialAcceleration));
-
 			add(genesis, new AtomicReference<>());
 		}
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
@@ -548,24 +581,6 @@ public class Database implements AutoCloseable {
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
 			throw new RuntimeException("unexpected exception", e);
 		}
-	}
-
-	/**
-	 * Yields the head block of the blockchain in the database, if it has been set already,
-	 * running inside the given transaction.
-	 * 
-	 * @param txn the transaction
-	 * @return the head block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private Optional<Block> getHead(Transaction txn) throws NoSuchAlgorithmException, DatabaseException {
-		Optional<byte[]> maybeHeadHash = getHeadHash(txn);
-	
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeHeadHash
-				.map(uncheck(hash -> getBlock(txn, hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
-		);
 	}
 
 	private void ensureNodeUUID() throws DatabaseException {
@@ -618,6 +633,47 @@ public class Database implements AutoCloseable {
 	private Optional<byte[]> getGenesisHash(Transaction txn) throws DatabaseException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, genesis)).map(ByteIterable::getBytes);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the power of the head block, if any, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the power of the head block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<BigInteger> getPowerOfHead(Transaction txn) throws DatabaseException {
+		try {
+			return Optional.ofNullable(storeOfBlocks.get(txn, power)).map(ByteIterable::getBytes).map(BigInteger::new);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the height of the head block, if any, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the height of the head block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private OptionalLong getHeightOfHead(Transaction txn) throws DatabaseException {
+		try {
+			ByteIterable heightBI = storeOfBlocks.get(txn, height);
+			if (heightBI == null)
+				return OptionalLong.empty();
+			else {
+				long chainHeight = bytesToLong(heightBI.getBytes());
+				if (chainHeight < 0L)
+					throw new DatabaseException("The database contains a negative chain length");
+
+				return OptionalLong.of(chainHeight);
+			}
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -769,11 +825,8 @@ public class Database implements AutoCloseable {
 	 */
 	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
-			return check(NoSuchAlgorithmException.class, IOException.class, () ->
-				Optional.ofNullable(storeOfBlocks.get(txn, fromBytes(hash)))
-					.map(ByteIterable::getBytes)
-					.map(uncheck(Blocks::from))
-			);
+			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
+			return blockBI == null ? Optional.empty() : Optional.of(Blocks.from(blockBI.getBytes()));
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
@@ -784,17 +837,17 @@ public class Database implements AutoCloseable {
 		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
 	}
 
-	private boolean isInStore(Transaction txn, byte[] hashOfBlock) {
+	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) {
 		return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
 	}
 
 	private boolean updateHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
-		Optional<Block> maybeHead = getHead(txn);
-		if (maybeHead.isEmpty())
-			throw new DatabaseException("the database of blocks is non-empty but the head is not set");
+		Optional<BigInteger> maybePowerOfHead = getPowerOfHead(txn);
+		if (maybePowerOfHead.isEmpty())
+			throw new DatabaseException("the database of blocks is non-empty but the power of the head is not set");
 
 		// we choose the branch with more power
-		if (block.getPower().compareTo(maybeHead.get().getPower()) > 0) {
+		if (block.getPower().compareTo(maybePowerOfHead.get()) > 0) {
 			setHeadHash(txn, block, hashOfBlock);
 			return true;
 		}
@@ -822,12 +875,12 @@ public class Database implements AutoCloseable {
 	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = config.getHashingForBlocks().hash(bytesOfBlock);
 
-		if (isInStore(txn, hashOfBlock)) {
+		if (containsBlock(txn, hashOfBlock)) {
 			LOGGER.warning("not adding block " + block.getHexHash(config.getHashingForBlocks()) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
-			if (containsBlock(ngb.getHashOfPreviousBlock())) {
+			if (containsBlock(txn, ngb.getHashOfPreviousBlock())) {
 				putInStore(txn, block, hashOfBlock, bytesOfBlock);
 				addToForwards(txn, ngb, hashOfBlock);
 				if (updateHead(txn, ngb, hashOfBlock))
@@ -864,15 +917,16 @@ public class Database implements AutoCloseable {
 
 	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
 		storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
+		storeOfBlocks.put(txn, power, fromBytes(newHead.getPower().toByteArray()));
+		storeOfBlocks.put(txn, height, fromBytes(longToBytes(newHead.getHeight())));
 		updateChain(txn, newHead, newHeadHash);
 		LOGGER.info("height " + newHead.getHeight() + ": block " + newHead.getHexHash(config.getHashingForBlocks()) + " set as head");
 	}
 
 	private void updateChain(Transaction txn, Block block, byte[] blockHash) throws NoSuchAlgorithmException, DatabaseException {
 		long height = block.getHeight();
-		var heightBI = ByteIterable.fromBytes(longToBytes(height));
-		storeOfChain.put(txn, Database.height, heightBI);
-		var _new = ByteIterable.fromBytes(blockHash);
+		var heightBI = fromBytes(longToBytes(height));
+		var _new = fromBytes(blockHash);
 		var old = storeOfChain.get(txn, heightBI);
 
 		do {
@@ -890,8 +944,8 @@ public class Database implements AutoCloseable {
 				blockHash = hashOfPrevious;
 				block = previous.get();
 				height--;
-				heightBI = ByteIterable.fromBytes(longToBytes(height));
-				_new = ByteIterable.fromBytes(blockHash);
+				heightBI = fromBytes(longToBytes(height));
+				_new = fromBytes(blockHash);
 				old = storeOfChain.get(txn, heightBI);
 			}
 			else if (height > 0L)
@@ -926,36 +980,27 @@ public class Database implements AutoCloseable {
 		var maybeGenesisHash = getGenesisHash(txn);
 		if (maybeGenesisHash.isEmpty())
 			return ChainInfos.of(0L, Optional.empty(), Optional.empty());
-		else {
-			var maybeHeadHash = getHeadHash(txn);
-			if (maybeHeadHash.isEmpty())
-				throw new DatabaseException("The hash of the genesis is set but there is no head hash set in the database");
 
-			ByteIterable heightBI = storeOfChain.get(txn, Database.height);
-			if (heightBI == null)
-				throw new DatabaseException("The hash of the genesis is set but the height of the current best chain is missing");
+		var maybeHeadHash = getHeadHash(txn);
+		if (maybeHeadHash.isEmpty())
+			throw new DatabaseException("The hash of the genesis is set but there is no head hash set in the database");
 
-			long chainHeight = bytesToLong(heightBI.getBytes());
-			if (chainHeight < 0L)
-				throw new DatabaseException("The database contains a negative chain length");
+		OptionalLong chainHeight = getHeightOfHead(txn);
+		if (chainHeight.isEmpty())
+			throw new DatabaseException("The hash of the genesis is set but the height of the current best chain is missing");
 
-			return ChainInfos.of(chainHeight, maybeGenesisHash, maybeHeadHash);
-		}
+		return ChainInfos.of(chainHeight.getAsLong(), maybeGenesisHash, maybeHeadHash);
 	}
 
 	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws DatabaseException {
 		if (start < 0L || count <= 0L)
 			return Stream.empty();
 
-		ByteIterable heightBI = storeOfChain.get(txn, Database.height);
-		if (heightBI == null)
+		OptionalLong chainHeight = getHeightOfHead(txn);
+		if (chainHeight.isEmpty())
 			return Stream.empty();
 
-		long chainHeight = bytesToLong(heightBI.getBytes());
-		if (chainHeight < 0L)
-			throw new DatabaseException("The database contains a negative chain length");
-
-		ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight + 1))
+		ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
 			.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
 			.toArray(ByteIterable[]::new);
 
@@ -987,6 +1032,7 @@ public class Database implements AutoCloseable {
 
 	private Store openStore(String name) throws DatabaseException {
 		var store = new AtomicReference<Store>();
+
 		try {
 			environment.executeInTransaction(txn -> store.set(environment.openStoreWithoutDuplicates(name, txn)));
 		}

@@ -178,10 +178,7 @@ public class SynchronizationTask implements Task {
 			}
 
 			// after synchronization, we let the blockchain start to mine its blocks
-			if (node.getDatabase().getGenesisHash().isPresent())
-				blockchain.startMining();
-			else
-				LOGGER.log(Level.SEVERE, logPrefix() + "the blockchain is empty after synchronization: I cannot start mining");
+			blockchain.startMining();
 		}
 
 		/**

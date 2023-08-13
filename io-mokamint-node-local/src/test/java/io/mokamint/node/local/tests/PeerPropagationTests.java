@@ -176,9 +176,9 @@ public class PeerPropagationTests {
 			@Override
 			protected void onComplete(Event event) {
 				if (event instanceof PeersAddedEvent pae) {
-					System.out.print("removing " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
+					System.out.print("removing " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", "))); // TODO: remove after debugging
 					pae.getPeers().forEach(stillToRemove::remove);
-					System.out.println(" -> " + stillToRemove);
+					System.out.println(" -> " + stillToRemove); // TODO
 					if (stillToRemove.isEmpty())
 						semaphore.release();
 				}
