@@ -95,7 +95,7 @@ public class SynchronizationTask implements Task {
 	}
 
 	@Override @OnThread("tasks")
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, IOException, InterruptedException {
 		new Run();
 	}
 
@@ -150,7 +150,7 @@ public class SynchronizationTask implements Task {
 
 		private final static int GROUP_SIZE = 500;
 
-		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, IOException, InterruptedException {
 			try {
 				do {
 					if (!downloadNextGroups()) {
@@ -174,10 +174,6 @@ public class SynchronizationTask implements Task {
 				}
 				while (chosenGroup.length == GROUP_SIZE);
 			}
-			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, logPrefix() + SynchronizationTask.this + " interrupted");
-				Thread.currentThread().interrupt();
-			}
 			finally {
 				atTheEnd.run();
 			}
@@ -196,13 +192,15 @@ public class SynchronizationTask implements Task {
 		 *         from at least one peer; if false, synchronization must stop here
 		 * @throws InterruptedException if the execution has been interrupted
 		 * @throws DatabaseException if the database of {@link SynchronizationTask#node} is corrupted
+		 * @throws IOException if an I/O error occurs
+		 * @throws ClosedDatabaseException if the database of the node is closed
 		 */
-		private boolean downloadNextGroups() throws InterruptedException, DatabaseException {
+		private boolean downloadNextGroups() throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
 			LOGGER.info(logPrefix() + "downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
 
 			groups.clear();
 
-			check(InterruptedException.class, DatabaseException.class, () -> {
+			check(InterruptedException.class, DatabaseException.class, ClosedDatabaseException.class, IOException.class, () -> {
 				peers.get().parallel()
 					.filter(PeerInfo::isConnected)
 					.map(PeerInfo::getPeer)
@@ -220,7 +218,7 @@ public class SynchronizationTask implements Task {
 		 * @throws InterruptedException if the execution has been interrupted
 		 * @throws DatabaseException if the database of {@link SynchronizationTask#node} is corrupted
 		 * @throws ClosedDatabaseException if the database is already closed
-		 * @throws IOException 
+		 * @throws IOException if an I/O error occurs
 		 */
 		private void downloadNextGroup(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
 			Optional<RemotePublicNode> maybeRemote = peers.getRemote(peer);
@@ -357,15 +355,17 @@ public class SynchronizationTask implements Task {
 		 * 
 		 * @throws DatabaseException if the database of {@link SynchronizationTask#node} is corrupted
 		 * @throws InterruptedException if the computation has been interrupted
+		 * @throws IOException if an I/O error occurs
+		 * @throws ClosedDatabaseException if the database of the node is closed
 		 */
-		private void downloadBlocks() throws InterruptedException, DatabaseException {
+		private void downloadBlocks() throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
 			blocks = new AtomicReferenceArray<>(chosenGroup.length);
 			semaphores = new Semaphore[chosenGroup.length];
 			Arrays.setAll(semaphores, _index -> new Semaphore(1));
 
 			LOGGER.info(logPrefix() + "downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
 
-			check(InterruptedException.class, DatabaseException.class, () -> {
+			check(InterruptedException.class, DatabaseException.class, ClosedDatabaseException.class, IOException.class, () -> {
 				peers.get().parallel()
 					.filter(PeerInfo::isConnected)
 					.map(PeerInfo::getPeer)
@@ -374,7 +374,7 @@ public class SynchronizationTask implements Task {
 			});
 		}
 
-		private void downloadBlocks(Peer peer) throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
+		private void downloadBlocks(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 			byte[][] ownGroup = groups.get(peer);
 			if (ownGroup != null) {
 				var alreadyTried = new boolean[chosenGroup.length];
@@ -429,32 +429,27 @@ public class SynchronizationTask implements Task {
 				unusable.add(peer);
 			else {
 				var remote = maybeRemote.get();
+				Optional<Block> maybeBlock;
 
 				try {
-					Optional<Block> maybeBlock;
-
-					try {
-						maybeBlock = remote.getBlock(chosenGroup[h]);
-					}
-					catch (DatabaseException e) {
-						markAsMisbehaving(peer);
-						return;
-					}
-
-					if (maybeBlock.isPresent()) {
-						Block block = maybeBlock.get();
-						if (!Arrays.equals(chosenGroup[h], block.getHash(hashingForBlocks)))
-							// the peer answered with a block with the wrong hash!
-							markAsMisbehaving(peer);
-						else
-							blocks.set(h, block);
-					}
+					maybeBlock = remote.getBlock(chosenGroup[h]);
+				}
+				catch (DatabaseException | NoSuchAlgorithmException e) {
+					markAsMisbehaving(peer);
+					return;
 				}
 				catch (TimeoutException | ClosedNodeException e) {
 					markAsUnreachable(peer);
+					return;
 				}
-				catch (NoSuchAlgorithmException e) {
-					markAsMisbehaving(peer);
+
+				if (maybeBlock.isPresent()) {
+					Block block = maybeBlock.get();
+					if (!Arrays.equals(chosenGroup[h], block.getHash(hashingForBlocks)))
+						// the peer answered with a block with the wrong hash!
+						markAsMisbehaving(peer);
+					else
+						blocks.set(h, block);
 				}
 			}
 		}
@@ -466,7 +461,7 @@ public class SynchronizationTask implements Task {
 		 * @return true if and only if no block was missing and all blocks could be
 		 *         successfully verified; if false, synchronization must stop here
 		 * @throws DatabaseException if the database of the node is corrupted
-		 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
+		 * @throws NoSuchAlgorithmException if some block in the database of the node uses an unknown hashing algorithm
 		 * @throws ClosedDatabaseException if the database is already closed
 		 */
 		private boolean addBlocksToBlockchain() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {

@@ -133,16 +133,10 @@ public class MineNewBlockTask implements Task {
 
 	@Override @OnThread("tasks")
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
-		try {
-			if (miners.get().count() == 0L)
-				node.submit(new NoMinersAvailableEvent());
-			else
-				new Run();
-		}
-		catch (TimeoutException e) {
-			LOGGER.warning(logPrefix + this + ": timed out while waiting for a deadline");
-			node.submit(new NoDeadlineFoundEvent());
-		}
+		if (miners.get().count() == 0L)
+			node.submit(new NoMinersAvailableEvent());
+		else
+			new Run();
 	}
 
 	/**
@@ -311,7 +305,7 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private Run() throws InterruptedException, TimeoutException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.targetBlockCreationTime = BigInteger.valueOf(config.getTargetBlockCreationTime());
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
@@ -321,6 +315,10 @@ public class MineNewBlockTask implements Task {
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
 				createNewBlock().ifPresent(this::informNodeAboutNewBlock);
+			}
+			catch (TimeoutException e) {
+				LOGGER.warning(logPrefix + MineNewBlockTask.this + ": timed out while waiting for a deadline");
+				node.submit(new NoDeadlineFoundEvent());
 			}
 			finally {
 				turnWakerOff();

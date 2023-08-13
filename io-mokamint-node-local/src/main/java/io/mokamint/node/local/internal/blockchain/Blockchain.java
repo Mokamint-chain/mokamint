@@ -230,8 +230,7 @@ public class Blockchain {
 	 *         correctly verified as a legal child of that previous block
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 * @throws VerificationException if {@code block} cannot be added since it does not respect all
-	 *                               consensus rules
+	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(final Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
