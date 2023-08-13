@@ -22,6 +22,7 @@ import static java.util.function.Predicate.not;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,11 +44,12 @@ import io.hotmoka.exceptions.UncheckPredicate;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.SanitizedStrings;
+import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerAdditionRejectedException;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
@@ -180,14 +182,14 @@ public class NodePeers implements AutoCloseable {
 	 * @param whisper true if and only if the added peer must be whispered to all peers after the addition
 	 * @return true if and only if the peer has been added
 	 * @throws IOException if a connection to the peer cannot be established
-	 * @throws PeerAdditionRejectedException if the addition of {@code peer} was rejected for some reason
+	 * @throws PeerRejectedException if the addition of {@code peer} was rejected for some reason
 	 * @throws DatabaseException if the database of the node is corrupted
 	 * @throws TimeoutException if the addition does not complete in time
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the addition to complete
 	 * @throws ClosedNodeException if the node is closed
 	 * @throws ClosedDatabaseException if the database of the node is closed
 	 */
-	public boolean add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, PeerAdditionRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
+	public boolean add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
 		if (containsDisconnected(peer)) {
 			tryToRecreateRemote(peer);
 			return false;
@@ -197,7 +199,7 @@ public class NodePeers implements AutoCloseable {
 			boolean result = check2(TimeoutException.class,
 					InterruptedException.class,
 					IOException.class,
-					PeerAdditionRejectedException.class,
+					PeerRejectedException.class,
 					DatabaseException.class,
 					ClosedNodeException.class,
 					ClosedDatabaseException.class,
@@ -514,11 +516,11 @@ public class NodePeers implements AutoCloseable {
 						ClosedDatabaseException.class,
 						InterruptedException.class,
 						IOException.class,
-						PeerAdditionRejectedException.class,
+						PeerRejectedException.class,
 						DatabaseException.class,
 						() -> peers.add(peer, force));
 			}
-			catch (PeerAdditionRejectedException | IOException | TimeoutException e) {
+			catch (PeerRejectedException | IOException | TimeoutException e) {
 				return false;
 			}
 		}
@@ -581,7 +583,7 @@ public class NodePeers implements AutoCloseable {
 			Thread.currentThread().interrupt();
 			throw new UncheckedException(e);
 		}
-		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | ClosedDatabaseException | PeerAdditionRejectedException e) {
+		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | ClosedDatabaseException | PeerRejectedException e) {
 			LOGGER.log(Level.WARNING, "peers: cannot add peer " + peer + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
@@ -648,7 +650,7 @@ public class NodePeers implements AutoCloseable {
 			LOGGER.log(Level.WARNING, "peers: cannot contact peer " + peer + ": " + e.getMessage());
 			punishBecauseUnreachable(peer);
 		}
-		catch (PeerAdditionRejectedException e) {
+		catch (PeerRejectedException e) {
 			LOGGER.log(Level.WARNING, "peers: " + e.getMessage());
 			remove(peer);
 		}
@@ -674,12 +676,13 @@ public class NodePeers implements AutoCloseable {
 	 * @return the time difference (in milliseconds) between the local time of {@link #node}
 	 *         and the local time of the peer (this is positive if the clock of the peer is
 	 *         in the future wrt the clock of this node; it is positive in the opposite case)
-	 * @throws PeerAdditionRejectedException if the peer was rejected for some reason
+	 * @throws PeerRejectedException if the peer was rejected for some reason
 	 * @throws TimeoutException if the peer could not be contacted through the {@code remote}
 	 * @throws InterruptedException if the connection to the peer though {@code remote} was interrupted
 	 * @throws ClosedNodeException if {@link #node} is closed
+	 * @throws DatabaseException if the database of {@link #node} is corrupted
 	 */
-	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerAdditionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
+	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
 		NodeInfo info1;
 
 		try {
@@ -687,23 +690,45 @@ public class NodePeers implements AutoCloseable {
 		}
 		catch (ClosedNodeException e) {
 			// it's the remote peer that is closed, not our node
-			throw new PeerAdditionRejectedException("the peer is closed", e);
+			throw new PeerRejectedException("the peer is closed", e);
 		}
 
 		NodeInfo info2 = node.getInfo();
 
 		long timeDifference = ChronoUnit.MILLIS.between(info2.getLocalDateTimeUTC(), info1.getLocalDateTimeUTC());
 		if (Math.abs(timeDifference) > config.peerMaxTimeDifference)
-			throw new PeerAdditionRejectedException("the time of the peer is more than " + config.peerMaxTimeDifference + " ms away from the time of this node");
+			throw new PeerRejectedException("the time of the peer is more than " + config.peerMaxTimeDifference + " ms away from the time of this node");
 			
 		UUID uuid1 = info1.getUUID();
 		if (uuid1.equals(info2.getUUID()))
-			throw new PeerAdditionRejectedException("a peer cannot be added as a peer of itself: same UUID " + uuid1);
+			throw new PeerRejectedException("a peer cannot be added as a peer of itself: same UUID " + uuid1);
 
 		var version1 = info1.getVersion();
 		var version2 = info2.getVersion();
 		if (!version1.canWorkWith(version2))
-			throw new PeerAdditionRejectedException("peer version " + version1 + " is incompatible with this node's version " + version2);
+			throw new PeerRejectedException("peer version " + version1 + " is incompatible with this node's version " + version2);
+
+		ChainInfo chain1;
+
+		try {
+			chain1 = remote.getChainInfo();
+		}
+		catch (ClosedNodeException e) {
+			// it's the remote peer that is closed, not our node
+			throw new PeerRejectedException("the peer is closed", e);
+		}
+		catch (DatabaseException e) {
+			// it's the remote peer that has database problems, not our node
+			throw new PeerRejectedException("the peer's database is corrupted", e);
+		}
+
+		Optional<byte[]> genesisHash1 = chain1.getGenesisHash();
+		if (genesisHash1.isPresent()) {
+			ChainInfo chain2 = node.getChainInfo();
+			Optional<byte[]> genesisHash2 = chain2.getGenesisHash();
+			if (genesisHash2.isPresent() && !Arrays.equals(genesisHash1.get(), genesisHash2.get()))
+				throw new PeerRejectedException("the peers have distinct genesis blocks");
+		}
 
 		return timeDifference;
 	}

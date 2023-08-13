@@ -19,7 +19,6 @@ package io.mokamint.node.local.internal.blockchain;
 import java.security.NoSuchAlgorithmException;
 import java.util.logging.Logger;
 
-import io.hotmoka.annotations.OnThread;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -40,7 +39,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 		return "delayed " + super.toString();
 	}
 
-	@Override @OnThread("tasks")
+	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
 		Thread.sleep(delay);

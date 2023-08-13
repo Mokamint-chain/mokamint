@@ -51,17 +51,19 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerAdditionRejectedException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
@@ -77,6 +79,11 @@ public class PeersTests {
 	 * The node information of the nodes used in the tests.
 	 */
 	private static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+
+	/**
+	 * The chain information of the nodes used in the tests.
+	 */
+	private static ChainInfo chainInfo = ChainInfos.of(2L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 5, 6, 7, 8 }));
 
 	/**
 	 * The application of the node used for testing.
@@ -99,10 +106,11 @@ public class PeersTests {
 	}
 
 	private static PublicNodeInternals mkNode() throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
-		PublicNodeInternals result = mock();
-		when(result.getInfo()).thenReturn(info);
-		when(result.getChain(anyLong(), anyLong())).thenReturn(Chains.of(Stream.empty()));
-		return result;
+		PublicNodeInternals node = mock();
+		when(node.getInfo()).thenReturn(info);
+		when(node.getChainInfo()).thenReturn(chainInfo);
+		when(node.getChain(anyLong(), anyLong())).thenReturn(Chains.of(Stream.empty()));
+		return node;
 	}
 
 	/**
@@ -179,7 +187,7 @@ public class PeersTests {
 	@Test
 	@DisplayName("if peers are added to a node, they are saved into the database and used at the next start-up")
 	@Timeout(10)
-	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, PeerAdditionRejectedException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
+	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
@@ -261,7 +269,7 @@ public class PeersTests {
 
 	@Test
 	@DisplayName("two peers that differ for the patch version only can work together")
-	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, PeerAdditionRejectedException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
+	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 		var allPeers = Set.of(peer);
@@ -305,7 +313,8 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			assertThrows(PeerAdditionRejectedException.class, () -> node.addPeer(peer));
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			assertTrue(e.getMessage().contains("peer version 0.0.1 is incompatible with this node's version 0.3.1"));
 		}
 	}
 
@@ -329,7 +338,8 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			assertThrows(PeerAdditionRejectedException.class, () -> node.addPeer(peer));
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			assertTrue(e.getMessage().contains("peer version 0.0.1 is incompatible with this node's version 1.0.1"));
 		}
 	}
 
@@ -352,7 +362,32 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			assertThrows(PeerAdditionRejectedException.class, () -> node.addPeer(peer));
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			assertTrue(e.getMessage().contains("the time of the peer is more than"));
+		}
+	}
+
+	@Test
+	@DisplayName("two peers whose genesisi block is different cannot work together")
+	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
+		var port = 8032;
+		var peer = Peers.of(new URI("ws://localhost:" + port));
+
+		class MyLocalNode extends LocalNodeImpl {
+
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
+				super(mkConfig(dir), app, false);
+			}
+
+			@Override
+			public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
+				return ChainInfos.of(chainInfo.getHeight(), Optional.of(new byte[] { 10, 11, 23, 34, 56, 7 }), chainInfo.getHeadHash());
+			}
+		}
+
+		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			assertTrue(e.getMessage().contains("the peers have distinct genesis blocks"));
 		}
 	}
 

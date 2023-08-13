@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.annotations.OnThread;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Chain;
@@ -94,7 +93,7 @@ public class SynchronizationTask implements Task {
 		return "chain synchronization from the peers";
 	}
 
-	@Override @OnThread("tasks")
+	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, IOException, InterruptedException {
 		new Run();
 	}

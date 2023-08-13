@@ -47,7 +47,7 @@ import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerAdditionRejectedException;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -111,20 +111,15 @@ public class LocalNodeImpl implements LocalNode {
 	private final UUID uuid;
 
 	/**
-	 * The executor of events. There might be more events in execution at the same time.
+	 * The executor of tasks and events. There might be more tasks and events in execution at the same time.
 	 */
-	private final ExecutorService events = Executors.newCachedThreadPool();
-
-	/**
-	 * The executor of tasks. There might be more tasks in execution at the same time.
-	 */
-	private final ExecutorService tasks = Executors.newCachedThreadPool();
+	private final ExecutorService executors = Executors.newCachedThreadPool();
 
 	/**
 	 * The executor of periodic tasks. There might be more periodic tasks in execution
 	 * at the same time.
 	 */
-	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(5);
+	private final ScheduledExecutorService periodExecutors = Executors.newScheduledThreadPool(5);
 
 	/**
 	 * The code to execute when this node gets closed.
@@ -269,7 +264,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerAdditionRejectedException, DatabaseException {
+	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
@@ -305,9 +300,8 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		if (closureLock.stopNewCalls()) {
-			events.shutdownNow();
-			tasks.shutdownNow();
-			periodicTasks.shutdownNow();
+			executors.shutdownNow();
+			periodExecutors.shutdownNow();
 
 			InterruptedException interruptedException = null;
 			IOException ioException = null;
@@ -325,9 +319,8 @@ public class LocalNodeImpl implements LocalNode {
 			}
 
 			try {
-				events.awaitTermination(3, TimeUnit.SECONDS);
-				tasks.awaitTermination(3, TimeUnit.SECONDS);
-				periodicTasks.awaitTermination(3, TimeUnit.SECONDS);
+				executors.awaitTermination(3, TimeUnit.SECONDS);
+				periodExecutors.awaitTermination(3, TimeUnit.SECONDS);
 			}
 			finally {
 				try {
@@ -474,7 +467,7 @@ public class LocalNodeImpl implements LocalNode {
 		 * 
 		 * @throws Exception if the execution fails
 		 */
-		@OnThread("events")
+		@OnThread("executors")
 		void body() throws Exception;
 
 		/**
@@ -524,17 +517,15 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Signals that an event occurred. This is typically called from tasks,
+	 * Signals that an event occurred. This is typically called
 	 * to signal that something occurred and that the node must react accordingly.
-	 * Events get queued into the {@link #events} queue and eventually executed
-	 * on its only thread, in order.
 	 * 
-	 * @param event the emitted event
+	 * @param event the submitted event
 	 */
 	public void submit(Event event) {
 		var runnable = new Runnable() {
 
-			@Override @OnThread("events")
+			@Override @OnThread("executors")
 			public final void run() {
 				onStart(event);
 
@@ -558,7 +549,7 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			LOGGER.info(event.logPrefix() + "received " + event);
 			onSubmit(event);
-			events.execute(runnable);
+			executors.execute(runnable);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(event.logPrefix() + event + " rejected, probably because the node is shutting down");
@@ -576,7 +567,7 @@ public class LocalNodeImpl implements LocalNode {
 		 * 
 		 * @throws Exception if the execution fails
 		 */
-		@OnThread("tasks")
+		@OnThread("executors")
 		void body() throws Exception;
 
 		/**
@@ -635,7 +626,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.task = task;
 		}
 
-		@Override @OnThread("events")
+		@Override @OnThread("executors")
 		public final void run() {
 			onStart(task);
 
@@ -657,7 +648,7 @@ public class LocalNodeImpl implements LocalNode {
 	};
 
 	/**
-	 * Runs the given task, asynchronously, in one thread from the {@link #tasks} executor.
+	 * Runs the given task, asynchronously, in one thread from the {@link #executors} executor.
 	 * 
 	 * @param task the task to run
 	 */
@@ -665,7 +656,7 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			LOGGER.info(task.logPrefix() + "scheduling " + task);
 			onSubmit(task);
-			tasks.execute(new RunnableTask(task));
+			executors.execute(new RunnableTask(task));
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
@@ -689,7 +680,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Runs the given task, periodically, with the {@link #periodicTasks} executor.
+	 * Runs the given task, periodically, with the {@link #periodExecutors} executor.
 	 * 
 	 * @param task the task to run
 	 * @param initialDelay the time to wait before running the task
@@ -700,7 +691,7 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			LOGGER.info(task.logPrefix() + "scheduling periodic " + task);
 			onSubmit(task);
-			periodicTasks.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
+			periodExecutors.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");

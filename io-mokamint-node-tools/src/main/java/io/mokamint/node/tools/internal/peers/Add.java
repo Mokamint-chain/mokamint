@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerAdditionRejectedException;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
@@ -63,7 +63,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 		catch (InterruptedException e) {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for the addition of peer " + peer + "!|@"));
 		}
-		catch (PeerAdditionRejectedException e) {
+		catch (PeerRejectedException e) {
 			System.out.println(Ansi.AUTO.string("@|red " + capitalize(e.getMessage()) + "!|@"));
 		}
 		catch (DatabaseException e) {

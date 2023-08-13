@@ -238,6 +238,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
           <includes>
             <include>*.java</include>
           </includes>
+          <!-- <forkCount>0</forkCount> this can be useful for testing, since the stack trace of the tests becomes available -->
         </configuration>
       </plugin>
       <plugin>

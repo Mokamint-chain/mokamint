@@ -20,7 +20,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerAdditionRejectedException;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -67,7 +67,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works")
-	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, PeerAdditionRejectedException, DatabaseException, ClosedNodeException {
+	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, PeerRejectedException, DatabaseException, ClosedNodeException {
 		var peers1 = Set.of(Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")));
 		var peers2 = new HashSet<Peer>();
 
@@ -181,14 +181,14 @@ public class RemoteRestrictedNodeTests {
 			@Override
 			protected void onAddPeers(AddPeerMessage message, Session session) {
 				try {
-					sendObjectAsync(session, ExceptionMessages.of(new PeerAdditionRejectedException(exceptionMessage), message.getId()));
+					sendObjectAsync(session, ExceptionMessages.of(new PeerRejectedException(exceptionMessage), message.getId()));
 				}
 				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(PeerAdditionRejectedException.class, () -> remote.addPeer(peer));
+			var exception = assertThrows(PeerRejectedException.class, () -> remote.addPeer(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

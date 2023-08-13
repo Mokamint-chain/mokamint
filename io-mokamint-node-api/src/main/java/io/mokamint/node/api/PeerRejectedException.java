@@ -21,19 +21,19 @@ package io.mokamint.node.api;
  * for instance, it is closed or it is incompatible with another peer.
  */
 @SuppressWarnings("serial")
-public class PeerAdditionRejectedException extends Exception {
+public class PeerRejectedException extends Exception {
 
 	/**
 	 * Creates a new exception.
 	 */
-	public PeerAdditionRejectedException() {}
+	public PeerRejectedException() {}
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public PeerAdditionRejectedException(String message) {
+	public PeerRejectedException(String message) {
 		super(message);
 	}
 
@@ -42,7 +42,7 @@ public class PeerAdditionRejectedException extends Exception {
 	 * 
 	 * @param cause the cause
 	 */
-	public PeerAdditionRejectedException(Throwable cause) {
+	public PeerRejectedException(Throwable cause) {
 		super(cause);
 	}
 
@@ -52,7 +52,7 @@ public class PeerAdditionRejectedException extends Exception {
 	 * @param message the message
 	 * @param cause the cause
 	 */
-	public PeerAdditionRejectedException(String message, Throwable cause) {
+	public PeerRejectedException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }

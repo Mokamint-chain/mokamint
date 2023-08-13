@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
-import io.hotmoka.annotations.OnThread;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -131,7 +130,7 @@ public class MineNewBlockTask implements Task {
 		return "block mining on top of " + previousHex;
 	}
 
-	@Override @OnThread("tasks")
+	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		if (miners.get().count() == 0L)
 			node.submit(new NoMinersAvailableEvent());
@@ -151,7 +150,7 @@ public class MineNewBlockTask implements Task {
 			return "no miners available event";
 		}
 
-		@Override @OnThread("events")
+		@Override
 		public void body() {}
 
 		@Override
@@ -173,7 +172,7 @@ public class MineNewBlockTask implements Task {
 			return "no deadline found event";
 		}
 
-		@Override @OnThread("events")
+		@Override
 		public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 			// all miners timed-out
 			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
@@ -209,7 +208,7 @@ public class MineNewBlockTask implements Task {
 			return "miner " + miner + " misbehavior event [-" + points + " points]";
 		}
 
-		@Override @OnThread("events")
+		@Override
 		public void body() {
 			miners.punish(miner, points);
 		}
@@ -253,7 +252,7 @@ public class MineNewBlockTask implements Task {
 			return "block mined event for block " + hexBlockHash;
 		}
 
-		@Override @OnThread("events")
+		@Override
 		public void body() throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 			if (blockchain.add(block)) {
 				LOGGER.info(logPrefix + "whispering block " + hexBlockHash + " to all peers");
@@ -360,7 +359,6 @@ public class MineNewBlockTask implements Task {
 		 * @param deadline the deadline that has just been computed
 		 * @param miner the miner that found the deadline
 		 */
-		@OnThread("miner")
 		private void onDeadlineComputed(Deadline deadline, Miner miner) {
 			LOGGER.info(logPrefix + "received deadline " + deadline);
 
