@@ -31,6 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -155,7 +156,8 @@ public class PeerPropagationTests {
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
 		var allPeers = Set.of(peer1, peer2, peer3);
-		var stillToRemove = new HashSet<>(allPeers);
+		Set<Peer> stillToRemove = ConcurrentHashMap.newKeySet();
+		stillToRemove.addAll(allPeers);
 		var config1 = Config.Builder.defaults().setDir(chain1).build();
 		var config2 = Config.Builder.defaults().setDir(chain2).build();
 		var config3 = Config.Builder.defaults().setDir(chain3).build();
@@ -198,7 +200,7 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
-			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed twice
+			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed three times
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}

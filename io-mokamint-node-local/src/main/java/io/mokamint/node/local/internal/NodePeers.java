@@ -808,8 +808,8 @@ public class NodePeers implements AutoCloseable {
 		if (remote != null) {
 			remote.unbindWhisperer(node);
 			remotes.remove(peer);
-			remote.close();
 			timeDifferences.remove(peer);
+			remote.close();
 			LOGGER.info("peers: closed connection to peer " + peer);
 		}
 	}

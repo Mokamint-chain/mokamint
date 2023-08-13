@@ -425,7 +425,7 @@ public class Database implements AutoCloseable {
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the head is unknown
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
@@ -775,10 +775,7 @@ public class Database implements AutoCloseable {
 					.map(uncheck(Blocks::from))
 			);
 		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-		catch (IOException e) {
+		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
 		}
 	}
