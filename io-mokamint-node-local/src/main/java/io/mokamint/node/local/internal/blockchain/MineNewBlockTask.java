@@ -119,7 +119,7 @@ public class MineNewBlockTask implements Task {
 
 	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
-		if (node.getDatabase().getHeadHash().isEmpty())
+		if (blockchain.getHeadHash().isEmpty())
 			LOGGER.log(Level.SEVERE, "cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L)
 			node.submit(new NoMinersAvailableEvent());
@@ -425,7 +425,7 @@ public class MineNewBlockTask implements Task {
 		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var powerForNewBlock = computePower(deadline);
-			var powerOfHead = node.getDatabase().getPowerOfHead();
+			var powerOfHead = blockchain.getPowerOfHead();
 
 			if (powerOfHead.isPresent() && powerOfHead.get().compareTo(powerForNewBlock) >= 0) {
 				LOGGER.info(logPrefix + "not creating block on top of " + previousHex + " since it would not improve the head");

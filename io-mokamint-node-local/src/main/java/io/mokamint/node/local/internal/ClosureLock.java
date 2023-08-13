@@ -48,7 +48,7 @@ public class ClosureLock {
 		synchronized (lock) {
 			if (isClosed)
 				throw exception.get();
-			
+
 			currentCallsCount++;
 		}
 	}

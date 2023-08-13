@@ -164,12 +164,12 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			this.config = config;
 			this.app = app;
-			this.db = new Database(this, init);
+			this.db = new Database(this);
 			this.version = Versions.current();
 			this.uuid = db.getUUID();
 			this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 			this.miners = new NodeMiners(this, Stream.of(miners));
-			this.blockchain = new Blockchain(this);
+			this.blockchain = new Blockchain(this, init);
 			this.peers = new NodePeers(this);
 			peers.tryToAdd(config.seeds().map(Peers::of), true, true);
 
@@ -239,7 +239,7 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return db.getBlock(hash);
+			return blockchain.getBlock(hash);
 		}
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed because this node is open
@@ -324,10 +324,15 @@ public class LocalNodeImpl implements LocalNode {
 			}
 			finally {
 				try {
-					db.close();
+					blockchain.close();
 				}
 				finally {
-					peers.close();
+					try {
+						db.close();
+					}
+					finally {
+						peers.close();
+					}
 				}
 			}
 
