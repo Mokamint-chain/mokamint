@@ -176,7 +176,9 @@ public class PeerPropagationTests {
 			@Override
 			protected void onComplete(Event event) {
 				if (event instanceof PeersAddedEvent pae) {
+					System.out.print("removing " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
 					pae.getPeers().forEach(stillToRemove::remove);
+					System.out.println(" -> " + stillToRemove);
 					if (stillToRemove.isEmpty())
 						semaphore.release();
 				}
@@ -199,7 +201,7 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
-			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed three times
+			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed four times
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
