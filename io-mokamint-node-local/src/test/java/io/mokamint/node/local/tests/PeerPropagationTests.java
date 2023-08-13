@@ -129,7 +129,7 @@ public class PeerPropagationTests {
 			assertTrue(node3.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer1::equals));
 
 			// we add peer4 as peer of peer1 now
-			node1.addPeer(peer4); // TODO: failed once at NodePeers.openRemote(NodePeers.java:579) (DeploymentException: Connection Failed)
+			node1.addPeer(peer4); // TODO: failed twice at NodePeers.openRemote(NodePeers.java:561) (DeploymentException: Connection Failed)
 
 			// we wait for three events of addition of peer4 as peer
 			assertTrue(semaphore.tryAcquire(3, 5, TimeUnit.SECONDS));

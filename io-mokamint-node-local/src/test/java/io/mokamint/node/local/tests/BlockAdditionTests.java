@@ -64,7 +64,7 @@ public class BlockAdditionTests {
 			.build();
 	}
 
-	private static Blockchain mkTestBlockchain(Config config) throws DatabaseException, NoSuchAlgorithmException {
+	private static Blockchain mkTestBlockchain(Config config) throws DatabaseException {
 		var peers = mock(NodePeers.class);
 		doAnswer(returnsFirstArg())
 			.when(peers)

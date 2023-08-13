@@ -16,9 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
-
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +40,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
- * It is a tree rather than necessarily a list of blocks, since a node might
+ * It is a tree rather than necessarily a list of blocks, since a block might
  * have more children, but only one child can lead to the head of the blockchain,
  * which is the most powerful block in the chain.
  */
@@ -64,7 +61,7 @@ public class Blockchain {
 	 * A cache for the genesis block, if it has been set already.
 	 * Otherwise it holds {@code null}.
 	 */
-	private volatile GenesisBlock genesis;
+	private volatile Optional<GenesisBlock> genesis;
 
 	/**
 	 * A buffer where blocks without a known previous block are parked, in case
@@ -96,10 +93,8 @@ public class Blockchain {
 	 * Creates the container of the blocks of a node.
 	 * 
 	 * @param node the node
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Blockchain(LocalNodeImpl node) throws NoSuchAlgorithmException, DatabaseException {
+	public Blockchain(LocalNodeImpl node) {
 		this.node = node;
 		this.db = node.getDatabase();
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
@@ -116,17 +111,15 @@ public class Blockchain {
 	 */
 	public void startMining() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		if (db.getHeadHash().isEmpty())
-			throw new IllegalStateException("Cannot mine on an empty blockchain");
-
+			LOGGER.warning("cannot mine on an empty blockchain");
 		// if synchronization is in progress, mining will be triggered at its end
-		if (!isSynchronizing.get())
+		else if (!isSynchronizing.get())
 			node.submit(new MineNewBlockTask(node));
 	}
 
 	/**
 	 * Triggers a synchronization of this blockchain from the peers of the node,
-	 * if this blockchain is not already performing a synchronization.
-	 * Otherwise, nothing happens.
+	 * if this blockchain is not already performing a synchronization. Otherwise, nothing happens.
 	 * 
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
@@ -143,23 +136,25 @@ public class Blockchain {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<GenesisBlock> getGenesis() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
 		// we use a cache to avoid repeated access for reading the genesis block
 		if (genesis != null)
-			return Optional.of(genesis);
+			return genesis;
 
 		Optional<byte[]> maybeGenesisHash = db.getGenesisHash();
+		if (maybeGenesisHash.isEmpty())
+			return Optional.empty();
 
-		Optional<GenesisBlock> result = check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeGenesisHash
-				.map(uncheck(hash -> db.getBlock(hash).orElseThrow(() -> new DatabaseException("the genesis hash is set but it is not in the database"))))
-				.map(uncheck(block -> castToGenesis(block).orElseThrow(() -> new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database"))))
-		);
-
-		if (result.isPresent())
-			genesis = result.get();
-
-		return result;
+		Optional<Block> maybeGenesis = db.getBlock(maybeGenesisHash.get());
+		if (maybeGenesis.isPresent()) {
+			Block genesis = maybeGenesis.get();
+			if (genesis instanceof GenesisBlock gb)
+				return this.genesis = Optional.of(gb);
+			else
+				throw new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database");
+		}
+		else
+			throw new DatabaseException("the genesis hash is set but it is not in the database");
 	}
 
 	/**
@@ -172,11 +167,14 @@ public class Blockchain {
 	 */
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		Optional<byte[]> maybeHeadHash = db.getHeadHash();
-	
-		return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-			maybeHeadHash
-				.map(uncheck(hash -> db.getBlock(hash).orElseThrow(() -> new DatabaseException("the head hash is set but it is not in the database"))))
-		);
+		if (maybeHeadHash.isEmpty())
+			return Optional.empty();
+
+		Optional<Block> maybeBlock = db.getBlock(maybeHeadHash.get());
+		if (maybeBlock.isPresent())
+			return maybeBlock;
+		else
+			throw new DatabaseException("the head hash is set but it is not in the database");
 	}
 
 	/**
@@ -346,9 +344,5 @@ public class Blockchain {
 					.filter(Objects::nonNull)
 					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
 		}
-	}
-
-	private static Optional<GenesisBlock> castToGenesis(Block block) {
-		return block instanceof GenesisBlock gb ? Optional.of(gb) : Optional.empty();
 	}
 }
