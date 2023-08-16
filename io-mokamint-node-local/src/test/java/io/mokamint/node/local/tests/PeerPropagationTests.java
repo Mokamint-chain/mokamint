@@ -48,15 +48,13 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
-import io.mokamint.node.local.internal.blockchain.SynchronizationTask;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
 

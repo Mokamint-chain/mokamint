@@ -200,18 +200,18 @@ public class Blockchain implements AutoCloseable{
 
 	/**
 	 * Triggers block mining on top of the current head, if this blockchain
-	 * is not performing a synchronization. Otherwise, nothing happens.
+	 * is not currently performing a synchronization. Otherwise, nothing happens.
 	 * This method requires the blockchain to be non-empty.
 	 */
 	public void startMining() {
-		// if synchronization is in progress, mining will be triggered at its end
+		// if synchronization is in progress, mining will be triggered at its end anyway
 		if (!isSynchronizing.get())
 			node.submit(new MineNewBlockTask(node));
 	}
 
 	/**
 	 * Triggers a synchronization of this blockchain from the peers of the node,
-	 * if this blockchain is not already performing a synchronization. Otherwise, nothing happens.
+	 * if this blockchain is not currently performing a synchronization. Otherwise, nothing happens.
 	 * 
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
@@ -452,7 +452,7 @@ public class Blockchain implements AutoCloseable{
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
-			return environment.computeInReadonlyTransaction(txn -> containsBlock(txn, hash));
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> containsBlock(txn, hash))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -575,7 +575,7 @@ public class Blockchain implements AutoCloseable{
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException("cannot write block " + block.getHexHash(hashingForBlocks) + " in the database", e);
+			throw new DatabaseException(e);
 		}
 		finally {
 			closureLock.afterCall();
@@ -840,12 +840,22 @@ public class Blockchain implements AutoCloseable{
 		}
 	}
 
-	private void putInStore(Transaction txn, Block block, byte[] hashOfBlock, byte[] bytesOfBlock) {
-		storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
+	private void putInStore(Transaction txn, Block block, byte[] hashOfBlock, byte[] bytesOfBlock) throws DatabaseException {
+		try {
+			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
-	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) {
-		return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
+	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws DatabaseException {
+		try {
+			return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private boolean updateHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
@@ -877,9 +887,8 @@ public class Blockchain implements AutoCloseable{
 	 *         is a non-genesis block whose previous is not in the tree
 	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
 		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
 		if (containsBlock(txn, hashOfBlock)) {
@@ -917,17 +926,27 @@ public class Blockchain implements AutoCloseable{
 		}
 	}
 
-	private void setGenesisHash(Transaction txn, GenesisBlock newGenesis, byte[] newGenesisHash) {
-		storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
-		LOGGER.info("height " + newGenesis.getHeight() + ": block " + newGenesis.getHexHash(hashingForBlocks) + " set as genesis");
+	private void setGenesisHash(Transaction txn, GenesisBlock newGenesis, byte[] newGenesisHash) throws DatabaseException {
+		try {
+			storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
+			LOGGER.info("height " + newGenesis.getHeight() + ": block " + newGenesis.getHexHash(hashingForBlocks) + " set as genesis");
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
-		storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
-		storeOfBlocks.put(txn, power, fromBytes(newHead.getPower().toByteArray()));
-		storeOfBlocks.put(txn, height, fromBytes(longToBytes(newHead.getHeight())));
-		updateChain(txn, newHead, newHeadHash);
-		LOGGER.info("height " + newHead.getHeight() + ": block " + newHead.getHexHash(hashingForBlocks) + " set as head");
+		try {
+			storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
+			storeOfBlocks.put(txn, power, fromBytes(newHead.getPower().toByteArray()));
+			storeOfBlocks.put(txn, height, fromBytes(longToBytes(newHead.getHeight())));
+			updateChain(txn, newHead, newHeadHash);
+			LOGGER.info("height " + newHead.getHeight() + ": block " + newHead.getHexHash(hashingForBlocks) + " set as head");
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private void updateChain(Transaction txn, Block block, byte[] blockHash) throws NoSuchAlgorithmException, DatabaseException {
@@ -1000,28 +1019,38 @@ public class Blockchain implements AutoCloseable{
 	}
 
 	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws DatabaseException {
-		if (start < 0L || count <= 0L)
-			return Stream.empty();
+		try {
+			if (start < 0L || count <= 0L)
+				return Stream.empty();
 
-		OptionalLong chainHeight = getHeightOfHead(txn);
-		if (chainHeight.isEmpty())
-			return Stream.empty();
+			OptionalLong chainHeight = getHeightOfHead(txn);
+			if (chainHeight.isEmpty())
+				return Stream.empty();
 
-		ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
-			.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
-			.toArray(ByteIterable[]::new);
+			ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
+					.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
+					.toArray(ByteIterable[]::new);
 
-		if (Stream.of(hashes).anyMatch(Objects::isNull))
-			throw new DatabaseException("The current best chain contains a missing element");
+			if (Stream.of(hashes).anyMatch(Objects::isNull))
+				throw new DatabaseException("The current best chain contains a missing element");
 
-		return Stream.of(hashes).map(ByteIterable::getBytes);
+			return Stream.of(hashes).map(ByteIterable::getBytes);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
-	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) {
-		var hashOfPrevious = fromBytes(block.getHashOfPreviousBlock());
-		var oldForwards = storeOfForwards.get(txn, hashOfPrevious);
-		var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlockToAdd) : hashOfBlockToAdd);
-		storeOfForwards.put(txn, hashOfPrevious, newForwards);
+	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) throws DatabaseException {
+		try {
+			var hashOfPrevious = fromBytes(block.getHashOfPreviousBlock());
+			var oldForwards = storeOfForwards.get(txn, hashOfPrevious);
+			var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlockToAdd) : hashOfBlockToAdd);
+			storeOfForwards.put(txn, hashOfPrevious, newForwards);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {
