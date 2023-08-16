@@ -177,19 +177,14 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onSubmit(Task task) {
+				// we avoid these tasks in order to make the test faster: on Github actions,
+				// this test failed because it has fewer cores available and tasks
+				// tend to exhaust the power of the test machine
 				if (task instanceof SynchronizationTask || task instanceof MineNewBlockTask)
 					return;
 
-				System.out.println("onSubmit of " + task);
+				System.out.println("onSubmit " + task);
 				super.onSubmit(task);
-			}
-
-			@Override
-			protected void onSubmit(Event event) {
-				if (event instanceof PeersAddedEvent pae)
-					System.out.println("onSubmit of " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
-
-				super.onSubmit(event);
 			}
 
 			@Override
@@ -198,7 +193,7 @@ public class PeerPropagationTests {
 				if (event instanceof PeersAddedEvent pae) {
 					System.out.print("removing " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", "))); // TODO: remove after debugging
 					pae.getPeers().forEach(stillToRemove::remove);
-					System.out.println(" -> " + stillToRemove); // TODO
+					System.out.println(" -> " + stillToRemove);
 					if (stillToRemove.isEmpty())
 						semaphore.release();
 				}
@@ -207,8 +202,9 @@ public class PeerPropagationTests {
 
 		try (var node1 = LocalNodes.of(config1, app, false); var node2 = LocalNodes.of(config2, app, false);
 			 var node3 = LocalNodes.of(config3, app, false); var node4 = new MyLocalNode(config4);
-			 var service1 = PublicNodeServices.open(node1, port1); var service2 = PublicNodeServices.open(node2, port2);
-			 var service3 = PublicNodeServices.open(node3, port3)) {
+			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000L, Optional.of(peer1.getURI()));
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000L, Optional.of(peer2.getURI()));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(peer3.getURI()))) {
 
 			// node1 has peer2 and peer3 as peers
 			node1.addPeer(peer2);
