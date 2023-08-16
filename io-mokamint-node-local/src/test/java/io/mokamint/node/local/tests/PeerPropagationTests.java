@@ -117,8 +117,10 @@ public class PeerPropagationTests {
 
 		try (var node1 = new MyLocalNode(config1); var node2 = new MyLocalNode(config2);
 			 var node3 = new MyLocalNode(config3); var node4 = new MyLocalNode(config4);
-			 var service1 = PublicNodeServices.open(node1, port1); var service2 = PublicNodeServices.open(node2, port2);
-			 var service3 = PublicNodeServices.open(node3, port3); var service4 = PublicNodeServices.open(node4, port4)) {
+			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000L, Optional.of(peer1.getURI()));
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000L, Optional.of(peer2.getURI()));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(peer3.getURI()));
+			 var service4 = PublicNodeServices.open(node4, port4, 1800000L, 1000L, Optional.of(peer4.getURI()))) {
 
 			node1.addPeer(peer2);
 			node2.addPeer(peer3);
@@ -145,7 +147,7 @@ public class PeerPropagationTests {
 
 	@Test
 	@DisplayName("a peer added to a node eventually propagates all its peers")
-	@Timeout(30)
+	@Timeout(20)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException {
@@ -164,7 +166,7 @@ public class PeerPropagationTests {
 		var config3 = Config.Builder.defaults().setDir(chain3).build();
 		
 		var config4 = Config.Builder.defaults().setDir(chain4)
-			.setPeerPingInterval(1000L) // we must make peer propagation fast
+			.setPeerPingInterval(2000L) // we must make peer propagation fast
 			.build();
 
 		var semaphore = new Semaphore(0);
@@ -173,18 +175,6 @@ public class PeerPropagationTests {
 
 			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, app, false);
-			}
-
-			@Override
-			protected void onSubmit(Task task) {
-				// we avoid these tasks in order to make the test faster: on Github actions,
-				// this test failed because it has fewer cores available and tasks
-				// tend to exhaust the power of the test machine
-				if (task instanceof SynchronizationTask || task instanceof MineNewBlockTask)
-					return;
-
-				System.out.println("onSubmit " + task);
-				super.onSubmit(task);
 			}
 
 			@Override
@@ -217,7 +207,7 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
-			assertTrue(semaphore.tryAcquire(1, 20, TimeUnit.SECONDS)); // TODO: this failed five times
+			assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS)); // TODO: this failed five times
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
