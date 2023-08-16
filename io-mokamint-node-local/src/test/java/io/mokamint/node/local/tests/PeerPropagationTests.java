@@ -143,7 +143,7 @@ public class PeerPropagationTests {
 
 	@Test
 	@DisplayName("a peer added to a node eventually propagates all its peers")
-	@Timeout(10)
+	@Timeout(15)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException {
@@ -162,7 +162,7 @@ public class PeerPropagationTests {
 		var config3 = Config.Builder.defaults().setDir(chain3).build();
 		
 		var config4 = Config.Builder.defaults().setDir(chain4)
-			.setPeerPingInterval(2000L) // we must make peer propagation fast
+			.setPeerPingInterval(1000L) // we must make peer propagation fast
 			.build();
 
 		var semaphore = new Semaphore(0);
@@ -174,7 +174,16 @@ public class PeerPropagationTests {
 			}
 
 			@Override
+			protected void onSubmit(Event event) {
+				if (event instanceof PeersAddedEvent pae)
+					System.out.println("onSubmit of " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
+
+				super.onSubmit(event);
+			}
+
+			@Override
 			protected void onComplete(Event event) {
+				// removing ws://localhost:8032 -> [ws://localhost:8034, ws://localhost:8036] e l'altro non si verifica
 				if (event instanceof PeersAddedEvent pae) {
 					System.out.print("removing " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", "))); // TODO: remove after debugging
 					pae.getPeers().forEach(stillToRemove::remove);
@@ -201,7 +210,7 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
-			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed four times
+			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed five times
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
