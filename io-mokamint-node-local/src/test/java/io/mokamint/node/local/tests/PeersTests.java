@@ -363,7 +363,7 @@ public class PeersTests {
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
-			assertTrue(e.getMessage().contains("the time of the peer is more than"));
+			assertTrue(e.getMessage().contains("the time of the peer is more than " + node.getConfig().peerMaxTimeDifference + " ms away"));
 		}
 	}
 

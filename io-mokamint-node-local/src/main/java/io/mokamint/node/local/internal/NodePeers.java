@@ -43,6 +43,7 @@ import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.exceptions.UncheckPredicate;
 import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.PeerInfos;
+import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -82,9 +83,9 @@ public class NodePeers implements AutoCloseable {
 	private final Config config;
 
 	/**
-	 * The database of the node.
+	 * The database containing the peers.
 	 */
-	private final Database db;
+	private final PeersDatabase db;
 
 	/**
 	 * The peers of the node.
@@ -116,21 +117,31 @@ public class NodePeers implements AutoCloseable {
 	 * @param node the node having these peers
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database of {@code node} is already closed
-	 * @throws InterruptedException if the execution has been interrupted
-	 * @throws ClosedNodeException if {@code node} is closed
-	 * @throws IOException if an I/O error occurs
 	 */
-	public NodePeers(LocalNodeImpl node) throws DatabaseException, ClosedDatabaseException, ClosedNodeException, InterruptedException, IOException {
+	public NodePeers(LocalNodeImpl node) throws DatabaseException, ClosedDatabaseException {
 		this.node = node;
 		this.config = node.getConfig();
-		this.db = node.getDatabase();
+		this.db = new PeersDatabase(node);
 		this.peers = new PunishableSet<>(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
-		openConnectionToPeers();
-		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
 	}
 
 	/**
-	 * Yields information about the peers.
+	 * Connects to the peers.
+	 * 
+	 * @throws ClosedNodeException if the node is already closed
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws InterruptedException if the connection gets interrupted
+	 * @throws IOException if an I/O error occurs
+	 */
+	void connect() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		openConnectionToPeers();
+		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
+		tryToAdd(config.seeds().map(Peers::of), true, true);
+	}
+
+	/**
+	 * Yields information about these peers.
 	 * 
 	 * @return the peers information
 	 */
@@ -139,36 +150,14 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Add some peers to the node. If the peer was already present but was disconnected,
-	 * it tries to open a connection to the peer. Peers might not be added because
-	 * they are already present in the node, or because a connection cannot be established
-	 * to them, or because they are incompatible with the node. In such cases, the peers are
-	 * simply ignored and no exception is thrown.
+	 * Yields the UUID of the node having these peers.
 	 * 
-	 * @param peers the peers to add
-	 * @param force true if and only if the peers must be added also when the maximal number of peers
-	 *              for the node has been reached
-	 * @param whisper true if and only if the added peers must be whispered to all peers
-	 *                after the addition
-	 * @throws InterruptedException if the execution was interrupted
-	 * @throws ClosedDatabaseException if the database of {@link #node} is closed
-	 * @throws DatabaseException if the database of {@link #node} is corrupted
-	 * @throws ClosedNodeException if {@link #node} is closed
-	 * @throws IOException if an I/O error occurs
+	 * @return the UUID
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		var peersAsArray = peers.toArray(Peer[]::new);
-
-		var added = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			Stream.of(peersAsArray)
-				.parallel()
-				.distinct()
-				.filter(UncheckPredicate.uncheck(peer -> reconnectOrAdd(peer, force)))
-				.toArray(Peer[]::new)
-			);
-	
-		if (added.length > 0) // just to avoid useless events
-			node.submit(new PeersAddedEvent(Stream.of(added), whisper));
+	public UUID getUUID() throws DatabaseException, ClosedDatabaseException {
+		return db.getUUID();
 	}
 
 	/**
@@ -209,36 +198,6 @@ public class NodePeers implements AutoCloseable {
 				node.submit(new PeersAddedEvent(Stream.of(peer), whisper));
 
 			return result;
-		}
-	}
-
-	// TODO: remove after pushing the new hotmoka jars to Maven Central
-	@SuppressWarnings("unchecked")
-	private static <R, T1 extends Throwable, T2 extends Throwable, T3 extends Throwable, T4 extends Throwable, T5 extends Throwable, T6 extends Throwable, T7 extends Throwable>
-			R check2(Class<T1> exception1, Class<T2> exception2, Class<T3> exception3, Class<T4> exception4, Class<T5> exception5, Class<T6> exception6, Class<T7> exception7,
-					Supplier<R> supplier) throws T1, T2, T3, T4, T5, T6, T7 {
-
-		try {
-			return supplier.get();
-		}
-		catch (UncheckedException e) {
-			var cause = e.getCause();
-			if (exception1.isInstance(cause))
-				throw (T1) cause;
-			else if (exception2.isInstance(cause))
-				throw (T2) cause;
-			else if (exception3.isInstance(cause))
-				throw (T3) cause;
-			else if (exception4.isInstance(cause))
-				throw (T4) cause;
-			else if (exception5.isInstance(cause))
-				throw (T5) cause;
-			else if (exception6.isInstance(cause))
-				throw (T6) cause;
-			else if (exception7.isInstance(cause))
-				throw (T7) cause;
-			else
-				throw e;
 		}
 	}
 
@@ -309,7 +268,7 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws IOException, InterruptedException {
+	public void close() throws IOException, InterruptedException, DatabaseException {
 		IOException ioException = null;
 		InterruptedException interruptedException = null;
 
@@ -329,10 +288,15 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		finally {
-			if (interruptedException != null)
-				throw interruptedException;
-			else if (ioException != null)
-				throw ioException;
+			try {
+				db.close();
+			}
+			finally {
+				if (interruptedException != null)
+					throw interruptedException;
+				else if (ioException != null)
+					throw ioException;
+			}
 		}
 	}
 
@@ -483,6 +447,69 @@ public class NodePeers implements AutoCloseable {
 
 	public void pardonBecauseReachable(Peer peer) {
 		peers.pardon(peer, config.peerPunishmentForUnreachable);
+	}
+
+	// TODO: remove after pushing the new hotmoka jars to Maven Central
+	@SuppressWarnings("unchecked")
+	private static <R, T1 extends Throwable, T2 extends Throwable, T3 extends Throwable, T4 extends Throwable, T5 extends Throwable, T6 extends Throwable, T7 extends Throwable>
+			R check2(Class<T1> exception1, Class<T2> exception2, Class<T3> exception3, Class<T4> exception4, Class<T5> exception5, Class<T6> exception6, Class<T7> exception7,
+					Supplier<R> supplier) throws T1, T2, T3, T4, T5, T6, T7 {
+	
+		try {
+			return supplier.get();
+		}
+		catch (UncheckedException e) {
+			var cause = e.getCause();
+			if (exception1.isInstance(cause))
+				throw (T1) cause;
+			else if (exception2.isInstance(cause))
+				throw (T2) cause;
+			else if (exception3.isInstance(cause))
+				throw (T3) cause;
+			else if (exception4.isInstance(cause))
+				throw (T4) cause;
+			else if (exception5.isInstance(cause))
+				throw (T5) cause;
+			else if (exception6.isInstance(cause))
+				throw (T6) cause;
+			else if (exception7.isInstance(cause))
+				throw (T7) cause;
+			else
+				throw e;
+		}
+	}
+
+	/**
+	 * Add some peers to the node. If the peer was already present but was disconnected,
+	 * it tries to open a connection to the peer. Peers might not be added because
+	 * they are already present in the node, or because a connection cannot be established
+	 * to them, or because they are incompatible with the node. In such cases, the peers are
+	 * simply ignored and no exception is thrown.
+	 * 
+	 * @param peers the peers to add
+	 * @param force true if and only if the peers must be added also when the maximal number of peers
+	 *              for the node has been reached
+	 * @param whisper true if and only if the added peers must be whispered to all peers
+	 *                after the addition
+	 * @throws InterruptedException if the execution was interrupted
+	 * @throws ClosedDatabaseException if the database of {@link #node} is closed
+	 * @throws DatabaseException if the database of {@link #node} is corrupted
+	 * @throws ClosedNodeException if {@link #node} is closed
+	 * @throws IOException if an I/O error occurs
+	 */
+	private void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		var peersAsArray = peers.toArray(Peer[]::new);
+	
+		var added = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
+			Stream.of(peersAsArray)
+				.parallel()
+				.distinct()
+				.filter(UncheckPredicate.uncheck(peer -> reconnectOrAdd(peer, force)))
+				.toArray(Peer[]::new)
+			);
+	
+		if (added.length > 0) // just to avoid useless events
+			node.submit(new PeersAddedEvent(Stream.of(added), whisper));
 	}
 
 	/**
@@ -681,8 +708,9 @@ public class NodePeers implements AutoCloseable {
 	 * @throws InterruptedException if the connection to the peer though {@code remote} was interrupted
 	 * @throws ClosedNodeException if {@link #node} is closed
 	 * @throws DatabaseException if the database of {@link #node} is corrupted
+	 * @throws ClosedDatabaseException  if the database is already closed
 	 */
-	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {
 		NodeInfo info1;
 
 		try {
@@ -700,7 +728,7 @@ public class NodePeers implements AutoCloseable {
 			throw new PeerRejectedException("the time of the peer is more than " + config.peerMaxTimeDifference + " ms away from the time of this node");
 			
 		UUID uuid1 = info1.getUUID();
-		if (uuid1.equals(info2.getUUID()))
+		if (uuid1.equals(db.getUUID()))
 			throw new PeerRejectedException("a peer cannot be added as a peer of itself: same UUID " + uuid1);
 
 		var version1 = info1.getVersion();

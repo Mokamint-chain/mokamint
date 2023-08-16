@@ -48,7 +48,6 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.Database;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodeMiners;
 import io.mokamint.node.local.internal.NodePeers;
@@ -74,8 +73,6 @@ public class BlockAdditionTests {
 		when(node.getConfig()).thenReturn(config);
 		when(node.getApplication()).thenReturn(mock(Application.class));
 		when(node.getPeers()).thenReturn(peers);
-		Database database = new Database(node);
-		when(node.getDatabase()).thenReturn(database);
 		var miners = new NodeMiners(node, Stream.empty());
 		when(node.getMiners()).thenReturn(miners);
 		var blockchain = new Blockchain(node);

@@ -40,12 +40,12 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.Database;
+import io.mokamint.node.local.internal.PeersDatabase;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DatabaseTests {
 
-	private static Database mkDatabase(Path dir) throws NoSuchAlgorithmException, DatabaseException {
+	private static PeersDatabase mkDatabase(Path dir) throws NoSuchAlgorithmException, DatabaseException {
 		var config = Config.Builder.defaults()
 			.setDir(dir)
 			.build();
@@ -53,7 +53,7 @@ public class DatabaseTests {
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
 
-		return new Database(node);
+		return new PeersDatabase(node);
 	}
 
 	@Test

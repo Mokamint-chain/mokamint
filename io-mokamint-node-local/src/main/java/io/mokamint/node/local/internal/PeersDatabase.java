@@ -45,14 +45,9 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.Config;
 
 /**
- * The database where the blockchain is persisted.
+ * The database where the peers are persisted.
  */
-public class Database implements AutoCloseable {
-
-	/**
-	 * The configuration of the node having this database.
-	 */
-	private final Config config;
+public class PeersDatabase implements AutoCloseable {
 
 	/**
 	 * The maximal number of non-forced peers kept in the database.
@@ -70,22 +65,22 @@ public class Database implements AutoCloseable {
 	private final Store storeOfPeers;
 
 	/**
+	 * The lock used to block new calls when the database has been requested to close.
+	 */
+	private final ClosureLock closureLock = new ClosureLock();
+
+	/**
 	 * The key mapped in the {@link #storeOfPeers} to the sequence of peers.
 	 */
-	private final static ByteIterable peers = fromByte((byte) 17);
+	private final static ByteIterable PEERS = fromByte((byte) 17);
 
 	/**
 	 * The key mapped in the {@link #storeOfPeers} to the unique identifier of the node
 	 * having this database.
 	 */
-	private final static ByteIterable uuid = fromByte((byte) 23);
+	private final static ByteIterable UUID = fromByte((byte) 23);
 
-	/**
-	 * The lock used to block new calls when the database has been requested to close.
-	 */
-	private final ClosureLock closureLock = new ClosureLock();
-
-	private final static Logger LOGGER = Logger.getLogger(Database.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(PeersDatabase.class.getName());
 
 	/**
 	 * Creates the database of a node.
@@ -93,8 +88,8 @@ public class Database implements AutoCloseable {
 	 * @param node the node
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
 	 */
-	public Database(LocalNodeImpl node) throws DatabaseException {
-		this.config = node.getConfig();
+	public PeersDatabase(LocalNodeImpl node) throws DatabaseException {
+		Config config = node.getConfig();
 		this.maxPeers = config.maxPeers;
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfPeers = openStore("peers");
@@ -106,11 +101,11 @@ public class Database implements AutoCloseable {
 		if (closureLock.stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
-				LOGGER.info("closed the blockchain database");
+				LOGGER.info("closed the peers database");
 			}
 			catch (ExodusException e) {
-				LOGGER.log(Level.WARNING, "failed to close the blockchain database", e);
-				throw new DatabaseException("cannot close the database", e);
+				LOGGER.log(Level.WARNING, "failed to close the peers database", e);
+				throw new DatabaseException("cannot close the peers database", e);
 			}
 		}
 	}
@@ -126,9 +121,9 @@ public class Database implements AutoCloseable {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
-			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, uuid));
+			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, UUID));
 			if (bi == null)
-				throw new DatabaseException("The UUID of the node is not in the database");
+				throw new DatabaseException("The UUID of the node is not in the peers database");
 
 			return MarshallableUUID.from(bi).uuid;
 		}
@@ -151,7 +146,7 @@ public class Database implements AutoCloseable {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
-			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, peers));
+			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, PEERS));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
@@ -179,7 +174,7 @@ public class Database implements AutoCloseable {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
-			return check(URISyntaxException.class, IOException.class,
+			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
@@ -203,7 +198,7 @@ public class Database implements AutoCloseable {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
-			return check(URISyntaxException.class, IOException.class,
+			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
@@ -248,10 +243,10 @@ public class Database implements AutoCloseable {
 		try {
 			CheckRunnable.check(IOException.class, () -> {
 				environment.executeInTransaction(txn -> {
-					var bi = storeOfPeers.get(txn, uuid);
+					var bi = storeOfPeers.get(txn, UUID);
 					if (bi == null) {
-						var nodeUUID = UUID.randomUUID();
-						storeOfPeers.put(txn, uuid, fromBytes(new MarshallableUUID(nodeUUID).toByteArray()));
+						var nodeUUID = java.util.UUID.randomUUID();
+						storeOfPeers.put(txn, UUID, fromBytes(new MarshallableUUID(nodeUUID).toByteArray()));
 						LOGGER.info("created a new UUID for the node: " + nodeUUID);
 					}
 					else {
@@ -323,47 +318,57 @@ public class Database implements AutoCloseable {
 		}
 	}
 
-	private boolean add(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException {
-		var bi = storeOfPeers.get(txn, peers);
-		if (bi == null) {
-			if (force || maxPeers >= 1) {
-				storeOfPeers.put(txn, peers, new ArrayOfPeers(Stream.of(peer)).toByteIterable());
-				return true;
+	private boolean add(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException, DatabaseException {
+		try {
+			var bi = storeOfPeers.get(txn, PEERS);
+			if (bi == null) {
+				if (force || maxPeers >= 1) {
+					storeOfPeers.put(txn, PEERS, new ArrayOfPeers(Stream.of(peer)).toByteIterable());
+					return true;
+				}
+				else
+					return false;
 			}
-			else
-				return false;
-		}
-		else {
-			var aop = ArrayOfPeers.from(bi);
-			if (aop.contains(peer) || (!force && aop.length() >= maxPeers))
-				return false;
 			else {
-				var concat = Stream.concat(aop.stream(), Stream.of(peer));
-				storeOfPeers.put(txn, peers, new ArrayOfPeers(concat).toByteIterable());
-				return true;
+				var aop = ArrayOfPeers.from(bi);
+				if (aop.contains(peer) || (!force && aop.length() >= maxPeers))
+					return false;
+				else {
+					var concat = Stream.concat(aop.stream(), Stream.of(peer));
+					storeOfPeers.put(txn, PEERS, new ArrayOfPeers(concat).toByteIterable());
+					return true;
+				}
 			}
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
 		}
 	}
 
-	private boolean remove(Transaction txn, Peer peer) throws IOException, URISyntaxException {
-		var bi = storeOfPeers.get(txn, peers);
-		if (bi == null)
-			return false;
-		else {
-			var aop = ArrayOfPeers.from(bi);
-			if (aop.contains(peer)) {
-				Stream<Peer> result = aop.stream().filter(p -> !peer.equals(p));
-				storeOfPeers.put(txn, peers, new ArrayOfPeers(result).toByteIterable());
-				return true;
-			}
-			else
+	private boolean remove(Transaction txn, Peer peer) throws IOException, URISyntaxException, DatabaseException {
+		try {
+			var bi = storeOfPeers.get(txn, PEERS);
+			if (bi == null)
 				return false;
+			else {
+				var aop = ArrayOfPeers.from(bi);
+				if (aop.contains(peer)) {
+					Stream<Peer> result = aop.stream().filter(p -> !peer.equals(p));
+					storeOfPeers.put(txn, PEERS, new ArrayOfPeers(result).toByteIterable());
+					return true;
+				}
+				else
+					return false;
+			}
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
 		}
 	}
 
 	private Environment createBlockchainEnvironment(Config config) {
-		var env = new Environment(config.dir.resolve("blockchain2").toString());
-		LOGGER.info("opened the blockchain database");
+		var env = new Environment(config.dir.resolve("peers").toString());
+		LOGGER.info("opened the peers database");
 		return env;
 	}
 
@@ -377,7 +382,7 @@ public class Database implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 
-		LOGGER.info("opened the store of " + name + " inside the blockchain database");
+		LOGGER.info("opened the store of " + name + " inside the peers database");
 		return store.get();
 	}
 }

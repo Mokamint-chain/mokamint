@@ -40,17 +40,16 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
-import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
@@ -89,11 +88,6 @@ public class LocalNodeImpl implements LocalNode {
 	 * The peers of the node.
 	 */
 	private final NodePeers peers;
-
-	/**
-	 * The database containing the blockchain.
-	 */
-	private final Database db;
 
 	/**
 	 * The blockchain of this node.
@@ -164,14 +158,13 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			this.config = config;
 			this.app = app;
-			this.db = new Database(this);
 			this.version = Versions.current();
-			this.uuid = db.getUUID();
 			this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
 			this.miners = new NodeMiners(this, Stream.of(miners));
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new NodePeers(this);
-			peers.tryToAdd(config.seeds().map(Peers::of), true, true);
+			this.uuid = peers.getUUID();
+			peers.connect();
 
 			if (init)
 				blockchain.startMining();
@@ -327,12 +320,7 @@ public class LocalNodeImpl implements LocalNode {
 					blockchain.close();
 				}
 				finally {
-					try {
-						db.close();
-					}
-					finally {
-						peers.close();
-					}
+					peers.close();
 				}
 			}
 
@@ -406,15 +394,6 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public Application getApplication() {
 		return app;
-	}
-
-	/**
-	 * Yields the database in this node.
-	 * 
-	 * @return the database
-	 */
-	public Database getDatabase() {
-		return db;
 	}
 
 	/**
