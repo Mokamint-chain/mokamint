@@ -174,6 +174,12 @@ public class PeerPropagationTests {
 			}
 
 			@Override
+			protected void onSubmit(Task task) {
+				System.out.println("onSubmit of " + task);
+				super.onSubmit(task);
+			}
+
+			@Override
 			protected void onSubmit(Event event) {
 				if (event instanceof PeersAddedEvent pae)
 					System.out.println("onSubmit of " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", ")));
