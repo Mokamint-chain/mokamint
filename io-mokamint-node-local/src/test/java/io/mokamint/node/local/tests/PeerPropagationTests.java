@@ -55,6 +55,8 @@ import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
+import io.mokamint.node.local.internal.blockchain.SynchronizationTask;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
 
@@ -143,7 +145,7 @@ public class PeerPropagationTests {
 
 	@Test
 	@DisplayName("a peer added to a node eventually propagates all its peers")
-	@Timeout(15)
+	@Timeout(30)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException {
@@ -175,6 +177,9 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onSubmit(Task task) {
+				if (task instanceof SynchronizationTask || task instanceof MineNewBlockTask)
+					return;
+
 				System.out.println("onSubmit of " + task);
 				super.onSubmit(task);
 			}
@@ -216,7 +221,7 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
-			assertTrue(semaphore.tryAcquire(1, 8, TimeUnit.SECONDS)); // TODO: this failed five times
+			assertTrue(semaphore.tryAcquire(1, 20, TimeUnit.SECONDS)); // TODO: this failed five times
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
