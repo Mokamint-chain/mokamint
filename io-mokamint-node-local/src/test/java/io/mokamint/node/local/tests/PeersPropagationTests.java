@@ -61,7 +61,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * Tests about the propagation of the peers in a network of nodes.
  */
-public class PeerPropagationTests {
+public class PeersPropagationTests {
 
 	/**
 	 * The application of the node used for testing.
@@ -253,7 +253,7 @@ public class PeerPropagationTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = PeerPropagationTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = PeersPropagationTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

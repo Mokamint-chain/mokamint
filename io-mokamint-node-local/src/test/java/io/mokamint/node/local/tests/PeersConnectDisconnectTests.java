@@ -59,7 +59,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * Tests about the connection and disconnection of peers in a network of nodes.
  */
-public class PeerConnectDisconnectTests {
+public class PeersConnectDisconnectTests {
 
 	/**
 	 * The application of the node used for testing.
@@ -228,7 +228,7 @@ public class PeerConnectDisconnectTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = PeerConnectDisconnectTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = PeersConnectDisconnectTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

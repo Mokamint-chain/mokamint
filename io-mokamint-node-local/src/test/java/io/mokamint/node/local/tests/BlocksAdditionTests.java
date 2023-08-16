@@ -55,7 +55,7 @@ import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.nonce.Deadlines;
 
-public class BlockAdditionTests {
+public class BlocksAdditionTests {
 
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
@@ -357,7 +357,7 @@ public class BlockAdditionTests {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = BlockAdditionTests.class.getClassLoader().getResource("logging.properties");
+			URL resource = BlocksAdditionTests.class.getClassLoader().getResource("logging.properties");
 			if (resource != null)
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);

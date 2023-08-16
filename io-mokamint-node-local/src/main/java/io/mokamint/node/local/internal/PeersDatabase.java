@@ -175,7 +175,7 @@ public class PeersDatabase implements AutoCloseable {
 
 		try {
 			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
-					() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
+				() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
