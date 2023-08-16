@@ -133,7 +133,7 @@ public class PeerPropagationTests {
 			assertTrue(node3.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer1::equals));
 
 			// we add peer4 as peer of peer1 now
-			node1.addPeer(peer4); // TODO: failed twice at NodePeers.openRemote(NodePeers.java:561) (DeploymentException: Connection Failed)
+			node1.addPeer(peer4);
 
 			// we wait for three events of addition of peer4 as peer
 			assertTrue(semaphore.tryAcquire(3, 5, TimeUnit.SECONDS));
@@ -179,11 +179,8 @@ public class PeerPropagationTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				// removing ws://localhost:8032 -> [ws://localhost:8034, ws://localhost:8036] e l'altro non si verifica
 				if (event instanceof PeersAddedEvent pae) {
-					System.out.print("removing " + pae.getPeers().map(Peer::toString).collect(Collectors.joining(", "))); // TODO: remove after debugging
 					pae.getPeers().forEach(stillToRemove::remove);
-					System.out.println(" -> " + stillToRemove);
 					if (stillToRemove.isEmpty())
 						semaphore.release();
 				}
@@ -207,7 +204,7 @@ public class PeerPropagationTests {
 			node4.addPeer(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
-			assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS)); // TODO: this failed five times
+			assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
 			assertEquals(allPeers, node4.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
