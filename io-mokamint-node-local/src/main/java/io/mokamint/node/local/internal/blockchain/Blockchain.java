@@ -89,7 +89,7 @@ public class Blockchain implements AutoCloseable{
 	/**
 	 * The Xodus store that maps each block to its immediate successor(s).
 	 */
-	private final Store storeOfForwards; // TODO: maybe useless?
+	private final Store storeOfForwards;
 
 	/**
 	 * The Xodus store that holds the list of hashes of the blocks in the current best chain.
@@ -221,6 +221,27 @@ public class Blockchain implements AutoCloseable{
 	}
 
 	/**
+	 * Yields the hash of the first genesis block that has been added to this database, if any.
+	 * 
+	 * @return the hash of the genesis block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<byte[]> getGenesisHash() throws DatabaseException, ClosedDatabaseException {
+		closureLock.beforeCall(ClosedDatabaseException::new);
+	
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	/**
 	 * Yields the first genesis block of this blockchain, if any.
 	 * 
 	 * @return the genesis block, if any
@@ -244,31 +265,6 @@ public class Blockchain implements AutoCloseable{
 				genesisCache = result;
 
 			return result;
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
-		}
-	}
-
-	/**
-	 * Yields the block with the given hash, if it is contained in this database.
-	 * 
-	 * @param hash the hash
-	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 */
-	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
-			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
-			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -303,27 +299,6 @@ public class Blockchain implements AutoCloseable{
 	}
 
 	/**
-	 * Yields the hash of the first genesis block that has been added to this database, if any.
-	 * 
-	 * @return the hash of the genesis block, if any
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 */
-	public Optional<byte[]> getGenesisHash() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
-		}
-	}
-
-	/**
 	 * Yields the hash of the head block of the blockchain in the database, if it has been set already.
 	 * 
 	 * @return the hash of the head block, if any
@@ -344,9 +319,23 @@ public class Blockchain implements AutoCloseable{
 		}
 	}
 
+	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
+		closureLock.beforeCall(ClosedDatabaseException::new);
+	
+		try {
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
 	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, ClosedDatabaseException {
 		closureLock.beforeCall(ClosedDatabaseException::new);
-
+	
 		try {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
 		}
@@ -358,11 +347,22 @@ public class Blockchain implements AutoCloseable{
 		}
 	}
 
-	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
+	/**
+	 * Yields the block with the given hash, if it is contained in this database.
+	 * 
+	 * @param hash the hash
+	 * @return the block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		closureLock.beforeCall(ClosedDatabaseException::new);
-
+	
 		try {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
+			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
+			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -491,8 +491,8 @@ public class Blockchain implements AutoCloseable{
 	
 		do {
 			Block cursor = ws.remove(ws.size() - 1);
-	
-			if (!containsBlock(cursor.getHash(hashingForBlocks))) { // optimization check, to avoid repeated verification
+			byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
+			if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
 				if (cursor instanceof NonGenesisBlock ngb) {
 					Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
 					if (previous.isEmpty()) {
@@ -501,10 +501,10 @@ public class Blockchain implements AutoCloseable{
 							addedToOrphans = true;
 					}
 					else
-						added |= add(ngb, previous, block == ngb, ws, updatedHead);
+						added |= add(ngb, hashOfCursor, previous, block == ngb, ws, updatedHead);
 				}
 				else
-					added |= add(cursor, Optional.empty(), block == cursor, ws, updatedHead);
+					added |= add(cursor, hashOfCursor, Optional.empty(), block == cursor, ws, updatedHead);
 			}
 		}
 		while (!ws.isEmpty());
@@ -582,14 +582,14 @@ public class Blockchain implements AutoCloseable{
 		}
 	}
 
-	private boolean add(Block block, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
+	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
 			verify(block, previous);
 
 			if (add(block, updatedHead)) {
-				getOrphansWithParent(block).forEach(ws::add);
+				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);
 				if (first)
 					return true;
 			}
@@ -598,7 +598,7 @@ public class Blockchain implements AutoCloseable{
 			if (first)
 				throw e;
 			else
-				LOGGER.warning("discarding orphan block " + block.getHexHash(hashingForBlocks) + " since it does not pass verification: " + e.getMessage());
+				LOGGER.warning("discarding orphan block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
 		}
 
 		return false;
@@ -637,11 +637,10 @@ public class Blockchain implements AutoCloseable{
 	 * Yields the orphans having the given parent.
 	 * 
 	 * @param parent the parent
+	 * @param hashOfParent the hash of {@code parent}
 	 * @return the orphans whose previous block is {@code parent}, if any
 	 */
-	private Stream<NonGenesisBlock> getOrphansWithParent(Block parent) {
-		byte[] hashOfParent = parent.getHash(hashingForBlocks);
-
+	private Stream<NonGenesisBlock> getOrphansWithParent(Block parent, byte[] hashOfParent) {
 		synchronized (orphans) {
 			return Stream.of(orphans)
 					.filter(Objects::nonNull)
@@ -892,7 +891,7 @@ public class Blockchain implements AutoCloseable{
 		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
 
 		if (containsBlock(txn, hashOfBlock)) {
-			LOGGER.warning("not adding block " + block.getHexHash(hashingForBlocks) + " since it is already in the database");
+			LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
@@ -906,7 +905,7 @@ public class Blockchain implements AutoCloseable{
 				return true;
 			}
 			else {
-				LOGGER.warning("not adding block " + block.getHexHash(hashingForBlocks) + " since its previous block is not in the database");
+				LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
 				return false;
 			}
 		}
@@ -920,7 +919,7 @@ public class Blockchain implements AutoCloseable{
 				return true;
 			}
 			else {
-				LOGGER.warning("not adding genesis block " + block.getHexHash(hashingForBlocks) + " since the database already contains a genesis block");
+				LOGGER.warning("not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
 				return false;
 			}
 		}
@@ -929,7 +928,7 @@ public class Blockchain implements AutoCloseable{
 	private void setGenesisHash(Transaction txn, GenesisBlock newGenesis, byte[] newGenesisHash) throws DatabaseException {
 		try {
 			storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
-			LOGGER.info("height " + newGenesis.getHeight() + ": block " + newGenesis.getHexHash(hashingForBlocks) + " set as genesis");
+			LOGGER.info("height " + newGenesis.getHeight() + ": block " + Hex.toHexString(newGenesisHash) + " set as genesis");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -942,7 +941,7 @@ public class Blockchain implements AutoCloseable{
 			storeOfBlocks.put(txn, power, fromBytes(newHead.getPower().toByteArray()));
 			storeOfBlocks.put(txn, height, fromBytes(longToBytes(newHead.getHeight())));
 			updateChain(txn, newHead, newHeadHash);
-			LOGGER.info("height " + newHead.getHeight() + ": block " + newHead.getHexHash(hashingForBlocks) + " set as head");
+			LOGGER.info("height " + newHead.getHeight() + ": block " + Hex.toHexString(newHeadHash) + " set as head");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
