@@ -53,7 +53,8 @@ import io.mokamint.node.local.internal.ClosureLock;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
- * The database where the blocks are persisted.
+ * The database where the blocks are persisted. Blocks are rooted at a genesis block
+ * and do not necessarily form a list but are in general a tree.
  */
 public class BlocksDatabase implements AutoCloseable {
 
@@ -63,17 +64,12 @@ public class BlocksDatabase implements AutoCloseable {
 	private final ClosureLock closureLock = new ClosureLock();
 
 	/**
-	 * The node having this blockchain.
-	 */
-	private final LocalNodeImpl node;
-
-	/**
 	 * The Xodus environment that holds the database of blocks.
 	 */
 	private final Environment environment;
 
 	/**
-	 * The Xodus store that holds the blocks of the chain.
+	 * The Xodus store that holds the blocks, of all chains.
 	 */
 	private final Store storeOfBlocks;
 
@@ -121,9 +117,8 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public BlocksDatabase(LocalNodeImpl node) throws DatabaseException {
-		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
-		this.environment = createBlockchainEnvironment();
+		this.environment = createBlockchainEnvironment(node);
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
 		this.storeOfChain = openStore("chain");
@@ -144,7 +139,7 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the hash of the first genesis block that has been added to this database, if any.
+	 * Yields the hash of the genesis block in this database, if any.
 	 * 
 	 * @return the hash of the genesis block, if any
 	 * @throws DatabaseException if the database is corrupted
@@ -165,7 +160,7 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the first genesis block of this blockchain, if any.
+	 * Yields the genesis block in this database, if any.
 	 * 
 	 * @return the genesis block, if any
 	 * @throws DatabaseException if the database is corrupted
@@ -188,7 +183,7 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the head block of this blockchain, if any.
+	 * Yields the head of the best chain in this database, if any.
 	 * 
 	 * @return the head block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
@@ -212,7 +207,7 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the hash of the head block of the blockchain in the database, if it has been set already.
+	 * Yields the hash of the head of the best chain in this database, if any.
 	 * 
 	 * @return the hash of the head block, if any
 	 * @throws DatabaseException if the database is corrupted
@@ -232,6 +227,13 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Yields the height of the head of the best chain in this database, if any.
+	 * 
+	 * @return the height of the head block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
 	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 	
@@ -246,6 +248,13 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Yields the power of the head of the best chain in this database, if any.
+	 * 
+	 * @return the power of the head block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
 	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, ClosedDatabaseException {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 	
@@ -376,16 +385,17 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Adds the given block to the database of blocks.
+	 * Adds the given block to this database.
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
-	 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head;
-	 *                    otherwise it is left unchanged
+	 * @param updatedHead the new head of the best chain resulting from the addition,
+	 *                    if it changed wrt the previous head; otherwise it is left unchanged
 	 * @return true if the block has been actually added to the database, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
 	 *         if {@code block} was already in the database, or if {@code block} is
-	 *         a genesis block but the genesis block is already set in the database
+	 *         a genesis block but the genesis block is already set in the database;
+	 *         or if {@code block} is a non-genesis block whose previous is not in the tree
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
@@ -429,7 +439,8 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
 			if (containsBlock(txn, ngb.getHashOfPreviousBlock())) {
-				putInStore(txn, block, hashOfBlock, bytesOfBlock);
+				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
+				putInStore(txn, hashOfBlock, bytesOfBlock);
 				addToForwards(txn, ngb, hashOfBlock);
 				if (updateHead(txn, ngb, hashOfBlock))
 					updatedHead.set(ngb);
@@ -443,8 +454,9 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 		else {
 			if (getGenesisHash(txn).isEmpty()) {
-				putInStore(txn, block, hashOfBlock, bytesOfBlock);
-				setGenesisHash(txn, (GenesisBlock) block, hashOfBlock);
+				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
+				putInStore(txn, hashOfBlock, bytesOfBlock);
+				setGenesisHash(txn, hashOfBlock);
 				setHeadHash(txn, block, hashOfBlock);
 				updatedHead.set(block);
 				return true;
@@ -456,7 +468,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
-	private Environment createBlockchainEnvironment() {
+	private Environment createBlockchainEnvironment(LocalNodeImpl node) {
 		var env = new Environment(node.getConfig().dir.resolve("blocks").toString());
 		LOGGER.info("opened the blocks database");
 		return env;
@@ -477,7 +489,7 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the hash of the head block of the blockchain in the database, if it has been set already,
+	 * Yields the hash of the head block of the blockchain in this database, if it has been set already,
 	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -494,7 +506,7 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the hash of the first genesis block that has been added to this database, if any,
+	 * Yields the hash of the genesis block in this database, if any,
 	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -552,9 +564,10 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the hashes of the blocks that follow the block with the given hash, if any.
+	 * Yields the hashes of the blocks that follow the block with the given hash, if any,
+	 * running inside a transaction.
 	 * 
-	 * @param txn the Xodus transaction to use for the computation
+	 * @param txn the transaction
 	 * @param hash the hash of the parent block
 	 * @return the hashes
 	 * @throws DatabaseException if the database is corrupted
@@ -596,7 +609,8 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @param txn the transaction
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown; this can only
+	 *                                  occur if the block is a non-genesis block
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
@@ -609,6 +623,14 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Yields the head of the best chain in this database, if any, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the head, if any
+	 * @throws NoSuchAlgorithmException if the head uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	private Optional<Block> getHead(Transaction txn) throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			Optional<byte[]> maybeHeadHash = getHeadHash(txn);
@@ -626,6 +648,13 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Yields the genesis block in this database, if any, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the genesis block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	private Optional<GenesisBlock> getGenesis(Transaction txn) throws DatabaseException {
 		try {
 			Optional<byte[]> maybeGenesisHash = getGenesisHash(txn);
@@ -651,7 +680,15 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
-	private void putInStore(Transaction txn, Block block, byte[] hashOfBlock, byte[] bytesOfBlock) throws DatabaseException {
+	/**
+	 * Adds to the database a block with a given hash, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @param hashOfBlock the hash of the block
+	 * @param bytesOfBlock the bytes of the block
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private void putInStore(Transaction txn, byte[] hashOfBlock, byte[] bytesOfBlock) throws DatabaseException {
 		try {
 			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
 		}
@@ -660,6 +697,14 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Determines if this database contains a block with the given hash, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @param hashOfBlock the hash
+	 * @return true if and only if that condition holds
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws DatabaseException {
 		try {
 			return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
@@ -683,58 +728,90 @@ public class BlocksDatabase implements AutoCloseable {
 			return false;
 	}
 
-	private void setGenesisHash(Transaction txn, GenesisBlock newGenesis, byte[] newGenesisHash) throws DatabaseException {
+	/**
+	 * Sets the hash of the genesis block in this database, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @param newGenesisHash the hash of the genesis block
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws DatabaseException {
 		try {
 			storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
-			LOGGER.info("height " + newGenesis.getHeight() + ": block " + Hex.toHexString(newGenesisHash) + " set as genesis");
+			LOGGER.info("height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
 
+	/**
+	 * Sets the head of the best chain in this database, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @param newHead the new head
+	 * @param newHeadHash the hash of {@code newHead}
+	 * @throws NoSuchAlgorithmException if {@code newHead} uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
 			storeOfBlocks.put(txn, power, fromBytes(newHead.getPower().toByteArray()));
-			storeOfBlocks.put(txn, height, fromBytes(longToBytes(newHead.getHeight())));
+			long heightOfHead = newHead.getHeight();
+			storeOfBlocks.put(txn, height, fromBytes(longToBytes(heightOfHead)));
 			updateChain(txn, newHead, newHeadHash);
-			LOGGER.info("height " + newHead.getHeight() + ": block " + Hex.toHexString(newHeadHash) + " set as head");
+			LOGGER.info("height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
 
+	/**
+	 * Updates the current best chain in this database, to the chain having the given block as head,
+	 * running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @param block the block that gets set as new head
+	 * @param blockHash the hash of {@code block}
+	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
 	private void updateChain(Transaction txn, Block block, byte[] blockHash) throws NoSuchAlgorithmException, DatabaseException {
-		long height = block.getHeight();
-		var heightBI = fromBytes(longToBytes(height));
-		var _new = fromBytes(blockHash);
-		var old = storeOfChain.get(txn, heightBI);
+		try {
+			long height = block.getHeight();
+			var heightBI = fromBytes(longToBytes(height));
+			var _new = fromBytes(blockHash);
+			var old = storeOfChain.get(txn, heightBI);
 
-		do {
-			storeOfChain.put(txn, heightBI, _new);
+			do {
+				storeOfChain.put(txn, heightBI, _new);
 
-			if (block instanceof NonGenesisBlock ngb) {
-				if (height <= 0L)
-					throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(blockHash) + " at height " + height);
+				if (block instanceof NonGenesisBlock ngb) {
+					if (height <= 0L)
+						throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(blockHash) + " at height " + height);
 
-				byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
-				Optional<Block> previous = getBlock(txn, hashOfPrevious);
-				if (previous.isEmpty())
-					throw new DatabaseException("Block " + Hex.toHexString(blockHash) + " has no previous block in the database");
+					byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
+					Optional<Block> previous = getBlock(txn, hashOfPrevious);
+					if (previous.isEmpty())
+						throw new DatabaseException("Block " + Hex.toHexString(blockHash) + " has no previous block in the database");
 
-				blockHash = hashOfPrevious;
-				block = previous.get();
-				height--;
-				heightBI = fromBytes(longToBytes(height));
-				_new = fromBytes(blockHash);
-				old = storeOfChain.get(txn, heightBI);
+					blockHash = hashOfPrevious;
+					block = previous.get();
+					height--;
+					heightBI = fromBytes(longToBytes(height));
+					_new = fromBytes(blockHash);
+					old = storeOfChain.get(txn, heightBI);
+				}
+				else if (height > 0L)
+					throw new DatabaseException("The current best chain contains the genesis block " + Hex.toHexString(blockHash) + " at height " + height);
 			}
-			else if (height > 0L)
-				throw new DatabaseException("The current best chain contains the genesis block " + Hex.toHexString(blockHash) + " at height " + height);
+			while (block instanceof NonGenesisBlock && !_new.equals(old));
 		}
-		while (block instanceof NonGenesisBlock && !_new.equals(old));
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private static byte[] longToBytes(long l) {
@@ -785,8 +862,8 @@ public class BlocksDatabase implements AutoCloseable {
 				return Stream.empty();
 
 			ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
-					.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
-					.toArray(ByteIterable[]::new);
+				.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
+				.toArray(ByteIterable[]::new);
 
 			if (Stream.of(hashes).anyMatch(Objects::isNull))
 				throw new DatabaseException("The current best chain contains a missing element");
