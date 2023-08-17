@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
@@ -48,17 +49,22 @@ import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
- * It is a tree rather than necessarily a list of blocks, since a block might
+ * It is a tree and not necessarily a list of blocks, since a block might
  * have more children, but only one child can lead to the head of the blockchain,
  * which is the most powerful block in the chain.
  */
 @ThreadSafe
-public class Blockchain implements AutoCloseable{
+public class Blockchain implements AutoCloseable {
 
 	/**
 	 * The node having this blockchain.
 	 */
 	private final LocalNodeImpl node;
+
+	/**
+	 * The hashing algorithm used for the blocks.
+	 */
+	private final HashingAlgorithm<byte[]> hashingForBlocks;
 
 	/**
 	 * The database where the blocks are persisted.
@@ -76,7 +82,7 @@ public class Blockchain implements AutoCloseable{
 	 * their previous block arrives later.
 	 */
 	@GuardedBy("itself")
-	private final NonGenesisBlock[] orphans = new NonGenesisBlock[20];
+	private final NonGenesisBlock[] orphans = new NonGenesisBlock[20]; // TODO
 
 	/**
 	 * The next insertion position inside the {@link #orphans} array.
@@ -85,7 +91,7 @@ public class Blockchain implements AutoCloseable{
 	private int orphansPos;
 
 	/**
-	 * True if and only if the blockchain is currently performing
+	 * True if and only if this blockchain is currently performing
 	 * a synchronization from the peers of the node.
 	 */
 	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
@@ -93,23 +99,26 @@ public class Blockchain implements AutoCloseable{
 	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
 	/**
-	 * Creates the container of the blocks of a node.
+	 * Creates the blockchain of a node. It restores the block from the persistent
+	 * state of the blocks database, if any.
 	 * 
 	 * @param node the node
 	 * @throws DatabaseException if the database of blocks is corrupted
 	 */
 	public Blockchain(LocalNodeImpl node) throws DatabaseException {
 		this.node = node;
+		this.hashingForBlocks = node.getConfig().hashingForBlocks;
 		this.db = new BlocksDatabase(node);
 	}
 
 	/**
-	 * Creates the container of the blocks of a node, allowing to require initialization with a new genesis block.
+	 * Creates the blockchain of a node. It restores the block from the persistent
+	 * state of the blocks database, if any. Moreover, it allows initialization with a new genesis block.
 	 * 
 	 * @param node the node
-	 * @param init if the container must be initialized with a genesis block (if empty)
+	 * @param init if the blockchain must be initialized with a genesis block (if empty)
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
-	 * @throws AlreadyInitializedException if {@code init} is true but the container has a genesis block already
+	 * @throws AlreadyInitializedException if {@code init} is true but the blockchain has a genesis block already
 	 */
 	public Blockchain(LocalNodeImpl node, boolean init) throws DatabaseException, AlreadyInitializedException {
 		this(node);
@@ -160,11 +169,10 @@ public class Blockchain implements AutoCloseable{
 	 * Yields the first genesis block of this blockchain, if any.
 	 * 
 	 * @return the genesis block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException {
 		// we use a cache to avoid repeated access for reading the genesis block
 		if (genesisCache != null)
 			return genesisCache;
@@ -178,19 +186,18 @@ public class Blockchain implements AutoCloseable{
 	}
 
 	/**
-	 * Yields the head block of this blockchain, if any.
+	 * Determines if this blockchain is empty.
 	 * 
-	 * @return the head block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @return true if and only if this blockchain is empty
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		return db.getHead();
+	public boolean isEmpty() throws DatabaseException, ClosedDatabaseException {
+		return db.getGenesisHash().isEmpty();
 	}
 
 	/**
-	 * Yields the hash of the head block of the blockchain in the database, if it has been set already.
+	 * Yields the hash of the head block of the blockchain, if it has been set already.
 	 * 
 	 * @return the hash of the head block, if any
 	 * @throws DatabaseException if the database is corrupted
@@ -200,20 +207,46 @@ public class Blockchain implements AutoCloseable{
 		return db.getGenesisHash();
 	}
 
+	/**
+	 * Yields the head block of this blockchain, if any.
+	 * 
+	 * @return the head block, if any
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the head is unknown
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return db.getHead();
+	}
+
+	/**
+	 * Yields the height of the head block of this blockchain, if any.
+	 * 
+	 * @return the height
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
 	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
 		return db.getHeightOfHead();
 	}
 
+	/**
+	 * Yields the power of the head block of this blockchain, if any.
+	 * 
+	 * @return the power
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
 	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, ClosedDatabaseException {
 		return db.getPowerOfHead();
 	}
 
 	/**
-	 * Yields the block with the given hash, if it is contained in this database.
+	 * Yields the block with the given hash, if it is contained in this blockchain.
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown; this can only occur for non-genesis blocks
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
@@ -273,7 +306,13 @@ public class Blockchain implements AutoCloseable{
 
 	/**
 	 * Adds the given block to the database of blocks of this node.
-	 * If the block was already in the database, nothing happens.
+	 * If the block was already in the database, nothing happens. Note that the addition
+	 * of a block might actually induce the addition of more, orphan blocks,
+	 * if the block is recognized as the previous block of an orphan block.
+	 * The addition of a block might change the head of the best chain, in which case
+	 * mining will be started by this method. Moreover, if the block is an orphan
+	 * with higher power than the current head, its addition might trigger the synchronization
+	 * of the chain from the peers of the node.
 	 * 
 	 * @param block the block to add
 	 * @return true if the block has been actually added to the tree of blocks
@@ -300,7 +339,7 @@ public class Blockchain implements AutoCloseable{
 	
 		do {
 			Block cursor = ws.remove(ws.size() - 1);
-			byte[] hashOfCursor = cursor.getHash(node.getConfig().hashingForBlocks);
+			byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
 			if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
 				if (cursor instanceof NonGenesisBlock ngb) {
 					Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
@@ -334,18 +373,24 @@ public class Blockchain implements AutoCloseable{
 	}
 
 	/**
-	 * An event triggered when a block gets added to the blockchain, not necessarily
+	 * An event fired when a block gets added to the blockchain, not necessarily
 	 * to the main chain, but definitely connected to the genesis block.
 	 */
-	public class BlockAddedEvent implements Event {
+	public static class BlockAddedEvent implements Event {
 
 		/**
 		 * The block that has been added.
 		 */
 		public final Block block;
 
-		private BlockAddedEvent(Block block) {
+		/**
+		 * The hash of the block, as a hexadecimal string.
+		 */
+		public final String hexHashOfBlock;
+
+		private BlockAddedEvent(Block block, byte[] hashOfBlock) {
 			this.block = block;
+			this.hexHashOfBlock = Hex.toHexString(hashOfBlock);
 		}
 
 		@Override
@@ -353,7 +398,7 @@ public class Blockchain implements AutoCloseable{
 
 		@Override
 		public String toString() {
-			return "block added event for block " + block.getHexHash(node.getConfig().hashingForBlocks);
+			return "block added event for block " + hexHashOfBlock;
 		}
 
 		@Override
@@ -370,7 +415,7 @@ public class Blockchain implements AutoCloseable{
 
 			if (db.add(block, updatedHead)) {
 				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);
-				node.submit(new BlockAddedEvent(block));
+				node.submit(new BlockAddedEvent(block, hashOfBlock));
 				if (first)
 					return true;
 			}
@@ -385,6 +430,13 @@ public class Blockchain implements AutoCloseable{
 		return false;
 	}
 
+	/**
+	 * Verifies if {@code block} satisfies all consensus rules required for being a child of {@code previous}.
+	 * 
+	 * @param block the block
+	 * @param previous the previous of {@code block}; this can be missing if {@code block} is a genesis block
+	 * @throws VerificationException if verification fails
+	 */
 	private void verify(Block block, Optional<Block> previous) throws VerificationException {
 		if (block instanceof GenesisBlock gb)
 			verify(gb);
@@ -392,9 +444,22 @@ public class Blockchain implements AutoCloseable{
 			verify((NonGenesisBlock) block, previous.get());
 	}
 
+	/**
+	 * Verifies if {@code block} is valid for this blockchain.
+	 * 
+	 * @param block the block
+	 * @throws VerificationException if verification fails
+	 */
 	private void verify(GenesisBlock block) throws VerificationException {
 	}
 
+	/**
+	 * Verifies if {@code block} satisfies all consensus rules required for being a child of {@code previous}.
+	 * 
+	 * @param block the block
+	 * @param previous the previous block
+	 * @throws VerificationException if verification fails
+	 */
 	private void verify(NonGenesisBlock block, Block previous) throws VerificationException {
 	}
 
@@ -431,15 +496,15 @@ public class Blockchain implements AutoCloseable{
 
 	private void initialize() throws DatabaseException, AlreadyInitializedException {
 		try {
-			if (getGenesisHash().isPresent())
+			if (!isEmpty())
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
 
 			var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(node.getConfig().initialAcceleration));
 			if (db.add(genesis, new AtomicReference<>()))
-				node.submit(new BlockAddedEvent(genesis));
+				node.submit(new BlockAddedEvent(genesis, genesis.getHash(hashingForBlocks)));
 		}
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
-			// the database cannot be closed at this moment
+			// the database cannot be closed at this moment;
 			// moreover, if the database is empty, there is no way it can contain a non-genesis block (that contains a hashing algorithm)
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
 			throw new RuntimeException("unexpected exception", e);

@@ -119,7 +119,7 @@ public class MineNewBlockTask implements Task {
 
 	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
-		if (blockchain.getHeadHash().isEmpty())
+		if (blockchain.isEmpty())
 			LOGGER.log(Level.SEVERE, "cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L)
 			node.submit(new NoMinersAvailableEvent());

@@ -168,15 +168,14 @@ public class BlocksDatabase implements AutoCloseable {
 	 * Yields the first genesis block of this blockchain, if any.
 	 * 
 	 * @return the genesis block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the genesis block is unknown
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
-			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+			return check(DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getGenesis))
 			);
 		}
@@ -627,7 +626,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
-	private Optional<GenesisBlock> getGenesis(Transaction txn) throws NoSuchAlgorithmException, DatabaseException {
+	private Optional<GenesisBlock> getGenesis(Transaction txn) throws DatabaseException {
 		try {
 			Optional<byte[]> maybeGenesisHash = getGenesisHash(txn);
 			if (maybeGenesisHash.isEmpty())
@@ -642,6 +641,10 @@ public class BlocksDatabase implements AutoCloseable {
 			}
 			else
 				throw new DatabaseException("the genesis hash is set but it is not in the database");
+		}
+		catch (NoSuchAlgorithmException e) {
+			// getBlock throws NoSuchAlgorithmException only for non-genesis blocks
+			throw new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database", e);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);

@@ -253,6 +253,8 @@ public class SynchronizationTask implements Task {
 		 * @throws ClosedDatabaseException if the database is already closed
 		 */
 		private boolean groupIsUseless(byte[][] hashes) throws DatabaseException, ClosedDatabaseException {
+			Optional<byte[]> genesisHash;
+
 			// the first hash must coincide with the last hash of the previous group,
 			// or otherwise the peer is cheating or there has been a change in the best chain
 			// and we must anyway stop downloading blocks here from this peer
@@ -260,8 +262,8 @@ public class SynchronizationTask implements Task {
 				return true;
 			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
 			// then the first hash must be that genesis' hash
-			else if (hashes.length > 0 && height == 0L && node.getBlockchain().getGenesisHash().isPresent()
-					&& !Arrays.equals(hashes[0], node.getBlockchain().getGenesisHash().get()))
+			else if (hashes.length > 0 && height == 0L && (genesisHash = node.getBlockchain().getGenesisHash()).isPresent()
+					&& !Arrays.equals(hashes[0], genesisHash.get()))
 				return true;
 			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or
 			// otherwise the hashes are useless

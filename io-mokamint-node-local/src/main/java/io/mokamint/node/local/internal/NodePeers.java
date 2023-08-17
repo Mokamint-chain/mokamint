@@ -799,7 +799,7 @@ public class NodePeers implements AutoCloseable {
 			node.whisperItsServices();
 
 			// if the blockchain was empty, it might be the right moment to attempt a synchronization
-			if (node.getBlockchain().getGenesisHash().isEmpty())
+			if (node.getBlockchain().isEmpty())
 				node.getBlockchain().startSynchronization(0L);
 		}
 
