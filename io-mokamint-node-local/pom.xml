@@ -50,11 +50,6 @@
       <version>${hotmoka.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.hotmoka</groupId>
-      <artifactId>toml4j</artifactId>
-      <version>0.7.3</version>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-nop</artifactId>
       <version>2.0.7</version>
