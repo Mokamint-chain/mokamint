@@ -58,7 +58,7 @@ public class Create extends AbstractCommand {
 
 		var prolog = new byte[] { 11, 13, 24, 88 };
 
-		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.mk(hashing, (byte[] bytes) -> bytes), this::onNewPercent)) {
+		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.of(hashing, (byte[] bytes) -> bytes), this::onNewPercent)) {
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException(e);

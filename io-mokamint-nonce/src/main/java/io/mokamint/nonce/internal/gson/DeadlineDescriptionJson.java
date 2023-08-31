@@ -41,6 +41,6 @@ public abstract class DeadlineDescriptionJson implements JsonRepresentation<Dead
 
 	@Override
 	public DeadlineDescription unmap() throws NoSuchAlgorithmException {
-		return DeadlineDescriptions.of(scoopNumber, Hex.fromHexString(data), HashingAlgorithms.mk(hashing, Function.identity()));
+		return DeadlineDescriptions.of(scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing, Function.identity()));
 	}
 }

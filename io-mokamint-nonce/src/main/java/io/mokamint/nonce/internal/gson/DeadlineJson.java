@@ -47,6 +47,6 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 
 	@Override
 	public Deadline unmap() throws NoSuchAlgorithmException {
-		return Deadlines.of(Hex.fromHexString(prolog), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.mk(hashing, Function.identity()));
+		return Deadlines.of(Hex.fromHexString(prolog), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing, Function.identity()));
 	}
 }

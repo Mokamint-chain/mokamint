@@ -84,7 +84,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			context.readBytes(context.readCompactInt(), "mismatch in deadline's value length"),
 			context.readInt(),
 			context.readBytes(context.readInt(), "mismatch in deadline's data length"),
-			HashingAlgorithms.mk(context.readUTF(), Function.identity()));
+			HashingAlgorithms.of(context.readStringUnshared(), Function.identity()));
 	}
 
 	@Override
@@ -172,6 +172,6 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		context.writeInt(scoopNumber);
 		context.writeInt(data.length);
 		context.write(data);
-		context.writeUTF(hashing.getName());
+		context.writeStringUnshared(hashing.getName());
 	}
 }

@@ -238,7 +238,7 @@ public class EventsTests {
 			.findAny()
 			.get();
 
-		var algo = HashingAlgorithms.mk(algoName, Function.identity());
+		var algo = HashingAlgorithms.of(algoName, Function.identity());
 
 		var myMiner = new Miner() {
 

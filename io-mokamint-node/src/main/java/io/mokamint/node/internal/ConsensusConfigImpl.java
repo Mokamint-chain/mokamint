@@ -211,7 +211,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public T setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
-			this.hashingForDeadlines = HashingAlgorithms.mk(hashingForDeadlines, Function.identity());
+			this.hashingForDeadlines = HashingAlgorithms.of(hashingForDeadlines, Function.identity());
 			return getThis();
 		}
 
@@ -224,7 +224,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public T setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
-			this.hashingForGenerations = HashingAlgorithms.mk(hashingForGenerations, Function.identity());
+			this.hashingForGenerations = HashingAlgorithms.of(hashingForGenerations, Function.identity());
 			return getThis();
 		}
 
@@ -236,7 +236,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public T setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
-			this.hashingForBlocks = HashingAlgorithms.mk(hashingForBlocks, Function.identity());
+			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Function.identity());
 			return getThis();
 		}
 

@@ -111,7 +111,7 @@ public class PlotImpl implements Plot {
 		if (reader.read(hashingNameBytes) != hashingNameLength)
 			throw new IOException("cannot read the name of the hashing algorithm used for the plot file");
 		var hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
-		this.hashing = HashingAlgorithms.mk(hashingName, Function.identity());
+		this.hashing = HashingAlgorithms.of(hashingName, Function.identity());
 	}
 
 	/**

@@ -63,7 +63,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		context.writeUTF(uri.toString());
+		context.writeStringUnshared(uri.toString());
 	}
 
 	@Override
@@ -99,6 +99,6 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 * @throws URISyntaxException if the context contains a URI with illegal syntax
 	 */
 	public static PeerImpl from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return new PeerImpl(new URI(context.readUTF()));
+		return new PeerImpl(new URI(context.readStringUnshared()));
 	}
 }

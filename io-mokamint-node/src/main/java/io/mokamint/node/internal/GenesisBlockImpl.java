@@ -65,7 +65,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	GenesisBlockImpl(UnmarshallingContext context) throws IOException {
-		String startDateTimeUTC = context.readUTF();
+		String startDateTimeUTC = context.readStringUnshared();
 		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 		this.acceleration = context.readBigInteger();
 	}
@@ -111,7 +111,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
 		context.writeLong(0L);
-		context.writeUTF(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
+		context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 		context.writeBigInteger(acceleration);
 	}
 
