@@ -141,6 +141,13 @@ public class Config extends AbstractConfig {
 	public final long whisperingMemorySize;
 
 	/**
+	 * The maximal time (in milliseconds) a block can be created in the future,
+	 * from now (intended as network time now). Block verification will reject blocks created
+	 * beyond this threshold. It defaults to 15,000 (15 seconds).
+	 */
+	public final long blockMaxTimeInTheFuture;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 */
 	private Config(Builder builder) {
@@ -159,6 +166,7 @@ public class Config extends AbstractConfig {
 		this.peerTimeout = builder.peerTimeout;
 		this.peerPingInterval = builder.peerPingInterval;
 		this.whisperingMemorySize = builder.whisperingMemorySize;
+		this.blockMaxTimeInTheFuture = builder.blockMaxTimeInTheFuture;
 	}
 
 	@Override
@@ -208,6 +216,9 @@ public class Config extends AbstractConfig {
 		sb.append("\n");
 		sb.append("# the size of the memory used to avoid whispering the same message again\n");
 		sb.append("whispering_memory_size = " + whisperingMemorySize + "\n");
+		sb.append("\n");
+		sb.append("# the maximal creation time in the future (in milliseconds) of a block that passes verification\n");
+		sb.append("block_max_time_in_the_future = " + blockMaxTimeInTheFuture + "\n");
 
 		return sb.toString();
 	}
@@ -228,7 +239,8 @@ public class Config extends AbstractConfig {
 				peerPunishmentForUnreachable == otherConfig.peerPunishmentForUnreachable &&
 				peerTimeout == otherConfig.peerTimeout &&
 				peerPingInterval == otherConfig.peerPingInterval &&
-				whisperingMemorySize == otherConfig.whisperingMemorySize;
+				whisperingMemorySize == otherConfig.whisperingMemorySize &&
+				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture;
 		}
 		else
 			return false;
@@ -251,6 +263,7 @@ public class Config extends AbstractConfig {
 		private long peerTimeout = 10000L;
 		private long peerPingInterval = 120000L;
 		private long whisperingMemorySize = 1000L;
+		private long blockMaxTimeInTheFuture = 15000L;
 
 		private Builder() throws NoSuchAlgorithmException {
 		}
@@ -314,6 +327,10 @@ public class Config extends AbstractConfig {
 			var whisperingMemorySize = toml.getLong("whispering_memory_size");
 			if (whisperingMemorySize != null)
 				setWhisperingMemorySize(whisperingMemorySize);
+
+			var blockMaxTimeInTheFuture = toml.getLong("block_max_time_in_the_future");
+			if (blockMaxTimeInTheFuture != null)
+				setBlockMaxTimeInTheFuture(blockMaxTimeInTheFuture);
 		}
 
 		/**
@@ -536,6 +553,22 @@ public class Config extends AbstractConfig {
 				throw new IllegalArgumentException("whisperingMemorySize must be non-negative");
 
 			this.whisperingMemorySize = whisperingMemorySize;
+			return this;
+		}
+
+		/**
+		 * Sets the maximal time (in milliseconds) a block can be created in the future,
+		 * from now (intended as network time now). Block verification will reject blocks created
+		 * beyond this threshold. It defaults to 15,000 (15 seconds).
+		 * 
+		 * @param blockMaxTimeInTheFuture the maximal time difference (in milliseconds)
+		 * @return this builder
+		 */
+		public Builder setBlockMaxTimeInTheFuture(long blockMaxTimeInTheFuture) {
+			if (blockMaxTimeInTheFuture < 0L)
+				throw new IllegalArgumentException("blockMaxTimeInTheFuture must be non-negative");
+		
+			this.blockMaxTimeInTheFuture = blockMaxTimeInTheFuture;
 			return this;
 		}
 

@@ -711,35 +711,35 @@ public class NodePeers implements AutoCloseable {
 	 * @throws ClosedDatabaseException  if the database is already closed
 	 */
 	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {
-		NodeInfo info1;
+		NodeInfo peerInfo;
 
 		try {
-			info1 = remote.getInfo();
+			peerInfo = remote.getInfo();
 		}
 		catch (ClosedNodeException e) {
 			// it's the remote peer that is closed, not our node
 			throw new PeerRejectedException("the peer is closed", e);
 		}
 
-		NodeInfo info2 = node.getInfo();
+		NodeInfo nodeInfo = node.getInfo();
 
-		long timeDifference = ChronoUnit.MILLIS.between(info2.getLocalDateTimeUTC(), info1.getLocalDateTimeUTC());
+		long timeDifference = ChronoUnit.MILLIS.between(nodeInfo.getLocalDateTimeUTC(), peerInfo.getLocalDateTimeUTC());
 		if (Math.abs(timeDifference) > config.peerMaxTimeDifference)
 			throw new PeerRejectedException("the time of the peer is more than " + config.peerMaxTimeDifference + " ms away from the time of this node");
 			
-		UUID uuid1 = info1.getUUID();
-		if (uuid1.equals(db.getUUID()))
-			throw new PeerRejectedException("a peer cannot be added as a peer of itself: same UUID " + uuid1);
+		UUID peerUUID = peerInfo.getUUID();
+		if (peerUUID.equals(db.getUUID()))
+			throw new PeerRejectedException("a peer cannot be added as a peer of itself: same UUID " + peerUUID);
 
-		var version1 = info1.getVersion();
-		var version2 = info2.getVersion();
-		if (!version1.canWorkWith(version2))
-			throw new PeerRejectedException("peer version " + version1 + " is incompatible with this node's version " + version2);
+		var peerVersion = peerInfo.getVersion();
+		var nodeVersion = nodeInfo.getVersion();
+		if (!peerVersion.canWorkWith(nodeVersion))
+			throw new PeerRejectedException("peer version " + peerVersion + " is incompatible with this node's version " + nodeVersion);
 
-		ChainInfo chain1;
+		ChainInfo peerChainInfo;
 
 		try {
-			chain1 = remote.getChainInfo();
+			peerChainInfo = remote.getChainInfo();
 		}
 		catch (ClosedNodeException e) {
 			// it's the remote peer that is closed, not our node
@@ -750,11 +750,11 @@ public class NodePeers implements AutoCloseable {
 			throw new PeerRejectedException("the peer's database is corrupted", e);
 		}
 
-		Optional<byte[]> genesisHash1 = chain1.getGenesisHash();
-		if (genesisHash1.isPresent()) {
-			ChainInfo chain2 = node.getChainInfo();
-			Optional<byte[]> genesisHash2 = chain2.getGenesisHash();
-			if (genesisHash2.isPresent() && !Arrays.equals(genesisHash1.get(), genesisHash2.get()))
+		Optional<byte[]> peerGenesisHash = peerChainInfo.getGenesisHash();
+		if (peerGenesisHash.isPresent()) {
+			ChainInfo nodeChainInfo = node.getChainInfo();
+			Optional<byte[]> nodeGenesisHash = nodeChainInfo.getGenesisHash();
+			if (nodeGenesisHash.isPresent() && !Arrays.equals(peerGenesisHash.get(), nodeGenesisHash.get()))
 				throw new PeerRejectedException("the peers have distinct genesis blocks");
 		}
 

@@ -20,6 +20,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -436,8 +437,10 @@ public class Blockchain implements AutoCloseable {
 	 * @param block the block
 	 * @param previous the previous of {@code block}; this can be missing if {@code block} is a genesis block
 	 * @throws VerificationException if verification fails
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void verify(Block block, Optional<Block> previous) throws VerificationException {
+	private void verify(Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		if (block instanceof GenesisBlock gb)
 			verify(gb);
 		else
@@ -459,8 +462,19 @@ public class Blockchain implements AutoCloseable {
 	 * @param block the block
 	 * @param previous the previous block
 	 * @throws VerificationException if verification fails
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void verify(NonGenesisBlock block, Block previous) throws VerificationException {
+	private void verify(NonGenesisBlock block, Block previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
+		var maybeGenesis = getGenesis();
+		if (maybeGenesis.isPresent()) {
+			LocalDateTime creationTime = maybeGenesis.get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
+			long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime);
+			if (howMuchInTheFuture > node.getConfig().blockMaxTimeInTheFuture)
+				throw new VerificationException("Too much in the future (" + howMuchInTheFuture
+					+ " ms against an allowed maximum of " + node.getConfig().blockMaxTimeInTheFuture + " ms)");
+		}
 	}
 
 	/**

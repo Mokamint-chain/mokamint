@@ -63,3 +63,6 @@ peer_ping_interval = 120000
 
 # the size of the memory used to avoid whispering the same message again
 whispering_memory_size = 1000
+
+# the maximal creation time in the future (in milliseconds) of a block that passes verification
+block_max_time_in_the_future = 15000
