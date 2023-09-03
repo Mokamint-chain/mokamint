@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
@@ -57,7 +58,6 @@ public class VerificationTests {
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
 			.setDir(dir)
-			.setBlockMaxTimeInTheFuture(1000L)
 			.build();
 	}
 
@@ -80,7 +80,7 @@ public class VerificationTests {
 	}
 
 	@Test
-	@DisplayName("if an added block is too much in the future, verification rejects it")
+	@DisplayName("if an added non-genesis block is too much in the future, verification rejects it")
 	public void blockTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, InterruptedException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
@@ -89,7 +89,7 @@ public class VerificationTests {
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
-		var block = Blocks.of(1, BigInteger.TEN, 12345678L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var block = Blocks.of(1, BigInteger.TEN, config.blockMaxTimeInTheFuture + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -99,6 +99,24 @@ public class VerificationTests {
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(1, chain.length);
 		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+	}
+
+	@Test
+	@DisplayName("if an added genesis block is too much in the future, verification rejects it")
+	public void genesisTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, InterruptedException, VerificationException, ClosedDatabaseException {
+		var config = mkConfig(dir);
+		var blockchain = mkTestBlockchain(config);
+		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var genesis2 = Blocks.genesis(genesis1.getStartDateTimeUTC().plus(config.blockMaxTimeInTheFuture + 1000, ChronoUnit.MINUTES), BigInteger.ONE);
+
+		assertTrue(blockchain.add(genesis1));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(genesis2));
+		assertTrue(e.getMessage().contains("Too much in the future"));
+		assertEquals(genesis1, blockchain.getGenesis().get());
+		assertEquals(genesis1, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis1.getHash(config.hashingForBlocks));
 	}
 
 	static {

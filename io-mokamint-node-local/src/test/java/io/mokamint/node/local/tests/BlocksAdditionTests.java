@@ -98,7 +98,7 @@ public class BlocksAdditionTests {
 	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
 	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES), BigInteger.ONE);
+		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.ONE);
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 

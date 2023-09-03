@@ -448,12 +448,15 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
-	 * Verifies if {@code block} is valid for this blockchain.
+	 * Verifies if a genesis block is valid for this blockchain.
 	 * 
-	 * @param block the block
+	 * @param genesis the genesis block
 	 * @throws VerificationException if verification fails
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void verify(GenesisBlock block) throws VerificationException {
+	private void verify(GenesisBlock genesis) throws VerificationException, DatabaseException, ClosedDatabaseException {
+		creationTimeIsNotTooMuchInTheFuture(genesis);
 	}
 
 	/**
@@ -466,15 +469,40 @@ public class Blockchain implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private void verify(NonGenesisBlock block, Block previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		var maybeGenesis = getGenesis();
-		if (maybeGenesis.isPresent()) {
-			LocalDateTime creationTime = maybeGenesis.get().getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-			LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-			long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime);
-			if (howMuchInTheFuture > node.getConfig().blockMaxTimeInTheFuture)
-				throw new VerificationException("Too much in the future (" + howMuchInTheFuture
-					+ " ms against an allowed maximum of " + node.getConfig().blockMaxTimeInTheFuture + " ms)");
-		}
+		creationTimeIsNotTooMuchInTheFuture(block);
+	}
+
+	/**
+	 * Yields the creation time of the given block.
+	 * 
+	 * @param block the block
+	 * @return the creation time of {@code block}
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private LocalDateTime creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
+		if (block instanceof GenesisBlock gb)
+			return gb.getStartDateTimeUTC();
+		else
+			return getGenesis()
+				.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
+				.getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+	}
+
+	/**
+	 * Checks that the creation time of the given block is not too much in the future.
+	 * 
+	 * @param block the block
+	 * @throws VerificationException if the creationTime of {@code block} is too much in the future
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private void creationTimeIsNotTooMuchInTheFuture(Block block) throws VerificationException, DatabaseException, ClosedDatabaseException {
+		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
+		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTimeOf(block));
+		if (howMuchInTheFuture > node.getConfig().blockMaxTimeInTheFuture)
+			throw new VerificationException("Too much in the future (" + howMuchInTheFuture
+				+ " ms against an allowed maximum of " + node.getConfig().blockMaxTimeInTheFuture + " ms)");
 	}
 
 	/**
