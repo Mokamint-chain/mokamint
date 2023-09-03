@@ -78,7 +78,9 @@ public class Verifier {
 	/**
 	 * Verifies if {@code block} satisfies all consensus rules required for being a child of {@code previous}.
 	 * This method is called only if the database is not empty. Namely, if {@code previous} is in the
-	 * database and if the genesis block of the database is set.
+	 * database and if the genesis block of the database is set. It is guaranteed that the
+	 * previous hash inside {@code block} coincides with the hash of {@code previous} (hence
+	 * that condition is not verified by this method).
 	 * 
 	 * @param block the block
 	 * @param previous the previous block

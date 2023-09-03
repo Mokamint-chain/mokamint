@@ -28,6 +28,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
@@ -95,6 +96,98 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 
 		return DeadlineDescriptions.of
 			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
+	}
+
+	/**
+	 * Yields the description of the next block, assuming that the latter has the given deadline.
+	 * 
+	 * @param deadline the deadline of the next block
+	 * @param targetBlockCreationTime the target time interval, in milliseconds, between the creation of a block
+	 *                                and the creation of a next block
+	 * @param hashingForBlocks the hashing algorithm used for the blocks
+	 * @return the description
+	 */
+	public final Block getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<byte[]> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines) {
+		var heightForNewBlock = getHeight() + 1;
+		var powerForNewBlock = computePower(deadline, hashingForDeadlines);
+		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(getAcceleration());
+		var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
+		var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
+		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, targetBlockCreationTime);
+		var hashOfPreviousBlock = getHash(hashingForBlocks);
+
+		return Blocks.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
+			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
+	}
+
+	/**
+	 * Yields the power of this block, computed as the sum, for each block from genesis to this,
+	 * of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
+	 * forks and choose the one whose tip has the highest power. Intuitively, the power
+	 * expresses the space used to compute the chain leading to the block.
+	 * 
+	 * @return the power
+	 */
+	public abstract BigInteger getPower();
+
+	/**
+	 * Yields the weighted waiting time, in milliseconds, from the genesis block
+	 * until the creation of this block. This is an average waiting time that gives
+	 * 5% weight to the waiting time for this block and 95% to the cumulative
+	 * weighted waiting time at the previous block.
+	 * 
+	 * @return the weighted waiting time
+	 */
+	public abstract long getWeightedWaitingTime();
+
+	/**
+	 * Yields the acceleration used for the creation of this block, that is,
+	 * a value used to divide the deadline to derive the time needed to wait for it.
+	 * The higher, the shorter the time. This value changes from block to block in order
+	 * to cope with varying mining power in the network. It is the inverse of Bitcoin's difficulty.
+	 * 
+	 * @return the acceleration
+	 */
+	public abstract BigInteger getAcceleration();
+
+	private BigInteger computePower(Deadline deadline, HashingAlgorithm<byte[]> hashingForDeadlines) {
+		byte[] valueAsBytes = deadline.getValue();
+		var value = new BigInteger(1, valueAsBytes);
+		return getPower().add(BigInteger.TWO.shiftLeft(hashingForDeadlines.length() * 8).divide(value.add(BigInteger.ONE)));
+	}
+
+	private long computeTotalWaitingTime(long waitingTime) {
+		return getTotalWaitingTime() + waitingTime;
+	}
+
+	private long computeWeightedWaitingTime(long waitingTime) {
+		var previousWeightedWaitingTime_95 = getWeightedWaitingTime() * 95L;
+		var waitingTime_5 = waitingTime * 5L;
+		return (previousWeightedWaitingTime_95 + waitingTime_5) / 100L;
+	}
+
+	private final static BigInteger _20 = BigInteger.valueOf(20L);
+	private final static BigInteger _100 = BigInteger.valueOf(100L);
+
+	/**
+	 * Computes the acceleration for the new block, in order to get closer to the target creation time.
+	 * 
+	 * @param weightedWaitingTimeForNewBlock the weighted waiting time for the new block
+	 * @param targetBlockCreationTime 
+	 * @return the acceleration for the new block
+	 */
+	private BigInteger computeAcceleration(long weightedWaitingTimeForNewBlock, long targetBlockCreationTime) {
+		var oldAcceleration = getAcceleration();
+		var delta = oldAcceleration
+			.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
+			.divide(BigInteger.valueOf(targetBlockCreationTime))
+			.subtract(oldAcceleration);
+
+		var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
+		if (acceleration.signum() == 0)
+			acceleration = BigInteger.ONE; // acceleration must be strictly positive
+
+		return acceleration;
 	}
 
 	public final byte[] getHash(HashingAlgorithm<byte[]> hashing) {

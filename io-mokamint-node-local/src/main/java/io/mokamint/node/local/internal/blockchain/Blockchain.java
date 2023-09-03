@@ -430,7 +430,7 @@ public class Blockchain implements AutoCloseable {
 			if (first)
 				throw e;
 			else
-				LOGGER.warning("discarding orphan block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
+				LOGGER.warning("discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
 		}
 
 		return false;

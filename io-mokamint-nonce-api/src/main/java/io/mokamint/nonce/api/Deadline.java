@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
+import java.math.BigInteger;
+
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
@@ -57,6 +59,14 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * @return the value
 	 */
 	byte[] getValue();
+
+	/**
+	 * Yields the milliseconds to wait for this deadline, assuming the given acceleration.
+	 * 
+	 * @param acceleration the acceleration
+	 * @return the milliseconds to wait
+	 */
+	long getMillisecondsToWaitFor(BigInteger acceleration);
 
 	@Override
 	boolean equals(Object other);

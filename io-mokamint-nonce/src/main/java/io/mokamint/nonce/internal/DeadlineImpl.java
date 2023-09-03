@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.nonce.internal;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -101,6 +102,26 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public int hashCode() {
 		return scoopNumber ^ Arrays.hashCode(data) ^ hashing.getName().hashCode();
+	}
+
+	@Override
+	public long getMillisecondsToWaitFor(BigInteger acceleration) {
+		byte[] valueAsBytes = getValue();
+		var value = new BigInteger(1, valueAsBytes);
+		value = value.divide(acceleration);
+		byte[] newValueAsBytes = value.toByteArray();
+		// we recreate an array of the same length as at the beginning
+		var dividedValueAsBytes = new byte[valueAsBytes.length];
+		System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
+			dividedValueAsBytes.length - newValueAsBytes.length,
+			newValueAsBytes.length);
+		// we take the first 8 bytes of the divided value
+		var firstEightBytes = new byte[] {
+			dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],
+			dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
+		};
+		// TODO: theoretically, there might be an overflow when converting into long
+		return new BigInteger(1, firstEightBytes).longValue();
 	}
 
 	@Override

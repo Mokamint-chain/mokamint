@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
@@ -100,6 +101,18 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 * @return the description
 	 */
 	DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, HashingAlgorithm<byte[]> hashingForDeadlines);
+
+	/**
+	 * Yields the description of the next block, assuming that the latter has the given deadline.
+	 * 
+	 * @param deadline the deadline of the next block
+	 * @param targetBlockCreationTime the target time interval, in milliseconds, between the creation of a block
+	 *                                and the creation of a next block
+	 * @param hashingForBlocks the hashing algorithm used for the blocks
+	 * @param hashingForDeadlines the hashing algorithm for the deadlines
+	 * @return the description
+	 */
+	Block getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<byte[]> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines);
 
 	/**
 	 * Checks if this block is equal to another object.

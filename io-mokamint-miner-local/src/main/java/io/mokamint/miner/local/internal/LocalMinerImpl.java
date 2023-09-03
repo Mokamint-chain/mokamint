@@ -61,7 +61,7 @@ public class LocalMinerImpl implements Miner {
 			.map(plot -> getSmallestDeadline(plot, description))
 			.flatMap(Optional::stream)
 			.min(Deadline::compareByValue)
-			.ifPresent(deadline -> onDeadlineComputed.accept(deadline));
+			.ifPresent(onDeadlineComputed::accept);
 	}
 
 	/**
