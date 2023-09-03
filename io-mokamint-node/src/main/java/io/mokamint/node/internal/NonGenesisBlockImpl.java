@@ -82,12 +82,16 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * Creates a new non-genesis block.
 	 */
 	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
-		Objects.requireNonNull(acceleration, "acceleration cannot be null");
-		Objects.requireNonNull(deadline, "deadline cannot be null");
-		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
-
 		if (height < 1)
 			throw new IllegalArgumentException("a non-genesis block must have positive height");
+
+		Objects.requireNonNull(acceleration, "acceleration cannot be null");
+		if (acceleration.signum() <= 0)
+			throw new IllegalArgumentException("acceleration must be strictly positive");
+
+		Objects.requireNonNull(deadline, "deadline cannot be null");
+		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
+		Objects.requireNonNull(power, "power cannot be null");
 
 		this.height = height;
 		this.power = power;
@@ -115,7 +119,13 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		this.acceleration = context.readBigInteger();
 		this.deadline = Deadlines.from(context);
 		int hashOfPreviousBlockLength = context.readCompactInt();
-		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "previous block hash length mismatch");
+		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "Previous block hash length mismatch");
+
+		if (height < 1)
+			throw new IOException("a non-genesis block must have positive height");
+
+		if (acceleration.signum() <= 0)
+			throw new IOException("acceleration must be strictly positive");
 	}
 
 	@Override

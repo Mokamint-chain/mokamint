@@ -174,7 +174,7 @@ public class LocalNodeImpl implements LocalNode {
 		catch (ClosedDatabaseException | ClosedNodeException e) {
 			// the database and the node itself cannot be closed already
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 

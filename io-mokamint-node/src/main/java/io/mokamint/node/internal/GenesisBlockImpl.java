@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 import io.hotmoka.crypto.Hex;
@@ -51,6 +52,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration) {
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
+		if (acceleration.signum() <= 0)
+			throw new IllegalArgumentException("acceleration must be strictly positive");
 
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
@@ -66,8 +69,17 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 */
 	GenesisBlockImpl(UnmarshallingContext context) throws IOException {
 		String startDateTimeUTC = context.readStringUnshared();
-		this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+		try {
+			this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		}
+		catch (DateTimeParseException e) {
+			throw new IOException(e);
+		}
+
 		this.acceleration = context.readBigInteger();
+		if (acceleration.signum() <= 0)
+			throw new IOException("acceleration must be strictly positive");
 	}
 
 	@Override
@@ -92,7 +104,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	@Override
 	public BigInteger getAcceleration() {
-		return acceleration; //BigInteger.valueOf(100000000000L); // big enough to start easily
+		return acceleration;
 	}
 
 	@Override

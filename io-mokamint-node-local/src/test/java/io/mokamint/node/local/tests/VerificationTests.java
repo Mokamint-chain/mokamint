@@ -58,6 +58,7 @@ public class VerificationTests {
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
 			.setDir(dir)
+			.setBlockMaxTimeInTheFuture(1000)
 			.build();
 	}
 
@@ -117,6 +118,28 @@ public class VerificationTests {
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(1, chain.length);
 		assertArrayEquals(chain[0], genesis1.getHash(config.hashingForBlocks));
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has inconsistent height, verification rejects it")
+	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, InterruptedException, VerificationException, ClosedDatabaseException {
+		var config = mkConfig(dir);
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var hashingForBlocks = config.getHashingForBlocks();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		byte[] previous = genesis.getHash(hashingForBlocks);
+		var block = Blocks.of(2, BigInteger.TEN, config.blockMaxTimeInTheFuture / 2, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().contains("Height mismatch"));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
 	}
 
 	static {

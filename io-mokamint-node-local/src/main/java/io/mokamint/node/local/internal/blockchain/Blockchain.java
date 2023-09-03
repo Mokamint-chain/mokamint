@@ -20,7 +20,6 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -73,6 +72,11 @@ public class Blockchain implements AutoCloseable {
 	private final BlocksDatabase db;
 
 	/**
+	 * The verifier of the blocks added to this blockchain.
+	 */
+	private final Verifier verifier;
+
+	/**
 	 * A cache for the genesis block, if it has been set already.
 	 * Otherwise it holds {@code null}.
 	 */
@@ -110,6 +114,7 @@ public class Blockchain implements AutoCloseable {
 		this.node = node;
 		this.hashingForBlocks = node.getConfig().hashingForBlocks;
 		this.db = new BlocksDatabase(node);
+		this.verifier = new Verifier(node);
 	}
 
 	/**
@@ -412,7 +417,7 @@ public class Blockchain implements AutoCloseable {
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
-			verify(block, previous);
+			verifier.verify(block, previous);
 
 			if (db.add(block, updatedHead)) {
 				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);
@@ -429,80 +434,6 @@ public class Blockchain implements AutoCloseable {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Verifies if {@code block} satisfies all consensus rules required for being a child of {@code previous}.
-	 * 
-	 * @param block the block
-	 * @param previous the previous of {@code block}; this can be missing if {@code block} is a genesis block
-	 * @throws VerificationException if verification fails
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private void verify(Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		if (block instanceof GenesisBlock gb)
-			verify(gb);
-		else
-			verify((NonGenesisBlock) block, previous.get());
-	}
-
-	/**
-	 * Verifies if a genesis block is valid for this blockchain.
-	 * 
-	 * @param genesis the genesis block
-	 * @throws VerificationException if verification fails
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private void verify(GenesisBlock genesis) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		creationTimeIsNotTooMuchInTheFuture(genesis);
-	}
-
-	/**
-	 * Verifies if {@code block} satisfies all consensus rules required for being a child of {@code previous}.
-	 * 
-	 * @param block the block
-	 * @param previous the previous block
-	 * @throws VerificationException if verification fails
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private void verify(NonGenesisBlock block, Block previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		creationTimeIsNotTooMuchInTheFuture(block);
-	}
-
-	/**
-	 * Yields the creation time of the given block.
-	 * 
-	 * @param block the block
-	 * @return the creation time of {@code block}
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private LocalDateTime creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
-		if (block instanceof GenesisBlock gb)
-			return gb.getStartDateTimeUTC();
-		else
-			return getGenesis()
-				.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
-				.getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
-	}
-
-	/**
-	 * Checks that the creation time of the given block is not too much in the future.
-	 * 
-	 * @param block the block
-	 * @throws VerificationException if the creationTime of {@code block} is too much in the future
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private void creationTimeIsNotTooMuchInTheFuture(Block block) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTimeOf(block));
-		if (howMuchInTheFuture > node.getConfig().blockMaxTimeInTheFuture)
-			throw new VerificationException("Too much in the future (" + howMuchInTheFuture
-				+ " ms against an allowed maximum of " + node.getConfig().blockMaxTimeInTheFuture + " ms)");
 	}
 
 	/**
