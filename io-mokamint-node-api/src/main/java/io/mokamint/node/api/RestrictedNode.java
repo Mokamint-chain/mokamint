@@ -39,7 +39,7 @@ public interface RestrictedNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	void addPeer(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	void add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node.
@@ -51,5 +51,5 @@ public interface RestrictedNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	void removePeer(Peer peer) throws TimeoutException, IOException, InterruptedException, ClosedNodeException, DatabaseException;
+	void remove(Peer peer) throws TimeoutException, IOException, InterruptedException, ClosedNodeException, DatabaseException;
 }

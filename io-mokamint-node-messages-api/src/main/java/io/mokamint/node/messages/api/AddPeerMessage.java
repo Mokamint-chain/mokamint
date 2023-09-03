@@ -21,7 +21,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to {@link RestrictedNode#addPeer(Peer)}.
+ * The network message corresponding to {@link RestrictedNode#add(Peer)}.
  */
 public interface AddPeerMessage extends RpcMessage {
 

@@ -66,13 +66,13 @@ public class RestrictedNodeServiceTests {
 		}
 
 		@Override
-		public void addPeer(Peer received) throws TimeoutException, InterruptedException {
+		public void add(Peer received) throws TimeoutException, InterruptedException {
 			if (allPeers.remove(received))
 				semaphore.release();
 		}
 
 		@Override
-		public void removePeer(Peer peer) {}
+		public void remove(Peer peer) {}
 
 		@Override
 		public void addOnClosedHandler(CloseHandler handler) {}
@@ -174,7 +174,7 @@ public class RestrictedNodeServiceTests {
 		try (var service = RestrictedNodeServices.open(node, 8031); var remote = new MyRemoteRestrictedNode()) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
-			assertThrows(ClosedNodeException.class, () -> remote.addPeer(Peers.of(new URI("ws://www.mokamint.io:8031"))));
+			assertThrows(ClosedNodeException.class, () -> remote.add(Peers.of(new URI("ws://www.mokamint.io:8031"))));
 		}
 	}
 

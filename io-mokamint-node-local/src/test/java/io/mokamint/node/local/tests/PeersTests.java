@@ -204,8 +204,8 @@ public class PeersTests {
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
 			try (var node = new MyLocalNode()) {
 				assertTrue(node.getPeerInfos().count() == 0L);
-				node.addPeer(peer1);
-				node.addPeer(peer2);
+				node.add(peer1);
+				node.add(peer2);
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 
@@ -256,7 +256,7 @@ public class PeersTests {
 			try (var node = new MyLocalNode()) {
 				semaphore.acquire(2);
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
-				node.removePeer(peer1);
+				node.remove(peer1);
 				allPeers.remove(peer1);
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
@@ -288,7 +288,7 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			node.addPeer(peer);
+			node.add(peer);
 			assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
 	}
@@ -313,7 +313,7 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().contains("peer version 0.0.1 is incompatible with this node's version 0.3.1"));
 		}
 	}
@@ -338,7 +338,7 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().contains("peer version 0.0.1 is incompatible with this node's version 1.0.1"));
 		}
 	}
@@ -362,7 +362,7 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().contains("the time of the peer is more than " + node.getConfig().peerMaxTimeDifference + " ms away"));
 		}
 	}
@@ -386,7 +386,7 @@ public class PeersTests {
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
-			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.addPeer(peer));
+			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().contains("the peers have distinct genesis blocks"));
 		}
 	}

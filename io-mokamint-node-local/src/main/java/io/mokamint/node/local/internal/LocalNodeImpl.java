@@ -257,7 +257,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addPeer(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
+	public void add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
@@ -274,7 +274,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void removePeer(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
+	public void remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {

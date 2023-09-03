@@ -106,8 +106,8 @@ public class PeersConnectDisconnectTests {
 			 var service2 = PublicNodeServices.open(node2, port2); var service3 = PublicNodeServices.open(node3, port3)) {
 
 			// node1 has peer2 and peer3 as peers
-			node1.addPeer(peer2);
-			node1.addPeer(peer3);
+			node1.add(peer2);
+			node1.add(peer3);
 
 			// at this point, node1 has both its peers connected
 			assertTrue(node1.getPeerInfos().allMatch(PeerInfo::isConnected));
@@ -190,7 +190,7 @@ public class PeersConnectDisconnectTests {
 
 			try (var node2 = new MyLocalNode2(config2); var service2 = PublicNodeServices.open(node2, port2, 500, 1000, Optional.of(uri2))) {
 				// node1 has node2 as peer
-				node1.addPeer(peer2);
+				node1.add(peer2);
 
 				// eventually, both know each other
 				assertTrue(connections.tryAcquire(2, 5, TimeUnit.SECONDS));

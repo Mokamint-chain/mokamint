@@ -103,7 +103,7 @@ public class RemoteRestrictedNodeTests {
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			for (var peer: peers1)
-				remote.addPeer(peer);
+				remote.add(peer);
 
 			assertEquals(peers1, peers2);
 		}
@@ -129,7 +129,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.addPeer(peer));
+			var exception = assertThrows(TimeoutException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -154,7 +154,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.addPeer(peer));
+			var exception = assertThrows(InterruptedException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -179,7 +179,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IOException.class, () -> remote.addPeer(peer));
+			var exception = assertThrows(IOException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -204,7 +204,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(PeerRejectedException.class, () -> remote.addPeer(peer));
+			var exception = assertThrows(PeerRejectedException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -229,7 +229,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(DatabaseException.class, () -> remote.addPeer(peer));
+			var exception = assertThrows(DatabaseException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -258,7 +258,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.addPeer(peer));
+			assertThrows(TimeoutException.class, () -> remote.add(peer));
 		}
 	}
 	
@@ -282,7 +282,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.addPeer(peer));
+			assertThrows(TimeoutException.class, () -> remote.add(peer));
 		}
 	}
 
@@ -308,7 +308,7 @@ public class RemoteRestrictedNodeTests {
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			for (Peer peer: peers1)
-				remote.removePeer(peer);
+				remote.remove(peer);
 
 			assertEquals(peers1, peers2);
 		}
@@ -334,7 +334,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(DatabaseException.class, () -> remote.removePeer(peer));
+			var exception = assertThrows(DatabaseException.class, () -> remote.remove(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -359,7 +359,7 @@ public class RemoteRestrictedNodeTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IOException.class, () -> remote.removePeer(peer));
+			var exception = assertThrows(IOException.class, () -> remote.remove(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

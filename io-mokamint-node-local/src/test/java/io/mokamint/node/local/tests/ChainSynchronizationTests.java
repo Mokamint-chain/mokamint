@@ -178,7 +178,7 @@ public class ChainSynchronizationTests {
 
 			// by adding miningPeer as peer of nonMiningNode, the latter will synchronize and then follow
 			// the other howMany / 2 blocks by whispering
-			nonMiningNode.addPeer(miningPeer);
+			nonMiningNode.add(miningPeer);
 
 			assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY, 20, TimeUnit.SECONDS));
 			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2, 20, TimeUnit.SECONDS));
@@ -201,7 +201,7 @@ public class ChainSynchronizationTests {
 				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 				// by adding miningNode as peer of nonMiningNode, the latter will synchronize and then follow the other blocks by whispering
-				nonMiningNode.addPeer(miningPeer);
+				nonMiningNode.add(miningPeer);
 
 				// we wait until nonMiningNode has received HOW_MANY / 4 blocks
 				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
@@ -240,19 +240,19 @@ public class ChainSynchronizationTests {
 				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 				// by adding miningNode as peer of nonMiningNode, the latter will synchronize and then follow the other blocks by whispering
-				nonMiningNode.addPeer(miningPeer);
+				nonMiningNode.add(miningPeer);
 
 				// we wait until nonMiningNode has received HOW_MANY / 4 blocks
 				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
 
 				// then we disconnect the two peers
-				nonMiningNode.removePeer(miningPeer);
+				nonMiningNode.remove(miningPeer);
 
 				// we wait until miningNode has mined HOW_MANY / 2 blocks
 				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 
 				// we reconnect nonMiningNode to miningNode
-				nonMiningNode.addPeer(miningPeer);
+				nonMiningNode.add(miningPeer);
 
 				// we wait until nonMiningNode has received all blocks
 				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));

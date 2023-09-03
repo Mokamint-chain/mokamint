@@ -24,7 +24,7 @@ import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 
 /**
- * Implementation of the network message corresponding to {@link RestrictedNode#removePeer(Peer)}.
+ * Implementation of the network message corresponding to {@link RestrictedNode#remove(Peer)}.
  */
 public class RemovePeerMessageImpl extends AbstractRpcMessage implements RemovePeerMessage {
 

@@ -48,7 +48,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 
 	private void addPeer(Peer peer, RemoteRestrictedNode remote) {
 		try {
-			remote.addPeer(peer);
+			remote.add(peer);
 			if (json())
 				System.out.println(new Peers.Encoder().encode(peer));
 			else

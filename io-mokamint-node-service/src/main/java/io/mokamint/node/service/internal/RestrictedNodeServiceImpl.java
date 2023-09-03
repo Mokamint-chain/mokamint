@@ -118,7 +118,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 
 		try {
 			try {
-				node.addPeer(message.getPeer());
+				node.add(message.getPeer());
 			}
 			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
@@ -137,7 +137,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 
 		try {
 			try {
-				node.removePeer(message.getPeer());
+				node.remove(message.getPeer());
 			}
 			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException e) {
 				sendExceptionAsync(session, e, message.getId());

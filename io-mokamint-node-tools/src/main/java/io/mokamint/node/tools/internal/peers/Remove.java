@@ -47,7 +47,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 
 	private void removePeer(Peer peer, RemoteRestrictedNode remote) {
 		try {
-			remote.removePeer(peer);
+			remote.remove(peer);
 			if (json())
 				System.out.println(new Peers.Encoder().encode(peer));
 			else

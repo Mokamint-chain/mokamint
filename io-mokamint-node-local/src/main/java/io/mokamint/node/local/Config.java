@@ -95,7 +95,7 @@ public class Config extends AbstractConfig {
 	/**
 	 * The maximum number of peers kept by a node. The actual number of peers can
 	 * be larger only if peers are explicitly added as seeds or through the
-	 * {@link RestrictedNode#addPeer(Peer)} method.
+	 * {@link RestrictedNode#add(Peer)} method.
 	 * It defaults to 20.
 	 */
 	public final long maxPeers;
@@ -448,7 +448,7 @@ public class Config extends AbstractConfig {
 		/**
 		 * Sets the maximum number of peers kept by a node. The actual number of peers can
 		 * be larger only if peers are explicitly added as seeds or through the
-		 * {@link RestrictedNode#addPeer(Peer)} method.
+		 * {@link RestrictedNode#add(Peer)} method.
 		 * It defaults to 20.
 		 * 
 		 * @param maxPeers the maximum number of peers

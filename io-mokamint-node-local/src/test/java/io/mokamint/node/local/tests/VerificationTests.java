@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -43,7 +42,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
@@ -83,7 +81,7 @@ public class VerificationTests {
 
 	@Test
 	@DisplayName("if an added block is too much in the future, verification rejects it")
-	public void blockTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException, VerificationException, ClosedDatabaseException {
+	public void blockTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, InterruptedException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();

@@ -120,9 +120,9 @@ public class PeersPropagationTests {
 			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(peer3.getURI()));
 			 var service4 = PublicNodeServices.open(node4, port4, 1800000L, 1000L, Optional.of(peer4.getURI()))) {
 
-			node1.addPeer(peer2);
-			node2.addPeer(peer3);
-			node3.addPeer(peer1);
+			node1.add(peer2);
+			node2.add(peer3);
+			node3.add(peer1);
 
 			// at this point, each node is a peer of the next in the sequence
 			// (there might also be views of the same peer through its local IP address)
@@ -131,7 +131,7 @@ public class PeersPropagationTests {
 			assertTrue(node3.getPeerInfos().map(PeerInfo::getPeer).anyMatch(peer1::equals));
 
 			// we add peer4 as peer of peer1 now
-			node1.addPeer(peer4);
+			node1.add(peer4);
 
 			// we wait for three events of addition of peer4 as peer
 			assertTrue(semaphore.tryAcquire(3, 5, TimeUnit.SECONDS));
@@ -192,14 +192,14 @@ public class PeersPropagationTests {
 			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(peer3.getURI()))) {
 
 			// node1 has peer2 and peer3 as peers
-			node1.addPeer(peer2);
-			node1.addPeer(peer3);
+			node1.add(peer2);
+			node1.add(peer3);
 
 			// at this point, node4 has still no peers
 			assertTrue(node4.getPeerInfos().count() == 0L);
 
 			// we add peer1 as peer of node4 now
-			node4.addPeer(peer1);
+			node4.add(peer1);
 
 			// we wait until peer1, peer2 and peer3 get propagated to node4
 			assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
@@ -243,7 +243,7 @@ public class PeersPropagationTests {
 			 var service1 = PublicNodeServices.open(node1, port1, 100L, 1000, Optional.of(uri1));
 			 var service2 = PublicNodeServices.open(node2, port2, 100L, 1000, Optional.of(uri2))) {
 
-			node1.addPeer(peer2);
+			node1.add(peer2);
 
 			assertTrue(semaphore.tryAcquire(2, 4, TimeUnit.SECONDS));
 		}

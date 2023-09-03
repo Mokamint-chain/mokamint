@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -44,7 +43,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
@@ -83,7 +81,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
-	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, VerificationException, ClosedDatabaseException {
+	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
@@ -98,7 +96,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
-	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, VerificationException, ClosedDatabaseException {
+	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MINUTES), BigInteger.ONE);
 		var config = mkConfig(dir);
@@ -115,7 +113,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
-	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException, VerificationException, ClosedDatabaseException {
+	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -135,7 +133,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
-	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException, VerificationException, ClosedDatabaseException {
+	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -157,7 +155,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
-	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, IOException, ClosedNodeException, VerificationException, ClosedDatabaseException {
+	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -189,7 +187,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
-	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, ClosedNodeException, InterruptedException, IOException, VerificationException, ClosedDatabaseException {
+	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -253,7 +251,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if more children of the head are added, the one with higher power becomes head")
-	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, ClosedNodeException, InterruptedException, IOException, VerificationException, ClosedDatabaseException {
+	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -302,7 +300,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, ClosedNodeException, InterruptedException, IOException, VerificationException, ClosedDatabaseException {
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();

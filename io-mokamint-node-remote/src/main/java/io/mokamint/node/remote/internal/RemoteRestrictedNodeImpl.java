@@ -127,7 +127,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onException(ExceptionMessage message) {}
 
 	@Override
-	public void addPeer(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddPeer(peer, id);
@@ -163,7 +163,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public void removePeer(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, IOException {
+	public void remove(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, IOException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendRemovePeer(peer, id);
