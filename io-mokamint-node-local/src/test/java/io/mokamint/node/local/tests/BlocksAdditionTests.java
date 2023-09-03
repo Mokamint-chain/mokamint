@@ -34,16 +34,23 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -52,12 +59,40 @@ import io.mokamint.node.local.internal.NodePeers;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.Plot;
 
 public class BlocksAdditionTests {
+
+	/**
+	 * The plots used for creating the deadlines.
+	 */
+	private static Plot plot1;
+	private static Plot plot2;
+	private static Plot plot3;
+
+	@BeforeAll
+	public static void beforeAll(@TempDir Path plotDir) throws IOException {
+		var prolog = new byte[] { 11, 13, 24, 88 };
+		var hashing = HashingAlgorithms.shabal256(Function.identity());
+
+		plot1 = Plots.create(plotDir.resolve("plot1.plot"), prolog, 65536L, 50L, hashing, __ -> {});
+		plot2 = Plots.create(plotDir.resolve("plot2.plot"), prolog, 10000L, 100L, hashing, __ -> {});
+		plot3 = Plots.create(plotDir.resolve("plot3.plot"), prolog, 15000L, 256L, hashing, __ -> {});
+	}
+
+	@AfterAll
+	public static void afterAll() throws IOException {
+		plot1.close();
+		plot2.close();
+		plot3.close();
+	}
 
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
 			.setDir(dir)
+			// we effectively disable the time check
+			.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
 			.build();
 	}
 
@@ -82,9 +117,9 @@ public class BlocksAdditionTests {
 	@Test
 	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
 	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 
 		assertTrue(blockchain.add(genesis));
 		assertEquals(genesis, blockchain.getGenesis().get());
@@ -97,10 +132,10 @@ public class BlocksAdditionTests {
 	@Test
 	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
 	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
-		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.ONE);
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
+		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.ONE);
 
 		assertTrue(blockchain.add(genesis1));
 		assertFalse(blockchain.add(genesis2));
@@ -133,15 +168,11 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
-	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var hashingForDeadlines = config.getHashingForDeadlines();
-		var hashingForBlocks = config.getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
-		byte[] previous = genesis.getHash(hashingForBlocks);
-		var block = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var block = computeNextBlock(genesis, config);
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block));
@@ -155,20 +186,21 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
-	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var hashingForDeadlines = config.getHashingForDeadlines();
-		var hashingForBlocks = config.getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
-		byte[] previous = genesis.getHash(hashingForBlocks);
-		var block1 = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		var added = Blocks.of(1, BigInteger.valueOf(15), 4321L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block1.getHash(hashingForBlocks);
-		var block2 = Blocks.of(2, BigInteger.valueOf(20), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block2.getHash(hashingForBlocks);
-		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var block1 = computeNextBlock(genesis, config, plot1);
+		var added = computeNextBlock(genesis, config, plot2);
+		if (block1.getPower().compareTo(added.getPower()) < 0) {
+			// we invert the blocks, so that block1 has always at least the power of added
+			var temp = block1;
+			block1 = added;
+			added = temp;
+		}
+
+		var block2 = computeNextBlock(block1, config);
+		var block3 = computeNextBlock(block2, config);
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
@@ -187,20 +219,21 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
-	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var hashingForDeadlines = config.getHashingForDeadlines();
-		var hashingForBlocks = config.getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
-		byte[] previous = genesis.getHash(hashingForBlocks);
-		var block1 = Blocks.of(1, BigInteger.valueOf(11), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		var block0 = Blocks.of(1, BigInteger.TEN, 4321L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block1.getHash(hashingForBlocks);
-		var block2 = Blocks.of(2, BigInteger.valueOf(18), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block2.getHash(hashingForBlocks);
-		var block3 = Blocks.of(3, BigInteger.valueOf(26), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var block1 = computeNextBlock(genesis, config, plot1);
+		var block0 = computeNextBlock(genesis, config, plot2);
+		if (block1.getPower().compareTo(block0.getPower()) < 0) {
+			// we invert the blocks, so that block1 has always at least the power of block0
+			var temp = block1;
+			block1 = block0;
+			block0 = temp;
+		}
+
+		var block2 = computeNextBlock(block1, config);
+		var block3 = computeNextBlock(block2, config);
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block0));
@@ -238,7 +271,7 @@ public class BlocksAdditionTests {
 		// we add a block after the genesis, that creates a better chain of length 4
 		assertTrue(blockchain.add(block1));
 
-		// the longer chain is the current chain now
+		// the more powerful chain is the current chain now
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(block3, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
@@ -251,17 +284,15 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if more children of the head are added, the one with higher power becomes head")
-	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var hashingForDeadlines = config.getHashingForDeadlines();
-		var hashingForBlocks = config.getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
-		byte[] previous = genesis.getHash(hashingForBlocks);
-		var block1 = Blocks.of(1, BigInteger.TEN, 4321L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		var block2 = Blocks.of(1, BigInteger.valueOf(11), 1234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
-		var block3 = Blocks.of(1, BigInteger.valueOf(11), 2234L, 1000L, BigInteger.valueOf(13011973), deadline, previous);
+		var sorted = Stream.of(computeNextBlock(genesis, config, plot1), computeNextBlock(genesis, config, plot2), computeNextBlock(genesis, config, plot3))
+			.sorted(Comparator.comparing(NonGenesisBlock::getPower)).toArray(NonGenesisBlock[]::new);
+		var block3 = sorted[0]; // least powerful
+		var block1 = sorted[1]; // medium
+		var block2 = sorted[2]; // most powerful
 
 		assertTrue(blockchain.add(genesis));
 		assertTrue(blockchain.add(block1));
@@ -274,7 +305,7 @@ public class BlocksAdditionTests {
 		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
 		assertArrayEquals(chain[1], block1.getHash(config.hashingForBlocks));
 
-		// we create a chain with more power as the current chain (11 vs 10),
+		// we create a chain with more power as the current chain
 		assertTrue(blockchain.add(block2));
 
 		// block2 is the new head now
@@ -286,7 +317,7 @@ public class BlocksAdditionTests {
 		assertArrayEquals(chain[1], block2.getHash(config.hashingForBlocks));
 
 		// we create a chain with the same length as the current chain (2 blocks),
-		// but same power as the current head (11 vs 11)
+		// but less power than the current head
 		assertTrue(blockchain.add(block3));
 
 		// block2 is still the head
@@ -300,19 +331,13 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var hashingForDeadlines = config.getHashingForDeadlines();
-		var hashingForBlocks = config.getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
-		byte[] previous = genesis.getHash(hashingForBlocks);
-		var block1 = Blocks.of(1, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block1.getHash(hashingForBlocks);
-		var block2 = Blocks.of(2, BigInteger.valueOf(20), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
-		previous = block2.getHash(hashingForBlocks);
-		var block3 = Blocks.of(3, BigInteger.valueOf(30), 1234L, 1100L, BigInteger.valueOf(13011973), deadline, previous);
+		var block1 = computeNextBlock(genesis, config);
+		var block2 = computeNextBlock(block1, config);
+		var block3 = computeNextBlock(block2, config);
 
 		assertFalse(blockchain.add(block3));
 
@@ -349,6 +374,16 @@ public class BlocksAdditionTests {
 		assertArrayEquals(chain[1], block1.getHash(config.hashingForBlocks));
 		assertArrayEquals(chain[2], block2.getHash(config.hashingForBlocks));
 		assertArrayEquals(chain[3], block3.getHash(config.hashingForBlocks));
+	}
+
+	private NonGenesisBlock computeNextBlock(Block previous, Config config) throws IOException {
+		return computeNextBlock(previous, config, plot1);
+	}
+
+	private NonGenesisBlock computeNextBlock(Block previous, Config config, Plot plot) throws IOException {
+		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines);
+		var deadline = plot.getSmallestDeadline(nextDeadlineDescription);
+		return previous.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
 	}
 
 	static {

@@ -89,21 +89,22 @@ public class Verifier {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private void verify(NonGenesisBlock block, Block previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		heightIsCorrect(block, previous);
 		creationTimeIsNotTooMuchInTheFuture(block);
+		var config = node.getConfig();
+		var description = previous.getNextBlockDescription(block.getDeadline(), config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
+		matches(block, description);
 	}
 
 	/**
-	 * Checks the the height of {@code block} is one more than the height of {@code previous}.
+	 * Checks that the given block matches the expected description.
 	 * 
 	 * @param block the block
-	 * @param previous the previous of {@code block}
+	 * @param description the description
 	 * @throws VerificationException if that condition in violated
 	 */
-	private void heightIsCorrect(NonGenesisBlock block, Block previous) throws VerificationException {
-		long expected = previous.getHeight() + 1;
-		if (block.getHeight() != expected)
-			throw new VerificationException("Height mismatch (expected " + expected + " but found " + block.getHeight() + ")");
+	private void matches(NonGenesisBlock block, Block description) throws VerificationException {
+		if (block.getHeight() != description.getHeight())
+			throw new VerificationException("Height mismatch (expected " + description.getHeight() + " but found " + block.getHeight() + ")");
 	}
 
 	/**

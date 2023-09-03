@@ -30,6 +30,7 @@ import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -57,6 +58,10 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	private byte[] lastHash;
 
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
+
+	private final static BigInteger _20 = BigInteger.valueOf(20L);
+
+	private final static BigInteger _100 = BigInteger.valueOf(100L);
 
 	/**
 	 * Unmarshals a block from the given context.
@@ -91,6 +96,43 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 		}
 	}
 
+	/**
+	 * Yields the hash of this block, by using the given hashing algorithm.
+	 * 
+	 * @param hashing the hashing algorithm
+	 * @return the hash of this block
+	 */
+	public final byte[] getHash(HashingAlgorithm<byte[]> hashing) {
+		// it uses a cache for optimization, since the computation might be expensive
+	
+		String name = hashing.getName();
+	
+		synchronized (lock) {
+			if (Objects.equals(lastHashingName, name))
+				return lastHash.clone();
+		}
+	
+		byte[] result = hashing.hash(toByteArray());
+	
+		synchronized (lock) {
+			lastHashingName = name;
+			lastHash = result.clone();
+		}
+	
+		return result;
+	}
+
+	/**
+	 * Yields the hash of this block, by using the given hashing algorithm,
+	 * as an hexadecimal string.
+	 * 
+	 * @param hashing the hashing algorithm
+	 * @return the hash of this block, as a hexadecimal string
+	 */
+	public final String getHexHash(HashingAlgorithm<byte[]> hashing) {
+		return Hex.toHexString(getHash(hashing));
+	}
+
 	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, HashingAlgorithm<byte[]> hashingForDeadlines) {
 		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
 
@@ -107,7 +149,7 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @return the description
 	 */
-	public final Block getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<byte[]> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines) {
+	public final NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<byte[]> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines) {
 		var heightForNewBlock = getHeight() + 1;
 		var powerForNewBlock = computePower(deadline, hashingForDeadlines);
 		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(getAcceleration());
@@ -150,6 +192,21 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 */
 	public abstract BigInteger getAcceleration();
 
+	/**
+	 * Yields the height of the block, counting from 0 for the genesis block.
+	 * 
+	 * @return the height of the block
+	 */
+	public abstract long getHeight();
+
+	/**
+	 * Yields the total waiting time, in milliseconds, from the genesis block
+	 * until the creation of this block.
+	 * 
+	 * @return the total waiting time
+	 */
+	public abstract long getTotalWaitingTime();
+
 	private BigInteger computePower(Deadline deadline, HashingAlgorithm<byte[]> hashingForDeadlines) {
 		byte[] valueAsBytes = deadline.getValue();
 		var value = new BigInteger(1, valueAsBytes);
@@ -166,9 +223,6 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 		return (previousWeightedWaitingTime_95 + waitingTime_5) / 100L;
 	}
 
-	private final static BigInteger _20 = BigInteger.valueOf(20L);
-	private final static BigInteger _100 = BigInteger.valueOf(100L);
-
 	/**
 	 * Computes the acceleration for the new block, in order to get closer to the target creation time.
 	 * 
@@ -182,52 +236,13 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 			.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
 			.divide(BigInteger.valueOf(targetBlockCreationTime))
 			.subtract(oldAcceleration);
-
+	
 		var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
 		if (acceleration.signum() == 0)
 			acceleration = BigInteger.ONE; // acceleration must be strictly positive
-
+	
 		return acceleration;
 	}
-
-	public final byte[] getHash(HashingAlgorithm<byte[]> hashing) {
-		// it uses a cache for optimization, since the computation might be expensive
-
-		String name = hashing.getName();
-
-		synchronized (lock) {
-			if (Objects.equals(lastHashingName, name))
-				return lastHash.clone();
-		}
-
-		byte[] result = hashing.hash(toByteArray());
-
-		synchronized (lock) {
-			lastHashingName = name;
-			lastHash = result.clone();
-		}
-
-		return result;
-	}
-
-	public final String getHexHash(HashingAlgorithm<byte[]> hashing) {
-		return Hex.toHexString(getHash(hashing));
-	}
-
-	/**
-	 * Yields the height of the block, counting from 0 for the genesis block.
-	 * 
-	 * @return the height of the block
-	 */
-	public abstract long getHeight();
-
-	/**
-	 * Yields the total waiting time, in milliseconds, from the genesis block
-	 * until the creation of this block.
-	 * 
-	 * @return the total waiting time
-	 */
-	public abstract long getTotalWaitingTime();
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashing) {
 		var generationHash = hashing.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));

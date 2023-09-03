@@ -112,7 +112,7 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @return the description
 	 */
-	Block getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<byte[]> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines);
+	NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<byte[]> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines);
 
 	/**
 	 * Checks if this block is equal to another object.
