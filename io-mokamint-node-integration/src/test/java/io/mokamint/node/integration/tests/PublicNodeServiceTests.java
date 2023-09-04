@@ -158,7 +158,9 @@ public class PublicNodeServiceTests {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
-		var value = new byte[] { 1, 2, 3, 4, 5, 6 };
+		var value = new byte[shabal256.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
 		int scoopNumber = 42;
 		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
 		var block = Blocks.of(13L, BigInteger.TEN, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });

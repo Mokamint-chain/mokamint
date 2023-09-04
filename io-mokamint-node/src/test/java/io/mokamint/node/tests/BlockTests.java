@@ -49,7 +49,10 @@ public class BlockTests {
 	@DisplayName("non-genesis blocks are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksNonGenesis() throws EncodeException, DecodeException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block1 = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);

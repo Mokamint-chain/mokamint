@@ -17,7 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -105,7 +106,10 @@ public class MessagesTests {
 	@DisplayName("non-empty getBlockResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var getBlockResultMessage1 = GetBlockResultMessages.of(Optional.of(block), "id");
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
@@ -259,7 +263,10 @@ public class MessagesTests {
 	@DisplayName("whisperBlock messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, URISyntaxException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var whisperBlockMessage1 = WhisperBlockMessages.of(block, "id");
 		String encoded = new WhisperBlockMessages.Encoder().encode(whisperBlockMessage1);
@@ -271,16 +278,8 @@ public class MessagesTests {
 	@DisplayName("exception result messages cannot be decoded from Json if the class type is not an exception")
 	public void decodeFailsForExceptionResultIfNotException() {
 		String encoded = "{\"clazz\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionMessage.class.getName() + "\",\"id\":\"id\"}";
-
-		try {
-			new ExceptionMessages.Decoder().decode(encoded);
-		}
-		catch (DecodeException e) {
-			if (e.getCause() instanceof ClassCastException)
-				return;
-		}
-
-		fail();
+		DecodeException e = assertThrows(DecodeException.class, () -> new ExceptionMessages.Decoder().decode(encoded));
+		assertTrue(e.getCause() instanceof ClassCastException);
 	}
 
 	static {

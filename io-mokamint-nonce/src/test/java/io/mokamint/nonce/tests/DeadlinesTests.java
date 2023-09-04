@@ -37,7 +37,11 @@ public class DeadlinesTests {
 	@DisplayName("deadlines are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeadlines() throws EncodeException, DecodeException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadline1 = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashing);
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		
+		var deadline1 = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		String encoded = new Deadlines.Encoder().encode(deadline1);
 		var deadline2 = new Deadlines.Decoder().decode(encoded);
 		assertEquals(deadline1, deadline2);

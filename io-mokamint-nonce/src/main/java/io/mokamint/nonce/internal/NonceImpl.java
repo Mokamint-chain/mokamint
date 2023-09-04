@@ -20,8 +20,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.util.Objects;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Nonce;
@@ -64,14 +66,14 @@ public class NonceImpl implements Nonce {
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 */
 	public NonceImpl(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
+		Objects.requireNonNull(prolog, "prolog cannot be null");
+		Objects.requireNonNull(hashing, "hashing cannot be null");
+
 		if (progressive < 0L)
 			throw new IllegalArgumentException("nonce number cannot be negative");
 
-		if (prolog == null)
-			throw new NullPointerException("the prolog cannot be null");
-
 		if (prolog.length > Deadline.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + Deadline.MAX_PROLOG_SIZE);
+			throw new IllegalArgumentException("Illegal prolog size: the maximum is " + Deadline.MAX_PROLOG_SIZE);
 			
 		this.prolog = prolog;
 		this.hashing = hashing;
@@ -85,9 +87,9 @@ public class NonceImpl implements Nonce {
 		if (!description.getHashing().getName().equals(hashing.getName()))
 			throw new IllegalArgumentException("deadline description and nonce use different hashing algorithms");
 
-		return new DeadlineImpl(prolog, progressive,
+		return Deadlines.of(prolog, progressive,
 			hashing.hash(extractScoopAndConcat(description.getScoopNumber(), description.getData())),
-				description.getScoopNumber(), description.getData(), description.getHashing());
+				description.getScoopNumber(), description.getData(), hashing);
 	}
 
 	/**
@@ -100,7 +102,7 @@ public class NonceImpl implements Nonce {
 	 */
 	private byte[] extractScoopAndConcat(int scoopNumber, byte[] data) {
 		int scoopSize = hashSize * 2;
-		byte[] result = new byte[scoopSize + data.length];
+		var result = new byte[scoopSize + data.length];
 		System.arraycopy(this.data, scoopNumber * scoopSize, result, 0, scoopSize);
 		System.arraycopy(data, 0, result, scoopSize, data.length);
 		return result;

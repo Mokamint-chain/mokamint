@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -45,31 +46,15 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final byte[] data;
 	private final HashingAlgorithm<byte[]> hashing;
 
-	public DeadlineImpl(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
-		if (prolog == null)
-			throw new NullPointerException("prolog cannot be null");
-
-		if (prolog.length > MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + MAX_PROLOG_SIZE);
-
-		if (progressive < 0L)
-			throw new IllegalArgumentException("progressive cannot be negative");
-
-		if (value == null)
-			throw new NullPointerException("value cannot be null");
-
-		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
-			throw new IllegalArgumentException("scoopNumber must be between 0 and " + MAX_SCOOP_NUMBER);
-
-		if (data == null)
-			throw new NullPointerException("data cannot be null");
-
+	public DeadlineImpl(HashingAlgorithm<byte[]> hashing, byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data) {
+		this.hashing = hashing;
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
 		this.scoopNumber = scoopNumber;
 		this.data = data;
-		this.hashing = hashing;
+
+		verify();
 	}
 
 	/**
@@ -80,12 +65,44 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		this(context.readBytes(context.readCompactInt(), "mismatch in deadline's prolog length"),
-			context.readLong(),
-			context.readBytes(context.readCompactInt(), "mismatch in deadline's value length"),
-			context.readInt(),
-			context.readBytes(context.readInt(), "mismatch in deadline's data length"),
-			HashingAlgorithms.of(context.readStringUnshared(), Function.identity()));
+		this.hashing = HashingAlgorithms.of(context.readStringUnshared(), Function.identity());
+		this.prolog = context.readBytes(context.readCompactInt(), "Mismatch in deadline's prolog length");
+		this.progressive = context.readLong();
+		this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
+		this.scoopNumber = context.readInt();
+		this.data = context.readBytes(context.readInt(), "Mismatch in deadline's data length");
+
+		try {
+			verify();
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
+	}
+
+	/**
+	 * Checks all constraints expected from a deadline.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	private void verify() {
+		Objects.requireNonNull(prolog, "prolog cannot be null");
+		Objects.requireNonNull(value, "value cannot be null");
+		Objects.requireNonNull(data, "data cannot be null");
+		Objects.requireNonNull(hashing, "hashing cannot be null");
+	
+		if (prolog.length > MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("prolog too long: maximum is " + MAX_PROLOG_SIZE);
+	
+		if (progressive < 0L)
+			throw new IllegalArgumentException("progressive cannot be negative");
+	
+		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
+			throw new IllegalArgumentException("Illegal scoopNumber: it must be between 0 and " + MAX_SCOOP_NUMBER);
+	
+		if (value.length != hashing.length())
+			throw new IllegalArgumentException("Illegal deadline value: expected an array of length " + hashing.length() + " rather than " + value.length);
 	}
 
 	@Override
@@ -185,14 +202,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
+		context.writeStringUnshared(hashing.getName());
 		context.writeCompactInt(prolog.length);
 		context.write(prolog);
 		context.writeLong(progressive);
-		context.writeCompactInt(value.length);
+		// we do not write value.length, since it coincides with hashing.length()
 		context.write(value);
 		context.writeInt(scoopNumber);
 		context.writeInt(data.length);
 		context.write(data);
-		context.writeStringUnshared(hashing.getName());
 	}
 }

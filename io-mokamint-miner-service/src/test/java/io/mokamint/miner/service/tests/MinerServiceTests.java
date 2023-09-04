@@ -73,7 +73,10 @@ public class MinerServiceTests {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
-		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var value = new byte[shabal256.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 
 		var miner = new Miner() {
 
@@ -104,8 +107,11 @@ public class MinerServiceTests {
 		var shabal256 = shabal256(Function.identity());
 		var description1 = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var description2 = DeadlineDescriptions.of(43, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
-		var deadline1 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
-		var deadline2 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 43L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var value = new byte[shabal256.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline1 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var deadline2 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 43L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 		var delay = 2000L;
 
 		var miner = new Miner() {
@@ -145,7 +151,10 @@ public class MinerServiceTests {
 	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
-		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, new byte[] { 1, 2, 3, 4, 5, 6 }, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var value = new byte[shabal256.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 		long delay = 2000;
 
 		var miner = new Miner() {

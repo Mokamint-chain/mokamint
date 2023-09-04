@@ -92,7 +92,10 @@ public class VerificationTests {
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var hashingForBlocks = config.getHashingForBlocks();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, new byte[] { 4, 5, 6 }, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		var value = new byte[hashingForDeadlines.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block = Blocks.of(1, BigInteger.TEN, config.blockMaxTimeInTheFuture + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 

@@ -44,7 +44,7 @@ public interface Deadlines {
 	 * @return the deadline
 	 */
 	static Deadline of(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
-		return new DeadlineImpl(prolog, progressive, value, scoopNumber, data, hashing);
+		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data);
 	}
 
 	/**

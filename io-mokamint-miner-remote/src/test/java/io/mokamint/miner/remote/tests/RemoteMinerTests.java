@@ -67,10 +67,13 @@ public class RemoteMinerTests {
 	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
+		var value = new byte[shabal256.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
-		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, data, scoopNumber, data, shabal256);
+		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
@@ -93,7 +96,10 @@ public class RemoteMinerTests {
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
-		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, data, scoopNumber + 1, data, shabal256); // <-- +1
+		var value = new byte[shabal256.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber + 1, data, shabal256); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
@@ -113,7 +119,7 @@ public class RemoteMinerTests {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
-		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = received -> semaphore.release();
+		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = _description -> semaphore.release();
 
 		try (var remote = RemoteMiners.of(8025); var client = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
 			client.close();
