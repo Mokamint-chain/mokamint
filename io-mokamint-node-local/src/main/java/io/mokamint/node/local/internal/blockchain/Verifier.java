@@ -96,7 +96,7 @@ public class Verifier {
 	}
 
 	/**
-	 * Checks that the given block matches the expected description.
+	 * Checks that the given block matches its expected description.
 	 * 
 	 * @param block the block
 	 * @param description the description
@@ -105,6 +105,18 @@ public class Verifier {
 	private void matches(NonGenesisBlock block, Block description) throws VerificationException {
 		if (block.getHeight() != description.getHeight())
 			throw new VerificationException("Height mismatch (expected " + description.getHeight() + " but found " + block.getHeight() + ")");
+
+		if (!block.getAcceleration().equals(description.getAcceleration()))
+			throw new VerificationException("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + block.getAcceleration() + ")");
+
+		if (!block.getPower().equals(description.getPower()))
+			throw new VerificationException("Power mismatch (expected " + description.getPower() + " but found " + block.getPower() + ")");
+
+		if (block.getTotalWaitingTime() != description.getTotalWaitingTime())
+			throw new VerificationException("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + block.getTotalWaitingTime() + ")");
+
+		if (block.getWeightedWaitingTime() != description.getWeightedWaitingTime())
+			throw new VerificationException("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + block.getWeightedWaitingTime() + ")");
 	}
 
 	/**
