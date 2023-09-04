@@ -34,6 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Stream;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.DatabaseException;
@@ -56,6 +58,7 @@ import io.mokamint.node.local.internal.NodePeers;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
@@ -239,6 +242,104 @@ public class VerificationTests {
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 		assertTrue(e.getMessage().contains("Total waiting time mismatch"));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has inconsistent deadline's scoop number, verification rejects it")
+	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+		var config = Config.Builder.defaults()
+				.setDir(dir)
+				// we effectively disable the time check
+				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+				.build();
+
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we replace the expected deadline
+		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
+				(deadline.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, deadline.getData(), deadline.getHashing());
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+				modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().contains("Deadline mismatch"));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has inconsistent deadline's data, verification rejects it")
+	public void deadlineDataMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+		var config = Config.Builder.defaults()
+				.setDir(dir)
+				// we effectively disable the time check
+				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+				.build();
+
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we replace the expected deadline
+		var modifiedData = deadline.getData();
+		// blocks' deadlines have a non-empty data array
+		modifiedData[0]++;
+		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
+				deadline.getScoopNumber(), modifiedData, deadline.getHashing());
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+				modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().contains("Deadline mismatch"));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has inconsistent deadline's hashing algorithm, verification rejects it")
+	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+		var config = Config.Builder.defaults()
+				.setDir(dir)
+				// we effectively disable the time check
+				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+				.build();
+
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we replace the expected deadline
+		Optional<String> otherAlgorithmName = Stream.of(HashingAlgorithms.TYPES.values()).map(Enum::name).filter(name -> !name.equalsIgnoreCase(deadline.getHashing().getName())).findAny();
+		HashingAlgorithm<byte[]> otherAlgorithm = HashingAlgorithms.of(otherAlgorithmName.get(), Function.identity());
+		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
+				deadline.getScoopNumber(), deadline.getData(), otherAlgorithm);
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+				modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().contains("Deadline mismatch"));
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(genesis, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);

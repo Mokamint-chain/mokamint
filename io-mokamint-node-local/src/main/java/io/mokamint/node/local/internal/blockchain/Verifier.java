@@ -27,6 +27,8 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
  * A verifier of the consensus rules of the blocks that gets added to a blockchain.
@@ -91,8 +93,23 @@ public class Verifier {
 	private void verify(NonGenesisBlock block, Block previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		creationTimeIsNotTooMuchInTheFuture(block);
 		var config = node.getConfig();
-		var description = previous.getNextBlockDescription(block.getDeadline(), config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
-		matches(block, description);
+		var deadlineDescription = previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines);
+		var blockDeadline = block.getDeadline();
+		matches(blockDeadline, deadlineDescription);
+		var blockDescription = previous.getNextBlockDescription(blockDeadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
+		matches(block, blockDescription);
+	}
+
+	/**
+	 * Checks that the given deadline matches its expected description.
+	 * 
+	 * @param deadline the deadline
+	 * @param description the description
+	 * @throws VerificationException if that condition in violated
+	 */
+	private void matches(Deadline deadline, DeadlineDescription description) throws VerificationException {
+		if (!deadline.matches(description))
+			throw new VerificationException("Deadline mismatch");
 	}
 
 	/**

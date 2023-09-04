@@ -86,7 +86,8 @@ public class EventsTests {
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
-				when(deadline.isValid()).thenReturn(true);
+				when(deadline.isValid()).thenReturn(true); // <--
+				when(deadline.isLegalFor(any(), any())).thenReturn(true); // <--
 				when(deadline.getProlog()).thenReturn(deadlineProlog);
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
@@ -245,7 +246,7 @@ public class EventsTests {
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
-				when(deadline.isValid()).thenReturn(true);
+				when(deadline.isValid()).thenReturn(true); // <--
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getValue()).thenReturn(deadlineValue);

@@ -15,6 +15,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka</groupId>
       <artifactId>io-hotmoka-marshalling-api</artifactId>
       <version>${hotmoka.version}</version>

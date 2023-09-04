@@ -352,7 +352,7 @@ public class MineNewBlockTask implements Task {
 			else if (miners.get().noneMatch(m -> m == miner)) // TODO: should I really discard it?
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
-				if (isLegal(deadline)) {
+				if (deadline.isLegalFor(description, app)) {
 					if (currentDeadline.updateIfWorseThan(deadline)) {
 						LOGGER.info(logPrefix + "improved deadline to " + deadline);
 						setWaker(deadline);
@@ -371,21 +371,6 @@ public class MineNewBlockTask implements Task {
 
 		private void waitUntilDeadlineExpires() throws InterruptedException {
 			waker.await();
-		}
-
-		/**
-		 * Determines if a deadline is legal, that is,
-		 * it is actually a deadline for the expected description,
-		 * it is valid and its prolog is valid for the application. All these conditions
-		 * should always hold, if miners behave correctly.
-		 * 
-		 * @param deadline the deadline to check
-		 * @return true if and only if the deadline is legal
-		 */
-		private boolean isLegal(Deadline deadline) {
-			return deadline.matches(description)
-				&& deadline.isValid()
-				&& app.prologIsValid(deadline.getProlog());
 		}
 
 		/**
