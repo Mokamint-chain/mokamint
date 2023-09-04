@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 import io.hotmoka.crypto.Hex;
@@ -50,13 +49,10 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration) {
-		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
-		Objects.requireNonNull(acceleration, "acceleration cannot be null");
-		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("acceleration must be strictly positive");
-
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
+
+		verify();
 	}
 
 	/**
@@ -68,18 +64,28 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	GenesisBlockImpl(UnmarshallingContext context) throws IOException {
-		String startDateTimeUTC = context.readStringUnshared();
-
 		try {
-			this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			this.acceleration = context.readBigInteger();
+
+			verify();
 		}
-		catch (DateTimeParseException e) {
+		catch (RuntimeException e) {
 			throw new IOException(e);
 		}
+	}
 
-		this.acceleration = context.readBigInteger();
+	/**
+	 * Checks all constraints expected from a genesis block.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	private void verify() {
+		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
+		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		if (acceleration.signum() <= 0)
-			throw new IOException("acceleration must be strictly positive");
+			throw new IllegalArgumentException("acceleration must be strictly positive");
 	}
 
 	@Override

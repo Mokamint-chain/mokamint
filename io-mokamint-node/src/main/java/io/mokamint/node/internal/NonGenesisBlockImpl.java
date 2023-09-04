@@ -82,17 +82,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * Creates a new non-genesis block.
 	 */
 	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
-		if (height < 1)
-			throw new IllegalArgumentException("a non-genesis block must have positive height");
-
-		Objects.requireNonNull(acceleration, "acceleration cannot be null");
-		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("acceleration must be strictly positive");
-
-		Objects.requireNonNull(deadline, "deadline cannot be null");
-		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
-		Objects.requireNonNull(power, "power cannot be null");
-
 		this.height = height;
 		this.power = power;
 		this.totalWaitingTime = totalWaitingTime;
@@ -100,6 +89,8 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		this.acceleration = acceleration;
 		this.deadline = deadline;
 		this.hashOfPreviousBlock = hashOfPreviousBlock;
+
+		verify();
 	}
 
 	/**
@@ -112,20 +103,39 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * @throws IOException if the block could not be unmarshalled
 	 */
 	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		this.height = height;
-		this.power = context.readBigInteger();
-		this.totalWaitingTime = context.readLong();
-		this.weightedWaitingTime = context.readLong();
-		this.acceleration = context.readBigInteger();
-		this.deadline = Deadlines.from(context);
-		int hashOfPreviousBlockLength = context.readCompactInt();
-		this.hashOfPreviousBlock = context.readBytes(hashOfPreviousBlockLength, "Previous block hash length mismatch");
+		try {
+			this.height = height;
+			this.power = context.readBigInteger();
+			this.totalWaitingTime = context.readLong();
+			this.weightedWaitingTime = context.readLong();
+			this.acceleration = context.readBigInteger();
+			this.deadline = Deadlines.from(context);
+			this.hashOfPreviousBlock = context.readBytes(context.readCompactInt(), "Previous block hash length mismatch");
+
+			verify();
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
+	}
+
+	/**
+	 * Checks all constraints expected from a non-genesis block.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	private void verify() {
+		Objects.requireNonNull(acceleration, "acceleration cannot be null");
+		Objects.requireNonNull(deadline, "deadline cannot be null");
+		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
+		Objects.requireNonNull(power, "power cannot be null");
 
 		if (height < 1)
-			throw new IOException("a non-genesis block must have positive height");
+			throw new IllegalArgumentException("a non-genesis block must have positive height");
 
 		if (acceleration.signum() <= 0)
-			throw new IOException("acceleration must be strictly positive");
+			throw new IllegalArgumentException("acceleration must be strictly positive");
 	}
 
 	@Override

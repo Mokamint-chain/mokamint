@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.nonce.internal;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -33,14 +34,11 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 	private final HashingAlgorithm<byte[]> hashing;
 
 	public DeadlineDescriptionImpl(int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+		Objects.requireNonNull(data, "data cannot be null");
+		Objects.requireNonNull(hashing, "hashing cannot be null");
+
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
-
-		if (data == null)
-			throw new NullPointerException("data cannot be null");
-
-		if (hashing == null)
-			throw new NullPointerException("hashing cannot be null");
 
 		this.scoopNumber = scoopNumber;
 		this.data = data;

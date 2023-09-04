@@ -65,14 +65,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		this.hashing = HashingAlgorithms.of(context.readStringUnshared(), Function.identity());
-		this.prolog = context.readBytes(context.readCompactInt(), "Mismatch in deadline's prolog length");
-		this.progressive = context.readLong();
-		this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
-		this.scoopNumber = context.readInt();
-		this.data = context.readBytes(context.readInt(), "Mismatch in deadline's data length");
-
 		try {
+			this.hashing = HashingAlgorithms.of(context.readStringUnshared(), Function.identity());
+			this.prolog = context.readBytes(context.readCompactInt(), "Mismatch in deadline's prolog length");
+			this.progressive = context.readLong();
+			this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
+			this.scoopNumber = context.readInt();
+			this.data = context.readBytes(context.readInt(), "Mismatch in deadline's data length");
+
 			verify();
 		}
 		catch (RuntimeException e) {
