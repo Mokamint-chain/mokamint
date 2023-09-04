@@ -43,18 +43,12 @@ public class ChainImpl implements Chain {
 	 * @param hashes the hashes
 	 */
 	public ChainImpl(Stream<byte[]> hashes) {
-		this.hashes = hashes.toArray(byte[][]::new);
-		for (int pos = 0; pos < this.hashes.length; pos++)
-			this.hashes[pos] = this.hashes[pos].clone();
+		this.hashes = hashes.map(byte[]::clone).toArray(byte[][]::new);
 	}
 
 	@Override
 	public Stream<byte[]> getHashes() {
-		byte[][] copy = hashes.clone();
-		for (int pos = 0; pos < copy.length; pos++)
-			copy[pos] = copy[pos].clone();
-
-		return Stream.of(copy);
+		return Stream.of(hashes).map(byte[]::clone);
 	}
 
 	@Override

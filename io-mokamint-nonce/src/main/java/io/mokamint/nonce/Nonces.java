@@ -27,8 +27,7 @@ import io.mokamint.nonce.internal.NonceImpl;
 public interface Nonces {
 
 	/**
-	 * Yields the nonce for the given data and with the given number, usingthe given
-	 * hashing algorithm.
+	 * Yields the nonce for the given data and with the given number, using the given hashing algorithm.
 	 * 
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the nonce. This can be really anything, but cannot be {@code null}
@@ -47,8 +46,6 @@ public interface Nonces {
 	 * @return the nonce
 	 */
 	static Nonce from(Deadline deadline) {
-		return new NonceImpl(deadline.getProlog(),
-			deadline.getProgressive(),
-			deadline.getHashing());
+		return new NonceImpl(deadline.getProlog(), deadline.getProgressive(), deadline.getHashing());
 	}
 }

@@ -70,7 +70,7 @@ public class NonceImpl implements Nonce {
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 
 		if (progressive < 0L)
-			throw new IllegalArgumentException("nonce number cannot be negative");
+			throw new IllegalArgumentException("progressive cannot be negative");
 
 		if (prolog.length > Deadline.MAX_PROLOG_SIZE)
 			throw new IllegalArgumentException("Illegal prolog size: the maximum is " + Deadline.MAX_PROLOG_SIZE);
@@ -87,9 +87,8 @@ public class NonceImpl implements Nonce {
 		if (!description.getHashing().getName().equals(hashing.getName()))
 			throw new IllegalArgumentException("deadline description and nonce use different hashing algorithms");
 
-		return Deadlines.of(prolog, progressive,
-			hashing.hash(extractScoopAndConcat(description.getScoopNumber(), description.getData())),
-				description.getScoopNumber(), description.getData(), hashing);
+		byte[] value = hashing.hash(extractScoopAndConcat(description.getScoopNumber(), description.getData()));
+		return Deadlines.of(prolog, progressive, value, description.getScoopNumber(), description.getData(), hashing);
 	}
 
 	/**
