@@ -93,11 +93,21 @@ public class Verifier {
 	private void verify(NonGenesisBlock block, Block previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		creationTimeIsNotTooMuchInTheFuture(block);
 		var config = node.getConfig();
-		var deadlineDescription = previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines);
 		var blockDeadline = block.getDeadline();
-		matches(blockDeadline, deadlineDescription);
-		var blockDescription = previous.getNextBlockDescription(blockDeadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
-		matches(block, blockDescription);
+		matches(blockDeadline, previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines));
+		prologIsValid(blockDeadline);
+		isValid(blockDeadline);
+		matches(block, previous.getNextBlockDescription(blockDeadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines));
+	}
+
+	private void isValid(Deadline blockDeadline) throws VerificationException {
+		if (!blockDeadline.isValid())
+			throw new VerificationException("Invalid deadline");
+	}
+
+	private void prologIsValid(Deadline deadline) throws VerificationException {
+		if (!node.getApplication().prologIsValid(deadline.getProlog()))
+			throw new VerificationException("Deadline prolog mismatch");
 	}
 
 	/**

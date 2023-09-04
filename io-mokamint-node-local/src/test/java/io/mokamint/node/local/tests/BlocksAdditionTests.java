@@ -34,6 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.function.Function;
 import java.util.logging.LogManager;
@@ -65,6 +66,11 @@ import io.mokamint.plotter.api.Plot;
 public class BlocksAdditionTests {
 
 	/**
+	 * The prolog of the plot files.
+	 */
+	private static byte[] PROLOG = new byte[] { 11, 13, 24, 88 };
+
+	/**
 	 * The plots used for creating the deadlines.
 	 */
 	private static Plot plot1;
@@ -73,12 +79,11 @@ public class BlocksAdditionTests {
 
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException {
-		var prolog = new byte[] { 11, 13, 24, 88 };
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 
-		plot1 = Plots.create(plotDir.resolve("plot1.plot"), prolog, 65536L, 50L, hashing, __ -> {});
-		plot2 = Plots.create(plotDir.resolve("plot2.plot"), prolog, 10000L, 100L, hashing, __ -> {});
-		plot3 = Plots.create(plotDir.resolve("plot3.plot"), prolog, 15000L, 256L, hashing, __ -> {});
+		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
+		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
+		plot3 = Plots.create(plotDir.resolve("plot3.plot"), PROLOG, 15000L, 256L, hashing, __ -> {});
 	}
 
 	@AfterAll
@@ -102,9 +107,17 @@ public class BlocksAdditionTests {
 			.when(peers)
 			.asNetworkDateTime(any());
 
+		var application = new Application() {
+
+			@Override
+			public boolean prologIsValid(byte[] prolog) {
+				return Arrays.equals(prolog, PROLOG);
+			}
+		};
+
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		when(node.getApplication()).thenReturn(mock(Application.class));
+		when(node.getApplication()).thenReturn(application);
 		when(node.getPeers()).thenReturn(peers);
 		var miners = new NodeMiners(node, Stream.empty());
 		when(node.getMiners()).thenReturn(miners);

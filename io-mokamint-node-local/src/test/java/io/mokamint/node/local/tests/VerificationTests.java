@@ -34,6 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.LogManager;
@@ -347,15 +348,120 @@ public class VerificationTests {
 		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
 	}
 
+	@Test
+	@DisplayName("if an added non-genesis block has the wrong deadline's prolog, verification rejects it")
+	public void deadlinePrologMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+		var config = Config.Builder.defaults()
+				.setDir(dir)
+				// we effectively disable the time check
+				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+				.build();
+
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we replace the prolog
+		var prolog = deadline.getProlog();
+		prolog[0]++; // the prolog of the plot file is non-empty
+		var modifiedDeadline = Deadlines.of(prolog, deadline.getProgressive(), deadline.getValue(),
+				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+				modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().contains("Deadline prolog mismatch"));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has an invalid deadline progressive, verification rejects it")
+	public void invalidDeadlineProgressiveGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+		var config = Config.Builder.defaults()
+				.setDir(dir)
+				// we effectively disable the time check
+				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+				.build();
+
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we make the deadline invalid by changing its progressive
+		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive() + 1, deadline.getValue(),
+				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+				modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().contains("Invalid deadline"));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has an invalid deadline value, verification rejects it")
+	public void invalidDeadlineValueGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+		var config = Config.Builder.defaults()
+				.setDir(dir)
+				// we effectively disable the time check
+				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+				.build();
+
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we make the deadline invalid by changing its value (it is not empty since it is a hash)
+		var value = deadline.getValue();
+		value[0]++;
+		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), value,
+				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+				modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().contains("Invalid deadline"));
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+	}
+
 	private static Blockchain mkTestBlockchain(Config config) throws DatabaseException {
 		var peers = mock(NodePeers.class);
 		doAnswer(returnsFirstArg())
 			.when(peers)
 			.asNetworkDateTime(any());
 	
+		var application = new Application() {
+
+			@Override
+			public boolean prologIsValid(byte[] prolog) {
+				return Arrays.equals(prolog, plot.getProlog());
+			}
+		};
+
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
-		when(node.getApplication()).thenReturn(mock(Application.class));
+		when(node.getApplication()).thenReturn(application);
 		when(node.getPeers()).thenReturn(peers);
 		var miners = new NodeMiners(node, Stream.empty());
 		when(node.getMiners()).thenReturn(miners);
