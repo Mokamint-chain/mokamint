@@ -72,11 +72,6 @@ public class Blockchain implements AutoCloseable {
 	private final BlocksDatabase db;
 
 	/**
-	 * The verifier of the blocks added to this blockchain.
-	 */
-	private final Verifier verifier;
-
-	/**
 	 * A cache for the genesis block, if it has been set already.
 	 * Otherwise it holds {@code null}.
 	 */
@@ -114,7 +109,6 @@ public class Blockchain implements AutoCloseable {
 		this.node = node;
 		this.hashingForBlocks = node.getConfig().hashingForBlocks;
 		this.db = new BlocksDatabase(node);
-		this.verifier = new Verifier(node);
 	}
 
 	/**
@@ -417,7 +411,7 @@ public class Blockchain implements AutoCloseable {
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
-			verifier.verify(block, previous);
+			new BlockVerification(node, block, previous);
 
 			if (db.add(block, updatedHead)) {
 				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);

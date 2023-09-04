@@ -25,15 +25,15 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
 
 /**
  * A verifier of the consensus rules of the blocks that gets added to a blockchain.
  */
-public class Verifier {
+public class BlockVerification {
 
 	/**
 	 * The node having the blockchain whose blocks get verified.
@@ -41,95 +41,119 @@ public class Verifier {
 	private final LocalNodeImpl node;
 
 	/**
-	 * Created a new verifier.
-	 * 
-	 * @param node the node whose blocks get verified
+	 * The configuration of {@link #node}.
 	 */
-	Verifier(LocalNodeImpl node) {
-		this.node = node;
-	}
+	private final Config config;
 
 	/**
-	 * Verifies if {@code block} satisfies all consensus rules required for being a child of {@code previous}.
+	 * The block to verify.
+	 */
+	private final Block block;
+
+	/**
+	 * The previous of the block to verify. This is {@code null} if and only if
+	 * {@link #block} is a genesis block.
+	 */
+	private final Block previous;
+
+	/**
+	 * The deadline of {@link #block}. This is {@code null} if and only if
+	 * {@link #block} is a genesis block.
+	 */
+	private final Deadline deadline;
+
+	/**
+	 * Performs the verification that {@code block} satisfies all consensus rules required
+	 * for being a child of {@code previous}, in the given {@code node}.
 	 * 
+	 * @param node the node whose blocks get verified
 	 * @param block the block
 	 * @param previous the previous of {@code block}; this can be empty only if {@code block} is a genesis block
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public void verify(Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		if (block instanceof GenesisBlock gb)
-			verify(gb);
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
+		this.node = node;
+		this.config = node.getConfig();
+		this.block = block;
+		this.previous = previous.orElse(null);
+		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
+
+		if (block instanceof GenesisBlock)
+			verifyAsGenesis();
 		else
-			verify((NonGenesisBlock) block, previous.get());
+			verifyAsNonGenesis();
 	}
 
 	/**
-	 * Verifies if a genesis block is valid for this blockchain.
+	 * Verifies if the genesis {@link #block} is valid for the blockchain in {@link #node}.
 	 * 
-	 * @param genesis the genesis block
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void verify(GenesisBlock genesis) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		creationTimeIsNotTooMuchInTheFuture(genesis);
+	private void verifyAsGenesis() throws VerificationException, DatabaseException, ClosedDatabaseException {
+		creationTimeIsNotTooMuchInTheFuture();
 	}
 
 	/**
-	 * Verifies if {@code block} satisfies all consensus rules required for being a child of {@code previous}.
-	 * This method is called only if the database is not empty. Namely, if {@code previous} is in the
-	 * database and if the genesis block of the database is set. It is guaranteed that the
-	 * previous hash inside {@code block} coincides with the hash of {@code previous} (hence
-	 * that condition is not verified by this method).
+	 * Verifies if the non-genesis {@link #block} satisfies all consensus rules required for being
+	 * a child of {@link #previous}. This method is called only if the database is not empty.
+	 * Namely, if {@link #previous} is in the database and if the genesis block of the database is set.
+	 * It is guaranteed that the previous hash inside {@link #block} coincides with the hash
+	 * of {@link #previous} (hence this condition is not verified by this method).
 	 * 
-	 * @param block the block
-	 * @param previous the previous block
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void verify(NonGenesisBlock block, Block previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
-		creationTimeIsNotTooMuchInTheFuture(block);
-		var config = node.getConfig();
-		var blockDeadline = block.getDeadline();
-		matches(blockDeadline, previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines));
-		prologIsValid(blockDeadline);
-		isValid(blockDeadline);
-		matches(block, previous.getNextBlockDescription(blockDeadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines));
+	private void verifyAsNonGenesis() throws VerificationException, DatabaseException, ClosedDatabaseException {
+		creationTimeIsNotTooMuchInTheFuture();
+		deadlineMatchesItsExpectedDescription();
+		deadlineHasValidProlog();
+		deadlineIsValid();
+		blockMatchesItsExpectedDescription();
 	}
 
-	private void isValid(Deadline blockDeadline) throws VerificationException {
-		if (!blockDeadline.isValid())
+	/**
+	 * Checks if the deadline of {@link #block} is valid.
+	 * 
+	 * @throws VerificationException if that condition in violated
+	 */
+	private void deadlineIsValid() throws VerificationException {
+		if (!deadline.isValid())
 			throw new VerificationException("Invalid deadline");
 	}
 
-	private void prologIsValid(Deadline deadline) throws VerificationException {
+	/**
+	 * Checks if the deadline of {@link #block} has a prolog valid for the {@link #node}.
+	 * 
+	 * @throws VerificationException if that condition in violated
+	 */
+	private void deadlineHasValidProlog() throws VerificationException {
 		if (!node.getApplication().prologIsValid(deadline.getProlog()))
 			throw new VerificationException("Deadline prolog mismatch");
 	}
 
 	/**
-	 * Checks that the given deadline matches its expected description.
+	 * Checks if the deadline of {@link #block} matches its expected description.
 	 * 
-	 * @param deadline the deadline
-	 * @param description the description
 	 * @throws VerificationException if that condition in violated
 	 */
-	private void matches(Deadline deadline, DeadlineDescription description) throws VerificationException {
-		if (!deadline.matches(description))
+	private void deadlineMatchesItsExpectedDescription() throws VerificationException {
+		if (!deadline.matches(previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines)))
 			throw new VerificationException("Deadline mismatch");
 	}
 
 	/**
-	 * Checks that the given block matches its expected description.
+	 * Checks if {@link #block} matches its expected description.
 	 * 
-	 * @param block the block
-	 * @param description the description
 	 * @throws VerificationException if that condition in violated
 	 */
-	private void matches(NonGenesisBlock block, Block description) throws VerificationException {
+	private void blockMatchesItsExpectedDescription() throws VerificationException {
+		var description = previous.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
+
 		if (block.getHeight() != description.getHeight())
 			throw new VerificationException("Height mismatch (expected " + description.getHeight() + " but found " + block.getHeight() + ")");
 
@@ -147,14 +171,13 @@ public class Verifier {
 	}
 
 	/**
-	 * Yields the creation time of the given block.
+	 * Yields the creation time of {@link #block}.
 	 * 
-	 * @param block the block
-	 * @return the creation time of {@code block}
+	 * @return the creation time of {@link #block}
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private LocalDateTime creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
+	private LocalDateTime creationTimeOfBlock() throws DatabaseException, ClosedDatabaseException {
 		if (block instanceof GenesisBlock gb)
 			return gb.getStartDateTimeUTC();
 		else
@@ -164,16 +187,15 @@ public class Verifier {
 	}
 
 	/**
-	 * Checks that the creation time of the given block is not too much in the future.
+	 * Checks if the creation time of {@link #block} is not too much in the future.
 	 * 
-	 * @param block the block
-	 * @throws VerificationException if the creationTime of {@code block} is too much in the future
+	 * @throws VerificationException if the creationTime of {@link #block} is too much in the future
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void creationTimeIsNotTooMuchInTheFuture(Block block) throws VerificationException, DatabaseException, ClosedDatabaseException {
+	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, DatabaseException, ClosedDatabaseException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTimeOf(block));
+		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTimeOfBlock());
 		long max = node.getConfig().blockMaxTimeInTheFuture;
 		if (howMuchInTheFuture > max)
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
