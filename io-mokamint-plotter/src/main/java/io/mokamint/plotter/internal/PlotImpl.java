@@ -20,13 +20,13 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -35,6 +35,10 @@ import java.util.stream.LongStream;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckConsumer;
+import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
@@ -109,7 +113,7 @@ public class PlotImpl implements Plot {
 		int hashingNameLength = reader.readInt();
 		var hashingNameBytes = new byte[hashingNameLength];
 		if (reader.read(hashingNameBytes) != hashingNameLength)
-			throw new IOException("cannot read the name of the hashing algorithm used for the plot file");
+			throw new IOException("Cannot read the name of the hashing algorithm used for the plot file");
 		var hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
 		this.hashing = HashingAlgorithms.of(hashingName, Function.identity());
 	}
@@ -130,17 +134,18 @@ public class PlotImpl implements Plot {
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
 	public PlotImpl(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
+		Objects.requireNonNull(prolog, "prolog cannot be null");
+		Objects.requireNonNull(hashing, "hashing cannot be null");
+		Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null");
+
 		if (start < 0)
-			throw new IllegalArgumentException("the plot starting number cannot be negative");
+			throw new IllegalArgumentException("start cannot be negative");
 		
 		if (length < 1)
-			throw new IllegalArgumentException("the plot length must be positive");
-
-		if (prolog == null)
-			throw new NullPointerException("the prolog cannot be null");
+			throw new IllegalArgumentException("length must be positive");
 
 		if (prolog.length > Deadline.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + Deadline.MAX_PROLOG_SIZE);
+			throw new IllegalArgumentException("prolog cannot be longer than " + Deadline.MAX_PROLOG_SIZE);
 
 		this.prolog = prolog.clone();
 		this.start = start;
@@ -170,15 +175,10 @@ public class PlotImpl implements Plot {
 
 			this.onNewPercent = onNewPercent;
 		
-			try (RandomAccessFile writer = new RandomAccessFile(where.toFile(), "rw");
-				 FileChannel channel = this.channel = writer.getChannel()) {
-		
+			try (var writer = new RandomAccessFile(where.toFile(), "rw"); var channel = this.channel = writer.getChannel()) {
 				sizePlotFile();
 				dumpMetadata();
 				dumpNonces();
-			}
-			catch (UncheckedIOException e) {
-				throw e.getCause();
 			}
 		
 			logger.info("Plot file created in " + (System.currentTimeMillis() - startTime) + "ms");
@@ -193,7 +193,7 @@ public class PlotImpl implements Plot {
 			// by forcing a write to the last byte of the file, we guarantee
 			// that it is fully created (but randomly initialized, for now)
 			channel.position(plotSize - 1);
-			ByteBuffer buffer = ByteBuffer.wrap(new byte[1]);
+			var buffer = ByteBuffer.wrap(new byte[1]);
 			channel.write(buffer);
 		}
 
@@ -212,36 +212,32 @@ public class PlotImpl implements Plot {
 			}
 		}
 
-		private void dumpNonces() throws UncheckedIOException {
-			LongStream.range(start, start + length)
-				.parallel()
-				.forEach(this::dumpNonce);
+		private void dumpNonces() throws IOException {
+			CheckRunnable.check(IOException.class, () ->
+				LongStream.range(start, start + length)
+					.parallel()
+					.mapToObj(Long::valueOf)
+					.forEach(UncheckConsumer.uncheck(this::dumpNonce))
+			);
 		}
 
 		/**
-		 * Write into the file the data of the nonce with the given progressive inside
-		 * the plot file.
+		 * Write into the file the data of the nonce with the given progressive inside the plot file.
 		 * 
 		 * @param n the number of the nonce to dumpo inside the file. It goes from
 		 *          {@link PlotImpl#start} (inclusive)
 		 *          to {@link PlotImpl#start} + {@link PlotImpl#length} (exclusive)
-		 * @throws UncheckedIOException if the nonce cannot be written into the file
+		 * @throws IOException if the nonce cannot be written into the file
 		 */
-		private void dumpNonce(long n) throws UncheckedIOException {
-			try {
-				// the hashing algorithm is cloned to avoid thread contention
-				Nonces.of(prolog, n, hashing.clone())
-					.dumpInto(channel, metadataSize, n - start, length);
-			}
-			catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+		private void dumpNonce(long n) throws IOException {
+			// the hashing algorithm is cloned to avoid thread contention
+			Nonces.of(prolog, n, hashing.clone())
+				.dumpInto(channel, metadataSize, n - start, length);
 
 			int counter = alreadyDone.getAndIncrement();
 			long percent = (counter + 1) * 100L / length;
 			if (percent > counter * 100L / length)
 				onNewPercent.accept((int) percent);
-				
 		}
 	}
 
@@ -270,12 +266,7 @@ public class PlotImpl implements Plot {
 		if (!description.getHashing().getName().equals(hashing.getName()))
 			throw new IllegalArgumentException("deadline description and plot file use different hashing algorithms");
 
-		try {
-			return new SmallestDeadlineFinder(description).deadline;
-		}
-		catch (UncheckedIOException e) {
-			throw e.getCause();
-		}
+		return new SmallestDeadlineFinder(description).deadline;
 	}
 
 	/**
@@ -298,36 +289,37 @@ public class PlotImpl implements Plot {
 		private final long groupSize = length * scoopSize;
 		private final int metadataSize = getMetadataSize();
 
-		private SmallestDeadlineFinder(DeadlineDescription description) {
+		private SmallestDeadlineFinder(DeadlineDescription description) throws IOException {
 			this.scoopNumber = description.getScoopNumber();
 			this.data = description.getData();
-			this.deadline = LongStream.range(start, start + length)
-				.parallel()
-				.mapToObj(this::mkDeadline)
-				.min(Deadline::compareByValue)
-				.get(); // OK, since plots contain at least one nonce
+			this.deadline = CheckSupplier.check(IOException.class, () ->
+				LongStream.range(start, start + length)
+					.mapToObj(Long::valueOf)
+					.parallel()
+					.map(UncheckFunction.uncheck(this::mkDeadline))
+					.min(Deadline::compareByValue)
+					.get() // OK, since plots contain at least one nonce
+			);
 		}
 
-		private Deadline mkDeadline(long n) {
+		private Deadline mkDeadline(long n) throws IOException {
 			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
 		}
 
 		/**
 		 * Extracts the scoop (two hashes) number {@code scoopNumber} from the nonce
-		 * number {@code progressive} of this plot file, and concats the {@code data} at its end.
+		 * number {@code progressive} of this plot file, and concatenates the {@code data} at its end.
 		 * 
 		 * @param progressive the progressive number of the nonce whose scoop must be extracted,
 		 *                    between 0 (inclusive) and {@code length} (exclusive)
 		 * @return the scoop data (two hashes)
+		 * @throws IOException if an I/O error occurs
 		 */
-		private byte[] extractScoopAndConcatData(long progressive) {
+		private byte[] extractScoopAndConcatData(long progressive) throws IOException {
 			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
 				channel.transferTo(metadataSize + scoopNumber * groupSize + progressive * scoopSize, scoopSize, destination);
 				destination.write(ByteBuffer.wrap(data));
 				return os.toByteArray();
-			}
-			catch (IOException e) {
-				throw new UncheckedIOException(e);
 			}
 		}
 	}
@@ -337,11 +329,8 @@ public class PlotImpl implements Plot {
 		try {
 			reader.close();
 		}
-		catch (IOException e) {
+		finally {
 			channel.close();
-			throw e;
 		}
-
-		channel.close();
 	}
 }
