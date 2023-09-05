@@ -24,13 +24,21 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Entropies;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
@@ -111,9 +119,9 @@ public class Start extends AbstractCommand {
 	 */
 	private void loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(Path[] paths, int pos, List<Plot> plots) {
 		if (pos < paths.length) {
-			System.out.print(Ansi.AUTO.string("@|blue Loading " + paths[pos] + "... |@"));
+			System.out.print("Loading " + paths[pos] + "... ");
 			try (var plot = Plots.load(paths[pos])) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				System.out.println("done.");
 				plots.add(plot);
 				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
 			}
@@ -139,12 +147,12 @@ public class Start extends AbstractCommand {
 			publishRemoteMinersStartNodeAndPublishNodeServices(0, miners);
 		else {
 			if (plots.size() == 1)
-				System.out.print(Ansi.AUTO.string("@|blue Starting a local miner with 1 plot... |@"));
+				System.out.print("Starting a local miner with 1 plot... ");
 			else
-				System.out.print(Ansi.AUTO.string("@|blue Starting a local miner with " + plots.size() + " plots... |@"));
+				System.out.print("Starting a local miner with " + plots.size() + " plots... ");
 
 			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				System.out.println("done.");
 				miners.add(miner);
 				publishRemoteMinersStartNodeAndPublishNodeServices(0, miners);
 			}
@@ -153,9 +161,9 @@ public class Start extends AbstractCommand {
 
 	private void publishRemoteMinersStartNodeAndPublishNodeServices(int pos, List<Miner> miners) {
 		if (pos < minerPorts.length) {
-			System.out.print(Ansi.AUTO.string("@|blue Starting a remote miner listening at port " + minerPorts[pos] + " of localhost... |@"));
+			System.out.print("Starting a remote miner listening at port " + minerPorts[pos] + " of localhost... ");
 			try (var remote = RemoteMiners.of(minerPorts[pos])) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				System.out.println("done.");
 				miners.add(remote);
 				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
 			}
@@ -203,17 +211,27 @@ public class Start extends AbstractCommand {
 		}
 
 		try {
-			ensureExists(config.dir);
+			createWorkingDirectory(config);
 		}
 		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot create the directory " + config.dir + "|@"));
-			LOGGER.log(Level.SEVERE, "cannot create the directory " + config.dir + ": " + e.getMessage());
+			System.out.println(Ansi.AUTO.string("@|red Cannot create the working directory " + config.dir + "|@"));
+			LOGGER.log(Level.SEVERE, "cannot create the working directory " + config.dir + ": " + e.getMessage());
+			return;
+		}
+		catch (NoSuchAlgorithmException e) {
+			System.out.println(Ansi.AUTO.string("@|red The signature algorithm required for the key of the node is not available!|@"));
+			LOGGER.log(Level.SEVERE, "the signature algorithm required for the key of the node is not available: " + e.getMessage());
+			return;
+		}
+		catch (InvalidKeyException e) {
+			System.out.println(Ansi.AUTO.string("@|red The key of the node could not be encoded!|@"));
+			LOGGER.log(Level.SEVERE, "the key of the node could not be encoded: " + e.getMessage());
 			return;
 		}
 
-		System.out.print(Ansi.AUTO.string("@|blue Starting a local node... |@"));
+		System.out.print("Starting a local node... ");
 		try (var node = LocalNodes.of(config, new TestApplication(), init, miners.toArray(Miner[]::new))) {
-			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+			System.out.println("done.");
 			publishPublicAndRestrictedNodeServices(0, node);
 		}
 		catch (NoSuchAlgorithmException e) {
@@ -237,9 +255,9 @@ public class Start extends AbstractCommand {
 
 	private void publishPublicAndRestrictedNodeServices(int pos, LocalNode node) {
 		if (pos < publicPorts.length) {
-			System.out.print(Ansi.AUTO.string("@|blue Starting a public node service at port " + publicPorts[pos] + " of localhost... |@"));
+			System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
 			try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().whisperingMemorySize, Optional.ofNullable(uri))) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				System.out.println("done.");
 				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}
 			catch (IOException e) {
@@ -269,9 +287,9 @@ public class Start extends AbstractCommand {
 
 	private void publishRestrictedNodeServices(int pos, LocalNode node) {
 		if (pos < restrictedPorts.length) {
-			System.out.print(Ansi.AUTO.string("@|blue Starting a restricted node service at port " + restrictedPorts[pos] + " of localhost... |@"));
+			System.out.print("Opening a restricted node service at port " + restrictedPorts[pos] + " of localhost... ");
 			try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				System.out.println("done.");
 				publishRestrictedNodeServices(pos + 1, node);
 			}
 			catch (IOException e) {
@@ -296,19 +314,24 @@ public class Start extends AbstractCommand {
 	}
 
 	/**
-	 * Creates the given directory for the blockchain.
-	 * If the directory exists, nothing will happen.
+	 * Creates the working directory for the node. If the directory exists, nothing will happen.
 	 * 
-	 * @param dir the directory to create, together with its parent directories, if any
+	 * @param config the configuration of the node
 	 * @throws IOException if the directory could not be created
+	 * @throws NoSuchAlgorithmException if the signature algorithm required for the key of the node is not available
+	 * @throws InvalidKeyException if the key of the node cannot be encoded
 	 */
-	private void ensureExists(Path dir) throws IOException {
-		if (Files.exists(dir)) {
-			System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the blockchain from the old database.|@"));
-			System.out.println(Ansi.AUTO.string("@|yellow If you want to start a blockchain from scratch, delete \"" + dir + "\" and start again this node with --init.|@"));
-		}
+	private void createWorkingDirectory(Config config) throws IOException, InvalidKeyException, NoSuchAlgorithmException {
+		Path dir = config.dir;
 
-		Files.createDirectories(dir);
+		if (Files.exists(dir)) {
+			System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the node from the current content of \"" + dir + "\".|@"));
+			System.out.println(Ansi.AUTO.string("@|yellow If you want to start a blockchain from scratch, stop this process, delete \"" + dir + "\" and start again a node with --init.|@"));
+		}
+		else {
+			Files.createDirectories(config.dir);
+			createNodeKey(config);
+		}
 	}
 
 	private void waitForKeyPress() {
@@ -324,6 +347,33 @@ public class Start extends AbstractCommand {
 
 	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
 		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
+	}
+
+	private void createNodeKey(Config config) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+		var signatureAlgorithmOfNewAccount = SignatureAlgorithms.ed25519(Function.identity());
+		var entropy = Entropies.random();
+		KeyPair keys = entropy.keys("", signatureAlgorithmOfNewAccount);
+		byte[] publicKeyBytes = signatureAlgorithmOfNewAccount.encodingOf(keys.getPublic());
+		var publicKeyBase58 = Base58.encode(publicKeyBytes);
+		var pathToFile = entropy.dump(config.dir, publicKeyBase58);
+
+		try {
+			// TODO: uncomment after deploying the latest Hotmoka to Maven Central
+			//Files.setPosixFilePermissions(pathToFile, PosixFilePermissions.fromString("rw-------"));
+		}
+		catch (UnsupportedOperationException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot limit the access rights of the node's key!|@"));
+			LOGGER.log(Level.WARNING, "cannot limit the access rights of the node's key", e);
+			// we continue anyway
+		}
+
+		System.out.println("A new key has been created for this node:");
+		System.out.println(" * encoded in Base58: " + publicKeyBase58);
+		System.out.println(" * encoded in Base64: " + Base64.getEncoder().encodeToString(publicKeyBytes));
+		System.out.println(Ansi.AUTO.string("@|green This key has been saved into the file \"" + pathToFile + "\".|@"));
+		System.out.println(Ansi.AUTO.string("@|red Do not delete that file: this node needs it in order to sign the blocks it mines.|@"));
+		System.out.println(Ansi.AUTO.string("@|red Protect that file from other users: it gives access to all mining rights of your node.|@"));
+		System.out.println(Ansi.AUTO.string("@|green Copy that file in a safe place: you might need it if you want to restart the same node later.|@"));
 	}
 
 	private static class TestApplication implements Application {
