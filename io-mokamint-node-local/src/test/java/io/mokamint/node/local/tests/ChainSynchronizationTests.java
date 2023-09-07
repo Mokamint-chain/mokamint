@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
@@ -58,6 +59,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.Prologs;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -92,11 +94,11 @@ public class ChainSynchronizationTests {
 	private volatile Set<Block> nonMiningBlocks;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException {
 		app = mock(Application.class);
 		when(app.prologIsValid(any())).thenReturn(true);
-		
-		var prolog = new byte[] { 11, 13, 24, 88 };
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());

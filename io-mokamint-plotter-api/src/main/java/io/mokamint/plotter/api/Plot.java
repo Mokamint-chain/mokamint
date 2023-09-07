@@ -33,7 +33,7 @@ public interface Plot extends AutoCloseable {
 	 * 
 	 * @return the prolog
 	 */
-	byte[] getProlog();
+	Prolog getProlog();
 
 	/**
 	 * Yields the starting progressive number of the nonces inside this plot.

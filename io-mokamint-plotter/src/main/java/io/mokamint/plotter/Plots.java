@@ -23,12 +23,15 @@ import java.util.function.IntConsumer;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.Prolog;
 import io.mokamint.plotter.internal.PlotImpl;
 
 /**
- * Provider of a plot file.
+ * Provider of plot files for Mokamint.
  */
-public interface Plots {
+public final class Plots {
+
+	private Plots() {}
 
 	/**
 	 * Loads a plot file.
@@ -38,14 +41,15 @@ public interface Plots {
 	 * @throws IOException if the file of the plot cannot be read
 	 * @throws NoSuchAlgorithmException if the plot file uses an unknown hashing algorithm
 	 */
-	static Plot load(Path path) throws IOException, NoSuchAlgorithmException {
+	public static Plot load(Path path) throws IOException, NoSuchAlgorithmException {
 		return new PlotImpl(path);
 	}
 
 	/**
-	 * Creates a plot file containing sequential nonces for the given prolog.
+	 * Creates a plot file containing sequential nonces for the given prolog and
+	 * writes it to a file.
 	 * 
-	 * @param path the path to the file where the plot must be dumped
+	 * @param path the path to the file where the plot must be written
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the plot. This can be really anything but cannot be {@code null}
 	 * @param start the starting progressive number of the nonces in the plot.
@@ -56,7 +60,7 @@ public interface Plots {
 	 * @return the plot that has been created
 	 * @throws IOException if the plot file could not be written into {@code path}
 	 */
-	static Plot create(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
+	public static Plot create(Path path, Prolog prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
 		return new PlotImpl(path, prolog, start, length, hashing, onNewPercent);
 	}
 }

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
@@ -61,6 +62,7 @@ import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.Prologs;
 import io.mokamint.plotter.api.Plot;
 
 public class VerificationTests {
@@ -71,8 +73,9 @@ public class VerificationTests {
 	private static Plot plot;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException {
-		var prolog = new byte[] { 11, 13, 24, 88 };
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException {
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
@@ -455,7 +458,7 @@ public class VerificationTests {
 
 			@Override
 			public boolean prologIsValid(byte[] prolog) {
-				return Arrays.equals(prolog, plot.getProlog());
+				return Arrays.equals(prolog, plot.getProlog().toByteArray());
 			}
 		};
 

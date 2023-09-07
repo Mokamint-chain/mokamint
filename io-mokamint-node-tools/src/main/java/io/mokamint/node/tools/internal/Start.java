@@ -121,7 +121,7 @@ public class Start extends AbstractCommand {
 				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
 			}
 			catch (IOException e) {
-				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
+				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
 				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + paths[pos] + "\"", e);
 				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
 			}

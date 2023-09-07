@@ -20,6 +20,8 @@ limitations under the License.
 module io.mokamint.plotter.api {
 	exports io.mokamint.plotter.api;
 
+	requires io.hotmoka.marshalling.api;
 	requires io.hotmoka.crypto.api;
+	requires io.hotmoka.annotations;
 	requires transitive io.mokamint.nonce.api;
 }

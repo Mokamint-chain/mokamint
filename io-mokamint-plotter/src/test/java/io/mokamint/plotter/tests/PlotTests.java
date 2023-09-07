@@ -19,6 +19,7 @@ package io.mokamint.plotter.tests;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
 
@@ -28,17 +29,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.Prologs;
 
 public class PlotTests {
 
 	@Test
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
-	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException {
-		var prolog = new byte[] { 11, 13, 24, 88 };
+	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException {
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);

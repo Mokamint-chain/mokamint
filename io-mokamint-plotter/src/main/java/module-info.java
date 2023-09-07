@@ -21,8 +21,10 @@ module io.mokamint.plotter {
 	exports io.mokamint.plotter;
 
 	requires transitive io.mokamint.plotter.api;
+	requires transitive io.hotmoka.marshalling.api;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;
+	requires io.hotmoka.annotations;
 	requires java.logging;
 }

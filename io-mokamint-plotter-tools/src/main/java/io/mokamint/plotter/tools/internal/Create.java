@@ -16,9 +16,7 @@ limitations under the License.
 
 package io.mokamint.plotter.tools.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -29,6 +27,8 @@ import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.Prologs;
+import io.mokamint.plotter.api.Prolog;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
@@ -74,13 +74,16 @@ public class Create extends AbstractCommand {
 			throw new CommandException("Failed to overwrite \"" + path + "\"!", e);
 		}
 
-		byte[] prolog;
+		Prolog prolog;
 		
 		try {
 			prolog = computeProlog();
 		}
-		catch (IOException e) {
-			throw new CommandException("Cannot compute the prolog of the plot!", e);
+		catch (NoSuchAlgorithmException e) {
+			throw new CommandException("The ed25519 signature algorithm is not available!", e);
+		}
+		catch (InvalidKeySpecException e) {
+			throw new CommandException("Invalid public key!", e);
 		}
 
 		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.of(hashing, Function.identity()), this::onNewPercent)) {
@@ -102,19 +105,14 @@ public class Create extends AbstractCommand {
 			System.out.print(percent + "% ");
 	}
 
-	private byte[] computeProlog() throws IOException {
-		try (var os = new ByteArrayOutputStream()) {
-			var chainIdBytes = chainId.getBytes(Charset.forName("UTF-8"));
-			os.write(chainIdBytes.length);
-			os.write(chainIdBytes);
-			os.write(getKeyAsBytes(nodePublicKeyBase58));
-			os.write(getKeyAsBytes(plotPublicKeyBase58));
-			var extraBytes = bytesFromBase58(extraBase58);
-			os.write(extraBytes.length);
-			os.write(extraBytes);
-	
-			return os.toByteArray();
-		}
+	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException {
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		return Prologs.of(
+			chainId,
+			ed25519.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),
+			ed25519.publicKeyFromEncoding(bytesFromBase58(plotPublicKeyBase58)),
+			bytesFromBase58(extraBase58)
+		);
 	}
 
 	private byte[] bytesFromBase58(String base58) {
@@ -124,24 +122,5 @@ public class Create extends AbstractCommand {
 		catch (IllegalArgumentException e) {
 			throw new CommandException("The string " + base58 + " is not in Base58 format!", e);
 		}
-	}
-
-	private byte[] getKeyAsBytes(String base58EncodedPublicKey) {
-		byte[] publicKeyBytes = bytesFromBase58(base58EncodedPublicKey);
-	
-		if (publicKeyBytes.length != 32)
-			throw new CommandException("The public key " + base58EncodedPublicKey + " is not 32 bytes long!");
-	
-		try {
-			SignatureAlgorithms.ed25519(Function.identity()).publicKeyFromEncoding(publicKeyBytes);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The ed25519 signature algorithm is not available!", e);
-		}
-		catch (InvalidKeySpecException e) {
-			throw new CommandException("The public key " + base58EncodedPublicKey + " is not a legal ed25519 public key!", e);
-		}
-	
-		return publicKeyBytes;
 	}
 }

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -61,14 +62,16 @@ import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.Prologs;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.Prolog;
 
 public class BlocksAdditionTests {
 
 	/**
 	 * The prolog of the plot files.
 	 */
-	private static byte[] PROLOG = new byte[] { 11, 13, 24, 88 };
+	private static Prolog PROLOG;
 
 	/**
 	 * The plots used for creating the deadlines.
@@ -78,8 +81,10 @@ public class BlocksAdditionTests {
 	private static Plot plot3;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		PROLOG = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 
 		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
 		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
@@ -111,7 +116,7 @@ public class BlocksAdditionTests {
 
 			@Override
 			public boolean prologIsValid(byte[] prolog) {
-				return Arrays.equals(prolog, PROLOG);
+				return Arrays.equals(prolog, PROLOG.toByteArray());
 			}
 		};
 

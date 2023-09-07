@@ -25,6 +25,11 @@
       <version>${hotmoka.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-annotations</artifactId>
+      <version>${hotmoka.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-nonce</artifactId>
       <version>${mokamint.version}</version>

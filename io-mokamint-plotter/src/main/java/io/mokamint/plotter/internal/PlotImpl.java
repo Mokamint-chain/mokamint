@@ -39,11 +39,13 @@ import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
+import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.Prolog;
 
 /**
  * An implementation of a plot file. There are two ways of creating this implementation:
@@ -67,7 +69,7 @@ public class PlotImpl implements Plot {
 	 * Generic data that identifies, for instance, the creator of the plot.
 	 * This can be really anything by is limited to {@link Deadline#MAX_PROLOG_SIZE} bytes.
 	 */
-	private final byte[] prolog;
+	private final Prolog prolog;
 
 	/**
 	 * The starting progressive number of the nonces inside this plot.
@@ -89,7 +91,7 @@ public class PlotImpl implements Plot {
 	 * 
 	 * @param path the path to the file that must be loaded
 	 * @throws IOException if the file of the plot cannot be read
-	 * @throws NoSuchAlgorithmException if the plot file uses a hashing algorithm that is not available
+	 * @throws NoSuchAlgorithmException if the plot file uses an unknown cryptographic algorithm
 	 */
 	public PlotImpl(Path path) throws IOException, NoSuchAlgorithmException {
 		this.reader = new RandomAccessFile(path.toFile(), "r");
@@ -98,9 +100,13 @@ public class PlotImpl implements Plot {
 		int prologLength = reader.readInt();
 		if (prologLength > Deadline.MAX_PROLOG_SIZE)
 			throw new IllegalArgumentException("the maximal prolog size is " + Deadline.MAX_PROLOG_SIZE);
-		this.prolog = new byte[prologLength];
-		if (reader.read(prolog) != prologLength)
-			throw new IOException("cannot read the prolog of the plot file");
+		var prologBytes = new byte[prologLength];
+		if (reader.read(prologBytes) != prologLength)
+			throw new IOException("Cannot read the prolog of the plot file");
+
+		try (var context = UnmarshallingContexts.of(new ByteArrayInputStream(prologBytes))) {
+			this.prolog = new PrologImpl(context);
+		}
 
 		this.start = reader.readLong();
 		if (start < 0)
@@ -133,7 +139,7 @@ public class PlotImpl implements Plot {
 	 * @param onNewPercent a handler called with the percent of work already alreadyDone, for feedback
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
-	public PlotImpl(Path path, byte[] prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
+	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 		Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null");
@@ -144,10 +150,7 @@ public class PlotImpl implements Plot {
 		if (length < 1)
 			throw new IllegalArgumentException("length must be positive");
 
-		if (prolog.length > Deadline.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("prolog cannot be longer than " + Deadline.MAX_PROLOG_SIZE);
-
-		this.prolog = prolog.clone();
+		this.prolog = prolog;
 		this.start = start;
 		this.length = length;
 		this.hashing = hashing;
@@ -198,9 +201,10 @@ public class PlotImpl implements Plot {
 		}
 
 		private void dumpMetadata() throws IOException {
-			ByteBuffer buffer = ByteBuffer.allocate(metadataSize);
-			buffer.putInt(prolog.length);
-			buffer.put(prolog);
+			var buffer = ByteBuffer.allocate(metadataSize);
+			byte[] prologBytes = prolog.toByteArray();
+			buffer.putInt(prologBytes.length);
+			buffer.put(prologBytes);
 			buffer.putLong(start);
 			buffer.putLong(length);
 			byte[] name = hashing.getName().getBytes(Charset.forName("UTF-8"));
@@ -231,7 +235,7 @@ public class PlotImpl implements Plot {
 		 */
 		private void dumpNonce(long n) throws IOException {
 			// the hashing algorithm is cloned to avoid thread contention
-			Nonces.of(prolog, n, hashing.clone())
+			Nonces.of(prolog.toByteArray(), n, hashing.clone())
 				.dumpInto(channel, metadataSize, n - start, length);
 
 			int counter = alreadyDone.getAndIncrement();
@@ -242,8 +246,8 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public byte[] getProlog() {
-		return prolog.clone();
+	public Prolog getProlog() {
+		return prolog;
 	}
 
 	@Override
@@ -275,7 +279,7 @@ public class PlotImpl implements Plot {
 	 * @return the size of the metadata, in bytes
 	 */
 	private int getMetadataSize() {
-		return 4 + prolog.length // prolog
+		return 4 + prolog.toByteArray().length // prolog
 			+ 8 // start
 			+ 8 // length
 			+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
@@ -303,7 +307,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) throws IOException {
-			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
+			return Deadlines.of(prolog.toByteArray(), n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
 		}
 
 		/**
