@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.tools.internal.keys;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -43,7 +42,7 @@ public class Create extends AbstractCommand {
 			var publicKeyBase58 = Base58.encode(publicKeyBytes);
 			System.out.println("A new key pair has been created.");
 			System.out.println("Its public key Base58 is " + publicKeyBase58 + ".");
-			Path fileName = entropy.dump(publicKeyBase58);
+			var fileName = entropy.dump(publicKeyBase58);
 			System.out.println("The key pair has been saved as \"" + fileName + "\".");
 		}
 		catch (IOException e) {

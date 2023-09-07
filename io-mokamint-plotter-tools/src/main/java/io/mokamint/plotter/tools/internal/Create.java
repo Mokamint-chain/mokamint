@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public class Create extends AbstractCommand {
 	@Parameters(index = "2", description = "the amount of nonces")
 	private long length;
 
-	@Option(names = "--hashing", description = "the name of the hashing algorithm", defaultValue = "shabal256")
+	@Option(names = "--hashing", description = "the name of the hashing algorithm for the nonces", defaultValue = "shabal256")
 	private String hashing;
 
 	@Override
