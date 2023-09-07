@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.plotter.Plots;
@@ -53,18 +54,18 @@ public class Create extends AbstractCommand {
 			Files.deleteIfExists(path);
 		}
 		catch (IOException e) {
-			throw new CommandException(e);
+			throw new CommandException("Failed to overwrite \"" + path + "\"!", e);
 		}
 
 		var prolog = new byte[] { 11, 13, 24, 88 };
 
-		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.of(hashing, (byte[] bytes) -> bytes), this::onNewPercent)) {
+		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.of(hashing, Function.identity()), this::onNewPercent)) {
 		}
 		catch (NoSuchAlgorithmException e) {
-			throw new CommandException(e);
+			throw new CommandException("The required hashing algorithm \"" + hashing + "\" does not exist!", e);
 		}
 		catch (IOException e) {
-			throw new CommandException(e);
+			throw new CommandException("Cannot write the plot file!", e);
 		}
 
 		System.out.println();

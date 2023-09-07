@@ -17,24 +17,20 @@ limitations under the License.
 package io.mokamint.node.tools.internal.chain;
 
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "info", description = "Show information about the chain of a node.")
 public class Info extends AbstractPublicRpcCommand {
 
-	private final static Logger LOGGER = Logger.getLogger(Info.class.getName());
-
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
 		try {
 			var info = remote.getChainInfo();
 
@@ -44,17 +40,12 @@ public class Info extends AbstractPublicRpcCommand {
 				System.out.println(info);
 		}
 		catch (EncodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode the chain info of the node at \"" + publicUri() + "\" in JSON format.", e);
-		}
-		catch (DatabaseException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
-			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
+			throw new CommandException("Cannot encode the chain info of the node at \"" + publicUri() + "\" in JSON format!", e);
 		}
 	}
 
 	@Override
 	protected void execute() {
-		execute(this::body, LOGGER);
+		execute(this::body);
 	}
 }

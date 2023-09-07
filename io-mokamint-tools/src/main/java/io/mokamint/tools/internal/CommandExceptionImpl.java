@@ -26,12 +26,25 @@ public abstract class CommandExceptionImpl extends RuntimeException {
 	private static final long serialVersionUID = 2066756038127592236L;
 
 	/**
-	 * Creates the exception, with the given cause.
+	 * Creates the exception, with the given message and cause.
+	 * 
+	 * @param message the message
+	 * @param cause the cause
+	 */
+	protected CommandExceptionImpl(String message, Throwable cause) {
+		super(message, cause);
+
+		Objects.requireNonNull(message);
+		Objects.requireNonNull(cause);
+	}
+
+	/**
+	 * Creates the exception, with an empty message and the given cause.
 	 * 
 	 * @param cause the cause
 	 */
 	protected CommandExceptionImpl(Throwable cause) {
-		super(cause);
+		super("", cause);
 
 		Objects.requireNonNull(cause);
 	}
@@ -43,5 +56,7 @@ public abstract class CommandExceptionImpl extends RuntimeException {
 	 */
 	protected CommandExceptionImpl(String message) {
 		super(message);
+
+		Objects.requireNonNull(message);
 	}
 }

@@ -19,14 +19,13 @@ package io.mokamint.node.tools.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.remote.RemoteNode;
 import io.mokamint.tools.AbstractCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
-import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 
 /**
@@ -66,30 +65,28 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 * @param supplier the supplier of the remote node
 	 * @param what the body
 	 * @param uri the uri where the remote service can be contacted
-	 * @param logger the logger to use for reporting
 	 */
-	protected <N extends RemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri, Logger logger) {
+	protected <N extends RemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri) {
 		try (var remote = supplier.get(uri, timeout)) {
 			what.run(remote);
 		}
 		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			logger.log(Level.SEVERE, "I/O error while accessing \"" + uri + "\": " + e.getMessage());
+			throw new CommandException("I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?", e);
 		}
 		catch (ClosedNodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red The connection to " + uri + " has been closed!|@"));
+			throw new CommandException("The connection to " + uri + " has been closed!", e);
 		}
 		catch (DeploymentException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot contact the remote service! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?|@"));
-			logger.log(Level.SEVERE, "failed deployment of a remote node for \"" + uri + "\": " + e.getMessage());
+			throw new CommandException("Cannot contact the remote service! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?", e);
 		}
 		catch (TimeoutException e) {
-			System.out.println(Ansi.AUTO.string("@|red Timeout: I waited for " + timeout + "ms but the remote service didn't answer.|@"));
-			logger.log(Level.SEVERE, "a call to \"" + uri + "\" has timed-out", e);
+			throw new CommandException("Timeout: I waited for " + timeout + "ms but the remote service didn't answer!", e);
 		}
 		catch (InterruptedException e) {
-			System.out.println(Ansi.AUTO.string("@|red Unexpected interruption while waiting for \"" + uri + "\".|@"));
-			logger.log(Level.SEVERE, "a call to \"" + uri + "\" has been interrupted", e);
+			throw new CommandException("Unexpected interruption while waiting for \"" + uri + "\"!", e);
+		}
+		catch (DatabaseException e) {
+			throw new CommandException("The database of the node at \"" + uri + "\" seems corrupted!", e);
 		}
 	}
 
@@ -116,7 +113,8 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 		 * @throws TimeoutException if the command does into a timeout
 		 * @throws InterruptedException if the command was interrupted while waiting
 		 * @throws ClosedNodeException if the remote node has been closed
+		 * @throws DatabaseException if the database of the node is corrupted
 		 */
-		void run(N remote) throws TimeoutException, InterruptedException, ClosedNodeException;
+		void run(N remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException;
 	}
 }

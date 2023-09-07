@@ -24,21 +24,15 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Entropies;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
@@ -53,6 +47,7 @@ import io.mokamint.node.service.RestrictedNodeServices;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
@@ -195,38 +190,26 @@ public class Start extends AbstractCommand {
 			config = getConfig();
 		}
 		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" refers to an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "the configuration file refers to an unknown hashing algorithm", e);
-			return;
+			throw new CommandException("The configuration file \"" + this.config + "\" refers to an unknown hashing algorithm!", e);
 		}
 		catch (FileNotFoundException e) {
-			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" does not exist!|@"));
-			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" does not exist: " + e.getMessage());
-			return;
+			throw new CommandException("The configuration file \"" + this.config + "\" does not exist!", e);
 		}
 		catch (URISyntaxException e) {
-			System.out.println(Ansi.AUTO.string("@|red The configuration file \"" + this.config + "\" refers to a URI with wrong syntax!|@"));
-			LOGGER.log(Level.SEVERE, "the configuration file \"" + this.config + "\" refers to a URI with wrong syntax: " + e.getMessage());
-			return;
+			throw new CommandException("The configuration file \"" + this.config + "\" refers to a URI with wrong syntax!", e);
 		}
 
 		try {
 			createWorkingDirectory(config);
 		}
 		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot create the working directory " + config.dir + "|@"));
-			LOGGER.log(Level.SEVERE, "cannot create the working directory " + config.dir + ": " + e.getMessage());
-			return;
+			throw new CommandException("Cannot create the working directory " + config.dir + "!", e);
 		}
 		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red The signature algorithm required for the key of the node is not available!|@"));
-			LOGGER.log(Level.SEVERE, "the signature algorithm required for the key of the node is not available: " + e.getMessage());
-			return;
+			throw new CommandException("The signature algorithm required for the key of the node is not available!", e);
 		}
 		catch (InvalidKeyException e) {
-			System.out.println(Ansi.AUTO.string("@|red The key of the node could not be encoded!|@"));
-			LOGGER.log(Level.SEVERE, "the key of the node could not be encoded: " + e.getMessage());
-			return;
+			throw new CommandException("The key of the node could not be encoded!", e);
 		}
 
 		System.out.print("Starting a local node... ");
@@ -235,21 +218,17 @@ public class Start extends AbstractCommand {
 			publishPublicAndRestrictedNodeServices(0, node);
 		}
 		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database refers to an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "the database refers to an unknown hashing algorithm", e);
+			throw new CommandException("The database refers to an unknown hashing algorithm!", e);
 		}
 		catch (DatabaseException | IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red the database seems corrupted!|@"));
-			LOGGER.log(Level.SEVERE, "the database seems corrupted", e);
+			throw new CommandException("The database seems corrupted!", e);
 		}
 		catch (InterruptedException e) {
 			// unexpected: who could interrupt this process?
-			System.out.println(Ansi.AUTO.string("@|red The process has been interrupted!|@"));
-			LOGGER.log(Level.SEVERE, "unexpected interruption", e);
+			throw new CommandException("Unexpected interruption!", e);
 		}
 		catch (AlreadyInitializedException e) {
-			System.out.println(Ansi.AUTO.string("@|red the node is already initialized: delete \"" + config.dir + "\" and start again with --init|@"));
-			LOGGER.log(Level.SEVERE, "the node is already initialized");
+			throw new CommandException("The node is already initialized: delete \"" + config.dir + "\" and start again with --init", e);
 		}
 	}
 
@@ -277,8 +256,7 @@ public class Start extends AbstractCommand {
 				publishPublicAndRestrictedNodeServices(pos + 1, node);
 			}
 			catch (InterruptedException e) {
-				System.out.println(Ansi.AUTO.string("@|red close interrupted!|@"));
-				LOGGER.log(Level.SEVERE, "the close operation of the service at port " + publicPorts[pos] + " got interrupted", e);
+				throw new CommandException("The close operation of the service at port \" + publicPorts[pos] + \" got interrupted!", e);
 			}
 		}
 		else
@@ -330,7 +308,7 @@ public class Start extends AbstractCommand {
 		}
 		else {
 			Files.createDirectories(config.dir);
-			createNodeKey(config);
+			createNodeKeys(config);
 		}
 	}
 
@@ -340,8 +318,7 @@ public class Start extends AbstractCommand {
 			reader.readLine();
 		}
 		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
-			LOGGER.log(Level.SEVERE, "cannot access the standard input", e);
+			throw new CommandException("Cannot access the standard input!", e);
 		}
 	}
 
@@ -349,13 +326,8 @@ public class Start extends AbstractCommand {
 		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
 	}
 
-	private void createNodeKey(Config config) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
-		var signatureAlgorithmOfNewAccount = SignatureAlgorithms.ed25519(Function.identity());
-		var entropy = Entropies.random();
-		KeyPair keys = entropy.keys("", signatureAlgorithmOfNewAccount);
-		byte[] publicKeyBytes = signatureAlgorithmOfNewAccount.encodingOf(keys.getPublic());
-		var publicKeyBase58 = Base58.encode(publicKeyBytes);
-		var pathToFile = entropy.dump(config.dir, publicKeyBase58);
+	private void createNodeKeys(Config config) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+		var pathToFile = Entropies.random().dump(config.dir, "node_private_key");
 
 		try {
 			// TODO: uncomment after deploying the latest Hotmoka to Maven Central
@@ -367,10 +339,8 @@ public class Start extends AbstractCommand {
 			// we continue anyway
 		}
 
-		System.out.println("A new key has been created for this node:");
-		System.out.println(" * encoded in Base58: " + publicKeyBase58);
-		System.out.println(" * encoded in Base64: " + Base64.getEncoder().encodeToString(publicKeyBytes));
-		System.out.println(Ansi.AUTO.string("@|green This key has been saved into the file \"" + pathToFile + "\".|@"));
+		System.out.println("A new key pair has been generated for this node (public key Base58 is " + "node_key_pair.pem" + ").");
+		System.out.println(Ansi.AUTO.string("@|green This key pair has been saved into the file \"" + pathToFile + "\".|@"));
 		System.out.println(Ansi.AUTO.string("@|red Do not delete that file: this node needs it in order to sign the blocks it mines.|@"));
 		System.out.println(Ansi.AUTO.string("@|red Protect that file from other users: it gives access to all mining rights of your node.|@"));
 		System.out.println(Ansi.AUTO.string("@|green Copy that file in a safe place: you might need it if you want to restart the same node later.|@"));

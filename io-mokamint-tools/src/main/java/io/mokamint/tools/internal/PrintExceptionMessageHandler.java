@@ -37,10 +37,11 @@ public class PrintExceptionMessageHandler implements IExecutionExceptionHandler 
 
 			LOGGER.log(Level.SEVERE, "command threw exception", cause);
 
-			if (cause instanceof CommandException)
-				cmd.getErr().println(cmd.getColorScheme().errorText(cause.getMessage()));
-			else
+			var message = e.getMessage();
+			if (message.isEmpty())
 				cmd.getErr().println(cmd.getColorScheme().errorText(cause.getClass().getName() + ": " + cause.getMessage()));
+			else
+				cmd.getErr().println(cmd.getColorScheme().errorText(message));
 
 			var mapper = cmd.getExitCodeExceptionMapper();
 			return mapper != null ? mapper.getExitCode(cause) : cmd.getCommandSpec().exitCodeOnExecutionException();

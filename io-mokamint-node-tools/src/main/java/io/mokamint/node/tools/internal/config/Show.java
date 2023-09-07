@@ -17,21 +17,17 @@ limitations under the License.
 package io.mokamint.node.tools.internal.config;
 
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import io.mokamint.node.ConsensusConfigs;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "show", description = "Show the configuration of a node.")
 public class Show extends AbstractPublicRpcCommand {
-
-	private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 		try {
@@ -43,13 +39,12 @@ public class Show extends AbstractPublicRpcCommand {
 				System.out.println(config);
 		}
 		catch (EncodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode the configuration of the node at \"" + publicUri() + "\" in JSON format.", e);
+			throw new CommandException("Cannot encode the configuration of the node at \"" + publicUri() + "\" in JSON format.", e);
 		}
 	}
 
 	@Override
 	protected void execute() {
-		execute(this::body, LOGGER);
+		execute(this::body);
 	}
 }

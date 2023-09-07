@@ -60,8 +60,7 @@ public class Start extends AbstractCommand {
 			}
 			catch (URISyntaxException e) {
 				// impossible: the syntax of the URI is correct
-				LOGGER.log(Level.SEVERE, "unexpected exception", e);
-				throw new CommandException(e);
+				throw new CommandException("The default URI is unexpectedly illegal!", e);
 			}
 
 		loadPlotsAndStartMiningServices(plots, 0, new ArrayList<>());
@@ -95,7 +94,7 @@ public class Start extends AbstractCommand {
 			}
 		}
 		else if (plots.isEmpty()) {
-			System.out.println(Ansi.AUTO.string("@|red No plot file could be loaded!|@"));
+			throw new CommandException("No plot file could be loaded!");
 		}
 		else {
 			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
@@ -125,8 +124,7 @@ public class Start extends AbstractCommand {
 			}
 			catch (InterruptedException e) {
 				// unexpected: who could interrupt this process?
-				System.out.println(Ansi.AUTO.string("@|red The process has been interrupted!|@"));
-				LOGGER.log(Level.SEVERE, "unexpected interruption", e);
+				throw new CommandException("Unexpected interruption!", e);
 			}
 		}
 		else if (atLeastOne)

@@ -19,7 +19,6 @@ package io.mokamint.node.tools.internal.peers;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
@@ -39,9 +38,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = { "the URIs of the peers to remove" })
 	private URI[] uris;
 
-	private final static Logger LOGGER = Logger.getLogger(Remove.class.getName());
-
-	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException {
+	private void body(RemoteRestrictedNode remote) {
 		Stream.of(uris).map(Peers::of).parallel().forEach(peer -> removePeer(peer, remote));
 	}
 
@@ -78,6 +75,6 @@ public class Remove extends AbstractRestrictedRpcCommand {
 		if (uris == null)
 			uris = new URI[0];
 
-		execute(this::body, LOGGER);
+		execute(this::body);
 	}
 }

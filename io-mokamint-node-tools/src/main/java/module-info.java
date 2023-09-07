@@ -25,6 +25,7 @@ module io.mokamint.node.tools {
     opens io.mokamint.node.tools.internal.peers to info.picocli;
     opens io.mokamint.node.tools.internal.config to info.picocli;
     opens io.mokamint.node.tools.internal.chain to info.picocli;
+    opens io.mokamint.node.tools.internal.keys to info.picocli;
 
 	requires io.mokamint.node.local;
 	requires io.mokamint.application.api;

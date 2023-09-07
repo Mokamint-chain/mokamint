@@ -30,12 +30,14 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	private String hashingForGenerations;
 	private String hashingForBlocks;
 	private long targetBlockCreationTime;
+	private long initialAcceleration;
 
 	protected ConsensusConfigJson(ConsensusConfig config) {
 		this.hashingForDeadlines = config.getHashingForDeadlines().getName();
 		this.hashingForGenerations = config.getHashingForGenerations().getName();
 		this.hashingForBlocks = config.getHashingForBlocks().getName();
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
+		this.initialAcceleration = config.getInitialAcceleration();
 	}
 
 	@Override
@@ -45,6 +47,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 			.setHashingForGenerations(hashingForGenerations)
 			.setHashingForBlocks(hashingForBlocks)
 			.setTargetBlockCreationTime(targetBlockCreationTime)
+			.setInitialAcceleration(initialAcceleration)
 			.build();
 	}
 }

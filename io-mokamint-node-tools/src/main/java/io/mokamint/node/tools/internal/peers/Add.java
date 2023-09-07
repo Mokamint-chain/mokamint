@@ -19,14 +19,13 @@ package io.mokamint.node.tools.internal.peers;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import jakarta.websocket.EncodeException;
@@ -40,9 +39,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	@Parameters(description = { "the URIs of the peers to add" })
 	private URI[] uris;
 
-	private final static Logger LOGGER = Logger.getLogger(Add.class.getName());
-
-	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+	private void body(RemoteRestrictedNode remote) {
 		Stream.of(uris).map(Peers::of).parallel().forEach(peer -> addPeer(peer, remote));
 	}
 
@@ -89,6 +86,6 @@ public class Add extends AbstractRestrictedRpcCommand {
 		if (uris == null)
 			uris = new URI[0];
 
-		execute(this::body, LOGGER);
+		execute(this::body);
 	}
 }

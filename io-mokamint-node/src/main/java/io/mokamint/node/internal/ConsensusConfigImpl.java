@@ -184,14 +184,20 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 			var hashingForDeadlines = toml.getString("hashing_for_deadlines");
 			if (hashingForDeadlines != null)
 				setHashingForDeadlines(hashingForDeadlines);
+			else
+				setHashingForDeadlines(HashingAlgorithms.TYPES.SHABAL256.name());
 		
 			var hashingForGenerations = toml.getString("hashing_for_generations");
 			if (hashingForGenerations != null)
 				setHashingForGenerations(hashingForGenerations);
+			else
+				setHashingForGenerations(HashingAlgorithms.TYPES.SHA256.name());
 		
 			var hashingForBlocks = toml.getString("hashing_for_blocks");
 			if (hashingForBlocks != null)
 				setHashingForBlocks(hashingForBlocks);
+			else
+				setHashingForBlocks(HashingAlgorithms.TYPES.SHA256.name());
 
 			var initialAcceleration = toml.getLong("initial_acceleration");
 			if (initialAcceleration != null)

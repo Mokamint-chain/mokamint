@@ -22,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
@@ -34,8 +33,8 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -55,16 +54,12 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
-		if (count < 0) {
-			System.out.println(Ansi.AUTO.string("@|red count cannot be negative!|@"));
-			return;
-		}
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+		if (count < 0)
+			throw new CommandException("count cannot be negative!");
 
-		if (from < -1L) {
-			System.out.println(Ansi.AUTO.string("@|red from cannot be smaller than -1!|@"));
-			return;
-		}
+		if (from < -1L)
+			throw new CommandException("from cannot be smaller than -1!");
 
 		try {
 			ChainInfo info = remote.getChainInfo();
@@ -118,12 +113,7 @@ public class List extends AbstractPublicRpcCommand {
 				System.out.println("]");
 		}
 		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red The head of the chain uses an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\".", e);
-		}
-		catch (DatabaseException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
-			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
+			throw new CommandException("Unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\"!", e);
 		}
 	}
 
@@ -163,6 +153,6 @@ public class List extends AbstractPublicRpcCommand {
 
 	@Override
 	protected void execute() {
-		execute(this::body, LOGGER);
+		execute(this::body);
 	}
 }

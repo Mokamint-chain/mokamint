@@ -19,8 +19,6 @@ package io.mokamint.node.tools.internal.chain;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.Blocks;
@@ -31,10 +29,10 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 
 @Command(name = "show", description = "Show the blocks of the chain of a node.")
@@ -63,61 +61,50 @@ public class Show extends AbstractPublicRpcCommand {
          * @throws InterruptedException if some connection was interrupted while waiting
          * @throws ClosedNodeException if the remote node is closed
          */
-        private Optional<Block> getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+        private Block getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
         	if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
 
-				Optional<Block> result = remote.getBlock(Hex.fromHexString(hash));
-				if (result.isPresent())
-					return result;
-				else
-					System.out.println(Ansi.AUTO.string("@|red The node does not contain any block with hash " + hash + "|@"));
+				return remote.getBlock(Hex.fromHexString(hash)).orElseThrow(() -> new CommandException("The node does not contain any block with hash " + hash + "!"));
 			}
 			else if (head) {
 				var info = remote.getChainInfo();
 				var headHash = info.getHeadHash();
 				if (headHash.isPresent())
-					return Optional.of(remote.getBlock(headHash.get()).orElseThrow(() -> new DatabaseException("The node has a head hash but it is bound to no block!")));
+					return remote.getBlock(headHash.get()).orElseThrow(() -> new DatabaseException("The node has a head hash but it is bound to no block!"));
 				else
-					System.out.println(Ansi.AUTO.string("@|red There is no chain head in the node!|@"));
+					throw new CommandException("There is no chain head in the node!");
 			}
 			else if (genesis) {
 				var info = remote.getChainInfo();
 				var genesisHash = info.getGenesisHash();
 				if (genesisHash.isPresent())
-					return Optional.of(remote.getBlock(genesisHash.get()).orElseThrow(() -> new DatabaseException("The node has a genesis hash but it is bound to no block!")));
+					return remote.getBlock(genesisHash.get()).orElseThrow(() -> new DatabaseException("The node has a genesis hash but it is bound to no block!"));
 				else
-					System.out.println(Ansi.AUTO.string("@|red There is no genesis block in the node!|@"));
+					throw new CommandException("There is no genesis block in the node!");
 			}
 			else {
 				// it must be --depth, since the {@code blockIdentifier} parameter is mandatory
 				if (depth < 0)
-					System.out.println(Ansi.AUTO.string("@|red The depth of the block must be positive|@"));
+					throw new CommandException("The depth of the block must be positive!");
 				else if (depth > 20)
-					System.out.println(Ansi.AUTO.string("@|red Cannot show more than 20 blocks behind the head|@"));
+					throw new CommandException("Cannot show more than 20 blocks behind the head!");
 				else {
 					var info = remote.getChainInfo();
-					var maybeHeadhHash = info.getHeadHash();
-					if (maybeHeadhHash.isPresent()) {
-						Optional<Block> maybeHead = remote.getBlock(maybeHeadhHash.get());
-						if (maybeHead.isPresent()) {
-							var head = maybeHead.get();
-							var height = head.getHeight();
-							if (height - depth < 0)
-								System.out.println(Ansi.AUTO.string("@|red There is no block at that depth since the chain has height " + height + "!|@"));
-							else
-								return Optional.of(backwards(head, depth, remote));
-						}
+					var maybeHeadHash = info.getHeadHash();
+					if (maybeHeadHash.isPresent()) {
+						var head = remote.getBlock(maybeHeadHash.get()).orElseThrow(() -> new DatabaseException("The node has a head hash but it is bound to no block!"));
+						var height = head.getHeight();
+						if (height - depth < 0)
+							throw new CommandException("There is no block at depth " + depth + " since the chain has height " + height + "!");
 						else
-							throw new DatabaseException("The node has a head hash but it is bound to no block!");
+							return backwards(head, depth, remote);
 					}
 					else
-						System.out.println(Ansi.AUTO.string("@|red There is no block at that depth since the chain has no head!|@"));
+						throw new CommandException("There is no block at depth " + depth + " since the chain has no head!");
 				}
 			}
-
-        	return Optional.empty();
         }
 
         /**
@@ -137,41 +124,26 @@ public class Show extends AbstractPublicRpcCommand {
 			if (depth == 0)
 				return cursor;
 			else if (cursor instanceof NonGenesisBlock ngb) {
-				var previousHash = ngb.getHashOfPreviousBlock();
-				Optional<Block> maybePrevious = remote.getBlock(previousHash);
+				Optional<Block> maybePrevious = remote.getBlock(ngb.getHashOfPreviousBlock());
 				if (maybePrevious.isPresent())
 					return backwards(maybePrevious.get(), depth - 1, remote);
-				else {
-					var config = remote.getConfig();
-					throw new DatabaseException("Block " + cursor.getHexHash(config.getHashingForBlocks()) + " has a previous hash that does not refer to any existing block!");
-				}
+				else
+					throw new DatabaseException("Block " + cursor.getHexHash(remote.getConfig().getHashingForBlocks()) + " has a previous hash that does not refer to any existing block!");
 			}
-			else {
-				var config = remote.getConfig();
-				throw new DatabaseException("Block " + cursor.getHexHash(config.getHashingForBlocks()) + " is a genesis block but is not at height 0!");
-			}
+			else
+				throw new DatabaseException("Block " + cursor.getHexHash(remote.getConfig().getHashingForBlocks()) + " is a genesis block but is not at height 0!");
 		}
 	}
 
-    private final static Logger LOGGER = Logger.getLogger(Show.class.getName());
-
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
 		try {
-			var block = blockIdentifier.getBlock(remote);
-			if (block.isPresent())
-				print(remote, block.get());
+			print(remote, blockIdentifier.getBlock(remote));
 		}
 		catch (NoSuchAlgorithmException e) {
-			System.out.println(Ansi.AUTO.string("@|red Some block uses an unknown hashing algorithm!|@"));
-			LOGGER.log(Level.SEVERE, "unknown hashing algotihm in a block at \"" + publicUri() + "\"", e);
+			throw new CommandException("Unknown hashing algorithm in a block of \"" + publicUri() + "\"", e);
 		}
 		catch (EncodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode a block from \"" + publicUri() + "\" in JSON format.", e);
-		}
-		catch (DatabaseException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node at \"" + publicUri() + "\" seems corrupted!|@"));
-			LOGGER.log(Level.SEVERE, "error accessing the database of the node at \"" + publicUri() + "\".", e);
+			throw new CommandException("Cannot encode a block from \"" + publicUri() + "\" in JSON format!", e);
 		}
 	}
 
@@ -186,8 +158,8 @@ public class Show extends AbstractPublicRpcCommand {
 				var genesis = remote.getBlock(genesisHash.get());
 				if (genesis.isPresent()) {
 					var content = genesis.get();
-					if (content instanceof GenesisBlock)
-						System.out.println(block.toString(config, ((GenesisBlock) content).getStartDateTimeUTC()));
+					if (content instanceof GenesisBlock gb)
+						System.out.println(block.toString(config, gb.getStartDateTimeUTC()));
 					else
 						throw new DatabaseException("The initial block of the chain is not a genesis block!");
 				}
@@ -201,6 +173,6 @@ public class Show extends AbstractPublicRpcCommand {
 
     @Override
 	protected void execute() {
-		execute(this::body, LOGGER);
+		execute(this::body);
 	}
 }

@@ -33,6 +33,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
@@ -79,8 +80,7 @@ public class List extends AbstractPublicRpcCommand {
 			}
 		}
 		catch (EncodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot encode in JSON format!|@"));
-			LOGGER.log(Level.SEVERE, "cannot encode the peers of the node at \"" + publicUri() + "\" in JSON format.", e);
+			throw new CommandException("Cannot encode the peers of the node at \"" + publicUri() + "\" in JSON format!", e);
 		}
 	}
 
@@ -114,6 +114,6 @@ public class List extends AbstractPublicRpcCommand {
 
 	@Override
 	protected void execute() {
-		execute(this::body, LOGGER);
+		execute(this::body);
 	}
 }

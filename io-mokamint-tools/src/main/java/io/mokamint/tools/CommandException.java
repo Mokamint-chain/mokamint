@@ -26,9 +26,19 @@ public class CommandException extends CommandExceptionImpl {
 	private static final long serialVersionUID = 2066756038127592236L;
 
 	/**
-	 * Creates the exception, with the given cause.
+	 * Creates the exception, with the given message and cause.
 	 * 
-	 * @param cause the cause
+	 * @param message the message; this gets reported on the shell to the user of the command
+	 * @param cause the cause; this gets logged
+	 */
+	public CommandException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	/**
+	 * Creates the exception, with an empty message and the given cause.
+	 * 
+	 * @param cause the cause; this gets reported to the user of the command and gets logged
 	 */
 	public CommandException(Throwable cause) {
 		super(cause);
@@ -37,7 +47,7 @@ public class CommandException extends CommandExceptionImpl {
 	/**
 	 * Creates the exception, with the given message.
 	 * 
-	 * @param message the message
+	 * @param message the message; this gets reported on the shell to the user of the command and gets logged
 	 */
 	public CommandException(String message) {
 		super(message);

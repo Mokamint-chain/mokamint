@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.tools.internal;
 
 import java.net.URI;
-import java.util.logging.Logger;
 
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -46,9 +45,8 @@ public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand {
 	 * the given command body.
 	 * 
 	 * @param what the body
-	 * @param logger the logger to use for reporting
 	 */
-	protected void execute(RpcCommandBody<RemotePublicNode> what, Logger logger) {
-		execute(RemotePublicNodes::of, what, publicUri, logger);
+	protected void execute(RpcCommandBody<RemotePublicNode> what) {
+		execute(RemotePublicNodes::of, what, publicUri);
 	}
 }
