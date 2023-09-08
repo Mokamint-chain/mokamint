@@ -22,7 +22,7 @@ import java.util.TreeSet;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.messages.MessageMemory;
+import io.mokamint.node.messages.api.MessageMemory;
 
 /**
  * Implementation of a memory of messages, that remembers that last inserted messages.

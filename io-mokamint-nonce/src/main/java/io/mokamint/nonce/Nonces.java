@@ -24,7 +24,9 @@ import io.mokamint.nonce.internal.NonceImpl;
 /**
  * A provider of nonces.
  */
-public interface Nonces {
+public final class Nonces {
+
+	private Nonces() {}
 
 	/**
 	 * Yields the nonce for the given data and with the given number, using the given hashing algorithm.
@@ -35,7 +37,7 @@ public interface Nonces {
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 * @return the nonce
 	 */
-	static Nonce of(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
+	public static Nonce of(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
 		return new NonceImpl(prolog, progressive, hashing);
 	}
 
@@ -45,7 +47,7 @@ public interface Nonces {
 	 * @param deadline the deadline
 	 * @return the nonce
 	 */
-	static Nonce from(Deadline deadline) {
+	public static Nonce from(Deadline deadline) {
 		return new NonceImpl(deadline.getProlog(), deadline.getProgressive(), deadline.getHashing());
 	}
 }

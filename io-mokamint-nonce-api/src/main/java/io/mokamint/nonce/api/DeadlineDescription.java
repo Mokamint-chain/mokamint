@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 
 /**
  * The description of a deadline. This can be provided for instance to
  * a miner to describe the properties if the deadline one is looking for.
  */
+@Immutable
 public interface DeadlineDescription {
 
 	/**

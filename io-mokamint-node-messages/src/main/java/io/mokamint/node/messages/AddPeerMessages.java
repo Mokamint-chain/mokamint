@@ -26,7 +26,7 @@ import io.mokamint.node.messages.internal.gson.AddPeerMessageJson;
 /**
  * A provider of {@link AddPeerMessage}.
  */
-public class AddPeerMessages {
+public final class AddPeerMessages {
 
 	private AddPeerMessages() {}
 

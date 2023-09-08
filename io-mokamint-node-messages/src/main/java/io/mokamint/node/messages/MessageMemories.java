@@ -16,12 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.mokamint.node.messages.api.MessageMemory;
 import io.mokamint.node.messages.internal.MessageMemoryImpl;
 
 /**
  * A provider of message memories.
  */
-public abstract class MessageMemories {
+public final class MessageMemories {
 	
 	private MessageMemories() {}
 

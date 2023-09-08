@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -38,6 +39,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * and a value computed for that nonce. Deadlines are ordered
  * by the lexicographical ordering of their values.
  */
+@Immutable
 public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final byte[] prolog;
 	private final long progressive;

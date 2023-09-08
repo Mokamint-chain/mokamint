@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.api;
+package io.mokamint.nonce.api;
 
 import java.security.PublicKey;
 
@@ -22,7 +22,7 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * The prolog of a plot file.
+ * The prolog of a deadline.
  */
 @Immutable
 public interface Prolog extends Marshallable {
@@ -33,15 +33,14 @@ public interface Prolog extends Marshallable {
 	final int MAX_PROLOG_SIZE = 16777216; // 16 megabytes
 
 	/**
-	 * Yields the chain identifier of the blockchain where the plot with
-	 * this prolog can be used.
+	 * Yields the chain identifier of the blockchain where the deadline is legal.
 	 * 
 	 * @return the chain identifier
 	 */
 	String getChainId();
 
 	/**
-	 * Yields the public key that the node using the plots with this prolog
+	 * Yields the public key that the node using the deadlines with this prolog
 	 * uses to sign new mined blocks.
 	 * 
 	 * @return the public key
@@ -49,11 +48,27 @@ public interface Prolog extends Marshallable {
 	PublicKey getNodePublicKey();
 
 	/**
-	 * Yields the public key that identifier the plots having this prolog.
+	 * Yields the public key that the node using the deadlines with this prolog
+	 * uses to sign new mined blocks, in Base58 format.
+	 * 
+	 * @return the public key
+	 */
+	String getNodePublicKeyBase58();
+
+	/**
+	 * Yields the public key that identifies the plots from which this deadline is derived.
 	 * 
 	 * @return the public key
 	 */
 	PublicKey getPlotPublicKey();
+
+	/**
+	 * Yields the public key that identifies the plots from which this deadline is derived,
+	 * in Base58 format.
+	 * 
+	 * @return the public key
+	 */
+	String getPlotPublicKeyBase58();
 
 	/**
 	 * Application-specific extra data in the prolog.

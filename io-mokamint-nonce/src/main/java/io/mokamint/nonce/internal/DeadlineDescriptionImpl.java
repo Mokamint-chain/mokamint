@@ -19,6 +19,7 @@ package io.mokamint.nonce.internal;
 import java.util.Arrays;
 import java.util.Objects;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
@@ -28,6 +29,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * Implementation of a deadline description. It reports the information needed
  * to compute a deadline from a plot file.
  */
+@Immutable
 public class DeadlineDescriptionImpl implements DeadlineDescription {
 	private final int scoopNumber;
 	private final byte[] data;

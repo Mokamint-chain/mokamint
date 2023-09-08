@@ -25,7 +25,7 @@ import io.mokamint.node.messages.internal.gson.ExceptionResultMessageJson;
 /**
  * A provider of {@link ExceptionMessage}.
  */
-public class ExceptionMessages {
+public final class ExceptionMessages {
 
 	private ExceptionMessages() {}
 

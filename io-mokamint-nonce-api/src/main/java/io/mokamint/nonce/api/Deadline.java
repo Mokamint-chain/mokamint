@@ -18,6 +18,7 @@ package io.mokamint.nonce.api;
 
 import java.math.BigInteger;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
@@ -25,6 +26,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * and a value computed for that nonce. Deadlines are ordered
  * by the lexicographical ordering of their values.
  */
+@Immutable
 public interface Deadline extends DeadlineDescription, Marshallable {
 
 	/**
@@ -35,7 +37,7 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	/**
 	 * The maximal scoop number in a deadline (inclusive).
 	 */
-	final static int MAX_SCOOP_NUMBER = 4095;
+	final int MAX_SCOOP_NUMBER = 4095;
 
 	/**
 	 * Yields the prolog that was used to create the plot file from which

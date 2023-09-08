@@ -33,6 +33,7 @@ import java.util.function.IntConsumer;
 import java.util.logging.Logger;
 import java.util.stream.LongStream;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
@@ -42,16 +43,17 @@ import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.plotter.Prologs;
+import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.api.Prolog;
 
 /**
  * An implementation of a plot file. There are two ways of creating this implementation:
  * by computing a brand new plot file on disk, or by loading a previously created plot file.
  */
+@Immutable
 public class PlotImpl implements Plot {
 
 	private final static Logger logger = Logger.getLogger(PlotImpl.class.getName());

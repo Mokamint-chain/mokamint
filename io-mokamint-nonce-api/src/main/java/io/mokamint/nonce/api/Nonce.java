@@ -19,10 +19,12 @@ package io.mokamint.nonce.api;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import io.hotmoka.annotations.Immutable;
+
 /**
- * A nonce. Each nonce contains scoops.
- * Each scoop contains a pair of hashes.
+ * A nonce. Each nonce contains scoops. Each scoop contains a pair of hashes.
  */
+@Immutable
 public interface Nonce {
 
 	/**

@@ -24,7 +24,7 @@ import io.mokamint.node.messages.internal.gson.GetBlockMessageEncoder;
 /**
  * A provider of {@link GetBlockMessage}.
  */
-public class GetBlockMessages {
+public final class GetBlockMessages {
 
 	private GetBlockMessages() {}
 

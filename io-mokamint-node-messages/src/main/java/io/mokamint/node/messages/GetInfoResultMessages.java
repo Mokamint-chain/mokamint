@@ -26,7 +26,7 @@ import io.mokamint.node.messages.internal.gson.GetInfoResultMessageJson;
 /**
  * A provider of {@link GetInfoResultMessage}.
  */
-public class GetInfoResultMessages {
+public final class GetInfoResultMessages {
 
 	private GetInfoResultMessages() {}
 

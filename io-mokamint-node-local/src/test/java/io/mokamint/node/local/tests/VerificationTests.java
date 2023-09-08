@@ -61,9 +61,9 @@ import io.mokamint.node.local.internal.NodePeers;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.Prologs;
 import io.mokamint.plotter.api.Plot;
 
 public class VerificationTests {

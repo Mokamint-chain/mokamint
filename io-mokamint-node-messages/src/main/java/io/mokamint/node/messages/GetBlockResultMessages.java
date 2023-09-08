@@ -28,7 +28,7 @@ import io.mokamint.node.messages.internal.gson.GetBlockResultMessageJson;
 /**
  * A provider of {@link GetBlockResultMessage}.
  */
-public class GetBlockResultMessages {
+public final class GetBlockResultMessages {
 
 	private GetBlockResultMessages() {}
 

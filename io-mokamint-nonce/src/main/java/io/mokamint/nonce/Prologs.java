@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter;
+package io.mokamint.nonce;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -22,8 +22,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.plotter.api.Prolog;
-import io.mokamint.plotter.internal.PrologImpl;
+import io.mokamint.nonce.api.Prolog;
+import io.mokamint.nonce.internal.PrologImpl;
 
 /**
  * Providers of plot prologs.

@@ -22,8 +22,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.IntConsumer;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.api.Prolog;
 import io.mokamint.plotter.internal.PlotImpl;
 
 /**

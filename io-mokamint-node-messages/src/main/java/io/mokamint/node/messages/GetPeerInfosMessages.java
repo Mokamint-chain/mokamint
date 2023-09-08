@@ -24,7 +24,7 @@ import io.mokamint.node.messages.internal.gson.GetPeerInfosMessageEncoder;
 /**
  * A provider of {@link GetPeerInfosMessage}.
  */
-public class GetPeerInfosMessages {
+public final class GetPeerInfosMessages {
 
 	private GetPeerInfosMessages() {}
 

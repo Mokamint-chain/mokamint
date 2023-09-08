@@ -24,6 +24,11 @@
       <artifactId>io-hotmoka-crypto-api</artifactId>
       <version>${hotmoka.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-annotations</artifactId>
+      <version>${hotmoka.version}</version>
+    </dependency>
   </dependencies>
 
   <profiles>

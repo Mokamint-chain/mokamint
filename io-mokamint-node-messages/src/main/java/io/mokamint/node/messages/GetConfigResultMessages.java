@@ -26,7 +26,7 @@ import io.mokamint.node.messages.internal.gson.GetConfigResultMessageJson;
 /**
  * A provider of {@link GetConfigResultMessage}.
  */
-public class GetConfigResultMessages {
+public final class GetConfigResultMessages {
 
 	private GetConfigResultMessages() {}
 

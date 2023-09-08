@@ -33,9 +33,9 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Nonces;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.Prologs;
 
 public class PlotTests {
 

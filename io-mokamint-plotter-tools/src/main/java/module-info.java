@@ -22,6 +22,7 @@ module io.mokamint.plotter.tools {
     opens io.mokamint.plotter.tools.internal to info.picocli; // for injecting CLI options
 
 	requires io.mokamint.plotter;
+	requires io.mokamint.nonce;
 	requires io.mokamint.tools;
 	requires io.hotmoka.crypto;
 }

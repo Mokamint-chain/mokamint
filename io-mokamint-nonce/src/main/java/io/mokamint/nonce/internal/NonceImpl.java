@@ -22,6 +22,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -34,6 +35,7 @@ import io.mokamint.nonce.api.Nonce;
  * This code is a generalization and modification of the code
  * from {@url https://github.com/signum-network/signum-node/blob/main/src/brs/util/MiningPlot.java}.
  */
+@Immutable
 public class NonceImpl implements Nonce {
 
 	/**

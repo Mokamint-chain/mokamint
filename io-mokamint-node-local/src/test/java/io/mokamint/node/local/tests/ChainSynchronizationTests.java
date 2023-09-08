@@ -59,8 +59,8 @@ import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.Prologs;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 

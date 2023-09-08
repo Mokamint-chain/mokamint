@@ -28,7 +28,7 @@ import io.mokamint.node.messages.internal.gson.WhisperPeersMessageJson;
 /**
  * A provider of {@link WhisperPeersMessage}.
  */
-public class WhisperPeersMessages {
+public final class WhisperPeersMessages {
 
 	private WhisperPeersMessages() {}
 

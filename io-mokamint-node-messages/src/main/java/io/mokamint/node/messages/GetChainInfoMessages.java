@@ -24,7 +24,7 @@ import io.mokamint.node.messages.internal.gson.GetChainInfoMessageEncoder;
 /**
  * A provider of {@link GetChainInfoMessage}.
  */
-public class GetChainInfoMessages {
+public final class GetChainInfoMessages {
 
 	private GetChainInfoMessages() {}
 

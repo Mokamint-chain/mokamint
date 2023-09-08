@@ -18,14 +18,17 @@ package io.mokamint.plotter.api;
 
 import java.io.IOException;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Prolog;
 
 /**
  * A plot file, containing sequential nonces. Each nonce contains
  * a sequence of scoops. Each scoop contains a pair of hashes.
  */
+@Immutable
 public interface Plot extends AutoCloseable {
 
 	/**

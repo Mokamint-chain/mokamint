@@ -28,7 +28,7 @@ import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageJson;
 /**
  * A provider of {@link GetPeerInfosResultMessage}.
  */
-public class GetPeerInfosResultMessages {
+public final class GetPeerInfosResultMessages {
 
 	private GetPeerInfosResultMessages() {}
 

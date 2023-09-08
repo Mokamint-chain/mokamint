@@ -25,7 +25,7 @@ import io.mokamint.node.messages.internal.gson.RemovePeerResultMessageJson;
 /**
  * A provider of {@link RemovePeerResultMessage}.
  */
-public class RemovePeerResultMessages {
+public final class RemovePeerResultMessages {
 
 	private RemovePeerResultMessages() {}
 

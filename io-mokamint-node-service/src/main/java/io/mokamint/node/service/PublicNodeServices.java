@@ -28,7 +28,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * A provider of node services for the public API of a node.
  */
-public class PublicNodeServices {
+public final class PublicNodeServices {
 
 	private PublicNodeServices() {}
 

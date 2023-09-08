@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.plotter.tools;
 
 import io.mokamint.plotter.tools.internal.Create;
+import io.mokamint.plotter.tools.internal.Show;
 import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
@@ -32,7 +33,8 @@ import picocli.CommandLine.Command;
 	header = "This is the command-line tool for creating Mokamint plots.",
 	footer = "Copyright (c) 2023 Fausto Spoto",
 	subcommands = {
-		Create.class
+		Create.class,
+		Show.class
 	}
 )
 public class MokamintPlotter extends AbstractTool {

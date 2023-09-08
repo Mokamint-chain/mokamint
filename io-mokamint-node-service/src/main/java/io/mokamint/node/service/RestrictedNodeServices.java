@@ -26,7 +26,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * A provider of node services for the restricted API of a node.
  */
-public class RestrictedNodeServices {
+public final class RestrictedNodeServices {
 
 	private RestrictedNodeServices() {}
 

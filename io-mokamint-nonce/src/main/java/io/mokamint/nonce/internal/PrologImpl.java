@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.internal;
+package io.mokamint.nonce.internal;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -32,7 +32,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.plotter.api.Prolog;
+import io.mokamint.nonce.api.Prolog;
 
 /**
  * Implementation of the prolog of a plot file.
@@ -144,8 +144,18 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
+	public String getNodePublicKeyBase58() {
+		return nodePublicKeyBase58;
+	}
+
+	@Override
 	public PublicKey getPlotPublicKey() {
 		return plotPublicKey;
+	}
+
+	@Override
+	public String getPlotPublicKeyBase58() {
+		return plotPublicKeyBase58;
 	}
 
 	@Override

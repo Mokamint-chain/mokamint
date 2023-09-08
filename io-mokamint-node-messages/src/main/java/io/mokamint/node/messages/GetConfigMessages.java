@@ -24,7 +24,7 @@ import io.mokamint.node.messages.internal.gson.GetConfigMessageEncoder;
 /**
  * A provider of {@link GetConfigMessage}.
  */
-public class GetConfigMessages {
+public final class GetConfigMessages {
 
 	private GetConfigMessages() {}
 

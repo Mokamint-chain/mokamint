@@ -21,5 +21,5 @@ module io.mokamint.node.messages.api {
 	exports io.mokamint.node.messages.api;
 
 	requires transitive io.mokamint.node.api;
-	requires io.hotmoka.websockets.beans.api;
+	requires transitive io.hotmoka.websockets.beans.api;
 }

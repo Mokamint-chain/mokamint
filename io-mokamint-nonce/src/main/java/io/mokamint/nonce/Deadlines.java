@@ -30,7 +30,9 @@ import io.mokamint.nonce.internal.gson.DeadlineJson;
 /**
  * A provider of deadlines.
  */
-public interface Deadlines {
+public final class Deadlines {
+
+	private Deadlines() {}
 
 	/**
 	 * Yields a deadline.
@@ -43,7 +45,7 @@ public interface Deadlines {
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @return the deadline
 	 */
-	static Deadline of(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+	public static Deadline of(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data);
 	}
 
@@ -55,24 +57,24 @@ public interface Deadlines {
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	static Deadline from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+	public static Deadline from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		return new DeadlineImpl(context);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	static class Encoder extends DeadlineEncoder {}
+	public static class Encoder extends DeadlineEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-    static class Decoder extends DeadlineDecoder {}
+	public static class Decoder extends DeadlineDecoder {}
 
     /**
      * Json representation.
      */
-    static class Json extends DeadlineJson {
+	public static class Json extends DeadlineJson {
 
     	/**
     	 * Creates the Json representation for the given deadline.

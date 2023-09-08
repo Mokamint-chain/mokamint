@@ -26,7 +26,9 @@ import io.mokamint.nonce.internal.gson.DeadlineDescriptionJson;
 /**
  * A provider of deadline descriptions.
  */
-public interface DeadlineDescriptions {
+public final class DeadlineDescriptions {
+
+	private DeadlineDescriptions() {}
 
 	/**
 	 * Yields a deadline description.
@@ -36,24 +38,24 @@ public interface DeadlineDescriptions {
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @return the deadline description
 	 */
-	static DeadlineDescription of(int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+	public static DeadlineDescription of(int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		return new DeadlineDescriptionImpl(scoopNumber, data, hashing);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	static class Encoder extends DeadlineDescriptionEncoder {}
+	public static class Encoder extends DeadlineDescriptionEncoder {}
 
 	/**
 	 * Gson decoder.
 	 */
-    static class Decoder extends DeadlineDescriptionDecoder {}
+	public static class Decoder extends DeadlineDescriptionDecoder {}
 
     /**
      * Json representation.
      */
-    static class Json extends DeadlineDescriptionJson {
+	public static class Json extends DeadlineDescriptionJson {
 
     	/**
     	 * Creates the Json representation for the given deadline description.
