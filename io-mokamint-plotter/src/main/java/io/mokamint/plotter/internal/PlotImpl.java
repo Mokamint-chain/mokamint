@@ -44,6 +44,7 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.plotter.Prologs;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.Prolog;
 
@@ -105,7 +106,7 @@ public class PlotImpl implements Plot {
 			throw new IOException("Cannot read the prolog of the plot file");
 
 		try (var context = UnmarshallingContexts.of(new ByteArrayInputStream(prologBytes))) {
-			this.prolog = new PrologImpl(context);
+			this.prolog = Prologs.from(context);
 		}
 
 		this.start = reader.readLong();

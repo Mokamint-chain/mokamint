@@ -19,6 +19,7 @@ package io.mokamint.plotter.tests;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 import java.util.logging.LogManager;
@@ -40,7 +41,7 @@ public class PlotTests {
 
 	@Test
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
-	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException {
+	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;

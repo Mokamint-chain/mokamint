@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.plotter;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 
@@ -39,8 +40,10 @@ public final class Prologs {
 	 *                      use to sign new mined blocks
 	 * @param plotPublicKey the public key that identifies the plots with this prolog
 	 * @param extra application-specific extra information
+	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
+	 * @throws InvalidKeyException if some of the keys is not an ed25519 valid public key
 	 */
-	public static Prolog of(String chainId, PublicKey nodePublicKey, PublicKey plotPublicKey, byte[] extra) {
+	public static Prolog of(String chainId, PublicKey nodePublicKey, PublicKey plotPublicKey, byte[] extra) throws InvalidKeyException, NoSuchAlgorithmException {
 		return new PrologImpl(chainId, nodePublicKey, plotPublicKey, extra);
 	}
 

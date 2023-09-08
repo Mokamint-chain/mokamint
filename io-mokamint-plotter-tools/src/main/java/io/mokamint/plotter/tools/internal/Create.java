@@ -19,6 +19,7 @@ package io.mokamint.plotter.tools.internal;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.function.Function;
@@ -82,7 +83,7 @@ public class Create extends AbstractCommand {
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The ed25519 signature algorithm is not available!", e);
 		}
-		catch (InvalidKeySpecException e) {
+		catch (InvalidKeySpecException | InvalidKeyException e) {
 			throw new CommandException("Invalid public key!", e);
 		}
 
@@ -105,7 +106,7 @@ public class Create extends AbstractCommand {
 			System.out.print(percent + "% ");
 	}
 
-	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException {
+	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException {
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		return Prologs.of(
 			chainId,

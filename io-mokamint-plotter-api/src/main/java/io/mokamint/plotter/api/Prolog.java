@@ -46,14 +46,14 @@ public interface Prolog extends Marshallable {
 	 * 
 	 * @return the public key
 	 */
-	PublicKey getNodeKey();
+	PublicKey getNodePublicKey();
 
 	/**
 	 * Yields the public key that identifier the plots having this prolog.
 	 * 
 	 * @return the public key
 	 */
-	PublicKey getPlotKey();
+	PublicKey getPlotPublicKey();
 
 	/**
 	 * Application-specific extra data in the prolog.
@@ -61,4 +61,13 @@ public interface Prolog extends Marshallable {
 	 * @return the extra data
 	 */
 	byte[] getExtra();
+
+	@Override
+	String toString();
+
+	@Override
+	boolean equals(Object other);
+
+	@Override
+	int hashCode();
 }
