@@ -102,6 +102,36 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	/**
+	 * Creates the prolog of a plot file.
+	 * 
+	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
+	 * @param nodePublicKeyBase58 the public key that the nodes, using this plots with this prolog,
+	 *                            use to sign new mined blocks; in Base58 format
+	 * @param plotPublicKeyBase58 the public key that identifies the plots with this prolog,
+	 *                            in Base58 format
+	 * @param extra application-specific extra information
+	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
+	 * @throws InvalidKeySpecException if some of the keys is not an ed25519 valid public key
+	 */
+	public PrologImpl(String chainId, String nodePublicKeyBase58, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
+		Objects.requireNonNull(chainId, "chainId cannot be null");
+		Objects.requireNonNull(nodePublicKeyBase58, "nodePublicKeyBase58 cannot be null");
+		Objects.requireNonNull(plotPublicKeyBase58, "plotPublicKeyBase58 cannot be null");
+		Objects.requireNonNull(extra, "extra cannot be null");
+
+		this.chainId = chainId;
+		this.nodePublicKeyBase58 = nodePublicKeyBase58;
+		this.plotPublicKeyBase58 = plotPublicKeyBase58;
+		this.extra = extra.clone();
+
+		var signature = SignatureAlgorithms.ed25519(Function.identity());
+		this.nodePublicKey = signature.publicKeyFromEncoding(Base58.decode(nodePublicKeyBase58));
+		this.plotPublicKey = signature.publicKeyFromEncoding(Base58.decode(plotPublicKeyBase58));
+
+		verify();
+	}
+
+	/**
 	 * Unmarshals a prolog from the given context.
 	 * 
 	 * @param context the unmarshalling context

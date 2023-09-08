@@ -30,11 +30,6 @@ import io.hotmoka.marshalling.api.Marshallable;
 public interface Deadline extends DeadlineDescription, Marshallable {
 
 	/**
-	 * The maximal length of the prolog of a deadline, in bytes (inclusive).
-	 */
-	final int MAX_PROLOG_SIZE = 16777216; // 16 megabytes
-
-	/**
 	 * The maximal scoop number in a deadline (inclusive).
 	 */
 	final int MAX_SCOOP_NUMBER = 4095;

@@ -101,8 +101,8 @@ public class PlotImpl implements Plot {
 		this.channel = reader.getChannel();
 
 		int prologLength = reader.readInt();
-		if (prologLength > Deadline.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("the maximal prolog size is " + Deadline.MAX_PROLOG_SIZE);
+		if (prologLength > Prolog.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("the maximal prolog size is " + Prolog.MAX_PROLOG_SIZE);
 		var prologBytes = new byte[prologLength];
 		if (reader.read(prologBytes) != prologLength)
 			throw new IOException("Cannot read the prolog of the plot file");

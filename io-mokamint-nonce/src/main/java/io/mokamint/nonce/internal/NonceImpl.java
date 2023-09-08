@@ -28,6 +28,7 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Nonce;
+import io.mokamint.nonce.api.Prolog;
 
 /**
  * A nonce of a plot file. Each nonce contains 4096 scoops.
@@ -74,8 +75,8 @@ public class NonceImpl implements Nonce {
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
 
-		if (prolog.length > Deadline.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("Illegal prolog size: the maximum is " + Deadline.MAX_PROLOG_SIZE);
+		if (prolog.length > Prolog.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("Illegal prolog size: the maximum is " + Prolog.MAX_PROLOG_SIZE);
 			
 		this.prolog = prolog;
 		this.hashing = hashing;

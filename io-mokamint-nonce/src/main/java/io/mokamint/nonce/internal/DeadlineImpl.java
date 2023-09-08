@@ -33,6 +33,7 @@ import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Prolog;
 
 /**
  * Implementation of a deadline inside a plot file. It is a reference to a nonce
@@ -94,8 +95,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		Objects.requireNonNull(data, "data cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 	
-		if (prolog.length > MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("prolog too long: maximum is " + MAX_PROLOG_SIZE);
+		if (prolog.length > Prolog.MAX_PROLOG_SIZE)
+			throw new IllegalArgumentException("prolog too long: maximum is " + Prolog.MAX_PROLOG_SIZE);
 	
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
