@@ -19,7 +19,6 @@ package io.mokamint.nonce.api;
 import java.math.BigInteger;
 
 import io.hotmoka.marshalling.api.Marshallable;
-import io.mokamint.application.api.Application;
 
 /**
  * A deadline inside a plot file. It is a reference to a nonce
@@ -102,16 +101,6 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * @return true if and only if this deadline is valid
 	 */
 	boolean isValid();
-
-	/**
-	 * Determines if a deadline is legal, that is, it is valid and, moreover, it is
-	 * a deadline for the given description and its prolog is valid for the given application.
-	 * 
-	 * @param description the description
-	 * @param application the application
-	 * @return true if and only if that condition holds
-	 */
-	boolean isLegalFor(DeadlineDescription description, Application application);
 
 	/**
 	 * Yields a string representation of this deadline.

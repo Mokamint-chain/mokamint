@@ -29,7 +29,6 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.application.api.Application;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -194,11 +193,6 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public boolean isValid() {
 		return equals(Nonces.from(this).getDeadline(this));
-	}
-
-	@Override
-	public boolean isLegalFor(DeadlineDescription description, Application application) {
-		return matches(description) && isValid() && application.prologIsValid(getProlog());
 	}
 
 	@Override

@@ -352,7 +352,7 @@ public class MineNewBlockTask implements Task {
 			else if (miners.get().noneMatch(m -> m == miner)) // TODO: should I really discard it?
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
-				if (deadline.isLegalFor(description, app)) {
+				if (isLegal(deadline)) {
 					if (currentDeadline.updateIfWorseThan(deadline)) {
 						LOGGER.info(logPrefix + "improved deadline to " + deadline);
 						setWaker(deadline);
@@ -367,6 +367,10 @@ public class MineNewBlockTask implements Task {
 			}
 			else
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it's not better than the current deadline");
+		}
+
+		private boolean isLegal(Deadline deadline) {
+			return deadline.matches(description) && deadline.isValid() && app.prologIsValid(deadline.getProlog());
 		}
 
 		private void waitUntilDeadlineExpires() throws InterruptedException {
