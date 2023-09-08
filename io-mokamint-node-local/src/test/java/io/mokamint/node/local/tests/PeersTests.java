@@ -133,7 +133,7 @@ public class PeersTests {
 	@BeforeAll
 	public static void beforeAll() {
 		app = mock(Application.class);
-		when(app.prologIsValid(any())).thenReturn(true);
+		when(app.prologExtraIsValid(any())).thenReturn(true);
 	}
 
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {

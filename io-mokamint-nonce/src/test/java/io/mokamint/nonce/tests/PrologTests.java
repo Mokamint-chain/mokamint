@@ -41,7 +41,6 @@ public class PrologTests {
 		var signature = SignatureAlgorithms.ed25519(Function.identity());
 		var prolog1 = Prologs.of("octopus", signature.getKeyPair().getPublic(), signature.getKeyPair().getPublic(), new byte[] { 1, 2, 4 });
 		String encoded = new Prologs.Encoder().encode(prolog1);
-		System.out.println(encoded);
 		var prolog2 = new Prologs.Decoder().decode(encoded);
 		assertEquals(prolog1, prolog2);
 	}

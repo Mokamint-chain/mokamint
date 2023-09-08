@@ -370,7 +370,7 @@ public class MineNewBlockTask implements Task {
 		}
 
 		private boolean isLegal(Deadline deadline) {
-			return deadline.matches(description) && deadline.isValid() && app.prologIsValid(deadline.getProlog());
+			return deadline.matches(description) && deadline.isValid() && app.prologExtraIsValid(deadline.getProlog().getExtra());
 		}
 
 		private void waitUntilDeadlineExpires() throws InterruptedException {

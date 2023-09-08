@@ -35,7 +35,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.function.Function;
 import java.util.logging.LogManager;
@@ -113,13 +112,8 @@ public class BlocksAdditionTests {
 			.when(peers)
 			.asNetworkDateTime(any());
 
-		var application = new Application() {
-
-			@Override
-			public boolean prologIsValid(byte[] prolog) {
-				return Arrays.equals(prolog, PROLOG.toByteArray());
-			}
-		};
+		var application = mock(Application.class);
+		when(application.prologExtraIsValid(any())).thenReturn(true);
 
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
@@ -167,7 +161,7 @@ public class BlocksAdditionTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
-	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -175,7 +169,9 @@ public class BlocksAdditionTests {
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
 

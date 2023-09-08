@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -47,6 +48,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -72,6 +74,7 @@ import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 
 public class PublicNodeServiceTests {
@@ -154,7 +157,7 @@ public class PublicNodeServiceTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
-	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -162,7 +165,9 @@ public class PublicNodeServiceTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		int scoopNumber = 42;
-		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
 		var block = Blocks.of(13L, BigInteger.TEN, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
 		class MyTestClient extends RemotePublicNodeImpl {

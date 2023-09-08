@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.DatabaseException;
@@ -50,6 +52,7 @@ import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.BlockMinedEve
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.IllegalDeadlineEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoDeadlineFoundEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
@@ -63,7 +66,7 @@ public class EventsTests {
 	@BeforeAll
 	public static void beforeAll() {
 		app = mock(Application.class);
-		when(app.prologIsValid(any())).thenReturn(true);
+		when(app.prologExtraIsValid(any())).thenReturn(true);
 	}
 
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
@@ -76,10 +79,11 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	@Timeout(1)
-	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
-		var deadlineProlog = new byte[] { 1, 2, 3, 4 };
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
 
 		var myMiner = new Miner() {
 
@@ -87,7 +91,7 @@ public class EventsTests {
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true); // <--
-				when(deadline.getProlog()).thenReturn(deadlineProlog);
+				when(deadline.getProlog()).thenReturn(prolog);
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getValue()).thenReturn(deadlineValue);

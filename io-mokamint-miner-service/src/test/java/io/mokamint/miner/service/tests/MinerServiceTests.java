@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -33,10 +35,12 @@ import java.util.logging.LogManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
@@ -69,14 +73,16 @@ public class MinerServiceTests {
 
 	@Test
 	@DisplayName("if the miner sends a deadline, it gets forwarded to the requester")
-	public void minerForwardsToRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	public void minerForwardsToRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("ocyopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var deadline = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 
 		var miner = new Miner() {
 
@@ -102,7 +108,7 @@ public class MinerServiceTests {
 
 	@Test
 	@DisplayName("if the miner sends a deadline after a delayed one, it gets forwarded to the requester")
-	public void minerForwardsToRequesterAfterDelay() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	public void minerForwardsToRequesterAfterDelay() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var description1 = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
@@ -110,8 +116,10 @@ public class MinerServiceTests {
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline1 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
-		var deadline2 = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 43L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("ocyopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline1 = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var deadline2 = Deadlines.of(prolog, 43L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 		var delay = 2000L;
 
 		var miner = new Miner() {
@@ -148,13 +156,15 @@ public class MinerServiceTests {
 
 	@Test
 	@DisplayName("a deadline sent back after the requester disconnects is simply lost, without errors")
-	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException {
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] { 13, 42, 17, 19 }, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 		long delay = 2000;
 
 		var miner = new Miner() {

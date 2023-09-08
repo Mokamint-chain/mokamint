@@ -132,7 +132,7 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineHasValidProlog() throws VerificationException {
-		if (!node.getApplication().prologIsValid(deadline.getProlog()))
+		if (!node.getApplication().prologExtraIsValid(deadline.getProlog().getExtra()))
 			throw new VerificationException("Deadline prolog mismatch");
 	}
 

@@ -69,7 +69,7 @@ public class PeersConnectDisconnectTests {
 	@BeforeAll
 	public static void beforeAll() {
 		app = mock(Application.class);
-		when(app.prologIsValid(any())).thenReturn(true);
+		when(app.prologExtraIsValid(any())).thenReturn(true);
 	}
 
 	@Test

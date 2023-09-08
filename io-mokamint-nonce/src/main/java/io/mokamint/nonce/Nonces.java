@@ -19,6 +19,7 @@ package io.mokamint.nonce;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
+import io.mokamint.nonce.api.Prolog;
 import io.mokamint.nonce.internal.NonceImpl;
 
 /**
@@ -31,13 +32,12 @@ public final class Nonces {
 	/**
 	 * Yields the nonce for the given data and with the given number, using the given hashing algorithm.
 	 * 
-	 * @param prolog generic data that identifies, for instance, the creator
-	 *               of the nonce. This can be really anything, but cannot be {@code null}
+	 * @param prolog generic data that identifies, for instance, the creator of the nonce
 	 * @param progressive the progressive number of the nonce. This must be non-negative
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 * @return the nonce
 	 */
-	public static Nonce of(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
+	public static Nonce of(Prolog prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
 		return new NonceImpl(prolog, progressive, hashing);
 	}
 

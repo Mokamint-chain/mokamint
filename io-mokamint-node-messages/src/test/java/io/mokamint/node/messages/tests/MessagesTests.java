@@ -25,6 +25,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -67,6 +69,7 @@ import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
@@ -104,12 +107,14 @@ public class MessagesTests {
 
 	@Test
 	@DisplayName("non-empty getBlockResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var getBlockResultMessage1 = GetBlockResultMessages.of(Optional.of(block), "id");
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
@@ -261,12 +266,14 @@ public class MessagesTests {
 
 	@Test
 	@DisplayName("whisperBlock messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, URISyntaxException {
+	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var whisperBlockMessage1 = WhisperBlockMessages.of(block, "id");
 		String encoded = new WhisperBlockMessages.Encoder().encode(whisperBlockMessage1);

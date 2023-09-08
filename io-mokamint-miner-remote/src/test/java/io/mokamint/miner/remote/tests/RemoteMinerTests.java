@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -33,9 +35,11 @@ import java.util.logging.LogManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
@@ -64,7 +68,7 @@ public class RemoteMinerTests {
 
 	@Test
 	@DisplayName("if a client sends a deadline, it reaches the requester of the corresponding description")
-	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
+	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var value = new byte[shabal256.length()];
@@ -73,7 +77,9 @@ public class RemoteMinerTests {
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
-		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber, data, shabal256);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
@@ -90,7 +96,7 @@ public class RemoteMinerTests {
 
 	@Test
 	@DisplayName("if a client sends a deadline, it does not reach the requester of another description")
-	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
+	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -99,7 +105,9 @@ public class RemoteMinerTests {
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] { 13, 44, 17, 19 }, 43L, value, scoopNumber + 1, data, shabal256); // <-- +1
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber + 1, data, shabal256); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))

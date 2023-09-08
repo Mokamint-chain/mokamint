@@ -18,6 +18,7 @@ package io.mokamint.node.internal.gson;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -60,7 +61,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	}
 
 	@Override
-	public Block unmap() throws NoSuchAlgorithmException {
+	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
 		if (startDateTimeUTC == null)
 			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
 		else

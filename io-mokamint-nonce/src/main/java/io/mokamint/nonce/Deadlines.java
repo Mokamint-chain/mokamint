@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Prolog;
 import io.mokamint.nonce.internal.DeadlineImpl;
 import io.mokamint.nonce.internal.gson.DeadlineDecoder;
 import io.mokamint.nonce.internal.gson.DeadlineEncoder;
@@ -45,7 +46,7 @@ public final class Deadlines {
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @return the deadline
 	 */
-	public static Deadline of(byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
 		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data);
 	}
 

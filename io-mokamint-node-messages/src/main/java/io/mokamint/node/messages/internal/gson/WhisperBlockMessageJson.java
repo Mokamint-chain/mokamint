@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Blocks;
@@ -36,7 +37,7 @@ public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepr
 	}
 
 	@Override
-	public WhisperBlockMessage unmap() throws NoSuchAlgorithmException {
+	public WhisperBlockMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
 		return WhisperBlockMessages.of(block.unmap(), getId());
 	}
 

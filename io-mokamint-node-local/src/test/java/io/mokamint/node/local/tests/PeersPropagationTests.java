@@ -75,7 +75,7 @@ public class PeersPropagationTests {
 
 	private static void createApplication() {
 		app = mock(Application.class);
-		when(app.prologIsValid(any())).thenReturn(true);
+		when(app.prologExtraIsValid(any())).thenReturn(true);
 	}
 
 	@Test

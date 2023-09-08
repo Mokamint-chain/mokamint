@@ -238,7 +238,7 @@ public class PlotImpl implements Plot {
 		 */
 		private void dumpNonce(long n) throws IOException {
 			// the hashing algorithm is cloned to avoid thread contention
-			Nonces.of(prolog.toByteArray(), n, hashing.clone())
+			Nonces.of(prolog, n, hashing.clone())
 				.dumpInto(channel, metadataSize, n - start, length);
 
 			int counter = alreadyDone.getAndIncrement();
@@ -310,7 +310,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) throws IOException {
-			return Deadlines.of(prolog.toByteArray(), n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
+			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
 		}
 
 		/**

@@ -17,19 +17,21 @@ limitations under the License.
 package io.mokamint.nonce.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * The JSON representation of a {@link Deadline}.
  */
 public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
-	private String prolog;
+	private Prologs.Json prolog;
 	private long progressive;
 	private String value;
 	private int scoopNumber;
@@ -37,7 +39,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	private String hashing;
 
 	protected DeadlineJson(Deadline deadline) {
-		this.prolog = Hex.toHexString(deadline.getProlog());
+		this.prolog = new Prologs.Json(deadline.getProlog());
 		this.progressive = deadline.getProgressive();
 		this.value = Hex.toHexString(deadline.getValue());
 		this.scoopNumber = deadline.getScoopNumber();
@@ -46,7 +48,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	}
 
 	@Override
-	public Deadline unmap() throws NoSuchAlgorithmException {
-		return Deadlines.of(Hex.fromHexString(prolog), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing, Function.identity()));
+	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
+		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing, Function.identity()));
 	}
 }

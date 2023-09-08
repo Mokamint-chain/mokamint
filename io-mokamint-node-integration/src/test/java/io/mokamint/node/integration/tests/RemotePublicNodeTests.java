@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.Timeout;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -81,6 +83,7 @@ import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -299,12 +302,14 @@ public class RemotePublicNodeTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block exists")
-	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, InvalidKeyException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block1 = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var hash = new byte[] { 67, 56, 43 };
 
@@ -577,12 +582,14 @@ public class RemotePublicNodeTests {
 	@Test
 	@Timeout(10)
 	@DisplayName("if a service whispers a block, a remote will inform its bound whisperers")
-	public void ifServiceWhispersBlockTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException {
+	public void ifServiceWhispersBlockTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(new byte[] {80, 81, 83}, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var semaphore = new Semaphore(0);
 

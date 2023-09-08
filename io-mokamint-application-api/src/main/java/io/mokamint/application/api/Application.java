@@ -23,11 +23,11 @@ public interface Application {
 
 	/**
 	 * Called whenever a node receives a new deadline from one of its miners.
-	 * The application has to change to accept oe reject the deadline, on the
-	 * basis of its prolog.
+	 * The application can decide to accept or reject the deadline, on the
+	 * basis of its prolog's extra bytes.
 	 * 
-	 * @param prolog the prolog of the deadline
-	 * @return true if and only if the {@code prolog} is valid according to this application
+	 * @param extra the extra, application-specific bytes of the prolog
+	 * @return true if and only if the {@code extra} is valid according to this application
 	 */
-	boolean prologIsValid(byte[] prolog);
+	boolean prologExtraIsValid(byte[] extra);
 }

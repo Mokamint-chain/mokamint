@@ -97,7 +97,7 @@ public class ChainSynchronizationTests {
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
-		when(app.prologIsValid(any())).thenReturn(true);
+		when(app.prologExtraIsValid(any())).thenReturn(true);
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;

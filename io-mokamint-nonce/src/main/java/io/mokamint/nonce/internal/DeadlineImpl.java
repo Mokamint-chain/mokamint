@@ -31,6 +31,7 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.Nonces;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Prolog;
@@ -42,14 +43,14 @@ import io.mokamint.nonce.api.Prolog;
  */
 @Immutable
 public class DeadlineImpl extends AbstractMarshallable implements Deadline {
-	private final byte[] prolog;
+	private final Prolog prolog;
 	private final long progressive;
 	private final byte[] value;
 	private final int scoopNumber;
 	private final byte[] data;
 	private final HashingAlgorithm<byte[]> hashing;
 
-	public DeadlineImpl(HashingAlgorithm<byte[]> hashing, byte[] prolog, long progressive, byte[] value, int scoopNumber, byte[] data) {
+	public DeadlineImpl(HashingAlgorithm<byte[]> hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data) {
 		this.hashing = hashing;
 		this.prolog = prolog;
 		this.progressive = progressive;
@@ -70,7 +71,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		try {
 			this.hashing = HashingAlgorithms.of(context.readStringUnshared(), Function.identity());
-			this.prolog = context.readBytes(context.readCompactInt(), "Mismatch in deadline's prolog length");
+			this.prolog = Prologs.from(context);
 			this.progressive = context.readLong();
 			this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
 			this.scoopNumber = context.readInt();
@@ -95,9 +96,6 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		Objects.requireNonNull(data, "data cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 	
-		if (prolog.length > Prolog.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("prolog too long: maximum is " + Prolog.MAX_PROLOG_SIZE);
-	
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
 	
@@ -114,14 +112,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			progressive == otherAsDeadline.getProgressive() &&
 			scoopNumber == otherAsDeadline.getScoopNumber() &&
 			Arrays.equals(value, otherAsDeadline.getValue()) &&
-			Arrays.equals(prolog, otherAsDeadline.getProlog()) &&
+			prolog.equals(otherAsDeadline.getProlog()) &&
 			Arrays.equals(data, otherAsDeadline.getData()) &&
 			hashing.getName().equals(otherAsDeadline.getHashing().getName());
 	}
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(data) ^ hashing.getName().hashCode();
+		return scoopNumber ^ Arrays.hashCode(data);
 	}
 
 	@Override
@@ -159,8 +157,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public byte[] getProlog() {
-		return prolog.clone();
+	public Prolog getProlog() {
+		return prolog;
 	}
 
 	@Override
@@ -206,8 +204,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		context.writeStringUnshared(hashing.getName());
-		context.writeCompactInt(prolog.length);
-		context.write(prolog);
+		prolog.into(context);
 		context.writeLong(progressive);
 		// we do not write value.length, since it coincides with hashing.length()
 		context.write(value);

@@ -40,10 +40,9 @@ import io.mokamint.nonce.api.Prolog;
 public class NonceImpl implements Nonce {
 
 	/**
-	 * Generic data that identifies, for instance, the creator
-	 * of the nonce. This can be really anything.
+	 * Generic data that identifies, for instance, the creator of the nonce.
 	 */
-	private final byte[] prolog;
+	private final Prolog prolog;
 
 	/**
 	 * The hashing algorithm used for creating this nonce.
@@ -68,16 +67,13 @@ public class NonceImpl implements Nonce {
 	 * @param progressive the progressive number of the nonce. This must be non-negative
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 */
-	public NonceImpl(byte[] prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
+	public NonceImpl(Prolog prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
 
-		if (prolog.length > Prolog.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("Illegal prolog size: the maximum is " + Prolog.MAX_PROLOG_SIZE);
-			
 		this.prolog = prolog;
 		this.hashing = hashing;
 		this.hashSize = hashing.length();
@@ -90,8 +86,9 @@ public class NonceImpl implements Nonce {
 		if (!description.getHashing().getName().equals(hashing.getName()))
 			throw new IllegalArgumentException("deadline description and nonce use different hashing algorithms");
 
-		byte[] value = hashing.hash(extractScoopAndConcat(description.getScoopNumber(), description.getData()));
-		return Deadlines.of(prolog, progressive, value, description.getScoopNumber(), description.getData(), hashing);
+		byte[] data = description.getData();
+		byte[] value = hashing.hash(extractScoopAndConcat(description.getScoopNumber(), data));
+		return Deadlines.of(prolog, progressive, value, description.getScoopNumber(), data, hashing);
 	}
 
 	/**
@@ -110,17 +107,7 @@ public class NonceImpl implements Nonce {
 		return result;
 	}
 
-	/**
-	 * Dumps this nonce into the give file, as the {@code offset}th nonce inside the file.
-	 * 
-	 * @param where the file channel where the nonce must be dumped
-	 * @param metadataSize the size of the metadata of the plot file, that precedes the nonces
-	 * @param offset the progressive number of the nonce inside the file; for instance,
-	 *               if the file will contains nonces from progressive 100 to progressive 150,
-	 *               then they are placed at offsets from 0 to 50 inside the file, respectively
-	 * @param length the total number of nonces that will be contained in the file
-	 * @throws IOException if the nonce could not be dumped into the file
-	 */
+	@Override
 	public void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException {
 		int scoopSize = 2 * hashSize;
 
@@ -180,6 +167,7 @@ public class NonceImpl implements Nonce {
 		 * @return the initial seed
 		 */
 		private byte[] initWithPrologAndProgressive() {
+			byte[] prolog = NonceImpl.this.prolog.toByteArray();
 			byte[] buffer = new byte[nonceSize + prolog.length + 8];
 			System.arraycopy(prolog, 0, buffer, nonceSize, prolog.length);
 			longToBytesBE(progressive, buffer, nonceSize + prolog.length);

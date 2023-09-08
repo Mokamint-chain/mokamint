@@ -40,7 +40,7 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * 
 	 * @return the prolog
 	 */
-	byte[] getProlog();
+	Prolog getProlog();
 
 	/**
 	 * Yields the progressive number of the nonce of the deadline.

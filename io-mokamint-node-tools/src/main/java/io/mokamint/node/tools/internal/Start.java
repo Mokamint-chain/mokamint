@@ -349,7 +349,7 @@ public class Start extends AbstractCommand {
 	private static class TestApplication implements Application {
 
 		@Override
-		public boolean prologIsValid(byte[] prolog) {
+		public boolean prologExtraIsValid(byte[] extra) {
 			return true;
 		}
 	}

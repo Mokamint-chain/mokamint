@@ -194,25 +194,6 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
-	public void into(MarshallingContext context) throws IOException {
-		try {
-			context.writeStringUnshared(chainId);
-			var signature = SignatureAlgorithms.ed25519(Function.identity());
-			var nodePublicKeyBytes = signature.encodingOf(nodePublicKey);
-			context.writeCompactInt(nodePublicKeyBytes.length);
-			context.write(nodePublicKeyBytes);
-			var plotPublicKeyBytes = signature.encodingOf(plotPublicKey);
-			context.writeCompactInt(plotPublicKeyBytes.length);
-			context.write(plotPublicKeyBytes);
-			context.writeCompactInt(extra.length);
-			context.write(extra);
-		}
-		catch (NoSuchAlgorithmException | InvalidKeyException e) {
-			throw new IOException("Cannot marshal the prolog into bytes", e);
-		}
-	}
-
-	@Override
 	public String toString() {
 		return "chainId: " + chainId + ", nodePublicKey: " + nodePublicKeyBase58 + ", plotPublicKey: " + plotPublicKeyBase58 + ", extra: " + Hex.toHexString(extra);
 	}
@@ -230,5 +211,24 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	@Override
 	public int hashCode() {
 		return chainId.hashCode() ^ nodePublicKey.hashCode() ^ plotPublicKey.hashCode() ^ Arrays.hashCode(extra);
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		try {
+			context.writeStringUnshared(chainId);
+			var signature = SignatureAlgorithms.ed25519(Function.identity());
+			var nodePublicKeyBytes = signature.encodingOf(nodePublicKey);
+			context.writeCompactInt(nodePublicKeyBytes.length);
+			context.write(nodePublicKeyBytes);
+			var plotPublicKeyBytes = signature.encodingOf(plotPublicKey);
+			context.writeCompactInt(plotPublicKeyBytes.length);
+			context.write(plotPublicKeyBytes);
+			context.writeCompactInt(extra.length);
+			context.write(extra);
+		}
+		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+			throw new IOException("Cannot marshal the prolog into bytes", e);
+		}
 	}
 }
