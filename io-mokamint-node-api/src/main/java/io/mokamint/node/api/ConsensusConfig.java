@@ -27,6 +27,13 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 public interface ConsensusConfig {
 
 	/**
+	 * Yields the chain identifier of the blockchain the node belongs to.
+	 * 
+	 * @return the chain identifier
+	 */
+	String getChainId();
+
+	/**
 	 * Yields the hashing algorithm used for computing the deadlines, hence
 	 * also in the plot files used by the miners.
 	 * 

@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
@@ -55,6 +56,7 @@ import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvail
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Prolog;
 
 public class EventsTests {
 
@@ -63,10 +65,23 @@ public class EventsTests {
 	 */
 	private static Application app;
 
+	/**
+	 * The key of the node.
+	 */
+	private static KeyPair nodeKey;
+
+	/**
+	 * The prolog of the deadlines.
+	 */
+	private static Prolog prolog;
+
 	@BeforeAll
-	public static void beforeAll() {
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		nodeKey = id25519.getKeyPair();
+		prolog = Prologs.of("octopus", nodeKey.getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
 	}
 
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
@@ -82,8 +97,6 @@ public class EventsTests {
 	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
 
 		var myMiner = new Miner() {
 
@@ -108,7 +121,7 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, true, myMiner);
+				super(mkConfig(dir), nodeKey, app, true, myMiner);
 			}
 
 			@Override
@@ -131,7 +144,7 @@ public class EventsTests {
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
 	@Timeout(1)
-	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException {
+	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 	
@@ -141,6 +154,7 @@ public class EventsTests {
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(false); // <--
+				when(deadline.getProlog()).thenReturn(prolog);
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getValue()).thenReturn(deadlineValue);
@@ -156,7 +170,7 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 	
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, true, myMiner);
+				super(mkConfig(dir), nodeKey, app, true, myMiner);
 			}
 	
 			@Override
@@ -182,7 +196,7 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, true, new Miner[0]);
+				super(mkConfig(dir), nodeKey, app, true, new Miner[0]);
 			}
 
 			@Override
@@ -209,7 +223,7 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, true, myMiner);
+				super(mkConfig(dir), nodeKey, app, true, myMiner);
 			}
 
 			@Override
@@ -250,6 +264,7 @@ public class EventsTests {
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true); // <--
+				when(deadline.getProlog()).thenReturn(prolog);
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getData()).thenReturn(description.getData());
 				when(deadline.getValue()).thenReturn(deadlineValue);
@@ -265,7 +280,7 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException, InterruptedException, AlreadyInitializedException {
-				super(config, app, true, myMiner);
+				super(config, nodeKey, app, true, myMiner);
 			}
 
 			@Override

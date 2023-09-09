@@ -27,6 +27,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.Set;
@@ -34,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
@@ -43,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
@@ -68,14 +72,17 @@ public class PeersPropagationTests {
 	 */
 	private static Application app;
 
-	@BeforeAll
-	public static void beforeAll() {
-		createApplication();
-	}
+	/**
+	 * The key of the node.
+	 */
+	private static KeyPair nodeKey;
 
-	private static void createApplication() {
+	@BeforeAll
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		nodeKey = id25519.getKeyPair();
 	}
 
 	@Test
@@ -103,7 +110,7 @@ public class PeersPropagationTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false);
+				super(config, nodeKey, app, false);
 			}
 
 			@Override
@@ -172,7 +179,7 @@ public class PeersPropagationTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false);
+				super(config, nodeKey, app, false);
 			}
 
 			@Override
@@ -185,8 +192,8 @@ public class PeersPropagationTests {
 			}
 		}
 
-		try (var node1 = LocalNodes.of(config1, app, false); var node2 = LocalNodes.of(config2, app, false);
-			 var node3 = LocalNodes.of(config3, app, false); var node4 = new MyLocalNode(config4);
+		try (var node1 = LocalNodes.of(config1, nodeKey, app, false); var node2 = LocalNodes.of(config2, nodeKey, app, false);
+			 var node3 = LocalNodes.of(config3, nodeKey, app, false); var node4 = new MyLocalNode(config4);
 			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000L, Optional.of(peer1.getURI()));
 			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000L, Optional.of(peer2.getURI()));
 			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(peer3.getURI()))) {
@@ -227,7 +234,7 @@ public class PeersPropagationTests {
 			private final Peer expected;
 
 			private MyLocalNode(Config config, Peer expected) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false);
+				super(config, nodeKey, app, false);
 				
 				this.expected = expected;
 			}

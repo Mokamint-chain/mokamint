@@ -19,6 +19,7 @@ package io.mokamint.node.internal;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 import java.util.function.Function;
 
 import com.moandjiezana.toml.Toml;
@@ -34,6 +35,12 @@ import io.mokamint.node.api.ConsensusConfig;
  */
 @Immutable
 public class ConsensusConfigImpl implements ConsensusConfig {
+
+	/**
+	 * The chain identifier of the blockchain the node belongs to.
+	 * It defaults to the empty string.
+	 */
+	public final String chainId;
 
 	/**
 	 * The hashing algorithm used for computing the deadlines, hence
@@ -76,6 +83,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	 * @param builder the builder where information is extracted from
 	 */
 	public ConsensusConfigImpl(AbstractBuilder<?> builder) {
+		this.chainId = builder.chainId;
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
 		this.hashingForBlocks = builder.hashingForBlocks;
@@ -87,7 +95,8 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	public boolean equals(Object other) {
 		if (other != null && getClass() == other.getClass()) {
 			var otherConfig = (ConsensusConfigImpl) other;
-			return targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
+			return chainId.equals(otherConfig.chainId) &&
+				targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
 				initialAcceleration == otherConfig.initialAcceleration &&
 				hashingForDeadlines.getName().equals(otherConfig.hashingForDeadlines.getName()) &&
 				hashingForGenerations.getName().equals(otherConfig.hashingForGenerations.getName()) &&
@@ -111,6 +120,9 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		sb.append("\n");
 		sb.append("## Consensus parameters\n");
 		sb.append("\n");
+		sb.append("# the chain identifier of the blockchain\n");
+		sb.append("chain_id = \"" + chainId + "\"\n");
+		sb.append("\n");
 		sb.append("# the hashing algorithm used for the deadlines and hence for the plot files of the miners\n");
 		sb.append("hashing_for_deadlines = \"" + hashingForDeadlines.getName() + "\"\n");
 		sb.append("\n");
@@ -128,6 +140,11 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
 
 		return sb.toString();
+	}
+
+	@Override
+	public String getChainId() {
+		return chainId;
 	}
 
 	@Override
@@ -161,6 +178,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	 * @param <T> the concrete type of the builder
 	 */
 	public abstract static class AbstractBuilder<T extends AbstractBuilder<T>> {
+		private String chainId = "";
 		private HashingAlgorithm<byte[]> hashingForDeadlines;
 		private HashingAlgorithm<byte[]> hashingForGenerations;
 		private HashingAlgorithm<byte[]> hashingForBlocks;
@@ -181,6 +199,10 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @throws NoSuchAlgorithmException if some hashing algorithm cannot be found
 		 */
 		protected AbstractBuilder(Toml toml) throws NoSuchAlgorithmException {
+			var chainId = toml.getString("chain_id");
+			if (chainId != null)
+				setChainId(chainId);
+
 			var hashingForDeadlines = toml.getString("hashing_for_deadlines");
 			if (hashingForDeadlines != null)
 				setHashingForDeadlines(hashingForDeadlines);
@@ -209,6 +231,18 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		}
 
 		/**
+		 * Sets the chain identifier of the blockchain the node belongs to.
+		 * 
+		 * @param chainId the chain identifier
+		 * @return this builder
+		 */
+		public T setChainId(String chainId) {
+			Objects.requireNonNull(chainId, "chainId cannot be null");
+			this.chainId = chainId;
+			return getThis();
+		}
+
+		/**
 		 * Sets the hashing algorithm for computing the deadlines and hence also the
 		 * plot files used by the miners.
 		 * 
@@ -217,6 +251,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public T setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
+			Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 			this.hashingForDeadlines = HashingAlgorithms.of(hashingForDeadlines, Function.identity());
 			return getThis();
 		}
@@ -230,6 +265,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public T setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
+			Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 			this.hashingForGenerations = HashingAlgorithms.of(hashingForGenerations, Function.identity());
 			return getThis();
 		}
@@ -242,6 +278,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 		 */
 		public T setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
+			Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
 			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Function.identity());
 			return getThis();
 		}
@@ -258,7 +295,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 */
 		public T setInitialAcceleration(long initialAcceleration) {
 			if (initialAcceleration < 1L)
-				throw new IllegalArgumentException("The initial acceleration must be positive");
+				throw new IllegalArgumentException("initialAcceleration must be positive");
 
 			this.initialAcceleration = initialAcceleration;
 			return getThis();
@@ -274,6 +311,9 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @return this builder
 		 */
 		public T setTargetBlockCreationTime(long targetBlockCreationTime) {
+			if (targetBlockCreationTime < 1L)
+				throw new IllegalArgumentException("targetBlockCreationTime must be positive");
+
 			this.targetBlockCreationTime = targetBlockCreationTime;
 			return getThis();
 		}

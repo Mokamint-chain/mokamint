@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.io.IOException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -73,6 +74,11 @@ public class LocalNodeImpl implements LocalNode {
 	 * The configuration of the node.
 	 */
 	private final Config config;
+
+	/**
+	 * The key pair that the node uses to sign the blocks that it mines.
+	 */
+	private final KeyPair keyPair;
 
 	/**
 	 * The application running over this node.
@@ -143,6 +149,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * using the given miners.
 	 * 
 	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
@@ -154,9 +161,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 */
-	public LocalNodeImpl(Config config, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
+	public LocalNodeImpl(Config config, KeyPair keyPair, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 		try {
 			this.config = config;
+			this.keyPair = keyPair;
 			this.app = app;
 			this.version = Versions.current();
 			this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);

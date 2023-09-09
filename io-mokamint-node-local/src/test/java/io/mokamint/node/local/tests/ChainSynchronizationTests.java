@@ -28,6 +28,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,6 +80,8 @@ public class ChainSynchronizationTests {
 	 */
 	private static Plot plot;
 
+	private static KeyPair nodeKey;
+
 	/**
 	 * The miner used by the mining node.
 	 */
@@ -99,7 +102,8 @@ public class ChainSynchronizationTests {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
+		nodeKey = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", nodeKey.getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
@@ -133,7 +137,7 @@ public class ChainSynchronizationTests {
 	private class MiningNode extends LocalNodeImpl {
 
 		private MiningNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-			super(config, app, true, miner);
+			super(config, nodeKey, app, true, miner);
 		}
 
 		@Override
@@ -150,7 +154,7 @@ public class ChainSynchronizationTests {
 	private class NonMiningNode extends LocalNodeImpl {
 
 		private NonMiningNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-			super(config, app, false); // <--- does not start mining by itself
+			super(config, nodeKey, app, false); // <--- does not start mining by itself
 		}
 
 		@Override

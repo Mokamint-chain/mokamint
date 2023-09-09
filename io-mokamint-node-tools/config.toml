@@ -4,6 +4,9 @@
 
 ## Consensus parameters
 
+# the chain identifier of the blockchain
+chain_id = "octopus"
+
 # the hashing algorithm used for the deadlines and hence for the plot files of the miners
 hashing_for_deadlines = "shabal256"
 
@@ -58,11 +61,11 @@ peer_punishment_for_unreachable = 1
 # the time (in milliseconds) for communications to the peers
 peer_timeout = 30000
 
-# time, in milliseconds, between successive pings to a peer
+# the time, in milliseconds, between successive pings to a peer
 peer_ping_interval = 120000
 
 # the size of the memory used to avoid whispering the same message again
 whispering_memory_size = 1000
 
-# the maximal creation time in the future (in milliseconds) of a block that passes verification
+# the maximal creation time in the future (in milliseconds) of a block
 block_max_time_in_the_future = 15000

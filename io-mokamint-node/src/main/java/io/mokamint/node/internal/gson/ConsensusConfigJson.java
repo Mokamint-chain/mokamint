@@ -26,6 +26,7 @@ import io.mokamint.node.api.ConsensusConfig;
  * The JSON representation of a {@code Config}.
  */
 public abstract class ConsensusConfigJson implements JsonRepresentation<ConsensusConfig> {
+	private String chainId;
 	private String hashingForDeadlines;
 	private String hashingForGenerations;
 	private String hashingForBlocks;
@@ -33,6 +34,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	private long initialAcceleration;
 
 	protected ConsensusConfigJson(ConsensusConfig config) {
+		this.chainId = config.getChainId();
 		this.hashingForDeadlines = config.getHashingForDeadlines().getName();
 		this.hashingForGenerations = config.getHashingForGenerations().getName();
 		this.hashingForBlocks = config.getHashingForBlocks().getName();
@@ -43,6 +45,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	@Override
 	public ConsensusConfig unmap() throws NoSuchAlgorithmException {
 		return ConsensusConfigs.defaults()
+			.setChainId(chainId)
 			.setHashingForDeadlines(hashingForDeadlines)
 			.setHashingForGenerations(hashingForGenerations)
 			.setHashingForBlocks(hashingForBlocks)

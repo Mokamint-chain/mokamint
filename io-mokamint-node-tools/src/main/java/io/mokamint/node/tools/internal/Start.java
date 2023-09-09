@@ -25,14 +25,17 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Entropies;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
@@ -57,29 +60,35 @@ import picocli.CommandLine.Parameters;
 @Command(name = "start", description = "Start a new node.")
 public class Start extends AbstractCommand {
 
-	@Parameters(description = { "plot files that will be used for local mining" })
+	@Parameters(index = "0", description = "the key of the node, used to sign the blocks that it mines")
+	private Path key;
+
+	@Parameters(index = "1", description = "plot files that will be used for local mining")
 	private Path[] plots;
 
-	@Option(names = "--config", description = { "the toml config file of the node; if missing, defaults are used"})
+	@Option(names = "--config", description = "the toml config file of the node; if missing, defaults are used")
 	private Path config;
 
-	@Option(names = "--broadcast-interval", description = { "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers" }, defaultValue = "1800000")
+	@Option(names = "--broadcast-interval", description = "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers", defaultValue = "1800000")
 	private long broadcastInterval;
 
-	@Option(names = { "--init" }, description = { "create a genesis block at start-up and start mining" }, defaultValue = "false")
+	@Option(names = "--init", description = "create a genesis block at start-up and start mining", defaultValue = "false")
 	private boolean init;
 
-	@Option(names = "--uri", description = { "the URI of the node, such as \"ws://my.machine.com:8030\"; if missing, the node will try to use its public IP"})
+	@Option(names = "--uri", description = "the URI of the node, such as \"ws://my.machine.com:8030\"; if missing, the node will try to use its public IP")
 	private URI uri;
 
-	@Option(names = "--miner-port", description = { "network ports where a remote miner must be published" })
+	@Option(names = "--miner-port", description = "network ports where a remote miner will be published")
 	private int[] minerPorts;
 
-	@Option(names = "--public-port", description = { "network ports where the public API of the node must be published" })
+	@Option(names = "--public-port", description = "network ports where the public API of the node will be published")
 	private int[] publicPorts;
 
-	@Option(names = "--restricted-port", description = { "network ports where the restricted API of the node must be published" })
+	@Option(names = "--restricted-port", description = "network ports where the restricted API of the node will be published")
 	private int[] restrictedPorts;
+
+	@Option(names = { "--password" }, description = "the password of the key of the node; if not specified, it will be asked interactively")
+    private String password;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
@@ -102,33 +111,35 @@ public class Start extends AbstractCommand {
 		if (restrictedPorts == null)
 			restrictedPorts = new int[0];
 
-		loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(plots, 0, new ArrayList<>());
+		if (password == null)
+			password = askForPassword();
+
+		loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(0, new ArrayList<>());
 	}
 
 	/**
-	 * Loads the given plots, start a local miner on them and run a node with that miner.
+	 * Loads the plots, start a local miner on them and run a node with that miner.
 	 * 
-	 * @param paths the paths to the plots to load
 	 * @param pos the index to the next plot to load
 	 * @param plots the plots that are being loaded
 	 */
-	private void loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(Path[] paths, int pos, List<Plot> plots) {
-		if (pos < paths.length) {
-			System.out.print("Loading " + paths[pos] + "... ");
-			try (var plot = Plots.load(paths[pos])) {
+	private void loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(int pos, List<Plot> plots) {
+		if (pos < this.plots.length) {
+			System.out.print("Loading " + this.plots[pos] + "... ");
+			try (var plot = Plots.load(this.plots[pos])) {
 				System.out.println("done.");
 				plots.add(plot);
-				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
+				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, plots);
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + paths[pos] + "\"", e);
-				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
+				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + this.plots[pos] + "\"", e);
+				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, plots);
 			}
 			catch (NoSuchAlgorithmException e) {
 				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-				LOGGER.log(Level.SEVERE, "the plot file \"" + paths[pos] + "\" uses an unknown hashing algorithm", e);
-				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(paths, pos + 1, plots);
+				LOGGER.log(Level.SEVERE, "the plot file \"" + this.plots[pos] + "\" uses an unknown hashing algorithm", e);
+				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, plots);
 			}
 		}
 		else
@@ -184,6 +195,18 @@ public class Start extends AbstractCommand {
 	}
 
 	private void startNodeAndPublishNodeServices(List<Miner> miners) {
+		KeyPair keyPair;
+
+		try {
+			keyPair = Entropies.load(key).keys(password, SignatureAlgorithms.ed25519(Function.identity()));
+		}
+		catch (IOException e) {
+			throw new CommandException("Cannot read the pem file " + key + "!", e);
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new CommandException("The ed25519 signature algorithm is not available!", e);
+		}
+
 		Config config;
 
 		try {
@@ -213,7 +236,7 @@ public class Start extends AbstractCommand {
 		}
 
 		System.out.print("Starting a local node... ");
-		try (var node = LocalNodes.of(config, new TestApplication(), init, miners.toArray(Miner[]::new))) {
+		try (var node = LocalNodes.of(config, keyPair, new TestApplication(), init, miners.toArray(Miner[]::new))) {
 			System.out.println("done.");
 			publishPublicAndRestrictedNodeServices(0, node);
 		}
@@ -306,10 +329,8 @@ public class Start extends AbstractCommand {
 			System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the node from the current content of \"" + dir + "\".|@"));
 			System.out.println(Ansi.AUTO.string("@|yellow If you want to start a blockchain from scratch, stop this process, delete \"" + dir + "\" and start again a node with --init.|@"));
 		}
-		else {
+		else
 			Files.createDirectories(config.dir);
-			createNodeKeys(config);
-		}
 	}
 
 	private void waitForKeyPress() {
@@ -322,28 +343,13 @@ public class Start extends AbstractCommand {
 		}
 	}
 
-	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
-		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
+	private String askForPassword() {
+		System.out.print("Please insert the password of the new key (press ENTER to use the empty string): ");
+		return new String(System.console().readPassword());
 	}
 
-	private void createNodeKeys(Config config) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
-		var pathToFile = Entropies.random().dump(config.dir, "node_private_key");
-
-		try {
-			// TODO: uncomment after deploying the latest Hotmoka to Maven Central
-			//Files.setPosixFilePermissions(pathToFile, PosixFilePermissions.fromString("rw-------"));
-		}
-		catch (UnsupportedOperationException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot limit the access rights of the node's key!|@"));
-			LOGGER.log(Level.WARNING, "cannot limit the access rights of the node's key", e);
-			// we continue anyway
-		}
-
-		System.out.println("A new key pair has been generated for this node (public key Base58 is " + "node_key_pair.pem" + ").");
-		System.out.println(Ansi.AUTO.string("@|green This key pair has been saved into the file \"" + pathToFile + "\".|@"));
-		System.out.println(Ansi.AUTO.string("@|red Do not delete that file: this node needs it in order to sign the blocks it mines.|@"));
-		System.out.println(Ansi.AUTO.string("@|red Protect that file from other users: it gives access to all mining rights of your node.|@"));
-		System.out.println(Ansi.AUTO.string("@|green Copy that file in a safe place: you might need it if you want to restart the same node later.|@"));
+	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
+		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
 	}
 
 	private static class TestApplication implements Application {

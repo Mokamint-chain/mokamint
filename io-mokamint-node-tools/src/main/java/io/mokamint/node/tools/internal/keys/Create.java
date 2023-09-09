@@ -28,16 +28,23 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 @Command(name = "create", description = "Create a new key pair")
 public class Create extends AbstractCommand {
 
+	@Option(names = { "--password" }, description = "the password that will be required later to use the key; if not specified, it will be asked interactively")
+    private String password;
+
 	@Override
 	protected void execute() {
+		if (password == null)
+			password = askForPassword();
+
 		try {
 			var signatureAlgorithmOfNewAccount = SignatureAlgorithms.ed25519(Function.identity());
 			var entropy = Entropies.random();
-			KeyPair keys = entropy.keys("", signatureAlgorithmOfNewAccount);
+			KeyPair keys = entropy.keys(password, signatureAlgorithmOfNewAccount);
 			byte[] publicKeyBytes = signatureAlgorithmOfNewAccount.encodingOf(keys.getPublic());
 			var publicKeyBase58 = Base58.encode(publicKeyBytes);
 			System.out.println("A new key pair has been created.");
@@ -54,5 +61,10 @@ public class Create extends AbstractCommand {
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The ed25519 signature algorithm is not available!", e);
 		}
+	}
+
+	private String askForPassword() {
+		System.out.print("Please insert the password of the new key (press ENTER to use the empty string): ");
+		return new String(System.console().readPassword());
 	}
 }

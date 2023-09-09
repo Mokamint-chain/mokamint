@@ -18,11 +18,13 @@ package io.mokamint.node.tools.internal;
 
 import io.mokamint.node.tools.internal.keys.Create;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.HelpCommand;
 
 @Command(name = "keys",
 	description = "Manage the cryptographical keys of a node.",
 	subcommands = {
-		Create.class
+		Create.class,
+		HelpCommand.class
 	})
 public class Keys {
 }

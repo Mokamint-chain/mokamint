@@ -211,13 +211,13 @@ public class Config extends AbstractConfig {
 		sb.append("# the time (in milliseconds) for communications to the peers\n");
 		sb.append("peer_timeout = " + peerTimeout + "\n");
 		sb.append("\n");
-		sb.append("# time, in milliseconds, between successive pings to a peer\n");
+		sb.append("# the time, in milliseconds, between successive pings to a peer\n");
 		sb.append("peer_ping_interval = " + peerPingInterval + "\n");
 		sb.append("\n");
 		sb.append("# the size of the memory used to avoid whispering the same message again\n");
 		sb.append("whispering_memory_size = " + whisperingMemorySize + "\n");
 		sb.append("\n");
-		sb.append("# the maximal creation time in the future (in milliseconds) of a block that passes verification\n");
+		sb.append("# the maximal creation time in the future (in milliseconds) of a block\n");
 		sb.append("block_max_time_in_the_future = " + blockMaxTimeInTheFuture + "\n");
 
 		return sb.toString();

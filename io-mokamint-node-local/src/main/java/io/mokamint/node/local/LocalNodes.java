@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local;
 
 import java.io.IOException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.application.api.Application;
@@ -33,6 +34,7 @@ public interface LocalNodes {
 	 * Yields a local node of a Mokamint blockchain, for the given application.
 	 * 
 	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
@@ -45,9 +47,9 @@ public interface LocalNodes {
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 */
-	static LocalNode of(Config config, Application app, boolean init, Miner... miners)
+	static LocalNode of(Config config, KeyPair keyPair, Application app, boolean init, Miner... miners)
 			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 
-		return new LocalNodeImpl(config, app, init, miners);
+		return new LocalNodeImpl(config, keyPair, app, init, miners);
 	}
 }

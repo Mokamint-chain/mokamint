@@ -29,6 +29,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,6 +41,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,6 +53,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -91,6 +95,19 @@ public class PeersTests {
 	private static Application app;
 
 	/**
+	 * The key of the node.
+	 */
+	private static KeyPair nodeKey;
+
+	@BeforeAll
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
+		app = mock(Application.class);
+		when(app.prologExtraIsValid(any())).thenReturn(true);
+		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		nodeKey = id25519.getKeyPair();
+	}
+
+	/**
 	 * Extracts the version of Mokamint from the pom.xml file.
 	 * 
 	 * @return the version
@@ -130,12 +147,6 @@ public class PeersTests {
 		}
 	}
 
-	@BeforeAll
-	public static void beforeAll() {
-		app = mock(Application.class);
-		when(app.prologExtraIsValid(any())).thenReturn(true);
-	}
-
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
 			.setDir(dir)
@@ -166,7 +177,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false);
+				super(config, nodeKey, app, false);
 			}
 
 			@Override
@@ -197,7 +208,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, false);
+				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
 
@@ -240,7 +251,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(config, app, false);
+				super(config, nodeKey, app, false);
 			}
 
 			@Override
@@ -261,7 +272,7 @@ public class PeersTests {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 
-			try (var node = LocalNodes.of(mkConfig(dir), app, false)) {
+			try (var node = LocalNodes.of(mkConfig(dir), nodeKey, app, false)) {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 		}
@@ -277,7 +288,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, false);
+				super(mkConfig(dir), nodeKey, app, false);
 			}
 
 			@Override
@@ -302,7 +313,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, false);
+				super(mkConfig(dir), nodeKey, app, false);
 			}
 
 			@Override
@@ -327,7 +338,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, false);
+				super(mkConfig(dir), nodeKey, app, false);
 			}
 
 			@Override
@@ -352,7 +363,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, false);
+				super(mkConfig(dir), nodeKey, app, false);
 			}
 
 			@Override
@@ -376,7 +387,7 @@ public class PeersTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), app, false);
+				super(mkConfig(dir), nodeKey, app, false);
 			}
 
 			@Override
