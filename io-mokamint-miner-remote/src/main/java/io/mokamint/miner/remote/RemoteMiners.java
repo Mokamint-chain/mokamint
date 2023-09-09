@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.miner.remote;
 
 import java.io.IOException;
+import java.security.PublicKey;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.internal.RemoteMinerImpl;
@@ -32,10 +33,12 @@ public interface RemoteMiners {
 	 * 
 	 * @param port the http port where the server is opened on localhost
 	 * @return the new remote miner
+	 * @param chainId the chain identifier of the blockchain for which the deadlines will be used
+	 * @param nodePublicKey the public key of the node for which the deadlines are computed
 	 * @throws DeploymentException if the remote mining endpoint could not be deployed
-	 * @throws IOException if the remote miner could not be created
+	 * @throws IOException if an I/O error occurs
 	 */
-	static Miner of(int port) throws DeploymentException, IOException {
-		return new RemoteMinerImpl(port);
+	static Miner of(int port, String chainId, PublicKey nodePublicKey) throws DeploymentException, IOException {
+		return new RemoteMinerImpl(port, chainId, nodePublicKey);
 	}
 }

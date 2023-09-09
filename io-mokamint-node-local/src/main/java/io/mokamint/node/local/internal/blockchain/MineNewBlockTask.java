@@ -29,7 +29,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
@@ -79,11 +78,6 @@ public class MineNewBlockTask implements Task {
 	private final Config config;
 
 	/**
-	 * The application running in the node.
-	 */
-	private final Application app;
-
-	/**
 	 * The miners of the node.
 	 */
 	private final NodeMiners miners;
@@ -97,7 +91,6 @@ public class MineNewBlockTask implements Task {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.config = node.getConfig();
-		this.app = node.getApplication();
 		this.miners = node.getMiners();
 		this.logPrefix = "";
 		this.toString = "next block mining";
@@ -349,8 +342,6 @@ public class MineNewBlockTask implements Task {
 
 			if (done)
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it arrived too late");
-			else if (miners.get().noneMatch(m -> m == miner)) // TODO: should I really discard it?
-				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since its miner is unknown");
 			else if (currentDeadline.isWorseThan(deadline)) {
 				if (isLegal(deadline)) {
 					if (currentDeadline.updateIfWorseThan(deadline)) {
@@ -358,19 +349,27 @@ public class MineNewBlockTask implements Task {
 						setWaker(deadline);
 					}
 					else
-						LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it's not better than the current deadline");
+						LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
 				}
 				else {
-					LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it's illegal");
+					LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is illegal");
 					node.submit(new IllegalDeadlineEvent(miner));
 				}
 			}
 			else
-				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it's not better than the current deadline");
+				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
 		}
 
+		/**
+		 * Determines if a deadline, provided by a miner, is legal for the creation of the next block.
+		 * This means that it matches the description expected for the deadline of the next block and
+		 * it is legal for the node, for which the block is being mined.
+		 * 
+		 * @param deadline the deadline to check
+		 * @return true if and only if all the above conditions hold
+		 */
 		private boolean isLegal(Deadline deadline) {
-			return deadline.matches(description) && deadline.isValid() && app.prologExtraIsValid(deadline.getProlog().getExtra());
+			return deadline.matches(description) && node.isLegal(deadline);
 		}
 
 		private void waitUntilDeadlineExpires() throws InterruptedException {

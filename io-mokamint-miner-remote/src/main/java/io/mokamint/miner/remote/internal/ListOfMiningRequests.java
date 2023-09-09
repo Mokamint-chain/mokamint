@@ -84,9 +84,9 @@ public class ListOfMiningRequests {
 
 		synchronized (lock) {
 			Iterator<Consumer<Deadline>> it = actions.iterator();
-			for (var d: descriptions) {
+			for (var description: descriptions) {
 				Consumer<Deadline> action = it.next();
-				if (d.equals(deadline))
+				if (description.equals(deadline))
 					filtered.add(action);
 			}
 		}

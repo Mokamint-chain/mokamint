@@ -114,233 +114,7 @@ public class Start extends AbstractCommand {
 		if (password == null)
 			password = askForPassword();
 
-		loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(0, new ArrayList<>());
-	}
-
-	/**
-	 * Loads the plots, start a local miner on them and run a node with that miner.
-	 * 
-	 * @param pos the index to the next plot to load
-	 * @param plots the plots that are being loaded
-	 */
-	private void loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(int pos, List<Plot> plots) {
-		if (pos < this.plots.length) {
-			System.out.print("Loading " + this.plots[pos] + "... ");
-			try (var plot = Plots.load(this.plots[pos])) {
-				System.out.println("done.");
-				plots.add(plot);
-				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, plots);
-			}
-			catch (IOException e) {
-				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + this.plots[pos] + "\"", e);
-				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, plots);
-			}
-			catch (NoSuchAlgorithmException e) {
-				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-				LOGGER.log(Level.SEVERE, "the plot file \"" + this.plots[pos] + "\" uses an unknown hashing algorithm", e);
-				loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, plots);
-			}
-		}
-		else
-			createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(plots);
-	}
-
-	private void createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(List<Plot> plots) {
-		var miners = new ArrayList<Miner>();
-
-		if (plots.isEmpty())
-			publishRemoteMinersStartNodeAndPublishNodeServices(0, miners);
-		else {
-			if (plots.size() == 1)
-				System.out.print("Starting a local miner with 1 plot... ");
-			else
-				System.out.print("Starting a local miner with " + plots.size() + " plots... ");
-
-			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
-				System.out.println("done.");
-				miners.add(miner);
-				publishRemoteMinersStartNodeAndPublishNodeServices(0, miners);
-			}
-		}
-	}
-
-	private void publishRemoteMinersStartNodeAndPublishNodeServices(int pos, List<Miner> miners) {
-		if (pos < minerPorts.length) {
-			System.out.print("Starting a remote miner listening at port " + minerPorts[pos] + " of localhost... ");
-			try (var remote = RemoteMiners.of(minerPorts[pos])) {
-				System.out.println("done.");
-				miners.add(remote);
-				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
-			}
-			catch (IOException e) {
-				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while creating a remote miner at port " + minerPorts[pos], e);
-				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
-			}
-			catch (DeploymentException e) {
-				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
-				LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
-				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
-			}
-			catch (IllegalArgumentException e) {
-				// for instance, the port number is illegal
-				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
-				LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
-				publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1, miners);
-			}
-		}
-		else
-			startNodeAndPublishNodeServices(miners);
-	}
-
-	private void startNodeAndPublishNodeServices(List<Miner> miners) {
-		KeyPair keyPair;
-
-		try {
-			keyPair = Entropies.load(key).keys(password, SignatureAlgorithms.ed25519(Function.identity()));
-		}
-		catch (IOException e) {
-			throw new CommandException("Cannot read the pem file " + key + "!", e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The ed25519 signature algorithm is not available!", e);
-		}
-
-		Config config;
-
-		try {
-			config = getConfig();
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The configuration file \"" + this.config + "\" refers to an unknown hashing algorithm!", e);
-		}
-		catch (FileNotFoundException e) {
-			throw new CommandException("The configuration file \"" + this.config + "\" does not exist!", e);
-		}
-		catch (URISyntaxException e) {
-			throw new CommandException("The configuration file \"" + this.config + "\" refers to a URI with wrong syntax!", e);
-		}
-
-		try {
-			createWorkingDirectory(config);
-		}
-		catch (IOException e) {
-			throw new CommandException("Cannot create the working directory " + config.dir + "!", e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The signature algorithm required for the key of the node is not available!", e);
-		}
-		catch (InvalidKeyException e) {
-			throw new CommandException("The key of the node could not be encoded!", e);
-		}
-
-		System.out.print("Starting a local node... ");
-		try (var node = LocalNodes.of(config, keyPair, new TestApplication(), init, miners.toArray(Miner[]::new))) {
-			System.out.println("done.");
-			publishPublicAndRestrictedNodeServices(0, node);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The database refers to an unknown hashing algorithm!", e);
-		}
-		catch (DatabaseException | IOException e) {
-			throw new CommandException("The database seems corrupted!", e);
-		}
-		catch (InterruptedException e) {
-			// unexpected: who could interrupt this process?
-			throw new CommandException("Unexpected interruption!", e);
-		}
-		catch (AlreadyInitializedException e) {
-			throw new CommandException("The node is already initialized: delete \"" + config.dir + "\" and start again with --init", e);
-		}
-	}
-
-	private void publishPublicAndRestrictedNodeServices(int pos, LocalNode node) {
-		if (pos < publicPorts.length) {
-			System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
-			try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().whisperingMemorySize, Optional.ofNullable(uri))) {
-				System.out.println("done.");
-				publishPublicAndRestrictedNodeServices(pos + 1, node);
-			}
-			catch (IOException e) {
-				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + publicPorts[pos], e);
-				publishPublicAndRestrictedNodeServices(pos + 1, node);
-			}
-			catch (DeploymentException e) {
-				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
-				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
-				publishPublicAndRestrictedNodeServices(pos + 1, node);
-			}
-			catch (IllegalArgumentException e) {
-				// for instance, the port number is illegal
-				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
-				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
-				publishPublicAndRestrictedNodeServices(pos + 1, node);
-			}
-			catch (InterruptedException e) {
-				throw new CommandException("The close operation of the service at port \" + publicPorts[pos] + \" got interrupted!", e);
-			}
-		}
-		else
-			publishRestrictedNodeServices(0, node);
-	}
-
-	private void publishRestrictedNodeServices(int pos, LocalNode node) {
-		if (pos < restrictedPorts.length) {
-			System.out.print("Opening a restricted node service at port " + restrictedPorts[pos] + " of localhost... ");
-			try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
-				System.out.println("done.");
-				publishRestrictedNodeServices(pos + 1, node);
-			}
-			catch (IOException e) {
-				System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + restrictedPorts[pos], e);
-				publishRestrictedNodeServices(pos + 1, node);
-			}
-			catch (DeploymentException e) {
-				System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
-				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
-				publishRestrictedNodeServices(pos + 1, node);
-			}
-			catch (IllegalArgumentException e) {
-				// for instance, the port number is illegal
-				System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
-				LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
-				publishRestrictedNodeServices(pos + 1, node);
-			}
-		}
-		else
-			waitForKeyPress();
-	}
-
-	/**
-	 * Creates the working directory for the node. If the directory exists, nothing will happen.
-	 * 
-	 * @param config the configuration of the node
-	 * @throws IOException if the directory could not be created
-	 * @throws NoSuchAlgorithmException if the signature algorithm required for the key of the node is not available
-	 * @throws InvalidKeyException if the key of the node cannot be encoded
-	 */
-	private void createWorkingDirectory(Config config) throws IOException, InvalidKeyException, NoSuchAlgorithmException {
-		Path dir = config.dir;
-
-		if (Files.exists(dir)) {
-			System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the node from the current content of \"" + dir + "\".|@"));
-			System.out.println(Ansi.AUTO.string("@|yellow If you want to start a blockchain from scratch, stop this process, delete \"" + dir + "\" and start again a node with --init.|@"));
-		}
-		else
-			Files.createDirectories(config.dir);
-	}
-
-	private void waitForKeyPress() {
-		try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-			System.out.println(Ansi.AUTO.string("@|green Press any key to stop the node.|@"));
-			reader.readLine();
-		}
-		catch (IOException e) {
-			throw new CommandException("Cannot access the standard input!", e);
-		}
+		new Run();
 	}
 
 	private String askForPassword() {
@@ -350,6 +124,236 @@ public class Start extends AbstractCommand {
 
 	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
 		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
+	}
+
+	private class Run {
+		private final KeyPair keyPair;
+		private final Config config;
+		private final List<Plot> plots = new ArrayList<>();
+		private final List<Miner> miners = new ArrayList<>();
+		private LocalNode node;
+
+		private Run() {
+			try {
+				this.keyPair = Entropies.load(key).keys(password, SignatureAlgorithms.ed25519(Function.identity()));
+			}
+			catch (IOException e) {
+				throw new CommandException("Cannot read the pem file " + key + "!", e);
+			}
+			catch (NoSuchAlgorithmException e) {
+				throw new CommandException("The ed25519 signature algorithm is not available!", e);
+			}
+
+			try {
+				this.config = getConfig();
+			}
+			catch (NoSuchAlgorithmException e) {
+				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to an unknown hashing algorithm!", e);
+			}
+			catch (FileNotFoundException e) {
+				throw new CommandException("The configuration file \"" + Start.this.config + "\" does not exist!", e);
+			}
+			catch (URISyntaxException e) {
+				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to a URI with wrong syntax!", e);
+			}
+
+			loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(0);
+		}
+
+		/**
+		 * Loads the plots, start a local miner on them and run a node with that miner.
+		 * 
+		 * @param pos the index to the next plot to load
+		 */
+		private void loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(int pos) {
+			if (pos < Start.this.plots.length) {
+				System.out.print("Loading " + Start.this.plots[pos] + "... ");
+				try (var plot = Plots.load(Start.this.plots[pos])) {
+					System.out.println("done.");
+					plots.add(plot);
+					loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+				}
+				catch (IOException e) {
+					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
+					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + Start.this.plots[pos] + "\"", e);
+					loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+				}
+				catch (NoSuchAlgorithmException e) {
+					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
+					LOGGER.log(Level.SEVERE, "the plot file \"" + Start.this.plots[pos] + "\" uses an unknown hashing algorithm", e);
+					loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+				}
+			}
+			else
+				createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices();
+		}
+
+		private void createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices() {
+			if (plots.isEmpty())
+				publishRemoteMinersStartNodeAndPublishNodeServices(0);
+			else {
+				if (plots.size() == 1)
+					System.out.print("Starting a local miner with 1 plot... ");
+				else
+					System.out.print("Starting a local miner with " + plots.size() + " plots... ");
+
+				try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
+					System.out.println("done.");
+					miners.add(miner);
+					publishRemoteMinersStartNodeAndPublishNodeServices(0);
+				}
+			}
+		}
+
+		private void publishRemoteMinersStartNodeAndPublishNodeServices(int pos) {
+			if (pos < minerPorts.length) {
+				System.out.print("Starting a remote miner listening at port " + minerPorts[pos] + " of localhost... ");
+				try (var remote = RemoteMiners.of(minerPorts[pos], config.chainId, keyPair.getPublic())) {
+					System.out.println("done.");
+					miners.add(remote);
+					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+				}
+				catch (IOException e) {
+					System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
+					LOGGER.log(Level.SEVERE, "I/O error while creating a remote miner at port " + minerPorts[pos], e);
+					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+				}
+				catch (DeploymentException e) {
+					System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
+					LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
+					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+				}
+				catch (IllegalArgumentException e) {
+					// for instance, the port number is illegal
+					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
+					LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
+					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+				}
+			}
+			else
+				startNodeAndPublishNodeServices();
+		}
+
+		private void startNodeAndPublishNodeServices() {
+			try {
+				createWorkingDirectory();
+			}
+			catch (IOException e) {
+				throw new CommandException("Cannot create the working directory " + config.dir + "!", e);
+			}
+			catch (NoSuchAlgorithmException e) {
+				throw new CommandException("The signature algorithm required for the key of the node is not available!", e);
+			}
+			catch (InvalidKeyException e) {
+				throw new CommandException("The key of the node could not be encoded!", e);
+			}
+
+			System.out.print("Starting a local node... ");
+			try (var node = this.node = LocalNodes.of(config, keyPair, new TestApplication(), init, miners.toArray(Miner[]::new))) {
+				System.out.println("done.");
+				publishPublicAndRestrictedNodeServices(0);
+			}
+			catch (NoSuchAlgorithmException e) {
+				throw new CommandException("The database refers to an unknown hashing algorithm!", e);
+			}
+			catch (DatabaseException | IOException e) {
+				throw new CommandException("The database seems corrupted!", e);
+			}
+			catch (InterruptedException e) {
+				// unexpected: who could interrupt this process?
+				throw new CommandException("Unexpected interruption!", e);
+			}
+			catch (AlreadyInitializedException e) {
+				throw new CommandException("The node is already initialized: delete \"" + config.dir + "\" and start again with --init", e);
+			}
+		}
+
+		private void publishPublicAndRestrictedNodeServices(int pos) {
+			if (pos < publicPorts.length) {
+				System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
+				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().whisperingMemorySize, Optional.ofNullable(uri))) {
+					System.out.println("done.");
+					publishPublicAndRestrictedNodeServices(pos + 1);
+				}
+				catch (IOException e) {
+					System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
+					LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + publicPorts[pos], e);
+					publishPublicAndRestrictedNodeServices(pos + 1);
+				}
+				catch (DeploymentException e) {
+					System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
+					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
+					publishPublicAndRestrictedNodeServices(pos + 1);
+				}
+				catch (IllegalArgumentException e) {
+					// for instance, the port number is illegal
+					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
+					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
+					publishPublicAndRestrictedNodeServices(pos + 1);
+				}
+				catch (InterruptedException e) {
+					throw new CommandException("The close operation of the service at port \" + publicPorts[pos] + \" got interrupted!", e);
+				}
+			}
+			else
+				publishRestrictedNodeServices(0);
+		}
+
+		private void publishRestrictedNodeServices(int pos) {
+			if (pos < restrictedPorts.length) {
+				System.out.print("Opening a restricted node service at port " + restrictedPorts[pos] + " of localhost... ");
+				try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
+					System.out.println("done.");
+					publishRestrictedNodeServices(pos + 1);
+				}
+				catch (IOException e) {
+					System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
+					LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + restrictedPorts[pos], e);
+					publishRestrictedNodeServices(pos + 1);
+				}
+				catch (DeploymentException e) {
+					System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
+					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
+					publishRestrictedNodeServices(pos + 1);
+				}
+				catch (IllegalArgumentException e) {
+					// for instance, the port number is illegal
+					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
+					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
+					publishRestrictedNodeServices(pos + 1);
+				}
+			}
+			else
+				waitForKeyPress();
+		}
+
+		/**
+		 * Creates the working directory for the node. If the directory exists, nothing will happen.
+		 * 
+		 * @throws IOException if the directory could not be created
+		 * @throws NoSuchAlgorithmException if the signature algorithm required for the key of the node is not available
+		 * @throws InvalidKeyException if the key of the node cannot be encoded
+		 */
+		private void createWorkingDirectory() throws IOException, InvalidKeyException, NoSuchAlgorithmException {
+			Path dir = config.dir;
+
+			if (Files.exists(dir)) {
+				System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the node from the current content of \"" + dir + "\".|@"));
+				System.out.println(Ansi.AUTO.string("@|yellow If you want to start a blockchain from scratch, stop this process, delete \"" + dir + "\" and start again a node with --init.|@"));
+			}
+			else
+				Files.createDirectories(dir);
+		}
+
+		private void waitForKeyPress() {
+			try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
+				System.out.println(Ansi.AUTO.string("@|green Press any key to stop the node.|@"));
+				reader.readLine();
+			}
+			catch (IOException e) {
+				throw new CommandException("Cannot access the standard input!", e);
+			}
+		}
 	}
 
 	private static class TestApplication implements Application {

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.io.IOException;
+import java.security.PublicKey;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -49,14 +50,36 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	 */
 	private final int port;
 
+	/**
+	 * The chain identifier of the blockchain for which the deadlines will be used.
+	 */
+	private final String chainId;
+
+	/**
+	 * The public key of the node for which the deadlines are computed.
+	 */
+	private final PublicKey nodePublicKey;
+
 	private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
 
 	private final ListOfMiningRequests requests = new ListOfMiningRequests(10);
 
 	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
 
-	public RemoteMinerImpl(int port) throws DeploymentException, IOException {
+	/**
+	 * Creates a remote miner.
+	 * 
+	 * @param port the port where the remote miner will receive the deadlines
+	 * @param chainId the chain identifier of the blockchain for which the deadlines will be used
+	 * @param nodePublicKey the public key of the node for which the deadlines are computed
+	 * @throws DeploymentException if the miner cannot be deployed
+	 * @throws IOException if an I/O error occurs
+	 */
+	public RemoteMinerImpl(int port, String chainId, PublicKey nodePublicKey) throws DeploymentException, IOException {
 		this.port = port;
+		this.chainId = chainId;
+		this.nodePublicKey = nodePublicKey;
+
 		startContainer("", port, RemoteMinerEndpoint.config(this));
     	LOGGER.info("published a remote miner at ws://localhost:" + port);
 	}
@@ -100,7 +123,10 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		LOGGER.info("miner service " + session.getId() + ": unbound");
 	}
 
-	void processDeadline(Deadline deadline) {
+	private void processDeadline(Deadline deadline) {
+		// TODO
+		// we avoid sending back illegal deadlines, since otherwise we take the risk
+		// of being banned by the node we are working for
 		LOGGER.info("notifying deadline: " + deadline);
 		requests.runAllActionsFor(deadline);
 	}
@@ -110,11 +136,11 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	 */
 	public static class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
-		@SuppressWarnings("resource")
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-	    	getServer().addSession(session);
-	    	addMessageHandler(session, getServer()::processDeadline);
+			var server = getServer();
+	    	server.addSession(session);
+	    	addMessageHandler(session, server::processDeadline);
 	    }
 
 	    @Override
@@ -122,7 +148,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	    	getServer().removeSession(session);
 	    }
 
-		static ServerEndpointConfig config(RemoteMinerImpl server) {
+		private static ServerEndpointConfig config(RemoteMinerImpl server) {
 			return simpleConfig(server, RemoteMinerEndpoint.class, "/", Deadlines.Decoder.class, DeadlineDescriptions.Encoder.class);
 		}
 	}

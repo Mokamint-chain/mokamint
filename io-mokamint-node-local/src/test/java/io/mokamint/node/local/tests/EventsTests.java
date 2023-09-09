@@ -87,6 +87,7 @@ public class EventsTests {
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
 			.setDir(dir)
+			.setChainId("octopus")
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
 			.build();
 	}
@@ -120,7 +121,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), nodeKey, app, true, myMiner);
 			}
 
@@ -169,7 +170,7 @@ public class EventsTests {
 	
 		class MyLocalNode extends LocalNodeImpl {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), nodeKey, app, true, myMiner);
 			}
 	
@@ -195,7 +196,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, InterruptedException, AlreadyInitializedException {
+			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), nodeKey, app, true, new Miner[0]);
 			}
 
@@ -222,7 +223,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(mkConfig(dir), nodeKey, app, true, myMiner);
 			}
 
@@ -279,7 +280,7 @@ public class EventsTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, URISyntaxException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 				super(config, nodeKey, app, true, myMiner);
 			}
 

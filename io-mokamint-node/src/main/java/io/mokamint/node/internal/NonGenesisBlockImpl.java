@@ -227,7 +227,17 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
 		builder.append("* acceleration: " + getAcceleration() + "\n");
 		builder.append("* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + "\n");
-		builder.append("* deadline: " + deadline);
+		builder.append("* deadline:\n");
+		builder.append("  * prolog:\n");
+		var prolog = deadline.getProlog();
+		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
+		builder.append("    * node's public key: " + prolog.getNodePublicKeyBase58() + "\n");
+		builder.append("    * plot's public key: " + prolog.getPlotPublicKeyBase58() + "\n");
+		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
+		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
+		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()) + "\n");
+		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
+		builder.append("  * value: " + Hex.toHexString(deadline.getValue()));
 	}
 
 	@Override

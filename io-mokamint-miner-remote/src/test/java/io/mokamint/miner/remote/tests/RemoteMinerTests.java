@@ -48,17 +48,18 @@ public class RemoteMinerTests {
 
 	@Test
 	@DisplayName("if a deadline description is requested to a remote miner, it gets forwarded to the connected service(s)")
-	public void remoteMinerForwardsToServices() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
+	public void remoteMinerForwardsToServices() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 
 		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = received -> {
 			if (description.equals(received))
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025);
+		try (var remote = RemoteMiners.of(8025, "chainid", ed25519.getKeyPair().getPublic());
 			 var client1 = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived);
 			 var client2 = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
 			remote.requestDeadline(description, deadline -> {});
@@ -77,8 +78,9 @@ public class RemoteMinerTests {
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var nodePublicKey = ed25519.getKeyPair().getPublic();
+		var prolog = Prologs.of("octopus", nodePublicKey, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
@@ -86,7 +88,7 @@ public class RemoteMinerTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
+		try (var remote = RemoteMiners.of(8025, "octopus", nodePublicKey); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
 			remote.requestDeadline(description, onDeadlineReceived);
 			remote.requestDeadline(description, onDeadlineReceived);
 			client.send(deadline);
@@ -105,8 +107,9 @@ public class RemoteMinerTests {
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var nodePublicKey = ed25519.getKeyPair().getPublic();
+		var prolog = Prologs.of("octopus", nodePublicKey, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber + 1, data, shabal256); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
@@ -114,7 +117,7 @@ public class RemoteMinerTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
+		try (var remote = RemoteMiners.of(8025, "octopus", nodePublicKey); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
 			remote.requestDeadline(description, onDeadlineReceived);
 			client.send(deadline);
 			assertFalse(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
@@ -123,13 +126,16 @@ public class RemoteMinerTests {
 
 	@Test
 	@DisplayName("if a client has been closed, it does not receive descriptions anymore")
-	public void remoteMinerDoesNotForwardDescriptionToClosedClient() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
+	public void remoteMinerDoesNotForwardDescriptionToClosedClient() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = _description -> semaphore.release();
 
-		try (var remote = RemoteMiners.of(8025); var client = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
+		try (var remote = RemoteMiners.of(8025, "chainid", ed25519.getKeyPair().getPublic());
+			 var client = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
+
 			client.close();
 			remote.requestDeadline(description, _deadline -> {});
 			assertFalse(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));

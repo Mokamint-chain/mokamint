@@ -63,6 +63,7 @@ import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.service.api.PublicNodeService;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -429,6 +430,27 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public Blockchain getBlockchain() {
 		return blockchain;
+	}
+
+	/**
+	 * Determines if a deadline is legal for this node. This means that:
+	 * <ul>
+	 * <li> it is valid
+	 * <li> its prolog specifies the same chain identifier as the node
+	 * <li> its prolog uses a node's public key that coincides with that of the node
+	 * <li> the extra bytes of the prolog are valid for the application
+	 * </ul>
+	 * 
+	 * @param deadline the deadline to check
+	 * @return true if and only if all the above conditions hold
+	 */
+	public boolean isLegal(Deadline deadline) {
+		var prolog = deadline.getProlog();
+
+		return deadline.isValid() &&
+			prolog.getChainId().equals(config.chainId) &&
+			prolog.getNodePublicKey().equals(keyPair.getPublic()) &&
+			app.prologExtraIsValid(prolog.getExtra());
 	}
 
 	/**

@@ -27,7 +27,9 @@ import jakarta.websocket.DeploymentException;
 /**
  * Providers of miner services.
  */
-public interface MinerServices {
+public final class MinerServices {
+
+	private MinerServices() {}
 
 	/**
 	 * Opens and yields a new miner service that adapts the given miner and connects it to the given URI of a remote miner.
@@ -38,7 +40,7 @@ public interface MinerServices {
 	 * @throws IOException if an I/O error occurs
 	 * @throws DeploymentException if the service cannot be deployed
 	 */
-	static MinerService open(Miner miner, URI uri) throws DeploymentException, IOException {
+	public static MinerService open(Miner miner, URI uri) throws DeploymentException, IOException {
 		return new MinerServiceImpl(miner, uri);
 	}
 }
