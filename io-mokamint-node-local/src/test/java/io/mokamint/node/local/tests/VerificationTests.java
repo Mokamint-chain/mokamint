@@ -42,7 +42,6 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,6 +52,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -63,6 +63,7 @@ import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
@@ -73,14 +74,18 @@ public class VerificationTests {
 	 */
 	private static Plot plot;
 
+	/**
+	 * The prolog of the deadlines.
+	 */
+	private static Prolog prolog;
+
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
+		prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
-
 		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, hashing, __ -> {});
 	}
 
@@ -95,6 +100,7 @@ public class VerificationTests {
 		var config = Config.Builder.defaults()
 				.setDir(dir)
 				.setBlockMaxTimeInTheFuture(1000)
+				.setChainId("octopus")
 				.build();
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -103,20 +109,14 @@ public class VerificationTests {
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block = Blocks.of(1, BigInteger.TEN, config.blockMaxTimeInTheFuture + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Too much in the future"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Too much in the future"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
@@ -124,6 +124,7 @@ public class VerificationTests {
 	public void genesisTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = Config.Builder.defaults()
 			.setDir(dir)
+			.setChainId("octopus")
 			.setBlockMaxTimeInTheFuture(1000)
 			.build();
 		var blockchain = mkTestBlockchain(config);
@@ -132,23 +133,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis1));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(genesis2));
-		assertTrue(e.getMessage().contains("Too much in the future"));
-		assertEquals(genesis1, blockchain.getGenesis().get());
-		assertEquals(genesis1, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis1.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Too much in the future"));
+		assertBlockchainIsJustGenesis(blockchain, genesis1, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent height, verification rejects it")
 	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -161,23 +153,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Height mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Height mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent acceleration, verification rejects it")
 	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -190,23 +173,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Acceleration mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Acceleration mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent power, verification rejects it")
 	public void powerMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -219,23 +193,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Power mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Power mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent total waiting time, verification rejects it")
 	public void totalWaitingTimeMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -248,23 +213,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Total waiting time mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Total waiting time mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's scoop number, verification rejects it")
 	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -279,23 +235,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Deadline mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Deadline mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's data, verification rejects it")
 	public void deadlineDataMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -313,23 +260,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Deadline mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Deadline mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's hashing algorithm, verification rejects it")
 	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -346,59 +284,55 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Deadline mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Deadline mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
-	// TODO: BlockVerification must add checks on chain id and block's signature
 	@Test
-	@Disabled
-	@DisplayName("if an added non-genesis block has the wrong deadline's prolog, verification rejects it")
-	public void deadlinePrologMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+	@DisplayName("if an added non-genesis block has the wrong deadline's prolog chain identifier, verification rejects it")
+	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException {
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
 		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
 		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
 
-		// we replace the prolog
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
 		// we create a different prolog
-		var prolog = Prologs.of("octopus+", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
-		var modifiedDeadline = Deadlines.of(prolog, deadline.getProgressive(), deadline.getValue(),
+		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getNodePublicKey(), prolog.getPlotPublicKey(), prolog.getExtra());
+		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
 				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Deadline prolog mismatch"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Deadline prolog's chainId mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has a wrong deadline's prolog extra, verification rejects it")
+	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException {
+		var config = mkConfig(dir);
+		var application = mock(Application.class);
+		when(application.prologExtraIsValid(any())).thenReturn(false);
+		var blockchain = mkTestBlockchain(config, application);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.getHashingForBlocks(), hashingForDeadlines);
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(expected));
+		assertTrue(e.getMessage().startsWith("Invalid deadline prolog's extra"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has an invalid deadline progressive, verification rejects it")
 	public void invalidDeadlineProgressiveGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -413,23 +347,14 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Invalid deadline"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Invalid deadline"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block has an invalid deadline value, verification rejects it")
 	public void invalidDeadlineValueGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
-		var config = Config.Builder.defaults()
-				.setDir(dir)
-				// we effectively disable the time check
-				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
-				.build();
-
+		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -446,23 +371,32 @@ public class VerificationTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().contains("Invalid deadline"));
-		assertEquals(genesis, blockchain.getGenesis().get());
-		assertEquals(genesis, blockchain.getHead().get());
-		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertTrue(e.getMessage().startsWith("Invalid deadline"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
+	}
+
+	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
+		return Config.Builder.defaults()
+				.setDir(dir)
+				// we effectively disable the time check
+				.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+				.setChainId("octopus")
+				.build();
 	}
 
 	private static Blockchain mkTestBlockchain(Config config) throws DatabaseException {
+		var application = mock(Application.class);
+		when(application.prologExtraIsValid(any())).thenReturn(true);
+
+		return mkTestBlockchain(config, application);
+	}
+
+	private static Blockchain mkTestBlockchain(Config config, Application application) throws DatabaseException {
 		var peers = mock(NodePeers.class);
 		doAnswer(returnsFirstArg())
 			.when(peers)
 			.asNetworkDateTime(any());
 	
-		var application = mock(Application.class);
-		when(application.prologExtraIsValid(any())).thenReturn(true);
-
 		var node = mock(LocalNodeImpl.class);
 		when(node.getConfig()).thenReturn(config);
 		when(node.getApplication()).thenReturn(application);
@@ -473,6 +407,14 @@ public class VerificationTests {
 		when(node.getBlockchain()).thenReturn(blockchain);
 	
 		return blockchain;
+	}
+
+	private void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis, Config config) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+		assertEquals(genesis, blockchain.getGenesis().get());
+		assertEquals(genesis, blockchain.getHead().get());
+		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
+		assertEquals(1, chain.length);
+		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
 	}
 
 	static {

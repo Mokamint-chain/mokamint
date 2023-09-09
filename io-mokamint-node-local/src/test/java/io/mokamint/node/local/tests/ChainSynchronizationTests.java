@@ -129,6 +129,7 @@ public class ChainSynchronizationTests {
 	private Config mkConfig(Path chainDir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
 			.setDir(chainDir)
+			.setChainId("octopus")
 			.setTargetBlockCreationTime(300L)
 			.setInitialAcceleration(1000000000000000L)
 			.build();

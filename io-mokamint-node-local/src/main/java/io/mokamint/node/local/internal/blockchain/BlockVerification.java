@@ -29,6 +29,7 @@ import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Prolog;
 
 /**
  * A verifier of the consensus rules of the blocks that gets added to a blockchain.
@@ -132,8 +133,13 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineHasValidProlog() throws VerificationException {
-		if (!node.getApplication().prologExtraIsValid(deadline.getProlog().getExtra()))
-			throw new VerificationException("Deadline prolog mismatch");
+		Prolog prolog = deadline.getProlog();
+
+		if (!prolog.getChainId().equals(config.chainId))
+			throw new VerificationException("Deadline prolog's chainId mismatch");
+
+		if (!node.getApplication().prologExtraIsValid(prolog.getExtra()))
+			throw new VerificationException("Invalid deadline prolog's extra");
 	}
 
 	/**

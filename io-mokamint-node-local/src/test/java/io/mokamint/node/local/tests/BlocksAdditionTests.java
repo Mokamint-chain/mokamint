@@ -101,6 +101,7 @@ public class BlocksAdditionTests {
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
 		return Config.Builder.defaults()
 			.setDir(dir)
+			.setChainId("octopus")
 			// we effectively disable the time check
 			.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
 			.build();
