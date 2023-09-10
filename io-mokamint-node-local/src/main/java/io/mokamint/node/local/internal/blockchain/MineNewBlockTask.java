@@ -183,7 +183,7 @@ public class MineNewBlockTask implements Task {
 
 		@Override
 		public String toString() {
-			return "miner " + miner + " misbehavior event [-" + points + " points]";
+			return "miner " + miner.getUUID() + " misbehavior event [-" + points + " points]";
 		}
 
 		@Override
@@ -208,7 +208,7 @@ public class MineNewBlockTask implements Task {
 
 		@Override
 		public String toString() {
-			return "miner " + miner + " computed illegal deadline event [-" + points + " points]";
+			return "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]";
 		}
 	}
 

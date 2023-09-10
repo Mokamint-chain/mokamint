@@ -20,6 +20,7 @@ import io.mokamint.node.tools.internal.Chain;
 import io.mokamint.node.tools.internal.Config;
 import io.mokamint.node.tools.internal.Info;
 import io.mokamint.node.tools.internal.Keys;
+import io.mokamint.node.tools.internal.Miners;
 import io.mokamint.node.tools.internal.Peers;
 import io.mokamint.node.tools.internal.Start;
 import io.mokamint.tools.AbstractTool;
@@ -41,6 +42,7 @@ import picocli.CommandLine.Command;
 		Config.class,
 		Info.class,
 		Keys.class,
+		Miners.class,
 		Peers.class,
 		Start.class
 	}

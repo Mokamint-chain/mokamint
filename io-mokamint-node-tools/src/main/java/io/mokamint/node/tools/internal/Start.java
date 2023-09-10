@@ -63,7 +63,7 @@ public class Start extends AbstractCommand {
 	@Parameters(index = "0", description = "the key of the node, used to sign the blocks that it mines")
 	private Path key;
 
-	@Parameters(index = "1", description = "plot files that will be used for local mining")
+	@Parameters(index = "1..", description = "plot files that will be used for local mining")
 	private Path[] plots;
 
 	@Option(names = "--config", description = "the toml config file of the node; if missing, defaults are used")
