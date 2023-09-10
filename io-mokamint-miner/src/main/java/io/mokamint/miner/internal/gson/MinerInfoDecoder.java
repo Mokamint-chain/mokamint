@@ -14,11 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package io.mokamint.miner.internal.gson;
+
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.miner.MinerInfos;
+import io.mokamint.miner.api.MinerInfo;
+
 /**
- * This module defines the API of a Mokamint miner.
+ * A decoder for {@link MinerInfo}.
  */
-module io.mokamint.miner.api {
-	exports io.mokamint.miner.api;
-	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.annotations;
+public class MinerInfoDecoder extends MappedDecoder<MinerInfo, MinerInfos.Json> {
+
+	public MinerInfoDecoder() {
+		super(MinerInfos.Json.class);
+	}
 }

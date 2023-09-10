@@ -14,15 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.internal.gson;
+/**
+ * This module implements shared code about the miners.
+ */
+module io.mokamint.miner {
+	exports io.mokamint.miner;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.MinerInfos;
-import io.mokamint.node.api.MinerInfo;
+	// beans must be accessible, encoded and decoded by reflection through Gson
+	opens io.mokamint.miner.internal to com.google.gson;
+	opens io.mokamint.miner.internal.gson to com.google.gson;
 
-public class MinerInfoEncoder extends MappedEncoder<MinerInfo, MinerInfos.Json> {
-
-	public MinerInfoEncoder() {
-		super(MinerInfos.Json::new);
-	}
+	requires transitive io.mokamint.miner.api;
+	requires io.hotmoka.annotations;
+	requires io.hotmoka.websockets.beans;
+	requires com.google.gson;
+	requires java.logging;
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tests;
+package io.mokamint.miner.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,7 +27,7 @@ import java.util.logging.LogManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.mokamint.node.MinerInfos;
+import io.mokamint.miner.MinerInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 

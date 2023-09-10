@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-miner-api</artifactId>
-  <name>io-mokamint-miner-api</name>
+<artifactId>io-mokamint-miner</artifactId>
+  <name>io-mokamint-miner</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module defines the API of a Mokamint miner.</description>
+  <description>This module implements shared code about the miners.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -15,14 +15,14 @@
 
   <dependencies>
     <dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-nonce-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-annotations</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka.websockets</groupId>
+      <artifactId>io-hotmoka-websockets-beans</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
     </dependency>
   </dependencies>
 

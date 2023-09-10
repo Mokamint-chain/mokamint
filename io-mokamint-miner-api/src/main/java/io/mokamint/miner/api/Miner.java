@@ -18,6 +18,7 @@ package io.mokamint.miner.api;
 
 import java.util.function.Consumer;
 
+import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
@@ -27,8 +28,17 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * typically, the construction method requires a consumer of the deadline
  * to be specified.
  */
+@ThreadSafe
 public interface Miner extends AutoCloseable {
-	
+
+	/**
+	 * Yields information about this miner.
+	 * 
+	 * @return the information
+	 */
+	// TODO
+	//MinerInfo getInfo();
+
 	/**
 	 * Request to the miner the computation of a deadline.
 	 * 

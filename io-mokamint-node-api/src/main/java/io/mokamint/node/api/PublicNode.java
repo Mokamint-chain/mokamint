@@ -53,7 +53,7 @@ public interface PublicNode extends Node {
 	/**
 	 * Yields information about the peers this node is connected to. There is a dynamic
 	 * set of peers connected to a node, potentially zero or more peers.
-	 * Peers might be connected or disconnected to the node at the moment.
+	 * Peers might be connected or disconnected to the node at any moment.
 	 * 
 	 * @return the peers information
 	 * @throws TimeoutException if no answer arrives before a time window
@@ -61,6 +61,18 @@ public interface PublicNode extends Node {
 	 * @throws ClosedNodeException if the node is closed
 	 */
 	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
+	 * Yields information about the miners this node uses. A node uses a dynamic,
+	 * potentially empty set of miners. Miners might be added or removed from a node at any moment.
+	 * 
+	 * @return the miners information
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	// TODO
+	//Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the current chain of this node.

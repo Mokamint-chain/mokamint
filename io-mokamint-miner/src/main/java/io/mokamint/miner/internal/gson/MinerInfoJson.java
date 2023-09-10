@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.internal.gson;
+package io.mokamint.miner.internal.gson;
 
 import java.util.UUID;
 
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.MinerInfos;
-import io.mokamint.node.api.MinerInfo;
+import io.mokamint.miner.MinerInfos;
+import io.mokamint.miner.api.MinerInfo;
 
 /**
  * The JSON representation of a {@link MinerInfo}.
