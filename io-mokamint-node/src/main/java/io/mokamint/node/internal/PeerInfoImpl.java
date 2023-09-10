@@ -16,17 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.AbstractMarshallable;
-import io.hotmoka.marshalling.UnmarshallingContexts;
-import io.hotmoka.marshalling.api.MarshallingContext;
-import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 
@@ -34,7 +26,7 @@ import io.mokamint.node.api.PeerInfo;
  * An implementation of peer information.
  */
 @Immutable
-public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
+public class PeerInfoImpl implements PeerInfo {
 	private final Peer peer;
 	private final long points;
 	private final boolean connected;
@@ -100,38 +92,5 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 	@Override
 	public String toString() {
 		return peer + ", points = " + points + ", connected: " + connected;
-	}
-
-	@Override
-	public void into(MarshallingContext context) throws IOException {
-		peer.into(context);
-		context.writeLong(points);
-		context.writeBoolean(connected);
-	}
-
-	/**
-	 * Unmarshals a peer information object from the given bytes.
-	 * 
-	 * @param bytes the bytes
-	 * @return the peer information
-	 * @throws IOException if the peer information cannot be unmarshalled
-	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
-	 */
-	public static PeerInfoImpl from(byte[] bytes) throws IOException, URISyntaxException {
-		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
-			return from(context);
-		}
-	}
-
-	/**
-	 * Unmarshals a peer information object from the given context.
-	 * 
-	 * @param context the context
-	 * @return the peer information
-	 * @throws IOException if the peer information cannot be unmarshalled
-	 * @throws URISyntaxException if the context contains a URI with illegal syntax
-	 */
-	public static PeerInfoImpl from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return new PeerInfoImpl(Peers.from(context), context.readLong(), context.readBoolean());
 	}
 }

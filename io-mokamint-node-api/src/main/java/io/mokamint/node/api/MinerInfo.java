@@ -43,7 +43,7 @@ public interface MinerInfo extends Comparable<MinerInfo> {
 	long getPoints();
 
 	/**
-	 * Yields a miner-specific description of the miner.
+	 * Yields a description of the miner.
 	 * 
 	 * @return the description
 	 */

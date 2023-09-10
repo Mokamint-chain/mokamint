@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * Information about a peer of a node. Peer information is ordered first
@@ -25,7 +24,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * by points (decreasing), then by peer and finally by local date and time.
  */
 @Immutable
-public interface PeerInfo extends Marshallable, Comparable<PeerInfo> {
+public interface PeerInfo extends Comparable<PeerInfo> {
 
 	/**
 	 * Yields the peer described by this information.

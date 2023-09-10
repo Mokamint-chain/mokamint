@@ -16,10 +16,6 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
-import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.internal.PeerInfoImpl;
@@ -28,7 +24,7 @@ import io.mokamint.node.internal.gson.PeerInfoEncoder;
 import io.mokamint.node.internal.gson.PeerInfoJson;
 
 /**
- * Providers of peer informations.
+ * Providers of peer information objects.
  */
 public abstract class PeerInfos {
 
@@ -44,30 +40,6 @@ public abstract class PeerInfos {
 	 */
 	public static PeerInfo of(Peer peer, long points, boolean connected) {
 		return new PeerInfoImpl(peer, points, connected);
-	}
-
-	/**
-	 * Unmarshals a peer information object from the given bytes.
-	 * 
-	 * @param bytes the bytes
-	 * @return the peer information object
-	 * @throws IOException if the peer information cannot be unmarshalled
-	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
-	 */
-	public static PeerInfo from(byte[] bytes) throws IOException, URISyntaxException {
-		return PeerInfoImpl.from(bytes);
-	}
-
-	/**
-	 * Unmarshals a peer information object from the given context.
-	 * 
-	 * @param context the context
-	 * @return the peer information
-	 * @throws IOException if the peer information cannot be unmarshalled
-	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
-	 */
-	public static PeerInfo from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return PeerInfoImpl.from(context);
 	}
 
 	/**
