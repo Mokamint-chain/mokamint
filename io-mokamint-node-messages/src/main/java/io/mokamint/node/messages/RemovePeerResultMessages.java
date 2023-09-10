@@ -32,11 +32,12 @@ public final class RemovePeerResultMessages {
 	/**
 	 * Yields an {@link RemovePeerResultMessage}.
 	 * 
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static RemovePeerResultMessage of(String id) {
-		return new RemovePeerResultMessageImpl(id);
+	public static RemovePeerResultMessage of(boolean result, String id) {
+		return new RemovePeerResultMessageImpl(result, id);
 	}
 
 	/**

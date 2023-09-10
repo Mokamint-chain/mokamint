@@ -26,21 +26,34 @@ import io.mokamint.node.messages.api.AddPeerResultMessage;
 public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddPeerResultMessage {
 
 	/**
+	 * The result of the call.
+	 */
+	private final boolean result;
+
+	/**
 	 * Creates the message.
 	 * 
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public AddPeerResultMessageImpl(String id) {
+	public AddPeerResultMessageImpl(boolean result, String id) {
 		super(id);
+
+		this.result = result;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddPeerResultMessage && super.equals(other);
+		return other instanceof AddPeerResultMessage aprm && super.equals(other) && result == aprm.get().booleanValue();
 	}
 
 	@Override
 	protected String getExpectedType() {
 		return AddPeerResultMessage.class.getName();
+	}
+
+	@Override
+	public Boolean get() {
+		return result;
 	}
 }

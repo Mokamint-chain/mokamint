@@ -52,6 +52,26 @@ public class NodeMiners {
 	}
 
 	/**
+	 * Adds the given miner to this container, if it was not already there.
+	 * 
+	 * @param miner the miner to add
+	 * @return true if and only if the miner has been added
+	 */
+	public boolean add(Miner miner) {
+		return miners.add(miner);
+	}
+
+	/**
+	 * Removes the given miner from this container, if it was there.
+	 * 
+	 * @param miner the miner to remove
+	 * @return true if and only if the miner has been removed
+	 */
+	public boolean remove(Miner miner) {
+		return miners.remove(miner);
+	}
+
+	/**
 	 * Punishes a miner, by reducing its points. If the miner reaches zero points,
 	 * it gets removed from this container. If the miner was not present in this
 	 * container, nothing happens.

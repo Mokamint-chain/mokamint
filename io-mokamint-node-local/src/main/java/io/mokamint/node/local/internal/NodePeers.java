@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
 import static java.util.function.Predicate.not;
 
 import java.io.IOException;
@@ -30,7 +29,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -50,8 +48,8 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -185,7 +183,7 @@ public class NodePeers implements AutoCloseable {
 		}
 		else {
 			// we uncheck the exceptions of onAdd
-			boolean result = check2(TimeoutException.class,
+			boolean result = CheckSupplier.check(TimeoutException.class,
 					InterruptedException.class,
 					IOException.class,
 					PeerRejectedException.class,
@@ -212,8 +210,8 @@ public class NodePeers implements AutoCloseable {
 	 * @throws IOException if an I/O exception occurred while contacting the peer
 	 */
 	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		// we uncheck the exceptions of onRemove
-		return check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.remove(peer));
+		// we check the exceptions of onRemove
+		return CheckSupplier.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.remove(peer));
 	}
 
 	/**
@@ -442,41 +440,11 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.punish(peer, config.peerPunishmentForUnreachable));
+		CheckRunnable.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.punish(peer, config.peerPunishmentForUnreachable));
 	}
 
 	public void pardonBecauseReachable(Peer peer) {
 		peers.pardon(peer, config.peerPunishmentForUnreachable);
-	}
-
-	// TODO: remove after pushing the new hotmoka jars to Maven Central
-	@SuppressWarnings("unchecked")
-	private static <R, T1 extends Throwable, T2 extends Throwable, T3 extends Throwable, T4 extends Throwable, T5 extends Throwable, T6 extends Throwable, T7 extends Throwable>
-			R check2(Class<T1> exception1, Class<T2> exception2, Class<T3> exception3, Class<T4> exception4, Class<T5> exception5, Class<T6> exception6, Class<T7> exception7,
-					Supplier<R> supplier) throws T1, T2, T3, T4, T5, T6, T7 {
-	
-		try {
-			return supplier.get();
-		}
-		catch (UncheckedException e) {
-			var cause = e.getCause();
-			if (exception1.isInstance(cause))
-				throw (T1) cause;
-			else if (exception2.isInstance(cause))
-				throw (T2) cause;
-			else if (exception3.isInstance(cause))
-				throw (T3) cause;
-			else if (exception4.isInstance(cause))
-				throw (T4) cause;
-			else if (exception5.isInstance(cause))
-				throw (T5) cause;
-			else if (exception6.isInstance(cause))
-				throw (T6) cause;
-			else if (exception7.isInstance(cause))
-				throw (T7) cause;
-			else
-				throw e;
-		}
 	}
 
 	/**
@@ -538,7 +506,7 @@ public class NodePeers implements AutoCloseable {
 		else {
 			try {
 				// we do not spawn an event since we will spawn one at the end for all peers
-				return check2(TimeoutException.class,
+				return CheckSupplier.check(TimeoutException.class,
 						ClosedNodeException.class,
 						ClosedDatabaseException.class,
 						InterruptedException.class,

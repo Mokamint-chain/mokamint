@@ -32,11 +32,12 @@ public final class AddPeerResultMessages {
 	/**
 	 * Yields an {@link AddPeerResultMessage}.
 	 * 
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static AddPeerResultMessage of(String id) {
-		return new AddPeerResultMessageImpl(id);
+	public static AddPeerResultMessage of(boolean result, String id) {
+		return new AddPeerResultMessageImpl(result, id);
 	}
 
 	/**

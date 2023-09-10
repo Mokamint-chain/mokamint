@@ -66,13 +66,17 @@ public class RestrictedNodeServiceTests {
 		}
 
 		@Override
-		public void add(Peer received) throws TimeoutException, InterruptedException {
+		public boolean add(Peer received) throws TimeoutException, InterruptedException {
 			if (allPeers.remove(received))
 				semaphore.release();
+
+			return true;
 		}
 
 		@Override
-		public void remove(Peer peer) {}
+		public boolean remove(Peer peer) {
+			return true;
+		}
 
 		@Override
 		public void addOnClosedHandler(CloseHandler handler) {}

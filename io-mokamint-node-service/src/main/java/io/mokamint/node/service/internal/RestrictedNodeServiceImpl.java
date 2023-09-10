@@ -117,15 +117,17 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		LOGGER.info(logPrefix + "received an " + ADD_PEER_ENDPOINT + " request");
 
 		try {
+			boolean result;
+
 			try {
-				node.add(message.getPeer());
+				result = node.add(message.getPeer());
 			}
 			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}
 
-			sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
+			sendObjectAsync(session, AddPeerResultMessages.of(result, message.getId()));
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
@@ -136,14 +138,17 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		LOGGER.info(logPrefix + "received a " + REMOVE_PEER_ENDPOINT + " request");
 
 		try {
+			boolean result;
+
 			try {
-				node.remove(message.getPeer());
+				result = node.remove(message.getPeer());
 			}
 			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException e) {
 				sendExceptionAsync(session, e, message.getId());
+				return;
 			}
 
-			sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
+			sendObjectAsync(session, RemovePeerResultMessages.of(result, message.getId()));
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());

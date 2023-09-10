@@ -127,12 +127,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onException(ExceptionMessage message) {}
 
 	@Override
-	public void add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public boolean add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddPeer(peer, id);
 		try {
-			queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
+			return queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerRejectedException e) {
 			throw e;
@@ -150,8 +150,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
-	private AddPeerResultMessage processAddPeerSuccess(RpcMessage message) {
-		return message instanceof AddPeerResultMessage aprm ? aprm : null;
+	private Boolean processAddPeerSuccess(RpcMessage message) {
+		return message instanceof AddPeerResultMessage aprm ? aprm.get() : null;
 	}
 
 	private boolean processAddPeerException(ExceptionMessage message) {
@@ -163,12 +163,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public void remove(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, IOException {
+	public boolean remove(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, IOException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendRemovePeer(peer, id);
 		try {
-			queues.waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
+			return queues.waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
 		}
 		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 			throw e;
@@ -186,8 +186,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
-	private RemovePeerResultMessage processRemovePeerSuccess(RpcMessage message) {
-		return message instanceof RemovePeerResultMessage rprm ? rprm : null;
+	private Boolean processRemovePeerSuccess(RpcMessage message) {
+		return message instanceof RemovePeerResultMessage rprm ? rprm.get() : null;
 	}
 
 	private boolean processRemovePeerException(ExceptionMessage message) {

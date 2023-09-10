@@ -63,34 +63,33 @@ public class Start extends AbstractCommand {
 				throw new CommandException("The default URI is unexpectedly illegal!", e);
 			}
 
-		loadPlotsAndStartMiningServices(plots, 0, new ArrayList<>());
+		loadPlotsAndStartMiningServices(0, new ArrayList<>());
 	}
 
 	/**
 	 * Loads the given plots, start a local miner on them and run a node
 	 * with that miner.
 	 * 
-	 * @param paths the paths to the plots to load
 	 * @param pos the index to the next plot to load
 	 * @param plots the plots that are being loaded
 	 */
-	private void loadPlotsAndStartMiningServices(Path[] paths, int pos, List<Plot> plots) {
-		if (pos < paths.length) {
-			System.out.print(Ansi.AUTO.string("@|blue Loading " + paths[pos] + "... |@"));
-			try (var plot = Plots.load(paths[pos])) {
+	private void loadPlotsAndStartMiningServices(int pos, List<Plot> plots) {
+		if (pos < this.plots.length) {
+			System.out.print(Ansi.AUTO.string("@|blue Loading " + this.plots[pos] + "... |@"));
+			try (var plot = Plots.load(this.plots[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				plots.add(plot);
-				loadPlotsAndStartMiningServices(paths, pos + 1, plots);
+				loadPlotsAndStartMiningServices(pos + 1, plots);
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + paths[pos] + "\"", e);
-				loadPlotsAndStartMiningServices(paths, pos + 1, plots);
+				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + this.plots[pos] + "\"", e);
+				loadPlotsAndStartMiningServices(pos + 1, plots);
 			}
 			catch (NoSuchAlgorithmException e) {
 				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-				LOGGER.log(Level.SEVERE, "the plot file \"" + paths[pos] + "\" uses an unknown hashing algorithm", e);
-				loadPlotsAndStartMiningServices(paths, pos + 1, plots);
+				LOGGER.log(Level.SEVERE, "the plot file \"" + this.plots[pos] + "\" uses an unknown hashing algorithm", e);
+				loadPlotsAndStartMiningServices(pos + 1, plots);
 			}
 		}
 		else if (plots.isEmpty()) {
@@ -98,29 +97,29 @@ public class Start extends AbstractCommand {
 		}
 		else {
 			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
-				startMiningServices(uris, 0, false, miner);
+				startMiningServices(0, false, miner);
 			}
 		}
 	}
 
-	private void startMiningServices(URI[] uris, int pos, boolean atLeastOne, Miner miner) {
+	private void startMiningServices(int pos, boolean atLeastOne, Miner miner) {
 		if (pos < uris.length) {
 			System.out.print(Ansi.AUTO.string("@|blue Connecting to " + uris[pos] + "... |@"));
 
 			try (var service = MinerServices.open(miner, uris[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-				startMiningServices(uris, pos + 1, true, miner);
+				startMiningServices(pos + 1, true, miner);
 				service.waitUntilDisconnected();
 			}
 			catch (DeploymentException e) {
 				System.out.println(Ansi.AUTO.string("@|red failed to deploy! Is " + uris[pos] + " up and reachable?|@"));
 				LOGGER.log(Level.SEVERE, "cannot deploy a miner service bound to " + uris[pos], e);
-				startMiningServices(uris, pos + 1, atLeastOne, miner);
+				startMiningServices(pos + 1, atLeastOne, miner);
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red I/O failure! Is " + uris[pos] + " up and reachable?|@"));
 				LOGGER.log(Level.SEVERE, "I/O error while deploying a miner service bound to " + uris[pos], e);
-				startMiningServices(uris, pos + 1, atLeastOne, miner);
+				startMiningServices(pos + 1, atLeastOne, miner);
 			}
 			catch (InterruptedException e) {
 				// unexpected: who could interrupt this process?

@@ -29,9 +29,10 @@ import io.hotmoka.annotations.ThreadSafe;
 public interface RestrictedNode extends Node {
 
 	/**
-	 * Adds the given peer to the set of peers of this node.
+	 * Adds the given peer to the set of peers of this node, if it was not already there.
 	 * 
 	 * @param peer the peer to add
+	 * @return if and only if the peer has been actually added
 	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws PeerRejectedException if {@code peer} was rejected for some reason
 	 * @throws DatabaseException if the database of this node is corrupted
@@ -39,17 +40,22 @@ public interface RestrictedNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	void add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	boolean add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Removes the given peer from the set of peers of this node.
+	 * Removes the given peer from the set of peers of this node, if it was there.
 	 * 
 	 * @param peer the peer to remove
+	 * @return true if and only if the peer has been actually removed
 	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	void remove(Peer peer) throws TimeoutException, IOException, InterruptedException, ClosedNodeException, DatabaseException;
+	boolean remove(Peer peer) throws TimeoutException, IOException, InterruptedException, ClosedNodeException, DatabaseException;
+
+	//boolean openRemoteMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+
+	//boolean closeRemoteMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 }

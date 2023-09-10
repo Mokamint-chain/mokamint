@@ -16,11 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
-import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to the result of {@link RestrictedNode#remove(io.mokamint.node.api.Peer)} method of a node.
  */
-public interface RemovePeerResultMessage extends RpcMessage {
+public interface RemovePeerResultMessage extends ResultMessage<Boolean> {
 }

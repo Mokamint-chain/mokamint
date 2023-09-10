@@ -26,21 +26,34 @@ import io.mokamint.node.messages.api.RemovePeerResultMessage;
 public class RemovePeerResultMessageImpl extends AbstractRpcMessage implements RemovePeerResultMessage {
 
 	/**
+	 * The result of the call.
+	 */
+	private final boolean result;
+
+	/**
 	 * Creates the message.
 	 * 
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public RemovePeerResultMessageImpl(String id) {
+	public RemovePeerResultMessageImpl(boolean result, String id) {
 		super(id);
+
+		this.result = result;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof RemovePeerResultMessage && super.equals(other);
+		return other instanceof RemovePeerResultMessage rprm && super.equals(other) && result == rprm.get().booleanValue();
 	}
 
 	@Override
 	protected String getExpectedType() {
 		return RemovePeerResultMessage.class.getName();
+	}
+
+	@Override
+	public Boolean get() {
+		return result;
 	}
 }

@@ -95,7 +95,7 @@ public class RemoteRestrictedNodeTests {
 			protected void onAddPeers(AddPeerMessage message, Session session) {
 				peers2.add(message.getPeer());
 				try {
-					sendObjectAsync(session, AddPeerResultMessages.of(message.getId()));
+					sendObjectAsync(session, AddPeerResultMessages.of(true, message.getId()));
 				}
 				catch (IOException e) {}
 			}
@@ -300,7 +300,7 @@ public class RemoteRestrictedNodeTests {
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
 				peers2.add(message.getPeer());
 				try {
-					sendObjectAsync(session, RemovePeerResultMessages.of(message.getId()));
+					sendObjectAsync(session, RemovePeerResultMessages.of(true, message.getId()));
 				}
 				catch (IOException e) {}
 			}

@@ -24,14 +24,17 @@ import io.mokamint.node.messages.api.AddPeerResultMessage;
  * The JSON representation of a {@link AddPeerResultMessage}.
  */
 public abstract class AddPeerResultMessageJson extends AbstractRpcMessageJsonRepresentation<AddPeerResultMessage> {
+	private boolean result;
 
 	protected AddPeerResultMessageJson(AddPeerResultMessage message) {
 		super(message);
+
+		this.result = message.get();
 	}
 
 	@Override
 	public AddPeerResultMessage unmap() {
-		return AddPeerResultMessages.of(getId());
+		return AddPeerResultMessages.of(result, getId());
 	}
 
 	@Override

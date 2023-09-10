@@ -237,7 +237,7 @@ public class MessagesTests {
 	@Test
 	@DisplayName("addPeer result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForAddPeerResult() throws EncodeException, DecodeException {
-		var addPeerResultMessage1 = AddPeerResultMessages.of("id");
+		var addPeerResultMessage1 = AddPeerResultMessages.of(true, "id");
 		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
 		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
 		assertEquals(addPeerResultMessage1, addPeerResultMessage2);
@@ -246,7 +246,7 @@ public class MessagesTests {
 	@Test
 	@DisplayName("removePeer result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForRemovePeerResult() throws EncodeException, DecodeException {
-		var removePeerResultMessage1 = RemovePeerResultMessages.of("id");
+		var removePeerResultMessage1 = RemovePeerResultMessages.of(true, "id");
 		String encoded = new RemovePeerResultMessages.Encoder().encode(removePeerResultMessage1);
 		var removePeerResultMessage2 = new RemovePeerResultMessages.Decoder().decode(encoded);
 		assertEquals(removePeerResultMessage1, removePeerResultMessage2);

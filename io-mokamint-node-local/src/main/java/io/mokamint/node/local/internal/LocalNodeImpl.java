@@ -266,16 +266,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
+	public boolean add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			peers.add(peer, true, true);
+			return peers.add(peer, true, true);
 		}
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed because this node is open
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 		finally {
 			closureLock.afterCall();
@@ -283,16 +283,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
+	public boolean remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			peers.remove(peer);
+			return peers.remove(peer);
 		}
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed because this node is open
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 		finally {
 			closureLock.afterCall();
