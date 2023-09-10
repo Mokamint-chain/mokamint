@@ -48,6 +48,9 @@ public class PeerInfoImpl extends AbstractMarshallable implements PeerInfo {
 	 */
 	public PeerInfoImpl(Peer peer, long points, boolean connected) {
 		Objects.requireNonNull(peer);
+		if (points <= 0)
+			throw new IllegalArgumentException("points must be positive");
+
 		this.peer = peer;
 		this.points = points;
 		this.connected = connected;

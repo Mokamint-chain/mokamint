@@ -16,38 +16,38 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.UUID;
+
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * Information about a peer of a node. Peer information is ordered first
- * by connection (connected peers before disconnected peers), then
- * by points (decreasing), then by peer and finally by local date and time.
+ * Information about a miner of a node. Miner information is ordered first
+ * by points (decreasing), then by {@link #getUUID()}.
  */
 @Immutable
-public interface PeerInfo extends Marshallable, Comparable<PeerInfo> {
+public interface MinerInfo extends Comparable<MinerInfo> {
 
 	/**
-	 * Yields the peer described by this information.
+	 * Yields the identifier of the miner.
 	 * 
-	 * @return the peer
+	 * @return the identifier of the miner
 	 */
-	Peer getPeer();
+	UUID getUUID();
 
 	/**
-	 * Yields the points of the peer. They are an estimation of how much well the
-	 * peer behaved recently.
+	 * Yields the points of the miner. They are an estimation of how much well the
+	 * miner behaved recently.
 	 *
 	 * @return the points; this should always be positive
 	 */
 	long getPoints();
 
 	/**
-	 * The connection status of the peer.
+	 * Yields a miner-specific description of the miner.
 	 * 
-	 * @return true if and only if the node is connected to the peer
+	 * @return the description
 	 */
-	boolean isConnected();
+	String getDescription();
 
 	@Override
 	boolean equals(Object obj);
