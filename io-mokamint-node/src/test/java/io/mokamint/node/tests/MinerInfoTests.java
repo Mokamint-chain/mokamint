@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.miner.tests;
+package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.UUID;
 import java.util.logging.LogManager;
@@ -27,7 +26,7 @@ import java.util.logging.LogManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.mokamint.miner.MinerInfos;
+import io.mokamint.node.MinerInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
@@ -35,8 +34,8 @@ public class MinerInfoTests {
 
 	@Test
 	@DisplayName("miner information is correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, URISyntaxException, DecodeException {
-		var minerInfo1 = MinerInfos.of(UUID.randomUUID(), 1234, "very smart remote miner");
+	public void encodeDecodeWorks() throws EncodeException, DecodeException {
+		var minerInfo1 = MinerInfos.of(UUID.randomUUID(), 1234L, "a miner");
 		String encoded = new MinerInfos.Encoder().encode(minerInfo1);
 		var minerInfo2 = new MinerInfos.Decoder().decode(encoded);
 		assertEquals(minerInfo1, minerInfo2);

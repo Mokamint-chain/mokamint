@@ -71,8 +71,7 @@ public interface PublicNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	// TODO
-	//Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
+	Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the current chain of this node.

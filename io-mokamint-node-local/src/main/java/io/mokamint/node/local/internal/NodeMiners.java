@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.MinerInfos;
+import io.mokamint.node.api.MinerInfo;
 
 /**
  * The set of miners of a local node.
@@ -49,6 +51,15 @@ public class NodeMiners {
 	 */
 	public Stream<Miner> get() {
 		return miners.getElements();
+	}
+
+	/**
+	 * Yields information about the miners.
+	 * 
+	 * @return information about the miners
+	 */
+	public Stream<MinerInfo> getInfos() {
+		return miners.getActorsWithPoints().map(entry -> MinerInfos.of(entry.getKey().getUUID(), entry.getValue(), entry.getKey().toString()));
 	}
 
 	/**

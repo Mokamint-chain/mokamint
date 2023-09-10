@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.miner.internal;
+package io.mokamint.node.internal;
 
 import java.util.Objects;
 import java.util.UUID;
 
 import io.hotmoka.annotations.Immutable;
-import io.mokamint.miner.api.MinerInfo;
+import io.mokamint.node.api.MinerInfo;
 
 /**
  * An implementation of miner information.

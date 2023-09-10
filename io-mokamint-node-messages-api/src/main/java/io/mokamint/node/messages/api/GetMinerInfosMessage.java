@@ -14,19 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package io.mokamint.node.messages.api;
+
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.PublicNode;
+
 /**
- * This module implements shared code about the miners.
+ * The network message corresponding to the {@link PublicNode#getMinerInfos()} method of a node.
  */
-module io.mokamint.miner {
-	exports io.mokamint.miner;
-
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.miner.internal to com.google.gson;
-	opens io.mokamint.miner.internal.gson to com.google.gson;
-
-	requires transitive io.mokamint.miner.api;
-	requires io.hotmoka.annotations;
-	requires io.hotmoka.websockets.beans;
-	requires com.google.gson;
-	requires java.logging;
+public interface GetMinerInfosMessage extends RpcMessage {
+	
+	@Override
+	boolean equals(Object obj);
 }

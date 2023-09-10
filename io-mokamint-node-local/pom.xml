@@ -34,7 +34,7 @@
       <artifactId>io-mokamint-nonce</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
-    <dependency>
+	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-miner-api</artifactId>
       <version>${mokamint.version}</version>

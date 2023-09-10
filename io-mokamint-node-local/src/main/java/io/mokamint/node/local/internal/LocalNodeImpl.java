@@ -47,6 +47,7 @@ import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -259,6 +260,18 @@ public class LocalNodeImpl implements LocalNode {
 
 		try {
 			return peers.get();
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	@Override
+	public Stream<MinerInfo> getMinerInfos() throws ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			return miners.getInfos();
 		}
 		finally {
 			closureLock.afterCall();

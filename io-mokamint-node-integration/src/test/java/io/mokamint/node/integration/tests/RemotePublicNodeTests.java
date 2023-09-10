@@ -55,6 +55,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
 import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
@@ -68,6 +69,7 @@ import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetChainResultMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -76,6 +78,7 @@ import io.mokamint.node.messages.api.GetChainInfoMessage;
 import io.mokamint.node.messages.api.GetChainMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
+import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
@@ -133,8 +136,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getPeers() works")
-	public void getPeersWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException {
+	@DisplayName("getPeerInfos() works")
+	public void getPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException {
 		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
 				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
@@ -158,8 +161,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getPeers() works if it throws TimeoutException")
-	public void getPeersWorksInCaseOfTimeoutException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	@DisplayName("getPeerInfos() works if it throws TimeoutException")
+	public void getPeerInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
 		var exceptionMessage = "time-out";
 
 		class MyServer extends PublicTestServer {
@@ -182,8 +185,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getPeers() works if it throws ClosedNodeException")
-	public void getPeersWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	@DisplayName("getPeerInfos() works if it throws ClosedNodeException")
+	public void getPeerInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException {
 		var exceptionMessage = "node is closed";
 
 		class MyServer extends PublicTestServer {
@@ -206,8 +209,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getPeers() works if it throws InterruptedException")
-	public void getPeersWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	@DisplayName("getPeerInfos() works if it throws InterruptedException")
+	public void getPeerInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException {
 		var exceptionMessage = "interrupted";
 
 		class MyServer extends PublicTestServer {
@@ -230,8 +233,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("if getPeers() is slow, it leads to a time-out")
-	public void getPeersWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	@DisplayName("if getPeerInfos() is slow, it leads to a time-out")
+	public void getPeerInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
 				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
@@ -259,8 +262,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getPeers() ignores unexpected exceptions")
-	public void getPeersWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	@DisplayName("getPeerInfos() ignores unexpected exceptions")
+	public void getPeerInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -280,8 +283,8 @@ public class RemotePublicNodeTests {
 	}
 
 	@Test
-	@DisplayName("getPeers() ignores unexpected messages")
-	public void getPeersWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	@DisplayName("getPeerInfos() ignores unexpected messages")
+	public void getPeerInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -297,6 +300,174 @@ public class RemotePublicNodeTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
+		}
+	}
+
+	@Test
+	@DisplayName("getMinerInfos() works")
+	public void getMinerInfosWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+		var minerInfos1 = Set.of(MinerInfos.of(UUID.randomUUID(), 345L, "a miner"),
+			MinerInfos.of(UUID.randomUUID(), 11L, "a special miner"));
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var minerInfos2 = remote.getMinerInfos();
+			assertEquals(minerInfos1, minerInfos2.collect(Collectors.toSet()));
+		}
+	}
+
+	@Test
+	@DisplayName("getMinerInfos() works if it throws TimeoutException")
+	public void getMinerInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "time-out";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getMinerInfos() works if it throws ClosedNodeException")
+	public void getMinerInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "node is closed";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new ClosedNodeException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(ClosedNodeException.class, () -> remote.getMinerInfos());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getMinerInfos() works if it throws InterruptedException")
+	public void getMinerInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "interrupted";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(InterruptedException.class, () -> remote.getMinerInfos());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("if getMinerInfos() is slow, it leads to a time-out")
+	public void getMinerInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, InterruptedException {
+		var minerInfos1 = Set.of(MinerInfos.of(UUID.randomUUID(), 345L, "a miner"),
+				MinerInfos.of(UUID.randomUUID(), 11L, "a special miner"));
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+				try {
+					Thread.sleep(TIME_OUT * 4); // <----
+				}
+				catch (InterruptedException e) {}
+	
+				try {
+					sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
+		}
+	}
+
+	@Test
+	@DisplayName("getMinerInfos() ignores unexpected exceptions")
+	public void getMinerInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException {
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
+		}
+	}
+
+	@Test
+	@DisplayName("getMinerInfos() ignores unexpected messages")
+	public void getMinerInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException {
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
 		}
 	}
 

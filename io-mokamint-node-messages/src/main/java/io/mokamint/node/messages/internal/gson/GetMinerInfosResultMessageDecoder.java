@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.miner.internal.gson;
+package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.miner.MinerInfos;
-import io.mokamint.miner.api.MinerInfo;
+import io.mokamint.node.messages.GetMinerInfosResultMessages;
+import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 
 /**
- * A decoder for {@link MinerInfo}.
+ * A decoder for {@link GetMinerInfosResultMessage}.
  */
-public class MinerInfoDecoder extends MappedDecoder<MinerInfo, MinerInfos.Json> {
+public class GetMinerInfosResultMessageDecoder extends MappedDecoder<GetMinerInfosResultMessage, GetMinerInfosResultMessages.Json> {
 
-	public MinerInfoDecoder() {
-		super(MinerInfos.Json.class);
+	public GetMinerInfosResultMessageDecoder() {
+		super(GetMinerInfosResultMessages.Json.class);
 	}
 }

@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -62,6 +63,11 @@ public class MinerServiceTests {
 			}
 
 			@Override
+			public UUID getUUID() {
+				return UUID.randomUUID();
+			}
+
+			@Override
 			public void close() {}
 		};
 
@@ -89,6 +95,11 @@ public class MinerServiceTests {
 			@Override
 			public void requestDeadline(DeadlineDescription received, Consumer<Deadline> onDeadlineComputed) {
 				onDeadlineComputed.accept(deadline);
+			}
+
+			@Override
+			public UUID getUUID() {
+				return UUID.randomUUID();
 			}
 
 			@Override
@@ -130,6 +141,11 @@ public class MinerServiceTests {
 					onDeadlineComputed.accept(deadline1);
 				else
 					onDeadlineComputed.accept(deadline2);
+			}
+
+			@Override
+			public UUID getUUID() {
+				return UUID.randomUUID();
 			}
 
 			@Override
@@ -178,6 +194,11 @@ public class MinerServiceTests {
 
 				// when this is called, the requester has been already closed: the deadline is ignored
 				onDeadlineComputed.accept(deadline);
+			}
+
+			@Override
+			public UUID getUUID() {
+				return UUID.randomUUID();
 			}
 
 			@Override

@@ -36,6 +36,11 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String GET_PEER_INFOS_ENDPOINT = "/get_peer_infos";
 
 	/**
+	 * The network endpoint path where the {@link PublicNode#getMinerInfos()} method is published.
+	 */
+	String GET_MINER_INFOS_ENDPOINT = "/get_miner_infos";
+
+	/**
 	 * The network endpoint path where the {@link PublicNode#getBlock(byte[])} method is published.
 	 */
 	String GET_BLOCK_ENDPOINT = "/get_block";

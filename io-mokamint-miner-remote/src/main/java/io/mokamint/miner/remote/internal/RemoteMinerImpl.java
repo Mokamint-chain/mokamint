@@ -19,6 +19,7 @@ package io.mokamint.miner.remote.internal;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -44,6 +45,11 @@ import jakarta.websocket.server.ServerEndpointConfig;
  */
 @ThreadSafe
 public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
+
+	/**
+	 * The unique identifier of the miner.
+	 */
+	private final UUID uuid = UUID.randomUUID();
 
 	/**
 	 * The port of localhost, where this service is listening.
@@ -85,6 +91,11 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
+	public UUID getUUID() {
+		return uuid;
+	}
+
+	@Override
 	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		requests.add(description, onDeadlineComputed);
 
@@ -108,6 +119,11 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	public void close() {
 		stopContainer();
 		LOGGER.info("closed the remote miner at ws://localhost:" + port);
+	}
+
+	@Override
+	public String toString() {
+		return "a remote miner published at port " + port + ", with " + sessions.size() + " open sessions";
 	}
 
 	private void addSession(Session session) {

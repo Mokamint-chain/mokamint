@@ -18,6 +18,7 @@ package io.mokamint.miner.local.internal;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,12 +34,18 @@ import io.mokamint.plotter.api.Plot;
  * It uses a set of plot files to find deadlines on-demand.
  */
 public class LocalMinerImpl implements Miner {
-	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
+
+	/**
+	 * The unique identifier of the miner.
+	 */
+	private final UUID uuid = UUID.randomUUID();
 
 	/**
 	 * The plot files used by the miner.
 	 */
 	private final Plot[] plots;
+
+	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
 
 	/**
 	 * Builds a local miner.
@@ -50,6 +57,11 @@ public class LocalMinerImpl implements Miner {
 			throw new IllegalArgumentException("a miner needs at least a plot file");
 
 		this.plots = plots;
+	}
+
+	@Override
+	public UUID getUUID() {
+		return uuid;
 	}
 
 	@Override
@@ -84,5 +96,11 @@ public class LocalMinerImpl implements Miner {
 
 	@Override
 	public void close() {
+	}
+
+	@Override
+	public String toString() {
+		long nonces = Stream.of(plots).mapToLong(Plot::getLength).sum();
+		return "a local miner with " + plots.length + " plots, with up to " + nonces + " nonces";
 	}
 }

@@ -21,6 +21,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
@@ -45,6 +46,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -58,6 +60,8 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetMinerInfosMessages;
+import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.MessageMemories;
@@ -69,6 +73,7 @@ import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 import io.mokamint.node.messages.api.GetChainResultMessage;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
+import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.MessageMemory;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
@@ -122,7 +127,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		this.logPrefix = "remote to public service at " + uri + ": ";
 		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
 
-		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeersEndpoint::new);
+		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
+		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
 		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
 		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
@@ -203,7 +209,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private RuntimeException unexpectedException(Exception e) {
 		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
-		return new RuntimeException("unexpected exception", e);
+		return new RuntimeException("Unexpected exception", e);
 	}
 
 	@Override
@@ -212,6 +218,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetInfoResult(girm.get());
 		else if (message instanceof GetPeerInfosResultMessage gprm)
 			onGetPeerInfosResult(gprm.get());
+		else if (message instanceof GetMinerInfosResultMessage gmrm)
+			onGetMinerInfosResult(gmrm.get());
 		else if (message instanceof GetBlockResultMessage gbrm)
 			onGetBlockResult(gbrm.get());
 		else if (message instanceof GetConfigResultMessage gcrm)
@@ -261,6 +269,35 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private NodeInfo processGetInfoSuccess(RpcMessage message) {
 		return message instanceof GetInfoResultMessage girm ? girm.get() : null;
+	}
+
+	@Override
+	public Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendGetMinerInfos(id);
+		try {
+			return queues.waitForResult(id, this::processGetMinerInfosSuccess, this::processStandardExceptions);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendGetMinerInfos(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_MINER_INFOS_ENDPOINT), GetMinerInfosMessages.of(id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private Stream<MinerInfo> processGetMinerInfosSuccess(RpcMessage message) {
+		return message instanceof GetMinerInfosResultMessage gmrm ? gmrm.get() : null;
 	}
 
 	@Override
@@ -431,6 +468,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * Hooks that can be overridden in subclasses.
 	 */
 	protected void onGetPeerInfosResult(Stream<PeerInfo> peers) {}
+	protected void onGetMinerInfosResult(Stream<MinerInfo> peers) {}
 	protected void onGetBlockResult(Optional<Block> block) {}
 	protected void onGetConfigResult(ConsensusConfig config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
@@ -440,11 +478,19 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onWhisperPeers(WhisperPeersMessage message) {}
 	protected void onWhisperBlock(WhisperBlockMessage message) {}
 
-	private class GetPeersEndpoint extends Endpoint {
+	private class GetPeerInfosEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
+		}
+	}
+
+	private class GetMinerInfosEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
 		}
 	}
 

@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.miner;
+package io.mokamint.node;
 
 import java.util.UUID;
 
-import io.mokamint.miner.api.MinerInfo;
-import io.mokamint.miner.internal.MinerInfoImpl;
-import io.mokamint.miner.internal.gson.MinerInfoDecoder;
-import io.mokamint.miner.internal.gson.MinerInfoEncoder;
-import io.mokamint.miner.internal.gson.MinerInfoJson;
+import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.internal.MinerInfoImpl;
+import io.mokamint.node.internal.gson.MinerInfoDecoder;
+import io.mokamint.node.internal.gson.MinerInfoEncoder;
+import io.mokamint.node.internal.gson.MinerInfoJson;
 
 /**
  * Providers of miner information objects.

@@ -53,6 +53,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
 import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.NodeInternals.CloseHandler;
 import io.mokamint.node.PeerInfos;
@@ -65,6 +66,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -91,8 +93,8 @@ public class PublicNodeServiceTests {
 	}
 
 	@Test
-	@DisplayName("if a getPeers() request reaches the service, it sends back the peers of the node")
-	public void serviceGetPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
+	@DisplayName("if a getPeerInfos() request reaches the service, it sends back the peers of the node")
+	public void serviceGetPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
@@ -112,13 +114,46 @@ public class PublicNodeServiceTests {
 					semaphore.release();
 			}
 
-			private void sendGetPeers() throws ClosedNodeException {
+			private void sendGetPeerInfos() throws ClosedNodeException {
 				sendGetPeerInfos("id");
 			}
 		}
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			client.sendGetPeers();
+			client.sendGetPeerInfos();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getMinerInfos() request reaches the service, it sends back the miners of the node")
+	public void serviceGetMinerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
+		var minerInfo1 = MinerInfos.of(UUID.randomUUID(), 345L, "a miner");
+		var minerInfo2 = MinerInfos.of(UUID.randomUUID(), 11L, "a special miner");
+		var node = mock(PublicNodeInternals.class);
+		when(node.getMinerInfos()).thenReturn(Stream.of(minerInfo1, minerInfo2));
+
+		class MyTestClient extends RemotePublicNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+
+			@Override
+			protected void onGetMinerInfosResult(Stream<MinerInfo> received) {
+				var minerInfos = received.collect(Collectors.toList());
+				if (minerInfos.size() == 2 && minerInfos.contains(minerInfo1) && minerInfos.contains(minerInfo2))
+					semaphore.release();
+			}
+
+			private void sendGetMinerInfos() throws ClosedNodeException {
+				sendGetMinerInfos("id");
+			}
+		}
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetMinerInfos();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

@@ -28,6 +28,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -117,6 +118,11 @@ public class EventsTests {
 
 			@Override
 			public void close() {}
+
+			@Override
+			public UUID getUUID() {
+				return UUID.randomUUID();
+			}
 		};
 
 		class MyLocalNode extends LocalNodeImpl {
@@ -162,6 +168,11 @@ public class EventsTests {
 				when(deadline.getHashing()).thenReturn(description.getHashing());
 
 				onDeadlineComputed.accept(deadline);
+			}
+
+			@Override
+			public UUID getUUID() {
+				return UUID.randomUUID();
 			}
 
 			@Override
@@ -272,6 +283,11 @@ public class EventsTests {
 				when(deadline.getHashing()).thenReturn(algo);
 
 				onDeadlineComputed.accept(deadline);
+			}
+
+			@Override
+			public UUID getUUID() {
+				return UUID.randomUUID();
 			}
 
 			@Override

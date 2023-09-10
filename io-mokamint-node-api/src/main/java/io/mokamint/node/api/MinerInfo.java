@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.miner.api;
+package io.mokamint.node.api;
 
 import java.util.UUID;
 

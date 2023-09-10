@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.api;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -32,14 +33,6 @@ import io.mokamint.nonce.api.DeadlineDescription;
 public interface Miner extends AutoCloseable {
 
 	/**
-	 * Yields information about this miner.
-	 * 
-	 * @return the information
-	 */
-	// TODO
-	//MinerInfo getInfo();
-
-	/**
 	 * Request to the miner the computation of a deadline.
 	 * 
 	 * @param description the description of the requested deadline
@@ -51,4 +44,14 @@ public interface Miner extends AutoCloseable {
 
 	@Override
 	void close();
+
+	/**
+	 * Yields the unique identifier of the miner.
+	 * 
+	 * @return the unique identifier
+	 */
+	UUID getUUID();
+
+	@Override
+	String toString();
 }

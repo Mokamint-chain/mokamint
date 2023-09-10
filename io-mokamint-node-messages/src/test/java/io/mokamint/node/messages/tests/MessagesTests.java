@@ -44,6 +44,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
 import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
@@ -61,6 +62,8 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetMinerInfosMessages;
+import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
@@ -138,6 +141,44 @@ public class MessagesTests {
 		String encoded = new GetChainMessages.Encoder().encode(getChainMessage1);
 		var getChainMessage2 = new GetChainMessages.Decoder().decode(encoded);
 		assertEquals(getChainMessage1, getChainMessage2);
+	}
+
+	@DisplayName("getPeerInfos messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetPeerInfos() throws EncodeException, DecodeException {
+		var getPeerInfosMessage1 = GetPeerInfosMessages.of("id");
+		String encoded = new GetPeerInfosMessages.Encoder().encode(getPeerInfosMessage1);
+		var getPeerInfosMessage2 = new GetPeerInfosMessages.Decoder().decode(encoded);
+		assertEquals(getPeerInfosMessage1, getPeerInfosMessage2);
+	}
+
+	@Test
+	@DisplayName("getPeerInfosResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetPeerInfosResult() throws EncodeException, DecodeException, URISyntaxException {
+		var peers = Stream.of(PeerInfos.of(Peers.of(new URI("ws://www.hotmoka.io")), 100L, true),
+				PeerInfos.of(Peers.of(new URI("ws://www.mokamint.io:8030")), 123L, false));
+		var getPeerInfosResultMessage1 = GetPeerInfosResultMessages.of(peers, "id");
+		String encoded = new GetPeerInfosResultMessages.Encoder().encode(getPeerInfosResultMessage1);
+		var getPeerInfosResultMessage2 = new GetPeerInfosResultMessages.Decoder().decode(encoded);
+		assertEquals(getPeerInfosResultMessage1, getPeerInfosResultMessage2);
+	}
+
+	@DisplayName("getMinerInfos messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetMinerInfos() throws EncodeException, DecodeException {
+		var getMinerInfosMessage1 = GetMinerInfosMessages.of("id");
+		String encoded = new GetMinerInfosMessages.Encoder().encode(getMinerInfosMessage1);
+		var getMinerInfosMessage2 = new GetMinerInfosMessages.Decoder().decode(encoded);
+		assertEquals(getMinerInfosMessage1, getMinerInfosMessage2);
+	}
+
+	@Test
+	@DisplayName("getMinerInfosResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetMinerInfosResult() throws EncodeException, DecodeException, URISyntaxException {
+		var miners = Stream.of(MinerInfos.of(UUID.randomUUID(), 100L, "a miner"),
+				MinerInfos.of(UUID.randomUUID(), 123L, "another miner"));
+		var getMinerInfosResultMessage1 = GetMinerInfosResultMessages.of(miners, "id");
+		String encoded = new GetMinerInfosResultMessages.Encoder().encode(getMinerInfosResultMessage1);
+		var getMinerInfosResultMessage2 = new GetMinerInfosResultMessages.Decoder().decode(encoded);
+		assertEquals(getMinerInfosResultMessage1, getMinerInfosResultMessage2);
 	}
 
 	@Test
