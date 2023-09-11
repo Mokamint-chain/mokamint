@@ -39,7 +39,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	private URI[] uris;
 
 	private void body(RemoteRestrictedNode remote) {
-		Stream.of(uris).map(Peers::of).parallel().forEach(peer -> removePeer(peer, remote));
+		Stream.of(uris).parallel().map(Peers::of).forEach(peer -> removePeer(peer, remote));
 	}
 
 	private void removePeer(Peer peer, RemoteRestrictedNode remote) {
@@ -51,7 +51,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 				System.out.println("Removed " + peer + " from the set of peers");
 		}
 		catch (ClosedNodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red The connection to " + peer + " has been closed!|@"));
+			System.out.println(Ansi.AUTO.string("@|red The connection to " + restrictedUri() + " has been closed!|@"));
 		}
 		catch (IOException e) {
 			System.out.println(Ansi.AUTO.string("@|red I/O error in the connection to " + peer + "!|@"));
@@ -63,7 +63,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for removal of peer " + peer + "!|@"));
 		}
 		catch (DatabaseException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted0!|@"));
+			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted!|@"));
 		}
 		catch (EncodeException e) {
 			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));

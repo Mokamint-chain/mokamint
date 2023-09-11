@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal;
 
+import io.mokamint.node.tools.internal.miners.Add;
 import io.mokamint.node.tools.internal.miners.List;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -23,6 +24,7 @@ import picocli.CommandLine.HelpCommand;
 @Command(name = "miners",
 	description = "Operate on the miners of a node.",
 	subcommands = {
+		Add.class,
 		HelpCommand.class,
 		List.class
 	})

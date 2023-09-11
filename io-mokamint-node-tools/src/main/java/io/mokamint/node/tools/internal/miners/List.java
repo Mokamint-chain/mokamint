@@ -54,7 +54,7 @@ public class List extends AbstractPublicRpcCommand {
 			}
 		}
 		catch (EncodeException e) {
-			throw new CommandException("Cannot encode the miners of the node at \"" + publicUri() + "\" in JSON format!", e);
+			throw new CommandException("Cannot encode the miners of the node at " + publicUri() + " in JSON format!", e);
 		}
 	}
 

@@ -40,7 +40,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	private URI[] uris;
 
 	private void body(RemoteRestrictedNode remote) {
-		Stream.of(uris).map(Peers::of).parallel().forEach(peer -> addPeer(peer, remote));
+		Stream.of(uris).parallel().map(Peers::of).forEach(peer -> addPeer(peer, remote));
 	}
 
 	private void addPeer(Peer peer, RemoteRestrictedNode remote) {
@@ -52,7 +52,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 				System.out.println("Added " + peer + " to the set of peers");
 		}
 		catch (ClosedNodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red The connection to " + peer + " has been closed!|@"));
+			System.out.println(Ansi.AUTO.string("@|red The connection to " + restrictedUri() + " has been closed!|@"));
 		}
 		catch (TimeoutException e) {
 			System.out.println(Ansi.AUTO.string("@|red Connection timeout while adding peer " + peer + "!|@"));

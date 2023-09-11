@@ -83,10 +83,10 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 			throw new CommandException("Timeout: I waited for " + timeout + "ms but the remote service didn't answer!", e);
 		}
 		catch (InterruptedException e) {
-			throw new CommandException("Unexpected interruption while waiting for \"" + uri + "\"!", e);
+			throw new CommandException("Unexpected interruption while waiting for " + uri + "!", e);
 		}
 		catch (DatabaseException e) {
-			throw new CommandException("The database of the node at \"" + uri + "\" seems corrupted!", e);
+			throw new CommandException("The database of the node at " + uri + " seems corrupted!", e);
 		}
 	}
 
@@ -116,5 +116,27 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 		 * @throws DatabaseException if the database of the node is corrupted
 		 */
 		void run(N remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException;
+	}
+
+	/**
+	 * Throws the given exception as one of the exceptions allowed in
+	 * {@link RpcCommandBody#run(RemoteNode)}.
+	 * 
+	 * @param e the exception
+	 * @throws ClosedNodeException if {@code e} belongs to that class
+	 * @throws TimeoutException if {@code e} belongs to that class
+	 * @throws InterruptedException if {@code e} belongs to that class
+	 */
+	protected static void throwAsRpcCommandException(Exception e) throws ClosedNodeException, TimeoutException, InterruptedException {
+		if (e instanceof ClosedNodeException cne)
+			throw cne;
+		else if (e instanceof TimeoutException te)
+			throw te;
+		else if (e instanceof InterruptedException ie)
+			throw ie;
+		else if (e instanceof RuntimeException re)
+			throw re;
+		else
+			throw new RuntimeException("Unexpected exception", e);
 	}
 }

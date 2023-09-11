@@ -20,7 +20,6 @@ import static io.hotmoka.exceptions.CheckSupplier.check;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 
 import java.io.IOException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -72,15 +71,11 @@ public class List extends AbstractPublicRpcCommand {
 				else
 					System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", maxLength, "points", "status") + "|@"));
 
-				try (var pool = new ForkJoinPool()) {
-					pool.execute(() ->
-						Stream.of(infos).parallel().map(info -> formatLine(info, maxLength)).forEachOrdered(System.out::println)
-					);
-				}
+				Stream.of(infos).parallel().map(info -> formatLine(info, maxLength)).forEachOrdered(System.out::println);
 			}
 		}
 		catch (EncodeException e) {
-			throw new CommandException("Cannot encode the peers of the node at \"" + publicUri() + "\" in JSON format!", e);
+			throw new CommandException("Cannot encode the peers of the node at " + publicUri() + " in JSON format!", e);
 		}
 	}
 
