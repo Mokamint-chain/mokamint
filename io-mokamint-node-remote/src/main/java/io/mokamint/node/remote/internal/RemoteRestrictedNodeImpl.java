@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.remote.internal;
 
 import static io.mokamint.node.service.api.RestrictedNodeService.ADD_PEER_ENDPOINT;
+import static io.mokamint.node.service.api.RestrictedNodeService.OPEN_MINER_ENDPOINT;
 import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_ENDPOINT;
 
 import java.io.IOException;
@@ -29,15 +30,18 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.OpenMinerMessages;
+import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
 import io.mokamint.node.messages.api.ExceptionMessage;
+import io.mokamint.node.messages.api.OpenMinerResultMessage;
 import io.mokamint.node.messages.api.RemovePeerResultMessage;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
@@ -74,6 +78,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		
 		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
 		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
+		addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
 	}
 
 	@Override
@@ -82,6 +87,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 			onAddPeerResult();
 		else if (message instanceof RemovePeerResultMessage)
 			onRemovePeerResult();
+		else if (message instanceof OpenMinerResultMessage)
+			onOpenMinerResult();
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
@@ -114,9 +121,18 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
+	protected void sendOpenMiner(int port, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(OPEN_MINER_ENDPOINT), OpenMinerMessages.of(port, id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
 	private RuntimeException unexpectedException(Exception e) {
 		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
-		return new RuntimeException("unexpected exception", e);
+		return new RuntimeException("Unexpected exception", e);
 	}
 
 	/**
@@ -124,6 +140,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 */
 	protected void onAddPeerResult() {}
 	protected void onRemovePeerResult() {}
+	protected void onOpenMinerResult() {}
 	protected void onException(ExceptionMessage message) {}
 
 	@Override
@@ -195,5 +212,38 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		return DatabaseException.class.isAssignableFrom(exception) ||
 			IOException.class.isAssignableFrom(exception) ||
 			processStandardExceptions(message);
+	}
+
+	private class OpenMinerEndpoint extends Endpoint {
+		
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, OpenMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, OpenMinerMessages.Encoder.class);
+		}
+	}
+
+	@Override
+	public boolean openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendOpenMiner(port, id);
+		try {
+			return queues.waitForResult(id, this::processOpenMinerSuccess, this::processOpenMinerException);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private Boolean processOpenMinerSuccess(RpcMessage message) {
+		return message instanceof OpenMinerResultMessage omrm ? omrm.get() : null;
+	}
+
+	private boolean processOpenMinerException(ExceptionMessage message) {
+		var exception = message.getExceptionClass();
+		return IOException.class.isAssignableFrom(exception) || processStandardExceptions(message);
 	}
 }

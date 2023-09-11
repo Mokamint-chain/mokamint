@@ -34,6 +34,11 @@ public interface RestrictedNodeService extends WebSocketServer {
 	 */
 	String REMOVE_PEER_ENDPOINT = "/remove_peer";
 
+	/**
+	 * The network endpoint path where the {@link RestrictedNode#openMiner(int)} method is published.
+	 */
+	String OPEN_MINER_ENDPOINT = "/open_miner";
+
 	@Override
 	void close();
 }

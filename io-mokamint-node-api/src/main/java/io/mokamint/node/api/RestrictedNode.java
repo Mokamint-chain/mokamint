@@ -55,7 +55,17 @@ public interface RestrictedNode extends Node {
 	 */
 	boolean remove(Peer peer) throws TimeoutException, IOException, InterruptedException, ClosedNodeException, DatabaseException;
 
-	//boolean openRemoteMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+	/**
+	 * Opens a remote miner at the given port.
+	 * 
+	 * @param port the port
+	 * @return true if and only if the remote miner has been opened
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws IOException if an I/O error occurred (for instance, if the port is already bound to some service)
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if this node is closed
+	 */
+	boolean openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 
-	//boolean closeRemoteMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+	//boolean closeMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 }

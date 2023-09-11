@@ -26,7 +26,9 @@ import jakarta.websocket.DeploymentException;
 /**
  * Provider of a miner that connects to a remote mining service.
  */
-public interface RemoteMiners {
+public abstract class RemoteMiners {
+
+	private RemoteMiners() {}
 
 	/**
 	 * Yields and opens a new remote miner.
@@ -38,7 +40,7 @@ public interface RemoteMiners {
 	 * @throws DeploymentException if the remote mining endpoint could not be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	static Miner of(int port, String chainId, PublicKey nodePublicKey) throws DeploymentException, IOException {
+	public static Miner of(int port, String chainId, PublicKey nodePublicKey) throws DeploymentException, IOException {
 		return new RemoteMinerImpl(port, chainId, nodePublicKey);
 	}
 }

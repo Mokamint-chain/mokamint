@@ -66,6 +66,8 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.OpenMinerMessages;
+import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
@@ -291,6 +293,24 @@ public class MessagesTests {
 		String encoded = new RemovePeerResultMessages.Encoder().encode(removePeerResultMessage1);
 		var removePeerResultMessage2 = new RemovePeerResultMessages.Decoder().decode(encoded);
 		assertEquals(removePeerResultMessage1, removePeerResultMessage2);
+	}
+
+	@Test
+	@DisplayName("openMiner messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForOpenMiner() throws EncodeException, DecodeException {
+		var openMiner1 = OpenMinerMessages.of(8025, "id");
+		String encoded = new OpenMinerMessages.Encoder().encode(openMiner1);
+		var openMiner2 = new OpenMinerMessages.Decoder().decode(encoded);
+		assertEquals(openMiner1, openMiner2);
+	}
+
+	@Test
+	@DisplayName("openMiner result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForOpenMinerResult() throws EncodeException, DecodeException {
+		var openMinerResultMessage1 = OpenMinerResultMessages.of(true, "id");
+		String encoded = new OpenMinerResultMessages.Encoder().encode(openMinerResultMessage1);
+		var openMinerResultMessage2 = new OpenMinerResultMessages.Decoder().decode(encoded);
+		assertEquals(openMinerResultMessage1, openMinerResultMessage2);
 	}
 
 	@Test

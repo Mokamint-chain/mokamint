@@ -39,6 +39,7 @@ import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Versions;
@@ -65,6 +66,7 @@ import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
+import jakarta.websocket.DeploymentException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -313,7 +315,23 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public boolean openMiner(int port) throws IOException, ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			return miners.add(RemoteMiners.of(port, config.chainId, keyPair.getPublic()));
+		}
+		catch (DeploymentException e) {
+			throw new IOException(e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
+		// TODO: you should close the miners
 		if (closureLock.stopNewCalls()) {
 			executors.shutdownNow();
 			periodExecutors.shutdownNow();

@@ -33,9 +33,12 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.OpenMinerMessages;
+import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerMessage;
+import io.mokamint.node.messages.api.OpenMinerMessage;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import jakarta.websocket.DeploymentException;
@@ -88,7 +91,8 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 
-		startContainer("", port, AddPeersEndpoint.config(this), RemoveBlockEndpoint.config(this));
+		startContainer("", port, AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this), OpenMinerEndpoint.config(this));
+
 		LOGGER.info(logPrefix + "published");
 	}
 
@@ -113,7 +117,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
-	protected void onAddPeers(AddPeerMessage message, Session session) {
+	protected void onAddPeer(AddPeerMessage message, Session session) {
 		LOGGER.info(logPrefix + "received an " + ADD_PEER_ENDPOINT + " request");
 
 		try {
@@ -155,11 +159,32 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		}
 	};
 
+	protected void onOpenMiner(OpenMinerMessage message, Session session) {
+		LOGGER.info(logPrefix + "received an " + OPEN_MINER_ENDPOINT + " request");
+
+		try {
+			boolean result;
+
+			try {
+				result = node.openMiner(message.getPort());
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
+				sendExceptionAsync(session, e, message.getId());
+				return;
+			}
+
+			sendObjectAsync(session, OpenMinerResultMessages.of(result, message.getId()));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
 	public static class AddPeersEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (AddPeerMessage message) -> getServer().onAddPeers(message, session));
+			addMessageHandler(session, (AddPeerMessage message) -> getServer().onAddPeer(message, session));
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
@@ -168,7 +193,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		}
 	}
 
-	public static class RemoveBlockEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
+	public static class RemovePeerEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
@@ -176,8 +201,21 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
-			return simpleConfig(server, RemoveBlockEndpoint.class, REMOVE_PEER_ENDPOINT,
+			return simpleConfig(server, RemovePeerEndpoint.class, REMOVE_PEER_ENDPOINT,
 					RemovePeerMessages.Decoder.class, RemovePeerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	public static class OpenMinerEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (OpenMinerMessage message) -> getServer().onOpenMiner(message, session));
+	    }
+
+		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
+			return simpleConfig(server, OpenMinerEndpoint.class, OPEN_MINER_ENDPOINT,
+					OpenMinerMessages.Decoder.class, OpenMinerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

@@ -18,7 +18,10 @@ package io.mokamint.node.integration.tests;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +42,7 @@ import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.DeploymentException;
@@ -56,57 +60,26 @@ public class RestrictedNodeServiceTests {
 		}
 	}
 
-	private static class MyRestrictedNode implements RestrictedNodeInternals {
-		private final Set<Peer> allPeers;
-		private final Semaphore semaphore;
-
-		private MyRestrictedNode(Set<Peer> allPeers, Semaphore semaphore) {
-			this.allPeers = allPeers;
-			this.semaphore = semaphore;
-		}
-
-		@Override
-		public boolean add(Peer received) throws TimeoutException, InterruptedException {
-			if (allPeers.remove(received))
-				semaphore.release();
-
-			return true;
-		}
-
-		@Override
-		public boolean remove(Peer peer) {
-			return true;
-		}
-
-		@Override
-		public void addOnClosedHandler(CloseHandler handler) {}
-
-		@Override
-		public void removeOnCloseHandler(CloseHandler handler) {}
-
-		@Override
-		public void close() {}
-	}
-
 	@Test
-	@DisplayName("if an addPeers() request reaches the service, it adds the peers to the node and it sends back a void result")
-	public void serviceAddPeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
+	@DisplayName("if an addPeer() request reaches the service, it adds the peers to the node and it sends back a void result")
+	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, PeerRejectedException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(Peers.of(new URI("ws://my.machine:8032")));
 		allPeers.add(Peers.of(new URI("ws://her.machine:8033")));
 
-		var node = new MyRestrictedNode(allPeers, semaphore);
+		var node = mock(RestrictedNodeInternals.class);
+		when(node.add(any())).then(invocation -> {
+			if (allPeers.remove(invocation.getArguments()[0]))
+				semaphore.release();
+
+			return true;
+		});
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI, 2000L);
-			}
-
-			@Override
-			protected void onAddPeerResult() {
-				semaphore.release();
 			}
 
 			private void sendAddPeer(Peer peer) throws ClosedNodeException {
@@ -123,8 +96,8 @@ public class RestrictedNodeServiceTests {
 	}
 
 	@Test
-	@DisplayName("if a removePeers() request reaches the service, it removes the peers from the node and it sends back a void result")
-	public void serviceRemovePeersWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException {
+	@DisplayName("if a removePeer() request reaches the service, it removes the peers from the node and it sends back a void result")
+	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -132,17 +105,18 @@ public class RestrictedNodeServiceTests {
 		allPeers.add(peer1);
 		allPeers.add(peer2);
 
-		var node = new MyRestrictedNode(allPeers, semaphore);
+		var node = mock(RestrictedNodeInternals.class);
+		when(node.remove(any())).then(invocation -> {
+			if (allPeers.remove(invocation.getArguments()[0]))
+				semaphore.release();
+
+			return true;
+		});
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI, 2000L);
-			}
-
-			@Override
-			protected void onRemovePeerResult() {
-				semaphore.release();
 			}
 
 			private void sendRemovePeer(Peer peer) throws ClosedNodeException {
@@ -153,6 +127,42 @@ public class RestrictedNodeServiceTests {
 		try (var service = RestrictedNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendRemovePeer(peer1);
 			client.sendRemovePeer(peer2);
+			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if an openMiner() request reaches the service, it opens the miner and it sends back a void result")
+	public void serviceOpenMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
+		var port1 = 8025;
+		var port2 = 8028;
+		Set<Integer> allPorts = new HashSet<>();
+		allPorts.add(port1);
+		allPorts.add(port2);
+
+		var node = mock(RestrictedNodeInternals.class);
+		when(node.openMiner(anyInt())).then(invocation -> {
+			if (allPorts.remove(invocation.getArguments()[0]))
+				semaphore.release();
+
+			return true;
+		});
+		
+		class MyTestClient extends RemoteRestrictedNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L);
+			}
+
+			private void sendOpenMiner(int port) throws ClosedNodeException {
+				sendOpenMiner(port, "id");
+			}
+		}
+
+		try (var service = RestrictedNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendOpenMiner(port1);
+			client.sendOpenMiner(port2);
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
 		}
 	}
