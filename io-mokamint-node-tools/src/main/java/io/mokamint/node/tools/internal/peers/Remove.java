@@ -18,7 +18,11 @@ package io.mokamint.node.tools.internal.peers;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.mokamint.node.Peers;
@@ -27,46 +31,59 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.remote.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
+import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "rm", description = "Remove peers from a node.")
 public class Remove extends AbstractRestrictedRpcCommand {
 
-	@Parameters(description = { "the URIs of the peers to remove" })
+	@Parameters(description = "the URIs of the peers to remove")
 	private URI[] uris;
 
-	private void body(RemoteRestrictedNode remote) {
-		Stream.of(uris).parallel().map(Peers::of).forEach(peer -> removePeer(peer, remote));
-	}
+	private class Run {
+		private final RemoteRestrictedNode remote;
+		private final List<String> successes = new ArrayList<>();
 
-	private void removePeer(Peer peer, RemoteRestrictedNode remote) {
-		try {
-			remote.remove(peer);
+		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException {
+			this.remote = remote;
+
+			Optional<Exception> exception = Stream.of(uris)
+				.parallel()
+				.map(Peers::of)
+				.map(this::removePeer)
+				.flatMap(Optional::stream)
+				.findFirst();
+
 			if (json())
-				System.out.println(new Peers.Encoder().encode(peer));
-			else
-				System.out.println("Removed " + peer + " from the set of peers");
+				System.out.println(successes.stream().collect(Collectors.joining(", ", "[", "]")));
+
+			if (exception.isPresent())
+				throwAsRpcCommandException(exception.get());
 		}
-		catch (ClosedNodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red The connection to " + restrictedUri() + " has been closed!|@"));
-		}
-		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red I/O error in the connection to " + peer + "!|@"));
-		}
-		catch (TimeoutException e) {
-			System.out.println(Ansi.AUTO.string("@|red Connection time-out while removing peer " + peer + "!|@"));
-		}
-		catch (InterruptedException e) {
-			System.out.println(Ansi.AUTO.string("@|red Process interrupted while waiting for removal of peer " + peer + "!|@"));
-		}
-		catch (DatabaseException e) {
-			System.out.println(Ansi.AUTO.string("@|red The database of the node seems corrupted!|@"));
-		}
-		catch (EncodeException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot encode " + peer + " in JSON!|@"));
+
+		private Optional<Exception> removePeer(Peer peer) {
+			try {
+				if (remote.remove(peer))
+					if (json())
+						successes.add(new Peers.Encoder().encode(peer));
+					else
+						System.out.println("Removed " + peer + " from the set of peers");
+				else
+					System.out.println("Peer " + peer + " has not been removed from the set of peers");
+
+				return Optional.empty();
+			}
+			catch (RuntimeException | ClosedNodeException | TimeoutException | InterruptedException | DatabaseException e) {
+				return Optional.of(e);
+			}
+			catch (EncodeException e) {
+				return Optional.of(new CommandException("Cannot encode " + peer + " in JSON", e));
+			}
+			catch (IOException e) {
+				return Optional.of(new CommandException("Cannot establish a connection to " + peer, e));
+			}
 		}
 	}
 
@@ -75,6 +92,6 @@ public class Remove extends AbstractRestrictedRpcCommand {
 		if (uris == null)
 			uris = new URI[0];
 
-		execute(this::body);
+		execute(Run::new);
 	}
 }

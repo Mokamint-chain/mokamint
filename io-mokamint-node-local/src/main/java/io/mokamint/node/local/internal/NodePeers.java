@@ -693,16 +693,16 @@ public class NodePeers implements AutoCloseable {
 
 		long timeDifference = ChronoUnit.MILLIS.between(nodeInfo.getLocalDateTimeUTC(), peerInfo.getLocalDateTimeUTC());
 		if (Math.abs(timeDifference) > config.peerMaxTimeDifference)
-			throw new PeerRejectedException("the time of the peer is more than " + config.peerMaxTimeDifference + " ms away from the time of this node");
+			throw new PeerRejectedException("The time of the peer is more than " + config.peerMaxTimeDifference + " ms away from the time of this node");
 			
 		UUID peerUUID = peerInfo.getUUID();
 		if (peerUUID.equals(db.getUUID()))
-			throw new PeerRejectedException("a peer cannot be added as a peer of itself: same UUID " + peerUUID);
+			throw new PeerRejectedException("A peer cannot be added as a peer of itself: same UUID " + peerUUID);
 
 		var peerVersion = peerInfo.getVersion();
 		var nodeVersion = nodeInfo.getVersion();
 		if (!peerVersion.canWorkWith(nodeVersion))
-			throw new PeerRejectedException("peer version " + peerVersion + " is incompatible with this node's version " + nodeVersion);
+			throw new PeerRejectedException("Peer version " + peerVersion + " is incompatible with this node's version " + nodeVersion);
 
 		ChainInfo peerChainInfo;
 
@@ -711,11 +711,11 @@ public class NodePeers implements AutoCloseable {
 		}
 		catch (ClosedNodeException e) {
 			// it's the remote peer that is closed, not our node
-			throw new PeerRejectedException("the peer is closed", e);
+			throw new PeerRejectedException("The peer is closed", e);
 		}
 		catch (DatabaseException e) {
 			// it's the remote peer that has database problems, not our node
-			throw new PeerRejectedException("the peer's database is corrupted", e);
+			throw new PeerRejectedException("The peer's database is corrupted", e);
 		}
 
 		Optional<byte[]> peerGenesisHash = peerChainInfo.getGenesisHash();
@@ -723,7 +723,7 @@ public class NodePeers implements AutoCloseable {
 			ChainInfo nodeChainInfo = node.getChainInfo();
 			Optional<byte[]> nodeGenesisHash = nodeChainInfo.getGenesisHash();
 			if (nodeGenesisHash.isPresent() && !Arrays.equals(peerGenesisHash.get(), nodeGenesisHash.get()))
-				throw new PeerRejectedException("the peers have distinct genesis blocks");
+				throw new PeerRejectedException("The peers have distinct genesis blocks");
 		}
 
 		return timeDifference;

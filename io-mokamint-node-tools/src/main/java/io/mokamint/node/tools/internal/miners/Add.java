@@ -34,33 +34,33 @@ import picocli.CommandLine.Parameters;
 @Command(name = "add", description = "Add remote miners to a node.")
 public class Add extends AbstractRestrictedRpcCommand {
 
-	@Parameters(description = { "the ports where the miners must be published" })
+	@Parameters(description = "the ports where the miners must be published")
 	private int[] ports;
 
 	private class Run {
 		private final RemoteRestrictedNode remote;
-		private final List<Integer> successes = new ArrayList<>();
+		private final List<String> successes = new ArrayList<>();
 
 		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException {
 			this.remote = remote;
 
-			Exception[] exceptions = IntStream.of(ports)
+			Optional<Exception> exception = IntStream.of(ports)
 				.parallel()
 				.mapToObj(this::addMiner)
 				.flatMap(Optional::stream)
-				.toArray(Exception[]::new);
+				.findFirst();
 
 			if (json())
-				System.out.println(successes.stream().map(Object::toString).collect(Collectors.joining(", ", "[", "]")));
+				System.out.println(successes.stream().collect(Collectors.joining(", ", "[", "]")));
 
-			if (exceptions.length >= 1)
-				throwAsRpcCommandException(exceptions[0]);
+			if (exception.isPresent())
+				throwAsRpcCommandException(exception.get());
 		}
 
 		private Optional<Exception> addMiner(int port) {
 			try {
 				if (remote.openMiner(port)) {
-					successes.add(port);
+					successes.add(String.valueOf(port));
 					if (!json())
 						System.out.println("Opened a remote miner at port " + port);
 				}
