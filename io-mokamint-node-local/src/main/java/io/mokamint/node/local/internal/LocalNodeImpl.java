@@ -330,6 +330,27 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public boolean closeMiner(UUID uuid) throws ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			Optional<Miner> maybeMiner = miners.get().filter(miner -> miner.getUUID().equals(uuid)).findFirst();
+			if (maybeMiner.isPresent()) {
+				var miner = maybeMiner.get();
+				if (miners.remove(miner)) {
+					miner.close();
+					return true;
+				}
+			}
+
+			return false;
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		// TODO: you should close the miners
 		if (closureLock.stopNewCalls()) {

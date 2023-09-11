@@ -39,7 +39,6 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
@@ -75,11 +74,8 @@ public class Start extends AbstractCommand {
 	@Option(names = "--init", description = "create a genesis block at start-up and start mining", defaultValue = "false")
 	private boolean init;
 
-	@Option(names = "--uri", description = "the URI of the node, such as \"ws://my.machine.com:8030\"; if missing, the node will try to use its public IP")
+	@Option(names = "--uri", description = "the URI of the node, such as ws://my.machine.com:8030; if missing, the node will try to use its public IP")
 	private URI uri;
-
-	@Option(names = "--miner-port", description = "network ports where a remote miner will be published")
-	private int[] minerPorts;
 
 	@Option(names = "--public-port", description = "network ports where the public API of the node will be published")
 	private int[] publicPorts;
@@ -87,7 +83,7 @@ public class Start extends AbstractCommand {
 	@Option(names = "--restricted-port", description = "network ports where the restricted API of the node will be published")
 	private int[] restrictedPorts;
 
-	@Option(names = { "--password" }, description = "the password of the key of the node; if not specified, it will be asked interactively")
+	@Option(names = "--password", description = "the password of the key of the node; if not specified, it will be asked interactively")
     private String password;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
@@ -101,9 +97,6 @@ public class Start extends AbstractCommand {
 
 		if (plots == null)
 			plots = new Path[0];
-
-		if (minerPorts == null)
-			minerPorts = new int[0];
 
 		if (publicPorts == null)
 			publicPorts = new int[0];
@@ -157,7 +150,7 @@ public class Start extends AbstractCommand {
 				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to a URI with wrong syntax!", e);
 			}
 
-			loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(0);
+			loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(0);
 		}
 
 		/**
@@ -165,32 +158,32 @@ public class Start extends AbstractCommand {
 		 * 
 		 * @param pos the index to the next plot to load
 		 */
-		private void loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(int pos) {
+		private void loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(int pos) {
 			if (pos < Start.this.plots.length) {
 				System.out.print("Loading " + Start.this.plots[pos] + "... ");
 				try (var plot = Plots.load(Start.this.plots[pos])) {
 					System.out.println("done.");
 					plots.add(plot);
-					loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+					loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(pos + 1);
 				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
 					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + Start.this.plots[pos] + "\"", e);
-					loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+					loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
 					LOGGER.log(Level.SEVERE, "the plot file \"" + Start.this.plots[pos] + "\" uses an unknown hashing algorithm", e);
-					loadPlotsCreateLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
+					loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(pos + 1);
 				}
 			}
 			else
-				createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices();
+				createLocalMinerStartNodeAndPublishNodeServices();
 		}
 
-		private void createLocalMinerPublishRemoteMinersStartNodeAndPublishNodeServices() {
+		private void createLocalMinerStartNodeAndPublishNodeServices() {
 			if (plots.isEmpty())
-				publishRemoteMinersStartNodeAndPublishNodeServices(0);
+				startNodeAndPublishNodeServices();
 			else {
 				if (plots.size() == 1)
 					System.out.print("Starting a local miner with 1 plot... ");
@@ -200,38 +193,9 @@ public class Start extends AbstractCommand {
 				try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
 					System.out.println("done.");
 					miners.add(miner);
-					publishRemoteMinersStartNodeAndPublishNodeServices(0);
+					startNodeAndPublishNodeServices();
 				}
 			}
-		}
-
-		private void publishRemoteMinersStartNodeAndPublishNodeServices(int pos) {
-			if (pos < minerPorts.length) {
-				System.out.print("Starting a remote miner listening at port " + minerPorts[pos] + " of localhost... ");
-				try (var remote = RemoteMiners.of(minerPorts[pos], config.chainId, keyPair.getPublic())) {
-					System.out.println("done.");
-					miners.add(remote);
-					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
-				}
-				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while creating a remote miner at port " + minerPorts[pos], e);
-					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
-				}
-				catch (DeploymentException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
-					LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
-					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
-				}
-				catch (IllegalArgumentException e) {
-					// for instance, the port number is illegal
-					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
-					LOGGER.log(Level.SEVERE, "cannot deploy a remote miner at port " + minerPorts[pos], e);
-					publishRemoteMinersStartNodeAndPublishNodeServices(pos + 1);
-				}
-			}
-			else
-				startNodeAndPublishNodeServices();
 		}
 
 		private void startNodeAndPublishNodeServices() {

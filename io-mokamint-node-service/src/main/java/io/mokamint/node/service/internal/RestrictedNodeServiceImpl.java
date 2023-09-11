@@ -32,12 +32,15 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
+import io.mokamint.node.messages.CloseMinerMessages;
+import io.mokamint.node.messages.CloseMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerMessage;
+import io.mokamint.node.messages.api.CloseMinerMessage;
 import io.mokamint.node.messages.api.OpenMinerMessage;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 import io.mokamint.node.service.api.RestrictedNodeService;
@@ -91,7 +94,9 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 
-		startContainer("", port, AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this), OpenMinerEndpoint.config(this));
+		startContainer("", port,
+			AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this),
+			OpenMinerEndpoint.config(this), CloseMinerEndpoint.config(this));
 
 		LOGGER.info(logPrefix + "published");
 	}
@@ -180,6 +185,27 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		}
 	};
 
+	protected void onCloseMiner(CloseMinerMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + CLOSE_MINER_ENDPOINT + " request");
+
+		try {
+			boolean result;
+
+			try {
+				result = node.closeMiner(message.getUUID());
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+				return;
+			}
+
+			sendObjectAsync(session, CloseMinerResultMessages.of(result, message.getId()));
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
 	public static class AddPeersEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
 
 		@Override
@@ -216,6 +242,19 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
 			return simpleConfig(server, OpenMinerEndpoint.class, OPEN_MINER_ENDPOINT,
 					OpenMinerMessages.Decoder.class, OpenMinerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	public static class CloseMinerEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (CloseMinerMessage message) -> getServer().onCloseMiner(message, session));
+	    }
+
+		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
+			return simpleConfig(server, CloseMinerEndpoint.class, CLOSE_MINER_ENDPOINT,
+					CloseMinerMessages.Decoder.class, CloseMinerResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

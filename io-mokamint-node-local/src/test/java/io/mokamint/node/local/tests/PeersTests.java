@@ -325,7 +325,7 @@ public class PeersTests {
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
-			assertTrue(e.getMessage().contains("peer version 0.0.1 is incompatible with this node's version 0.3.1"));
+			assertTrue(e.getMessage().startsWith("Peer version 0.0.1 is incompatible with this node's version 0.3.1"));
 		}
 	}
 
@@ -350,7 +350,7 @@ public class PeersTests {
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
-			assertTrue(e.getMessage().contains("peer version 0.0.1 is incompatible with this node's version 1.0.1"));
+			assertTrue(e.getMessage().startsWith("Peer version 0.0.1 is incompatible with this node's version 1.0.1"));
 		}
 	}
 
@@ -374,12 +374,12 @@ public class PeersTests {
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
-			assertTrue(e.getMessage().contains("the time of the peer is more than " + node.getConfig().peerMaxTimeDifference + " ms away"));
+			assertTrue(e.getMessage().startsWith("The time of the peer is more than " + node.getConfig().peerMaxTimeDifference + " ms away"));
 		}
 	}
 
 	@Test
-	@DisplayName("two peers whose genesisi block is different cannot work together")
+	@DisplayName("two peers whose genesis block is different cannot work together")
 	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, DatabaseException, ClosedNodeException, AlreadyInitializedException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
@@ -398,7 +398,7 @@ public class PeersTests {
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
-			assertTrue(e.getMessage().contains("the peers have distinct genesis blocks"));
+			assertTrue(e.getMessage().startsWith("The peers have distinct genesis blocks"));
 		}
 	}
 

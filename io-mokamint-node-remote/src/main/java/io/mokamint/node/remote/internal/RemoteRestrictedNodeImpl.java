@@ -17,11 +17,13 @@ limitations under the License.
 package io.mokamint.node.remote.internal;
 
 import static io.mokamint.node.service.api.RestrictedNodeService.ADD_PEER_ENDPOINT;
+import static io.mokamint.node.service.api.RestrictedNodeService.CLOSE_MINER_ENDPOINT;
 import static io.mokamint.node.service.api.RestrictedNodeService.OPEN_MINER_ENDPOINT;
 import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,12 +36,15 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
+import io.mokamint.node.messages.CloseMinerMessages;
+import io.mokamint.node.messages.CloseMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
+import io.mokamint.node.messages.api.CloseMinerResultMessage;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 import io.mokamint.node.messages.api.RemovePeerResultMessage;
@@ -79,6 +84,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
 		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
 		addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
+		addSession(CLOSE_MINER_ENDPOINT, uri, CloseMinerEndpoint::new);
 	}
 
 	@Override
@@ -89,6 +95,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 			onRemovePeerResult();
 		else if (message instanceof OpenMinerResultMessage)
 			onOpenMinerResult();
+		else if (message instanceof CloseMinerResultMessage)
+			onCloseMinerResult();
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
@@ -130,6 +138,15 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
+	protected void sendCloseMiner(UUID uuid, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(CLOSE_MINER_ENDPOINT), CloseMinerMessages.of(uuid, id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
 	private RuntimeException unexpectedException(Exception e) {
 		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
 		return new RuntimeException("Unexpected exception", e);
@@ -141,6 +158,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onAddPeerResult() {}
 	protected void onRemovePeerResult() {}
 	protected void onOpenMinerResult() {}
+	protected void onCloseMinerResult() {}
 	protected void onException(ExceptionMessage message) {}
 
 	@Override
@@ -245,5 +263,33 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private boolean processOpenMinerException(ExceptionMessage message) {
 		var exception = message.getExceptionClass();
 		return IOException.class.isAssignableFrom(exception) || processStandardExceptions(message);
+	}
+
+	private class CloseMinerEndpoint extends Endpoint {
+		
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, CloseMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CloseMinerMessages.Encoder.class);
+		}
+	}
+
+	@Override
+	public boolean closeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendCloseMiner(uuid, id);
+		try {
+			return queues.waitForResult(id, this::processCloseMinerSuccess, this::processStandardExceptions);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private Boolean processCloseMinerSuccess(RpcMessage message) {
+		return message instanceof CloseMinerResultMessage cmrm ? cmrm.get() : null;
 	}
 }

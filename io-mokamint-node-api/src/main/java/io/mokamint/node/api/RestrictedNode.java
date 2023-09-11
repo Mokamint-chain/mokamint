@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -67,5 +68,15 @@ public interface RestrictedNode extends Node {
 	 */
 	boolean openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 
-	//boolean closeMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+	/**
+	 * Closes a miner.
+	 * 
+	 * @param uuid the unique identifier of the miner to close
+	 * @return true if and only if the miner has been closed; this is false if, for instance, no miner
+	 *         with the given {@code uuid} is currently open
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if this node is closed
+	 */
+	boolean closeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException;
 }

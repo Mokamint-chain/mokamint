@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.LogManager;
 
@@ -40,10 +41,12 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
+import io.mokamint.node.messages.CloseMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerMessage;
+import io.mokamint.node.messages.api.CloseMinerMessage;
 import io.mokamint.node.messages.api.OpenMinerMessage;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
@@ -113,7 +116,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works in case of TimeoutException")
-	public void addPeerWorksInCaseOfTimeoutException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeerWorksInCaseOfTimeoutException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "timeout";
 
@@ -138,7 +141,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works in case of InterruptedException")
-	public void addPeerWorksInCaseOfInterruptedException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeerWorksInCaseOfInterruptedException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "interrupted";
 
@@ -163,7 +166,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works in case of IOException")
-	public void addPeerWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeerWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "I/O error";
 
@@ -188,7 +191,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works in case of IncompatiblePeerException")
-	public void addPeerWorksInCaseOfIncompatiblePeerException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeerWorksInCaseOfIncompatiblePeerException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "incompatible peers";
 
@@ -213,7 +216,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("addPeer() works in case of DatabaseException")
-	public void addPeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "database exception";
 
@@ -238,7 +241,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("if addPeer() is slow, it leads to a time-out")
-	public void addPeerWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeerWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 
 		class MyServer extends RestrictedTestServer {
@@ -266,7 +269,7 @@ public class RemoteRestrictedNodeTests {
 	
 	@Test
 	@DisplayName("addPeer() works in case of unexpected exception")
-	public void addPeerWorksInCaseOfUnxepectedException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void addPeerWorksInCaseOfUnxepectedException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "unexpected";
 
@@ -317,36 +320,8 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
-	@DisplayName("openMiner() works")
-	public void openMinerWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
-		var ports1 = Set.of(8025,  8026, 8027);
-		var ports2 = new HashSet<Integer>();
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws DeploymentException, IOException {}
-
-			@Override
-			protected void onOpenMiner(OpenMinerMessage message, Session session) {
-				ports2.add(message.getPort());
-				try {
-					sendObjectAsync(session, OpenMinerResultMessages.of(true, message.getId()));
-				}
-				catch (IOException e) {}
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			for (int port: ports1)
-				remote.openMiner(port);
-
-			assertEquals(ports1, ports2);
-		}
-	}
-
-	@Test
 	@DisplayName("removePeer() works in case of DatabaseException")
-	public void removePeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void removePeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "database exception";
 
@@ -371,7 +346,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("removePeer() works in case of IOException")
-	public void removePeerWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException {
+	public void removePeerWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
 		var exceptionMessage = "I/O exception";
 
@@ -395,8 +370,36 @@ public class RemoteRestrictedNodeTests {
 	}
 
 	@Test
+	@DisplayName("openMiner() works")
+	public void openMinerWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+		var ports1 = Set.of(8025,  8026, 8027);
+		var ports2 = new HashSet<Integer>();
+	
+		class MyServer extends RestrictedTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onOpenMiner(OpenMinerMessage message, Session session) {
+				ports2.add(message.getPort());
+				try {
+					sendObjectAsync(session, OpenMinerResultMessages.of(true, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			for (int port: ports1)
+				remote.openMiner(port);
+	
+			assertEquals(ports1, ports2);
+		}
+	}
+
+	@Test
 	@DisplayName("openMiner() works in case of IOException")
-	public void openMinerWorksInCaseOfIOException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void openMinerWorksInCaseOfIOException() throws DeploymentException, IOException, InterruptedException {
 		var exceptionMessage = "I/O exception";
 
 		class MyServer extends RestrictedTestServer {
@@ -420,7 +423,7 @@ public class RemoteRestrictedNodeTests {
 
 	@Test
 	@DisplayName("openMiner() works in case of TimeoutException")
-	public void openMinerWorksInCaseOfTimeoutException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void openMinerWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
 		var exceptionMessage = "timeout exception";
 
 		class MyServer extends RestrictedTestServer {
@@ -438,6 +441,82 @@ public class RemoteRestrictedNodeTests {
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(TimeoutException.class, () -> remote.openMiner(8025));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("closeMiner() works")
+	public void closeMinerWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+		var uuids1 = Set.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+		var uuids2 = new HashSet<UUID>();
+	
+		class MyServer extends RestrictedTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onCloseMiner(CloseMinerMessage message, Session session) {
+				uuids2.add(message.getUUID());
+				try {
+					sendObjectAsync(session, CloseMinerResultMessages.of(true, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			for (UUID uuid: uuids1)
+				remote.closeMiner(uuid);
+	
+			assertEquals(uuids1, uuids2);
+		}
+	}
+
+	@Test
+	@DisplayName("closeMiner() works in case of InterruptedException")
+	public void closeMinerWorksInCaseOfIOException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "interrupted exception";
+
+		class MyServer extends RestrictedTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onCloseMiner(CloseMinerMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(InterruptedException.class, () -> remote.closeMiner(UUID.randomUUID()));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("closeMiner() works in case of TimeoutException")
+	public void closeMinerWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "timeout exception";
+
+		class MyServer extends RestrictedTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onCloseMiner(CloseMinerMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(TimeoutException.class, () -> remote.closeMiner(UUID.randomUUID()));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

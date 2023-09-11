@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -61,7 +62,7 @@ public class RestrictedNodeServiceTests {
 	}
 
 	@Test
-	@DisplayName("if an addPeer() request reaches the service, it adds the peers to the node and it sends back a void result")
+	@DisplayName("if an addPeer() request reaches the service, it adds the peers to the node and it sends back a result")
 	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, PeerRejectedException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var allPeers = new HashSet<Peer>();
@@ -96,7 +97,7 @@ public class RestrictedNodeServiceTests {
 	}
 
 	@Test
-	@DisplayName("if a removePeer() request reaches the service, it removes the peers from the node and it sends back a void result")
+	@DisplayName("if a removePeer() request reaches the service, it removes the peers from the node and it sends back a result")
 	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
@@ -132,7 +133,7 @@ public class RestrictedNodeServiceTests {
 	}
 
 	@Test
-	@DisplayName("if an openMiner() request reaches the service, it opens the miner and it sends back a void result")
+	@DisplayName("if an openMiner() request reaches the service, it opens the miner and it sends back a result")
 	public void serviceOpenMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
 		var port1 = 8025;
@@ -163,6 +164,42 @@ public class RestrictedNodeServiceTests {
 		try (var service = RestrictedNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendOpenMiner(port1);
 			client.sendOpenMiner(port2);
+			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a closeMiner() request reaches the service, it closes the miner and it sends back a result")
+	public void serviceCloseMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
+		Set<UUID> allUUIDs = new HashSet<>();
+		var uuid1 = UUID.randomUUID();
+		var uuid2 = UUID.randomUUID();
+		allUUIDs.add(uuid1);
+		allUUIDs.add(uuid2);
+
+		var node = mock(RestrictedNodeInternals.class);
+		when(node.closeMiner(any())).then(invocation -> {
+			if (allUUIDs.remove(invocation.getArguments()[0]))
+				semaphore.release();
+
+			return true;
+		});
+		
+		class MyTestClient extends RemoteRestrictedNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L);
+			}
+
+			private void sendCloseMiner(UUID uuid) throws ClosedNodeException {
+				sendCloseMiner(uuid, "id");
+			}
+		}
+
+		try (var service = RestrictedNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendCloseMiner(uuid1);
+			client.sendCloseMiner(uuid2);
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
 		}
 	}
