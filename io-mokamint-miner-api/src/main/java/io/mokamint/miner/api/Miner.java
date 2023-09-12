@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.api;
 
+import java.io.IOException;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -42,8 +43,13 @@ public interface Miner extends AutoCloseable {
 	 */
 	void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed);
 
+	/**
+	 * Closes the miner.
+	 * 
+	 * @throws IOException if the miner failed to close
+	 */
 	@Override
-	void close();
+	void close() throws IOException;
 
 	/**
 	 * Yields the unique identifier of the miner.

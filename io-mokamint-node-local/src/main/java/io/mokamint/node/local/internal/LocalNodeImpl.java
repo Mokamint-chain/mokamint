@@ -330,7 +330,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public boolean closeMiner(UUID uuid) throws ClosedNodeException {
+	public boolean closeMiner(UUID uuid) throws ClosedNodeException, IOException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {

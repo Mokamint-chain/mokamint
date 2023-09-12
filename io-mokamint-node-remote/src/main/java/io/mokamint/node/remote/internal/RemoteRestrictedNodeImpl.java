@@ -274,14 +274,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public boolean closeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException {
+	public boolean closeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException, IOException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendCloseMiner(uuid, id);
 		try {
-			return queues.waitForResult(id, this::processCloseMinerSuccess, this::processStandardExceptions);
+			return queues.waitForResult(id, this::processCloseMinerSuccess, this::processCloseMinerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -291,5 +291,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	private Boolean processCloseMinerSuccess(RpcMessage message) {
 		return message instanceof CloseMinerResultMessage cmrm ? cmrm.get() : null;
+	}
+
+	private boolean processCloseMinerException(ExceptionMessage message) {
+		var exception = message.getExceptionClass();
+		return IOException.class.isAssignableFrom(exception) || processStandardExceptions(message);
 	}
 }

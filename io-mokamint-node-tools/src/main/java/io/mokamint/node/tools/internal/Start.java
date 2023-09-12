@@ -195,6 +195,9 @@ public class Start extends AbstractCommand {
 					miners.add(miner);
 					startNodeAndPublishNodeServices();
 				}
+				catch (IOException e) {
+					throw new CommandException("Failed to close the local miner", e);
+				}
 			}
 		}
 

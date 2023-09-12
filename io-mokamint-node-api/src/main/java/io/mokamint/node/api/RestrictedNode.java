@@ -48,7 +48,7 @@ public interface RestrictedNode extends Node {
 	 * 
 	 * @param peer the peer to remove
 	 * @return true if and only if the peer has been actually removed
-	 * @throws IOException if a connection to the peer cannot be established
+	 * @throws IOException if the connection to the peer failed to close
 	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
@@ -77,6 +77,7 @@ public interface RestrictedNode extends Node {
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
+	 * @throws IOException if the miner failed to close
 	 */
-	boolean closeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException;
+	boolean closeMiner(UUID uuid) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 }

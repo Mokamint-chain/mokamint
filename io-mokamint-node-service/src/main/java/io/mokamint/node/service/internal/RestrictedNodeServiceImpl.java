@@ -194,7 +194,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.closeMiner(message.getUUID());
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}

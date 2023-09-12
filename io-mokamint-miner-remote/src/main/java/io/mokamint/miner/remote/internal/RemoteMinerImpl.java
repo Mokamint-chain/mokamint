@@ -116,8 +116,14 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void close() {
-		stopContainer();
+	public void close() throws IOException {
+		try {
+			stopContainer();
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
+
 		LOGGER.info("closed the remote miner at ws://localhost:" + port);
 	}
 
