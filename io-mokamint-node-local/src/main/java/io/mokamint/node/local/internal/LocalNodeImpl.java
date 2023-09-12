@@ -170,7 +170,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.app = app;
 			this.version = Versions.current();
 			this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
-			this.miners = new NodeMiners(this, Stream.empty()); // TODO
+			this.miners = new NodeMiners(this);
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new NodePeers(this);
 			this.uuid = peers.getUUID();
@@ -333,15 +333,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		try {
 			Optional<Miner> maybeMiner = miners.get().filter(miner -> miner.getUUID().equals(uuid)).findFirst();
-			if (maybeMiner.isPresent()) {
-				var miner = maybeMiner.get();
-				if (miners.remove(miner)) {
-					miner.close();
-					return true;
-				}
-			}
-
-			return false;
+			return maybeMiner.isPresent() && miners.remove(maybeMiner.get());
 		}
 		finally {
 			closureLock.afterCall();
@@ -350,7 +342,6 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
-		// TODO: you should close the miners
 		if (closureLock.stopNewCalls()) {
 			executors.shutdownNow();
 			periodExecutors.shutdownNow();
@@ -379,7 +370,12 @@ public class LocalNodeImpl implements LocalNode {
 					blockchain.close();
 				}
 				finally {
-					peers.close();
+					try {
+						peers.close();
+					}
+					finally {
+						miners.close();
+					}
 				}
 			}
 

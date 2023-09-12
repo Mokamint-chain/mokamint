@@ -18,6 +18,7 @@ package io.mokamint.node.local.internal.blockchain;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
@@ -151,9 +154,9 @@ public class MineNewBlockTask implements Task {
 		}
 
 		@Override
-		public void body() {
+		public void body() throws IOException {
 			// all miners timed-out
-			miners.get().forEach(miner -> miners.punish(miner, config.minerPunishmentForTimeout));
+			CheckRunnable.check(IOException.class, () -> miners.get().forEach(UncheckConsumer.uncheck(miner -> miners.punish(miner, config.minerPunishmentForTimeout))));
 			node.submit(new DelayedMineNewBlockTask(node));
 		}
 
@@ -187,7 +190,7 @@ public class MineNewBlockTask implements Task {
 		}
 
 		@Override
-		public void body() {
+		public void body() throws IOException {
 			miners.punish(miner, points);
 		}
 

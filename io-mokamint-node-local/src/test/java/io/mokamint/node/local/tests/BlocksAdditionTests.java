@@ -120,7 +120,7 @@ public class BlocksAdditionTests {
 		when(node.getConfig()).thenReturn(config);
 		when(node.getApplication()).thenReturn(application);
 		when(node.getPeers()).thenReturn(peers);
-		var miners = new NodeMiners(node, Stream.empty());
+		var miners = new NodeMiners(node);
 		when(node.getMiners()).thenReturn(miners);
 		var blockchain = new Blockchain(node);
 		when(node.getBlockchain()).thenReturn(blockchain);
