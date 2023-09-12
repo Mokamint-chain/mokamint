@@ -338,7 +338,7 @@ public class MineNewBlockTask implements Task {
 		 * @param miner the miner that found the deadline
 		 */
 		private void onDeadlineComputed(Deadline deadline, Miner miner) {
-			LOGGER.info(logPrefix + "received deadline " + deadline);
+			LOGGER.info(logPrefix + "miner " + miner.getUUID() + " sent deadline " + deadline);
 
 			if (done)
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it arrived too late");

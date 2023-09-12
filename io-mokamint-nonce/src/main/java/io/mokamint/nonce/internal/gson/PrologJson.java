@@ -33,6 +33,11 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 	private String plotPublicKey;
 	private String extra;
 
+	/**
+	 * Used by Gson.
+	 */
+	protected PrologJson() {}
+
 	protected PrologJson(Prolog prolog) {
 		this.chainId = prolog.getChainId();
 		this.nodePublicKey = prolog.getNodePublicKeyBase58();

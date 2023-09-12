@@ -18,6 +18,7 @@ package io.mokamint.node.tools.internal;
 
 import io.mokamint.node.tools.internal.miners.Add;
 import io.mokamint.node.tools.internal.miners.List;
+import io.mokamint.node.tools.internal.miners.Remove;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
@@ -26,7 +27,8 @@ import picocli.CommandLine.HelpCommand;
 	subcommands = {
 		Add.class,
 		HelpCommand.class,
-		List.class
+		List.class,
+		Remove.class
 	})
 public class Miners {
 }

@@ -33,6 +33,11 @@ public abstract class DeadlineDescriptionJson implements JsonRepresentation<Dead
 	private String data;
 	private String hashing;
 
+	/**
+	 * Used by Gson.
+	 */
+	protected DeadlineDescriptionJson() {}
+
 	protected DeadlineDescriptionJson(DeadlineDescription description) {
 		this.scoopNumber = description.getScoopNumber();
 		this.data = Hex.toHexString(description.getData());

@@ -58,6 +58,11 @@ public final class DeadlineDescriptions {
 	public static class Json extends DeadlineDescriptionJson {
 
     	/**
+    	 * Used by Gson.
+    	 */
+		public Json() {}
+
+		/**
     	 * Creates the Json representation for the given deadline description.
     	 * 
     	 * @param description the deadline description

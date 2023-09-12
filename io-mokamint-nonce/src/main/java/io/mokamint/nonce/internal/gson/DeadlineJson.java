@@ -38,6 +38,11 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	private String data;
 	private String hashing;
 
+	/**
+	 * Used by Gson.
+	 */
+	protected DeadlineJson() {}
+
 	protected DeadlineJson(Deadline deadline) {
 		this.prolog = new Prologs.Json(deadline.getProlog());
 		this.progressive = deadline.getProgressive();

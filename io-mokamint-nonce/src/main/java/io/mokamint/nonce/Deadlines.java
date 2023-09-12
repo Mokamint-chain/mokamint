@@ -78,6 +78,11 @@ public final class Deadlines {
 	public static class Json extends DeadlineJson {
 
     	/**
+    	 * Used by Gson.
+    	 */
+		public Json() {}
+ 
+		/**
     	 * Creates the Json representation for the given deadline.
     	 * 
     	 * @param deadline the deadline

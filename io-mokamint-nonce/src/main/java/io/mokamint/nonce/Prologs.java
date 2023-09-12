@@ -97,6 +97,11 @@ public final class Prologs {
 	public static class Json extends PrologJson {
 
     	/**
+    	 * Used by Gson.
+    	 */
+		public Json() {}
+
+		/**
     	 * Creates the Json representation for the given prolog.
     	 * 
     	 * @param prolog the prolog
