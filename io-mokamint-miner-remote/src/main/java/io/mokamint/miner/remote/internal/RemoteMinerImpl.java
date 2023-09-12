@@ -34,6 +34,8 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.CloseReason;
+import jakarta.websocket.CloseReason.CloseCode;
+import jakarta.websocket.CloseReason.CloseCodes;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -145,12 +147,22 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		LOGGER.info("miner service " + session.getId() + ": unbound");
 	}
 
-	private void processDeadline(Deadline deadline) {
+	private void processDeadline(Deadline deadline, Session session) {
 		// TODO
 		// we avoid sending back illegal deadlines, since otherwise we take the risk
 		// of being banned by the node we are working for
 		LOGGER.info("notifying deadline: " + deadline);
 		requests.runAllActionsFor(deadline);
+
+		removeSession(session);
+		LOGGER.warning("closing session " + session.getId() + " since it sent an illegal deadline");
+
+		try {
+			session.close(new CloseReason(CloseCodes.CANNOT_ACCEPT, "pippo"));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot close session " + session.getId());
+		}
 	}
 
 	/**
@@ -162,7 +174,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 	    	server.addSession(session);
-	    	addMessageHandler(session, server::processDeadline);
+	    	addMessageHandler(session, (Deadline deadline) -> server.processDeadline(deadline, session));
 	    }
 
 	    @Override

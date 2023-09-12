@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,18 +31,17 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.LogManager;
-import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
@@ -55,10 +55,13 @@ import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.BlockMinedEve
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.IllegalDeadlineEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoDeadlineFoundEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Prolog;
+import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.Plot;
 
 public class EventsTests {
 
@@ -77,13 +80,24 @@ public class EventsTests {
 	 */
 	private static Prolog prolog;
 
+	/**
+	 * A plot used for creating deadlines.
+	 */
+	private static Plot plot;
+
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
+	public static void beforeAll(@TempDir Path dir) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
 		nodeKey = id25519.getKeyPair();
 		prolog = Prologs.of("octopus", nodeKey.getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 100, mkConfig(dir).hashingForDeadlines, __ -> {});
+	}
+
+	@AfterAll
+	public static void afterAll() throws IOException {
+		plot.close();
 	}
 
 	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
@@ -96,7 +110,6 @@ public class EventsTests {
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
-	@Timeout(1)
 	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
 		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
@@ -105,6 +118,7 @@ public class EventsTests {
 
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
+				// we mock the deadline since we need a very small value in order to discover a block quickly
 				Deadline deadline = mock(Deadline.class);
 				when(deadline.isValid()).thenReturn(true); // <--
 				when(deadline.getProlog()).thenReturn(prolog);
@@ -152,30 +166,29 @@ public class EventsTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			semaphore.acquire();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
-	@Timeout(1)
 	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
-		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
-	
+
 		var myMiner = new Miner() {
 	
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
-				Deadline deadline = mock(Deadline.class);
-				when(deadline.isValid()).thenReturn(false); // <--
-				when(deadline.getProlog()).thenReturn(prolog);
-				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
-				when(deadline.getData()).thenReturn(description.getData());
-				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashing()).thenReturn(description.getHashing());
+				try {
+					var deadline = plot.getSmallestDeadline(description);
+					var illegalDeadline = Deadlines.of(
+							deadline.getProlog(),
+							Math.abs(deadline.getProgressive() + 1), deadline.getValue(),
+							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 
-				onDeadlineComputed.accept(deadline);
+					onDeadlineComputed.accept(illegalDeadline);
+				}
+				catch (IOException e) {}
 			}
 
 			@Override
@@ -210,13 +223,12 @@ public class EventsTests {
 		}
 	
 		try (var node = new MyLocalNode()) {
-			semaphore.acquire();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
-	@Timeout(1)
 	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, AlreadyInitializedException {
 		var semaphore = new Semaphore(0);
 
@@ -236,20 +248,20 @@ public class EventsTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			semaphore.acquire();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
-	@Timeout(3) // three times config.deadlineWaitTimeout
 	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException {
+		var config = mkConfig(dir);
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true);
+				super(config, nodeKey, app, true);
 
 				try {
 					add(mock(Miner.class));
@@ -269,41 +281,31 @@ public class EventsTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			semaphore.acquire();
+			assertTrue(semaphore.tryAcquire(1, 3 * config.deadlineWaitTimeout, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a miner provides deadlines for the wrong hashing algorithm, an event is signalled to the node")
-	@Timeout(1)
-	public void signalIfDeadlineForWrongAlgorithmArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException {
+	@DisplayName("if a miner provides deadlines for the wrong chain id, an event is signalled to the node")
+	public void signalIfDeadlineForWrongChainIdArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException {
 		var semaphore = new Semaphore(0);
-		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 		var config = mkConfig(dir);
-
-		// we look for a hashing algorithm different from that expected by the node
-		String algoName = Stream.of(HashingAlgorithms.TYPES.values())
-			.map(Enum::name)
-			.map(String::toLowerCase)
-			.filter(name -> !name.equals(config.getHashingForDeadlines().getName()))
-			.findAny()
-			.get();
-
-		var algo = HashingAlgorithms.of(algoName, Function.identity());
 
 		var myMiner = new Miner() {
 
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
-				Deadline deadline = mock(Deadline.class);
-				when(deadline.isValid()).thenReturn(true); // <--
-				when(deadline.getProlog()).thenReturn(prolog);
-				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
-				when(deadline.getData()).thenReturn(description.getData());
-				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashing()).thenReturn(algo);
+				try {
+					var deadline = plot.getSmallestDeadline(description);
+					var prolog = deadline.getProlog();
+					var illegalDeadline = Deadlines.of(
+							Prologs.of(prolog.getChainId() + "!", prolog.getNodePublicKey(), prolog.getPlotPublicKey(), prolog.getExtra()),
+							deadline.getProgressive(), deadline.getValue(),
+							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 
-				onDeadlineComputed.accept(deadline);
+					onDeadlineComputed.accept(illegalDeadline);
+				}
+				catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {}
 			}
 
 			@Override
@@ -338,7 +340,7 @@ public class EventsTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			semaphore.acquire();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 

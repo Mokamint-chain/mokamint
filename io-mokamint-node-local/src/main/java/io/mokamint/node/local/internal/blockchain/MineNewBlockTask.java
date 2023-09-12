@@ -44,6 +44,7 @@ import io.mokamint.node.local.internal.NodeMiners;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * A task that mines a new block, above a previous block.
@@ -345,8 +346,14 @@ public class MineNewBlockTask implements Task {
 
 			if (done)
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it arrived too late");
-			else if (currentDeadline.isWorseThan(deadline)) {
-				if (isLegal(deadline)) {
+			else if (!deadline.matches(description))
+				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not for the expected description");
+			else if (!currentDeadline.isWorseThan(deadline))
+				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
+			else {
+				try {
+					node.check(deadline);
+
 					if (currentDeadline.updateIfWorseThan(deadline)) {
 						LOGGER.info(logPrefix + "improved deadline to " + deadline);
 						setWaker(deadline);
@@ -354,25 +361,11 @@ public class MineNewBlockTask implements Task {
 					else
 						LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
 				}
-				else {
-					LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is illegal");
+				catch (IllegalDeadlineException e) {
+					LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());
 					node.submit(new IllegalDeadlineEvent(miner));
 				}
 			}
-			else
-				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
-		}
-
-		/**
-		 * Determines if a deadline, provided by a miner, is legal for the creation of the next block.
-		 * This means that it matches the description expected for the deadline of the next block and
-		 * it is legal for the node, for which the block is being mined.
-		 * 
-		 * @param deadline the deadline to check
-		 * @return true if and only if all the above conditions hold
-		 */
-		private boolean isLegal(Deadline deadline) {
-			return deadline.matches(description) && node.isLegal(deadline);
 		}
 
 		private void waitUntilDeadlineExpires() throws InterruptedException {

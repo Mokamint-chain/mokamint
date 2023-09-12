@@ -66,6 +66,7 @@ import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.IllegalDeadlineException;
 import jakarta.websocket.DeploymentException;
 
 /**
@@ -510,15 +511,19 @@ public class LocalNodeImpl implements LocalNode {
 	 * </ul>
 	 * 
 	 * @param deadline the deadline to check
-	 * @return true if and only if all the above conditions hold
+	 * @throws IllegalDeadlineException if and only if {@code deadline} is illegal
 	 */
-	public boolean isLegal(Deadline deadline) {
+	public void check(Deadline deadline) throws IllegalDeadlineException {
 		var prolog = deadline.getProlog();
 
-		return deadline.isValid() &&
-			prolog.getChainId().equals(config.chainId) &&
-			prolog.getNodePublicKey().equals(keyPair.getPublic()) &&
-			app.prologExtraIsValid(prolog.getExtra());
+		if (!deadline.isValid())
+			throw new IllegalDeadlineException("Invalid deadline");
+		else if (!prolog.getChainId().equals(config.chainId))
+			throw new IllegalDeadlineException("Wrong chain identifier in deadline");
+		else if (!prolog.getNodePublicKey().equals(keyPair.getPublic()))
+			throw new IllegalDeadlineException("Wrong node key in deadline");
+		else if (!app.prologExtraIsValid(prolog.getExtra()))
+			throw new IllegalDeadlineException("Invalid extra data in deadline");
 	}
 
 	/**

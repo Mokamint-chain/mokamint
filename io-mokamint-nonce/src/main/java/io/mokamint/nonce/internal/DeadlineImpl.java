@@ -198,7 +198,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public String toString() {
-		return "prolog: { " + prolog + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", nonce: " + progressive + ", value: " + Hex.toHexString(value);
+		return "prolog: { " + prolog + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data)
+			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing.getName();
 	}
 
 	@Override
