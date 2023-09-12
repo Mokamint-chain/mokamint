@@ -21,7 +21,6 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.application.api.Application;
-import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
@@ -38,7 +37,6 @@ public interface LocalNodes {
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
-	 * @param miners the miners
 	 * @return the local node
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
@@ -47,9 +45,9 @@ public interface LocalNodes {
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 */
-	static LocalNode of(Config config, KeyPair keyPair, Application app, boolean init, Miner... miners)
+	static LocalNode of(Config config, KeyPair keyPair, Application app, boolean init)
 			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 
-		return new LocalNodeImpl(config, keyPair, app, init, miners);
+		return new LocalNodeImpl(config, keyPair, app, init);
 	}
 }

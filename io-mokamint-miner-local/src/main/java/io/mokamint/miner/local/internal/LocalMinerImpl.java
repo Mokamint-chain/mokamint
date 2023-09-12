@@ -54,7 +54,7 @@ public class LocalMinerImpl implements Miner {
 	 */
 	public LocalMinerImpl(Plot... plots) {
 		if (plots.length < 1)
-			throw new IllegalArgumentException("a miner needs at least a plot file");
+			throw new IllegalArgumentException("A local miner needs at least one plot file");
 
 		this.plots = plots;
 	}

@@ -45,6 +45,7 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -128,7 +129,14 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true, myMiner);
+				super(mkConfig(dir), nodeKey, app, true);
+
+				try {
+					add(myMiner);
+				}
+				catch (ClosedNodeException e) {
+					// impossible
+				}
 			}
 
 			@Override
@@ -182,7 +190,14 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 	
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true, myMiner);
+				super(mkConfig(dir), nodeKey, app, true);
+
+				try {
+					add(myMiner);
+				}
+				catch (ClosedNodeException e) {
+					// impossible
+				}
 			}
 	
 			@Override
@@ -208,7 +223,7 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true, new Miner[0]);
+				super(mkConfig(dir), nodeKey, app, true);
 			}
 
 			@Override
@@ -230,12 +245,18 @@ public class EventsTests {
 	@Timeout(3) // three times config.deadlineWaitTimeout
 	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, DatabaseException, AlreadyInitializedException {
 		var semaphore = new Semaphore(0);
-		var myMiner = mock(Miner.class);
 
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true, myMiner);
+				super(mkConfig(dir), nodeKey, app, true);
+
+				try {
+					add(mock(Miner.class));
+				}
+				catch (ClosedNodeException e) {
+					// impossible
+				}
 			}
 
 			@Override
@@ -297,7 +318,14 @@ public class EventsTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(config, nodeKey, app, true, myMiner);
+				super(config, nodeKey, app, true);
+
+				try {
+					add(myMiner);
+				}
+				catch (ClosedNodeException e) {
+					// impossible
+				}				
 			}
 
 			@Override

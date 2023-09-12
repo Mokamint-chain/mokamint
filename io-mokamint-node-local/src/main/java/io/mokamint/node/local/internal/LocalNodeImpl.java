@@ -149,15 +149,13 @@ public class LocalNodeImpl implements LocalNode {
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
-	 * Creates a local node of a Mokamint blockchain, for the given application,
-	 * using the given miners.
+	 * Creates a local node of a Mokamint blockchain, for the given application.
 	 * 
 	 * @param config the configuration of the node
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
-	 * @param miners the miners
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
@@ -165,14 +163,14 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 */
-	public LocalNodeImpl(Config config, KeyPair keyPair, Application app, boolean init, Miner... miners) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
+	public LocalNodeImpl(Config config, KeyPair keyPair, Application app, boolean init) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 		try {
 			this.config = config;
 			this.keyPair = keyPair;
 			this.app = app;
 			this.version = Versions.current();
 			this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
-			this.miners = new NodeMiners(this, Stream.of(miners));
+			this.miners = new NodeMiners(this, Stream.empty()); // TODO
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new NodePeers(this);
 			this.uuid = peers.getUUID();
@@ -319,7 +317,7 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return miners.add(RemoteMiners.of(port, config.chainId, keyPair.getPublic()));
+			return add(RemoteMiners.of(port, config.chainId, keyPair.getPublic()));
 		}
 		catch (DeploymentException e) {
 			throw new IOException(e);
@@ -482,6 +480,28 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public Blockchain getBlockchain() {
 		return blockchain;
+	}
+
+	@Override
+	public boolean add(Miner miner) throws ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			var count = miners.get().count();
+
+			if (miners.add(miner)) {
+				// we require to mine, when there was no miners before this call
+				if (count == 0L)
+					blockchain.startMining();
+
+				return true;
+			}
+			else
+				return false;
+		}
+		finally {
+			closureLock.afterCall();
+		}
 	}
 
 	/**

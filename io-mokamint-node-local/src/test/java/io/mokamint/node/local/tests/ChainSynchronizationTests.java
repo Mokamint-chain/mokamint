@@ -48,7 +48,6 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
-import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
@@ -83,11 +82,6 @@ public class ChainSynchronizationTests {
 	private static KeyPair nodeKey;
 
 	/**
-	 * The miner used by the mining node.
-	 */
-	private static Miner miner;
-
-	/**
 	 * The number of blocks that must be mined.
 	 */
 	private final static int HOW_MANY = 20;
@@ -109,12 +103,10 @@ public class ChainSynchronizationTests {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 
 		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, hashing, __ -> {});
-		miner = LocalMiners.of(plot);
 	}
 
 	@AfterAll
 	public static void afterAll() throws IOException {
-		miner.close();
 		plot.close();
 	}
 
@@ -138,7 +130,14 @@ public class ChainSynchronizationTests {
 	private class MiningNode extends LocalNodeImpl {
 
 		private MiningNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-			super(config, nodeKey, app, true, miner);
+			super(config, nodeKey, app, true);
+
+			try {
+				add(LocalMiners.of(plot));
+			}
+			catch (ClosedNodeException e) {
+				// impossible, the node is not closed at this stage!
+			}
 		}
 
 		@Override

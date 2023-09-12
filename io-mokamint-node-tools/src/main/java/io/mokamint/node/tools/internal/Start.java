@@ -37,8 +37,8 @@ import java.util.logging.Logger;
 import io.hotmoka.crypto.Entropies;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
-import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.Config;
@@ -123,7 +123,6 @@ public class Start extends AbstractCommand {
 		private final KeyPair keyPair;
 		private final Config config;
 		private final List<Plot> plots = new ArrayList<>();
-		private final List<Miner> miners = new ArrayList<>();
 		private LocalNode node;
 
 		private Run() {
@@ -150,7 +149,7 @@ public class Start extends AbstractCommand {
 				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to a URI with wrong syntax!", e);
 			}
 
-			loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(0);
+			loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(0);
 		}
 
 		/**
@@ -158,50 +157,30 @@ public class Start extends AbstractCommand {
 		 * 
 		 * @param pos the index to the next plot to load
 		 */
-		private void loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(int pos) {
+		private void loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(int pos) {
 			if (pos < Start.this.plots.length) {
 				System.out.print("Loading " + Start.this.plots[pos] + "... ");
 				try (var plot = Plots.load(Start.this.plots[pos])) {
 					System.out.println("done.");
 					plots.add(plot);
-					loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(pos + 1);
+					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
 					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + Start.this.plots[pos] + "\"", e);
-					loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(pos + 1);
+					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
 					LOGGER.log(Level.SEVERE, "the plot file \"" + Start.this.plots[pos] + "\" uses an unknown hashing algorithm", e);
-					loadPlotsCreateLocalMinerStartNodeAndPublishNodeServices(pos + 1);
+					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 			}
 			else
-				createLocalMinerStartNodeAndPublishNodeServices();
+				startNodeOpenLocalMinerAndPublishNodeServices();
 		}
 
-		private void createLocalMinerStartNodeAndPublishNodeServices() {
-			if (plots.isEmpty())
-				startNodeAndPublishNodeServices();
-			else {
-				if (plots.size() == 1)
-					System.out.print("Starting a local miner with 1 plot... ");
-				else
-					System.out.print("Starting a local miner with " + plots.size() + " plots... ");
-
-				try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
-					System.out.println("done.");
-					miners.add(miner);
-					startNodeAndPublishNodeServices();
-				}
-				catch (IOException e) {
-					throw new CommandException("Failed to close the local miner", e);
-				}
-			}
-		}
-
-		private void startNodeAndPublishNodeServices() {
+		private void startNodeOpenLocalMinerAndPublishNodeServices() {
 			try {
 				createWorkingDirectory();
 			}
@@ -216,8 +195,27 @@ public class Start extends AbstractCommand {
 			}
 
 			System.out.print("Starting a local node... ");
-			try (var node = this.node = LocalNodes.of(config, keyPair, new TestApplication(), init, miners.toArray(Miner[]::new))) {
+			try (var node = this.node = LocalNodes.of(config, keyPair, new TestApplication(), init)) {
 				System.out.println("done.");
+
+				if (plots.size() >= 1) {
+					if (plots.size() == 1)
+						System.out.print("Starting a local miner with 1 plot... ");
+					else
+						System.out.print("Starting a local miner with " + plots.size() + " plots... ");
+
+					try {
+						if (node.add(LocalMiners.of(plots.toArray(Plot[]::new))))
+							System.out.println("done.");
+						else
+							System.out.println("no miner has been created.");
+					}
+					catch (ClosedNodeException e) {
+						// unexpected: who could have closed the node?
+						throw new CommandException("The node has been unexpectedly closed", e);
+					}
+				}
+
 				publishPublicAndRestrictedNodeServices(0);
 			}
 			catch (NoSuchAlgorithmException e) {

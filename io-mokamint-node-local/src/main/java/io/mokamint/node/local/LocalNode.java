@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
+import io.mokamint.miner.api.Miner;
 import io.mokamint.node.FullNodeInternals;
+import io.mokamint.node.api.ClosedNodeException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -25,4 +27,15 @@ public interface LocalNode extends FullNodeInternals {
 
 	@Override
 	Config getConfig();
+
+	/**
+	 * Adds the given miner to the miners of this node.
+	 * The responsibility of closing the miner passes to the node:
+	 * the miner will be closed when the node will be closed.
+	 * 
+	 * @param miner the miner
+	 * @return true if and only if the miner has been added
+	 * @throws ClosedNodeException if this node is closed
+	 */
+	boolean add(Miner miner) throws ClosedNodeException;
 }
