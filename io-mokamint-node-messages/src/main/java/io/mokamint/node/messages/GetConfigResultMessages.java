@@ -44,12 +44,24 @@ public final class GetConfigResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetConfigResultMessageEncoder {}
+	public static class Encoder extends GetConfigResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetConfigResultMessageDecoder {}
+	public static class Decoder extends GetConfigResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

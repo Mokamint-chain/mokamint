@@ -43,12 +43,24 @@ public final class OpenMinerMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends OpenMinerMessageEncoder {}
+	public static class Encoder extends OpenMinerMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends OpenMinerMessageDecoder {}
+	public static class Decoder extends OpenMinerMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

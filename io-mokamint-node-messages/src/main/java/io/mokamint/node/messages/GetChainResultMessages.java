@@ -44,12 +44,24 @@ public final class GetChainResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetChainResultMessageEncoder {}
+	public static class Encoder extends GetChainResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetChainResultMessageDecoder {}
+	public static class Decoder extends GetChainResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

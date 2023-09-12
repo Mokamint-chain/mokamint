@@ -84,12 +84,24 @@ public final class Prologs {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PrologEncoder {}
+	public static class Encoder extends PrologEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PrologDecoder {}
+	public static class Decoder extends PrologDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

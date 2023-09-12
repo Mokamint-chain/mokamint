@@ -46,12 +46,24 @@ public final class WhisperPeersMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends WhisperPeersMessageEncoder {}
+	public static class Encoder extends WhisperPeersMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends WhisperPeersMessageDecoder {}
+	public static class Decoder extends WhisperPeersMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

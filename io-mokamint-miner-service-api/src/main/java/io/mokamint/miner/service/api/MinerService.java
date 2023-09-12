@@ -27,12 +27,13 @@ import io.hotmoka.websockets.client.api.WebSocketClient;
 public interface MinerService extends WebSocketClient {
 
 	/**
-	 * Waits until the websockets session gets disconnected (for instance
+	 * Waits until the service gets disconnected (for instance
 	 * because the remote miner has been turned off or is not reachable anymore).
 	 * 
+	 * @return a description of why the service has been disconnected
 	 * @throws InterruptedException if the thread has been interrupted while waiting
 	 */
-	void waitUntilDisconnected() throws InterruptedException;
+	String waitUntilDisconnected() throws InterruptedException;
 
 	/**
 	 * Closes the service.

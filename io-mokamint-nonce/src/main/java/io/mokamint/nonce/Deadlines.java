@@ -65,12 +65,24 @@ public final class Deadlines {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends DeadlineEncoder {}
+	public static class Encoder extends DeadlineEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends DeadlineDecoder {}
+	public static class Decoder extends DeadlineDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

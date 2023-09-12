@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.io.IOException;
-import java.security.PublicKey;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,8 +32,9 @@ import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.DeadlineValidityCheck;
+import io.mokamint.nonce.api.IllegalDeadlineException;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.CloseReason.CloseCode;
 import jakarta.websocket.CloseReason.CloseCodes;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -59,14 +59,9 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	private final int port;
 
 	/**
-	 * The chain identifier of the blockchain for which the deadlines will be used.
+	 * An algorithm to check if deadlines are valid for the node we are working for.
 	 */
-	private final String chainId;
-
-	/**
-	 * The public key of the node for which the deadlines are computed.
-	 */
-	private final PublicKey nodePublicKey;
+	private final DeadlineValidityCheck check;
 
 	private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
 
@@ -83,10 +78,9 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	 * @throws DeploymentException if the miner cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public RemoteMinerImpl(int port, String chainId, PublicKey nodePublicKey) throws DeploymentException, IOException {
+	public RemoteMinerImpl(int port, DeadlineValidityCheck check) throws DeploymentException, IOException {
 		this.port = port;
-		this.chainId = chainId;
-		this.nodePublicKey = nodePublicKey;
+		this.check = check;
 
 		startContainer("", port, RemoteMinerEndpoint.config(this));
     	LOGGER.info("published a remote miner at ws://localhost:" + port);
@@ -118,7 +112,9 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() throws IOException { // TODO
+		//sessions.forEach(session -> close(session, new CloseReason(CloseCodes.GOING_AWAY, "The remote miner has been turned off.")));
+
 		try {
 			stopContainer();
 		}
@@ -148,20 +144,28 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	private void processDeadline(Deadline deadline, Session session) {
-		// TODO
 		// we avoid sending back illegal deadlines, since otherwise we take the risk
 		// of being banned by the node we are working for
+		try {
+			check.check(deadline);
+		}
+		catch (IllegalDeadlineException e) {
+			removeSession(session);
+			LOGGER.warning("closing session " + session.getId() + " since it sent an illegal deadline: " + e.getMessage());
+			close(session, new CloseReason(CloseCodes.CANNOT_ACCEPT, e.getMessage()));
+			return;
+		}
+
 		LOGGER.info("notifying deadline: " + deadline);
 		requests.runAllActionsFor(deadline);
+	}
 
-		removeSession(session);
-		LOGGER.warning("closing session " + session.getId() + " since it sent an illegal deadline");
-
+	private void close(Session session, CloseReason reason) {
 		try {
-			session.close(new CloseReason(CloseCodes.CANNOT_ACCEPT, "pippo"));
+			session.close(reason);
 		}
 		catch (IOException e) {
-			LOGGER.warning("cannot close session " + session.getId());
+			LOGGER.warning("cannot close session " + session.getId() + ": " + e.getMessage());
 		}
 	}
 

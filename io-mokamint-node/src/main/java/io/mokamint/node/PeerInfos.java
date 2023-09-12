@@ -45,12 +45,24 @@ public abstract class PeerInfos {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PeerInfoEncoder {}
+	public static class Encoder extends PeerInfoEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PeerInfoDecoder {}
+	public static class Decoder extends PeerInfoDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

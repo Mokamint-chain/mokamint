@@ -44,12 +44,24 @@ public final class GetInfoResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetInfoResultMessageEncoder {}
+	public static class Encoder extends GetInfoResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetInfoResultMessageDecoder {}
+	public static class Decoder extends GetInfoResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

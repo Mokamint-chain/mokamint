@@ -45,12 +45,24 @@ public abstract class MinerInfos {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MinerInfoEncoder {}
+	public static class Encoder extends MinerInfoEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MinerInfoDecoder {}
+	public static class Decoder extends MinerInfoDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

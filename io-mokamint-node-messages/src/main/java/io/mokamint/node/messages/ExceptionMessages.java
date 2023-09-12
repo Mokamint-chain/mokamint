@@ -55,12 +55,24 @@ public final class ExceptionMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends ExceptionResultMessageEncoder {}
+	public static class Encoder extends ExceptionResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends ExceptionResultMessageDecoder {}
+	public static class Decoder extends ExceptionResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

@@ -42,10 +42,22 @@ public final class GetBlockMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetBlockMessageEncoder {}
+	public static class Encoder extends GetBlockMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetBlockMessageDecoder {}
+	public static class Decoder extends GetBlockMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 }

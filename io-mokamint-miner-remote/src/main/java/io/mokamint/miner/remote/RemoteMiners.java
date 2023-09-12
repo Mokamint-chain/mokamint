@@ -17,10 +17,10 @@ limitations under the License.
 package io.mokamint.miner.remote;
 
 import java.io.IOException;
-import java.security.PublicKey;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.internal.RemoteMinerImpl;
+import io.mokamint.nonce.api.DeadlineValidityCheck;
 import jakarta.websocket.DeploymentException;
 
 /**
@@ -34,13 +34,12 @@ public abstract class RemoteMiners {
 	 * Yields and opens a new remote miner.
 	 * 
 	 * @param port the http port where the server is opened on localhost
+	 * @param check an algorithm to check if a deadline is valid for the node this miner is working for
 	 * @return the new remote miner
-	 * @param chainId the chain identifier of the blockchain for which the deadlines will be used
-	 * @param nodePublicKey the public key of the node for which the deadlines are computed
 	 * @throws DeploymentException if the remote mining endpoint could not be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static Miner of(int port, String chainId, PublicKey nodePublicKey) throws DeploymentException, IOException {
-		return new RemoteMinerImpl(port, chainId, nodePublicKey);
+	public static Miner of(int port, DeadlineValidityCheck check) throws DeploymentException, IOException {
+		return new RemoteMinerImpl(port, check);
 	}
 }

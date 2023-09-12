@@ -52,14 +52,13 @@ public class RemoteMinerTests {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 
 		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = received -> {
 			if (description.equals(received))
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025, "chainid", ed25519.getKeyPair().getPublic());
+		try (var remote = RemoteMiners.of(8025, _deadline -> {});
 			 var client1 = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived);
 			 var client2 = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
 			remote.requestDeadline(description, deadline -> {});
@@ -88,7 +87,7 @@ public class RemoteMinerTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025, "octopus", nodePublicKey); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
+		try (var remote = RemoteMiners.of(8025, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
 			remote.requestDeadline(description, onDeadlineReceived);
 			remote.requestDeadline(description, onDeadlineReceived);
 			client.send(deadline);
@@ -117,7 +116,7 @@ public class RemoteMinerTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025, "octopus", nodePublicKey); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
+		try (var remote = RemoteMiners.of(8025, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
 			remote.requestDeadline(description, onDeadlineReceived);
 			client.send(deadline);
 			assertFalse(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
@@ -130,11 +129,9 @@ public class RemoteMinerTests {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = _description -> semaphore.release();
 
-		try (var remote = RemoteMiners.of(8025, "chainid", ed25519.getKeyPair().getPublic());
-			 var client = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
+		try (var remote = RemoteMiners.of(8025, _deadline -> {});
+			 var client = new TestClient(new URI("ws://localhost:8025"), _description -> semaphore.release())) {
 
 			client.close();
 			remote.requestDeadline(description, _deadline -> {});

@@ -318,7 +318,7 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return add(RemoteMiners.of(port, config.chainId, keyPair.getPublic()));
+			return add(RemoteMiners.of(port, this::check));
 		}
 		catch (DeploymentException e) {
 			throw new IOException(e);

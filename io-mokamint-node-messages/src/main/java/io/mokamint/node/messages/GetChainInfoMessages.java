@@ -41,10 +41,22 @@ public final class GetChainInfoMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetChainInfoMessageEncoder {}
+	public static class Encoder extends GetChainInfoMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetChainInfoMessageDecoder {}
+	public static class Decoder extends GetChainInfoMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 }

@@ -41,10 +41,22 @@ public final class GetPeerInfosMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetPeerInfosMessageEncoder {}
+	public static class Encoder extends GetPeerInfosMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetPeerInfosMessageDecoder {}
+	public static class Decoder extends GetPeerInfosMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 }

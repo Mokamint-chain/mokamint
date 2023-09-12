@@ -46,12 +46,24 @@ public final class GetPeerInfosResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetPeerInfosResultMessageEncoder {}
+	public static class Encoder extends GetPeerInfosResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetPeerInfosResultMessageDecoder {}
+	public static class Decoder extends GetPeerInfosResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

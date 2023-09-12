@@ -18,7 +18,6 @@ package io.mokamint.miner.tools.internal;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -44,52 +43,42 @@ import picocli.CommandLine.Parameters;
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
-	@Parameters(description = { "plot files that will be used for mining" } , arity = "1..*" )
+	@Parameters(description = "plot files that will be used for mining" , arity = "1..*")
 	private Path[] plots;
 
-	@Option(names = "--uri", description = { "the address of the remote mining endpoint(s)", "default: ws://localhost:8025" })
-	private URI[] uris;
+	@Option(names = "--uri", description = "the address of the remote mining endpoint", defaultValue = "ws://localhost:8025")
+	private URI uri;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
 	@Override
 	protected void execute() {
-		if (uris == null || uris.length == 0)
-			try {
-				uris = new URI[] { new URI("ws://localhost:8025") };
-			}
-			catch (URISyntaxException e) {
-				// impossible: the syntax of the URI is correct
-				throw new CommandException("The default URI is unexpectedly illegal!", e);
-			}
-
-		loadPlotsAndStartMiningServices(0, new ArrayList<>());
+		loadPlotsAndStartMiningService(0, new ArrayList<>());
 	}
 
 	/**
-	 * Loads the given plots, start a local miner on them and run a node
-	 * with that miner.
+	 * Loads the given plots, start a local miner on them and run a mining service.
 	 * 
 	 * @param pos the index to the next plot to load
 	 * @param plots the plots that are being loaded
 	 */
-	private void loadPlotsAndStartMiningServices(int pos, List<Plot> plots) {
+	private void loadPlotsAndStartMiningService(int pos, List<Plot> plots) {
 		if (pos < this.plots.length) {
-			System.out.print(Ansi.AUTO.string("@|blue Loading " + this.plots[pos] + "... |@"));
+			System.out.print("Loading " + this.plots[pos] + "... ");
 			try (var plot = Plots.load(this.plots[pos])) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				plots.add(plot);
-				loadPlotsAndStartMiningServices(pos + 1, plots);
+				loadPlotsAndStartMiningService(pos + 1, plots);
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
 				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + this.plots[pos] + "\"", e);
-				loadPlotsAndStartMiningServices(pos + 1, plots);
+				loadPlotsAndStartMiningService(pos + 1, plots);
 			}
 			catch (NoSuchAlgorithmException e) {
 				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
 				LOGGER.log(Level.SEVERE, "the plot file \"" + this.plots[pos] + "\" uses an unknown hashing algorithm", e);
-				loadPlotsAndStartMiningServices(pos + 1, plots);
+				loadPlotsAndStartMiningService(pos + 1, plots);
 			}
 		}
 		else if (plots.isEmpty()) {
@@ -97,7 +86,7 @@ public class Start extends AbstractCommand {
 		}
 		else {
 			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
-				startMiningServices(0, false, miner);
+				startMiningService(miner);
 			}
 			catch (IOException e) {
 				throw new CommandException("Failed to close the local miner", e);
@@ -105,31 +94,20 @@ public class Start extends AbstractCommand {
 		}
 	}
 
-	private void startMiningServices(int pos, boolean atLeastOne, Miner miner) {
-		if (pos < uris.length) {
-			System.out.print(Ansi.AUTO.string("@|blue Connecting to " + uris[pos] + "... |@"));
+	private void startMiningService(Miner miner) {
+		System.out.print("Connecting to " + uri + "... ");
 
-			try (var service = MinerServices.open(miner, uris[pos])) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-				startMiningServices(pos + 1, true, miner);
-				service.waitUntilDisconnected();
-			}
-			catch (DeploymentException e) {
-				System.out.println(Ansi.AUTO.string("@|red failed to deploy! Is " + uris[pos] + " up and reachable?|@"));
-				LOGGER.log(Level.SEVERE, "cannot deploy a miner service bound to " + uris[pos], e);
-				startMiningServices(pos + 1, atLeastOne, miner);
-			}
-			catch (IOException e) {
-				System.out.println(Ansi.AUTO.string("@|red I/O failure! Is " + uris[pos] + " up and reachable?|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while deploying a miner service bound to " + uris[pos], e);
-				startMiningServices(pos + 1, atLeastOne, miner);
-			}
-			catch (InterruptedException e) {
-				// unexpected: who could interrupt this process?
-				throw new CommandException("Unexpected interruption!", e);
-			}
-		}
-		else if (atLeastOne)
+		try (var service = MinerServices.open(miner, uri)) {
+			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 			System.out.println(Ansi.AUTO.string("@|green Press CTRL+C to stop the miner.|@"));
+			System.out.println(service.waitUntilDisconnected() + ".");
+		}
+		catch (DeploymentException | IOException e) {
+			throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
+		}
+		catch (InterruptedException e) {
+			// unexpected: who could interrupt this process?
+			throw new CommandException("Unexpected interruption", e);
+		}
 	}
 }

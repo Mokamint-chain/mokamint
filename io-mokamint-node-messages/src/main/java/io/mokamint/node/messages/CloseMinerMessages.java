@@ -45,12 +45,24 @@ public final class CloseMinerMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends CloseMinerMessageEncoder {}
+	public static class Encoder extends CloseMinerMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends CloseMinerMessageDecoder {}
+	public static class Decoder extends CloseMinerMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

@@ -31,6 +31,7 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.CloseReason;
+import jakarta.websocket.CloseReason.CloseCodes;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -61,6 +62,11 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 */
 	private final CountDownLatch latch = new CountDownLatch(1);
 
+	/**
+	 * A description of the reason why the service has been disconnected.
+	 */
+	private volatile String closeReason;
+
 	private final static Logger LOGGER = Logger.getLogger(MinerServiceImpl.class.getName());
 
 	/**
@@ -79,26 +85,39 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	}
 
 	@Override
-	public void waitUntilDisconnected() throws InterruptedException {
+	public String waitUntilDisconnected() throws InterruptedException {
 		latch.await();
+		var closeReason = this.closeReason;
+		return closeReason == null ? "Disconnected" : closeReason;
 	}
 
 	@Override
 	public void close() throws IOException {
+		var reason = new CloseReason(CloseCodes.NORMAL_CLOSURE, "The service has been closed normally.");
+
 		try {
-			session.close();
+			System.out.println("chiudo la session");
+			session.close(reason);
+		}
+		catch (IllegalStateException e) {
+			// TODO
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.WARNING, "cannot close the session", e);
-			disconnect();
+			disconnect(reason);
 			throw e;
 		}
 	}
 
 	/**
 	 * The endpoint calls this when it gets closed, to wake-up who was waiting for disconnection.
+	 * 
+	 * @param reason the reason why the service gets disconnected
 	 */
-	private void disconnect() {
+	private void disconnect(CloseReason reason) {
+		if (closeReason != null)
+			closeReason = reason.getReasonPhrase();
+
+		System.out.println("latch!");
 		latch.countDown();
 	}
 
@@ -122,7 +141,13 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	private void onDeadlineComputed(Deadline deadline) {
 		if (session.isOpen()) {
 			LOGGER.info("sending " + deadline + " to " + uri);
-			session.getAsyncRemote().sendObject(deadline);
+
+			try {
+				sendObjectAsync(session, deadline);
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, "cannot send the deadline to the session", e);
+			}
 		}
 	}
 
@@ -138,8 +163,9 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		}
 
 		@Override
-		public void onClose(Session session, CloseReason closeReason) {
-			disconnect();
+		public void onClose(Session session, CloseReason reason) {
+			System.out.println(reason);
+			disconnect(reason);
 		}
 	}
 }

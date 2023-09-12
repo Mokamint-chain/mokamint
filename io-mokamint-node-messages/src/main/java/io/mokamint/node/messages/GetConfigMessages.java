@@ -41,10 +41,22 @@ public final class GetConfigMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetConfigMessageEncoder {}
+	public static class Encoder extends GetConfigMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetConfigMessageDecoder {}
+	public static class Decoder extends GetConfigMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 }

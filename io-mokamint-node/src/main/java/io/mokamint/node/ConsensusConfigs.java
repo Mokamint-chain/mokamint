@@ -83,12 +83,24 @@ public abstract class ConsensusConfigs {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends ConsensusConfigEncoder {}
+	public static class Encoder extends ConsensusConfigEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends ConsensusConfigDecoder {}
+	public static class Decoder extends ConsensusConfigDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

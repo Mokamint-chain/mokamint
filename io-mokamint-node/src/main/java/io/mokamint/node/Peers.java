@@ -71,12 +71,24 @@ public abstract class Peers {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PeerEncoder {}
+	public static class Encoder extends PeerEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PeerDecoder {}
+	public static class Decoder extends PeerDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

@@ -46,12 +46,24 @@ public final class GetBlockResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetBlockResultMessageEncoder {}
+	public static class Encoder extends GetBlockResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetBlockResultMessageDecoder {}
+	public static class Decoder extends GetBlockResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

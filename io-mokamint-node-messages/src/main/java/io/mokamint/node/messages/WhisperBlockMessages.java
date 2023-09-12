@@ -44,12 +44,24 @@ public final class WhisperBlockMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends WhisperBlockMessageEncoder {}
+	public static class Encoder extends WhisperBlockMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends WhisperBlockMessageDecoder {}
+	public static class Decoder extends WhisperBlockMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

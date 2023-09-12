@@ -45,12 +45,24 @@ public final class DeadlineDescriptions {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends DeadlineDescriptionEncoder {}
+	public static class Encoder extends DeadlineDescriptionEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends DeadlineDescriptionDecoder {}
+	public static class Decoder extends DeadlineDescriptionDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

@@ -43,12 +43,24 @@ public final class AddPeerResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends AddPeerResultMessageEncoder {}
+	public static class Encoder extends AddPeerResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends AddPeerResultMessageDecoder {}
+	public static class Decoder extends AddPeerResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

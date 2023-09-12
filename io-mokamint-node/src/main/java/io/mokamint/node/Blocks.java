@@ -102,12 +102,24 @@ public abstract class Blocks {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends BlockEncoder {}
+	public static class Encoder extends BlockEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends BlockDecoder {}
+	public static class Decoder extends BlockDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

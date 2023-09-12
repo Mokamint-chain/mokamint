@@ -57,12 +57,24 @@ public abstract class Versions {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends VersionEncoder {}
+	public static class Encoder extends VersionEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends VersionDecoder {}
+	public static class Decoder extends VersionDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

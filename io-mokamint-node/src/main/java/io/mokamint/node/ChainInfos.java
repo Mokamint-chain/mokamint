@@ -46,12 +46,24 @@ public abstract class ChainInfos {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends ChainInfoEncoder {}
+	public static class Encoder extends ChainInfoEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends ChainInfoDecoder {}
+	public static class Decoder extends ChainInfoDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
     /**
      * Json representation.

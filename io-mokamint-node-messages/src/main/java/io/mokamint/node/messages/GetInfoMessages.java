@@ -41,10 +41,22 @@ public final class GetInfoMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetInfoMessageEncoder {}
+	public static class Encoder extends GetInfoMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetInfoMessageDecoder {}
+	public static class Decoder extends GetInfoMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 }

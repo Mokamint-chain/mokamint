@@ -46,12 +46,24 @@ public final class GetMinerInfosResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetMinerInfosResultMessageEncoder {}
+	public static class Encoder extends GetMinerInfosResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetMinerInfosResultMessageDecoder {}
+	public static class Decoder extends GetMinerInfosResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.

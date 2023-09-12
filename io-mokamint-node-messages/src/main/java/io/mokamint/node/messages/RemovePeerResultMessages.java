@@ -43,12 +43,24 @@ public final class RemovePeerResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends RemovePeerResultMessageEncoder {}
+	public static class Encoder extends RemovePeerResultMessageEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends RemovePeerResultMessageDecoder {}
+	public static class Decoder extends RemovePeerResultMessageDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
 
 	/**
      * Json representation.
