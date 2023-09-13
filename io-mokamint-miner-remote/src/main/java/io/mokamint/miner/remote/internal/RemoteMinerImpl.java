@@ -112,8 +112,8 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void close() throws IOException { // TODO
-		//sessions.forEach(session -> close(session, new CloseReason(CloseCodes.GOING_AWAY, "The remote miner has been turned off.")));
+	public void close() throws IOException {
+		sessions.forEach(session -> close(session, new CloseReason(CloseCodes.GOING_AWAY, "The remote miner has been turned off.")));
 
 		try {
 			stopContainer();
@@ -150,8 +150,8 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			check.check(deadline);
 		}
 		catch (IllegalDeadlineException e) {
+			LOGGER.warning("removing session " + session.getId() + " since it sent an illegal deadline: " + e.getMessage());
 			removeSession(session);
-			LOGGER.warning("closing session " + session.getId() + " since it sent an illegal deadline: " + e.getMessage());
 			close(session, new CloseReason(CloseCodes.CANNOT_ACCEPT, e.getMessage()));
 			return;
 		}

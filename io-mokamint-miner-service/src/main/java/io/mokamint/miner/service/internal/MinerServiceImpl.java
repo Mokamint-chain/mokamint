@@ -19,6 +19,7 @@ package io.mokamint.miner.service.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,6 +64,11 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	private final CountDownLatch latch = new CountDownLatch(1);
 
 	/**
+	 * True if and only if {@link #close(CloseReason))} has been closed already.
+	 */
+	private final AtomicBoolean isClosed = new AtomicBoolean(false);
+
+	/**
 	 * A description of the reason why the service has been disconnected.
 	 */
 	private volatile String closeReason;
@@ -87,38 +93,22 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	@Override
 	public String waitUntilDisconnected() throws InterruptedException {
 		latch.await();
-		var closeReason = this.closeReason;
-		return closeReason == null ? "Disconnected" : closeReason;
+		return closeReason;
 	}
 
 	@Override
 	public void close() throws IOException {
-		var reason = new CloseReason(CloseCodes.NORMAL_CLOSURE, "The service has been closed normally.");
-
-		try {
-			System.out.println("chiudo la session");
-			session.close(reason);
-		}
-		catch (IllegalStateException e) {
-			// TODO
-		}
-		catch (IOException e) {
-			disconnect(reason);
-			throw e;
-		}
+		close(new CloseReason(CloseCodes.NORMAL_CLOSURE, "Closed normally."));
 	}
 
-	/**
-	 * The endpoint calls this when it gets closed, to wake-up who was waiting for disconnection.
-	 * 
-	 * @param reason the reason why the service gets disconnected
-	 */
-	private void disconnect(CloseReason reason) {
-		if (closeReason != null)
+	private void close(CloseReason reason) throws IOException {
+		if (!isClosed.getAndSet(true)) {
+			LOGGER.info("miner service being closed with reason: " + reason);
 			closeReason = reason.getReasonPhrase();
-
-		System.out.println("latch!");
-		latch.countDown();
+			latch.countDown();
+			session.close();
+			LOGGER.info("miner service unbound from " + uri);
+		}
 	}
 
 	/**
@@ -128,8 +118,10 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * @param description the description of the requested deadline
 	 */
 	private void requestDeadline(DeadlineDescription description) {
-		LOGGER.info("received deadline request: " + description + " from " + uri);
-		miner.requestDeadline(description, this::onDeadlineComputed);
+		if (!isClosed.get()) {
+			LOGGER.info("received deadline request: " + description + " from " + uri);
+			miner.requestDeadline(description, this::onDeadlineComputed);
+		}
 	}
 
 	/**
@@ -164,8 +156,12 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 
 		@Override
 		public void onClose(Session session, CloseReason reason) {
-			System.out.println(reason);
-			disconnect(reason);
+			try {
+				close(reason);
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.WARNING, "cannot close the session", e);
+			}
 		}
 	}
 }

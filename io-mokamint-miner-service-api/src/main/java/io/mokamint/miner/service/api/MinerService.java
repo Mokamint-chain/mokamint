@@ -38,7 +38,7 @@ public interface MinerService extends WebSocketClient {
 	/**
 	 * Closes the service.
 	 * 
-	 * @throws IOException if some I/O error occurred
+	 * @throws IOException if an I/O error occurred
 	 */
 	@Override
 	void close() throws IOException;

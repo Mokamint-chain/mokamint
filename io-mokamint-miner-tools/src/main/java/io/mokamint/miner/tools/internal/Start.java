@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.miner.tools.internal;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -28,6 +30,7 @@ import java.util.logging.Logger;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
+import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
@@ -99,8 +102,9 @@ public class Start extends AbstractCommand {
 
 		try (var service = MinerServices.open(miner, uri)) {
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-			System.out.println(Ansi.AUTO.string("@|green Press CTRL+C to stop the miner.|@"));
-			System.out.println(service.waitUntilDisconnected() + ".");
+			new Thread(() -> closeServiceIfKeyPressed(service)).start();
+			System.out.println("Service terminated: " + service.waitUntilDisconnected());
+			Thread.sleep(100); // guarantees flushing of log messages from the concurrent thread
 		}
 		catch (DeploymentException | IOException e) {
 			throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
@@ -108,6 +112,25 @@ public class Start extends AbstractCommand {
 		catch (InterruptedException e) {
 			// unexpected: who could interrupt this process?
 			throw new CommandException("Unexpected interruption", e);
+		}
+	}
+
+	private void closeServiceIfKeyPressed(MinerService service) {
+		try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
+			System.out.println(Ansi.AUTO.string("@|green Press any key to stop the miner.|@"));
+			reader.readLine();
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
+			LOGGER.log(Level.SEVERE, "cannot access the standard input", e);
+		}
+
+		try {
+			service.close(); // this will unlock the waitUntilDisconnected() above
+		}
+		catch (IOException e) {
+			System.out.println(Ansi.AUTO.string("@|red Cannot close the service!|@"));
+			LOGGER.log(Level.SEVERE, "cannot close the service", e);
 		}
 	}
 }
