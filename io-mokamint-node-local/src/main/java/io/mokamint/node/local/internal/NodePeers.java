@@ -686,7 +686,7 @@ public class NodePeers implements AutoCloseable {
 		}
 		catch (ClosedNodeException e) {
 			// it's the remote peer that is closed, not our node
-			throw new PeerRejectedException("the peer is closed", e);
+			throw new PeerRejectedException("The peer is closed", e);
 		}
 
 		NodeInfo nodeInfo = node.getInfo();
