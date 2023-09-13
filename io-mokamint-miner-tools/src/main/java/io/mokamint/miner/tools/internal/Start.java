@@ -104,7 +104,6 @@ public class Start extends AbstractCommand {
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 			new Thread(() -> closeServiceIfKeyPressed(service)).start();
 			System.out.println("Service terminated: " + service.waitUntilDisconnected());
-			Thread.sleep(100); // guarantees flushing of log messages from the concurrent thread
 		}
 		catch (DeploymentException | IOException e) {
 			throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
