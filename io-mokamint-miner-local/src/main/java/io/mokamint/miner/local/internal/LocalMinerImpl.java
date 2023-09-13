@@ -45,6 +45,11 @@ public class LocalMinerImpl implements Miner {
 	 */
 	private final Plot[] plots;
 
+	/**
+	 * The prefix reported in the log messages.
+	 */
+	private final String logPrefix = "local miner " + uuid + ": ";
+
 	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
 
 	/**
@@ -66,7 +71,7 @@ public class LocalMinerImpl implements Miner {
 
 	@Override
 	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
-		LOGGER.info("received deadline request: " + description);
+		LOGGER.info(logPrefix + "received deadline request: " + description);
 
 		Stream.of(plots)
 			.filter(plot -> plot.getHashing().getName().equals(description.getHashing().getName()))
@@ -89,7 +94,7 @@ public class LocalMinerImpl implements Miner {
 			return Optional.of(plot.getSmallestDeadline(description));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot access a plot file", e);
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot access a plot file", e);
 			return Optional.empty();
 		}
 	}

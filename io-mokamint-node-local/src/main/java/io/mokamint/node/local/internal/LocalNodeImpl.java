@@ -334,7 +334,15 @@ public class LocalNodeImpl implements LocalNode {
 
 		try {
 			Optional<Miner> maybeMiner = miners.get().filter(miner -> miner.getUUID().equals(uuid)).findFirst();
-			return maybeMiner.isPresent() && miners.remove(maybeMiner.get());
+			if (maybeMiner.isPresent()) {
+				var miner = maybeMiner.get();
+				if (miners.remove(miner)) {
+					LOGGER.info("removed miner " + uuid + " (" + miner + ")");
+					return true;
+				}
+			}
+
+			return false;
 		}
 		finally {
 			closureLock.afterCall();
@@ -487,6 +495,7 @@ public class LocalNodeImpl implements LocalNode {
 			var count = miners.get().count();
 
 			if (miners.add(miner)) {
+				LOGGER.info("added miner " + miner.getUUID() + " (" + miner + ")");
 				// we require to mine, when there was no miners before this call
 				if (count == 0L)
 					blockchain.startMining();

@@ -47,6 +47,8 @@ public class ListOfMiningRequests {
 	/**
 	 * Creates a list of requests of the given maximal size.
 	 * When more requests than {@code max} are added, the oldest requests get removed.
+	 * 
+	 * @param max how many requests can be kept in this container, at most.
 	 */
 	public ListOfMiningRequests(int max) {
 		if (max <= 0)

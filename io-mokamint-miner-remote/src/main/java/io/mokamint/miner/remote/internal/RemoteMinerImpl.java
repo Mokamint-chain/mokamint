@@ -67,6 +67,11 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	private final ListOfMiningRequests requests = new ListOfMiningRequests(10);
 
+	/**
+	 * The prefix reported in the log messages.
+	 */
+	private final String logPrefix = "remote miner " + uuid + ": ";
+
 	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
 
 	/**
@@ -83,7 +88,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		this.check = check;
 
 		startContainer("", port, RemoteMinerEndpoint.config(this));
-    	LOGGER.info("published a remote miner at ws://localhost:" + port);
+    	LOGGER.info(logPrefix + "published at ws://localhost:" + port);
 	}
 
 	@Override
@@ -95,7 +100,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		requests.add(description, onDeadlineComputed);
 
-		LOGGER.info("requesting " + description + " to " + sessions.size() + " open sessions");
+		LOGGER.info(logPrefix + "requesting " + description + " to " + sessions.size() + " open sessions");
 
 		sessions.stream()
 			.filter(Session::isOpen)
@@ -107,7 +112,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			sendObjectAsync(session, description);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot send to miner service " + session.getId(), e);
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to miner service " + session.getId(), e);
 		}
 	}
 
@@ -122,17 +127,20 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			throw new IOException(e);
 		}
 
-		LOGGER.info("closed the remote miner at ws://localhost:" + port);
+		LOGGER.info(logPrefix + "unpublished from ws://localhost:" + port);
 	}
 
 	@Override
 	public String toString() {
-		return "a remote miner published at port " + port + ", with " + sessions.size() + " open sessions";
+		int sessionsCount = sessions.size();
+		String openSessions = sessionsCount == 1 ? "1 open session" : (sessionsCount + " open sessions");
+
+		return "a remote miner published at port " + port + ", with " + openSessions;
 	}
 
 	private void addSession(Session session) {
 		sessions.add(session);
-		LOGGER.info("miner service " + session.getId() + ": bound");
+		LOGGER.info(logPrefix + "bound miner service " + session.getId());
 
 		// we inform the newly arrived about work that it can already start doing
 		requests.forAllDescriptions(description -> sendDescription(session, description));
@@ -140,7 +148,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 
 	private void removeSession(Session session) {
 		sessions.remove(session);
-		LOGGER.info("miner service " + session.getId() + ": unbound");
+		LOGGER.info(logPrefix + "unbound miner service " + session.getId());
 	}
 
 	private void processDeadline(Deadline deadline, Session session) {
@@ -150,13 +158,13 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			check.check(deadline);
 		}
 		catch (IllegalDeadlineException e) {
-			LOGGER.warning("removing session " + session.getId() + " since it sent an illegal deadline: " + e.getMessage());
+			LOGGER.warning(logPrefix + "removing session " + session.getId() + " since it sent an illegal deadline: " + e.getMessage());
 			removeSession(session);
 			close(session, new CloseReason(CloseCodes.CANNOT_ACCEPT, e.getMessage()));
 			return;
 		}
 
-		LOGGER.info("notifying deadline: " + deadline);
+		LOGGER.info(logPrefix + "notifying deadline: " + deadline);
 		requests.runAllActionsFor(deadline);
 	}
 
@@ -165,7 +173,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			session.close(reason);
 		}
 		catch (IOException e) {
-			LOGGER.warning("cannot close session " + session.getId() + ": " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot close session " + session.getId() + ": " + e.getMessage());
 		}
 	}
 
