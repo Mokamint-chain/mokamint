@@ -29,13 +29,14 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class BlockTests extends Tests {
+public class BlockTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("genesis blocks are correctly encoded into Json and decoded from Json")

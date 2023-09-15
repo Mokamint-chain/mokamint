@@ -47,6 +47,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -77,7 +78,7 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 
-public class PublicNodeServiceTests extends Tests {
+public class PublicNodeServiceTests extends AbstractLoggedTests {
 	private final static URI URI;
 	private final static int PORT = 8030;
 

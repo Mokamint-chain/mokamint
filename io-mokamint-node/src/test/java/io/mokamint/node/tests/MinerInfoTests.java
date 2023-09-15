@@ -23,11 +23,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.MinerInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class MinerInfoTests extends Tests {
+public class MinerInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("miner information is correctly encoded into Json and decoded from Json")

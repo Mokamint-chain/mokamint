@@ -45,6 +45,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
@@ -65,7 +66,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * Tests about the synchronization of the chain from the peers.
  */
-public class ChainSynchronizationTests extends Tests {
+public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	/**
 	 * The application of the node used for testing.

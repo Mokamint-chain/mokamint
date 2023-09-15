@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -77,7 +78,7 @@ import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class MessagesTests extends Tests {
+public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeers messages are correctly encoded into Json and decoded from Json")

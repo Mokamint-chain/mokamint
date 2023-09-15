@@ -24,11 +24,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.DeadlineDescriptions;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class DeadlineDescriptionsTests extends Tests {
+public class DeadlineDescriptionsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deadline descriptions are correctly encoded into Json and decoded from Json")

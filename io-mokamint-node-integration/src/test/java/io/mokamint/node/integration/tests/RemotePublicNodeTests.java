@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Timeout;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -88,7 +89,7 @@ import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
-public class RemotePublicNodeTests extends Tests {
+public class RemotePublicNodeTests extends AbstractLoggedTests {
 	private final static URI URI;
 	private final static int PORT = 8030;
 

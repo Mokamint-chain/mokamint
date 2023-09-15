@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.ClosedNodeException;
@@ -61,7 +62,7 @@ import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
-public class EventsTests extends Tests {
+public class EventsTests extends AbstractLoggedTests {
 
 	/**
 	 * The application of the node used for testing.

@@ -46,6 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -64,7 +65,7 @@ import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
-public class BlocksAdditionTests extends Tests {
+public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	/**
 	 * The prolog of the plot files.

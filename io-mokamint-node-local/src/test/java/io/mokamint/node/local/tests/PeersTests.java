@@ -52,6 +52,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -75,7 +76,7 @@ import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 
-public class PeersTests extends Tests {
+public class PeersTests extends AbstractLoggedTests {
 
 	/**
 	 * The node information of the nodes used in the tests.

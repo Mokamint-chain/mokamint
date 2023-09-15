@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
@@ -63,7 +64,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * Tests about the propagation of the peers in a network of nodes.
  */
-public class PeersPropagationTests extends Tests {
+public class PeersPropagationTests extends AbstractLoggedTests {
 
 	/**
 	 * The application of the node used for testing.

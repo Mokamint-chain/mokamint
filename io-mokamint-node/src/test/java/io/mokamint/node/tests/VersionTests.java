@@ -21,11 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Versions;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class VersionTests extends Tests {
+public class VersionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("versions are correctly encoded into Json and decoded from Json")

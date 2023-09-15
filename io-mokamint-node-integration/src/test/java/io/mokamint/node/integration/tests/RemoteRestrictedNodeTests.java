@@ -32,6 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -52,7 +53,7 @@ import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
-public class RemoteRestrictedNodeTests extends Tests {
+public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	private final static URI URI;
 	private final static int PORT = 8031;
 

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
@@ -40,7 +41,7 @@ import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.PeersDatabase;
 
-public class PeersDatabaseTests extends Tests {
+public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	private static PeersDatabase mkDatabase(Path dir) throws NoSuchAlgorithmException, DatabaseException {
 		var config = Config.Builder.defaults()

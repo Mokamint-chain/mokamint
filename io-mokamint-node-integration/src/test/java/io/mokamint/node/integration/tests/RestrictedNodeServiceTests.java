@@ -36,6 +36,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
 import io.mokamint.node.RestrictedNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
@@ -46,7 +47,7 @@ import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.DeploymentException;
 
-public class RestrictedNodeServiceTests extends Tests {
+public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 	private final static URI URI;
 	private final static int PORT = 8031;
 

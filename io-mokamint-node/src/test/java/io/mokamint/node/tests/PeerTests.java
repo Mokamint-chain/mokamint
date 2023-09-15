@@ -24,11 +24,12 @@ import java.net.URISyntaxException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class PeerTests extends Tests {
+public class PeerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("peers are correctly encoded into Json and decoded from Json")

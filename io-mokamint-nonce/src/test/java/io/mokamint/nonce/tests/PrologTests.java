@@ -26,11 +26,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class PrologTests extends Tests {
+public class PrologTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("prologs are correctly encoded into Json and decoded from Json")

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.DatabaseException;
@@ -65,7 +66,7 @@ import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
-public class VerificationTests extends Tests {
+public class VerificationTests extends AbstractLoggedTests {
 
 	/**
 	 * The plot used for creating the deadlines.

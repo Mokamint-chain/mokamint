@@ -29,13 +29,14 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
 
-public class PlotTests extends Tests {
+public class PlotTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")

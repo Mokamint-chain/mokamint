@@ -30,11 +30,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ChainInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class ChainInfoTests extends Tests {
+public class ChainInfoTests extends AbstractLoggedTests {
 
 	private final static Logger LOGGER = Logger.getLogger(ChainInfoTests.class.getName());
 

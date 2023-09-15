@@ -23,11 +23,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Chains;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class ChainTests extends Tests {
+public class ChainTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("chains with hashes are correctly encoded into Json and decoded from Json")

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -44,7 +45,7 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import jakarta.websocket.DeploymentException;
 
-public class MinerServiceTests extends Tests {
+public class MinerServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline description is requested to a miner service, it gets forwarded to the adapted miner")

@@ -28,11 +28,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ConsensusConfigs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class ConfigTests extends Tests {
+public class ConfigTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("configs are correctly encoded into Json and decoded from Json")
