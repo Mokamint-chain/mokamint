@@ -23,12 +23,10 @@ import static org.mockito.Mockito.mock;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,7 +52,7 @@ import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
-public class RemoteRestrictedNodeTests {
+public class RemoteRestrictedNodeTests extends Tests {
 	private final static URI URI;
 	private final static int PORT = 8031;
 
@@ -518,21 +516,6 @@ public class RemoteRestrictedNodeTests {
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(TimeoutException.class, () -> remote.closeMiner(UUID.randomUUID()));
 			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = RemoteRestrictedNodeTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
 		}
 	}
 }

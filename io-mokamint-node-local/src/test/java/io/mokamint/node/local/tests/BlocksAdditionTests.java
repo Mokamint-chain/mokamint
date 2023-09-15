@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -37,7 +36,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.function.Function;
-import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
@@ -66,7 +64,7 @@ import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
-public class BlocksAdditionTests {
+public class BlocksAdditionTests extends Tests {
 
 	/**
 	 * The prolog of the plot files.
@@ -403,20 +401,5 @@ public class BlocksAdditionTests {
 		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines);
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription);
 		return previous.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = BlocksAdditionTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
-		}
 	}
 }

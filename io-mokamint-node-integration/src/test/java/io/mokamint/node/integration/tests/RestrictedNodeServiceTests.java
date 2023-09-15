@@ -26,14 +26,12 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,7 +46,7 @@ import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.DeploymentException;
 
-public class RestrictedNodeServiceTests {
+public class RestrictedNodeServiceTests extends Tests {
 	private final static URI URI;
 	private final static int PORT = 8031;
 
@@ -226,21 +224,6 @@ public class RestrictedNodeServiceTests {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
 			assertThrows(ClosedNodeException.class, () -> remote.add(Peers.of(new URI("ws://www.mokamint.io:8031"))));
-		}
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = RestrictedNodeServiceTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
 		}
 	}
 }

@@ -6,6 +6,7 @@ mokamint-chain*
 .recommenders/
 RemoteSystemsTempFiles/
 .flattened-pom.xml
+*.log.*
 *.plot
 *.keys
 *.pri

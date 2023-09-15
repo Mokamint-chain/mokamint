@@ -18,10 +18,7 @@ package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.UUID;
-import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +27,7 @@ import io.mokamint.node.MinerInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class MinerInfoTests {
+public class MinerInfoTests extends Tests {
 
 	@Test
 	@DisplayName("miner information is correctly encoded into Json and decoded from Json")
@@ -39,20 +36,5 @@ public class MinerInfoTests {
 		String encoded = new MinerInfos.Encoder().encode(minerInfo1);
 		var minerInfo2 = new MinerInfos.Decoder().decode(encoded);
 		assertEquals(minerInfo1, minerInfo2);
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = MinerInfoTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
-		}
 	}
 }

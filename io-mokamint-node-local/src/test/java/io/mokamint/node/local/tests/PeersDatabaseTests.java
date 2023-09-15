@@ -22,14 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
-import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.DisplayName;
@@ -40,10 +37,10 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.Config;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.PeersDatabase;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.PeersDatabase;
 
-public class PeersDatabaseTests {
+public class PeersDatabaseTests extends Tests {
 
 	private static PeersDatabase mkDatabase(Path dir) throws NoSuchAlgorithmException, DatabaseException {
 		var config = Config.Builder.defaults()
@@ -106,21 +103,6 @@ public class PeersDatabaseTests {
 			assertFalse(db.add(peer1, true));
 			assertFalse(db.add(peer2, true));
 			assertEquals(Set.of(peer1, peer2), db.getPeers().collect(Collectors.toSet()));
-		}
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = PeersDatabaseTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
 		}
 	}
 }

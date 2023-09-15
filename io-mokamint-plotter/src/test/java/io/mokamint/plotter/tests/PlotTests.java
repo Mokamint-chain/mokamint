@@ -17,12 +17,10 @@ limitations under the License.
 package io.mokamint.plotter.tests;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
-import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +35,7 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
 
-public class PlotTests {
+public class PlotTests extends Tests {
 
 	@Test
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
@@ -52,21 +50,6 @@ public class PlotTests {
 			Deadline deadline1 = plot.getSmallestDeadline(description);
 			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description);
 			Assertions.assertEquals(deadline1, deadline2);
-		}
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = PlotTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try {
-					LogManager.getLogManager().readConfiguration(resource.openStream());
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
 		}
 	}
 }

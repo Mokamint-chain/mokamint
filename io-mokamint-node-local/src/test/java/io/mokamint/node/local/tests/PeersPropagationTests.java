@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -37,7 +36,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -65,7 +63,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * Tests about the propagation of the peers in a network of nodes.
  */
-public class PeersPropagationTests {
+public class PeersPropagationTests extends Tests {
 
 	/**
 	 * The application of the node used for testing.
@@ -253,21 +251,6 @@ public class PeersPropagationTests {
 			node1.add(peer2);
 
 			assertTrue(semaphore.tryAcquire(2, 4, TimeUnit.SECONDS));
-		}
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = PeersPropagationTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
 		}
 	}
 }

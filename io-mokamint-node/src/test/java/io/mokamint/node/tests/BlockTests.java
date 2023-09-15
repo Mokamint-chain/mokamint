@@ -18,14 +18,11 @@ package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.function.Function;
-import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,7 +35,7 @@ import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class BlockTests {
+public class BlockTests extends Tests {
 
 	@Test
 	@DisplayName("genesis blocks are correctly encoded into Json and decoded from Json")
@@ -63,20 +60,5 @@ public class BlockTests {
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = BlockTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
-		}
 	}
 }

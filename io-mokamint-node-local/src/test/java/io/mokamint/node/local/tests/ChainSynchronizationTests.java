@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -36,7 +35,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import java.util.logging.LogManager;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -67,7 +65,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * Tests about the synchronization of the chain from the peers.
  */
-public class ChainSynchronizationTests {
+public class ChainSynchronizationTests extends Tests {
 
 	/**
 	 * The application of the node used for testing.
@@ -271,20 +269,5 @@ public class ChainSynchronizationTests {
 		//System.out.println("nonMiningBlocks: " + nonMiningBlocks.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
 		//	System.out.println("miningBlocks: " + miningBlocks.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
 		assertEquals(nonMiningBlocks, miningBlocks);
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = ChainSynchronizationTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
-		}
 	}
 }

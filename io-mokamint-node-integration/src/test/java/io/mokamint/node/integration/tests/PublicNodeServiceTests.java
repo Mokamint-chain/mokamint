@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -41,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -79,7 +77,7 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 
-public class PublicNodeServiceTests {
+public class PublicNodeServiceTests extends Tests {
 	private final static URI URI;
 	private final static int PORT = 8030;
 
@@ -475,21 +473,6 @@ public class PublicNodeServiceTests {
 		try (var service = new MyPublicNodeService()) {
 			listenerForClose.get().close();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
-		}
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = PublicNodeServiceTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
 		}
 	}
 }

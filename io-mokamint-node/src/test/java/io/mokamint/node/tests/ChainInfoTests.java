@@ -23,15 +23,20 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import io.mokamint.node.ChainInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class ChainInfoTests {
+public class ChainInfoTests extends Tests {
+
+	private final static Logger LOGGER = Logger.getLogger(ChainInfoTests.class.getName());
 
 	@Test
 	@DisplayName("chain infos with non-empty hashes are correctly encoded into Json and decoded from Json")
@@ -82,5 +87,11 @@ public class ChainInfoTests {
 					throw new RuntimeException("Cannot load logging.properties file", e);
 				}
 		}
+	}
+
+	@BeforeEach
+	public void beforeEach(TestInfo testInfo) {
+		var separator = System.lineSeparator();
+		LOGGER.info(separator + separator + " * * * " + testInfo.getDisplayName() + " * * *" + separator + separator);
 	}
 }

@@ -20,11 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -32,7 +30,6 @@ import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.logging.LogManager;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
@@ -80,7 +77,7 @@ import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class MessagesTests {
+public class MessagesTests extends Tests {
 
 	@Test
 	@DisplayName("getPeers messages are correctly encoded into Json and decoded from Json")
@@ -368,20 +365,5 @@ public class MessagesTests {
 		String encoded = "{\"clazz\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionMessage.class.getName() + "\",\"id\":\"id\"}";
 		DecodeException e = assertThrows(DecodeException.class, () -> new ExceptionMessages.Decoder().decode(encoded));
 		assertTrue(e.getCause() instanceof ClassCastException);
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = MessagesTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
-		}
 	}
 }
