@@ -28,13 +28,17 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.ConsensusConfigBuilder;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
  * on this data in order to achieve consensus.
+ * 
+ * @param <C> the concrete type of the configuration
+ * @param <B> the concrete type of the builder
  */
 @Immutable
-public class ConsensusConfigImpl implements ConsensusConfig {
+public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B extends ConsensusConfigBuilder<C,B>> implements ConsensusConfig<C,B> {
 
 	/**
 	 * The chain identifier of the blockchain the node belongs to.
@@ -82,7 +86,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	 * 
 	 * @param builder the builder where information is extracted from
 	 */
-	public ConsensusConfigImpl(AbstractBuilder<?> builder) {
+	protected ConsensusConfigImpl(ConsensusConfigBuilderImpl<C,B> builder) {
 		this.chainId = builder.chainId;
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
@@ -94,7 +98,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	@Override
 	public boolean equals(Object other) {
 		if (other != null && getClass() == other.getClass()) {
-			var otherConfig = (ConsensusConfigImpl) other;
+			var otherConfig = (ConsensusConfigImpl<?,?>) other;
 			return chainId.equals(otherConfig.chainId) &&
 				targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
 				initialAcceleration == otherConfig.initialAcceleration &&
@@ -177,7 +181,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 	 * 
 	 * @param <T> the concrete type of the builder
 	 */
-	public abstract static class AbstractBuilder<T extends AbstractBuilder<T>> {
+	public abstract static class ConsensusConfigBuilderImpl<C extends ConsensusConfig<C,B>, B extends ConsensusConfigBuilder<C,B>> implements ConsensusConfigBuilder<C,B> {
 		private String chainId = "";
 		private HashingAlgorithm<byte[]> hashingForDeadlines;
 		private HashingAlgorithm<byte[]> hashingForGenerations;
@@ -185,7 +189,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		private long initialAcceleration = 100000000000L;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 
-		protected AbstractBuilder() throws NoSuchAlgorithmException {
+		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
 			setHashingForDeadlines(HashingAlgorithms.TYPES.SHABAL256.name());
 			setHashingForGenerations(HashingAlgorithms.TYPES.SHA256.name());
 			setHashingForBlocks(HashingAlgorithms.TYPES.SHA256.name());
@@ -198,7 +202,7 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		 * @param toml the file
 		 * @throws NoSuchAlgorithmException if some hashing algorithm cannot be found
 		 */
-		protected AbstractBuilder(Toml toml) throws NoSuchAlgorithmException {
+		protected ConsensusConfigBuilderImpl(Toml toml) throws NoSuchAlgorithmException {
 			var chainId = toml.getString("chain_id");
 			if (chainId != null)
 				setChainId(chainId);
@@ -231,69 +235,49 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		}
 
 		/**
-		 * Sets the chain identifier of the blockchain the node belongs to.
+		 * Creates a builder with properties initialized to those of the given configuration object.
 		 * 
-		 * @param chainId the chain identifier
-		 * @return this builder
+		 * @param config the configuration object
 		 */
-		public T setChainId(String chainId) {
+		protected ConsensusConfigBuilderImpl(ConsensusConfig<C,B> config) {
+			this.chainId = config.getChainId();
+			this.hashingForDeadlines = config.getHashingForDeadlines();
+			this.hashingForGenerations = config.getHashingForGenerations();
+			this.hashingForBlocks = config.getHashingForBlocks();
+			this.initialAcceleration = config.getInitialAcceleration();
+			this.targetBlockCreationTime = config.getTargetBlockCreationTime();
+		}
+
+		@Override
+		public B setChainId(String chainId) {
 			Objects.requireNonNull(chainId, "chainId cannot be null");
 			this.chainId = chainId;
 			return getThis();
 		}
 
-		/**
-		 * Sets the hashing algorithm for computing the deadlines and hence also the
-		 * plot files used by the miners.
-		 * 
-		 * @param hashingForDeadlines the name of the hashing algorithm
-		 * @return this builder
-		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
-		 */
-		public T setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
+		@Override
+		public B setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
 			Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 			this.hashingForDeadlines = HashingAlgorithms.of(hashingForDeadlines, Function.identity());
 			return getThis();
 		}
 
-		/**
-		 * Sets the hashing algorithm for computing the new generation and the new scoop
-		 * number from the previous block.
-		 * 
-		 * @param hashingForGenerations the name of the hashing algorithm
-		 * @return this builder
-		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
-		 */
-		public T setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
+		@Override
+		public B setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
 			Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 			this.hashingForGenerations = HashingAlgorithms.of(hashingForGenerations, Function.identity());
 			return getThis();
 		}
 
-		/**
-		 * Sets the hashing algorithm for identifying the blocks in the Mokamint blockchain.
-		 * 
-		 * @param hashingForBlocks the name of the hashing algorithm
-		 * @return this builder
-		 * @throws NoSuchAlgorithmException if no algorithm exists with that name
-		 */
-		public T setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
+		@Override
+		public B setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
 			Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
 			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Function.identity());
 			return getThis();
 		}
 
-		/**
-		 * Sets the acceleration for the genesis block. This specifies how
-		 * quickly get blocks generated at the beginning of a chain. The less
-		 * mining power has the network at the beginning, the higher the
-		 * initial acceleration should be, or otherwise the creation of the first blocks
-		 * might take a long time.
-		 * 
-		 * @param initialAcceleration the initial acceleration
-		 * @return this builder
-		 */
-		public T setInitialAcceleration(long initialAcceleration) {
+		@Override
+		public B setInitialAcceleration(long initialAcceleration) {
 			if (initialAcceleration < 1L)
 				throw new IllegalArgumentException("initialAcceleration must be positive");
 
@@ -301,16 +285,8 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 			return getThis();
 		}
 
-		/**
-		 * Sets the target time interval, in milliseconds, between the creation of a block
-		 * and the creation of a next block.  The network will strive to get close
-		 * to this time. The higher the hashing power of the network, the more precise
-		 * this will be.
-		 * 
-		 * @param targetBlockCreationTime the target time interval, in milliseconds
-		 * @return this builder
-		 */
-		public T setTargetBlockCreationTime(long targetBlockCreationTime) {
+		@Override
+		public B setTargetBlockCreationTime(long targetBlockCreationTime) {
 			if (targetBlockCreationTime < 1L)
 				throw new IllegalArgumentException("targetBlockCreationTime must be positive");
 
@@ -319,18 +295,11 @@ public class ConsensusConfigImpl implements ConsensusConfig {
 		}
 
 		/**
-		 * Builds the configuration.
-		 * 
-		 * @return the configuration
-		 */
-		public abstract ConsensusConfig build();
-
-		/**
 		 * Standard design pattern. See http://www.angelikalanger.com/GenericsFAQ/FAQSections/ProgrammingIdioms.html#FAQ205
 		 * 
 		 * @return this same builder
 		 */
-		protected abstract T getThis();
+		protected abstract B getThis();
 
 		/**
 		 * Loads the TOML file at the given path.

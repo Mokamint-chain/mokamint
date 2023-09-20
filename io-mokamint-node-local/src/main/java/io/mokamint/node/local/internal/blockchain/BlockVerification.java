@@ -25,7 +25,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
@@ -44,7 +44,7 @@ public class BlockVerification {
 	/**
 	 * The configuration of {@link #node}.
 	 */
-	private final Config config;
+	private final LocalNodeConfig config;
 
 	/**
 	 * The block to verify.
@@ -135,7 +135,7 @@ public class BlockVerification {
 	private void deadlineHasValidProlog() throws VerificationException {
 		Prolog prolog = deadline.getProlog();
 
-		if (!prolog.getChainId().equals(config.chainId))
+		if (!prolog.getChainId().equals(config.getChainId()))
 			throw new VerificationException("Deadline prolog's chainId mismatch");
 
 		if (!node.getApplication().prologExtraIsValid(prolog.getExtra()))
@@ -148,7 +148,7 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineMatchesItsExpectedDescription() throws VerificationException {
-		if (!deadline.matches(previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines)))
+		if (!deadline.matches(previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines())))
 			throw new VerificationException("Deadline mismatch");
 	}
 
@@ -158,7 +158,7 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void blockMatchesItsExpectedDescription() throws VerificationException {
-		var description = previous.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
+		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 
 		if (block.getHeight() != description.getHeight())
 			throw new VerificationException("Height mismatch (expected " + description.getHeight() + " but found " + block.getHeight() + ")");
@@ -202,7 +202,7 @@ public class BlockVerification {
 	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, DatabaseException, ClosedDatabaseException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTimeOfBlock());
-		long max = node.getConfig().blockMaxTimeInTheFuture;
+		long max = node.getConfig().getBlockMaxTimeInTheFuture();
 		if (howMuchInTheFuture > max)
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
 	}

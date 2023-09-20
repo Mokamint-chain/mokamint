@@ -37,7 +37,7 @@ public final class GetConfigResultMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetConfigResultMessage of(ConsensusConfig config, String id) {
+	public static GetConfigResultMessage of(ConsensusConfig<?,?> config, String id) {
 		return new GetConfigResultMessageImpl(config, id);
 	}
 

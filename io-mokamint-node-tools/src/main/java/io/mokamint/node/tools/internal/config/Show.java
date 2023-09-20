@@ -18,7 +18,7 @@ package io.mokamint.node.tools.internal.config;
 
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
@@ -34,7 +34,7 @@ public class Show extends AbstractPublicRpcCommand {
 			var config = remote.getConfig();
 
 			if (json())
-				System.out.println(new ConsensusConfigs.Encoder().encode(config));
+				System.out.println(new ConsensusConfigBuilders.Encoder().encode(config));
 			else
 				System.out.println(config);
 		}

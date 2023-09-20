@@ -22,9 +22,12 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
  * on this data in order to achieve consensus.
+ * 
+ * @param <C> the concrete type of the configuration
+ * @param <B> the concrete type of the builder
  */
 @Immutable
-public interface ConsensusConfig {
+public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends ConsensusConfigBuilder<C,B>> {
 
 	/**
 	 * Yields the chain identifier of the blockchain the node belongs to.
@@ -84,6 +87,13 @@ public interface ConsensusConfig {
 	 * @return the toml representation, as a string
 	 */
 	String toToml();
+
+	/**
+	 * Yields a builder initialized with the information in this object.
+	 * 
+	 * @return the builder
+	 */
+	B toBuilder();
 
 	@Override
 	boolean equals(Object other);

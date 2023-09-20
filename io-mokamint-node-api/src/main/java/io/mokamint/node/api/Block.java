@@ -139,6 +139,6 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the node
 	 * @return the representation
 	 */
-	String toString(ConsensusConfig config, LocalDateTime startDateTimeUTC);
+	String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC);
 	
 }

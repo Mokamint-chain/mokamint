@@ -54,7 +54,8 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
@@ -117,8 +118,8 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		nonMiningBlocks = ConcurrentHashMap.newKeySet();
 	}
 
-	private Config mkConfig(Path chainDir) throws NoSuchAlgorithmException {
-		return Config.Builder.defaults()
+	private LocalNodeConfig mkConfig(Path chainDir) throws NoSuchAlgorithmException {
+		return LocalNodeConfigBuilders.defaults()
 			.setDir(chainDir)
 			.setChainId("octopus")
 			.setTargetBlockCreationTime(300L)
@@ -128,7 +129,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends LocalNodeImpl {
 
-		private MiningNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+		private MiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 			super(config, nodeKey, app, true);
 
 			try {
@@ -152,7 +153,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends LocalNodeImpl {
 
-		private NonMiningNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+		private NonMiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 			super(config, nodeKey, app, false); // <--- does not start mining by itself
 		}
 

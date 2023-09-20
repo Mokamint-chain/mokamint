@@ -26,7 +26,7 @@ import io.mokamint.node.api.ClosedNodeException;
 public interface LocalNode extends FullNodeInternals {
 
 	@Override
-	Config getConfig();
+	LocalNodeConfig getConfig();
 
 	/**
 	 * Adds the given miner to the miners of this node.

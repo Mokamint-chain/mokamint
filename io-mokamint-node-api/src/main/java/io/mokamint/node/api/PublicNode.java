@@ -48,7 +48,7 @@ public interface PublicNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	ConsensusConfig getConfig() throws TimeoutException, InterruptedException, ClosedNodeException;
+	ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the peers this node is connected to. There is a dynamic

@@ -17,21 +17,26 @@ limitations under the License.
 package io.mokamint.node;
 
 import io.hotmoka.annotations.Immutable;
+import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.ConsensusConfigBuilder;
 import io.mokamint.node.internal.ConsensusConfigImpl;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
  * on this data in order to achieve consensus.
+ * 
+ * @param <C> the concrete type of the configuration
+ * @param <B> the concrete type of the builder
  */
 @Immutable
-public abstract class AbstractConfig extends ConsensusConfigImpl {
+public abstract class AbstractConsensusConfig<C extends ConsensusConfig<C,B>, B extends ConsensusConfigBuilder<C,B>> extends ConsensusConfigImpl<C,B> {
 
 	/**
 	 * Full constructor for the builder pattern.
 	 * 
 	 * @param builder the builder where information is extracted from
 	 */
-	protected AbstractConfig(AbstractConfigBuilder<?> builder) {
+	protected AbstractConsensusConfig(AbstractConsensusConfigBuilder<C,B> builder) {
 		super(builder);
 	}
 }

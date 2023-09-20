@@ -48,7 +48,8 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.BlockMinedEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.IllegalDeadlineEvent;
@@ -91,7 +92,7 @@ public class EventsTests extends AbstractLoggedTests {
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
 		nodeKey = id25519.getKeyPair();
 		prolog = Prologs.of("octopus", nodeKey.getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
-		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 100, mkConfig(dir).hashingForDeadlines, __ -> {});
+		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 100, mkConfig(dir).getHashingForDeadlines(), __ -> {});
 	}
 
 	@AfterAll
@@ -99,8 +100,8 @@ public class EventsTests extends AbstractLoggedTests {
 		plot.close();
 	}
 
-	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
-		return Config.Builder.defaults()
+	private static LocalNodeConfig mkConfig(Path dir) throws NoSuchAlgorithmException {
+		return LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.setChainId("octopus")
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
@@ -280,7 +281,7 @@ public class EventsTests extends AbstractLoggedTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			assertTrue(semaphore.tryAcquire(1, 3 * config.deadlineWaitTimeout, TimeUnit.SECONDS));
+			assertTrue(semaphore.tryAcquire(1, 3 * config.getDeadlineWaitTimeout(), TimeUnit.SECONDS));
 		}
 	}
 

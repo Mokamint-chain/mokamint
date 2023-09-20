@@ -41,7 +41,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
-import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -214,7 +214,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getConfigResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetConfigResult() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var config = ConsensusConfigs.defaults().build();
+		var config = ConsensusConfigBuilders.defaults().build();
 		var getConfigResultMessage1 = GetConfigResultMessages.of(config, "id");
 		String encoded = new GetConfigResultMessages.Encoder().encode(getConfigResultMessage1);
 		var getConfigResultMessage2 = new GetConfigResultMessages.Decoder().decode(encoded);

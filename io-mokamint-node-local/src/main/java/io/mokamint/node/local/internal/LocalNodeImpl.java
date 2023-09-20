@@ -55,8 +55,8 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
+import io.mokamint.node.local.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.messages.MessageMemories;
@@ -78,7 +78,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The configuration of the node.
 	 */
-	private final Config config;
+	private final LocalNodeConfig config;
 
 	/**
 	 * The key pair that the node uses to sign the blocks that it mines.
@@ -164,13 +164,13 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 */
-	public LocalNodeImpl(Config config, KeyPair keyPair, Application app, boolean init) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 		try {
 			this.config = config;
 			this.keyPair = keyPair;
 			this.app = app;
 			this.version = Versions.current();
-			this.whisperedMessages = MessageMemories.of(config.whisperingMemorySize);
+			this.whisperedMessages = MessageMemories.of(config.getWhisperingMemorySize());
 			this.miners = new NodeMiners(this);
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new NodePeers(this);
@@ -413,7 +413,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @return the configuration of this node
 	 */
 	@Override
-	public Config getConfig() {
+	public LocalNodeConfig getConfig() {
 		return config;
 	}
 
@@ -527,7 +527,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		if (!deadline.isValid())
 			throw new IllegalDeadlineException("Invalid deadline");
-		else if (!prolog.getChainId().equals(config.chainId))
+		else if (!prolog.getChainId().equals(config.getChainId()))
 			throw new IllegalDeadlineException("Wrong chain identifier in deadline");
 		else if (!prolog.getNodePublicKey().equals(keyPair.getPublic()))
 			throw new IllegalDeadlineException("Wrong node key in deadline");

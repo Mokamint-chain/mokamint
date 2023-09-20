@@ -45,7 +45,7 @@ public interface LocalNodes {
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 */
-	static LocalNode of(Config config, KeyPair keyPair, Application app, boolean init)
+	static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
 			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 
 		return new LocalNodeImpl(config, keyPair, app, init);

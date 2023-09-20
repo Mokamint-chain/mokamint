@@ -51,7 +51,8 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
@@ -93,15 +94,15 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		var port3 = 8034;
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
-		var config1 = Config.Builder.defaults().setDir(chain1).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).build();
-		var config3 = Config.Builder.defaults().setDir(chain3).build();
+		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
+		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
+		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
 
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -147,10 +148,10 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		var uri2 = new URI("ws://localhost:" + port2);
 		var peer1 = Peers.of(uri1);
 		var peer2 = Peers.of(uri2);
-		var config1 = Config.Builder.defaults()
+		var config1 = LocalNodeConfigBuilders.defaults()
 				.setDir(chain1)
 				.build();
-		var config2 = Config.Builder.defaults()
+		var config2 = LocalNodeConfigBuilders.defaults()
 				.setDir(chain2)
 				.build();
 
@@ -161,7 +162,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends LocalNodeImpl {
 
-			private MyLocalNode1(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode1(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -180,7 +181,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends LocalNodeImpl {
 
-			private MyLocalNode2(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode2(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -218,7 +219,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			assertTrue(disconnections.tryAcquire(1, 3, TimeUnit.SECONDS));
 
 			// at this point, node1 has still node2 as peer but marked as disconnected
-			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2) && info.getPoints() < config1.peerInitialPoints));
+			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2) && info.getPoints() < config1.getPeerInitialPoints()));
 
 			phase.set(3);
 

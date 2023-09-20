@@ -31,7 +31,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	public DelayedMineNewBlockTask(LocalNodeImpl node) {
 		super(node);
 
-		this.delay = node.getConfig().deadlineWaitTimeout;
+		this.delay = node.getConfig().getDeadlineWaitTimeout();
 	}
 
 	@Override

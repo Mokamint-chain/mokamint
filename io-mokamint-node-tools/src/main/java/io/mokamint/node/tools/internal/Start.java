@@ -41,8 +41,9 @@ import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.Config;
 import io.mokamint.node.local.LocalNode;
+import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
@@ -115,13 +116,13 @@ public class Start extends AbstractCommand {
 		return new String(System.console().readPassword());
 	}
 
-	private Config getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
-		return (config == null ? Config.Builder.defaults() : Config.Builder.load(config)).build();
+	private LocalNodeConfig getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
+		return (config == null ? LocalNodeConfigBuilders.defaults() : LocalNodeConfigBuilders.load(config)).build();
 	}
 
 	private class Run {
 		private final KeyPair keyPair;
-		private final Config config;
+		private final LocalNodeConfig config;
 		private final List<Plot> plots = new ArrayList<>();
 		private LocalNode node;
 
@@ -185,7 +186,7 @@ public class Start extends AbstractCommand {
 				createWorkingDirectory();
 			}
 			catch (IOException e) {
-				throw new CommandException("Cannot create the working directory " + config.dir + "!", e);
+				throw new CommandException("Cannot create the working directory " + config.getDir() + "!", e);
 			}
 			catch (NoSuchAlgorithmException e) {
 				throw new CommandException("The signature algorithm required for the key of the node is not available!", e);
@@ -229,14 +230,14 @@ public class Start extends AbstractCommand {
 				throw new CommandException("Unexpected interruption!", e);
 			}
 			catch (AlreadyInitializedException e) {
-				throw new CommandException("The node is already initialized: delete \"" + config.dir + "\" and start again with --init", e);
+				throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);
 			}
 		}
 
 		private void publishPublicAndRestrictedNodeServices(int pos) {
 			if (pos < publicPorts.length) {
 				System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
-				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().whisperingMemorySize, Optional.ofNullable(uri))) {
+				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().getWhisperingMemorySize(), Optional.ofNullable(uri))) {
 					System.out.println("done.");
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}
@@ -300,7 +301,7 @@ public class Start extends AbstractCommand {
 		 * @throws InvalidKeyException if the key of the node cannot be encoded
 		 */
 		private void createWorkingDirectory() throws IOException, InvalidKeyException, NoSuchAlgorithmException {
-			Path dir = config.dir;
+			Path dir = config.getDir();
 
 			if (Files.exists(dir)) {
 				System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the node from the current content of \"" + dir + "\".|@"));

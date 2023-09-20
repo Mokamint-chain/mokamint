@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -53,7 +54,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
-import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -61,6 +62,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.PublicNodeInternals;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -124,8 +126,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			PublicNodeInternals result = mock();
 			
 			try {
-				var config = ConsensusConfigs.defaults().build();
-				when(result.getConfig()).thenReturn(config);
+				var config = ConsensusConfigBuilders.defaults().build();
+				// compilation fails if the following is not split in two...
+				OngoingStubbing<ConsensusConfig<?,?>> x = when(result.getConfig());
+				x.thenReturn(config);
+				//when(result.getConfig()).thenReturn(config);
 				return result;
 			}
 			catch (InterruptedException | NoSuchAlgorithmException | TimeoutException | ClosedNodeException e) {
@@ -583,7 +588,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getConfig() works")
 	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
-		var config1 = ConsensusConfigs.defaults().build();
+		var config1 = ConsensusConfigBuilders.defaults().build();
 
 		class MyServer extends PublicTestServer {
 

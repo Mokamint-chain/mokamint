@@ -113,7 +113,7 @@ public class SynchronizationTask implements Task {
 		/**
 		 * The hashing algorithm used for the blocks.
 		 */
-		private final HashingAlgorithm<byte[]> hashingForBlocks = node.getConfig().hashingForBlocks;
+		private final HashingAlgorithm<byte[]> hashingForBlocks = node.getConfig().getHashingForBlocks();
 
 		/**
 		 * The peers that have been discarded so far during this synchronization, since

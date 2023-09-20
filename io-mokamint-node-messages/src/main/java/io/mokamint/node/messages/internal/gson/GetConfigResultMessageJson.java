@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
 
@@ -27,12 +27,12 @@ import io.mokamint.node.messages.api.GetConfigResultMessage;
  * The JSON representation of a {@link GetConfigResultMessage}.
  */
 public abstract class GetConfigResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetConfigResultMessage> {
-	private ConsensusConfigs.Json config;
+	private ConsensusConfigBuilders.Json config;
 
 	protected GetConfigResultMessageJson(GetConfigResultMessage message) {
 		super(message);
 
-		this.config = new ConsensusConfigs.Json(message.get());
+		this.config = new ConsensusConfigBuilders.Json(message.get());
 	}
 
 	@Override

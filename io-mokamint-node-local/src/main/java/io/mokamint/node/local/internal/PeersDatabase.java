@@ -42,7 +42,7 @@ import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
 
 /**
  * The database where the peers are persisted.
@@ -89,8 +89,8 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
 	 */
 	public PeersDatabase(LocalNodeImpl node) throws DatabaseException {
-		Config config = node.getConfig();
-		this.maxPeers = config.maxPeers;
+		LocalNodeConfig config = node.getConfig();
+		this.maxPeers = config.getMaxPeers();
 		this.environment = createBlockchainEnvironment(config);
 		this.storeOfPeers = openStore("peers");
 		ensureNodeUUID();
@@ -366,8 +366,8 @@ public class PeersDatabase implements AutoCloseable {
 		}
 	}
 
-	private Environment createBlockchainEnvironment(Config config) {
-		var env = new Environment(config.dir.resolve("peers").toString());
+	private Environment createBlockchainEnvironment(LocalNodeConfig config) {
+		var env = new Environment(config.getDir().resolve("peers").toString());
 		LOGGER.info("opened the peers database");
 		return env;
 	}

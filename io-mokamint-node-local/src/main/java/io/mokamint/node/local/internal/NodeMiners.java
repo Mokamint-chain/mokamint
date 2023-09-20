@@ -43,7 +43,7 @@ public class NodeMiners implements AutoCloseable {
 	 * @param node the node
 	 */
 	public NodeMiners(LocalNodeImpl node) {
-		this.miners = new PunishableSet<Miner>(Stream.empty(), node.getConfig().minerInitialPoints, (_miner, _force) -> true, this::onRemove);
+		this.miners = new PunishableSet<Miner>(Stream.empty(), node.getConfig().getMinerInitialPoints(), (_miner, _force) -> true, this::onRemove);
 	}
 
 	/**

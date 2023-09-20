@@ -50,7 +50,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -78,7 +78,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * The configuration of the node.
 	 */
-	private final Config config;
+	private final LocalNodeConfig config;
 
 	/**
 	 * The database containing the peers.
@@ -120,7 +120,7 @@ public class NodePeers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
-		this.peers = new PunishableSet<>(db.getPeers(), config.peerInitialPoints, this::onAdd, this::onRemove);
+		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::onAdd, this::onRemove);
 	}
 
 	/**
@@ -134,8 +134,8 @@ public class NodePeers implements AutoCloseable {
 	 */
 	void connect() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		openConnectionToPeers();
-		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.peerPingInterval, TimeUnit.MILLISECONDS);
-		tryToAdd(config.seeds().map(Peers::of), true, true);
+		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
+		tryToAdd(config.getSeeds().map(Peers::of), true, true);
 	}
 
 	/**
@@ -426,7 +426,7 @@ public class NodePeers implements AutoCloseable {
 				Stream<PeerInfo> infos = remote.getPeerInfos();
 				pardonBecauseReachable(peer);
 
-				if (peers.getElements().count() >= config.maxPeers) // optimization
+				if (peers.getElements().count() >= config.getMaxPeers()) // optimization
 					return Stream.empty();
 				else
 					return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(not(peers::contains));
@@ -440,11 +440,13 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		CheckRunnable.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.punish(peer, config.peerPunishmentForUnreachable));
+		CheckRunnable.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class,
+			() -> peers.punish(peer, config.getPeerPunishmentForUnreachable())
+		);
 	}
 
 	public void pardonBecauseReachable(Peer peer) {
-		peers.pardon(peer, config.peerPunishmentForUnreachable);
+		peers.pardon(peer, config.getPeerPunishmentForUnreachable());
 	}
 
 	/**
@@ -548,7 +550,7 @@ public class NodePeers implements AutoCloseable {
 
 	private boolean onAdd(Peer peer, boolean force) {
 		// optimization: this avoids opening a remote for a peer that would not be added anyway
-		if (!force && peers.getElements().count() >= config.maxPeers)
+		if (!force && peers.getElements().count() >= config.getMaxPeers())
 			return false;
 
 		try {
@@ -655,7 +657,7 @@ public class NodePeers implements AutoCloseable {
 
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
-			var remote = RemotePublicNodes.of(peer.getURI(), config.peerTimeout, config.whisperingMemorySize);
+			var remote = RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), config.getWhisperingMemorySize());
 			LOGGER.info("peers: opened connection to peer " + peer);
 			return remote;
 		}
@@ -692,8 +694,8 @@ public class NodePeers implements AutoCloseable {
 		NodeInfo nodeInfo = node.getInfo();
 
 		long timeDifference = ChronoUnit.MILLIS.between(nodeInfo.getLocalDateTimeUTC(), peerInfo.getLocalDateTimeUTC());
-		if (Math.abs(timeDifference) > config.peerMaxTimeDifference)
-			throw new PeerRejectedException("The time of the peer is more than " + config.peerMaxTimeDifference + " ms away from the time of this node");
+		if (Math.abs(timeDifference) > config.getPeerMaxTimeDifference())
+			throw new PeerRejectedException("The time of the peer is more than " + config.getPeerMaxTimeDifference() + " ms away from the time of this node");
 			
 		UUID peerUUID = peerInfo.getUUID();
 		if (peerUUID.equals(db.getUUID()))

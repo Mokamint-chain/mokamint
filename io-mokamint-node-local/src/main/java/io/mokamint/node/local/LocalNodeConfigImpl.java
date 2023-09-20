@@ -32,8 +32,8 @@ import java.util.stream.Stream;
 import com.moandjiezana.toml.Toml;
 
 import io.hotmoka.annotations.Immutable;
-import io.mokamint.node.AbstractConfig;
-import io.mokamint.node.AbstractConfigBuilder;
+import io.mokamint.node.AbstractConsensusConfig;
+import io.mokamint.node.AbstractConsensusConfigBuilder;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 
@@ -41,7 +41,7 @@ import io.mokamint.node.api.RestrictedNode;
  * The configuration of a local Mokamint node.
  */
 @Immutable
-public class Config extends AbstractConfig {
+public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig, LocalNodeConfigBuilder> implements LocalNodeConfig {
 
 	/**
 	 * The path where the node's data will be persisted.
@@ -81,16 +81,6 @@ public class Config extends AbstractConfig {
 	 * It defaults to the empty set.
 	 */
 	private final Set<URI> seeds;
-
-	/**
-	 * Yields the URIs of the initial peers that must be contacted at start-up
-	 * and potentially end-up in the set of active peers. It defaults to the empty set.
-	 * 
-	 * @return the set of URIs of initial peers
-	 */
-	public Stream<URI> seeds() {
-		return seeds.stream();
-	}
 
 	/**
 	 * The maximum number of peers kept by a node. The actual number of peers can
@@ -150,7 +140,7 @@ public class Config extends AbstractConfig {
 	/**
 	 * Full constructor for the builder pattern.
 	 */
-	private Config(Builder builder) {
+	private LocalNodeConfigImpl(LocalNodeConfigBuilderImpl builder) {
 		super(builder);
 
 		this.dir = builder.dir;
@@ -170,8 +160,79 @@ public class Config extends AbstractConfig {
 	}
 
 	@Override
+	public Path getDir() {
+		return dir;
+	}
+
+	@Override
+	public long getDeadlineWaitTimeout() {
+		return deadlineWaitTimeout;
+	}
+
+	@Override
+	public long getMinerInitialPoints() {
+		return minerInitialPoints;
+	}
+
+	@Override
+	public long getMinerPunishmentForTimeout() {
+		return minerPunishmentForTimeout;
+	}
+
+	@Override
+	public long getMinerPunishmentForIllegalDeadline() {
+		return minerPunishmentForIllegalDeadline;
+	}
+
+	@Override
+	public Stream<URI> getSeeds() {
+		return seeds.stream();
+	}
+
+	@Override
+	public long getMaxPeers() {
+		return maxPeers;
+	}
+
+	@Override
+	public long getPeerInitialPoints() {
+		return peerInitialPoints;
+	}
+
+	@Override
+	public long getPeerMaxTimeDifference() {
+		return peerMaxTimeDifference;
+	}
+
+	@Override
+	public long getPeerPunishmentForUnreachable() {
+		return peerPunishmentForUnreachable;
+	}
+
+	@Override
+	public long getPeerTimeout() {
+		return peerTimeout;
+	}
+
+	@Override
+	public long getPeerPingInterval() {
+		return peerPingInterval;
+	}
+
+	@Override
+	public long getWhisperingMemorySize() {
+		return whisperingMemorySize;
+	}
+
+	@Override
+	public long getBlockMaxTimeInTheFuture() {
+		return blockMaxTimeInTheFuture;
+	}
+
+	@Override
 	public String toToml() {
-		StringBuilder sb = new StringBuilder(super.toToml());
+		var sb = new StringBuilder(super.toToml());
+
 		sb.append("\n");
 		sb.append("## Local parameters\n");
 		sb.append("\n");
@@ -192,7 +253,7 @@ public class Config extends AbstractConfig {
 		sb.append("\n");
 		sb.append("# the URIs of the initial peers, that will always get added to the previous set of peers\n");
 		sb.append("# (if any) and contacted at start-up\n");
-		sb.append("seeds = " + seeds().map(uri -> "\"" + uri + "\"").collect(Collectors.joining(",", "[", "]")) + "\n");
+		sb.append("seeds = " + getSeeds().map(uri -> "\"" + uri + "\"").collect(Collectors.joining(",", "[", "]")) + "\n");
 		sb.append("\n");
 		sb.append("# the maximum amount of peers of a node; their actual number can be larger\n");
 		sb.append("# only if peers are explicitly added as seeds or through the addPeer() method\n");
@@ -224,9 +285,15 @@ public class Config extends AbstractConfig {
 	}
 
 	@Override
+	public LocalNodeConfigBuilder toBuilder() {
+		return new LocalNodeConfigBuilderImpl(this);
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		if (super.equals(other)) {
-			var otherConfig = (Config) other;
+			var otherConfig = (LocalNodeConfigImpl) other;
+
 			return dir.equals(otherConfig.dir) &&
 				deadlineWaitTimeout == otherConfig.deadlineWaitTimeout &&
 				minerInitialPoints == otherConfig.minerInitialPoints &&
@@ -249,7 +316,7 @@ public class Config extends AbstractConfig {
 	/**
 	 * The builder of a configuration object.
 	 */
-	public static class Builder extends AbstractConfigBuilder<Builder> {
+	public static class LocalNodeConfigBuilderImpl extends AbstractConsensusConfigBuilder<LocalNodeConfig, LocalNodeConfigBuilder> implements LocalNodeConfigBuilder {
 		private Path dir = Paths.get("mokamint-chain");
 		private long deadlineWaitTimeout = 20000L;
 		private long minerInitialPoints = 1000L;
@@ -265,10 +332,15 @@ public class Config extends AbstractConfig {
 		private long whisperingMemorySize = 1000L;
 		private long blockMaxTimeInTheFuture = 15000L;
 
-		private Builder() throws NoSuchAlgorithmException {
+		/**
+		 * Creates a configuration builder with initial default values.
+		 * 
+		 * @throws NoSuchAlgorithmException if some hashing algorithm is not available
+		 */
+		public LocalNodeConfigBuilderImpl() throws NoSuchAlgorithmException {
 		}
 
-		private Builder(Toml toml) throws NoSuchAlgorithmException, FileNotFoundException, URISyntaxException {
+		private LocalNodeConfigBuilderImpl(Toml toml) throws NoSuchAlgorithmException, FileNotFoundException, URISyntaxException {
 			super(toml);
 
 			var dir = toml.getString("dir");
@@ -334,255 +406,171 @@ public class Config extends AbstractConfig {
 		}
 
 		/**
-		 * Creates a builder containing default data.
+		 * Creates a builder by reading the properties of the given TOML file and sets them for
+		 * the corresponding fields of this builder.
 		 * 
-		 * @return the builder
-		 * @throws NoSuchAlgorithmException if some hashing algorithm used in the default comfiguration is not available
+		 * @param toml the file
+		 * @throws FileNotFoundException if the file cannot be found
+		 * @throws URISyntaxException if the file refers to a URI with a wrong syntax
+		 * @throws NoSuchAlgorithmException if the file refers to a hashing algorithm that is not available
 		 */
-		public static Builder defaults() throws NoSuchAlgorithmException {
-			return new Builder();
+		public LocalNodeConfigBuilderImpl(Path toml) throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
+			this(readToml(toml));
 		}
 
 		/**
-		 * Creates a builder from the given TOML configuration file.
-		 * The resulting builder will contain the information in the file,
-		 * and use defaults for the data not contained in the file.
+		 * Creates a builder with properties initialized to those of the given configuration object.
 		 * 
-		 * @param path the path to the TOML file
-		 * @return the builder
-		 * @throws FileNotFoundException if {@code path} cannot be found
-		 * @throws NoSuchAlgorithmException if the configuration file refers to some non-available hashing algorithm
-		 * @throws URISyntaxException if the configuration file refers to a URI with wrong syntax
+		 * @param config the configuration object
 		 */
-		public static Builder load(Path path) throws NoSuchAlgorithmException, FileNotFoundException, URISyntaxException {
-			return new Builder(readToml(path));
+		private LocalNodeConfigBuilderImpl(LocalNodeConfigImpl config) {
+			super(config);
+
+			this.dir = config.dir;
+			this.deadlineWaitTimeout = config.deadlineWaitTimeout;
+			this.minerInitialPoints = config.minerInitialPoints;
+			this.minerPunishmentForTimeout = config.minerPunishmentForTimeout;
+			this.minerPunishmentForIllegalDeadline = config.minerPunishmentForIllegalDeadline;
+			this.seeds.addAll(config.seeds);
+			this.maxPeers = config.maxPeers;
+			this.peerInitialPoints = config.peerInitialPoints;
+			this.peerMaxTimeDifference = config.peerMaxTimeDifference;
+			this.peerPunishmentForUnreachable = config.peerPunishmentForUnreachable;
+			this.peerTimeout = config.peerTimeout;
+			this.peerPingInterval = config.peerPingInterval;
+			this.whisperingMemorySize = config.whisperingMemorySize;
+			this.blockMaxTimeInTheFuture = config.blockMaxTimeInTheFuture;
 		}
 
-		/**
-		 * Sets the directory where the node's data will be persisted.
-		 * It defaults to {@code mokamint-chain} in the current directory.
-		 * 
-		 * @param dir the directory
-		 * @return this builder
-		 */
-		public Builder setDir(Path dir) {
+		@Override
+		public LocalNodeConfigBuilder setDir(Path dir) {
 			Objects.requireNonNull(dir);
 			this.dir = dir;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the maximal delay, in milliseconds, between the deadline request to the miners
-		 * and the reception of the first deadline from the miners. This defaults to 20000.
-		 * 
-		 * @param deadlineWaitTimeout the wait time, in milliseconds
-		 * @return this builder
-		 */
-		public Builder setDeadlineWaitTimeout(long deadlineWaitTimeout) {
+		@Override
+		public LocalNodeConfigBuilder setDeadlineWaitTimeout(long deadlineWaitTimeout) {
 			if (deadlineWaitTimeout < 0L)
 				throw new IllegalArgumentException("deadlineWaitTimeout must be non-negative");
 
 			this.deadlineWaitTimeout = deadlineWaitTimeout;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the initial points of a miner freshly connected to the node.
-		 * These points might be reduced for punishment. If they reach zero, the miner
-		 * gets disconnected. This defaults to 1000.
-		 * 
-		 * @param minerInitialPoints the initial points
-		 * @return this builder
-		 */
-		public Builder setMinerInitialPoints(long minerInitialPoints) {
+		@Override
+		public LocalNodeConfigBuilder setMinerInitialPoints(long minerInitialPoints) {
 			if (minerInitialPoints <= 0L)
 				throw new IllegalArgumentException("minerInitialPoints must be positive");
 
 			this.minerInitialPoints = minerInitialPoints;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the points lost by a miner, as punishment for timeout
-		 * at a request for a new deadline. This defaults to 1.
-		 * 
-		 * @param minerPunishmentForTimeout the points
-		 * @return this builder
-		 */
-		public Builder setMinerPunishmentForTimeout(long minerPunishmentForTimeout) {
+		@Override
+		public LocalNodeConfigBuilder setMinerPunishmentForTimeout(long minerPunishmentForTimeout) {
 			if (minerPunishmentForTimeout < 0L)
 				throw new IllegalArgumentException("minerPunishmentForTimeout must be non-negative");
 
 			this.minerPunishmentForTimeout = minerPunishmentForTimeout;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the points lost by a miner, as punishment for providing an illegal deadline.
-		 * This defaults to 500.
-		 * 
-		 * @param minerPunishmentForIllegalDeadline the points
-		 * @return this builder
-		 */
-		public Builder setMinerPunishmentForIllegalDeadline(long minerPunishmentForIllegalDeadline) {
+		@Override
+		public LocalNodeConfigBuilder setMinerPunishmentForIllegalDeadline(long minerPunishmentForIllegalDeadline) {
 			if (minerPunishmentForIllegalDeadline < 0L)
 				throw new IllegalArgumentException("minerPunishmentForIllegalDeadline must be non-negative");
 
 			this.minerPunishmentForIllegalDeadline = minerPunishmentForIllegalDeadline;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Adds the given URI to those of the initial peers (called seeds).
-		 * Such peers are contacted at start-up.
-		 * 
-		 * @param uri the URI to add
-		 * @return this builder
-		 */
-		public Builder addSeed(URI uri) {
+		@Override
+		public LocalNodeConfigBuilder addSeed(URI uri) {
 			Objects.requireNonNull(uri);
 			seeds.add(uri);
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the maximum number of peers kept by a node. The actual number of peers can
-		 * be larger only if peers are explicitly added as seeds or through the
-		 * {@link RestrictedNode#add(Peer)} method.
-		 * It defaults to 20.
-		 * 
-		 * @param maxPeers the maximum number of peers
-		 * @return this builder
-		 */
-		public Builder setMaxPeers(long maxPeers) {
+		@Override
+		public LocalNodeConfigBuilder setMaxPeers(long maxPeers) {
 			if (maxPeers < 0L)
 				throw new IllegalArgumentException("maxPeers must be non-negative");
 
 			this.maxPeers = maxPeers;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the initial points of a peer, freshly added to a node.
-		 * These points might be reduced for punishment. If they reach zero, the peer
-		 * gets disconnected. This defaults to 1000.
-		 * 
-		 * @param peerInitialPoints the initial points
-		 * @return this builder
-		 */
-		public Builder setPeerInitialPoints(long peerInitialPoints) {
+		@Override
+		public LocalNodeConfigBuilder setPeerInitialPoints(long peerInitialPoints) {
 			if (peerInitialPoints <= 0L)
 				throw new IllegalArgumentException("peerInitialPoints must be positive");
 
 			this.peerInitialPoints = peerInitialPoints;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the maximal difference (in milliseconds) between the local time of a node
-		 * and of one of its peers. This defaults to 15,000 (15 seconds).
-		 * 
-		 * @param peerMaxTimeDifference the maximal time difference (in milliseconds)
-		 * @return this builder
-		 */
-		public Builder setPeerMaxTimeDifference(long peerMaxTimeDifference) {
+		@Override
+		public LocalNodeConfigBuilder setPeerMaxTimeDifference(long peerMaxTimeDifference) {
 			if (peerMaxTimeDifference < 0L)
 				throw new IllegalArgumentException("peerMaxTimeDifference must be non-negative");
 
 			this.peerMaxTimeDifference = peerMaxTimeDifference;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the points lost by a peer, as punishment for not answering a ping.
-		 * This defaults to 1.
-		 * 
-		 * @param peerPunishmentForUnreachable the points
-		 * @return this builder
-		 */
-		public Builder setPeerPunishmentForUnreachable(long peerPunishmentForUnreachable) {
+		@Override
+		public LocalNodeConfigBuilder setPeerPunishmentForUnreachable(long peerPunishmentForUnreachable) {
 			if (peerPunishmentForUnreachable < 0L)
 				throw new IllegalArgumentException("peerPunishmentForUnreachable must be non-negative");
 
 			this.peerPunishmentForUnreachable = peerPunishmentForUnreachable;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request timeouts.
-		 * 
-		 * @param peerTimeout the timeout
-		 * @return this builder
-		 */
-		public Builder setPeerTimeout(long peerTimeout) {
+		@Override
+		public LocalNodeConfigBuilder setPeerTimeout(long peerTimeout) {
 			if (peerTimeout < 0L)
 				throw new IllegalArgumentException("peerTimeout must be non-negative");
 
 			this.peerTimeout = peerTimeout;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the time interval, in milliseconds, between successive pings to a peer.
-		 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
-		 * until they reach zero and the peer is removed.  During a successful ping, its peers are collected
-		 * if they are useful for the node (for instance, if the node has too few peers).
-		 * 
-		 * @param peerPingInterval the time interval
-		 * @return this builder
-		 */
-		public Builder setPeerPingInterval(long peerPingInterval) {
+		@Override
+		public LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval) {
 			if (peerPingInterval < 0L)
 				throw new IllegalArgumentException("peerPingInterval must be non-negative");
 
 			this.peerPingInterval = peerPingInterval;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the time interval, in milliseconds, between successive pings to a peer.
-		 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
-		 * until they reach zero and the peer is removed.  During a successful ping, its peers are collected
-		 * if they are useful for the node (for instance, if the node has too few peers).
-		 * 
-		 * @param whisperingMemorySize the size
-		 * @return this builder
-		 */
-		public Builder setWhisperingMemorySize(long whisperingMemorySize) {
+		@Override
+		public LocalNodeConfigBuilder setWhisperingMemorySize(long whisperingMemorySize) {
 			if (whisperingMemorySize < 0L)
 				throw new IllegalArgumentException("whisperingMemorySize must be non-negative");
 
 			this.whisperingMemorySize = whisperingMemorySize;
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Sets the maximal time (in milliseconds) a block can be created in the future,
-		 * from now (intended as network time now). Block verification will reject blocks created
-		 * beyond this threshold. It defaults to 15,000 (15 seconds).
-		 * 
-		 * @param blockMaxTimeInTheFuture the maximal time difference (in milliseconds)
-		 * @return this builder
-		 */
-		public Builder setBlockMaxTimeInTheFuture(long blockMaxTimeInTheFuture) {
+		@Override
+		public LocalNodeConfigBuilder setBlockMaxTimeInTheFuture(long blockMaxTimeInTheFuture) {
 			if (blockMaxTimeInTheFuture < 0L)
 				throw new IllegalArgumentException("blockMaxTimeInTheFuture must be non-negative");
 		
 			this.blockMaxTimeInTheFuture = blockMaxTimeInTheFuture;
-			return this;
-		}
-
-		/**
-		 * Builds the configuration.
-		 * 
-		 * @return the configuration
-		 */
-		public Config build() {
-			return new Config(this);
+			return getThis();
 		}
 
 		@Override
-		protected Builder getThis() {
+		public LocalNodeConfig build() {
+			return new LocalNodeConfigImpl(this);
+		}
+
+		@Override
+		protected LocalNodeConfigBuilder getThis() {
 			return this;
 		}
 	}

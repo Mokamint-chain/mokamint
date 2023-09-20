@@ -69,7 +69,8 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
@@ -146,8 +147,8 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 	}
 
-	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
-		return Config.Builder.defaults()
+	private static LocalNodeConfig mkConfig(Path dir) throws NoSuchAlgorithmException {
+		return LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
 			.build();
@@ -164,7 +165,7 @@ public class PeersTests extends AbstractLoggedTests {
 		var allPeers = Set.of(peer1, peer2);
 		var stillToAccept = new HashSet<>(allPeers);
 
-		Config config = Config.Builder.defaults()
+		LocalNodeConfig config = LocalNodeConfigBuilders.defaults()
 				.addSeed(peer1.getURI())
 				.addSeed(peer2.getURI())
 				.setDeadlineWaitTimeout(1000)
@@ -238,7 +239,7 @@ public class PeersTests extends AbstractLoggedTests {
 		allPeers.add(peer2);
 		var stillToAccept = new HashSet<>(allPeers);
 
-		Config config = Config.Builder.defaults()
+		LocalNodeConfig config = LocalNodeConfigBuilders.defaults()
 				.addSeed(peer1.getURI())
 				.addSeed(peer2.getURI())
 				.setDir(dir)
@@ -367,13 +368,13 @@ public class PeersTests extends AbstractLoggedTests {
 
 			@Override
 			public NodeInfo getInfo() {
-				return NodeInfos.of(info.getVersion(), UUID.randomUUID(), info.getLocalDateTimeUTC().plus(getConfig().peerMaxTimeDifference + 1000L, ChronoUnit.MILLIS));
+				return NodeInfos.of(info.getVersion(), UUID.randomUUID(), info.getLocalDateTimeUTC().plus(getConfig().getPeerMaxTimeDifference() + 1000L, ChronoUnit.MILLIS));
 			}
 		}
 
 		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
-			assertTrue(e.getMessage().startsWith("The time of the peer is more than " + node.getConfig().peerMaxTimeDifference + " ms away"));
+			assertTrue(e.getMessage().startsWith("The time of the peer is more than " + node.getConfig().getPeerMaxTimeDifference() + " ms away"));
 		}
 	}
 

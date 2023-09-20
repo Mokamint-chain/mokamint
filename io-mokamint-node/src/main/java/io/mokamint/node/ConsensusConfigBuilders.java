@@ -21,7 +21,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.node.api.ConsensusConfig;
-import io.mokamint.node.internal.ConsensusConfigImpl;
+import io.mokamint.node.api.ConsensusConfigBuilder;
 import io.mokamint.node.internal.gson.ConsensusConfigDecoder;
 import io.mokamint.node.internal.gson.ConsensusConfigEncoder;
 import io.mokamint.node.internal.gson.ConsensusConfigJson;
@@ -29,29 +29,50 @@ import io.mokamint.node.internal.gson.ConsensusConfigJson;
 /**
  * Providers of consensus configurations.
  */
-public abstract class ConsensusConfigs {
+public abstract class ConsensusConfigBuilders {
 
-	private ConsensusConfigs() {}
+	private ConsensusConfigBuilders() {}
+
+	private static class MyConsensusConfig extends AbstractConsensusConfig<MyConsensusConfig, MyConsensusConfigBuilder> {
+		
+		/**
+		 * Full constructor for the builder pattern.
+		 * 
+		 * @param builder the builder where information is extracted from
+		 */
+		private MyConsensusConfig(MyConsensusConfigBuilder builder) {
+			super(builder);
+		}
+
+		@Override
+		public MyConsensusConfigBuilder toBuilder() {
+			return new MyConsensusConfigBuilder(this);
+		}
+	}
 
 	/**
 	 * The builder of consensus configurations, according to the builder pattern.
 	 */
-	private static class ConsensusConfigBuilder extends AbstractConfigBuilder<ConsensusConfigBuilder> {
+	private static class MyConsensusConfigBuilder extends AbstractConsensusConfigBuilder<MyConsensusConfig, MyConsensusConfigBuilder> {
 
-		private ConsensusConfigBuilder() throws NoSuchAlgorithmException {
+		private MyConsensusConfigBuilder() throws NoSuchAlgorithmException {
 		}
 
-		private ConsensusConfigBuilder(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
+		private MyConsensusConfigBuilder(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
 			super(readToml(path));
 		}
 
-		@Override
-		public ConsensusConfig build() {
-			return new ConsensusConfigImpl(this);
+		private MyConsensusConfigBuilder(MyConsensusConfig config) {
+			super(config);
 		}
 
 		@Override
-		protected ConsensusConfigBuilder getThis() {
+		public MyConsensusConfig build() {
+			return new MyConsensusConfig(this);
+		}
+
+		@Override
+		protected MyConsensusConfigBuilder getThis() {
 			return this;
 		}
 	}
@@ -62,8 +83,8 @@ public abstract class ConsensusConfigs {
 	 * @return the builder
 	 * @throws NoSuchAlgorithmException if some hashing algorithm used in the default configuration is not available
 	 */
-	public static AbstractConfigBuilder<?> defaults() throws NoSuchAlgorithmException {
-		return new ConsensusConfigBuilder();
+	public static ConsensusConfigBuilder<?,?> defaults() throws NoSuchAlgorithmException {
+		return new MyConsensusConfigBuilder();
 	}
 
 	/**
@@ -76,8 +97,8 @@ public abstract class ConsensusConfigs {
 	 * @throws FileNotFoundException if {@code path} cannot be found
 	 * @throws NoSuchAlgorithmException if the configuration file refers to some non-available hashing algorithm
 	 */
-	public static AbstractConfigBuilder<?> load(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
-		return new ConsensusConfigBuilder(path);
+	public static ConsensusConfigBuilder<?,?> load(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
+		return new MyConsensusConfigBuilder(path);
 	}
 
 	/**
@@ -112,7 +133,7 @@ public abstract class ConsensusConfigs {
     	 * 
     	 * @param config the configuration
     	 */
-    	public Json(ConsensusConfig config) {
+    	public Json(ConsensusConfig<?,?> config) {
     		super(config);
     	}
     }

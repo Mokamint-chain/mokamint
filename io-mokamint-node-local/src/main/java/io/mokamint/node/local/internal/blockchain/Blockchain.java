@@ -107,7 +107,7 @@ public class Blockchain implements AutoCloseable {
 	 */
 	public Blockchain(LocalNodeImpl node) throws DatabaseException {
 		this.node = node;
-		this.hashingForBlocks = node.getConfig().hashingForBlocks;
+		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.db = new BlocksDatabase(node);
 	}
 
@@ -466,7 +466,7 @@ public class Blockchain implements AutoCloseable {
 			if (!isEmpty())
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
 
-			var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(node.getConfig().initialAcceleration));
+			var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(node.getConfig().getInitialAcceleration()));
 			if (db.add(genesis, new AtomicReference<>()))
 				node.submit(new BlockAddedEvent(genesis, genesis.getHash(hashingForBlocks)));
 		}

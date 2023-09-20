@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.ConsensusConfigBuilders;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
@@ -38,9 +38,9 @@ public class ConfigTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("configs are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorks() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var config1 = ConsensusConfigs.defaults().build();
-		String encoded = new ConsensusConfigs.Encoder().encode(config1);
-		var config2 = new ConsensusConfigs.Decoder().decode(encoded);
+		var config1 = ConsensusConfigBuilders.defaults().build();
+		String encoded = new ConsensusConfigBuilders.Encoder().encode(config1);
+		var config2 = new ConsensusConfigBuilders.Decoder().decode(encoded);
 		assertEquals(config1, config2);
 	}
 
@@ -48,9 +48,9 @@ public class ConfigTests extends AbstractLoggedTests {
 	@DisplayName("configs are correctly dumped into TOML and reloaded from TOML")
 	public void dumpLoadTOMLWorks(@TempDir Path dir) throws NoSuchAlgorithmException, IOException {
 		var path = dir.resolve("config.toml");
-		var config1 = ConsensusConfigs.defaults().build();
+		var config1 = ConsensusConfigBuilders.defaults().build();
 		Files.writeString(path, config1.toToml(), StandardCharsets.UTF_8);
-		var config2 = ConsensusConfigs.load(path).build();
+		var config2 = ConsensusConfigBuilders.load(path).build();
 		assertEquals(config1, config2);
 	}
 }

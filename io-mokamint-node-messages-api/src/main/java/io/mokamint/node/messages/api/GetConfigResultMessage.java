@@ -22,5 +22,5 @@ import io.mokamint.node.api.PublicNode;
 /**
  * The network message corresponding to the result of the {@link PublicNode#getConfig()} method.
  */
-public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig> {
+public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig<?,?>> {
 }

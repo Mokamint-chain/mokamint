@@ -54,7 +54,8 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
@@ -99,16 +100,16 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
 		var peer4 = Peers.of(new URI("ws://localhost:" + port4));
-		var config1 = Config.Builder.defaults().setDir(chain1).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).build();
-		var config3 = Config.Builder.defaults().setDir(chain3).build();
-		var config4 = Config.Builder.defaults().setDir(chain4).build();
+		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
+		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
+		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
+		var config4 = LocalNodeConfigBuilders.defaults().setDir(chain4).build();
 
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -165,11 +166,10 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		var allPeers = Set.of(peer1, peer2, peer3);
 		Set<Peer> stillToRemove = ConcurrentHashMap.newKeySet();
 		stillToRemove.addAll(allPeers);
-		var config1 = Config.Builder.defaults().setDir(chain1).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).build();
-		var config3 = Config.Builder.defaults().setDir(chain3).build();
-		
-		var config4 = Config.Builder.defaults().setDir(chain4)
+		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
+		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
+		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
+		var config4 = LocalNodeConfigBuilders.defaults().setDir(chain4)
 			.setPeerPingInterval(2000L) // we must make peer propagation fast
 			.build();
 
@@ -177,7 +177,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(Config config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -225,14 +225,14 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		var uri2 = new URI("ws://localhost:" + port2);
 		var peer1 = Peers.of(uri1);
 		var peer2 = Peers.of(uri2);
-		var config1 = Config.Builder.defaults().setDir(chain1).build();
-		var config2 = Config.Builder.defaults().setDir(chain2).build();
+		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
+		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends LocalNodeImpl {
 			private final Peer expected;
 
-			private MyLocalNode(Config config, Peer expected) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode(LocalNodeConfig config, Peer expected) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
 				super(config, nodeKey, app, false);
 				
 				this.expected = expected;

@@ -26,7 +26,7 @@ import io.mokamint.node.messages.api.GetConfigResultMessage;
  */
 public class GetConfigResultMessageImpl extends AbstractRpcMessage implements GetConfigResultMessage {
 
-	private final ConsensusConfig config;
+	private final ConsensusConfig<?,?> config;
 
 	/**
 	 * Creates the message.
@@ -34,14 +34,14 @@ public class GetConfigResultMessageImpl extends AbstractRpcMessage implements Ge
 	 * @param config the configuration in the message
 	 * @param id the identifier of the message
 	 */
-	public GetConfigResultMessageImpl(ConsensusConfig config, String id) {
+	public GetConfigResultMessageImpl(ConsensusConfig<?,?> config, String id) {
 		super(id);
 
 		this.config = config;
 	}
 
 	@Override
-	public ConsensusConfig get() {
+	public ConsensusConfig<?,?> get() {
 		return config;
 	}
 

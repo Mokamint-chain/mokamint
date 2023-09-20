@@ -35,7 +35,7 @@ import io.hotmoka.exceptions.UncheckConsumer;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
@@ -79,7 +79,7 @@ public class MineNewBlockTask implements Task {
 	/**
 	 * The configuration of the node running this task.
 	 */
-	private final Config config;
+	private final LocalNodeConfig config;
 
 	/**
 	 * The miners of the node.
@@ -157,7 +157,7 @@ public class MineNewBlockTask implements Task {
 		@Override
 		public void body() throws IOException {
 			// all miners timed-out
-			CheckRunnable.check(IOException.class, () -> miners.get().forEach(UncheckConsumer.uncheck(miner -> miners.punish(miner, config.minerPunishmentForTimeout))));
+			CheckRunnable.check(IOException.class, () -> miners.get().forEach(UncheckConsumer.uncheck(miner -> miners.punish(miner, config.getMinerPunishmentForTimeout()))));
 			node.submit(new DelayedMineNewBlockTask(node));
 		}
 
@@ -207,7 +207,7 @@ public class MineNewBlockTask implements Task {
 	public class IllegalDeadlineEvent extends MinerMisbehaviorEvent {
 
 		private IllegalDeadlineEvent(Miner miner) {
-			super(miner, config.minerPunishmentForIllegalDeadline);
+			super(miner, config.getMinerPunishmentForIllegalDeadline());
 		}
 
 		@Override
@@ -328,7 +328,7 @@ public class MineNewBlockTask implements Task {
 		}
 
 		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
-			currentDeadline.await(config.deadlineWaitTimeout, MILLISECONDS);
+			currentDeadline.await(config.getDeadlineWaitTimeout(), MILLISECONDS);
 		}
 
 		private void informNodeAboutNewBlock(Block block) {
@@ -383,7 +383,7 @@ public class MineNewBlockTask implements Task {
 		 */
 		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
-			var nextBlock = previous.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
+			var nextBlock = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 
 			var powerOfHead = blockchain.getPowerOfHead();
 			if (powerOfHead.isPresent() && powerOfHead.get().compareTo(nextBlock.getPower()) >= 0) {

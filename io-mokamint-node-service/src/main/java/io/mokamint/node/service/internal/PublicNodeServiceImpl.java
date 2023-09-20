@@ -101,7 +101,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	/**
 	 * The configuration of {@link #node}.
 	 */
-	private final ConsensusConfig config;
+	private final ConsensusConfig<?,?> config;
 
 	/**
 	 * The public URI of the machine where this service is running. If this is missing,

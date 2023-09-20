@@ -45,13 +45,14 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
-import io.mokamint.node.ConsensusConfigs;
+import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.NodeInternals.CloseHandler;
@@ -267,7 +268,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getConfig() request reaches the service, it sends back its consensus configuration")
 	public void serviceGetConfigWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
-		var config = ConsensusConfigs.defaults().build();
+		var config = ConsensusConfigBuilders.defaults().build();
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -276,7 +277,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onGetConfigResult(ConsensusConfig received) {
+			protected void onGetConfigResult(ConsensusConfig<?,?> received) {
 				if (config.equals(received))
 					semaphore.release();
 			}
@@ -287,7 +288,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 
 		var node = mock(PublicNodeInternals.class);
-		when(node.getConfig()).thenReturn(config);
+		// compilation fails if the following is not split in two...
+		OngoingStubbing<ConsensusConfig<?,?>> x = when(node.getConfig());
+		x.thenReturn(config);
+		//when(node.getConfig()).thenReturn(config);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetConfig();

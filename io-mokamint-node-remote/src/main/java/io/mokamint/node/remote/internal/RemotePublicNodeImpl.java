@@ -366,7 +366,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ConsensusConfig getConfig() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetConfig(id);
@@ -390,7 +390,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	private ConsensusConfig processGetConfigSuccess(RpcMessage message) {
+	private ConsensusConfig<?,?> processGetConfigSuccess(RpcMessage message) {
 		return message instanceof GetConfigResultMessage gcrm ? gcrm.get() : null;
 	}
 
@@ -470,7 +470,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetPeerInfosResult(Stream<PeerInfo> peers) {}
 	protected void onGetMinerInfosResult(Stream<MinerInfo> peers) {}
 	protected void onGetBlockResult(Optional<Block> block) {}
-	protected void onGetConfigResult(ConsensusConfig config) {}
+	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetChainResult(Chain chain) {}
 	protected void onGetInfoResult(NodeInfo info) {}

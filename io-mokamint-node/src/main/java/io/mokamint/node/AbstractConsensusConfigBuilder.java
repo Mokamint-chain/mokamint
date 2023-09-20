@@ -20,21 +20,24 @@ import java.security.NoSuchAlgorithmException;
 
 import com.moandjiezana.toml.Toml;
 
+import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.ConsensusConfigBuilder;
 import io.mokamint.node.internal.ConsensusConfigImpl;
 
 /**
  * The builder of a configuration object.
  * 
- * @param <T> the concrete type of the builder
+ * @param <C> the concrete type of the configuration
+ * @param <B> the concrete type of the builder
  */
-public abstract class AbstractConfigBuilder<T extends AbstractConfigBuilder<T>> extends ConsensusConfigImpl.AbstractBuilder<T> {
+public abstract class AbstractConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extends ConsensusConfigBuilder<C,B>> extends ConsensusConfigImpl.ConsensusConfigBuilderImpl<C,B> {
 
 	/**
 	 * Creates the builder.
 	 * 
 	 * @throws NoSuchAlgorithmException if the configuration refers to some unknown hashing algorithm
 	 */
-	protected AbstractConfigBuilder() throws NoSuchAlgorithmException {
+	protected AbstractConsensusConfigBuilder() throws NoSuchAlgorithmException {
 	}
 
 	/**
@@ -44,7 +47,16 @@ public abstract class AbstractConfigBuilder<T extends AbstractConfigBuilder<T>> 
 	 * @param toml the file
 	 * @throws NoSuchAlgorithmException if some hashing algorithm cannot be found
 	 */
-	protected AbstractConfigBuilder(Toml toml) throws NoSuchAlgorithmException {
+	protected AbstractConsensusConfigBuilder(Toml toml) throws NoSuchAlgorithmException {
 		super(toml);
+	}
+
+	/**
+	 * Creates a builder with properties initialized to those of the given configuration object.
+	 * 
+	 * @param config the configuration object
+	 */
+	protected AbstractConsensusConfigBuilder(ConsensusConfig<C,B> config) {
+		super(config);
 	}
 }

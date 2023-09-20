@@ -241,7 +241,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	public String toString(ConsensusConfig config, LocalDateTime startDateTimeUTC) {
+	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
 		var builder = new StringBuilder("Block:\n");
 		builder.append("* creation date and time UTC: " + startDateTimeUTC.plus(totalWaitingTime, ChronoUnit.MILLIS) + "\n");
 		builder.append("* hash: " + getHexHash(config.getHashingForBlocks()) + "\n");

@@ -46,13 +46,15 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.local.Config;
+import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodeMiners;
@@ -97,8 +99,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		plot3.close();
 	}
 
-	private static Config mkConfig(Path dir) throws NoSuchAlgorithmException {
-		return Config.Builder.defaults()
+	private static LocalNodeConfig mkConfig(Path dir) throws NoSuchAlgorithmException {
+		return LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.setChainId("octopus")
 			// we effectively disable the time check
@@ -106,7 +108,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 			.build();
 	}
 
-	private static Blockchain mkTestBlockchain(Config config) throws DatabaseException {
+	private static Blockchain mkTestBlockchain(LocalNodeConfig config) throws DatabaseException {
 		var peers = mock(NodePeers.class);
 		doAnswer(returnsFirstArg())
 			.when(peers)
@@ -139,7 +141,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(genesis, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
 	}
 
 	@Test
@@ -156,7 +158,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(genesis1, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis1.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis1.getHash(config.getHashingForBlocks()));
 	}
 
 	@Test
@@ -181,7 +183,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(genesis, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
 	}
 
 	@Test
@@ -198,8 +200,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
+		assertArrayEquals(chain[1], block.getHash(config.getHashingForBlocks()));
 	}
 
 	@Test
@@ -229,10 +231,11 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block3, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(4, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block1.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[2], block2.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[3], block3.getHash(config.hashingForBlocks));
+		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
+		assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
+		assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
 	}
 
 	@Test
@@ -261,8 +264,9 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block0, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block0.getHash(config.hashingForBlocks));
+		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
 
 		// we add an orphan (no previous in database)
 		assertFalse(blockchain.add(block3));
@@ -272,8 +276,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block0, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block0.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
 
 		// we add an orphan (no previous in database)
 		assertFalse(blockchain.add(block2));
@@ -283,8 +287,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block0, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block0.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
 
 		// we add a block after the genesis, that creates a better chain of length 4
 		assertTrue(blockchain.add(block1));
@@ -294,10 +298,10 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block3, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(4, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block1.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[2], block2.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[3], block3.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
+		assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
+		assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
 	}
 
 	@Test
@@ -320,8 +324,9 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block1, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block1.getHash(config.hashingForBlocks));
+		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
 
 		// we create a chain with more power as the current chain
 		assertTrue(blockchain.add(block2));
@@ -331,8 +336,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block2, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block2.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block2.getHash(hashingForBlocks));
 
 		// we create a chain with the same length as the current chain (2 blocks),
 		// but less power than the current head
@@ -343,8 +348,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block2, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block2.getHash(config.hashingForBlocks));
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block2.getHash(hashingForBlocks));
 	}
 
 	@Test
@@ -388,19 +393,20 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block3, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(4, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[1], block1.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[2], block2.getHash(config.hashingForBlocks));
-		assertArrayEquals(chain[3], block3.getHash(config.hashingForBlocks));
+		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
+		assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
+		assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
+		assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Config config) throws IOException {
+	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config) throws IOException {
 		return computeNextBlock(previous, config, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Config config, Plot plot) throws IOException {
-		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.hashingForGenerations, config.hashingForDeadlines);
+	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException {
+		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription);
-		return previous.getNextBlockDescription(deadline, config.targetBlockCreationTime, config.hashingForBlocks, config.hashingForDeadlines);
+		return previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 	}
 }
