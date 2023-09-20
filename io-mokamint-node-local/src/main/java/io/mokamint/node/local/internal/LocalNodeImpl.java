@@ -42,7 +42,6 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
-import io.mokamint.node.NodeInternals.CloseHandler;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Chain;

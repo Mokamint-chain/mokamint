@@ -218,7 +218,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	@Override
 	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen, null, false);
+		whisper(message, seen, null);
 	}
 
 	@Override
@@ -230,12 +230,23 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	public void whisperItself() {
 		if (uri.isEmpty())
 			LOGGER.warning(logPrefix + "not whispering itself since its public URI is unknown");
+		else {
+			LOGGER.info(logPrefix + "whispering itself to all peers");
+
+			var itself = Peers.of(uri.get());
+			var message = WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString());
+
+			if (whisperedMessages.add(message)) {
+				whisperPeersSessions.stream()
+					.filter(Session::isOpen)
+					.forEach(s -> whisperToSession(s, message));
 	
-		var itself = Peers.of(uri.get());
-		whisper(WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString()), _whisperer -> false, null, true);
+				node.whisperItself(message, Predicate.isEqual(this));
+			}
+		}
 	}
 
-	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded, boolean isItself) {
+	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded) {
 		if (seen.test(this) || !whisperedMessages.add(message))
 			return;
 	
@@ -246,10 +257,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			.filter(session -> session != excluded)
 			.forEach(s -> whisperToSession(s, message));
 	
-		if (isItself)
-			node.whisperItself(message, seen.or(Predicate.isEqual(this)));
-		else
-			node.whisper(message, seen.or(Predicate.isEqual(this)));
+		node.whisper(message, seen.or(Predicate.isEqual(this)));
 	}
 
 	private void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen, Session excluded) {
@@ -546,7 +554,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisper(message, _whisperer -> false, session, false));
+			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisper(message, _whisperer -> false, session));
 		}
 
 		@SuppressWarnings("resource")
