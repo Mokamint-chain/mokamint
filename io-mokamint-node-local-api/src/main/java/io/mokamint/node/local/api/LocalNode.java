@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local;
+package io.mokamint.node.local.api;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.FullNodeInternals;

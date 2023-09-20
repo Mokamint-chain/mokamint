@@ -22,12 +22,14 @@ import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.local.api.LocalNode;
+import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
  * A provider of local nodes.
  */
-public interface LocalNodes {
+public abstract class LocalNodes {
 
 	/**
 	 * Yields a local node of a Mokamint blockchain, for the given application.
@@ -45,7 +47,7 @@ public interface LocalNodes {
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 */
-	static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
+	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
 			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 
 		return new LocalNodeImpl(config, keyPair, app, init);

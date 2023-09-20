@@ -21,7 +21,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
-import io.mokamint.node.local.LocalNodeConfigImpl.LocalNodeConfigBuilderImpl;
+import io.mokamint.node.local.api.LocalNodeConfigBuilder;
+import io.mokamint.node.local.internal.LocalNodeConfigImpl.LocalNodeConfigBuilderImpl;
 
 /**
  * Providers of configuration object builders for local Mokamint nodes.

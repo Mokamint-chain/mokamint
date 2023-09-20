@@ -14,6 +14,16 @@
   </parent>
 
   <dependencies>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-local-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
   	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-node</artifactId>

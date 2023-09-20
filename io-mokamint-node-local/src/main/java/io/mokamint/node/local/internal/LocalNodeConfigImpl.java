@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local;
+package io.mokamint.node.local.internal;
 
 import java.io.FileNotFoundException;
 import java.net.URI;
@@ -36,6 +36,8 @@ import io.mokamint.node.AbstractConsensusConfig;
 import io.mokamint.node.AbstractConsensusConfigBuilder;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
+import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.node.local.api.LocalNodeConfigBuilder;
 
 /**
  * The configuration of a local Mokamint node.

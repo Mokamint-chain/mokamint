@@ -25,7 +25,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;

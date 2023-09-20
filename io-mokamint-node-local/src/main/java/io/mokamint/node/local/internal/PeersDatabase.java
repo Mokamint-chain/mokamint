@@ -42,7 +42,7 @@ import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**
  * The database where the peers are persisted.

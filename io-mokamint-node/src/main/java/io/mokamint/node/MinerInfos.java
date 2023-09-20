@@ -37,6 +37,7 @@ public abstract class MinerInfos {
 	 * @param uuid the unique identifier of the miner
 	 * @param points the points of the miner
 	 * @param description the description of the miner
+	 * @return the miner information object
 	 */
 	public static MinerInfo of(UUID uuid, long points, String description) {
 		return new MinerInfoImpl(uuid, points, description);

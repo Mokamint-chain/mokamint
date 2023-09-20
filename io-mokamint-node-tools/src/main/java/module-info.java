@@ -29,6 +29,7 @@ module io.mokamint.node.tools {
     opens io.mokamint.node.tools.internal.keys to info.picocli;
 
 	requires io.mokamint.node.local;
+	requires io.mokamint.node.local.api;
 	requires io.mokamint.application.api;
 	requires io.mokamint.miner.local;
 	requires io.mokamint.miner.remote;

@@ -21,6 +21,7 @@ limitations under the License.
 module io.mokamint.node.local {
 	exports io.mokamint.node.local;
 
+	requires transitive io.mokamint.node.local.api;
 	requires transitive io.mokamint.node;
 	requires transitive io.mokamint.application.api;
 	requires transitive io.mokamint.miner.api;

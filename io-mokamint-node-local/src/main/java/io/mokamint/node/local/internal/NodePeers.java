@@ -50,7 +50,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.local.LocalNodeConfig;
+import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.messages.WhisperPeersMessages;
