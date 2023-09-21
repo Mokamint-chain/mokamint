@@ -55,15 +55,15 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperedBlock;
+import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.messages.WhisperedMemories;
-import io.mokamint.node.messages.api.WhisperingMemory;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
+import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.IllegalDeadlineException;
@@ -210,13 +210,13 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen, true);
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
+		whisper(whisperedPeers, seen, true);
 	}
 
 	@Override
-	public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen, false);
+	public void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen) {
+		whisper(itself, seen, false);
 	}
 
 	@Override
@@ -544,13 +544,13 @@ public class LocalNodeImpl implements LocalNode {
 				service.whisperItself();
 	}
 
-	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
-		if (seen.test(this) || !alreadyWhispered.add(message))
+	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
-		peers.whisper(message, newSeen, tryToAddToThePeers);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+		peers.whisper(whisperedPeers, newSeen, tryToAddToThePeers);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
 	}
 
 	/**

@@ -50,6 +50,7 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.WhisperedBlock;
+import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -65,9 +66,9 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
-import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
 import io.mokamint.node.messages.api.GetChainInfoResultMessage;
@@ -76,10 +77,10 @@ import io.mokamint.node.messages.api.GetConfigResultMessage;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
-import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
+import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.remote.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -152,13 +153,13 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen, true);
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
+		whisper(whisperedPeers, seen, true);
 	}
 
 	@Override
-	public void whisperItself(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen);
+	public void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen) {
+		whisper(itself, seen, true);
 	}
 
 	@Override
@@ -187,17 +188,17 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
 	}
 
-	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
-		if (seen.test(this) || !alreadyWhispered.add(message))
+	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean includeNetwork) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
 
-		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(message.getPeers()));
+		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(whisperedPeers.getPeers()));
 
-		onWhisperPeers(message);
+		onWhisperPeers(whisperedPeers);
 
 		if (includeNetwork) {
 			try {
-				sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), message);
+				sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), whisperedPeers);
 			}
 			catch (IOException e) {
 				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper peers to the connected service: the connection might be closed: " + e.getMessage());
@@ -205,7 +206,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -476,7 +477,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetChainResult(Chain chain) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
-	protected void onWhisperPeers(WhisperPeersMessage message) {}
+	protected void onWhisperPeers(WhisperedPeers whisperedPeers) {} // TODO
 	protected void onWhisperBlock(WhisperedBlock whisperedBlock) {} // TODO
 
 	private class GetPeerInfosEndpoint extends Endpoint {

@@ -51,6 +51,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.WhisperedBlock;
+import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -66,9 +67,9 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
-import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
 import io.mokamint.node.messages.api.GetChainMessage;
@@ -76,10 +77,10 @@ import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
-import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
+import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -218,8 +219,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
-	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen, null);
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
+		whisper(whisperedPeers, seen, null);
 	}
 
 	@Override
@@ -247,18 +248,18 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded) {
-		if (seen.test(this) || !alreadyWhispered.add(message))
+	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, Session excluded) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
 	
-		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(message.getPeers()));
+		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(whisperedPeers.getPeers()));
 	
 		whisperPeersSessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, message));
+			.forEach(s -> whisperToSession(s, whisperedPeers));
 	
-		node.whisper(message, seen.or(Predicate.isEqual(this)));
+		node.whisper(whisperedPeers, seen.or(Predicate.isEqual(this)));
 	}
 
 	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, Session excluded) {
@@ -328,9 +329,9 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
-	private void whisperToSession(Session session, WhisperPeersMessage message) {
+	private void whisperToSession(Session session, WhisperedPeers whisperedPeers) {
 		try {
-			sendObjectAsync(session, message);
+			sendObjectAsync(session, whisperedPeers);
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper peers to session: it might be closed: " + e.getMessage());

@@ -51,11 +51,11 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.WhisperedBlock;
+import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.messages.WhisperPeersMessages;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -219,20 +219,20 @@ public class NodePeers implements AutoCloseable {
 	 * to the peers in this container and adds the peers in the message to this
 	 * container, if requested.
 	 * 
-	 * @param message the message containing the whispered peers
+	 * @param whisperedPeers the whispered peers
 	 * @param seen the whisperers already seen during whispering
 	 * @param tryToAdd if the peers must be added to those in this container
 	 */
-	public void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAdd) {
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean tryToAdd) {
 		if (tryToAdd) {
 			// we check if the node needs any of the whispered peers
-			var usefulToAdd = message.getPeers().distinct().toArray(Peer[]::new);
+			var usefulToAdd = whisperedPeers.getPeers().distinct().toArray(Peer[]::new);
 			if (usefulToAdd.length > 0)
 				node.submit(new AddWhisperedPeersTask(usefulToAdd));
 		}
 	
 		// in any case, we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(message, seen));
+		remotes.values().forEach(remote -> remote.whisper(whisperedPeers, seen));
 	}
 
 	/**

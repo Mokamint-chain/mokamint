@@ -69,9 +69,9 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -411,10 +411,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onWhisperPeers(WhisperPeersMessage message) {
+			protected void onWhisperPeers(WhisperedPeers whisperedPeers) {
 				// we must use containsAll since the suggested peers might include
 				// the public URI of the machine where the test is running
-				if (message.getPeers().collect(Collectors.toSet()).containsAll(allPeers))
+				if (whisperedPeers.getPeers().collect(Collectors.toSet()).containsAll(allPeers))
 					semaphore.release();
 			}
 		}

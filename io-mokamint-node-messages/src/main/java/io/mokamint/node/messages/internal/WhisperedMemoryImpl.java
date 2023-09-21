@@ -74,6 +74,7 @@ public class WhisperedMemoryImpl implements WhisperingMemory {
 		synchronized (lock) {
 			if (seen.add(whispered)) {
 				elements.add(whispered);
+
 				if (seen.size() > size) {
 					var toRemove = elements.removeFirst();
 					seen.remove(toRemove);
