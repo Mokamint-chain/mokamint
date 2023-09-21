@@ -14,12 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node;
+package io.mokamint.node.api;
 
 import java.io.IOException;
-
-import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.Node;
 
 /**
  * The internal API of a Mokamint node. It includes methods that are not

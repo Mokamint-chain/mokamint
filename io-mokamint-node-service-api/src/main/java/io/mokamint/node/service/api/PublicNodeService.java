@@ -18,7 +18,7 @@ package io.mokamint.node.service.api;
 
 import io.hotmoka.websockets.server.api.WebSocketServer;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.Whisperer;
+import io.mokamint.node.api.Whisperer;
 
 /**
  * A websocket server for the public API of a Mokamint node.

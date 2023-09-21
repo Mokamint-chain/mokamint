@@ -19,11 +19,6 @@
       <artifactId>io-mokamint-node-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
-     <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-node</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-miner-api</artifactId>

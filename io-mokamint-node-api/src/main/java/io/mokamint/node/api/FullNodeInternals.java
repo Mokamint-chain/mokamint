@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node;
-
-import io.mokamint.node.api.FullNode;
+package io.mokamint.node.api;
 
 /**
  * The internal API of a public and restricted Mokamint node. It includes methods that are not

@@ -18,7 +18,7 @@ package io.mokamint.node.service;
 
 import java.io.IOException;
 
-import io.mokamint.node.RestrictedNodeInternals;
+import io.mokamint.node.api.RestrictedNodeInternals;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
 import jakarta.websocket.DeploymentException;

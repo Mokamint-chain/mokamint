@@ -14,13 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node;
+package io.mokamint.node.api;
 
 import java.util.function.Predicate;
-
-import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.WhisperedPeers;
-import io.mokamint.node.messages.api.Whisperer;
 
 /**
  * The internal API of a public Mokamint node. It includes methods that are not

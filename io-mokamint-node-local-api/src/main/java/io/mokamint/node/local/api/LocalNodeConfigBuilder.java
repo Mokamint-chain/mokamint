@@ -19,7 +19,6 @@ package io.mokamint.node.local.api;
 import java.net.URI;
 import java.nio.file.Path;
 
-import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.ConsensusConfigBuilder;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
@@ -27,7 +26,6 @@ import io.mokamint.node.api.RestrictedNode;
 /**
  * The builder of a configuration of a local Mokamint node.
  */
-@Immutable
 public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNodeConfig, LocalNodeConfigBuilder> {
 
 	/**

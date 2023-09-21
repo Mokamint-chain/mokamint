@@ -14,12 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.api;
 
 import java.util.function.Predicate;
-
-import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeers;
 
 /**
  * An object that whispers peers, transactions and blocks.

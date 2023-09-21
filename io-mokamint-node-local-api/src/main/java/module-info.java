@@ -22,7 +22,6 @@ module io.mokamint.node.local.api {
 	exports io.mokamint.node.local.api;
 
 	requires transitive io.mokamint.node.api;
-	requires io.mokamint.node; // TODO
 	requires transitive io.mokamint.miner.api;
 	requires io.hotmoka.annotations;
 }

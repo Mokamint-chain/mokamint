@@ -16,13 +16,15 @@ limitations under the License.
 
 package io.mokamint.node.local.api;
 
+import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.node.FullNodeInternals;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.FullNodeInternals;
 
 /**
  * A local node of a Mokamint blockchain.
  */
+@ThreadSafe
 public interface LocalNode extends FullNodeInternals {
 
 	@Override

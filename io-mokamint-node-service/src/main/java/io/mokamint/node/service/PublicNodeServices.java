@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
-import io.mokamint.node.PublicNodeInternals;
+import io.mokamint.node.api.PublicNodeInternals;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
