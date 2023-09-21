@@ -18,6 +18,8 @@ package io.mokamint.node.messages.api;
 
 import java.util.function.Predicate;
 
+import io.mokamint.node.api.WhisperedBlock;
+
 /**
  * An object that whispers peers, transactions and blocks.
  */
@@ -35,13 +37,13 @@ public interface Whisperer {
 	void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen);
 
 	/**
-	 * Whisper the given message.
+	 * Whisper the given block.
 	 * 
-	 * @param message the message
+	 * @param whisperedBlock the whispered block
 	 * @param seen a predicate telling if a whisperer has already whispered the
 	 *             {@code message}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle inside the same machine (this does not account
 	 *             for network connections among whisperers)
 	 */
-	void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen);
+	void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen);
 }

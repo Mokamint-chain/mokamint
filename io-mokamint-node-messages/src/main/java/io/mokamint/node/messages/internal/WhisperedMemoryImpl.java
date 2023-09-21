@@ -16,13 +16,15 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.messages.api.MessageMemory;
+import io.mokamint.node.api.Whispered;
+import io.mokamint.node.messages.api.WhisperingMemory;
 
 /**
  * Implementation of a memory of messages, that remembers that last inserted messages.
@@ -30,26 +32,37 @@ import io.mokamint.node.messages.api.MessageMemory;
  * The test is incomplete, in general, since this memory has limited size.
  */
 @ThreadSafe
-public class MessageMemoryImpl implements MessageMemory {
+public class WhisperedMemoryImpl implements WhisperingMemory {
 
 	/**
-	 * The size of the memory (number of messages that can be stored).
+	 * The size of the memory (number of whispered things that can be stored).
 	 */
 	private final long size;
 
 	/**
-	 * UUIDs of the messages added to this container.
+	 * The lock for accessing {@link #seen} and {@link #elements}.
 	 */
-	@GuardedBy("itself")
-	private final SortedSet<String> seenUUIDs = new TreeSet<>();
+	private final Object lock = new Object();
+
+	/**
+	 * The whispered things added to this container.
+	 */
+	@GuardedBy("lock")
+	private final Set<Whispered> seen = new HashSet<>();
+
+	/**
+	 * The whispered things added to this container, in order of addition.
+	 */
+	@GuardedBy("lock")
+	private final Deque<Whispered> elements = new LinkedList<>();
 
 	/**
 	 * Creates a memory of the given size.
 	 * 
-	 * @param size the size (maximal number of stored messages)
+	 * @param size the size (maximal number of stored things)
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public MessageMemoryImpl(long size) {
+	public WhisperedMemoryImpl(long size) {
 		if (size < 0)
 			throw new IllegalArgumentException("size cannot be negative");
 
@@ -57,11 +70,14 @@ public class MessageMemoryImpl implements MessageMemory {
 	}
 
 	@Override
-	public boolean add(RpcMessage message) {
-		synchronized (seenUUIDs) {
-			if (seenUUIDs.add(message.getId())) {
-				if (seenUUIDs.size() > size)
-					seenUUIDs.remove(seenUUIDs.first());
+	public boolean add(Whispered whispered) {
+		synchronized (lock) {
+			if (seen.add(whispered)) {
+				elements.add(whispered);
+				if (seen.size() > size) {
+					var toRemove = elements.removeFirst();
+					seen.remove(toRemove);
+				}
 
 				return true;
 			}

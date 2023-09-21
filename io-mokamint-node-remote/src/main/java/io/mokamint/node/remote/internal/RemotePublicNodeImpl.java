@@ -49,6 +49,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -64,7 +65,7 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
-import io.mokamint.node.messages.MessageMemories;
+import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
@@ -75,7 +76,7 @@ import io.mokamint.node.messages.api.GetConfigResultMessage;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
-import io.mokamint.node.messages.api.MessageMemory;
+import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
@@ -102,7 +103,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final MessageMemory whisperedMessages;
+	private final WhisperingMemory alreadyWhispered;
 
 	/**
 	 * The prefix used in the log messages;
@@ -125,7 +126,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 */
 	public RemotePublicNodeImpl(URI uri, long timeout, long whisperedMessagesSize) throws DeploymentException, IOException {
 		this.logPrefix = "remote to public service at " + uri + ": ";
-		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
+		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
 
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
 		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
@@ -161,21 +162,21 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen, true);
+	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
+		whisper(whisperedBlock, seen, true);
 	}
 
-	private void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
-		if (seen.test(this) || !whisperedMessages.add(message))
+	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, boolean includeNetwork) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
 
 		LOGGER.info(logPrefix + "got whispered block"); // TODO
 
-		onWhisperBlock(message);
+		onWhisperBlock(whisperedBlock);
 
 		if (includeNetwork) {
 			try {
-				sendObjectAsync(getSession(WHISPER_BLOCK_ENDPOINT), message);
+				sendObjectAsync(getSession(WHISPER_BLOCK_ENDPOINT), whisperedBlock);
 			}
 			catch (IOException e) {
 				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper a block to the connected service: the connection might be closed: " + e.getMessage());
@@ -183,11 +184,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
 	}
 
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean includeNetwork) {
-		if (seen.test(this) || !whisperedMessages.add(message))
+		if (seen.test(this) || !alreadyWhispered.add(message))
 			return;
 
 		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(message.getPeers()));
@@ -476,7 +477,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhisperPeers(WhisperPeersMessage message) {}
-	protected void onWhisperBlock(WhisperBlockMessage message) {}
+	protected void onWhisperBlock(WhisperedBlock whisperedBlock) {} // TODO
 
 	private class GetPeerInfosEndpoint extends Endpoint {
 

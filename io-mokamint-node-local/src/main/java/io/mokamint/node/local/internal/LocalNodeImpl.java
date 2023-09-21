@@ -54,14 +54,14 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
+import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
-import io.mokamint.node.messages.MessageMemories;
-import io.mokamint.node.messages.api.MessageMemory;
-import io.mokamint.node.messages.api.WhisperBlockMessage;
+import io.mokamint.node.messages.WhisperedMemories;
+import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.service.api.PublicNodeService;
@@ -140,7 +140,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final MessageMemory whisperedMessages;
+	private final WhisperingMemory alreadyWhispered;
 
 	/**
 	 * The lock used to block new calls when the node has been requested to close.
@@ -170,7 +170,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.keyPair = keyPair;
 			this.app = app;
 			this.version = Versions.current();
-			this.whisperedMessages = MessageMemories.of(config.getWhisperingMemorySize());
+			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
 			this.miners = new NodeMiners(this);
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new NodePeers(this);
@@ -220,22 +220,22 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
-		if (seen.test(this) || !whisperedMessages.add(message))
+	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
 
 		try {
-			blockchain.add(message.getBlock());
+			blockchain.add(whisperedBlock.getBlock());
 		}
 		catch (NoSuchAlgorithmException | DatabaseException | VerificationException | ClosedDatabaseException e) {
 			LOGGER.log(Level.SEVERE, "the whispered block " +
-				message.getBlock().getHexHash(config.getHashingForBlocks()) +
+				whisperedBlock.getBlock().getHexHash(config.getHashingForBlocks()) +
 				" could not be added to the blockchain: " + e.getMessage());
 		}
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
-		peers.whisper(message, newSeen);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen));
+		peers.whisper(whisperedBlock, newSeen);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
 	}
 
 	@Override
@@ -545,7 +545,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
-		if (seen.test(this) || !whisperedMessages.add(message))
+		if (seen.test(this) || !alreadyWhispered.add(message))
 			return;
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));

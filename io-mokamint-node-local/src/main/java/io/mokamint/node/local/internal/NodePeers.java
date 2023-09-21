@@ -50,11 +50,11 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.messages.WhisperPeersMessages;
-import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
 import io.mokamint.node.remote.RemotePublicNode;
@@ -239,12 +239,12 @@ public class NodePeers implements AutoCloseable {
 	 * Whispers a block to this container of peers. It forwards the message
 	 * to the peers in this container.
 	 * 
-	 * @param message the message containing the whispered block
+	 * @param whisperedBlock the whispered block
 	 * @param seen the whisperers already seen during whispering
 	 */
-	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
+	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
 		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(message, seen));
+		remotes.values().forEach(remote -> remote.whisper(whisperedBlock, seen));
 	}
 
 	/**

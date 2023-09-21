@@ -50,6 +50,7 @@ import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -65,7 +66,7 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
-import io.mokamint.node.messages.MessageMemories;
+import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockMessage;
@@ -75,7 +76,7 @@ import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
-import io.mokamint.node.messages.api.MessageMemory;
+import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.Whisperer;
@@ -134,7 +135,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final MessageMemory whisperedMessages;
+	private final WhisperingMemory alreadyWhispered;
 
 	/**
 	 * True if and only if this service has been closed already.
@@ -183,7 +184,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			throw new IOException(e);
 		}
 
-		this.whisperedMessages = MessageMemories.of(whisperedMessagesSize);
+		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(u -> addPort(u, port)))));
 
 		// if the node gets closed, then this service will be closed as well
@@ -222,8 +223,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
-	public void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen) {
-		whisper(message, seen, null);
+	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
+		whisper(whisperedBlock, seen, null);
 	}
 
 	@Override
@@ -236,7 +237,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			var itself = Peers.of(uri.get());
 			var message = WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString());
 
-			if (whisperedMessages.add(message)) {
+			if (alreadyWhispered.add(message)) {
 				whisperPeersSessions.stream()
 					.filter(Session::isOpen)
 					.forEach(s -> whisperToSession(s, message));
@@ -247,7 +248,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	private void whisper(WhisperPeersMessage message, Predicate<Whisperer> seen, Session excluded) {
-		if (seen.test(this) || !whisperedMessages.add(message))
+		if (seen.test(this) || !alreadyWhispered.add(message))
 			return;
 	
 		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(message.getPeers()));
@@ -260,18 +261,18 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		node.whisper(message, seen.or(Predicate.isEqual(this)));
 	}
 
-	private void whisper(WhisperBlockMessage message, Predicate<Whisperer> seen, Session excluded) {
-		if (seen.test(this) || !whisperedMessages.add(message))
+	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, Session excluded) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
 
-		LOGGER.info(logPrefix + "got whispered block " + message.getBlock().getHexHash(config.getHashingForBlocks()));
+		LOGGER.info(logPrefix + "got whispered block " + whisperedBlock.getBlock().getHexHash(config.getHashingForBlocks()));
 	
 		whisperBlockSessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, message));
+			.forEach(s -> whisperToSession(s, whisperedBlock));
 	
-		node.whisper(message, seen.or(Predicate.isEqual(this)));
+		node.whisper(whisperedBlock, seen.or(Predicate.isEqual(this)));
 	}
 
 	private URI addPort(URI uri, int port) throws DeploymentException {
@@ -336,9 +337,9 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	private void whisperToSession(Session session, WhisperBlockMessage message) {
+	private void whisperToSession(Session session, WhisperedBlock whisperedBlock) {
 		try {
-			sendObjectAsync(session, message);
+			sendObjectAsync(session, whisperedBlock);
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper block to session: it might be closed: " + e.getMessage());

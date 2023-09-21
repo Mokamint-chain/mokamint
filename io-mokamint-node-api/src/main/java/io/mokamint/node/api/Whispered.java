@@ -14,13 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
-
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.WhisperedPeers;
+package io.mokamint.node.api;
 
 /**
- * The network message sent to whisper some peers between whisperers.
+ * Information whispered among peers.
  */
-public interface WhisperPeersMessage extends RpcMessage, WhisperedPeers {
+public interface Whispered {
+
+	@Override
+	boolean equals(Object obj);
+
+	@Override
+	int hashCode();
 }

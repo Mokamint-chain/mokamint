@@ -14,13 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.api;
 
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.WhisperedPeers;
+import java.util.stream.Stream;
 
 /**
- * The network message sent to whisper some peers between whisperers.
+ * Peers information whispered among peers.
  */
-public interface WhisperPeersMessage extends RpcMessage, WhisperedPeers {
+public interface WhisperedPeers extends Whispered {
+
+	/**
+	 * Yields the whispered peers.
+	 * 
+	 * @return the whispered peers
+	 */
+	Stream<Peer> getPeers();
 }

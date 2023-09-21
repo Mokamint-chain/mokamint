@@ -14,26 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
-
-import io.mokamint.node.messages.api.MessageMemory;
-import io.mokamint.node.messages.internal.MessageMemoryImpl;
+package io.mokamint.node.api;
 
 /**
- * A provider of message memories.
+ * Block information whispered among peers.
  */
-public final class MessageMemories {
-	
-	private MessageMemories() {}
+public interface WhisperedBlock extends Whispered {
 
 	/**
-	 * Yields a message memory of the given maximal size.
+	 * Yields the whispered block.
 	 * 
-	 * @param size the size (maximal number of stored messages)
-	 * @return the message memory
-	 * @throws IllegalArgumentException if {@code size} is negative
+	 * @return the whispered block
 	 */
-	public static MessageMemory of(long size) {
-		return new MessageMemoryImpl(size);
-	}
+	Block getBlock();
 }

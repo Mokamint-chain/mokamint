@@ -17,20 +17,10 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.Block;
+import io.mokamint.node.api.WhisperedBlock;
 
 /**
  * The network message sent to whisper a block between whisperers.
  */
-public interface WhisperBlockMessage extends RpcMessage {
-
-	/**
-	 * Yields the whispered block.
-	 * 
-	 * @return the block
-	 */
-	Block getBlock();
-
-	@Override
-	boolean equals(Object obj);
+public interface WhisperBlockMessage extends RpcMessage, WhisperedBlock {
 }

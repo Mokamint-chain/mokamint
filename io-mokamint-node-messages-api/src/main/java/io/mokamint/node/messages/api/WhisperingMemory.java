@@ -17,23 +17,23 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.Whispered;
 
 /**
- * A memory of messages, that remembers that last inserted messages.
- * In this way, it is possible to know if a message has been already seen.
+ * A memory of whispered things, that remembers that last inserted things.
+ * In this way, it is possible to know if something has been already whispered.
  * The test is incomplete, in general, since this memory has limited size.
  */
 @ThreadSafe
-public interface MessageMemory {
+public interface WhisperingMemory {
 
 	/**
-	 * Adds the given message to this container. If it is full already,
-	 * then the oldest inserted message is discarded.
+	 * Adds the given whispered thing to this container. If it is full already,
+	 * then the oldest inserted thing is discarded.
 	 * 
-	 * @param message the message to add
-	 * @return true if and only if {@code message} was not in the container
+	 * @param whispered the whispered thing to add
+	 * @return true if and only if {@code whispered} was not in the container
 	 *              and has been consequently added
 	 */
-	boolean add(RpcMessage message);
+	boolean add(Whispered whispered);
 }
