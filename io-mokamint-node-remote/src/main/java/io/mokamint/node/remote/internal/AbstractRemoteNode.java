@@ -64,13 +64,9 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	private final static Logger LOGGER = Logger.getLogger(AbstractRemoteNode.class.getName());
 
 	/**
-	 * Opens and yields a new remote node for the public or restricted API of a node.
-	 * 
-	 * @return the new remote node
-	 * @throws DeploymentException if the remote node endpoints could not be deployed
-	 * @throws IOException if the remote node could not be created
+	 * Creates and opens a new remote node for the public or restricted API of a node.
 	 */
-	protected AbstractRemoteNode() throws DeploymentException, IOException {}
+	protected AbstractRemoteNode() {}
 
 	@Override
 	public final void addOnClosedHandler(CloseHandler what) {

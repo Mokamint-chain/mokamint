@@ -384,9 +384,10 @@ public class NodePeers implements AutoCloseable {
 		@Override
 		public void body() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 			var allPeers = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-				peers.getElements().parallel().flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers))
+				peers.getElements().parallel().flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers)).toArray(Peer[]::new)
 			);
-			tryToAdd(allPeers, false, true);
+
+			tryToAdd(Stream.of(allPeers), false, true);
 		}
 
 		@Override
@@ -469,7 +470,7 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		var peersAsArray = peers.toArray(Peer[]::new);
-	
+
 		var added = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
 			Stream.of(peersAsArray)
 				.parallel()

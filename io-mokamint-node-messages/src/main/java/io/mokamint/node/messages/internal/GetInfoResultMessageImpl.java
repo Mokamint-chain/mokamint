@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.util.Objects;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PublicNode;
@@ -37,6 +39,7 @@ public class GetInfoResultMessageImpl extends AbstractRpcMessage implements GetI
 	public GetInfoResultMessageImpl(NodeInfo info, String id) {
 		super(id);
 
+		Objects.requireNonNull(info, "info cannot be null");
 		this.info = info;
 	}
 

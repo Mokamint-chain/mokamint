@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.Block;
@@ -48,6 +49,7 @@ import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -107,6 +109,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private final WhisperingMemory alreadyWhispered;
 
 	/**
+	 * The hashing to use for the blocks.
+	 */
+	private final HashingAlgorithm<byte[]> hashingForBlocks;
+
+	/**
 	 * The prefix used in the log messages;
 	 */
 	private final String logPrefix;
@@ -140,6 +147,16 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
 
 		this.queues = new NodeMessageQueues(timeout);
+
+		try {
+			this.hashingForBlocks = getConfig().getHashingForBlocks();
+		}
+		catch (ClosedNodeException e) {
+			throw unexpectedException(e);
+		}
+		catch (TimeoutException | InterruptedException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
@@ -171,16 +188,18 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
 
-		LOGGER.info(logPrefix + "got whispered block"); // TODO
+		Block block = whisperedBlock.getBlock();
+		String blockHash = block.getHexHash(hashingForBlocks);
+		LOGGER.info(logPrefix + "got whispered block " + blockHash);
 
-		onWhisperBlock(whisperedBlock);
+		onWhisperBlock(block);
 
 		if (includeNetwork) {
 			try {
 				sendObjectAsync(getSession(WHISPER_BLOCK_ENDPOINT), whisperedBlock);
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper a block to the connected service: the connection might be closed: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper block " + blockHash + " to the connected service: the connection might be closed: " + e.getMessage());
 			}
 		}
 
@@ -192,16 +211,17 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
 
-		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(whisperedPeers.getPeers()));
+		String peersAsString = SanitizedStrings.of(whisperedPeers.getPeers()).toString();
+		LOGGER.info(logPrefix + "got whispered peers " + peersAsString);
 
-		onWhisperPeers(whisperedPeers);
+		onWhisperPeers(whisperedPeers.getPeers());
 
 		if (includeNetwork) {
 			try {
 				sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), whisperedPeers);
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper peers to the connected service: the connection might be closed: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper peers " + peersAsString + " to the connected service: the connection might be closed: " + e.getMessage());
 			}
 		}
 
@@ -477,8 +497,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetChainResult(Chain chain) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
-	protected void onWhisperPeers(WhisperedPeers whisperedPeers) {} // TODO
-	protected void onWhisperBlock(WhisperedBlock whisperedBlock) {} // TODO
+	protected void onWhisperPeers(Stream<Peer> peers) {}
+	protected void onWhisperBlock(Block block) {}
 
 	private class GetPeerInfosEndpoint extends Endpoint {
 

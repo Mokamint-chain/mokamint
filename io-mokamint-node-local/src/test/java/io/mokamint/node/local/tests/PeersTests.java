@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.SignatureAlgorithms;
@@ -61,6 +63,7 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
@@ -122,11 +125,13 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 	}
 
-	private static PublicNode mkNode() throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+	private static PublicNode mkNode() throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, NoSuchAlgorithmException {
 		PublicNode node = mock();
 		when(node.getInfo()).thenReturn(info);
 		when(node.getChainInfo()).thenReturn(chainInfo);
 		when(node.getChain(anyLong(), anyLong())).thenReturn(Chains.of(Stream.empty()));
+		OngoingStubbing<ConsensusConfig<?,?>> w = when(node.getConfig());
+		w.thenReturn(LocalNodeConfigBuilders.defaults().build());
 		return node;
 	}
 
@@ -141,8 +146,9 @@ public class PeersTests extends AbstractLoggedTests {
 		 * 
 		 * @param port the port where the server is published
 		 * @throws DeploymentException if the service cannot be deployed
+		 * @throws NoSuchAlgorithmException if some hashing algorithm is missing
 		 */
-		private PublicTestServer(int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+		private PublicTestServer(int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, NoSuchAlgorithmException {
 			super(mkNode(), port, 180000L, 1000, Optional.empty());
 		}
 	}
@@ -239,7 +245,7 @@ public class PeersTests extends AbstractLoggedTests {
 		allPeers.add(peer2);
 		var stillToAccept = new HashSet<>(allPeers);
 
-		LocalNodeConfig config = LocalNodeConfigBuilders.defaults()
+		var config = LocalNodeConfigBuilders.defaults()
 				.addSeed(peer1.getURI())
 				.addSeed(peer2.getURI())
 				.setDir(dir)
@@ -265,7 +271,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
 			try (var node = new MyLocalNode()) {
-				semaphore.acquire(2);
+				assertTrue(semaphore.tryAcquire(2, 10, TimeUnit.SECONDS));
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 				node.remove(peer1);
 				allPeers.remove(peer1);

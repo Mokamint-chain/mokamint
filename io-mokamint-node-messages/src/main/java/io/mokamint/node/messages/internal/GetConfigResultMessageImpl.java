@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.util.Objects;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.PublicNode;
@@ -37,6 +39,7 @@ public class GetConfigResultMessageImpl extends AbstractRpcMessage implements Ge
 	public GetConfigResultMessageImpl(ConsensusConfig<?,?> config, String id) {
 		super(id);
 
+		Objects.requireNonNull(config, "config cannot be null");
 		this.config = config;
 	}
 
