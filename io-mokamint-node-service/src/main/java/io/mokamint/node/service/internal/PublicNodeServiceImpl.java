@@ -191,6 +191,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 
+		// if the node receives a whispering, it will be forwarded to this service as well
 		node.bindWhisperer(this);
 
 		startContainer("", port,
@@ -226,6 +227,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	@Override
 	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
 		whisper(whisperedBlock, seen, null);
+	}
+
+	@Override
+	public void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen) {
+		whisper(itself, seen, null);
 	}
 
 	@Override

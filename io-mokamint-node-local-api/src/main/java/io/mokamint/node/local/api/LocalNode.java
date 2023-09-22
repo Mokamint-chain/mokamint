@@ -20,13 +20,12 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.FullNode;
-import io.mokamint.node.api.PublicNode;
 
 /**
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public interface LocalNode extends PublicNode, FullNode {
+public interface LocalNode extends FullNode {
 
 	@Override
 	LocalNodeConfig getConfig();

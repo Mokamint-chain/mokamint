@@ -23,7 +23,7 @@ import io.mokamint.node.api.Node;
 /**
  * A remote node of a Mokamint blockchain, just seen as a closeable object.
  */
-public interface RemoteNode extends Node, AutoCloseable {
+public interface RemoteNode extends Node {
 
 	/**
 	 * Closes the node.

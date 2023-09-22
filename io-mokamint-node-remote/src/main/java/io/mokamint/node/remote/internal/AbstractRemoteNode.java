@@ -18,9 +18,8 @@ package io.mokamint.node.remote.internal;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,7 +49,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	/**
 	 * A map from path into the session listening to that path.
 	 */
-	private final Map<String, Session> sessions = new HashMap<>();
+	private final ConcurrentMap<String, Session> sessions = new ConcurrentHashMap<>();
 
 	/**
 	 * The code to execute when this node gets closed.
@@ -94,17 +93,11 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	 * @throws IOException if an I/O error occurs
 	 */
 	protected final void addSession(String path, URI uri, Supplier<Endpoint> endpoint) throws DeploymentException, IOException {
-		var session = endpoint.get().deployAt(uri.resolve(path));
-
-		synchronized (sessions) {
-			sessions.put(path, session);
-		}
+		sessions.put(path, endpoint.get().deployAt(uri.resolve(path)));
 	}
 
 	protected final Session getSession(String key) {
-		synchronized (sessions) {
-			return sessions.get(key);
-		}
+		return sessions.get(key);
 	}
 
 	/**
@@ -141,13 +134,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 				}
 			}
 
-			Collection<Session> sessions;
-
-			synchronized (this.sessions) {
-				sessions = this.sessions.values();
-			}
-
-			for (var session: sessions) {
+			for (var session: sessions.values()) {
 				try {
 					session.close();
 				}
@@ -171,7 +158,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	 */
 	protected final void ensureIsOpen() throws ClosedNodeException {
 		if (isClosed.get())
-			throw new ClosedNodeException("the node has been closed");
+			throw new ClosedNodeException("The node has been closed");
 	}
 
 	protected abstract void notifyResult(RpcMessage message);
