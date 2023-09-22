@@ -66,7 +66,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.PublicNodeInternals;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -122,8 +122,8 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 	}
 
-	private static PublicNodeInternals mkNode() throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
-		PublicNodeInternals node = mock();
+	private static PublicNode mkNode() throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+		PublicNode node = mock();
 		when(node.getInfo()).thenReturn(info);
 		when(node.getChainInfo()).thenReturn(chainInfo);
 		when(node.getChain(anyLong(), anyLong())).thenReturn(Chains.of(Stream.empty()));

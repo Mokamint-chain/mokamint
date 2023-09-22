@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
-import io.mokamint.node.api.PublicNodeInternals;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
@@ -48,7 +48,7 @@ public final class PublicNodeServices {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static PublicNodeService open(PublicNodeInternals node, int port) throws DeploymentException, IOException {
+	public static PublicNodeService open(PublicNode node, int port) throws DeploymentException, IOException {
 		return new PublicNodeServiceImpl(node, port, 1800000L, 1000L, Optional.empty());
 	}
 
@@ -72,7 +72,7 @@ public final class PublicNodeServices {
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static PublicNodeService open(PublicNodeInternals node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
+	public static PublicNodeService open(PublicNode node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		return new PublicNodeServiceImpl(node, port, peerBroadcastInterval, whisperedMessagesSize, uri);
 	}
 }

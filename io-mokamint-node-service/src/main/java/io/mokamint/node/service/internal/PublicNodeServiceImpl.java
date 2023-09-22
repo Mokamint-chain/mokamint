@@ -49,7 +49,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Node.CloseHandler;
-import io.mokamint.node.api.PublicNodeInternals;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
@@ -98,7 +98,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	/**
 	 * The node whose API is published.
 	 */
-	private final PublicNodeInternals node;
+	private final PublicNode node;
 
 	/**
 	 * The configuration of {@link #node}.
@@ -174,7 +174,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public PublicNodeServiceImpl(PublicNodeInternals node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
+	public PublicNodeServiceImpl(PublicNode node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
 		this.logPrefix = "public service at ws://localhost:" + port + ": ";
 

@@ -63,7 +63,7 @@ import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.PublicNodeInternals;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -122,8 +122,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			super(mockedNode(), PORT, 180000L, 1000, Optional.empty());
 		}
 
-		private static PublicNodeInternals mockedNode() throws IOException {
-			PublicNodeInternals result = mock();
+		private static PublicNode mockedNode() throws IOException {
+			PublicNode result = mock();
 			
 			try {
 				var config = ConsensusConfigBuilders.defaults().build();

@@ -68,7 +68,7 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.PublicNodeInternals;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
@@ -98,7 +98,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -131,7 +131,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var minerInfo1 = MinerInfos.of(UUID.randomUUID(), 345L, "a miner");
 		var minerInfo2 = MinerInfos.of(UUID.randomUUID(), 11L, "a special miner");
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getMinerInfos()).thenReturn(Stream.of(minerInfo1, minerInfo2));
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -181,7 +181,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getBlock(hash)).thenReturn(Optional.empty());
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -223,7 +223,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getBlock(hash)).thenReturn(Optional.of(block));
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -255,7 +255,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -287,7 +287,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		// compilation fails if the following is not split in two...
 		OngoingStubbing<ConsensusConfig<?,?>> x = when(node.getConfig());
 		x.thenReturn(config);
@@ -322,7 +322,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getChainInfo()).thenReturn(info);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -354,7 +354,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getChain(5, 10)).thenReturn(chain);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -386,7 +386,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		when(node.getInfo()).thenReturn(info);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
@@ -402,7 +402,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
 		var allPeers = Set.of(peer1, peer2);
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -428,7 +428,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a public service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
 	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		var semaphore = new Semaphore(0);
 		
 		class MyRemotePublicNode extends RemotePublicNodeImpl {
@@ -456,7 +456,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 
 		var listenerForClose = new AtomicReference<CloseHandler>();
-		var node = mock(PublicNodeInternals.class);
+		var node = mock(PublicNode.class);
 		doAnswer(listener -> {
 			listenerForClose.set(listener.getArgument(0));
 			return null;

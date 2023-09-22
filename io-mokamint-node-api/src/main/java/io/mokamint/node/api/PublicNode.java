@@ -19,6 +19,7 @@ package io.mokamint.node.api;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -28,7 +29,7 @@ import io.hotmoka.annotations.ThreadSafe;
  * Typically, this API can be called from every machine.
  */
 @ThreadSafe
-public interface PublicNode extends Node {
+public interface PublicNode extends Node, Whisperer {
 
 	/**
 	 * Yields non-consensus information about the node.
@@ -111,4 +112,35 @@ public interface PublicNode extends Node {
 	 * @throws ClosedNodeException if the node is closed
 	 */
 	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
+	 * Binds a whisperer to this node. This means that whenever this node
+	 * has something to whisper, it will whisper to {@code whisperer} as well.
+	 * Note that this method does not state the converse.
+	 * 
+	 * @param whisperer the whisperer to bind
+	 */
+	void bindWhisperer(Whisperer whisperer);
+
+	/**
+	 * Unbinds a whisperer to this node. This means that this node will stop
+	 * whispering to {@code whisperer}.
+	 * 
+	 * @param whisperer the whisperer to unbind
+	 */
+	void unbindWhisperer(Whisperer whisperer);
+
+	/**
+	 * Whisper the given peer. This is a special case of {@link Whisperer#whisper(io.mokamint.node.api.WhisperedPeers, Predicate)}
+	 * when it is known that the whispered peers are all the same whisperer that
+	 * receives the call. In some cases, this can be useful for optimization. For instance,
+	 * if the whisperer is a local node, then it needn't try to add the peers
+	 * among its peers, since they would end up being rejected (a peer cannot be added to itself).
+	 * 
+	 * @param itself the whispered peer itself
+	 * @param seen a predicate telling if a whisperer has already whispered the
+	 *             {@code message}. This is used in order to avoid infinite recursion
+	 *             if whisperers form a cycle
+	 */
+	void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen);
 }
