@@ -33,7 +33,6 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.NodeInternals;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.RemoteNode;
 import jakarta.websocket.CloseReason;
@@ -46,7 +45,7 @@ import jakarta.websocket.Session;
  * to a service for the public or restricted API of a Mokamint node.
  */
 @ThreadSafe
-abstract class AbstractRemoteNode extends AbstractWebSocketClient implements RemoteNode, NodeInternals {
+abstract class AbstractRemoteNode extends AbstractWebSocketClient implements RemoteNode {
 
 	/**
 	 * A map from path into the session listening to that path.

@@ -172,7 +172,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 		try {
 			session.close(reason);
 		}
-		catch (IOException e) {
+		catch (IOException | IllegalStateException e) {
 			LOGGER.warning(logPrefix + "cannot close session " + session.getId() + ": " + e.getMessage());
 		}
 	}

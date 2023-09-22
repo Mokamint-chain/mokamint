@@ -22,7 +22,7 @@ import java.util.function.Predicate;
  * The internal API of a public Mokamint node. It includes methods that are not
  * exported to the general users, but only used in the implementations of the nodes.
  */
-public interface PublicNodeInternals extends NodeInternals, PublicNode, Whisperer {
+public interface PublicNodeInternals extends PublicNode, Whisperer {
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node

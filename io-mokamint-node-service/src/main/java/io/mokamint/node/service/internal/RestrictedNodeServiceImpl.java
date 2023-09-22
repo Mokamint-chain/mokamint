@@ -25,11 +25,11 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.api.NodeInternals.CloseHandler;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.RestrictedNodeInternals;
+import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.CloseMinerMessages;
@@ -59,7 +59,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	/**
 	 * The node whose API is published.
 	 */
-	private final RestrictedNodeInternals node;
+	private final RestrictedNode node;
 
 	/**
 	 * True if and only if this service has been closed already.
@@ -87,7 +87,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public RestrictedNodeServiceImpl(RestrictedNodeInternals node, int port) throws DeploymentException, IOException {
+	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws DeploymentException, IOException {
 		this.node = node;
 		this.logPrefix = "restricted service at ws://localhost:" + port + ": ";
 

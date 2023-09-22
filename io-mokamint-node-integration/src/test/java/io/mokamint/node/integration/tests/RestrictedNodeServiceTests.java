@@ -42,7 +42,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.RestrictedNodeInternals;
+import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.DeploymentException;
@@ -68,7 +68,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		allPeers.add(Peers.of(new URI("ws://my.machine:8032")));
 		allPeers.add(Peers.of(new URI("ws://her.machine:8033")));
 
-		var node = mock(RestrictedNodeInternals.class);
+		var node = mock(RestrictedNode.class);
 		when(node.add(any())).then(invocation -> {
 			if (allPeers.remove(invocation.getArguments()[0]))
 				semaphore.release();
@@ -105,7 +105,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		allPeers.add(peer1);
 		allPeers.add(peer2);
 
-		var node = mock(RestrictedNodeInternals.class);
+		var node = mock(RestrictedNode.class);
 		when(node.remove(any())).then(invocation -> {
 			if (allPeers.remove(invocation.getArguments()[0]))
 				semaphore.release();
@@ -141,7 +141,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		allPorts.add(port1);
 		allPorts.add(port2);
 
-		var node = mock(RestrictedNodeInternals.class);
+		var node = mock(RestrictedNode.class);
 		when(node.openMiner(anyInt())).then(invocation -> {
 			if (allPorts.remove(invocation.getArguments()[0]))
 				semaphore.release();
@@ -177,7 +177,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		allUUIDs.add(uuid1);
 		allUUIDs.add(uuid2);
 
-		var node = mock(RestrictedNodeInternals.class);
+		var node = mock(RestrictedNode.class);
 		when(node.closeMiner(any())).then(invocation -> {
 			if (allUUIDs.remove(invocation.getArguments()[0]))
 				semaphore.release();
@@ -206,7 +206,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a restricted service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
 	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
-		var node = mock(RestrictedNodeInternals.class);
+		var node = mock(RestrictedNode.class);
 		var semaphore = new Semaphore(0);
 		
 		class MyRemoteRestrictedNode extends RemoteRestrictedNodeImpl {

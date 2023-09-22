@@ -16,11 +16,51 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.io.IOException;
+
 import io.hotmoka.annotations.ThreadSafe;
 
 /**
  * A node of a Mokamint blockchain.
  */
 @ThreadSafe
-public interface Node {
+public interface Node extends AutoCloseable {
+
+	/**
+	 * Code executed when the node gets closed.
+	 */
+	interface CloseHandler {
+
+		/**
+		 * Closes the node.
+		 * 
+		 * @throws IOException if the closure failed for an I/O exception
+		 * @throws InterruptedException if the closure has been interrupted
+		 */
+		void close() throws IOException, InterruptedException;
+	}
+
+	/**
+	 * Takes note that the given code must be executed when this node gets closed.
+	 * 
+	 * @param handler the code
+	 */
+	void addOnClosedHandler(CloseHandler handler);
+
+	/**
+	 * Removes the given code from that executed when this node gets closed.
+	 * 
+	 * @param handler the code
+	 */
+	void removeOnCloseHandler(CloseHandler handler);
+
+	/**
+	 * Closes the node.
+	 * 
+	 * @throws IOException if an I/O error occurred
+	 * @throws DatabaseException if a database could not be closed correctly
+	 * @throws InterruptedException if some closing activity has been interrupted
+	 */
+	@Override
+	void close() throws IOException, DatabaseException, InterruptedException;
 }
