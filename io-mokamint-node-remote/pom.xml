@@ -16,6 +16,11 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-remote-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-node</artifactId>
       <version>${mokamint.version}</version>
     </dependency>

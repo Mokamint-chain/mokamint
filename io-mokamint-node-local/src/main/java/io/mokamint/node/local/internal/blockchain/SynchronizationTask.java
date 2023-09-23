@@ -43,8 +43,8 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.local.internal.NodePeers;
-import io.mokamint.node.remote.RemotePublicNode;
 
 /**
  * A task that synchronizes the blockchain from the peers.

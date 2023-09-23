@@ -30,7 +30,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.remote.RemoteRestrictedNode;
+import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;

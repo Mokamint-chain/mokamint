@@ -33,7 +33,7 @@ import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.messages.api.ExceptionMessage;
-import io.mokamint.node.remote.RemoteNode;
+import io.mokamint.node.remote.api.RemoteNode;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;

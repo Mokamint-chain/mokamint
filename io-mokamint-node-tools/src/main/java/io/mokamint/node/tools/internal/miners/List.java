@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.remote.RemotePublicNode;
+import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;

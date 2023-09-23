@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.remote.RemoteNode;
+import io.mokamint.node.remote.api.RemoteNode;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;

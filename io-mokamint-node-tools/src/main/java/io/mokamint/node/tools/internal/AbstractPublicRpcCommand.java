@@ -18,8 +18,8 @@ package io.mokamint.node.tools.internal;
 
 import java.net.URI;
 
-import io.mokamint.node.remote.RemotePublicNode;
 import io.mokamint.node.remote.RemotePublicNodes;
+import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Option;
 
 /**

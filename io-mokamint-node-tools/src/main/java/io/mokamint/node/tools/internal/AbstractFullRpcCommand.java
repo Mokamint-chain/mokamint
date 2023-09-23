@@ -19,7 +19,7 @@ package io.mokamint.node.tools.internal;
 import java.net.URI;
 import java.util.logging.Logger;
 
-import io.mokamint.node.remote.RemoteFullNode;
+import io.mokamint.node.remote.api.RemoteFullNode;
 import picocli.CommandLine.Option;
 
 /**

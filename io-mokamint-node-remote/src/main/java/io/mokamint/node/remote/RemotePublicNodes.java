@@ -19,6 +19,7 @@ package io.mokamint.node.remote;
 import java.io.IOException;
 import java.net.URI;
 
+import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import jakarta.websocket.DeploymentException;
 

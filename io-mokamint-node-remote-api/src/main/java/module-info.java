@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.remote;
-
-import io.mokamint.node.api.PublicNode;
-
 /**
- * A remote public node of a Mokamint blockchain.
+ * This module defines the API of Mokamint nodes that forwards
+ * all calls to a network node service.
  */
-public interface RemotePublicNode extends PublicNode, RemoteNode {
+module io.mokamint.node.remote.api {
+	exports io.mokamint.node.remote.api;
+
+	requires io.mokamint.node.api;
+	requires io.hotmoka.annotations;
 }

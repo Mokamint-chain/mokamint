@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.remote;
+package io.mokamint.node.remote.api;
 
-import io.mokamint.node.api.RestrictedNode;
+import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.node.api.FullNode;
 
 /**
- * A remote restricted node of a Mokamint blockchain.
+ * A remote full node of a Mokamint blockchain, providing both the public and the restricted API to the node.
  */
-public interface RemoteRestrictedNode extends RestrictedNode, RemoteNode {
+@ThreadSafe
+public interface RemoteFullNode extends RemotePublicNode, RemoteRestrictedNode, FullNode {
 }

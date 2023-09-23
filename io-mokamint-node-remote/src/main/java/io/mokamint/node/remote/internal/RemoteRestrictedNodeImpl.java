@@ -48,7 +48,7 @@ import io.mokamint.node.messages.api.CloseMinerResultMessage;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 import io.mokamint.node.messages.api.RemovePeerResultMessage;
-import io.mokamint.node.remote.RemoteRestrictedNode;
+import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 

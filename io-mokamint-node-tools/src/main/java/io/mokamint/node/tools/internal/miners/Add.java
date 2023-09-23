@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.remote.RemoteRestrictedNode;
+import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
