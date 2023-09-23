@@ -20,13 +20,11 @@ limitations under the License.
 module io.mokamint.node.remote {
 	exports io.mokamint.node.remote;
 
-	requires transitive io.mokamint.node.api;
-	requires transitive jakarta.websocket.client;
 	requires io.mokamint.node;
-	requires io.mokamint.miner.api;
 	requires io.mokamint.node.service.api;
 	requires io.mokamint.node.messages;
+	requires io.hotmoka.crypto.api;
 	requires io.hotmoka.websockets.client;
-	requires io.hotmoka.websockets.beans;
+	requires io.hotmoka.annotations;
 	requires java.logging;
 }

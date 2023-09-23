@@ -22,4 +22,5 @@ module io.mokamint.node.messages.api {
 
 	requires transitive io.mokamint.node.api;
 	requires transitive io.hotmoka.websockets.beans.api;
+	requires io.hotmoka.annotations;
 }

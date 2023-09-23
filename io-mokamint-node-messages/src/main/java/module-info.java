@@ -27,6 +27,7 @@ module io.mokamint.node.messages {
 	requires io.mokamint.node;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.exceptions;
+	requires io.hotmoka.annotations;
 	requires com.google.gson;
 	requires java.logging;
 
