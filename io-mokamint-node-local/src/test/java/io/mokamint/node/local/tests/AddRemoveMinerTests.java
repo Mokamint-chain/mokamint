@@ -157,6 +157,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 			// we connect the local miner to the mining service of node1
 			try (var service = MinerServices.open(miner, new URI("ws://localhost:" + miningPort))) {
+				Thread.sleep(1000);
 			}
 		}
 	}

@@ -226,7 +226,7 @@ public class NodePeers implements AutoCloseable {
 	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean tryToAdd) {
 		if (tryToAdd) {
 			// we check if the node needs any of the whispered peers
-			var usefulToAdd = whisperedPeers.getPeers().distinct().toArray(Peer[]::new);
+			var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> remotes.get(peer) == null).toArray(Peer[]::new);
 			if (usefulToAdd.length > 0)
 				node.submit(new AddWhisperedPeersTask(usefulToAdd));
 		}
