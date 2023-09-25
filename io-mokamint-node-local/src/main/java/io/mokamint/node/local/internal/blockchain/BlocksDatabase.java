@@ -125,15 +125,18 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws InterruptedException, DatabaseException {
+	public void close() throws InterruptedException {
 		if (closureLock.stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
 				LOGGER.info("closed the blocks database");
 			}
 			catch (ExodusException e) {
+				// TODO
+				// not sure while this happens, it seems there might be transactions run for garbage collection,
+				// that will consequently find a closed environment
 				LOGGER.log(Level.WARNING, "failed to close the blocks database", e);
-				throw new DatabaseException("cannot close the blocks database", e);
+				//throw new DatabaseException("cannot close the blocks database", e);
 			}
 		}
 	}

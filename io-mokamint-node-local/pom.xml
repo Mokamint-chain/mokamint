@@ -72,6 +72,12 @@
       <version>${mokamint.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-service</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
