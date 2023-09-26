@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -52,6 +54,8 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
+import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
@@ -94,7 +98,6 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("the addition of a miner to a network of nodes lets them start mining, its removal stops mining")
-	//@Timeout(10)
 	public void addMinerStartsMiningThenRemovalStopsMining(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException {
@@ -103,14 +106,17 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var port2 = 8032;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
-		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
+		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).setInitialAcceleration(10000000000000L).setTargetBlockCreationTime(500).build();
+		var config2 = config1.toBuilder().setDir(chain2).build();
 		var miningPort = 8025;
 
 		// the prolog of the plot file must be compatible with node1 (same key and same chain id)
 		var prolog = Prologs.of(config1.getChainId(), nodeKey1.getPublic(), minerKey.getPublic(), new byte[0]);
 
+		var node1NoMinersAvailable = new Semaphore(0);
+		var minerClosing = new AtomicBoolean(false);
 		var node2HasConnectedToNode1 = new Semaphore(0);
+		var node2HasAddedBlock = new Semaphore(0);
 
 		class MyLocalNode1 extends LocalNodeImpl {
 
@@ -120,8 +126,8 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				//if (event instanceof PeerDisconnectedEvent pde && pde.getPeer().equals(peer2))
-					//semaphore.release();
+				if (minerClosing.get() && event instanceof NoMinersAvailableEvent)
+					node1NoMinersAvailable.release();
 			}
 		}
 
@@ -135,6 +141,8 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			protected void onComplete(Event event) {
 				if (event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer1))
 					node2HasConnectedToNode1.release();
+				else if (event instanceof BlockAddedEvent)
+					node2HasAddedBlock.release();
 			}
 		}
 
@@ -153,12 +161,33 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			// we open a remote miner on node1
 			assertTrue(node1.openMiner(miningPort));
 
+			// we get the UUID of the only miner of the node
+			var uuid = node1.getMinerInfos().findFirst().get().getUUID();
+
 			// TODO: it would be great to check that node1 and node2 are not mining at this stage
 
 			// we connect the local miner to the mining service of node1
 			try (var service = MinerServices.open(miner, new URI("ws://localhost:" + miningPort))) {
-				Thread.sleep(1000);
+				// miner works for node1, which whispers block to node2: eventually node2 will receive 5 blocks
+				assertTrue(node2HasAddedBlock.tryAcquire(5, 1, TimeUnit.MINUTES));
+				minerClosing.set(true);
+				node1.closeMiner(uuid);
 			}
+
+			// we wait until node1 stops mining, since it has no more miners
+			assertTrue(node1NoMinersAvailable.tryAcquire(1, 10, TimeUnit.SECONDS));
+
+			// typically, node1 could have added 5 blocks only, but it might happen that
+			// more blocks are added before closing the miner above: better ask node1 then
+			// and wait until any extra block has reached node2 as well; moreover,
+			// consider that the genesis has height 0, hence 5 blocks means to have reached height 4
+			var node1ChainInfo = node1.getChainInfo();
+			assertTrue(node2HasAddedBlock.tryAcquire((int) node1ChainInfo.getHeight() - 5 + 1, 10, TimeUnit.SECONDS));
+
+			// both chain should coincide now
+			var node2ChainInfo = node2.getChainInfo();
+
+			assertEquals(node1ChainInfo, node2ChainInfo);
 		}
 	}
 }
