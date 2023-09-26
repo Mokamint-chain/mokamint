@@ -39,7 +39,7 @@ public final class Plots {
 	 * @param path the path to the file that contains the plot
 	 * @return the plot that has been loaded
 	 * @throws IOException if the file of the plot cannot be read
-	 * @throws NoSuchAlgorithmException if the plot file uses an unknown hashing algorithm
+	 * @throws NoSuchAlgorithmException if the plot file uses an unknown cryptographic algorithm
 	 */
 	public static Plot load(Path path) throws IOException, NoSuchAlgorithmException {
 		return new PlotImpl(path);

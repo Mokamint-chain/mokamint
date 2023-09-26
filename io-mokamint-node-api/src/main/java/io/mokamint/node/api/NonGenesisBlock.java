@@ -38,4 +38,14 @@ public non-sealed interface NonGenesisBlock extends Block {
 	 * @return the reference to the previous block
 	 */
 	byte[] getHashOfPreviousBlock();
+
+	/**
+	 * Yields the signature of this node, computed from its hash by the node
+	 * that mined this block. This signature must have been computed with the
+	 * private key corresponding to the node's public key inside the prolog
+	 * of the deadline of this block (as returned by {@link #getDeadline()}.
+	 * 
+	 * @return the signature
+	 */
+	//TODO byte[] getSignature();
 }

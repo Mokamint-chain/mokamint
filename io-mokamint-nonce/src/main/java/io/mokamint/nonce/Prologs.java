@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.nonce.internal.PrologImpl;
@@ -45,11 +46,11 @@ public final class Prologs {
 	 * @param plotPublicKey the public key that identifies the plots with this prolog
 	 * @param extra application-specific extra information
 	 * @return the prolog
-	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
-	 * @throws InvalidKeyException if some of the keys is not an ed25519 valid public key
+	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
+	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
 	public static Prolog of(String chainId, PublicKey nodePublicKey, PublicKey plotPublicKey, byte[] extra) throws InvalidKeyException, NoSuchAlgorithmException {
-		return new PrologImpl(chainId, nodePublicKey, plotPublicKey, extra);
+		return new PrologImpl(chainId, SignatureAlgorithms.TYPES.ED25519, nodePublicKey, SignatureAlgorithms.TYPES.ED25519, plotPublicKey, extra);
 	}
 
 	/**
@@ -62,11 +63,11 @@ public final class Prologs {
 	 *                            in Base58 format
 	 * @param extra application-specific extra information
 	 * @return the prolog
-	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
-	 * @throws InvalidKeySpecException if some of the keys is not an ed25519 valid public key
+	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
+	 * @throws InvalidKeySpecException if some of the keys is not valid
 	 */
 	public static Prolog of(String chainId, String nodePublicKeyBase58, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
-		return new PrologImpl(chainId, nodePublicKeyBase58, plotPublicKeyBase58, extra);
+		return new PrologImpl(chainId, SignatureAlgorithms.TYPES.ED25519, nodePublicKeyBase58, SignatureAlgorithms.TYPES.ED25519, plotPublicKeyBase58, extra);
 	}
 
 	/**
@@ -74,7 +75,7 @@ public final class Prologs {
 	 * 
 	 * @param context the unmarshalling context
 	 * @return the prolog
-	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
+	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws IOException if the prolog could not be unmarshalled
 	 */
 	public static Prolog from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {

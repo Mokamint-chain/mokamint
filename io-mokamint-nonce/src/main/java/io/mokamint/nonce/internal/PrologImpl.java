@@ -29,6 +29,7 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -47,10 +48,20 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	private final String chainId;
 
 	/**
+	 * The signature algorithm for the key {@link #getNodePublicKey()}.
+	 */
+	private final SignatureAlgorithm<byte[]> nodeSignature;
+
+	/**
 	 * The public key that the nodes, using this plots with this prolog,
 	 * use to sign new mined blocks.
 	 */
 	private final PublicKey nodePublicKey;
+
+	/**
+	 * The signature algorithm for the key {@link #getPlotPublicKey()}.
+	 */
+	private final SignatureAlgorithm<byte[]> plotSignature;
 
 	/**
 	 * The public key that identifies the plots with this prolog.
@@ -76,76 +87,90 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * Creates the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
+	 * @param nodeSignatureType the type of signature algorithm used by {@code nodePublicKey}
 	 * @param nodePublicKey the public key that the nodes, using this plots with this prolog,
 	 *                      use to sign new mined blocks
+	 * @param plotSignatureType the type of signature algorithm used by {@code plotPublicKey}
 	 * @param plotPublicKey the public key that identifies the plots with this prolog
 	 * @param extra application-specific extra information
-	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
-	 * @throws InvalidKeyException if some of the keys is not an ed25519 valid public key
+	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
+	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
-	public PrologImpl(String chainId, PublicKey nodePublicKey, PublicKey plotPublicKey, byte[] extra) throws NoSuchAlgorithmException, InvalidKeyException {
+	public PrologImpl(String chainId, SignatureAlgorithms.TYPES nodeSignatureType, PublicKey nodePublicKey,
+			SignatureAlgorithms.TYPES plotSignatureType, PublicKey plotPublicKey, byte[] extra) throws NoSuchAlgorithmException, InvalidKeyException {
+
 		Objects.requireNonNull(chainId, "chainId cannot be null");
+		Objects.requireNonNull(nodeSignatureType, "nodeSignatureType cannot be null");
 		Objects.requireNonNull(nodePublicKey, "nodePublicKey cannot be null");
+		Objects.requireNonNull(plotSignatureType, "plotSignatureType cannot be null");
 		Objects.requireNonNull(plotPublicKey, "plotPublicKey cannot be null");
 		Objects.requireNonNull(extra, "extra cannot be null");
 
 		this.chainId = chainId;
+		this.nodeSignature = SignatureAlgorithms.of(nodeSignatureType, Function.identity());
 		this.nodePublicKey = nodePublicKey;
+		this.plotSignature = SignatureAlgorithms.of(plotSignatureType, Function.identity());
 		this.plotPublicKey = plotPublicKey;
 		this.extra = extra.clone();
 
 		verify();
 
-		var signature = SignatureAlgorithms.ed25519(Function.identity());
-		this.nodePublicKeyBase58 = Base58.encode(signature.encodingOf(nodePublicKey));
-		this.plotPublicKeyBase58 = Base58.encode(signature.encodingOf(plotPublicKey));
+		this.nodePublicKeyBase58 = Base58.encode(nodeSignature.encodingOf(nodePublicKey));
+		this.plotPublicKeyBase58 = Base58.encode(plotSignature.encodingOf(plotPublicKey));
 	}
 
 	/**
 	 * Creates the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
+	 * @param nodeSignatureType the type of signature algorithm used by {@code nodePublicKeyBase58}
 	 * @param nodePublicKeyBase58 the public key that the nodes, using this plots with this prolog,
 	 *                            use to sign new mined blocks; in Base58 format
-	 * @param plotPublicKeyBase58 the public key that identifies the plots with this prolog,
-	 *                            in Base58 format
+	 * @param plotSignatureType the type of signature algorithm used by {@code plotPublicKeyBase58}
+	 * @param plotPublicKeyBase58 the public key that identifies the plots with this prolog, in Base58 format
 	 * @param extra application-specific extra information
-	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
-	 * @throws InvalidKeySpecException if some of the keys is not an ed25519 valid public key
+	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
+	 * @throws InvalidKeySpecException if some of the keys is not valid
 	 */
-	public PrologImpl(String chainId, String nodePublicKeyBase58, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public PrologImpl(String chainId, SignatureAlgorithms.TYPES nodeSignatureType, String nodePublicKeyBase58,
+			SignatureAlgorithms.TYPES plotSignatureType, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
+
 		Objects.requireNonNull(chainId, "chainId cannot be null");
+		Objects.requireNonNull(nodeSignatureType, "nodeSignatureType cannot be null");
 		Objects.requireNonNull(nodePublicKeyBase58, "nodePublicKeyBase58 cannot be null");
+		Objects.requireNonNull(plotSignatureType, "plotSignatureType cannot be null");
 		Objects.requireNonNull(plotPublicKeyBase58, "plotPublicKeyBase58 cannot be null");
 		Objects.requireNonNull(extra, "extra cannot be null");
 
 		this.chainId = chainId;
-		this.nodePublicKeyBase58 = nodePublicKeyBase58;
-		this.plotPublicKeyBase58 = plotPublicKeyBase58;
 		this.extra = extra.clone();
-
-		var signature = SignatureAlgorithms.ed25519(Function.identity());
-		this.nodePublicKey = signature.publicKeyFromEncoding(Base58.decode(nodePublicKeyBase58));
-		this.plotPublicKey = signature.publicKeyFromEncoding(Base58.decode(plotPublicKeyBase58));
+		this.nodeSignature = SignatureAlgorithms.of(nodeSignatureType, Function.identity());
+		this.nodePublicKey = nodeSignature.publicKeyFromEncoding(Base58.decode(nodePublicKeyBase58));
+		this.plotSignature = SignatureAlgorithms.of(plotSignatureType, Function.identity());
+		this.plotPublicKey = plotSignature.publicKeyFromEncoding(Base58.decode(plotPublicKeyBase58));
 
 		verify();
+
+		this.nodePublicKeyBase58 = nodePublicKeyBase58;
+		this.plotPublicKeyBase58 = plotPublicKeyBase58;
 	}
 
 	/**
 	 * Unmarshals a prolog from the given context.
 	 * 
 	 * @param context the unmarshalling context
-	 * @throws NoSuchAlgorithmException if the ed25519 signature algorithm is not available
+	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws IOException if the prolog could not be unmarshalled
 	 */
 	public PrologImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		try {
 			this.chainId = context.readStringUnshared();
-			var signature = SignatureAlgorithms.ed25519(Function.identity());
+			this.nodeSignature = SignatureAlgorithms.of(context.readStringShared(), Function.identity());
 			byte[] nodePublicKeyEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the node's public key length");
-			this.nodePublicKey = signature.publicKeyFromEncoding(nodePublicKeyEncoding);
+			this.nodePublicKey = nodeSignature.publicKeyFromEncoding(nodePublicKeyEncoding);
+			this.plotSignature = SignatureAlgorithms.of(context.readStringShared(), Function.identity());
 			byte[] plotPublicKeyEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the plot's public key length");
-			this.plotPublicKey = signature.publicKeyFromEncoding(plotPublicKeyEncoding);
+			this.plotPublicKey = plotSignature.publicKeyFromEncoding(plotPublicKeyEncoding);
 			this.extra = context.readBytes(context.readCompactInt(), "Mismatch in prolog's extra length");
 
 			verify();
@@ -169,6 +194,11 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
+	public SignatureAlgorithm<byte[]> getNodeSignature() {
+		return nodeSignature;
+	}
+
+	@Override
 	public PublicKey getNodePublicKey() {
 		return nodePublicKey;
 	}
@@ -176,6 +206,11 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	@Override
 	public String getNodePublicKeyBase58() {
 		return nodePublicKeyBase58;
+	}
+
+	@Override
+	public SignatureAlgorithm<byte[]> getPlotSignature() {
+		return plotSignature;
 	}
 
 	@Override
@@ -195,7 +230,8 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 
 	@Override
 	public String toString() {
-		return "chainId: " + chainId + ", nodePublicKey: " + nodePublicKeyBase58 + ", plotPublicKey: " + plotPublicKeyBase58 + ", extra: " + Hex.toHexString(extra);
+		return "chainId: " + chainId + ", nodeSignatureName: " + nodeSignature.getName() + ", nodePublicKey: " + nodePublicKeyBase58 +
+			", plotSignatureName: " + plotSignature.getName() + ", plotPublicKey: " + plotPublicKeyBase58 + ", extra: " + Hex.toHexString(extra);
 	}
 
 	@Override
@@ -217,17 +253,18 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	public void into(MarshallingContext context) throws IOException {
 		try {
 			context.writeStringUnshared(chainId);
-			var signature = SignatureAlgorithms.ed25519(Function.identity());
-			var nodePublicKeyBytes = signature.encodingOf(nodePublicKey);
+			context.writeStringShared(nodeSignature.getName());
+			var nodePublicKeyBytes = nodeSignature.encodingOf(nodePublicKey);
 			context.writeCompactInt(nodePublicKeyBytes.length);
 			context.write(nodePublicKeyBytes);
-			var plotPublicKeyBytes = signature.encodingOf(plotPublicKey);
+			var plotPublicKeyBytes = plotSignature.encodingOf(plotPublicKey);
+			context.writeStringShared(plotSignature.getName());
 			context.writeCompactInt(plotPublicKeyBytes.length);
 			context.write(plotPublicKeyBytes);
 			context.writeCompactInt(extra.length);
 			context.write(extra);
 		}
-		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+		catch (InvalidKeyException e) {
 			throw new IOException("Cannot marshal the prolog into bytes", e);
 		}
 	}

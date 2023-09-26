@@ -19,6 +19,7 @@ package io.mokamint.nonce.api;
 import java.security.PublicKey;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
@@ -40,6 +41,13 @@ public interface Prolog extends Marshallable {
 	String getChainId();
 
 	/**
+	 * The signature algorithm for the key {@link #getNodePublicKey()}.
+	 * 
+	 * @return the signature algorithm
+	 */
+	SignatureAlgorithm<byte[]> getNodeSignature();
+
+	/**
 	 * Yields the public key that the node using the deadlines with this prolog
 	 * uses to sign new mined blocks.
 	 * 
@@ -54,6 +62,13 @@ public interface Prolog extends Marshallable {
 	 * @return the public key
 	 */
 	String getNodePublicKeyBase58();
+
+	/**
+	 * The signature algorithm for the key {@link #getPlotPublicKey()}.
+	 * 
+	 * @return the signature algorithm
+	 */
+	SignatureAlgorithm<byte[]> getPlotSignature();
 
 	/**
 	 * Yields the public key that identifies the plots from which this deadline is derived.

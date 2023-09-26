@@ -84,7 +84,7 @@ public class NonceImpl implements Nonce {
 	@Override
 	public Deadline getDeadline(DeadlineDescription description) {
 		if (!description.getHashing().getName().equals(hashing.getName()))
-			throw new IllegalArgumentException("deadline description and nonce use different hashing algorithms");
+			throw new IllegalArgumentException("Deadline description and nonce use different hashing algorithms");
 
 		byte[] data = description.getData();
 		byte[] value = hashing.hash(extractScoopAndConcat(description.getScoopNumber(), data));

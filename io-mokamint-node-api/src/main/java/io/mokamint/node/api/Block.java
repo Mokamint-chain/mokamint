@@ -78,6 +78,8 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 
 	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
+	 * This hash does not use the signature of the node (if any) which is, instead,
+	 * computed from this hash and the private key of the signer.
 	 * 
 	 * @param hashing the hashing algorithm
 	 * @return the hash of this block

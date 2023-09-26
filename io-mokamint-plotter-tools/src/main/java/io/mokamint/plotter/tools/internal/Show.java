@@ -45,7 +45,9 @@ public class Show extends AbstractCommand {
 			var prolog = plot.getProlog();
 			System.out.println("* prolog:");
 			System.out.println("  * chain identifier: " + prolog.getChainId());
+			System.out.println("  * node's signature type: " + prolog.getNodeSignature().getName());
 			System.out.println("  * node's public key: " + prolog.getNodePublicKeyBase58());
+			System.out.println("  * plot's signature type: " + prolog.getPlotSignature().getName());
 			System.out.println("  * plot's public key: " + prolog.getPlotPublicKeyBase58());
 			System.out.println("  * extra: " + Hex.toHexString(prolog.getExtra()));
 			long start = plot.getStart();
@@ -53,7 +55,7 @@ public class Show extends AbstractCommand {
 			System.out.println("* hashing: " + plot.getHashing().getName());
 		}
 		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The plot file uses an unknown hashing algorithm!", e);
+			throw new CommandException("The plot file uses an unknown cryptographic algorithm!", e);
 		}
 		catch (IOException e) {
 			throw new CommandException("Cannot read the plot file!", e);
