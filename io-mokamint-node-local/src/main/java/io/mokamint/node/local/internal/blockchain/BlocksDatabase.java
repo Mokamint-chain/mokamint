@@ -87,7 +87,7 @@ public class BlocksDatabase implements AutoCloseable {
 	/**
 	 * The hashing used for the blocks in the node.
 	 */
-	private final HashingAlgorithm<byte[]> hashingForBlocks;
+	private final HashingAlgorithm<Block> hashingForBlocks;
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.
@@ -136,7 +136,7 @@ public class BlocksDatabase implements AutoCloseable {
 				// not sure while this happens, it seems there might be transactions run for garbage collection,
 				// that will consequently find a closed environment
 				LOGGER.log(Level.WARNING, "failed to close the blocks database", e);
-				throw new DatabaseException("cannot close the blocks database", e);
+				throw new DatabaseException("Cannot close the blocks database", e);
 			}
 		}
 	}
@@ -434,7 +434,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
-		byte[] bytesOfBlock = block.toByteArray(), hashOfBlock = hashingForBlocks.hash(bytesOfBlock);
+		byte[] hashOfBlock = block.getHash(hashingForBlocks);
 	
 		if (containsBlock(txn, hashOfBlock)) {
 			LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
@@ -442,6 +442,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
 			if (containsBlock(txn, ngb.getHashOfPreviousBlock())) {
+				byte[] bytesOfBlock = block.toByteArray();
 				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
 				putInStore(txn, hashOfBlock, bytesOfBlock);
 				addToForwards(txn, ngb, hashOfBlock);
@@ -457,6 +458,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 		else {
 			if (getGenesisHash(txn).isEmpty()) {
+				byte[] bytesOfBlock = block.toByteArray();
 				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
 				putInStore(txn, hashOfBlock, bytesOfBlock);
 				setGenesisHash(txn, hashOfBlock);

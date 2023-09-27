@@ -87,8 +87,9 @@ public class NonceImpl implements Nonce {
 			throw new IllegalArgumentException("Deadline description and nonce use different hashing algorithms");
 
 		byte[] data = description.getData();
-		byte[] value = hashing.hash(extractScoopAndConcat(description.getScoopNumber(), data));
-		return Deadlines.of(prolog, progressive, value, description.getScoopNumber(), data, hashing);
+		int scoopNumber = description.getScoopNumber();
+		byte[] value = hashing.hash(extractScoopAndConcat(scoopNumber, data));
+		return Deadlines.of(prolog, progressive, value, scoopNumber, data, hashing);
 	}
 
 	/**

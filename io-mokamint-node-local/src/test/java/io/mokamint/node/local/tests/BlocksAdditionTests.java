@@ -231,7 +231,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block3, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(4, chain.length);
-		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		HashingAlgorithm<Block> hashingForBlocks = config.getHashingForBlocks();
 		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
 		assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
 		assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
@@ -264,7 +264,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block0, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		HashingAlgorithm<Block> hashingForBlocks = config.getHashingForBlocks();
 		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
 		assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
 
@@ -324,7 +324,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block1, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		HashingAlgorithm<Block> hashingForBlocks = config.getHashingForBlocks();
 		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
 		assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
 
@@ -393,7 +393,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertEquals(block3, blockchain.getHead().get());
 		chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(4, chain.length);
-		HashingAlgorithm<byte[]> hashingForBlocks = config.getHashingForBlocks();
+		HashingAlgorithm<Block> hashingForBlocks = config.getHashingForBlocks();
 		assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
 		assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
 		assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));

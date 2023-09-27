@@ -174,10 +174,10 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashing) {
+	protected byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashingForGenerations) {
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
-		return hashing.hash(concat(previousGenerationSignature, previousProlog));
+		return hashingForGenerations.hash(concat(previousGenerationSignature, previousProlog));
 	}
 
 	@Override

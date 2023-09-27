@@ -26,9 +26,13 @@ import com.moandjiezana.toml.Toml;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
+import io.mokamint.node.api.NonGenesisBlock;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
@@ -62,7 +66,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	 * The hashing algorithm used for the identifying the blocks of
 	 * the Mokamint blockchain. It defaults to {@code sha256}.
 	 */
-	public final HashingAlgorithm<byte[]> hashingForBlocks;
+	public final HashingAlgorithm<Block> hashingForBlocks;
+
+	/**
+	 * The signature algorithm used to sign the blocks with the key of their miner.
+	 */
+	public final SignatureAlgorithm<NonGenesisBlock> signatureForBlocks;
 
 	/**
 	 * The acceleration for the genesis block. This specifies how
@@ -91,6 +100,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
 		this.hashingForBlocks = builder.hashingForBlocks;
+		this.signatureForBlocks = builder.signatureForBlocks;
 		this.initialAcceleration = builder.initialAcceleration;
 		this.targetBlockCreationTime = builder.targetBlockCreationTime;
 	}
@@ -104,7 +114,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				initialAcceleration == otherConfig.initialAcceleration &&
 				hashingForDeadlines.getName().equals(otherConfig.hashingForDeadlines.getName()) &&
 				hashingForGenerations.getName().equals(otherConfig.hashingForGenerations.getName()) &&
-				hashingForBlocks.getName().equals(otherConfig.hashingForBlocks.getName());
+				hashingForBlocks.getName().equals(otherConfig.hashingForBlocks.getName()) &&
+				signatureForBlocks.getName().equals(otherConfig.getSignatureForBlocks().getName());
 		}
 		else
 			return false;
@@ -117,7 +128,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 
 	@Override
 	public String toToml() {
-		StringBuilder sb = new StringBuilder();
+		var sb = new StringBuilder();
+
 		sb.append("# This is a TOML config file for Mokamint nodes.\n");
 		sb.append("# For more information about TOML, see https://github.com/toml-lang/toml\n");
 		sb.append("# For more information about Mokamint, see https://www.mokamint.io\n");
@@ -135,6 +147,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("\n");
 		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
 		sb.append("hashing_for_blocks = \"" + hashingForBlocks.getName() + "\"\n");
+		sb.append("\n");
+		sb.append("# the signature algorithm used for signing the blocks\n");
+		sb.append("signature_for_blocks = \"" + signatureForBlocks.getName() + "\"\n");
 		sb.append("\n");
 		sb.append("# the initial acceleration of the blockchain, at the genesis block;\n");
 		sb.append("# this might be increased if the network starts with very little mining power\n");
@@ -162,8 +177,13 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public HashingAlgorithm<byte[]> getHashingForBlocks() {
+	public HashingAlgorithm<Block> getHashingForBlocks() {
 		return hashingForBlocks;
+	}
+
+	@Override
+	public SignatureAlgorithm<NonGenesisBlock> getSignatureForBlocks() {
+		return signatureForBlocks;
 	}
 
 	@Override
@@ -185,7 +205,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private String chainId = "";
 		private HashingAlgorithm<byte[]> hashingForDeadlines;
 		private HashingAlgorithm<byte[]> hashingForGenerations;
-		private HashingAlgorithm<byte[]> hashingForBlocks;
+		private HashingAlgorithm<Block> hashingForBlocks;
+		private SignatureAlgorithm<NonGenesisBlock> signatureForBlocks;
 		private long initialAcceleration = 100000000000L;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 
@@ -193,6 +214,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			setHashingForDeadlines(HashingAlgorithms::shabal256);
 			setHashingForGenerations(HashingAlgorithms::sha256);
 			setHashingForBlocks(HashingAlgorithms::sha256);
+			setSignatureForBlocks(SignatureAlgorithms::ed25519);
 		}
 
 		/**
@@ -225,6 +247,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			else
 				setHashingForBlocks(HashingAlgorithms::sha256);
 
+			var signatureForBlocks = toml.getString("signature_for_blocks");
+			if (signatureForBlocks != null)
+				setSignatureForBlocks(signatureForBlocks);
+			else
+				setSignatureForBlocks(SignatureAlgorithms::ed25519);
+
 			var initialAcceleration = toml.getLong("initial_acceleration");
 			if (initialAcceleration != null)
 				setInitialAcceleration(initialAcceleration);
@@ -244,6 +272,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForDeadlines = config.getHashingForDeadlines();
 			this.hashingForGenerations = config.getHashingForGenerations();
 			this.hashingForBlocks = config.getHashingForBlocks();
+			this.signatureForBlocks = config.getSignatureForBlocks();
 			this.initialAcceleration = config.getInitialAcceleration();
 			this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 		}
@@ -272,7 +301,14 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		@Override
 		public B setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
 			Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
-			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Function.identity());
+			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Block::toByteArray);
+			return getThis();
+		}
+
+		@Override
+		public B setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
+			Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
+			this.signatureForBlocks = SignatureAlgorithms.of(signatureForBlocks, NonGenesisBlock::toByteArray);
 			return getThis();
 		}
 
@@ -284,8 +320,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForGenerations = supplier.get(Function.identity());
 		}
 
-		private void setHashingForBlocks(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
-			this.hashingForBlocks = supplier.get(Function.identity());
+		private void setHashingForBlocks(HashingAlgorithm.Supplier<Block> supplier) throws NoSuchAlgorithmException {
+			this.hashingForBlocks = supplier.get(Block::toByteArray);
+		}
+
+		private void setSignatureForBlocks(SignatureAlgorithm.Supplier<NonGenesisBlock> supplier) throws NoSuchAlgorithmException {
+			this.signatureForBlocks = supplier.get(NonGenesisBlock::toByteArray);
 		}
 
 		@Override

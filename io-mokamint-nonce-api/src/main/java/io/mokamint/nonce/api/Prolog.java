@@ -41,7 +41,7 @@ public interface Prolog extends Marshallable {
 	String getChainId();
 
 	/**
-	 * The signature algorithm for the key {@link #getNodePublicKey()}.
+	 * Yields the signature algorithm for the key {@link #getNodePublicKey()}.
 	 * 
 	 * @return the signature algorithm
 	 */
@@ -64,7 +64,7 @@ public interface Prolog extends Marshallable {
 	String getNodePublicKeyBase58();
 
 	/**
-	 * The signature algorithm for the key {@link #getPlotPublicKey()}.
+	 * Yields the signature algorithm for the key {@link #getPlotPublicKey()}.
 	 * 
 	 * @return the signature algorithm
 	 */

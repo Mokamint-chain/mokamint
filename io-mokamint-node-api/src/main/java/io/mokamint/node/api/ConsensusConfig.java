@@ -18,6 +18,7 @@ package io.mokamint.node.api;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
@@ -58,8 +59,15 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm<byte[]> getHashingForBlocks();
+	HashingAlgorithm<Block> getHashingForBlocks();
 
+	/**
+	 * Yields the signature algorithm that nodes use to sign the blocks.
+	 * 
+	 * @return the signature algorithm
+	 */
+	SignatureAlgorithm<NonGenesisBlock> getSignatureForBlocks();
+	
 	/**
 	 * Yields the acceleration for the genesis block. This specifies how
 	 * quickly get blocks generated at the beginning of a chain. The less

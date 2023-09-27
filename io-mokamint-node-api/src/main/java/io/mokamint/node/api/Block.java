@@ -84,7 +84,7 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 * @param hashing the hashing algorithm
 	 * @return the hash of this block
 	 */
-	byte[] getHash(HashingAlgorithm<byte[]> hashing);
+	byte[] getHash(HashingAlgorithm<Block> hashing);
 
 	/**
 	 * Yields the hash of this block, by using the given hashing algorithm,
@@ -93,7 +93,7 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 * @param hashing the hashing algorithm
 	 * @return the hash of this block, as a hexadecimal string
 	 */
-	String getHexHash(HashingAlgorithm<byte[]> hashing);
+	String getHexHash(HashingAlgorithm<Block> hashing);
 
 	/**
 	 * Yields the description of the deadline that must be computed for the next block.
@@ -114,7 +114,7 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @return the description
 	 */
-	NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<byte[]> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines);
+	NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<Block> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines);
 
 	/**
 	 * Checks if this block is equal to another object.
