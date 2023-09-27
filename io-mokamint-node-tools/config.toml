@@ -16,6 +16,9 @@ hashing_for_generations = "sha256"
 # the hashing algorithm used for the blocks of the blockchain
 hashing_for_blocks = "sha256"
 
+# the signature algorithm used for signing the blocks
+signature_for_blocks = "ed25519"
+
 # the initial acceleration of the blockchain, at the genesis block;
 # this might be increased if the network starts with very little mining power
 initial_acceleration = 100000000000

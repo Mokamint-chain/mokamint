@@ -299,7 +299,7 @@ public class EventsTests extends AbstractLoggedTests {
 					var deadline = plot.getSmallestDeadline(description);
 					var prolog = deadline.getProlog();
 					var illegalDeadline = Deadlines.of(
-							Prologs.of(prolog.getChainId() + "!", prolog.getNodeSignature().getSupplier(), prolog.getNodePublicKey(),
+							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks().getSupplier(), prolog.getPublicKeyForSigningBlocks(),
 							prolog.getPlotSignature().getSupplier(), prolog.getPlotPublicKey(), prolog.getExtra()),
 							deadline.getProgressive(), deadline.getValue(),
 							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());

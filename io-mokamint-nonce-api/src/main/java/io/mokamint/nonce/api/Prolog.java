@@ -41,27 +41,28 @@ public interface Prolog extends Marshallable {
 	String getChainId();
 
 	/**
-	 * Yields the signature algorithm for the key {@link #getNodePublicKey()}.
+	 * Yields the signature algorithm used for signing the blocks
+	 * having a deadline with this prolog, with the key {@link #getPublicKeyForSigningBlocks()}.
 	 * 
 	 * @return the signature algorithm
 	 */
-	SignatureAlgorithm<byte[]> getNodeSignature();
+	SignatureAlgorithm<byte[]> getSignatureForBlocks();
 
 	/**
-	 * Yields the public key that the node using the deadlines with this prolog
-	 * uses to sign new mined blocks.
+	 * Yields the public key that must be used to sign the blocks having
+	 * a deadline with this prolog.
 	 * 
 	 * @return the public key
 	 */
-	PublicKey getNodePublicKey();
+	PublicKey getPublicKeyForSigningBlocks();
 
 	/**
-	 * Yields the public key that the node using the deadlines with this prolog
-	 * uses to sign new mined blocks, in Base58 format.
+	 * Yields the public key that must be used to sign the blocks having
+	 * a deadline with this prolog, in Base58 format.
 	 * 
 	 * @return the public key
 	 */
-	String getNodePublicKeyBase58();
+	String getPublicKeyForSigningBlocksBase58();
 
 	/**
 	 * Yields the signature algorithm for the key {@link #getPlotPublicKey()}.

@@ -73,6 +73,15 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	B setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException;
 
 	/**
+	 * Sets the signature algorithm that the miners use to sign the deadlines.
+	 * 
+	 * @param signatureForDeadlines the name of the signature algorithm
+	 * @return this builder
+	 * @throws NoSuchAlgorithmException if no algorithm exists with that name
+	 */
+	B setSignatureForDeadlines(String signatureForDeadlines) throws NoSuchAlgorithmException;
+
+	/**
 	 * Sets the acceleration for the genesis block. This specifies how
 	 * quickly get blocks generated at the beginning of a chain. The less
 	 * mining power has the network at the beginning, the higher the

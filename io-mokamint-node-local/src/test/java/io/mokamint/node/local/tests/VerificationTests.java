@@ -298,16 +298,70 @@ public class VerificationTests extends AbstractLoggedTests {
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we create a different prolog
-		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getNodeSignature().getSupplier(), prolog.getNodePublicKey(),
+		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getSignatureForBlocks().getSupplier(), prolog.getPublicKeyForSigningBlocks(),
 			prolog.getPlotSignature().getSupplier(), prolog.getPlotPublicKey(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
-				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock());
+			modifiedDeadline, expected.getHashOfPreviousBlock());
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 		assertTrue(e.getMessage().startsWith("Deadline prolog's chainId mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has the wrong blocks' signature algorithm, verification rejects it")
+	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException {
+		var config = mkConfig(dir);
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we create a different prolog
+		var oldSignature = prolog.getSignatureForBlocks();
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? SignatureAlgorithms.sha256dsa(Function.identity()) : ed25519;
+		var modifiedProlog = Prologs.of(prolog.getChainId(), newSignature.getSupplier(), prolog.getPublicKeyForSigningBlocks(),
+			prolog.getPlotSignature().getSupplier(), prolog.getPlotPublicKey(), prolog.getExtra());
+		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
+			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+			modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().startsWith("Deadline prolog's signature algorithm for blocks mismatch"));
+		assertBlockchainIsJustGenesis(blockchain, genesis, config);
+	}
+
+	@Test
+	@DisplayName("if an added non-genesis block has the wrong deadlines' signature algorithm, verification rejects it")
+	public void deadlinePrologDeadlinesSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException {
+		var config = mkConfig(dir);
+		var blockchain = mkTestBlockchain(config);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we create a different prolog
+		var oldSignature = prolog.getPlotSignature();
+		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? SignatureAlgorithms.sha256dsa(Function.identity()) : ed25519;
+		var modifiedProlog = Prologs.of(prolog.getChainId(), prolog.getSignatureForBlocks().getSupplier(), prolog.getPublicKeyForSigningBlocks(),
+			newSignature.getSupplier(), prolog.getPlotPublicKey(), prolog.getExtra());
+		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
+			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
+			modifiedDeadline, expected.getHashOfPreviousBlock());
+
+		assertTrue(blockchain.add(genesis));
+		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+		assertTrue(e.getMessage().startsWith("Deadline prolog's signature algorithm for deadlines mismatch"));
 		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 

@@ -38,7 +38,10 @@ public class ConfigTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("configs are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorks() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var config1 = ConsensusConfigBuilders.defaults().build();
+		var config1 = ConsensusConfigBuilders.defaults()
+			.setChainId("octopus")
+			.setSignatureForBlocks("ed25519")
+			.setSignatureForDeadlines("sha256dsa").build();
 		String encoded = new ConsensusConfigBuilders.Encoder().encode(config1);
 		var config2 = new ConsensusConfigBuilders.Decoder().decode(encoded);
 		assertEquals(config1, config2);
@@ -48,7 +51,10 @@ public class ConfigTests extends AbstractLoggedTests {
 	@DisplayName("configs are correctly dumped into TOML and reloaded from TOML")
 	public void dumpLoadTOMLWorks(@TempDir Path dir) throws NoSuchAlgorithmException, IOException {
 		var path = dir.resolve("config.toml");
-		var config1 = ConsensusConfigBuilders.defaults().build();
+		var config1 = ConsensusConfigBuilders.defaults()
+				.setChainId("octopus")
+				.setSignatureForBlocks("ed25519")
+				.setSignatureForDeadlines("sha256dsa").build();
 		Files.writeString(path, config1.toToml(), StandardCharsets.UTF_8);
 		var config2 = ConsensusConfigBuilders.load(path).build();
 		assertEquals(config1, config2);

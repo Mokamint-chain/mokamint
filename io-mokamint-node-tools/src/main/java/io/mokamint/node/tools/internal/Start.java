@@ -60,7 +60,7 @@ import picocli.CommandLine.Parameters;
 @Command(name = "start", description = "Start a new node.")
 public class Start extends AbstractCommand {
 
-	@Parameters(index = "0", description = "the key of the node, used to sign the blocks that it mines")
+	@Parameters(index = "0", description = "the file containing the key of the node, used to sign the blocks that it mines")
 	private Path key;
 
 	@Parameters(index = "1..", description = "plot files that will be used for local mining")

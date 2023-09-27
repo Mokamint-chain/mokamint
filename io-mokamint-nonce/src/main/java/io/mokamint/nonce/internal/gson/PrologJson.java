@@ -44,9 +44,9 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 
 	protected PrologJson(Prolog prolog) {
 		this.chainId = prolog.getChainId();
-		this.nodeSignatureName = prolog.getNodeSignature().getName();
-		this.nodePublicKey = prolog.getNodePublicKeyBase58();
-		this.plotSignatureName = prolog.getNodeSignature().getName();
+		this.nodeSignatureName = prolog.getSignatureForBlocks().getName();
+		this.nodePublicKey = prolog.getPublicKeyForSigningBlocksBase58();
+		this.plotSignatureName = prolog.getSignatureForBlocks().getName();
 		this.plotPublicKey = prolog.getPlotPublicKeyBase58();
 		this.extra = Hex.toHexString(prolog.getExtra());
 	}

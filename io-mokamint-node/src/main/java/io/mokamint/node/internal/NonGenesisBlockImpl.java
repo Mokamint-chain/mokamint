@@ -231,7 +231,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		builder.append("  * prolog:\n");
 		var prolog = deadline.getProlog();
 		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
-		builder.append("    * node's public key: " + prolog.getNodePublicKeyBase58() + "\n");
+		builder.append("    * node's public key: " + prolog.getPublicKeyForSigningBlocksBase58() + "\n");
 		builder.append("    * plot's public key: " + prolog.getPlotPublicKeyBase58() + "\n");
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
 		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");

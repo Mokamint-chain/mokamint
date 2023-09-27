@@ -87,7 +87,7 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * same data and same hashing algorithm.
 	 * 
 	 * @param description the description matched to this deadline
-	 * @return true if and inly if that condition holds
+	 * @return true if and only if that condition holds
 	 */
 	boolean matches(DeadlineDescription description);
 
@@ -99,11 +99,6 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 */
 	boolean isValid();
 
-	/**
-	 * Yields a string representation of this deadline.
-	 * 
-	 * @return the string representation
-	 */
 	@Override
 	String toString();
 }

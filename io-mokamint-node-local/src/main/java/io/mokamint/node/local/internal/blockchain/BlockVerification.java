@@ -138,6 +138,12 @@ public class BlockVerification {
 		if (!prolog.getChainId().equals(config.getChainId()))
 			throw new VerificationException("Deadline prolog's chainId mismatch");
 
+		if (!prolog.getSignatureForBlocks().getName().equals(config.getSignatureForBlocks().getName()))
+			throw new VerificationException("Deadline prolog's signature algorithm for blocks mismatch");
+
+		if (!prolog.getPlotSignature().getName().equals(config.getSignatureForDeadlines().getName()))
+			throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
+
 		if (!node.getApplication().prologExtraIsValid(prolog.getExtra()))
 			throw new VerificationException("Invalid deadline prolog's extra");
 	}
