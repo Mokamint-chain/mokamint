@@ -85,7 +85,9 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		PROLOG = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
+		PROLOG = Prologs.of("octopus",
+			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 
 		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
 		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
@@ -163,7 +165,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
-	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException {
+	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -171,9 +173,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		var deadline = Deadlines.of(PROLOG, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
 

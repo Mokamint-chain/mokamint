@@ -78,7 +78,8 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
-		var prolog = Prologs.of("octopus", nodePublicKey, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, nodePublicKey,
+			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
@@ -107,7 +108,8 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
-		var prolog = Prologs.of("octopus", nodePublicKey, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, nodePublicKey,
+			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber + 1, data, shabal256); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {

@@ -22,7 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 
-import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.nonce.internal.PrologImpl;
@@ -41,24 +41,29 @@ public final class Prologs {
 	 * Yields the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
+	 * @param nodeSignatureSupplier the supplier of the signature algorithm used by {@code nodePublicKey}
 	 * @param nodePublicKey the public key that the nodes, using this plots with this prolog,
 	 *                      use to sign new mined blocks
+	 * @param plotSignatureSupplier the supplier of the signature algorithm used by {@code plotPublicKey}
 	 * @param plotPublicKey the public key that identifies the plots with this prolog
 	 * @param extra application-specific extra information
 	 * @return the prolog
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
-	public static Prolog of(String chainId, PublicKey nodePublicKey, PublicKey plotPublicKey, byte[] extra) throws InvalidKeyException, NoSuchAlgorithmException {
-		return new PrologImpl(chainId, SignatureAlgorithms.TYPES.ED25519, nodePublicKey, SignatureAlgorithms.TYPES.ED25519, plotPublicKey, extra);
+	public static Prolog of(String chainId, SignatureAlgorithm.Supplier<byte[]> nodeSignatureSupplier, PublicKey nodePublicKey,
+			SignatureAlgorithm.Supplier<byte[]> plotSignatureSupplier, PublicKey plotPublicKey, byte[] extra) throws InvalidKeyException, NoSuchAlgorithmException {
+		return new PrologImpl(chainId, nodeSignatureSupplier, nodePublicKey, plotSignatureSupplier, plotPublicKey, extra);
 	}
 
 	/**
 	 * Yields the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
+	 * @param nodeSignatureSupplier the supplier of the signature algorithm used by {@code nodePublicKeyBase58}
 	 * @param nodePublicKeyBase58 the public key that the nodes, using this plots with this prolog,
 	 *                            use to sign new mined blocks; in Base58 format
+	 * @param plotSignatureSupplier the supplier of the signature algorithm used by {@code plotPublicKeyBase58}
 	 * @param plotPublicKeyBase58 the public key that identifies the plots with this prolog,
 	 *                            in Base58 format
 	 * @param extra application-specific extra information
@@ -66,8 +71,9 @@ public final class Prologs {
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeySpecException if some of the keys is not valid
 	 */
-	public static Prolog of(String chainId, String nodePublicKeyBase58, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
-		return new PrologImpl(chainId, SignatureAlgorithms.TYPES.ED25519, nodePublicKeyBase58, SignatureAlgorithms.TYPES.ED25519, plotPublicKeyBase58, extra);
+	public static Prolog of(String chainId, SignatureAlgorithm.Supplier<byte[]> nodeSignatureSupplier, String nodePublicKeyBase58,
+			SignatureAlgorithm.Supplier<byte[]> plotSignatureSupplier, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
+		return new PrologImpl(chainId, nodeSignatureSupplier, nodePublicKeyBase58, plotSignatureSupplier, plotPublicKeyBase58, extra);
 	}
 
 	/**

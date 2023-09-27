@@ -118,7 +118,8 @@ public class MessagesTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var getBlockResultMessage1 = GetBlockResultMessages.of(Optional.of(block), "id");
@@ -351,7 +352,8 @@ public class MessagesTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var whisperBlockMessage1 = WhisperBlockMessages.of(block, "id");

@@ -87,29 +87,29 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * Creates the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 * @param nodeSignatureType the type of signature algorithm used by {@code nodePublicKey}
+	 * @param nodeSignatureSupplier the supplier of the signature algorithm used by {@code nodePublicKey}
 	 * @param nodePublicKey the public key that the nodes, using this plots with this prolog,
 	 *                      use to sign new mined blocks
-	 * @param plotSignatureType the type of signature algorithm used by {@code plotPublicKey}
+	 * @param plotSignatureSupplier the supplier of the signature algorithm used by {@code plotPublicKey}
 	 * @param plotPublicKey the public key that identifies the plots with this prolog
 	 * @param extra application-specific extra information
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
-	public PrologImpl(String chainId, SignatureAlgorithms.TYPES nodeSignatureType, PublicKey nodePublicKey,
-			SignatureAlgorithms.TYPES plotSignatureType, PublicKey plotPublicKey, byte[] extra) throws NoSuchAlgorithmException, InvalidKeyException {
+	public PrologImpl(String chainId, SignatureAlgorithm.Supplier<byte[]> nodeSignatureSupplier, PublicKey nodePublicKey,
+			SignatureAlgorithm.Supplier<byte[]> plotSignatureSupplier, PublicKey plotPublicKey, byte[] extra) throws NoSuchAlgorithmException, InvalidKeyException {
 
 		Objects.requireNonNull(chainId, "chainId cannot be null");
-		Objects.requireNonNull(nodeSignatureType, "nodeSignatureType cannot be null");
+		Objects.requireNonNull(nodeSignatureSupplier, "nodeSignatureType cannot be null");
 		Objects.requireNonNull(nodePublicKey, "nodePublicKey cannot be null");
-		Objects.requireNonNull(plotSignatureType, "plotSignatureType cannot be null");
+		Objects.requireNonNull(plotSignatureSupplier, "plotSignatureType cannot be null");
 		Objects.requireNonNull(plotPublicKey, "plotPublicKey cannot be null");
 		Objects.requireNonNull(extra, "extra cannot be null");
 
 		this.chainId = chainId;
-		this.nodeSignature = SignatureAlgorithms.of(nodeSignatureType, Function.identity());
+		this.nodeSignature = nodeSignatureSupplier.get(Function.identity());
 		this.nodePublicKey = nodePublicKey;
-		this.plotSignature = SignatureAlgorithms.of(plotSignatureType, Function.identity());
+		this.plotSignature = plotSignatureSupplier.get(Function.identity());
 		this.plotPublicKey = plotPublicKey;
 		this.extra = extra.clone();
 
@@ -123,30 +123,30 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * Creates the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 * @param nodeSignatureType the type of signature algorithm used by {@code nodePublicKeyBase58}
+	 * @param nodeSignatureSupplier the supplier of the signature algorithm used by {@code nodePublicKeyBase58}
 	 * @param nodePublicKeyBase58 the public key that the nodes, using this plots with this prolog,
 	 *                            use to sign new mined blocks; in Base58 format
-	 * @param plotSignatureType the type of signature algorithm used by {@code plotPublicKeyBase58}
+	 * @param plotSignatureSupplier the supplier of the signature algorithm used by {@code plotPublicKeyBase58}
 	 * @param plotPublicKeyBase58 the public key that identifies the plots with this prolog, in Base58 format
 	 * @param extra application-specific extra information
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeySpecException if some of the keys is not valid
 	 */
-	public PrologImpl(String chainId, SignatureAlgorithms.TYPES nodeSignatureType, String nodePublicKeyBase58,
-			SignatureAlgorithms.TYPES plotSignatureType, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public PrologImpl(String chainId, SignatureAlgorithm.Supplier<byte[]> nodeSignatureSupplier, String nodePublicKeyBase58,
+			SignatureAlgorithm.Supplier<byte[]> plotSignatureSupplier, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
 
 		Objects.requireNonNull(chainId, "chainId cannot be null");
-		Objects.requireNonNull(nodeSignatureType, "nodeSignatureType cannot be null");
+		Objects.requireNonNull(nodeSignatureSupplier, "nodeSignatureType cannot be null");
 		Objects.requireNonNull(nodePublicKeyBase58, "nodePublicKeyBase58 cannot be null");
-		Objects.requireNonNull(plotSignatureType, "plotSignatureType cannot be null");
+		Objects.requireNonNull(plotSignatureSupplier, "plotSignatureType cannot be null");
 		Objects.requireNonNull(plotPublicKeyBase58, "plotPublicKeyBase58 cannot be null");
 		Objects.requireNonNull(extra, "extra cannot be null");
 
 		this.chainId = chainId;
 		this.extra = extra.clone();
-		this.nodeSignature = SignatureAlgorithms.of(nodeSignatureType, Function.identity());
+		this.nodeSignature = nodeSignatureSupplier.get(Function.identity());
 		this.nodePublicKey = nodeSignature.publicKeyFromEncoding(Base58.decode(nodePublicKeyBase58));
-		this.plotSignature = SignatureAlgorithms.of(plotSignatureType, Function.identity());
+		this.plotSignature = plotSignatureSupplier.get(Function.identity());
 		this.plotPublicKey = plotSignature.publicKeyFromEncoding(Base58.decode(plotPublicKeyBase58));
 
 		verify();

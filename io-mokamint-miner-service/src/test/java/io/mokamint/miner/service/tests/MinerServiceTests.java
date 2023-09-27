@@ -82,7 +82,9 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256(Function.identity());
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("ocyopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus",
+			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(), new byte[0]);
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -127,7 +129,8 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("ocyopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline1 = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 		var deadline2 = Deadlines.of(prolog, 43L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 		var delay = 2000L;
@@ -178,7 +181,8 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", id25519.getKeyPair().getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256);
 		long delay = 2000;
 

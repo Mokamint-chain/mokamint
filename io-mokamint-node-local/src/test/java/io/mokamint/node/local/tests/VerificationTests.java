@@ -34,9 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,7 +80,8 @@ public class VerificationTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
+		prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
@@ -275,8 +274,8 @@ public class VerificationTests extends AbstractLoggedTests {
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected deadline
-		Optional<String> otherAlgorithmName = Stream.of(HashingAlgorithms.TYPES.values()).map(Enum::name).filter(name -> !name.equalsIgnoreCase(deadline.getHashing().getName())).findAny();
-		HashingAlgorithm<byte[]> otherAlgorithm = HashingAlgorithms.of(otherAlgorithmName.get(), Function.identity());
+		HashingAlgorithm<byte[]> otherAlgorithm = deadline.getHashing().getName().equals(HashingAlgorithms.sha256(Function.identity()).getName()) ?
+			HashingAlgorithms.shabal256(Function.identity()) : HashingAlgorithms.sha256(Function.identity());
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
 				deadline.getScoopNumber(), deadline.getData(), otherAlgorithm);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
@@ -299,7 +298,8 @@ public class VerificationTests extends AbstractLoggedTests {
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we create a different prolog
-		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getNodePublicKey(), prolog.getPlotPublicKey(), prolog.getExtra());
+		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getNodeSignature().getSupplier(), prolog.getNodePublicKey(),
+			prolog.getPlotSignature().getSupplier(), prolog.getPlotPublicKey(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
 				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),

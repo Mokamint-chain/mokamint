@@ -91,7 +91,7 @@ public class EventsTests extends AbstractLoggedTests {
 		when(app.prologExtraIsValid(any())).thenReturn(true);
 		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
 		nodeKey = id25519.getKeyPair();
-		prolog = Prologs.of("octopus", nodeKey.getPublic(), id25519.getKeyPair().getPublic(), new byte[0]);
+		prolog = Prologs.of("octopus", id25519.getSupplier(), nodeKey.getPublic(), id25519.getSupplier(), id25519.getKeyPair().getPublic(), new byte[0]);
 		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 100, mkConfig(dir).getHashingForDeadlines(), __ -> {});
 	}
 
@@ -299,7 +299,8 @@ public class EventsTests extends AbstractLoggedTests {
 					var deadline = plot.getSmallestDeadline(description);
 					var prolog = deadline.getProlog();
 					var illegalDeadline = Deadlines.of(
-							Prologs.of(prolog.getChainId() + "!", prolog.getNodePublicKey(), prolog.getPlotPublicKey(), prolog.getExtra()),
+							Prologs.of(prolog.getChainId() + "!", prolog.getNodeSignature().getSupplier(), prolog.getNodePublicKey(),
+							prolog.getPlotSignature().getSupplier(), prolog.getPlotPublicKey(), prolog.getExtra()),
 							deadline.getProgressive(), deadline.getValue(),
 							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 

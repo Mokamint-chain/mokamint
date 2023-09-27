@@ -190,9 +190,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
-			setHashingForDeadlines(HashingAlgorithms.TYPES.SHABAL256.name());
-			setHashingForGenerations(HashingAlgorithms.TYPES.SHA256.name());
-			setHashingForBlocks(HashingAlgorithms.TYPES.SHA256.name());
+			setHashingForDeadlines(HashingAlgorithms::shabal256);
+			setHashingForGenerations(HashingAlgorithms::sha256);
+			setHashingForBlocks(HashingAlgorithms::sha256);
 		}
 
 		/**
@@ -211,19 +211,19 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			if (hashingForDeadlines != null)
 				setHashingForDeadlines(hashingForDeadlines);
 			else
-				setHashingForDeadlines(HashingAlgorithms.TYPES.SHABAL256.name());
+				setHashingForDeadlines(HashingAlgorithms::shabal256);
 		
 			var hashingForGenerations = toml.getString("hashing_for_generations");
 			if (hashingForGenerations != null)
 				setHashingForGenerations(hashingForGenerations);
 			else
-				setHashingForGenerations(HashingAlgorithms.TYPES.SHA256.name());
+				setHashingForGenerations(HashingAlgorithms::sha256);
 		
 			var hashingForBlocks = toml.getString("hashing_for_blocks");
 			if (hashingForBlocks != null)
 				setHashingForBlocks(hashingForBlocks);
 			else
-				setHashingForBlocks(HashingAlgorithms.TYPES.SHA256.name());
+				setHashingForBlocks(HashingAlgorithms::sha256);
 
 			var initialAcceleration = toml.getLong("initial_acceleration");
 			if (initialAcceleration != null)
@@ -274,6 +274,18 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
 			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Function.identity());
 			return getThis();
+		}
+
+		private void setHashingForDeadlines(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
+			this.hashingForDeadlines = supplier.get(Function.identity());
+		}
+
+		private void setHashingForGenerations(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
+			this.hashingForGenerations = supplier.get(Function.identity());
+		}
+
+		private void setHashingForBlocks(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
+			this.hashingForBlocks = supplier.get(Function.identity());
 		}
 
 		@Override

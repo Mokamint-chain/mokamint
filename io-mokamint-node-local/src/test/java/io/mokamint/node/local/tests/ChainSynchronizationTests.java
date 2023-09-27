@@ -97,7 +97,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		when(app.prologExtraIsValid(any())).thenReturn(true);
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		nodeKey = ed25519.getKeyPair();
-		var prolog = Prologs.of("octopus", nodeKey.getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", ed25519.getSupplier(), nodeKey.getPublic(), ed25519.getSupplier(), ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());

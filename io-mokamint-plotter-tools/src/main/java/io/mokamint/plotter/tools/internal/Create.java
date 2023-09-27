@@ -110,7 +110,9 @@ public class Create extends AbstractCommand {
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
 		return Prologs.of(
 			chainId,
+			SignatureAlgorithms::ed25519,
 			ed25519.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),
+			SignatureAlgorithms::ed25519,
 			ed25519.publicKeyFromEncoding(bytesFromBase58(plotPublicKeyBase58)),
 			bytesFromBase58(extraBase58)
 		);

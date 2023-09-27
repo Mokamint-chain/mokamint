@@ -42,7 +42,8 @@ public class PlotTests extends AbstractLoggedTests {
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
 	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", ed25519.getKeyPair().getPublic(), ed25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(),
+			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
 		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);

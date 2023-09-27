@@ -111,7 +111,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var miningPort = 8025;
 
 		// the prolog of the plot file must be compatible with node1 (same key and same chain id)
-		var prolog = Prologs.of(config1.getChainId(), nodeKey1.getPublic(), minerKey.getPublic(), new byte[0]);
+		var prolog = Prologs.of(config1.getChainId(), SignatureAlgorithms::ed25519, nodeKey1.getPublic(), SignatureAlgorithms::ed25519, minerKey.getPublic(), new byte[0]);
 
 		var node1NoMinersAvailable = new Semaphore(0);
 		var minerClosing = new AtomicBoolean(false);
