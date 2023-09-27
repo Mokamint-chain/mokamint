@@ -18,6 +18,10 @@ package io.mokamint.node.api;
 
 import java.security.NoSuchAlgorithmException;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.mokamint.nonce.api.Deadline;
+
 /**
  * The builder of a consensus configuration object.
  * 
@@ -57,29 +61,29 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	/**
 	 * Sets the hashing algorithm for identifying the blocks in the Mokamint blockchain.
 	 * 
-	 * @param hashingForBlocks the name of the hashing algorithm
+	 * @param supplier the supplier of the hashing algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if no algorithm exists with that name
+	 * @throws NoSuchAlgorithmException if the hashing algorithm is not available
 	 */
-	B setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException;
+	B setHashingForBlocks(HashingAlgorithm.Supplier<Block> supplier) throws NoSuchAlgorithmException;
 
 	/**
 	 * Sets the signature algorithm that the nodes use to sign the blocks.
 	 * 
-	 * @param signatureForBlocks the name of the signature algorithm
+	 * @param supplier the supplier of the signature algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if no algorithm exists with that name
+	 * @throws NoSuchAlgorithmException if the signature algorithm is not available
 	 */
-	B setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException;
+	B setSignatureForBlocks(SignatureAlgorithm.Supplier<NonGenesisBlock> supplier) throws NoSuchAlgorithmException;
 
 	/**
 	 * Sets the signature algorithm that the miners use to sign the deadlines.
 	 * 
-	 * @param signatureForDeadlines the name of the signature algorithm
+	 * @param supplier the supplier of the signature algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if no algorithm exists with that name
+	 * @throws NoSuchAlgorithmException if the signature algorithm is not available
 	 */
-	B setSignatureForDeadlines(String signatureForDeadlines) throws NoSuchAlgorithmException;
+	B setSignatureForDeadlines(SignatureAlgorithm.Supplier<Deadline> supplier) throws NoSuchAlgorithmException;
 
 	/**
 	 * Sets the acceleration for the genesis block. This specifies how

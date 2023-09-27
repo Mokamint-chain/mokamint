@@ -28,6 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ConsensusConfigBuilders;
 import jakarta.websocket.DecodeException;
@@ -40,8 +41,8 @@ public class ConfigTests extends AbstractLoggedTests {
 	public void encodeDecodeWorks() throws EncodeException, DecodeException, NoSuchAlgorithmException {
 		var config1 = ConsensusConfigBuilders.defaults()
 			.setChainId("octopus")
-			.setSignatureForBlocks("ed25519")
-			.setSignatureForDeadlines("sha256dsa").build();
+			.setSignatureForBlocks(SignatureAlgorithms::ed25519)
+			.setSignatureForDeadlines(SignatureAlgorithms::sha256dsa).build();
 		String encoded = new ConsensusConfigBuilders.Encoder().encode(config1);
 		var config2 = new ConsensusConfigBuilders.Decoder().decode(encoded);
 		assertEquals(config1, config2);
@@ -53,8 +54,8 @@ public class ConfigTests extends AbstractLoggedTests {
 		var path = dir.resolve("config.toml");
 		var config1 = ConsensusConfigBuilders.defaults()
 				.setChainId("octopus")
-				.setSignatureForBlocks("ed25519")
-				.setSignatureForDeadlines("sha256dsa").build();
+				.setSignatureForBlocks(SignatureAlgorithms::ed25519)
+				.setSignatureForDeadlines(SignatureAlgorithms::sha256dsa).build();
 		Files.writeString(path, config1.toToml(), StandardCharsets.UTF_8);
 		var config2 = ConsensusConfigBuilders.load(path).build();
 		assertEquals(config1, config2);

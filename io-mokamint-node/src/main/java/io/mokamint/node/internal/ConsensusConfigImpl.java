@@ -321,25 +321,16 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			return getThis();
 		}
 
-		@Override
-		public B setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
-			Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
+		private void setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
 			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Block::toByteArray);
-			return getThis();
 		}
 
-		@Override
-		public B setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
-			Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
+		private void setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
 			this.signatureForBlocks = SignatureAlgorithms.of(signatureForBlocks, NonGenesisBlock::toByteArray);
-			return getThis();
 		}
 
-		@Override
-		public B setSignatureForDeadlines(String signatureForDeadlines) throws NoSuchAlgorithmException {
-			Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null");
+		private void setSignatureForDeadlines(String signatureForDeadlines) throws NoSuchAlgorithmException {
 			this.signatureForDeadlines = SignatureAlgorithms.of(signatureForDeadlines, Deadline::toByteArray);
-			return getThis();
 		}
 
 		private void setHashingForDeadlines(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
@@ -350,16 +341,21 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForGenerations = supplier.get(Function.identity());
 		}
 
-		private void setHashingForBlocks(HashingAlgorithm.Supplier<Block> supplier) throws NoSuchAlgorithmException {
+		public B setHashingForBlocks(HashingAlgorithm.Supplier<Block> supplier) throws NoSuchAlgorithmException {
 			this.hashingForBlocks = supplier.get(Block::toByteArray);
+			return getThis();
 		}
 
-		private void setSignatureForBlocks(SignatureAlgorithm.Supplier<NonGenesisBlock> supplier) throws NoSuchAlgorithmException {
+		@Override
+		public B setSignatureForBlocks(SignatureAlgorithm.Supplier<NonGenesisBlock> supplier) throws NoSuchAlgorithmException {
 			this.signatureForBlocks = supplier.get(NonGenesisBlock::toByteArray);
+			return getThis();
 		}
 
-		private void setSignatureForDeadlines(SignatureAlgorithm.Supplier<Deadline> supplier) throws NoSuchAlgorithmException {
+		@Override
+		public B setSignatureForDeadlines(SignatureAlgorithm.Supplier<Deadline> supplier) throws NoSuchAlgorithmException {
 			this.signatureForDeadlines = supplier.get(Deadline::toByteArray);
+			return getThis();
 		}
 
 		@Override

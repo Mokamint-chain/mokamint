@@ -232,7 +232,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		var prolog = deadline.getProlog();
 		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
 		builder.append("    * node's public key: " + prolog.getPublicKeyForSigningBlocksBase58() + "\n");
-		builder.append("    * plot's public key: " + prolog.getPlotPublicKeyBase58() + "\n");
+		builder.append("    * plot's public key: " + prolog.getPublicKeyForSigningDeadlinesBase58() + "\n");
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
 		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
 		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()) + "\n");

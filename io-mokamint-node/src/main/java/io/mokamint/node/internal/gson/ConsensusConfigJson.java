@@ -18,9 +18,14 @@ package io.mokamint.node.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * The JSON representation of a {@code Config}.
@@ -52,9 +57,9 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 			.setChainId(chainId)
 			.setHashingForDeadlines(hashingForDeadlines)
 			.setHashingForGenerations(hashingForGenerations)
-			.setHashingForBlocks(hashingForBlocks)
-			.setSignatureForBlocks(signatureForBlocks)
-			.setSignatureForDeadlines(signatureForDeadlines)
+			.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks, Block::toByteArray).getSupplier())
+			.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks, NonGenesisBlock::toByteArray).getSupplier())
+			.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines, Deadline::toByteArray).getSupplier())
 			.setTargetBlockCreationTime(targetBlockCreationTime)
 			.setInitialAcceleration(initialAcceleration)
 			.build();
