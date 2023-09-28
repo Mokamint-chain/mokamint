@@ -45,9 +45,9 @@ public class Show extends AbstractCommand {
 			var prolog = plot.getProlog();
 			System.out.println("* prolog:");
 			System.out.println("  * chain identifier: " + prolog.getChainId());
-			System.out.println("  * node's signature: " + prolog.getSignatureForBlocks().getName());
+			System.out.println("  * node's signature: " + prolog.getSignatureForBlocks());
 			System.out.println("  * node's public key: " + prolog.getPublicKeyForSigningBlocksBase58());
-			System.out.println("  * plot's signature: " + prolog.getSignatureForDeadlines().getName());
+			System.out.println("  * plot's signature: " + prolog.getSignatureForDeadlines());
 			System.out.println("  * plot's public key: " + prolog.getPublicKeyForSigningDeadlinesBase58());
 			System.out.println("  * extra: " + Hex.toHexString(prolog.getExtra()));
 			long start = plot.getStart();

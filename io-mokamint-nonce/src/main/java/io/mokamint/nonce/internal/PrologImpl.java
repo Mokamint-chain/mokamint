@@ -237,8 +237,8 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 
 	@Override
 	public String toString() {
-		return "chainId: " + chainId + ", nodeSignatureName: " + signatureForBlocks.getName() + ", nodePublicKey: " + publicKeyForSigningBlocksBase58 +
-			", plotSignatureName: " + signatureForDeadlines.getName() + ", plotPublicKey: " + publicKeyForSigningDeadlinesBase58 + ", extra: " + Hex.toHexString(extra);
+		return "chainId: " + chainId + ", nodeSignatureName: " + signatureForBlocks + ", nodePublicKey: " + publicKeyForSigningBlocksBase58 +
+			", plotSignatureName: " + signatureForDeadlines + ", plotPublicKey: " + publicKeyForSigningDeadlinesBase58 + ", extra: " + Hex.toHexString(extra);
 	}
 
 	@Override

@@ -533,9 +533,9 @@ public class LocalNodeImpl implements LocalNode {
 			throw new IllegalDeadlineException("Wrong chain identifier in deadline");
 		else if (!prolog.getPublicKeyForSigningBlocks().equals(keyPair.getPublic()))
 			throw new IllegalDeadlineException("Wrong node key in deadline");
-		else if (!prolog.getSignatureForBlocks().getName().equals(config.getSignatureForBlocks().getName()))
+		else if (!prolog.getSignatureForBlocks().equals(config.getSignatureForBlocks()))
 			throw new IllegalDeadlineException("Wrong blocks' signature algorithm in deadline");
-		else if (!prolog.getSignatureForDeadlines().getName().equals(config.getSignatureForDeadlines().getName()))
+		else if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
 			throw new IllegalDeadlineException("Wrong deadlines' signature algorithm in deadline");
 		else if (!app.prologExtraIsValid(prolog.getExtra()))
 			throw new IllegalDeadlineException("Invalid extra data in deadline");

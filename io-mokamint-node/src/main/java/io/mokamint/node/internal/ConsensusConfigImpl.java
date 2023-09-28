@@ -120,7 +120,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				hashingForDeadlines.getName().equals(otherConfig.hashingForDeadlines.getName()) &&
 				hashingForGenerations.getName().equals(otherConfig.hashingForGenerations.getName()) &&
 				hashingForBlocks.getName().equals(otherConfig.hashingForBlocks.getName()) &&
-				signatureForBlocks.getName().equals(otherConfig.getSignatureForBlocks().getName());
+				signatureForBlocks.equals(otherConfig.getSignatureForBlocks()) &&
+				signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines());
 		}
 		else
 			return false;
@@ -154,10 +155,10 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("hashing_for_blocks = \"" + hashingForBlocks.getName() + "\"\n");
 		sb.append("\n");
 		sb.append("# the signature algorithm that nodes use to sign the blocks\n");
-		sb.append("signature_for_blocks = \"" + signatureForBlocks.getName() + "\"\n");
+		sb.append("signature_for_blocks = \"" + signatureForBlocks + "\"\n");
 		sb.append("\n");
 		sb.append("# the signature algorithm that miners use to sign the deadlines\n");
-		sb.append("signature_for_deadlines = \"" + signatureForDeadlines.getName() + "\"\n");
+		sb.append("signature_for_deadlines = \"" + signatureForDeadlines + "\"\n");
 		sb.append("\n");
 		sb.append("# the initial acceleration of the blockchain, at the genesis block;\n");
 		sb.append("# this might be increased if the network starts with very little mining power\n");

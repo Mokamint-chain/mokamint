@@ -325,7 +325,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var oldSignature = prolog.getSignatureForBlocks();
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var sha256dsa = SignatureAlgorithms.sha256dsa();
-		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? sha256dsa : ed25519;
+		var newSignature = oldSignature.equals(ed25519) ? sha256dsa : ed25519;
 		var modifiedProlog = Prologs.of(prolog.getChainId(), newSignature, prolog.getPublicKeyForSigningBlocks(),
 			prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
@@ -353,7 +353,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var oldSignature = prolog.getSignatureForDeadlines();
 		SignatureAlgorithm ed25519 = SignatureAlgorithms.ed25519();
 		SignatureAlgorithm sha256dsa = SignatureAlgorithms.sha256dsa();
-		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? sha256dsa : ed25519;
+		var newSignature = oldSignature.equals(ed25519) ? sha256dsa : ed25519;
 		var modifiedProlog = Prologs.of(prolog.getChainId(), prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 			newSignature, prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
