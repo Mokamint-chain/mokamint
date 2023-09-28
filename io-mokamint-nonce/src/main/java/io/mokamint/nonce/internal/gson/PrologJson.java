@@ -18,7 +18,6 @@ package io.mokamint.nonce.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.SignatureAlgorithms;
@@ -53,7 +52,7 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 
 	@Override
 	public Prolog unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
-		return Prologs.of(chainId, SignatureAlgorithms.of(nodeSignatureName, Function.identity()).getSupplier(), nodePublicKey,
-			SignatureAlgorithms.of(plotSignatureName, Function.identity()).getSupplier(), plotPublicKey, Hex.fromHexString(extra));
+		return Prologs.of(chainId, SignatureAlgorithms.of(nodeSignatureName), nodePublicKey,
+			SignatureAlgorithms.of(plotSignatureName), plotPublicKey, Hex.fromHexString(extra));
 	}
 }

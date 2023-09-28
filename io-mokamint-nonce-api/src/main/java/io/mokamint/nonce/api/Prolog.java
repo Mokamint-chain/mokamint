@@ -46,7 +46,7 @@ public interface Prolog extends Marshallable {
 	 * 
 	 * @return the signature algorithm
 	 */
-	SignatureAlgorithm<byte[]> getSignatureForBlocks();
+	SignatureAlgorithm getSignatureForBlocks();
 
 	/**
 	 * Yields the public key that must be used to sign the blocks having
@@ -70,7 +70,7 @@ public interface Prolog extends Marshallable {
 	 * 
 	 * @return the signature algorithm
 	 */
-	SignatureAlgorithm<byte[]> getSignatureForDeadlines();
+	SignatureAlgorithm getSignatureForDeadlines();
 
 	/**
 	 * Yields the public key that miners must use to sign deadlines having this prolog.

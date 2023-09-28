@@ -23,7 +23,6 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
@@ -51,7 +50,7 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * The signature algorithm that nodes must use to sign blocks having
 	 * a deadline with this prolog, with the key {@link #getPublicKeyForSigningBlocks()}.
 	 */
-	private final SignatureAlgorithm<byte[]> signatureForBlocks;
+	private final SignatureAlgorithm signatureForBlocks;
 
 	/**
 	 * The public key that the nodes, using this plots with this prolog,
@@ -68,7 +67,7 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * The signature algorithm that miners must use to sign deadlines having
 	 * this prolog, with the key {@link #getPublicKeyForSigningDeadlines()}.
 	 */
-	private final SignatureAlgorithm<byte[]> signatureForDeadlines;
+	private final SignatureAlgorithm signatureForDeadlines;
 
 	/**
 	 * The public key that miners must use to sign deadlines having this prolog.
@@ -89,32 +88,32 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * Creates the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 *  @param signatureForBlocksSupplier the supplier of the signature algorithm that nodes must use to sign the
-	 *                                    blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocks}
+	 * @param signatureForBlocks the signature algorithm that nodes must use to sign the
+	 *                            blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocks}
 	 * @param publicKeyForSigningBlocks the public key that the nodes must use to sign the
 	 *                                  blocks having a deadline with the prolog
-	 * @param signatureForDeadlinesSupplier the supplier of the signature algorithm that miners must use to sign
-	 *                                      the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
+	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
+	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
 	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
 	 * @param extra application-specific extra information
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
-	public PrologImpl(String chainId, SignatureAlgorithm.Supplier<byte[]> signatureForBlocksSupplier, PublicKey publicKeyForSigningBlocks,
-			SignatureAlgorithm.Supplier<byte[]> signatureForDeadlinesSupplier, PublicKey publicKeyForSigningDeadlines, byte[] extra)
+	public PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
+			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)
 					throws NoSuchAlgorithmException, InvalidKeyException {
 
 		Objects.requireNonNull(chainId, "chainId cannot be null");
-		Objects.requireNonNull(signatureForBlocksSupplier, "nodeSignatureType cannot be null");
+		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
 		Objects.requireNonNull(publicKeyForSigningBlocks, "publicKeyForSigningBlocks cannot be null");
-		Objects.requireNonNull(signatureForDeadlinesSupplier, "plotSignatureType cannot be null");
-		Objects.requireNonNull(publicKeyForSigningDeadlines, "plotPublicKey cannot be null");
+		Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null");
+		Objects.requireNonNull(publicKeyForSigningDeadlines, "publicKeyForSigningDeadlines cannot be null");
 		Objects.requireNonNull(extra, "extra cannot be null");
 
 		this.chainId = chainId;
-		this.signatureForBlocks = signatureForBlocksSupplier.get(Function.identity());
+		this.signatureForBlocks = signatureForBlocks;
 		this.publicKeyForSigningBlocks = publicKeyForSigningBlocks;
-		this.signatureForDeadlines = signatureForDeadlinesSupplier.get(Function.identity());
+		this.signatureForDeadlines = signatureForDeadlines;
 		this.publicKeyForSigningDeadlines = publicKeyForSigningDeadlines;
 		this.extra = extra.clone();
 
@@ -128,33 +127,33 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * Creates the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 *  @param signatureForBlocksSupplier the supplier of the signature algorithm that nodes must use to sign the
-	 *                                    blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocksBase58}
-	 * @param publicKeyForSigningBlocks58 the public key that the nodes must use to sign the
-	 *                                    blocks having a deadline with the prolog, in Base58 format
-	 * @param signatureForDeadlinesSupplier the supplier of the signature algorithm that miners must use to sign
-	 *                                      the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
+	 *  @param signatureForBlocks the signature algorithm that nodes must use to sign the
+	 *                            blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocksBase58}
+	 * @param publicKeyForSigningBlocksBase58 the public key that the nodes must use to sign the
+	 *                                        blocks having a deadline with the prolog, in Base58 format
+	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
+	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
 	 * @param publicKeyForSigningDeadlinesBase58 the public key that miners must use to sign the deadlines with the prolog,
 	 *                                           in Base58 format
 	 * @param extra application-specific extra information
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
-	 * @throws InvalidKeyException if some of the keys is not valid
+	 * @throws InvalidKeySpecException if some of the keys is not valid
 	 */
-	public PrologImpl(String chainId, SignatureAlgorithm.Supplier<byte[]> signatureForBlocksSupplier, String publicKeyForSigningBlocksBase58,
-			SignatureAlgorithm.Supplier<byte[]> signatureForDeadlinesSupplier, String publicKeyForSigningDeadlinesBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, String publicKeyForSigningBlocksBase58,
+			SignatureAlgorithm signatureForDeadlines, String publicKeyForSigningDeadlinesBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
 
 		Objects.requireNonNull(chainId, "chainId cannot be null");
-		Objects.requireNonNull(signatureForBlocksSupplier, "nodeSignatureType cannot be null");
+		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
 		Objects.requireNonNull(publicKeyForSigningBlocksBase58, "publicKeyForSigningBlocksBase58 cannot be null");
-		Objects.requireNonNull(signatureForDeadlinesSupplier, "plotSignatureType cannot be null");
-		Objects.requireNonNull(publicKeyForSigningDeadlinesBase58, "plotPublicKeyBase58 cannot be null");
+		Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null");
+		Objects.requireNonNull(publicKeyForSigningDeadlinesBase58, "publicKeyForSigningDeadlinesBase58 cannot be null");
 		Objects.requireNonNull(extra, "extra cannot be null");
 
 		this.chainId = chainId;
 		this.extra = extra.clone();
-		this.signatureForBlocks = signatureForBlocksSupplier.get(Function.identity());
+		this.signatureForBlocks = signatureForBlocks;
 		this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyForSigningBlocksBase58));
-		this.signatureForDeadlines = signatureForDeadlinesSupplier.get(Function.identity());
+		this.signatureForDeadlines = signatureForDeadlines;
 		this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(Base58.decode(publicKeyForSigningDeadlinesBase58));
 
 		verify();
@@ -173,10 +172,10 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	public PrologImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		try {
 			this.chainId = context.readStringUnshared();
-			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared(), Function.identity());
+			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared());
 			byte[] publicKeyForSigningBlocksEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the length of the public key for signing blocks");
 			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
-			this.signatureForDeadlines = SignatureAlgorithms.of(context.readStringShared(), Function.identity());
+			this.signatureForDeadlines = SignatureAlgorithms.of(context.readStringShared());
 			byte[] plotPublicKeyEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the plot's public key length");
 			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
 			this.extra = context.readBytes(context.readCompactInt(), "Mismatch in prolog's extra length");
@@ -202,7 +201,7 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
-	public SignatureAlgorithm<byte[]> getSignatureForBlocks() {
+	public SignatureAlgorithm getSignatureForBlocks() {
 		return signatureForBlocks;
 	}
 
@@ -217,7 +216,7 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
-	public SignatureAlgorithm<byte[]> getSignatureForDeadlines() {
+	public SignatureAlgorithm getSignatureForDeadlines() {
 		return signatureForDeadlines;
 	}
 

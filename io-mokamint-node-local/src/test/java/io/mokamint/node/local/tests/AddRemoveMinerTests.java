@@ -34,7 +34,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -90,7 +89,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var id25519 = SignatureAlgorithms.ed25519();
 		nodeKey1 = id25519.getKeyPair();
 		nodeKey2 = id25519.getKeyPair();
 		minerKey = id25519.getKeyPair();
@@ -111,7 +110,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var miningPort = 8025;
 
 		// the prolog of the plot file must be compatible with node1 (same key and same chain id)
-		var prolog = Prologs.of(config1.getChainId(), SignatureAlgorithms::ed25519, nodeKey1.getPublic(), SignatureAlgorithms::ed25519, minerKey.getPublic(), new byte[0]);
+		var prolog = Prologs.of(config1.getChainId(), SignatureAlgorithms.ed25519(), nodeKey1.getPublic(), SignatureAlgorithms.ed25519(), minerKey.getPublic(), new byte[0]);
 
 		var node1NoMinersAvailable = new Semaphore(0);
 		var minerClosing = new AtomicBoolean(false);

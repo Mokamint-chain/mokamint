@@ -33,7 +33,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -79,8 +78,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		nodeKey = id25519.getKeyPair();
+		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 	}
 
 	@Test

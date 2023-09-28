@@ -45,6 +45,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
@@ -79,9 +80,8 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(),
-			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var ed25519 = SignatureAlgorithms.ed25519();
+		prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
@@ -298,8 +298,8 @@ public class VerificationTests extends AbstractLoggedTests {
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we create a different prolog
-		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getSignatureForBlocks().getSupplier(), prolog.getPublicKeyForSigningBlocks(),
-			prolog.getSignatureForDeadlines().getSupplier(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
+		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
+			prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
 			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
@@ -323,10 +323,11 @@ public class VerificationTests extends AbstractLoggedTests {
 
 		// we create a different prolog
 		var oldSignature = prolog.getSignatureForBlocks();
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? SignatureAlgorithms.sha256dsa(Function.identity()) : ed25519;
-		var modifiedProlog = Prologs.of(prolog.getChainId(), newSignature.getSupplier(), prolog.getPublicKeyForSigningBlocks(),
-			prolog.getSignatureForDeadlines().getSupplier(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256dsa = SignatureAlgorithms.sha256dsa();
+		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? sha256dsa : ed25519;
+		var modifiedProlog = Prologs.of(prolog.getChainId(), newSignature, prolog.getPublicKeyForSigningBlocks(),
+			prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
 			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
@@ -350,10 +351,11 @@ public class VerificationTests extends AbstractLoggedTests {
 
 		// we create a different prolog
 		var oldSignature = prolog.getSignatureForDeadlines();
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? SignatureAlgorithms.sha256dsa(Function.identity()) : ed25519;
-		var modifiedProlog = Prologs.of(prolog.getChainId(), prolog.getSignatureForBlocks().getSupplier(), prolog.getPublicKeyForSigningBlocks(),
-			newSignature.getSupplier(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
+		SignatureAlgorithm ed25519 = SignatureAlgorithms.ed25519();
+		SignatureAlgorithm sha256dsa = SignatureAlgorithms.sha256dsa();
+		var newSignature = oldSignature.getName().equals(ed25519.getName()) ? sha256dsa : ed25519;
+		var modifiedProlog = Prologs.of(prolog.getChainId(), prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
+			newSignature, prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
 			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),

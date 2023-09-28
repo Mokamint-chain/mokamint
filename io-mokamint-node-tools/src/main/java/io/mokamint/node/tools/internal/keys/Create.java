@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.util.function.Function;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Entropies;
@@ -42,7 +41,7 @@ public class Create extends AbstractCommand {
 			password = askForPassword();
 
 		try {
-			var signatureAlgorithmOfNewAccount = SignatureAlgorithms.ed25519(Function.identity());
+			var signatureAlgorithmOfNewAccount = SignatureAlgorithms.ed25519();
 			var entropy = Entropies.random();
 			KeyPair keys = entropy.keys(password, signatureAlgorithmOfNewAccount);
 			byte[] publicKeyBytes = signatureAlgorithmOfNewAccount.encodingOf(keys.getPublic());

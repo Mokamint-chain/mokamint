@@ -41,39 +41,44 @@ public final class Prologs {
 	 * Yields the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 * @param nodeSignatureSupplier the supplier of the signature algorithm used by {@code nodePublicKey}
-	 * @param nodePublicKey the public key that the nodes, using this plots with this prolog,
-	 *                      use to sign new mined blocks
-	 * @param plotSignatureSupplier the supplier of the signature algorithm used by {@code plotPublicKey}
-	 * @param plotPublicKey the public key that identifies the plots with this prolog
+	 * @param signatureForBlocks the signature algorithm that nodes must use to sign the
+	 *                           blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocks}
+	 * @param publicKeyForSigningBlocks the public key that the nodes must use to sign the
+	 *                                  blocks having a deadline with the prolog
+	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
+	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
+	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
 	 * @param extra application-specific extra information
 	 * @return the prolog
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
-	public static Prolog of(String chainId, SignatureAlgorithm.Supplier<byte[]> nodeSignatureSupplier, PublicKey nodePublicKey,
-			SignatureAlgorithm.Supplier<byte[]> plotSignatureSupplier, PublicKey plotPublicKey, byte[] extra) throws InvalidKeyException, NoSuchAlgorithmException {
-		return new PrologImpl(chainId, nodeSignatureSupplier, nodePublicKey, plotSignatureSupplier, plotPublicKey, extra);
+	public static Prolog of(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
+			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)
+					throws NoSuchAlgorithmException, InvalidKeyException {
+		return new PrologImpl(chainId, signatureForBlocks, publicKeyForSigningBlocks, signatureForDeadlines, publicKeyForSigningDeadlines, extra);
 	}
 
 	/**
-	 * Yields the prolog of a plot file.
+	 * yields the prolog of a plot file.
 	 * 
 	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 * @param nodeSignatureSupplier the supplier of the signature algorithm used by {@code nodePublicKeyBase58}
-	 * @param nodePublicKeyBase58 the public key that the nodes, using this plots with this prolog,
-	 *                            use to sign new mined blocks; in Base58 format
-	 * @param plotSignatureSupplier the supplier of the signature algorithm used by {@code plotPublicKeyBase58}
-	 * @param plotPublicKeyBase58 the public key that identifies the plots with this prolog,
-	 *                            in Base58 format
+	 * @param signatureForBlocks the signature algorithm that nodes must use to sign the
+	 *                            blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocksBase58}
+	 * @param publicKeyForSigningBlocksBase58 the public key that the nodes must use to sign the
+	 *                                        blocks having a deadline with the prolog, in Base58 format
+	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
+	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
+	 * @param publicKeyForSigningDeadlinesBase58 the public key that miners must use to sign the deadlines with the prolog,
+	 *                                           in Base58 format
 	 * @param extra application-specific extra information
 	 * @return the prolog
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeySpecException if some of the keys is not valid
 	 */
-	public static Prolog of(String chainId, SignatureAlgorithm.Supplier<byte[]> nodeSignatureSupplier, String nodePublicKeyBase58,
-			SignatureAlgorithm.Supplier<byte[]> plotSignatureSupplier, String plotPublicKeyBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
-		return new PrologImpl(chainId, nodeSignatureSupplier, nodePublicKeyBase58, plotSignatureSupplier, plotPublicKeyBase58, extra);
+	public static Prolog of(String chainId, SignatureAlgorithm signatureForBlocks, String publicKeyForSigningBlocksBase58,
+			SignatureAlgorithm signatureForDeadlines, String publicKeyForSigningDeadlinesBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
+		return new PrologImpl(chainId, signatureForBlocks, publicKeyForSigningBlocksBase58, signatureForDeadlines, publicKeyForSigningDeadlinesBase58, extra);
 	}
 
 	/**

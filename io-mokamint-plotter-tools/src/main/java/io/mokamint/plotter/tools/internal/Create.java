@@ -107,13 +107,12 @@ public class Create extends AbstractCommand {
 	}
 
 	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException {
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var ed25519 = SignatureAlgorithms.ed25519();
+
 		return Prologs.of(
 			chainId,
-			SignatureAlgorithms::ed25519,
-			ed25519.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),
-			SignatureAlgorithms::ed25519,
-			ed25519.publicKeyFromEncoding(bytesFromBase58(plotPublicKeyBase58)),
+			ed25519, ed25519.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),
+			ed25519, ed25519.publicKeyFromEncoding(bytesFromBase58(plotPublicKeyBase58)),
 			bytesFromBase58(extraBase58)
 		);
 	}

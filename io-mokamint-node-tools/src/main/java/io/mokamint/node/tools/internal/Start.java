@@ -30,7 +30,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -128,7 +127,7 @@ public class Start extends AbstractCommand {
 
 		private Run() {
 			try {
-				this.keyPair = Entropies.load(key).keys(password, SignatureAlgorithms.ed25519(Function.identity()));
+				this.keyPair = Entropies.load(key).keys(password, SignatureAlgorithms.ed25519());
 			}
 			catch (IOException e) {
 				throw new CommandException("Cannot read the pem file " + key + "!", e);

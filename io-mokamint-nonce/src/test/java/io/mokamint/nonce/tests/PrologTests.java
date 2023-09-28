@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,9 +35,8 @@ public class PrologTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("prologs are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForPrologs() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException {
-		var signature = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog1 = Prologs.of("octopus", SignatureAlgorithms::ed25519, signature.getKeyPair().getPublic(),
-			SignatureAlgorithms::ed25519, signature.getKeyPair().getPublic(), new byte[] { 1, 2, 4 });
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var prolog1 = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[] { 1, 2, 4 });
 		String encoded = new Prologs.Encoder().encode(prolog1);
 		var prolog2 = new Prologs.Decoder().decode(encoded);
 		assertEquals(prolog1, prolog2);

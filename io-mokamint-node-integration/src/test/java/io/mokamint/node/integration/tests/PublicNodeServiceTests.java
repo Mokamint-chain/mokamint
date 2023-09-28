@@ -210,10 +210,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		int scoopNumber = 42;
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus",
-			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(),
-			SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(), new byte[0]);
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
 		var block = Blocks.of(13L, BigInteger.TEN, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 

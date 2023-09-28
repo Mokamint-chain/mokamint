@@ -76,10 +76,9 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
-		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, nodePublicKey,
-			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
@@ -106,10 +105,9 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
-		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, nodePublicKey,
-			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber + 1, data, shabal256); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {

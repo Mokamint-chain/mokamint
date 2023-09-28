@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -89,9 +88,9 @@ public class EventsTests extends AbstractLoggedTests {
 	public static void beforeAll(@TempDir Path dir) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
+		var id25519 = SignatureAlgorithms.ed25519();
 		nodeKey = id25519.getKeyPair();
-		prolog = Prologs.of("octopus", id25519.getSupplier(), nodeKey.getPublic(), id25519.getSupplier(), id25519.getKeyPair().getPublic(), new byte[0]);
+		prolog = Prologs.of("octopus", id25519, nodeKey.getPublic(), id25519, id25519.getKeyPair().getPublic(), new byte[0]);
 		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 100, mkConfig(dir).getHashingForDeadlines(), __ -> {});
 	}
 
@@ -299,8 +298,8 @@ public class EventsTests extends AbstractLoggedTests {
 					var deadline = plot.getSmallestDeadline(description);
 					var prolog = deadline.getProlog();
 					var illegalDeadline = Deadlines.of(
-							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks().getSupplier(), prolog.getPublicKeyForSigningBlocks(),
-							prolog.getSignatureForDeadlines().getSupplier(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra()),
+							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
+							prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra()),
 							deadline.getProgressive(), deadline.getValue(),
 							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 

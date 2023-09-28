@@ -32,8 +32,6 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
-import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.nonce.api.Deadline;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
@@ -72,12 +70,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	/**
 	 * The signature algorithm that nodes must use to sign the blocks.
 	 */
-	public final SignatureAlgorithm<NonGenesisBlock> signatureForBlocks;
+	public final SignatureAlgorithm signatureForBlocks;
 
 	/**
 	 * The signature algorithm that miners must use to sign the deadlines.
 	 */
-	public final SignatureAlgorithm<Deadline> signatureForDeadlines;
+	public final SignatureAlgorithm signatureForDeadlines;
 
 	/**
 	 * The acceleration for the genesis block. This specifies how
@@ -192,12 +190,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public SignatureAlgorithm<NonGenesisBlock> getSignatureForBlocks() {
+	public SignatureAlgorithm getSignatureForBlocks() {
 		return signatureForBlocks;
 	}
 
 	@Override
-	public SignatureAlgorithm<Deadline> getSignatureForDeadlines() {
+	public SignatureAlgorithm getSignatureForDeadlines() {
 		return signatureForDeadlines;
 	}
 
@@ -220,8 +218,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private HashingAlgorithm<byte[]> hashingForDeadlines;
 		private HashingAlgorithm<byte[]> hashingForGenerations;
 		private HashingAlgorithm<Block> hashingForBlocks;
-		private SignatureAlgorithm<NonGenesisBlock> signatureForBlocks;
-		private SignatureAlgorithm<Deadline> signatureForDeadlines;
+		private SignatureAlgorithm signatureForBlocks;
+		private SignatureAlgorithm signatureForDeadlines;
 		private long initialAcceleration = 100000000000L;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 
@@ -229,8 +227,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			setHashingForDeadlines(HashingAlgorithms::shabal256);
 			setHashingForGenerations(HashingAlgorithms::sha256);
 			setHashingForBlocks(HashingAlgorithms::sha256);
-			setSignatureForBlocks(SignatureAlgorithms::ed25519);
-			setSignatureForDeadlines(SignatureAlgorithms::ed25519);
+			setSignatureForBlocks(SignatureAlgorithms.ed25519());
+			setSignatureForDeadlines(SignatureAlgorithms.ed25519());
 		}
 
 		/**
@@ -267,13 +265,13 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			if (signatureForBlocks != null)
 				setSignatureForBlocks(signatureForBlocks);
 			else
-				setSignatureForBlocks(SignatureAlgorithms::ed25519);
+				setSignatureForBlocks(SignatureAlgorithms.ed25519());
 
 			var signatureForDeadlines = toml.getString("signature_for_deadlines");
 			if (signatureForDeadlines != null)
 				setSignatureForDeadlines(signatureForDeadlines);
 			else
-				setSignatureForDeadlines(SignatureAlgorithms::ed25519);
+				setSignatureForDeadlines(SignatureAlgorithms.ed25519());
 
 			var initialAcceleration = toml.getLong("initial_acceleration");
 			if (initialAcceleration != null)
@@ -326,11 +324,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		}
 
 		private void setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
-			this.signatureForBlocks = SignatureAlgorithms.of(signatureForBlocks, NonGenesisBlock::toByteArray);
+			this.signatureForBlocks = SignatureAlgorithms.of(signatureForBlocks);
 		}
 
 		private void setSignatureForDeadlines(String signatureForDeadlines) throws NoSuchAlgorithmException {
-			this.signatureForDeadlines = SignatureAlgorithms.of(signatureForDeadlines, Deadline::toByteArray);
+			this.signatureForDeadlines = SignatureAlgorithms.of(signatureForDeadlines);
 		}
 
 		private void setHashingForDeadlines(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
@@ -347,14 +345,14 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		}
 
 		@Override
-		public B setSignatureForBlocks(SignatureAlgorithm.Supplier<NonGenesisBlock> supplier) throws NoSuchAlgorithmException {
-			this.signatureForBlocks = supplier.get(NonGenesisBlock::toByteArray);
+		public B setSignatureForBlocks(SignatureAlgorithm signatureForBlocks) {
+			this.signatureForBlocks = signatureForBlocks;
 			return getThis();
 		}
 
 		@Override
-		public B setSignatureForDeadlines(SignatureAlgorithm.Supplier<Deadline> supplier) throws NoSuchAlgorithmException {
-			this.signatureForDeadlines = supplier.get(Deadline::toByteArray);
+		public B setSignatureForDeadlines(SignatureAlgorithm signatureForDeadlines) {
+			this.signatureForDeadlines = signatureForDeadlines;
 			return getThis();
 		}
 

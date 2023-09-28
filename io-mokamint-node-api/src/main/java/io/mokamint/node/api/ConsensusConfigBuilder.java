@@ -20,7 +20,6 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.mokamint.nonce.api.Deadline;
 
 /**
  * The builder of a consensus configuration object.
@@ -70,20 +69,18 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	/**
 	 * Sets the signature algorithm that the nodes use to sign the blocks.
 	 * 
-	 * @param supplier the supplier of the signature algorithm
+	 * @param signatureForBlocks the signature algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if the signature algorithm is not available
 	 */
-	B setSignatureForBlocks(SignatureAlgorithm.Supplier<NonGenesisBlock> supplier) throws NoSuchAlgorithmException;
+	B setSignatureForBlocks(SignatureAlgorithm signatureForBlocks);
 
 	/**
 	 * Sets the signature algorithm that the miners use to sign the deadlines.
 	 * 
-	 * @param supplier the supplier of the signature algorithm
+	 * @param signatureAlgorithmForDeadlines the signature algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if the signature algorithm is not available
 	 */
-	B setSignatureForDeadlines(SignatureAlgorithm.Supplier<Deadline> supplier) throws NoSuchAlgorithmException;
+	B setSignatureForDeadlines(SignatureAlgorithm signatureAlgorithmForDeadlines);
 
 	/**
 	 * Sets the acceleration for the genesis block. This specifies how

@@ -84,11 +84,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var ed25519 = SignatureAlgorithms.ed25519(Function.identity());
-		PROLOG = Prologs.of("octopus",
-			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(),
-			SignatureAlgorithms::ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
-
+		var ed25519 = SignatureAlgorithms.ed25519();
+		PROLOG = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
 		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
 		plot3 = Plots.create(plotDir.resolve("plot3.plot"), PROLOG, 15000L, 256L, hashing, __ -> {});

@@ -24,8 +24,6 @@ import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ConsensusConfig;
-import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.nonce.api.Deadline;
 
 /**
  * The JSON representation of a {@code Config}.
@@ -58,8 +56,8 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 			.setHashingForDeadlines(hashingForDeadlines)
 			.setHashingForGenerations(hashingForGenerations)
 			.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks, Block::toByteArray).getSupplier())
-			.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks, NonGenesisBlock::toByteArray).getSupplier())
-			.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines, Deadline::toByteArray).getSupplier())
+			.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks))
+			.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
 			.setTargetBlockCreationTime(targetBlockCreationTime)
 			.setInitialAcceleration(initialAcceleration)
 			.build();

@@ -42,9 +42,8 @@ public class DeadlinesTests extends AbstractLoggedTests {
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var id25519 = SignatureAlgorithms.ed25519(Function.identity());
-		var prolog = Prologs.of("octopus", SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(),
-				SignatureAlgorithms::ed25519, id25519.getKeyPair().getPublic(), new byte[0]);
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline1 = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		String encoded = new Deadlines.Encoder().encode(deadline1);
 		var deadline2 = new Deadlines.Decoder().decode(encoded);
