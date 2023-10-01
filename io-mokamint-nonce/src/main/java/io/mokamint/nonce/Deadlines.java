@@ -46,7 +46,7 @@ public final class Deadlines {
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @return the deadline
 	 */
-	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm hashing) {
 		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data);
 	}
 

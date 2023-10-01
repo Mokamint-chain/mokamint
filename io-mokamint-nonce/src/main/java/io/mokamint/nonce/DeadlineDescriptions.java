@@ -38,7 +38,7 @@ public final class DeadlineDescriptions {
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @return the deadline description
 	 */
-	public static DeadlineDescription of(int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+	public static DeadlineDescription of(int scoopNumber, byte[] data, HashingAlgorithm hashing) {
 		return new DeadlineDescriptionImpl(scoopNumber, data, hashing);
 	}
 

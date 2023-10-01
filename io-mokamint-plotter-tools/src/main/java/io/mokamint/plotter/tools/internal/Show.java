@@ -52,7 +52,7 @@ public class Show extends AbstractCommand {
 			System.out.println("  * extra: " + Hex.toHexString(prolog.getExtra()));
 			long start = plot.getStart();
 			System.out.println("* nonces: [" + start + "," + (start + plot.getLength()) + ")");
-			System.out.println("* hashing: " + plot.getHashing().getName());
+			System.out.println("* hashing: " + plot.getHashing());
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The plot file uses an unknown cryptographic algorithm!", e);

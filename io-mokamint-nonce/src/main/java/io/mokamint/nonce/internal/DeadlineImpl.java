@@ -21,7 +21,6 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -48,9 +47,9 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final byte[] value;
 	private final int scoopNumber;
 	private final byte[] data;
-	private final HashingAlgorithm<byte[]> hashing;
+	private final HashingAlgorithm hashing;
 
-	public DeadlineImpl(HashingAlgorithm<byte[]> hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data) {
+	public DeadlineImpl(HashingAlgorithm hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data) {
 		this.hashing = hashing;
 		this.prolog = prolog;
 		this.progressive = progressive;
@@ -70,7 +69,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 */
 	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		try {
-			this.hashing = HashingAlgorithms.of(context.readStringUnshared(), Function.identity());
+			this.hashing = HashingAlgorithms.of(context.readStringUnshared());
 			this.prolog = Prologs.from(context);
 			this.progressive = context.readLong();
 			this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
@@ -114,7 +113,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			Arrays.equals(value, otherAsDeadline.getValue()) &&
 			prolog.equals(otherAsDeadline.getProlog()) &&
 			Arrays.equals(data, otherAsDeadline.getData()) &&
-			hashing.getName().equals(otherAsDeadline.getHashing().getName());
+			hashing.equals(otherAsDeadline.getHashing());
 	}
 
 	@Override
@@ -182,7 +181,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public HashingAlgorithm<byte[]> getHashing() {
+	public HashingAlgorithm getHashing() {
 		return hashing;
 	}
 
@@ -199,7 +198,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public String toString() {
 		return "prolog: { " + prolog + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data)
-			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing.getName();
+			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing;
 	}
 
 	@Override

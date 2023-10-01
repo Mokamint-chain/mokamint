@@ -39,7 +39,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
@@ -204,7 +204,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
 	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, InvalidKeyException {
 		var semaphore = new Semaphore(0);
-		var shabal256 = shabal256(Function.identity());
+		HashingAlgorithm shabal256 = shabal256();
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)

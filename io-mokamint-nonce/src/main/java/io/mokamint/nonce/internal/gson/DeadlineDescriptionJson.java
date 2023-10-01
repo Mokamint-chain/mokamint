@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.nonce.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
@@ -46,6 +45,6 @@ public abstract class DeadlineDescriptionJson implements JsonRepresentation<Dead
 
 	@Override
 	public DeadlineDescription unmap() throws NoSuchAlgorithmException {
-		return DeadlineDescriptions.of(scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing, Function.identity()));
+		return DeadlineDescriptions.of(scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing));
 	}
 }

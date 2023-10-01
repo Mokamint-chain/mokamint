@@ -43,7 +43,7 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm<byte[]> getHashingForDeadlines();
+	HashingAlgorithm getHashingForDeadlines();
 
 	/**
 	 * Yields the hashing algorithm used for computing the next generation signature
@@ -51,7 +51,7 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm<byte[]> getHashingForGenerations();
+	HashingAlgorithm getHashingForGenerations();
 
 	/**
 	 * Yields the hashing algorithm used for the identifying the blocks of
@@ -59,7 +59,7 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm<Block> getHashingForBlocks();
+	HashingAlgorithm getHashingForBlocks();
 
 	/**
 	 * Yields the signature algorithm that nodes use to sign the blocks.

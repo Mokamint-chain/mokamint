@@ -33,9 +33,9 @@ import io.mokamint.nonce.api.DeadlineDescription;
 public class DeadlineDescriptionImpl implements DeadlineDescription {
 	private final int scoopNumber;
 	private final byte[] data;
-	private final HashingAlgorithm<byte[]> hashing;
+	private final HashingAlgorithm hashing;
 
-	public DeadlineDescriptionImpl(int scoopNumber, byte[] data, HashingAlgorithm<byte[]> hashing) {
+	public DeadlineDescriptionImpl(int scoopNumber, byte[] data, HashingAlgorithm hashing) {
 		Objects.requireNonNull(data, "data cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 
@@ -52,12 +52,12 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 		return other instanceof DeadlineDescription otherAsDeadlineDescription &&
 			scoopNumber == otherAsDeadlineDescription.getScoopNumber() &&
 			Arrays.equals(data, otherAsDeadlineDescription.getData()) &&
-			hashing.getName().equals(otherAsDeadlineDescription.getHashing().getName());
+			hashing.equals(otherAsDeadlineDescription.getHashing());
 	}
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(data) ^ hashing.getName().hashCode();
+		return scoopNumber ^ Arrays.hashCode(data) ^ hashing.hashCode();
 	}
 
 	@Override
@@ -71,12 +71,12 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 	}
 
 	@Override
-	public HashingAlgorithm<byte[]> getHashing() {
+	public HashingAlgorithm getHashing() {
 		return hashing;
 	}
 
 	@Override
 	public String toString() {
-		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", hashing: " + hashing.getName();
+		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", hashing: " + hashing;
 	}
 }

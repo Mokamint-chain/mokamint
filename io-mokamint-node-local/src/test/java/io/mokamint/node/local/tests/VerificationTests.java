@@ -34,7 +34,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,8 +83,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, hashing, __ -> {});
+		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
 	}
 
 	@AfterAll
@@ -274,8 +272,8 @@ public class VerificationTests extends AbstractLoggedTests {
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected deadline
-		HashingAlgorithm<byte[]> otherAlgorithm = deadline.getHashing().getName().equals(HashingAlgorithms.sha256(Function.identity()).getName()) ?
-			HashingAlgorithms.shabal256(Function.identity()) : HashingAlgorithms.sha256(Function.identity());
+		HashingAlgorithm sha256 = HashingAlgorithms.sha256();
+		HashingAlgorithm otherAlgorithm = deadline.getHashing().equals(sha256) ? HashingAlgorithms.shabal256() : sha256;
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
 				deadline.getScoopNumber(), deadline.getData(), otherAlgorithm);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),

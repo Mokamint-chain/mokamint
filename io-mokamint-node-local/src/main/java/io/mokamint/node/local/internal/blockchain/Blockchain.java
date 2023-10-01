@@ -64,7 +64,7 @@ public class Blockchain implements AutoCloseable {
 	/**
 	 * The hashing algorithm used for the blocks.
 	 */
-	private final HashingAlgorithm<Block> hashingForBlocks;
+	private final HashingAlgorithm hashingForBlocks;
 
 	/**
 	 * The database where the blocks are persisted.

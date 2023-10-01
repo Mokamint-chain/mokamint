@@ -20,7 +20,6 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
-import java.util.function.Function;
 
 import com.moandjiezana.toml.Toml;
 
@@ -29,7 +28,6 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
 
@@ -53,19 +51,19 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	 * The hashing algorithm used for computing the deadlines, hence
 	 * also in the plot files used by the miners. It defaults to {@code shabal256}.
 	 */
-	public final HashingAlgorithm<byte[]> hashingForDeadlines;
+	public final HashingAlgorithm hashingForDeadlines;
 
 	/**
 	 * The hashing algorithm used for computing the next generation signature
 	 * and the new scoop number from the previous block. It defaults to {@code sha256}.
 	 */
-	public final HashingAlgorithm<byte[]> hashingForGenerations;
+	public final HashingAlgorithm hashingForGenerations;
 
 	/**
 	 * The hashing algorithm used for the identifying the blocks of
 	 * the Mokamint blockchain. It defaults to {@code sha256}.
 	 */
-	public final HashingAlgorithm<Block> hashingForBlocks;
+	public final HashingAlgorithm hashingForBlocks;
 
 	/**
 	 * The signature algorithm that nodes must use to sign the blocks.
@@ -117,9 +115,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			return chainId.equals(otherConfig.chainId) &&
 				targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
 				initialAcceleration == otherConfig.initialAcceleration &&
-				hashingForDeadlines.getName().equals(otherConfig.hashingForDeadlines.getName()) &&
-				hashingForGenerations.getName().equals(otherConfig.hashingForGenerations.getName()) &&
-				hashingForBlocks.getName().equals(otherConfig.hashingForBlocks.getName()) &&
+				hashingForDeadlines.equals(otherConfig.hashingForDeadlines) &&
+				hashingForGenerations.equals(otherConfig.hashingForGenerations) &&
+				hashingForBlocks.equals(otherConfig.hashingForBlocks) &&
 				signatureForBlocks.equals(otherConfig.getSignatureForBlocks()) &&
 				signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines());
 		}
@@ -146,13 +144,13 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("chain_id = \"" + chainId + "\"\n");
 		sb.append("\n");
 		sb.append("# the hashing algorithm used for the deadlines and hence for the plot files of the miners\n");
-		sb.append("hashing_for_deadlines = \"" + hashingForDeadlines.getName() + "\"\n");
+		sb.append("hashing_for_deadlines = \"" + hashingForDeadlines + "\"\n");
 		sb.append("\n");
 		sb.append("# the hashing algorithm used for the computation of the new generation and scoop number from the previous block\n");
-		sb.append("hashing_for_generations = \"" + hashingForGenerations.getName() + "\"\n");
+		sb.append("hashing_for_generations = \"" + hashingForGenerations + "\"\n");
 		sb.append("\n");
 		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
-		sb.append("hashing_for_blocks = \"" + hashingForBlocks.getName() + "\"\n");
+		sb.append("hashing_for_blocks = \"" + hashingForBlocks + "\"\n");
 		sb.append("\n");
 		sb.append("# the signature algorithm that nodes use to sign the blocks\n");
 		sb.append("signature_for_blocks = \"" + signatureForBlocks + "\"\n");
@@ -176,17 +174,17 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public HashingAlgorithm<byte[]> getHashingForDeadlines() {
+	public HashingAlgorithm getHashingForDeadlines() {
 		return hashingForDeadlines;
 	}
 
 	@Override
-	public HashingAlgorithm<byte[]> getHashingForGenerations() {
+	public HashingAlgorithm getHashingForGenerations() {
 		return hashingForGenerations;
 	}
 
 	@Override
-	public HashingAlgorithm<Block> getHashingForBlocks() {
+	public HashingAlgorithm getHashingForBlocks() {
 		return hashingForBlocks;
 	}
 
@@ -216,18 +214,18 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	 */
 	public abstract static class ConsensusConfigBuilderImpl<C extends ConsensusConfig<C,B>, B extends ConsensusConfigBuilder<C,B>> implements ConsensusConfigBuilder<C,B> {
 		private String chainId = "";
-		private HashingAlgorithm<byte[]> hashingForDeadlines;
-		private HashingAlgorithm<byte[]> hashingForGenerations;
-		private HashingAlgorithm<Block> hashingForBlocks;
+		private HashingAlgorithm hashingForDeadlines;
+		private HashingAlgorithm hashingForGenerations;
+		private HashingAlgorithm hashingForBlocks;
 		private SignatureAlgorithm signatureForBlocks;
 		private SignatureAlgorithm signatureForDeadlines;
 		private long initialAcceleration = 100000000000L;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
-			setHashingForDeadlines(HashingAlgorithms::shabal256);
-			setHashingForGenerations(HashingAlgorithms::sha256);
-			setHashingForBlocks(HashingAlgorithms::sha256);
+			setHashingForDeadlines(HashingAlgorithms.shabal256());
+			setHashingForGenerations(HashingAlgorithms.sha256());
+			setHashingForBlocks(HashingAlgorithms.sha256());
 			setSignatureForBlocks(SignatureAlgorithms.ed25519());
 			setSignatureForDeadlines(SignatureAlgorithms.ed25519());
 		}
@@ -248,19 +246,19 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			if (hashingForDeadlines != null)
 				setHashingForDeadlines(hashingForDeadlines);
 			else
-				setHashingForDeadlines(HashingAlgorithms::shabal256);
+				setHashingForDeadlines(HashingAlgorithms.shabal256());
 		
 			var hashingForGenerations = toml.getString("hashing_for_generations");
 			if (hashingForGenerations != null)
 				setHashingForGenerations(hashingForGenerations);
 			else
-				setHashingForGenerations(HashingAlgorithms::sha256);
+				setHashingForGenerations(HashingAlgorithms.sha256());
 		
 			var hashingForBlocks = toml.getString("hashing_for_blocks");
 			if (hashingForBlocks != null)
 				setHashingForBlocks(hashingForBlocks);
 			else
-				setHashingForBlocks(HashingAlgorithms::sha256);
+				setHashingForBlocks(HashingAlgorithms.sha256());
 
 			var signatureForBlocks = toml.getString("signature_for_blocks");
 			if (signatureForBlocks != null)
@@ -306,22 +304,16 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			return getThis();
 		}
 
-		@Override
-		public B setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
-			Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
-			this.hashingForDeadlines = HashingAlgorithms.of(hashingForDeadlines, Function.identity());
-			return getThis();
+		private void setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
+			this.hashingForDeadlines = HashingAlgorithms.of(hashingForDeadlines);
 		}
 
-		@Override
-		public B setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
-			Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
-			this.hashingForGenerations = HashingAlgorithms.of(hashingForGenerations, Function.identity());
-			return getThis();
+		private void setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
+			this.hashingForGenerations = HashingAlgorithms.of(hashingForGenerations);
 		}
 
 		private void setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
-			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks, Block::toByteArray);
+			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks);
 		}
 
 		private void setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
@@ -332,16 +324,21 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.signatureForDeadlines = SignatureAlgorithms.of(signatureForDeadlines);
 		}
 
-		private void setHashingForDeadlines(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
-			this.hashingForDeadlines = supplier.get(Function.identity());
+		@Override
+		public B setHashingForDeadlines(HashingAlgorithm hashingForDeadlines) {
+			this.hashingForDeadlines = hashingForDeadlines;
+			return getThis();
 		}
 
-		private void setHashingForGenerations(HashingAlgorithm.Supplier<byte[]> supplier) throws NoSuchAlgorithmException {
-			this.hashingForGenerations = supplier.get(Function.identity());
+		@Override
+		public B setHashingForGenerations(HashingAlgorithm hashingForGenerations) {
+			this.hashingForGenerations = hashingForGenerations;
+			return getThis();
 		}
 
-		public B setHashingForBlocks(HashingAlgorithm.Supplier<Block> supplier) throws NoSuchAlgorithmException {
-			this.hashingForBlocks = supplier.get(Block::toByteArray);
+		@Override
+		public B setHashingForBlocks(HashingAlgorithm hashingForBlocks) {
+			this.hashingForBlocks = hashingForBlocks;
 			return getThis();
 		}
 

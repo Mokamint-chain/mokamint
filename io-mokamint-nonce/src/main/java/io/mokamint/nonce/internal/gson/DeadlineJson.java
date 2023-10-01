@@ -18,7 +18,6 @@ package io.mokamint.nonce.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.function.Function;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
@@ -54,6 +53,6 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 
 	@Override
 	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
-		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing, Function.identity()));
+		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing));
 	}
 }

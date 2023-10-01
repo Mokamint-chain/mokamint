@@ -74,7 +74,7 @@ public class LocalMinerImpl implements Miner {
 		LOGGER.info(logPrefix + "received deadline request: " + description);
 
 		Stream.of(plots)
-			.filter(plot -> plot.getHashing().getName().equals(description.getHashing().getName()))
+			.filter(plot -> plot.getHashing().equals(description.getHashing()))
 			.map(plot -> getSmallestDeadline(plot, description))
 			.flatMap(Optional::stream)
 			.min(Deadline::compareByValue)

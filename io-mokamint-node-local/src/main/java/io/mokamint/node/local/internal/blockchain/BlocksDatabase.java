@@ -87,7 +87,7 @@ public class BlocksDatabase implements AutoCloseable {
 	/**
 	 * The hashing used for the blocks in the node.
 	 */
-	private final HashingAlgorithm<Block> hashingForBlocks;
+	private final HashingAlgorithm hashingForBlocks;
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.

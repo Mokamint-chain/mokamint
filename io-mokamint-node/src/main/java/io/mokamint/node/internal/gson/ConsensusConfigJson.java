@@ -22,7 +22,6 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.ConsensusConfigBuilders;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ConsensusConfig;
 
 /**
@@ -53,9 +52,9 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	public ConsensusConfig<?,?> unmap() throws NoSuchAlgorithmException {
 		return ConsensusConfigBuilders.defaults()
 			.setChainId(chainId)
-			.setHashingForDeadlines(hashingForDeadlines)
-			.setHashingForGenerations(hashingForGenerations)
-			.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks, Block::toByteArray).getSupplier())
+			.setHashingForDeadlines(HashingAlgorithms.of(hashingForDeadlines))
+			.setHashingForGenerations(HashingAlgorithms.of(hashingForGenerations))
+			.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks))
 			.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks))
 			.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
 			.setTargetBlockCreationTime(targetBlockCreationTime)

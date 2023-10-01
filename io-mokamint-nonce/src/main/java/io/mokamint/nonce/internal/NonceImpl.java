@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -47,7 +49,7 @@ public class NonceImpl implements Nonce {
 	/**
 	 * The hashing algorithm used for creating this nonce.
 	 */
-	private final HashingAlgorithm<byte[]> hashing;
+	private final HashingAlgorithm hashing;
 
 	private final int hashSize;
 	private final byte[] data;
@@ -67,7 +69,7 @@ public class NonceImpl implements Nonce {
 	 * @param progressive the progressive number of the nonce. This must be non-negative
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 */
-	public NonceImpl(Prolog prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
+	public NonceImpl(Prolog prolog, long progressive, HashingAlgorithm hashing) {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 
@@ -83,12 +85,12 @@ public class NonceImpl implements Nonce {
 
 	@Override
 	public Deadline getDeadline(DeadlineDescription description) {
-		if (!description.getHashing().getName().equals(hashing.getName()))
-			throw new IllegalArgumentException("Deadline description and nonce use different hashing algorithms");
+		if (!description.getHashing().equals(hashing))
+			throw new IllegalArgumentException("The deadline description and the nonce use different hashing algorithms");
 
 		byte[] data = description.getData();
 		int scoopNumber = description.getScoopNumber();
-		byte[] value = hashing.hash(extractScoopAndConcat(scoopNumber, data));
+		byte[] value = hashing.getHasher(Function.identity()).hash(extractScoopAndConcat(scoopNumber, data));
 		return Deadlines.of(prolog, progressive, value, scoopNumber, data, hashing);
 	}
 
@@ -146,6 +148,11 @@ public class NonceImpl implements Nonce {
 		private final int scoopSize;
 
 		/**
+		 * The hasher derived from the hashing algorithm.
+		 */
+		private final Hasher<byte[]> hasher;
+
+		/**
 		 * Temporary data of the nonce. This is {@code data} followed by
 		 * the prolog and progressive of the nonce.
 		 */
@@ -155,6 +162,7 @@ public class NonceImpl implements Nonce {
 			this.data = new byte[(Deadline.MAX_SCOOP_NUMBER + 1) * 2 * hashSize];
 			this.nonceSize = data.length;
 			this.scoopSize = 2 * hashSize;
+			this.hasher = hashing.getHasher(Function.identity());
 			this.buffer = initWithPrologAndProgressive();
 			fillWithScoops();
 			applyFinalHash();
@@ -169,7 +177,7 @@ public class NonceImpl implements Nonce {
 		 */
 		private byte[] initWithPrologAndProgressive() {
 			byte[] prolog = NonceImpl.this.prolog.toByteArray();
-			byte[] buffer = new byte[nonceSize + prolog.length + 8];
+			var buffer = new byte[nonceSize + prolog.length + 8];
 			System.arraycopy(prolog, 0, buffer, nonceSize, prolog.length);
 			longToBytesBE(progressive, buffer, nonceSize + prolog.length);
 			return buffer;
@@ -188,7 +196,7 @@ public class NonceImpl implements Nonce {
 		private void fillWithScoops() {
 			for (int i = nonceSize; i > 0; i -= hashSize) {
 				int len = Math.min(buffer.length - i, HASH_CAP);
-				System.arraycopy(hashing.hash(buffer, i, len), 0, buffer, i - hashSize, hashSize);
+				System.arraycopy(hasher.hash(buffer, i, len), 0, buffer, i - hashSize, hashSize);
 			}
 		}
 
@@ -196,7 +204,7 @@ public class NonceImpl implements Nonce {
 		 * Computes the hash of the whole buffer and applies it to all scoops, in exclusive or.
 		 */
 		private void applyFinalHash() {
-			byte[] finalHash = hashing.hash(buffer);
+			byte[] finalHash = hasher.hash(buffer);
 			
 			// how much odd hashes must be shifted forward in order to fulfill the PoC2 representation
 			int shiftForOdds = nonceSize + scoopSize;

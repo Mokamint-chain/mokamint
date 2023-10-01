@@ -46,7 +46,7 @@ public interface DeadlineDescription {
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm<byte[]> getHashing();
+	HashingAlgorithm getHashing();
 
 	/**
 	 * Yields a string representation of this deadline description.

@@ -60,7 +60,7 @@ public final class Plots {
 	 * @return the plot that has been created
 	 * @throws IOException if the plot file could not be written into {@code path}
 	 */
-	public static Plot create(Path path, Prolog prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
+	public static Plot create(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent) throws IOException {
 		return new PlotImpl(path, prolog, start, length, hashing, onNewPercent);
 	}
 }

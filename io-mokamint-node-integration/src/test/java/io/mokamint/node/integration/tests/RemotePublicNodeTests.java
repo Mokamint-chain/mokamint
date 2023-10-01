@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,6 +49,7 @@ import org.mockito.stubbing.OngoingStubbing;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
@@ -478,7 +478,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getBlock() works if the block exists")
 	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, InvalidKeyException {
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -759,14 +759,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Timeout(10)
 	@DisplayName("if a service whispers a block, a remote will inform its bound whisperers")
 	public void ifServiceWhispersBlockTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException {
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var prolog = Prologs.of("octopus",
-				ed25519, ed25519.getKeyPair().getPublic(),
-				ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
 		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var semaphore = new Semaphore(0);

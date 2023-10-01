@@ -18,8 +18,6 @@ package io.mokamint.nonce.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.function.Function;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -34,8 +32,7 @@ public class DeadlineDescriptionsTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deadline descriptions are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeadlineDescriptions() throws EncodeException, DecodeException {
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
-		var deadlineDescription1 = DeadlineDescriptions.of(13, new byte[] { 4, 5, 6 }, hashing);
+		var deadlineDescription1 = DeadlineDescriptions.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256());
 		String encoded = new DeadlineDescriptions.Encoder().encode(deadlineDescription1);
 		var deadlineDescription2 = new DeadlineDescriptions.Decoder().decode(encoded);
 		assertEquals(deadlineDescription1, deadlineDescription2);

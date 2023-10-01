@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -174,10 +175,10 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashingForGenerations) {
+	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
-		return hashingForGenerations.hash(concat(previousGenerationSignature, previousProlog));
+		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
 	}
 
 	@Override

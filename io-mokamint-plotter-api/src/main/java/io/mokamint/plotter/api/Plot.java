@@ -57,7 +57,7 @@ public interface Plot extends AutoCloseable {
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm<byte[]> getHashing();
+	HashingAlgorithm getHashing();
 
 	@Override
 	void close() throws IOException;

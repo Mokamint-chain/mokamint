@@ -35,6 +35,7 @@ import java.util.stream.LongStream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
@@ -87,7 +88,7 @@ public class PlotImpl implements Plot {
 	/**
 	 * The hashing algorithm used by this plot.
 	 */
-	private final HashingAlgorithm<byte[]> hashing;
+	private final HashingAlgorithm hashing;
 
 	/**
 	 * Loads a plot file already existing on disk.
@@ -102,7 +103,7 @@ public class PlotImpl implements Plot {
 
 		int prologLength = reader.readInt();
 		if (prologLength > Prolog.MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("Illegal prolog size: the maximum is " + Prolog.MAX_PROLOG_SIZE);
+			throw new IOException("Illegal prolog size: the maximum is " + Prolog.MAX_PROLOG_SIZE);
 		var prologBytes = new byte[prologLength];
 		if (reader.read(prologBytes) != prologLength)
 			throw new IOException("Cannot read the prolog of the plot file");
@@ -113,18 +114,18 @@ public class PlotImpl implements Plot {
 
 		this.start = reader.readLong();
 		if (start < 0)
-			throw new IllegalArgumentException("the plot starting number cannot be negative");
+			throw new IOException("The plot starting number cannot be negative");
 
 		this.length = reader.readLong();
 		if (length < 1)
-			throw new IllegalArgumentException("the plot length must be positive");
+			throw new IOException("The plot length must be positive");
 
 		int hashingNameLength = reader.readInt();
 		var hashingNameBytes = new byte[hashingNameLength];
 		if (reader.read(hashingNameBytes) != hashingNameLength)
 			throw new IOException("Cannot read the name of the hashing algorithm used for the plot file");
 		var hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
-		this.hashing = HashingAlgorithms.of(hashingName, Function.identity());
+		this.hashing = HashingAlgorithms.of(hashingName);
 	}
 
 	/**
@@ -142,7 +143,7 @@ public class PlotImpl implements Plot {
 	 * @param onNewPercent a handler called with the percent of work already alreadyDone, for feedback
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
-	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm<byte[]> hashing, IntConsumer onNewPercent) throws IOException {
+	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent) throws IOException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 		Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null");
@@ -231,7 +232,7 @@ public class PlotImpl implements Plot {
 		/**
 		 * Write into the file the data of the nonce with the given progressive inside the plot file.
 		 * 
-		 * @param n the number of the nonce to dumpo inside the file. It goes from
+		 * @param n the number of the nonce to dump inside the file. It goes from
 		 *          {@link PlotImpl#start} (inclusive)
 		 *          to {@link PlotImpl#start} + {@link PlotImpl#length} (exclusive)
 		 * @throws IOException if the nonce cannot be written into the file
@@ -264,14 +265,14 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public HashingAlgorithm<byte[]> getHashing() {
+	public HashingAlgorithm getHashing() {
 		return hashing;
 	}
 
 	@Override
 	public Deadline getSmallestDeadline(DeadlineDescription description) throws IOException {
-		if (!description.getHashing().getName().equals(hashing.getName()))
-			throw new IllegalArgumentException("deadline description and plot file use different hashing algorithms");
+		if (!description.getHashing().equals(hashing))
+			throw new IllegalArgumentException("The deadline description and the plot file use different hashing algorithms");
 
 		return new SmallestDeadlineFinder(description).deadline;
 	}
@@ -295,10 +296,12 @@ public class PlotImpl implements Plot {
 		private final int scoopSize = 2 * hashing.length();
 		private final long groupSize = length * scoopSize;
 		private final int metadataSize = getMetadataSize();
+		private final Hasher<byte[]> hasher;
 
 		private SmallestDeadlineFinder(DeadlineDescription description) throws IOException {
 			this.scoopNumber = description.getScoopNumber();
 			this.data = description.getData();
+			this.hasher = hashing.getHasher(Function.identity());
 			this.deadline = CheckSupplier.check(IOException.class, () ->
 				LongStream.range(start, start + length)
 					.mapToObj(Long::valueOf)
@@ -310,7 +313,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) throws IOException {
-			return Deadlines.of(prolog, n, hashing.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
+			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
 		}
 
 		/**

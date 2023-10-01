@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
@@ -46,10 +47,10 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	private final Object lock = new Object();
 
 	/**
-	 * The name of the hashing algorithm used for the last call to {@link #getHash(HashingAlgorithm)}, if any.
+	 * The hashing algorithm used for the last call to {@link #getHash(HashingAlgorithm)}, if any.
 	 */
 	@GuardedBy("lock")
-	private String lastHashingName;
+	private HashingAlgorithm lastHashing;
 
 	/**
 	 * The result of the last call to {@link #getHash(HashingAlgorithm)}.
@@ -102,20 +103,18 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 * @param hashing the hashing algorithm
 	 * @return the hash of this block
 	 */
-	public final byte[] getHash(HashingAlgorithm<Block> hashing) {
+	public final byte[] getHash(HashingAlgorithm hashing) {
 		// it uses a cache for optimization, since the computation might be expensive
 	
-		String name = hashing.getName();
-	
 		synchronized (lock) {
-			if (Objects.equals(lastHashingName, name))
+			if (Objects.equals(lastHashing, hashing))
 				return lastHash.clone();
 		}
 	
-		byte[] result = hashing.hash((Block) this);
+		byte[] result = hashing.getHasher(Block::toByteArray).hash((Block) this);
 	
 		synchronized (lock) {
-			lastHashingName = name;
+			lastHashing = hashing;
 			lastHash = result.clone();
 		}
 	
@@ -129,15 +128,13 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 * @param hashing the hashing algorithm
 	 * @return the hash of this block, as a hexadecimal string
 	 */
-	public final String getHexHash(HashingAlgorithm<Block> hashing) {
+	public final String getHexHash(HashingAlgorithm hashing) {
 		return Hex.toHexString(getHash(hashing));
 	}
 
-	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm<byte[]> hashingForGenerations, HashingAlgorithm<byte[]> hashingForDeadlines) {
+	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
 		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
-
-		return DeadlineDescriptions.of
-			(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
+		return DeadlineDescriptions.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
 	/**
@@ -149,7 +146,7 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @return the description
 	 */
-	public final NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm<Block> hashingForBlocks, HashingAlgorithm<byte[]> hashingForDeadlines) {
+	public final NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines) {
 		var heightForNewBlock = getHeight() + 1;
 		var powerForNewBlock = computePower(deadline, hashingForDeadlines);
 		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(getAcceleration());
@@ -207,7 +204,7 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 	 */
 	public abstract long getTotalWaitingTime();
 
-	private BigInteger computePower(Deadline deadline, HashingAlgorithm<byte[]> hashingForDeadlines) {
+	private BigInteger computePower(Deadline deadline, HashingAlgorithm hashingForDeadlines) {
 		byte[] valueAsBytes = deadline.getValue();
 		var value = new BigInteger(1, valueAsBytes);
 		return getPower().add(BigInteger.TWO.shiftLeft(hashingForDeadlines.length() * 8).divide(value.add(BigInteger.ONE)));
@@ -244,12 +241,12 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 		return acceleration;
 	}
 
-	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm<byte[]> hashingForGenerations) {
-		var generationHash = hashingForGenerations.hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
+	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {
+		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
 	}
 
-	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashingForGenerations);
+	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
 
 	protected static byte[] concat(byte[] array1, byte[] array2) {
 		var merge = new byte[array1.length + array2.length];

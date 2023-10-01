@@ -29,7 +29,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
@@ -113,7 +113,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("non-empty getBlockResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException {
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -346,7 +346,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("whisperBlock messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException {
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;

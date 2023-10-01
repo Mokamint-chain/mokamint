@@ -111,7 +111,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	/**
 	 * The hashing to use for the blocks.
 	 */
-	private final HashingAlgorithm<Block> hashingForBlocks;
+	private final HashingAlgorithm hashingForBlocks;
 
 	/**
 	 * The prefix used in the log messages;

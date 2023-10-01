@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.security.NoSuchAlgorithmException;
-
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 
@@ -41,30 +39,27 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	 * Sets the hashing algorithm for computing the deadlines and hence also the
 	 * plot files used by the miners.
 	 * 
-	 * @param hashingForDeadlines the name of the hashing algorithm
+	 * @param hashingForDeadlines the hashing algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 	 */
-	B setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException;
+	B setHashingForDeadlines(HashingAlgorithm hashingForDeadlines);
 
 	/**
 	 * Sets the hashing algorithm for computing the new generation and the new scoop
 	 * number from the previous block.
 	 * 
-	 * @param hashingForGenerations the name of the hashing algorithm
+	 * @param hashingForGenerations the hashing algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if no algorithm exists with that name
 	 */
-	B setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException;
+	B setHashingForGenerations(HashingAlgorithm hashingForGenerations);
 
 	/**
 	 * Sets the hashing algorithm for identifying the blocks in the Mokamint blockchain.
 	 * 
-	 * @param supplier the supplier of the hashing algorithm
+	 * @param hashingForBlocks the hashing algorithm
 	 * @return this builder
-	 * @throws NoSuchAlgorithmException if the hashing algorithm is not available
 	 */
-	B setHashingForBlocks(HashingAlgorithm.Supplier<Block> supplier) throws NoSuchAlgorithmException;
+	B setHashingForBlocks(HashingAlgorithm hashingForBlocks);
 
 	/**
 	 * Sets the signature algorithm that the nodes use to sign the blocks.

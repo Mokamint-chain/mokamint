@@ -37,7 +37,7 @@ public final class Nonces {
 	 * @param hashing the hashing algorithm to use to create the nonce
 	 * @return the nonce
 	 */
-	public static Nonce of(Prolog prolog, long progressive, HashingAlgorithm<byte[]> hashing) {
+	public static Nonce of(Prolog prolog, long progressive, HashingAlgorithm hashing) {
 		return new NonceImpl(prolog, progressive, hashing);
 	}
 

@@ -20,13 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -38,7 +38,7 @@ public class DeadlinesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deadlines are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeadlines() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException {
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;

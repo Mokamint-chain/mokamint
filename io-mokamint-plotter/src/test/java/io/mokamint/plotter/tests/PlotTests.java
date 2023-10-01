@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Nonces;
@@ -44,7 +44,7 @@ public class PlotTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
+		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
 		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {

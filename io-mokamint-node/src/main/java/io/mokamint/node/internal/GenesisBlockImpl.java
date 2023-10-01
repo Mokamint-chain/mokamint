@@ -119,7 +119,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm<byte[]> hashing) {
+	protected byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
 		return BLOCK_1_GENERATION_SIGNATURE;
 	}
 

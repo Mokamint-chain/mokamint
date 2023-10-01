@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -100,9 +99,8 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		var prolog = Prologs.of("octopus", ed25519, nodeKey.getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
-		var hashing = HashingAlgorithms.shabal256(Function.identity());
 
-		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, hashing, __ -> {});
+		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
 	}
 
 	@AfterAll

@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.function.Function;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -87,7 +86,7 @@ public class Create extends AbstractCommand {
 			throw new CommandException("Invalid public key!", e);
 		}
 
-		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.of(hashing, Function.identity()), this::onNewPercent)) {
+		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.of(hashing), this::onNewPercent)) {
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The required hashing algorithm \"" + hashing + "\" does not exist!", e);
