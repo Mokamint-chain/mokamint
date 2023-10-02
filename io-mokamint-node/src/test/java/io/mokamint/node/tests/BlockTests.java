@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Blocks;
 import io.mokamint.nonce.Deadlines;
@@ -50,7 +49,7 @@ public class BlockTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("non-genesis blocks are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksNonGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException {
-		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
+		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;

@@ -88,18 +88,6 @@ public abstract class Blocks {
 	}
 
 	/**
-	 * Unmarshals a block from the given bytes.
-	 * 
-	 * @param bytes the bytes
-	 * @return the block
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws IOException if the block could not be unmarshalled
-	 */
-	public static Block from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
-		return AbstractBlock.from(bytes);
-	}
-
-	/**
 	 * Gson encoder.
 	 */
 	public static class Encoder extends BlockEncoder {

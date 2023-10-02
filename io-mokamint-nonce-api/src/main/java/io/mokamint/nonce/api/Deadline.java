@@ -99,6 +99,11 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 */
 	boolean isValid();
 
+	/**
+	 * Yields a string representation of this deadline.
+	 * 
+	 * @return the string representation
+	 */
 	@Override
 	String toString();
 }

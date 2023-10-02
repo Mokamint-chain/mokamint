@@ -21,6 +21,7 @@ import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
@@ -36,6 +37,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
@@ -621,7 +623,12 @@ public class BlocksDatabase implements AutoCloseable {
 	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
-			return blockBI == null ? Optional.empty() : Optional.of(Blocks.from(blockBI.getBytes()));
+			if (blockBI == null)
+				return Optional.empty();
+			
+			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
+				return Optional.of(Blocks.from(context));
+			}
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);

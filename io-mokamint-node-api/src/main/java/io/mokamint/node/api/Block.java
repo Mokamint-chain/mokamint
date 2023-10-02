@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 import io.hotmoka.annotations.Immutable;
@@ -29,52 +28,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * A block of the Mokamint blockchain.
  */
 @Immutable
-public sealed interface Block extends Marshallable permits GenesisBlock, NonGenesisBlock {
-
-	/**
-	 * Yields the power of this block, computed as the sum, for each block from genesis to this,
-	 * of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
-	 * forks and choose the one whose tip has the highest power. Intuitively, the power
-	 * expresses the space used to compute the chain leading to the block.
-	 * 
-	 * @return the power
-	 */
-	BigInteger getPower();
-
-	/**
-	 * Yields the total waiting time, in milliseconds, from the genesis block
-	 * until the creation of this block.
-	 * 
-	 * @return the total waiting time
-	 */
-	long getTotalWaitingTime();
-
-	/**
-	 * Yields the weighted waiting time, in milliseconds, from the genesis block
-	 * until the creation of this block. This is an average waiting time that gives
-	 * 5% weight to the waiting time for this block and 95% to the cumulative
-	 * weighted waiting time at the previous block.
-	 * 
-	 * @return the weighted waiting time
-	 */
-	long getWeightedWaitingTime();
-
-	/**
-	 * Yields the acceleration used for the creation of this block, that is,
-	 * a value used to divide the deadline to derive the time needed to wait for it.
-	 * The higher, the shorter the time. This value changes from block to block in order
-	 * to cope with varying mining power in the network. It is the inverse of Bitcoin's difficulty.
-	 * 
-	 * @return the acceleration
-	 */
-	BigInteger getAcceleration();
-
-	/**
-	 * Yields the height of the block, counting from 0 for the genesis block.
-	 * 
-	 * @return the height of the block
-	 */
-	long getHeight();
+public sealed interface Block extends BlockDescription, Marshallable permits GenesisBlock, NonGenesisBlock {
 
 	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
@@ -124,12 +78,6 @@ public sealed interface Block extends Marshallable permits GenesisBlock, NonGene
 	 */
 	@Override
 	boolean equals(Object other);
-
-	@Override
-	int hashCode();
-
-	@Override
-	String toString();
 
 	/**
 	 * Yields a string representation of this block. This yields a more informative

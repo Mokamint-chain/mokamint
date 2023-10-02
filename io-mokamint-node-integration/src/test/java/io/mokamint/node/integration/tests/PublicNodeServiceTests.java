@@ -213,7 +213,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
-		var block = Blocks.of(13L, BigInteger.TEN, 11L, 134L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
+		var block = Blocks.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

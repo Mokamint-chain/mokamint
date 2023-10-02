@@ -133,10 +133,19 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		Objects.requireNonNull(power, "power cannot be null");
 
 		if (height < 1)
-			throw new IllegalArgumentException("a non-genesis block must have positive height");
+			throw new IllegalArgumentException("A non-genesis block must have positive height");
+
+		if (power.signum() < 0)
+			throw new IllegalArgumentException("The power cannot be negative");
 
 		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("acceleration must be strictly positive");
+			throw new IllegalArgumentException("The acceleration must be strictly positive");
+
+		if (weightedWaitingTime < 0)
+			throw new IllegalArgumentException("The weighted waiting time cannot be negative");
+
+		if (totalWaitingTime < weightedWaitingTime)
+			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
 	}
 
 	@Override

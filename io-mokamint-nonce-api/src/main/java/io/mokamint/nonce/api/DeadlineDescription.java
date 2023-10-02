@@ -53,5 +53,6 @@ public interface DeadlineDescription {
 	 * 
 	 * @return the string representation
 	 */
+	@Override
 	String toString();
 }

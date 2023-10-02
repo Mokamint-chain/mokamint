@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
@@ -27,7 +26,6 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
-import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -81,20 +79,6 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 			return new NonGenesisBlockImpl(height, context);
 		else
 			throw new IOException("negative block height");
-	}
-
-	/**
-	 * Unmarshals a block from the given bytes.
-	 * 
-	 * @param bytes the bytes
-	 * @return the block
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws IOException if the block could not be unmarshalled
-	 */
-	public static Block from(byte[] bytes) throws NoSuchAlgorithmException, IOException {
-		try (var bais = new ByteArrayInputStream(bytes); var context = UnmarshallingContexts.of(bais)) {
-			return from(context);
-		}
 	}
 
 	/**
