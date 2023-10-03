@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -383,7 +384,10 @@ public class MineNewBlockTask implements Task {
 		 */
 		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
-			var nextBlock = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
+			var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
+			var nextBlock = Blocks.of(description.getHeight(), description.getPower(), description.getTotalWaitingTime(),
+				description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock());
+			// TODO: transactions should be added here
 
 			var powerOfHead = blockchain.getPowerOfHead();
 			if (powerOfHead.isPresent() && powerOfHead.get().compareTo(nextBlock.getPower()) >= 0) {

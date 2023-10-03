@@ -27,9 +27,8 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -37,7 +36,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract class AbstractBlock extends AbstractMarshallable {
+public abstract class AbstractBlock extends AbstractMarshallable implements Block {
 
 	/**
 	 * A lock for the {@link #lastHash} and {@link #lastHashingName} fields.
@@ -81,12 +80,7 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 			throw new IOException("negative block height");
 	}
 
-	/**
-	 * Yields the hash of this block, by using the given hashing algorithm.
-	 * 
-	 * @param hashing the hashing algorithm
-	 * @return the hash of this block
-	 */
+	@Override
 	public final byte[] getHash(HashingAlgorithm hashing) {
 		// it uses a cache for optimization, since the computation might be expensive
 	
@@ -95,7 +89,7 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 				return lastHash.clone();
 		}
 	
-		byte[] result = hashing.getHasher(Block::toByteArray).hash((Block) this);
+		byte[] result = hashing.getHasher(Block::toByteArray).hash(this);
 	
 		synchronized (lock) {
 			lastHashing = hashing;
@@ -105,32 +99,19 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 		return result;
 	}
 
-	/**
-	 * Yields the hash of this block, by using the given hashing algorithm,
-	 * as an hexadecimal string.
-	 * 
-	 * @param hashing the hashing algorithm
-	 * @return the hash of this block, as a hexadecimal string
-	 */
+	@Override
 	public final String getHexHash(HashingAlgorithm hashing) {
 		return Hex.toHexString(getHash(hashing));
 	}
 
+	@Override
 	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
 		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
 		return DeadlineDescriptions.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
-	/**
-	 * Yields the description of the next block, assuming that the latter has the given deadline.
-	 * 
-	 * @param deadline the deadline of the next block
-	 * @param targetBlockCreationTime the target time interval, in milliseconds, between the creation of a block
-	 *                                and the creation of a next block
-	 * @param hashingForBlocks the hashing algorithm used for the blocks
-	 * @return the description
-	 */
-	public final NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines) {
+	@Override
+	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines) {
 		var heightForNewBlock = getHeight() + 1;
 		var powerForNewBlock = computePower(deadline, hashingForDeadlines);
 		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(getAcceleration());
@@ -139,54 +120,9 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, targetBlockCreationTime);
 		var hashOfPreviousBlock = getHash(hashingForBlocks);
 
-		return Blocks.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
+		return new NonGenesisBlockDescriptionImpl(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
 			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
 	}
-
-	/**
-	 * Yields the power of this block, computed as the sum, for each block from genesis to this,
-	 * of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
-	 * forks and choose the one whose tip has the highest power. Intuitively, the power
-	 * expresses the space used to compute the chain leading to the block.
-	 * 
-	 * @return the power
-	 */
-	public abstract BigInteger getPower();
-
-	/**
-	 * Yields the weighted waiting time, in milliseconds, from the genesis block
-	 * until the creation of this block. This is an average waiting time that gives
-	 * 5% weight to the waiting time for this block and 95% to the cumulative
-	 * weighted waiting time at the previous block.
-	 * 
-	 * @return the weighted waiting time
-	 */
-	public abstract long getWeightedWaitingTime();
-
-	/**
-	 * Yields the acceleration used for the creation of this block, that is,
-	 * a value used to divide the deadline to derive the time needed to wait for it.
-	 * The higher, the shorter the time. This value changes from block to block in order
-	 * to cope with varying mining power in the network. It is the inverse of Bitcoin's difficulty.
-	 * 
-	 * @return the acceleration
-	 */
-	public abstract BigInteger getAcceleration();
-
-	/**
-	 * Yields the height of the block, counting from 0 for the genesis block.
-	 * 
-	 * @return the height of the block
-	 */
-	public abstract long getHeight();
-
-	/**
-	 * Yields the total waiting time, in milliseconds, from the genesis block
-	 * until the creation of this block.
-	 * 
-	 * @return the total waiting time
-	 */
-	public abstract long getTotalWaitingTime();
 
 	private BigInteger computePower(Deadline deadline, HashingAlgorithm hashingForDeadlines) {
 		byte[] valueAsBytes = deadline.getValue();
@@ -219,6 +155,15 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 			.subtract(oldAcceleration);
 	
 		var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
+		
+		// TODO: remove at then end
+		if (acceleration.signum() < 0) {
+			System.out.println("oldAcceleration: " + oldAcceleration);
+			System.out.println("weightedWaitingTimeForNewBlock: " + weightedWaitingTimeForNewBlock);
+			System.out.println("targetBlockCreationTime: " + targetBlockCreationTime);
+			System.out.println("delta: " + delta);
+		}
+
 		if (acceleration.signum() == 0)
 			acceleration = BigInteger.ONE; // acceleration must be strictly positive
 	
@@ -241,7 +186,6 @@ public abstract class AbstractBlock extends AbstractMarshallable {
 
 	private static byte[] longToBytesBE(long l) {
 		var target = new byte[8];
-
 		for (int i = 0; i <= 7; i++)
 			target[7 - i] = (byte) ((l>>(8*i)) & 0xFF);
 

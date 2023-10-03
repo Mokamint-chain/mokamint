@@ -31,6 +31,8 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
  */
 public abstract class LocalNodes {
 
+	private LocalNodes() {}
+
 	/**
 	 * Yields a local node of a Mokamint blockchain, for the given application.
 	 * 

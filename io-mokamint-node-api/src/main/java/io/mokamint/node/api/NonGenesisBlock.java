@@ -22,7 +22,15 @@ import io.hotmoka.annotations.Immutable;
  * A non-genesis block of the Mokamint blockchain.
  */
 @Immutable
-public non-sealed interface NonGenesisBlock extends NonGenesisBlockDescription, Block {
+public interface NonGenesisBlock extends NonGenesisBlockDescription, Block {
+
+	/**
+	 * Determines if this block matches the given description.
+	 * 
+	 * @param description the description matched against this block
+	 * @return true if and only if that condition holds
+	 */
+	boolean matches(NonGenesisBlockDescription description);
 
 	/**
 	 * Yields the signature of this node, computed from its hash by the node

@@ -86,7 +86,7 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * Determines if this deadline matches the given description: same scoop number,
 	 * same data and same hashing algorithm.
 	 * 
-	 * @param description the description matched to this deadline
+	 * @param description the description matched against this deadline
 	 * @return true if and only if that condition holds
 	 */
 	boolean matches(DeadlineDescription description);

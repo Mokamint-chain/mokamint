@@ -24,7 +24,7 @@ import io.hotmoka.annotations.Immutable;
  * The genesis block of a Mokamint blockchain.
  */
 @Immutable
-public non-sealed interface GenesisBlock extends Block {
+public interface GenesisBlock extends Block {
 
 	/**
 	 * The moment when this block has been mined. This is the moment

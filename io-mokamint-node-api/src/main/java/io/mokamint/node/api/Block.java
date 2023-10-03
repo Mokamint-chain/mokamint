@@ -28,7 +28,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * A block of the Mokamint blockchain.
  */
 @Immutable
-public sealed interface Block extends BlockDescription, Marshallable permits GenesisBlock, NonGenesisBlock {
+public interface Block extends BlockDescription, Marshallable {
 
 	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
@@ -68,7 +68,7 @@ public sealed interface Block extends BlockDescription, Marshallable permits Gen
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @return the description
 	 */
-	NonGenesisBlock getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines);
+	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines);
 
 	/**
 	 * Checks if this block is equal to another object.

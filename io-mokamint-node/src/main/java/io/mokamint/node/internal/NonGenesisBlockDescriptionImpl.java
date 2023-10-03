@@ -16,29 +16,18 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.marshalling.api.MarshallingContext;
-import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.ConsensusConfig;
-import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
 /**
- * The implementation of a non-genesis block of the Mokamint blockchain.
+ * The implementation of the description of a non-genesis block of the Mokamint blockchain.
  */
-public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBlock {
+public class NonGenesisBlockDescriptionImpl implements NonGenesisBlockDescription {
 
 	/**
 	 * The block height, non-negative, counting from 0, which is the genesis block.
@@ -83,7 +72,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	/**
 	 * Creates a new non-genesis block.
 	 */
-	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
+	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
 		this.height = height;
 		this.power = power;
 		this.totalWaitingTime = totalWaitingTime;
@@ -93,32 +82,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		this.hashOfPreviousBlock = hashOfPreviousBlock;
 
 		verify();
-	}
-
-	/**
-	 * Unmarshals a non-genesis block from the given context.
-	 * The height of the block has been already read.
-	 * 
-	 * @param height the height of the block
-	 * @param context the context
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
-	 * @throws IOException if the block could not be unmarshalled
-	 */
-	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		try {
-			this.height = height;
-			this.power = context.readBigInteger();
-			this.totalWaitingTime = context.readLong();
-			this.weightedWaitingTime = context.readLong();
-			this.acceleration = context.readBigInteger();
-			this.deadline = Deadlines.from(context);
-			this.hashOfPreviousBlock = context.readBytes(context.readCompactInt(), "Previous block hash length mismatch");
-
-			verify();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
-		}
 	}
 
 	/**
@@ -185,42 +148,20 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
-		byte[] previousGenerationSignature = deadline.getData();
-		byte[] previousProlog = deadline.getProlog().toByteArray();
-		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
-	}
-
-	@Override
 	public boolean equals(Object other) {
-		return other instanceof NonGenesisBlock ngb &&
-			height == ngb.getHeight() &&
-			power.equals(ngb.getPower()) &&
-			totalWaitingTime == ngb.getTotalWaitingTime() &&
-			weightedWaitingTime == ngb.getWeightedWaitingTime() &&
-			acceleration.equals(ngb.getAcceleration()) &&
-			deadline.equals(ngb.getDeadline()) &&
-			Arrays.equals(hashOfPreviousBlock, ngb.getHashOfPreviousBlock());
+		return other instanceof NonGenesisBlockDescription ngbd &&
+			height == ngbd.getHeight() &&
+			power.equals(ngbd.getPower()) &&
+			totalWaitingTime == ngbd.getTotalWaitingTime() &&
+			weightedWaitingTime == ngbd.getWeightedWaitingTime() &&
+			acceleration.equals(ngbd.getAcceleration()) &&
+			deadline.equals(ngbd.getDeadline()) &&
+			Arrays.equals(hashOfPreviousBlock, ngbd.getHashOfPreviousBlock());
 	}
 
 	@Override
 	public int hashCode() {
 		return ((int) height) ^ power.hashCode() ^ ((int) totalWaitingTime) ^ ((int) weightedWaitingTime) ^ acceleration.hashCode() ^ deadline.hashCode();
-	}
-
-	@Override
-	public void into(MarshallingContext context) throws IOException {
-		// we write the height of the block first, so that, by reading the first long,
-		// it is possible to distinguish between a genesis block (height == 0)
-		// and a non-genesis block (height > 0)
-		context.writeLong(height);
-		context.writeBigInteger(power);
-		context.writeLong(totalWaitingTime);
-		context.writeLong(weightedWaitingTime);
-		context.writeBigInteger(acceleration);
-		deadline.into(context);
-		context.writeCompactInt(hashOfPreviousBlock.length);
-		context.write(hashOfPreviousBlock);
 	}
 
 	@Override
@@ -249,21 +190,5 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()) + "\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()));
-	}
-
-	@Override
-	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var builder = new StringBuilder("Block:\n");
-		builder.append("* creation date and time UTC: " + startDateTimeUTC.plus(totalWaitingTime, ChronoUnit.MILLIS) + "\n");
-		builder.append("* hash: " + getHexHash(config.getHashingForBlocks()) + "\n");
-		populate(builder);
-		builder.append("\n");
-		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(config.getHashingForGenerations())));
-		return builder.toString();
-	}
-
-	@Override
-	public boolean matches(NonGenesisBlockDescription description) {
-		return description.equals(this);
 	}
 }
