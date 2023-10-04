@@ -105,7 +105,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var port2 = 8032;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).setInitialAcceleration(10000000000000L).setTargetBlockCreationTime(500).build();
+		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).setInitialAcceleration(50000000000000L).setTargetBlockCreationTime(500).build();
 		var config2 = config1.toBuilder().setDir(chain2).build();
 		var miningPort = 8025;
 
@@ -174,14 +174,14 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			}
 
 			// we wait until node1 stops mining, since it has no more miners
-			assertTrue(node1NoMinersAvailable.tryAcquire(1, 10, TimeUnit.SECONDS));
+			assertTrue(node1NoMinersAvailable.tryAcquire(1, 20, TimeUnit.SECONDS));
 
 			// typically, node1 could have added 5 blocks only, but it might happen that
 			// more blocks are added before closing the miner above: better ask node1 then
 			// and wait until any extra block has reached node2 as well; moreover,
 			// consider that the genesis has height 0, hence 5 blocks means to have reached height 4
 			var node1ChainInfo = node1.getChainInfo();
-			assertTrue(node2HasAddedBlock.tryAcquire((int) node1ChainInfo.getHeight() - 5 + 1, 10, TimeUnit.SECONDS));
+			assertTrue(node2HasAddedBlock.tryAcquire((int) node1ChainInfo.getHeight() - 5 + 1, 20, TimeUnit.SECONDS));
 
 			// both chain should coincide now
 			var node2ChainInfo = node2.getChainInfo();

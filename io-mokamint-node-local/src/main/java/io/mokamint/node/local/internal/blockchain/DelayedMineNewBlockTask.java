@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.logging.Logger;
 
 import io.mokamint.node.api.DatabaseException;
@@ -40,7 +42,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	}
 
 	@Override
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException {
 		LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
 		Thread.sleep(delay);
 

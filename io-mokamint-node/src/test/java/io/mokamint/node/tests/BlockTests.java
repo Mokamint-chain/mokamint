@@ -20,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.DisplayName;
@@ -48,15 +50,16 @@ public class BlockTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-genesis blocks are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksNonGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException {
+	public void encodeDecodeWorksNonGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		KeyPair keyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, keyPair.getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
-		var block1 = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
+		var block1 = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}, keyPair.getPrivate());
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);

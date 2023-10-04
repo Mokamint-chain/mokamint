@@ -42,6 +42,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private BigInteger acceleration;
 	private Deadlines.Json deadline;
 	private String hashOfPreviousBlock;
+	private String signature;
 
 	protected BlockJson(Block block) {
 		if (block instanceof GenesisBlock gb) {
@@ -57,13 +58,14 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 			this.acceleration = ngb.getAcceleration();
 			this.deadline = new Deadlines.Encoder().map(ngb.getDeadline());
 			this.hashOfPreviousBlock = Hex.toHexString(ngb.getHashOfPreviousBlock());
+			this.signature = Hex.toHexString(ngb.getSignature());
 		}
 	}
 
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
 		if (startDateTimeUTC == null)
-			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
+			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), Hex.fromHexString(signature));
 		else
 			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME), acceleration);
 	}

@@ -487,6 +487,15 @@ public class LocalNodeImpl implements LocalNode {
 		return blockchain;
 	}
 
+	/**
+	 * Yields the key pair of this node. It is used to sign the blocks mined by this node.
+	 * 
+	 * @return the key pair
+	 */
+	public KeyPair getKeys() {
+		return keyPair;
+	}
+
 	@Override
 	public boolean add(Miner miner) throws ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);

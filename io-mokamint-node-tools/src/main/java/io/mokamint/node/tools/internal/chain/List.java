@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -144,8 +145,10 @@ public class List extends AbstractPublicRpcCommand {
 				System.out.print("\"" + hash + "\"");
 			}
 			else {
-				var maybeBlock = remote.getBlock(hashes[counter]); // TODO: in the future, maybe a getBlockHeader() ?
-				String creationTime = maybeBlock.isEmpty() ? "unknown" : startDateTimeUTC.get().plus(maybeBlock.get().getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
+				var maybeBlockDescription = remote.getBlock(hashes[counter]); // TODO: in the future, maybe a getBlockDescription() ?
+				String creationTime = maybeBlockDescription.map(BlockDescription::getTotalWaitingTime)
+					.map(total -> startDateTimeUTC.get().plus(total, ChronoUnit.MILLIS).format(FORMATTER))
+					.orElse("unknown");
 				System.out.println(String.format("%" + slotsForHeight + "d: %s [%s]", height, hash, creationTime));
 			}
 		}

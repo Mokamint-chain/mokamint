@@ -18,7 +18,10 @@ package io.mokamint.node;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -41,7 +44,8 @@ public abstract class Blocks {
 	private Blocks() {}
 
 	/**
-	 * Yields a new non-genesis block.
+	 * Yields a new non-genesis block. The signature will be computed from its hash by using the
+	 * signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param height the block height, non-negative, counting from 0, which is the genesis block
 	 * @param power the power of this block, computed as the sum, for each block from genesis to this block,
@@ -55,11 +59,37 @@ public abstract class Blocks {
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @param deadline the deadline computed for this block
 	 * @param hashOfPreviousBlock the reference to the previous block
+	 * @param key the private key to use to sign the block; it must match the public key contained in the deadline
+	 * @return the non-genesis block
+	 * @throws SignatureException if the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	public static NonGenesisBlock of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
+			Deadline deadline, byte[] hashOfPreviousBlock, PrivateKey key) throws InvalidKeyException, SignatureException {
+		return new NonGenesisBlockImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, key);
+	}
+
+	/**
+	 * Yields a new non-genesis block with the given signature.
+	 * 
+	 * @param height the block height, non-negative, counting from 0, which is the genesis block
+	 * @param power the power of this block, computed as the sum, for each block from genesis to this block,
+	 *              of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
+	 *              forks and choose the one whose tip has the highest power. Intuitively, the power
+	 *              expresses the space used to compute the chain leading to the block
+	 * @param totalWaitingTime the total waiting time between the creation of the genesis block and the creation of this block
+	 * @param weightedWaitingTime the weighted waiting time between the creation of the genesis block and the creation of this block
+	 * @param acceleration a value used to divide the deadline to derive the time needed to wait for it.
+	 *                     The higher, the shorter the time. This value changes dynamically to cope with
+	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
+	 * @param deadline the deadline computed for this block
+	 * @param hashOfPreviousBlock the reference to the previous block
+	 * @param signature the signature of the block
 	 * @return the non-genesis block
 	 */
 	public static NonGenesisBlock of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
-			Deadline deadline, byte[] hashOfPreviousBlock) {
-		return new NonGenesisBlockImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
+			Deadline deadline, byte[] hashOfPreviousBlock, byte[] signature) {
+		return new NonGenesisBlockImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, signature);
 	}
 
 	/**

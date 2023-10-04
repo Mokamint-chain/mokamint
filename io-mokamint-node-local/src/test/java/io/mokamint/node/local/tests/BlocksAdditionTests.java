@@ -31,6 +31,8 @@ import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -43,8 +45,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
@@ -74,6 +74,11 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	private static Prolog PROLOG;
 
 	/**
+	 * The private key used to sign the blocks.
+	 */
+	private static PrivateKey privateKey;
+
+	/**
 	 * The plots used for creating the deadlines.
 	 */
 	private static Plot plot1;
@@ -82,9 +87,13 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
-		var ed25519 = SignatureAlgorithms.ed25519();
-		PROLOG = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var config = LocalNodeConfigBuilders.defaults().build();
+		var hashing = config.getHashingForDeadlines();
+		var signature = config.getSignatureForBlocks();
+		var keyPair = signature.getKeyPair();
+
+		privateKey = keyPair.getPrivate();
+		PROLOG = Prologs.of("octopus", signature, keyPair.getPublic(), signature, signature.getKeyPair().getPublic(), new byte[0]);
 		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
 		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
 		plot3 = Plots.create(plotDir.resolve("plot3.plot"), PROLOG, 15000L, 256L, hashing, __ -> {});
@@ -161,7 +170,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
-	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -171,7 +180,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 			value[pos] = (byte) pos;
 		var deadline = Deadlines.of(PROLOG, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
-		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious);
+		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, privateKey);
 
 		assertTrue(blockchain.add(genesis));
 		assertFalse(blockchain.add(block));
@@ -184,7 +193,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
-	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -202,7 +211,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
-	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -236,7 +245,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
-	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -302,7 +311,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if more children of the head are added, the one with higher power becomes head")
-	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -350,7 +359,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException {
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
@@ -396,15 +405,15 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config) throws IOException {
+	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config) throws IOException, InvalidKeyException, SignatureException {
 		return computeNextBlock(previous, config, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException {
+	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException {
 		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription);
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 		return Blocks.of(description.getHeight(), description.getPower(), description.getTotalWaitingTime(),
-			description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock());
+			description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock(), privateKey);
 	}
 }

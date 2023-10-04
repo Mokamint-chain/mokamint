@@ -19,7 +19,9 @@ package io.mokamint.node.local.internal.blockchain;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -112,7 +114,7 @@ public class MineNewBlockTask implements Task {
 	}
 
 	@Override
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException {
 		if (blockchain.isEmpty())
 			LOGGER.log(Level.SEVERE, "cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L)
@@ -298,7 +300,7 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 			this.previous = blockchain.getHead().get();
 			this.heightOfNewBlock = previous.getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
@@ -381,19 +383,22 @@ public class MineNewBlockTask implements Task {
 		 * @return the block, if any
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws ClosedDatabaseException if the database is already closed
+		 * @throws SignatureException if the block could not be signed
+		 * @throws InvalidKeyException if the private key of the node is invalid
 		 */
-		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException {
+		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
-			var nextBlock = Blocks.of(description.getHeight(), description.getPower(), description.getTotalWaitingTime(),
-				description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock());
-			// TODO: transactions should be added here
-
 			var powerOfHead = blockchain.getPowerOfHead();
-			if (powerOfHead.isPresent() && powerOfHead.get().compareTo(nextBlock.getPower()) >= 0) {
+			if (powerOfHead.isPresent() && powerOfHead.get().compareTo(description.getPower()) >= 0) {
 				LOGGER.info(logPrefix + "not creating block on top of " + previousHex + " since it would not improve the head");
 				return Optional.empty();
 			}
+
+			var nextBlock = Blocks.of(description.getHeight(), description.getPower(), description.getTotalWaitingTime(),
+				description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock(),
+				node.getKeys().getPrivate());
+			// TODO: transactions should be added here
 
 			return Optional.of(nextBlock);
 		}

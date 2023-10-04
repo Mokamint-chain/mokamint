@@ -40,5 +40,5 @@ public interface NonGenesisBlock extends NonGenesisBlockDescription, Block {
 	 * 
 	 * @return the signature
 	 */
-	//TODO byte[] getSignature();
+	byte[] getSignature();
 }
