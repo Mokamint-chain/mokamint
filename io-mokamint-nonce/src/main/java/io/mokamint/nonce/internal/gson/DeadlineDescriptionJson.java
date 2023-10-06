@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -44,7 +45,7 @@ public abstract class DeadlineDescriptionJson implements JsonRepresentation<Dead
 	}
 
 	@Override
-	public DeadlineDescription unmap() throws NoSuchAlgorithmException {
+	public DeadlineDescription unmap() throws NoSuchAlgorithmException, HexConversionException {
 		return DeadlineDescriptions.of(scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing));
 	}
 }

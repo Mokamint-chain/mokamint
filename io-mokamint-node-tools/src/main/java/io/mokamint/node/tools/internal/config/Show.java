@@ -29,7 +29,7 @@ import picocli.CommandLine.Command;
 @Command(name = "show", description = "Show the configuration of a node.")
 public class Show extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			var config = remote.getConfig();
 
@@ -44,7 +44,7 @@ public class Show extends AbstractPublicRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		execute(this::body);
 	}
 }

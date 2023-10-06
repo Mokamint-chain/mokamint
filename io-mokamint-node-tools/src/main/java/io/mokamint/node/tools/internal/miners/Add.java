@@ -79,7 +79,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		if (ports == null)
 			ports = new int[0];
 

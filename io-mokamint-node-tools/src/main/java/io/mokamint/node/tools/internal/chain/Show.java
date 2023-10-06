@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
@@ -60,13 +61,19 @@ public class Show extends AbstractPublicRpcCommand {
          * @throws TimeoutException if some connection timed-out
          * @throws InterruptedException if some connection was interrupted while waiting
          * @throws ClosedNodeException if the remote node is closed
+         * @throws CommandException if something erroneous must be logged and the user must be informed
          */
-        private Block getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+        private Block getBlock(RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, CommandException {
         	if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
 
-				return remote.getBlock(Hex.fromHexString(hash)).orElseThrow(() -> new CommandException("The node does not contain any block with hash " + hash + "!"));
+				try {
+					return remote.getBlock(Hex.fromHexString(hash)).orElseThrow(() -> new CommandException("The node does not contain any block with hash " + hash + "!"));
+				}
+				catch (HexConversionException e) {
+					throw new CommandException("The hexadecimal hash is invalid!", e);
+				}
 			}
 			else if (head) {
 				var info = remote.getChainInfo();
@@ -135,7 +142,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
 		try {
 			print(remote, blockIdentifier.getBlock(remote));
 		}
@@ -172,7 +179,7 @@ public class Show extends AbstractPublicRpcCommand {
     }
 
     @Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		execute(this::body);
 	}
 }

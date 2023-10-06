@@ -21,7 +21,7 @@ import java.util.Objects;
 /**
  * An exception thrown during the execution of a CLI command.
  */
-public abstract class CommandExceptionImpl extends RuntimeException {
+public abstract class CommandExceptionImpl extends Exception {
 
 	private static final long serialVersionUID = 2066756038127592236L;
 

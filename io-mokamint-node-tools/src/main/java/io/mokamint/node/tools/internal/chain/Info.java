@@ -30,7 +30,7 @@ import picocli.CommandLine.Command;
 @Command(name = "info", description = "Show information about the chain of a node.")
 public class Info extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
 		try {
 			var info = remote.getChainInfo();
 
@@ -45,7 +45,7 @@ public class Info extends AbstractPublicRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		execute(this::body);
 	}
 }

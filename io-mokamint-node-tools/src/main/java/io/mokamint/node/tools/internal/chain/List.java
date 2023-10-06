@@ -55,7 +55,7 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
@@ -155,7 +155,7 @@ public class List extends AbstractPublicRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		execute(this::body);
 	}
 }

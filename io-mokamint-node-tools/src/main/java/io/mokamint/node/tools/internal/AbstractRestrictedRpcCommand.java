@@ -20,6 +20,7 @@ import java.net.URI;
 
 import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
+import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Option;
 
 /**
@@ -45,8 +46,9 @@ public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand {
 	 * the given command body.
 	 * 
 	 * @param what the body
+	 * @throws CommandException if something erroneous must be logged and the user must be informed
 	 */
-	protected void execute(RpcCommandBody<RemoteRestrictedNode> what) {
+	protected void execute(RpcCommandBody<RemoteRestrictedNode> what) throws CommandException {
 		execute(RemoteRestrictedNodes::of, what, restrictedUri);
 	}
 }

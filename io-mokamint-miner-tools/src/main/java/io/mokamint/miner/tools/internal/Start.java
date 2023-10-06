@@ -55,7 +55,7 @@ public class Start extends AbstractCommand {
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		loadPlotsAndStartMiningService(0, new ArrayList<>());
 	}
 
@@ -64,8 +64,9 @@ public class Start extends AbstractCommand {
 	 * 
 	 * @param pos the index to the next plot to load
 	 * @param plots the plots that are being loaded
+	 * @throws CommandException if something erroneous must be logged and the user must be informed
 	 */
-	private void loadPlotsAndStartMiningService(int pos, List<Plot> plots) {
+	private void loadPlotsAndStartMiningService(int pos, List<Plot> plots) throws CommandException {
 		if (pos < this.plots.length) {
 			System.out.print("Loading " + this.plots[pos] + "... ");
 			try (var plot = Plots.load(this.plots[pos])) {
@@ -97,7 +98,7 @@ public class Start extends AbstractCommand {
 		}
 	}
 
-	private void startMiningService(Miner miner) {
+	private void startMiningService(Miner miner) throws CommandException {
 		System.out.print("Connecting to " + uri + "... ");
 
 		try (var service = MinerServices.open(miner, uri)) {

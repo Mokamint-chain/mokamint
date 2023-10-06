@@ -80,7 +80,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		if (uuids == null)
 			uuids = new UUID[0];
 

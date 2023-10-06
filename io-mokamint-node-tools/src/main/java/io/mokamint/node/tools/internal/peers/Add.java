@@ -92,7 +92,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		if (uris == null)
 			uris = new URI[0];
 

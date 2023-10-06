@@ -66,7 +66,7 @@ public class Create extends AbstractCommand {
 	private String hashing;
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		try {
 			Files.deleteIfExists(path);
 		}
@@ -105,7 +105,7 @@ public class Create extends AbstractCommand {
 			System.out.print(percent + "% ");
 	}
 
-	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException {
+	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, CommandException {
 		var ed25519 = SignatureAlgorithms.ed25519();
 
 		return Prologs.of(
@@ -116,7 +116,7 @@ public class Create extends AbstractCommand {
 		);
 	}
 
-	private byte[] bytesFromBase58(String base58) {
+	private byte[] bytesFromBase58(String base58) throws CommandException {
 		try {
 			return Base58.decode(base58);
 		}

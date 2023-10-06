@@ -21,9 +21,11 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.Hex;
+import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
+import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -40,19 +42,36 @@ public class Show extends AbstractCommand {
 	private boolean json;
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		try (var plot = Plots.load(path)) {
 			var prolog = plot.getProlog();
-			System.out.println("* prolog:");
-			System.out.println("  * chain identifier: " + prolog.getChainId());
-			System.out.println("  * node's signature: " + prolog.getSignatureForBlocks());
-			System.out.println("  * node's public key: " + prolog.getPublicKeyForSigningBlocksBase58());
-			System.out.println("  * plot's signature: " + prolog.getSignatureForDeadlines());
-			System.out.println("  * plot's public key: " + prolog.getPublicKeyForSigningDeadlinesBase58());
-			System.out.println("  * extra: " + Hex.toHexString(prolog.getExtra()));
-			long start = plot.getStart();
-			System.out.println("* nonces: [" + start + "," + (start + plot.getLength()) + ")");
-			System.out.println("* hashing: " + plot.getHashing());
+
+			if (json) {
+				String result = "{\"prolog\":";
+
+				try {
+					result += new Prologs.Encoder().encode(prolog);
+				}
+				catch (EncodeException e) {
+					throw new CommandException("Cannot encode the prolog of the plot in JSON format!", e);
+				}
+
+				result +=",\"start\":" + plot.getStart() + ",\"length\":" + plot.getLength() + ",\"hashing\":\"" + plot.getHashing() + "\"";
+
+				result += "}";
+
+				System.out.println(result);
+			}
+			else {
+				System.out.println("* prolog:");
+				System.out.println("  * chain identifier: " + prolog.getChainId());
+				System.out.println("  * node's public key for signing blocks: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ")");
+				System.out.println("  * plot's public key for signing deadlines: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ")");
+				System.out.println("  * extra: " + Hex.toHexString(prolog.getExtra()));
+				long start = plot.getStart();
+				System.out.println("* nonces: [" + start + "," + (start + plot.getLength()) + ")");
+				System.out.println("* hashing for deadlines: " + plot.getHashing());
+			}
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The plot file uses an unknown cryptographic algorithm!", e);

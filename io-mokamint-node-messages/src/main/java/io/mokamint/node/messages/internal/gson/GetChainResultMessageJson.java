@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Chains;
 import io.mokamint.node.messages.GetChainResultMessages;
@@ -34,7 +35,7 @@ public abstract class GetChainResultMessageJson extends AbstractRpcMessageJsonRe
 	}
 
 	@Override
-	public GetChainResultMessage unmap() {
+	public GetChainResultMessage unmap() throws HexConversionException {
 		return GetChainResultMessages.of(chain.unmap(), getId());
 	}
 

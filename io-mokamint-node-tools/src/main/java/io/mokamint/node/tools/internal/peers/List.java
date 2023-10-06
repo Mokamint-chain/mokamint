@@ -52,7 +52,7 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static int MAX_PEER_LENGTH = 50;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			PeerInfo[] infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
 			if (infos.length == 0)
@@ -108,7 +108,7 @@ public class List extends AbstractPublicRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		execute(this::body);
 	}
 }

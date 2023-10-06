@@ -19,6 +19,9 @@ package io.mokamint.node.internal.gson;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Chains;
 import io.mokamint.node.api.Chain;
@@ -34,7 +37,9 @@ public abstract class ChainJson implements JsonRepresentation<Chain> {
 	}
 
 	@Override
-	public Chain unmap() {
-		return Chains.of(Stream.of(hashes).map(Hex::fromHexString));
+	public Chain unmap() throws HexConversionException {
+		return CheckSupplier.check(HexConversionException.class, () ->
+			Chains.of(Stream.of(hashes).map(UncheckFunction.uncheck(Hex::fromHexString)))
+		);
 	}
 }

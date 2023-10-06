@@ -36,7 +36,7 @@ public class Create extends AbstractCommand {
     private String password;
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		if (password == null)
 			password = askForPassword();
 

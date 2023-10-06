@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -63,7 +64,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	}
 
 	@Override
-	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
 		if (startDateTimeUTC == null)
 			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), Hex.fromHexString(signature));
 		else

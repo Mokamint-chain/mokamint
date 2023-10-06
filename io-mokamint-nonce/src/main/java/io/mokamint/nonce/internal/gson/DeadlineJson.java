@@ -21,6 +21,7 @@ import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -52,7 +53,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	}
 
 	@Override
-	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
 		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing));
 	}
 }

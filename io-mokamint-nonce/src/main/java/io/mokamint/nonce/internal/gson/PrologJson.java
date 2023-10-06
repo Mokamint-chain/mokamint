@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Prologs;
@@ -51,7 +52,7 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 	}
 
 	@Override
-	public Prolog unmap() throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public Prolog unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
 		return Prologs.of(chainId, SignatureAlgorithms.of(nodeSignatureName), nodePublicKey,
 			SignatureAlgorithms.of(plotSignatureName), plotPublicKey, Hex.fromHexString(extra));
 	}

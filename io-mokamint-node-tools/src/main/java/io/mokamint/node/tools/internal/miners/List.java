@@ -36,7 +36,7 @@ import picocli.CommandLine.Help.Ansi;
 @Command(name = "ls", description = "List the miners of a node.")
 public class List extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			MinerInfo[] infos = remote.getMinerInfos().sorted().toArray(MinerInfo[]::new);
 			if (infos.length == 0)
@@ -67,7 +67,7 @@ public class List extends AbstractPublicRpcCommand {
 	}
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		execute(this::body);
 	}
 }

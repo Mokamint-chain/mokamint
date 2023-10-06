@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.tools.internal;
 
+import java.util.concurrent.Callable;
+
 import io.mokamint.tools.CommandException;
 
 /**
  * Partial implementation of all commands of a Mokamint CLI tool.
  */
-public abstract class AbstractCommandImpl implements Runnable {
+public abstract class AbstractCommandImpl implements Callable<Void> {
 
 	/**
 	 * Builds the command.
@@ -29,9 +31,10 @@ public abstract class AbstractCommandImpl implements Runnable {
 	protected AbstractCommandImpl() {}
 
 	@Override
-	public final void run() {
+	public final Void call() throws CommandException {
 		try {
 			execute();
+			return null;
 		}
 		catch (CommandException e) {
 			throw e;
@@ -43,6 +46,8 @@ public abstract class AbstractCommandImpl implements Runnable {
 
 	/**
 	 * Executes the command.
+	 * 
+	 * @throws CommandException if something erroneous must be logged and the user must be informed
 	 */
-	protected abstract void execute();
+	protected abstract void execute() throws CommandException;
 }

@@ -25,4 +25,5 @@ module io.mokamint.plotter.tools {
 	requires io.mokamint.nonce;
 	requires io.mokamint.tools;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.websockets.beans;
 }

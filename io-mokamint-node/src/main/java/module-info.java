@@ -30,6 +30,7 @@ module io.mokamint.node {
 	requires io.mokamint.nonce;
 	requires io.hotmoka.marshalling;
 	requires io.hotmoka.annotations;
+	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
 	requires toml4j;

@@ -89,7 +89,7 @@ public class Start extends AbstractCommand {
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
 	@Override
-	protected void execute() {
+	protected void execute() throws CommandException {
 		if (broadcastInterval < 1000L) {
 			System.out.println(Ansi.AUTO.string("@|red broadcast-interval cannot be smaller than one second!|@"));
 			return;
@@ -125,7 +125,7 @@ public class Start extends AbstractCommand {
 		private final List<Plot> plots = new ArrayList<>();
 		private LocalNode node;
 
-		private Run() {
+		private Run() throws CommandException {
 			try {
 				this.keyPair = Entropies.load(key).keys(password, SignatureAlgorithms.ed25519());
 			}
@@ -156,8 +156,9 @@ public class Start extends AbstractCommand {
 		 * Loads the plots, start a local miner on them and run a node with that miner.
 		 * 
 		 * @param pos the index to the next plot to load
+		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
-		private void loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(int pos) {
+		private void loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(int pos) throws CommandException {
 			if (pos < Start.this.plots.length) {
 				System.out.print("Loading " + Start.this.plots[pos] + "... ");
 				try (var plot = Plots.load(Start.this.plots[pos])) {
@@ -180,7 +181,7 @@ public class Start extends AbstractCommand {
 				startNodeOpenLocalMinerAndPublishNodeServices();
 		}
 
-		private void startNodeOpenLocalMinerAndPublishNodeServices() {
+		private void startNodeOpenLocalMinerAndPublishNodeServices() throws CommandException {
 			try {
 				createWorkingDirectory();
 			}
@@ -233,7 +234,7 @@ public class Start extends AbstractCommand {
 			}
 		}
 
-		private void publishPublicAndRestrictedNodeServices(int pos) {
+		private void publishPublicAndRestrictedNodeServices(int pos) throws CommandException {
 			if (pos < publicPorts.length) {
 				System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
 				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().getWhisperingMemorySize(), Optional.ofNullable(uri))) {
@@ -264,7 +265,7 @@ public class Start extends AbstractCommand {
 				publishRestrictedNodeServices(0);
 		}
 
-		private void publishRestrictedNodeServices(int pos) {
+		private void publishRestrictedNodeServices(int pos) throws CommandException {
 			if (pos < restrictedPorts.length) {
 				System.out.print("Opening a restricted node service at port " + restrictedPorts[pos] + " of localhost... ");
 				try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
@@ -310,7 +311,7 @@ public class Start extends AbstractCommand {
 				Files.createDirectories(dir);
 		}
 
-		private void waitForKeyPress() {
+		private void waitForKeyPress() throws CommandException {
 			try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
 				System.out.println(Ansi.AUTO.string("@|green Press any key to stop the node.|@"));
 				reader.readLine();

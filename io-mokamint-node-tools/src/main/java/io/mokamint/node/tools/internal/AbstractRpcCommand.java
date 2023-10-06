@@ -65,8 +65,9 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 * @param supplier the supplier of the remote node
 	 * @param what the body
 	 * @param uri the uri where the remote service can be contacted
+	 * @throws CommandException if something erroneous must be logged and the user must be informed
 	 */
-	protected <N extends RemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri) {
+	protected <N extends RemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri) throws CommandException {
 		try (var remote = supplier.get(uri, timeout)) {
 			what.run(remote);
 		}
@@ -114,8 +115,9 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 		 * @throws InterruptedException if the command was interrupted while waiting
 		 * @throws ClosedNodeException if the remote node has been closed
 		 * @throws DatabaseException if the database of the node is corrupted
+		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
-		void run(N remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException;
+		void run(N remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException;
 	}
 
 	/**

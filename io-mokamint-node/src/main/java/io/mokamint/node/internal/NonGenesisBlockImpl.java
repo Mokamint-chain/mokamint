@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
@@ -312,39 +313,50 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	@Override
 	public String toString() {
 		var builder = new StringBuilder("Block:\n");
-		populate(builder);
+		populate(builder, Optional.empty());
+		populateWithDeadline(builder, Optional.empty());
 		
 		return builder.toString();
 	}
 
-	private void populate(StringBuilder builder) {
+	private void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForBlocks) {
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
 		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
 		builder.append("* acceleration: " + getAcceleration() + "\n");
-		builder.append("* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + "\n");
-		builder.append("* signature: " + Hex.toHexString(signature) + "\n");
+		builder.append("* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock));
+		if (hashingForBlocks.isPresent())
+			builder.append(" (" + hashingForBlocks.get() + ")");
+		builder.append("\n");
+		builder.append("* signature: " + Hex.toHexString(signature) + " (" + deadline.getProlog().getSignatureForBlocks() + ")\n");
+	}
+
+	private void populateWithDeadline(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations) {
+		var prolog = deadline.getProlog();
 		builder.append("* deadline:\n");
 		builder.append("  * prolog:\n");
-		var prolog = deadline.getProlog();
 		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
-		builder.append("    * node's public key: " + prolog.getPublicKeyForSigningBlocksBase58() + "\n");
-		builder.append("    * plot's public key: " + prolog.getPublicKeyForSigningDeadlinesBase58() + "\n");
+		builder.append("    * node's public key for signing blocks: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ")\n");
+		builder.append("    * plot's public key for signing deadlines: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ")\n");
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
 		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
-		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()) + "\n");
+		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()));
+		if (hashingForGenerations.isPresent())
+			builder.append(" (" + hashingForGenerations.get() + ")");
+		builder.append("\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
-		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + "\n");
+		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + deadline.getHashing() + ")\n");
 	}
 
 	@Override
 	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var builder = new StringBuilder("Block:\n");
+		var builder = new StringBuilder("Block with hash " + getHexHash(config.getHashingForBlocks()) + " (" + config.getHashingForBlocks() + "):\n");
 		builder.append("* creation date and time UTC: " + startDateTimeUTC.plus(totalWaitingTime, ChronoUnit.MILLIS) + "\n");
-		builder.append("* hash: " + getHexHash(config.getHashingForBlocks()) + "\n");
-		populate(builder);
-		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(config.getHashingForGenerations())));
+		populate(builder, Optional.of(config.getHashingForBlocks()));		
+		var hashingForGenerations = config.getHashingForGenerations();
+		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(hashingForGenerations)) + " (" + hashingForGenerations + ")\n");
+		populateWithDeadline(builder, Optional.of(config.getHashingForGenerations()));
 		return builder.toString();
 	}
 
