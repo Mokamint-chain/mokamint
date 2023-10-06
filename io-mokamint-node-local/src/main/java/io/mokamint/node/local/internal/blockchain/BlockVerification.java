@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal.blockchain;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Optional;
 
 import io.mokamint.node.api.Block;
@@ -180,6 +181,9 @@ public class BlockVerification {
 
 		if (block.getWeightedWaitingTime() != description.getWeightedWaitingTime())
 			throw new VerificationException("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + block.getWeightedWaitingTime() + ")");
+
+		if (!Arrays.equals(((NonGenesisBlock) block).getHashOfPreviousBlock(), description.getHashOfPreviousBlock()))
+			throw new VerificationException("Hash of previous block mismatch");
 	}
 
 	/**

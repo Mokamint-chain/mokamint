@@ -166,6 +166,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		Objects.requireNonNull(deadline, "deadline cannot be null");
 		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
 		Objects.requireNonNull(power, "power cannot be null");
+		Objects.requireNonNull(signature, "signature cannot be null");
 
 		if (height < 1)
 			throw new IllegalArgumentException("A non-genesis block must have positive height");
@@ -252,7 +253,8 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 			weightedWaitingTime == ngb.getWeightedWaitingTime() &&
 			acceleration.equals(ngb.getAcceleration()) &&
 			deadline.equals(ngb.getDeadline()) &&
-			Arrays.equals(hashOfPreviousBlock, ngb.getHashOfPreviousBlock());
+			Arrays.equals(hashOfPreviousBlock, ngb.getHashOfPreviousBlock()) &&
+			Arrays.equals(signature, ngb.getSignature());
 	}
 
 	@Override

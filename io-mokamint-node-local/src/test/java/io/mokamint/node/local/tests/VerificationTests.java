@@ -226,6 +226,22 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@DisplayName("if an added non-genesis block has a wrong signature, its creation fails")
+	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+		var config = mkConfig(dir);
+		var hashingForDeadlines = config.getHashingForDeadlines();
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
+
+		// we replace the correct signature with a fake one
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime() + 1, expected.getWeightedWaitingTime(), expected.getAcceleration(),
+			expected.getDeadline(), expected.getHashOfPreviousBlock(), new byte[] { 1 , 2 ,3 }));
+
+		assertTrue(e.getMessage().startsWith("The block's signature cannot be verified"));
+	}
+
+	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's scoop number, verification rejects it")
 	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
