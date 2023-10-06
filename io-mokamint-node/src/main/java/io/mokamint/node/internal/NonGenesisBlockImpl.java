@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -42,6 +43,7 @@ import io.mokamint.nonce.api.Deadline;
 /**
  * The implementation of a non-genesis block of the Mokamint blockchain.
  */
+@Immutable
 public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBlock {
 
 	/**
@@ -347,7 +349,23 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	public boolean matches(NonGenesisBlockDescription description) {
-		return description.equals(this);
+	public <E extends Exception> void matchesOrException(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E {
+		if (height != description.getHeight())
+			throw exceptionSupplier.apply("Height mismatch (expected " + description.getHeight() + " but found " + height + ")");
+
+		if (!acceleration.equals(description.getAcceleration()))
+			throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
+
+		if (!power.equals(description.getPower()))
+			throw exceptionSupplier.apply("Power mismatch (expected " + description.getPower() + " but found " + power + ")");
+
+		if (totalWaitingTime != description.getTotalWaitingTime())
+			throw exceptionSupplier.apply("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
+
+		if (weightedWaitingTime != description.getWeightedWaitingTime())
+			throw exceptionSupplier.apply("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
+
+		if (!Arrays.equals(hashOfPreviousBlock, description.getHashOfPreviousBlock()))
+			throw exceptionSupplier.apply("Hash of previous block mismatch");
 	}
 }

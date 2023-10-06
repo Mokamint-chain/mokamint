@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -32,6 +33,7 @@ import io.mokamint.node.api.GenesisBlock;
 /**
  * The implementation of a genesis block of a Mokamint blockchain.
  */
+@Immutable
 public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	private final LocalDateTime startDateTimeUTC;

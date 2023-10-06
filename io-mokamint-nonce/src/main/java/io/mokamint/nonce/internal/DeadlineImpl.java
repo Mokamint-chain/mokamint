@@ -21,6 +21,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -186,8 +187,15 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public boolean matches(DeadlineDescription description) {
-		return description.equals(this);
+	public <E extends Exception> void matchesOrException(DeadlineDescription description, Function<String, E> exceptionSupplier) throws E {
+		if (scoopNumber != description.getScoopNumber())
+			throw exceptionSupplier.apply("Scoop number mismatch (expected " + description.getScoopNumber() + " but found " + scoopNumber + ")");
+
+		if (!Arrays.equals(data, description.getData()))
+			throw exceptionSupplier.apply("Data mismatch");
+
+		if (!hashing.equals(description.getHashing()))
+			throw exceptionSupplier.apply("Hashing algorithm mismatch");
 	}
 
 	@Override

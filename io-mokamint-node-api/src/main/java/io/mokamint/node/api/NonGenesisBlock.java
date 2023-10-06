@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.function.Function;
+
 import io.hotmoka.annotations.Immutable;
 
 /**
@@ -25,12 +27,15 @@ import io.hotmoka.annotations.Immutable;
 public interface NonGenesisBlock extends NonGenesisBlockDescription, Block {
 
 	/**
-	 * Determines if this block matches the given description.
+	 * Checks if this block matches the given description.
+	 * If it doesn't, an exception is thrown by using the given supplier.
 	 * 
+	 * @param <E> the type of the thrown exception
 	 * @param description the description matched against this block
-	 * @return true if and only if that condition holds
+	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
+	 * @throws E if the match fails
 	 */
-	boolean matches(NonGenesisBlockDescription description);
+	<E extends Exception> void matchesOrException(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E;
 
 	/**
 	 * Yields the signature of this node, computed from its hash by the node

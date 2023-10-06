@@ -19,7 +19,6 @@ package io.mokamint.node.local.internal.blockchain;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Optional;
 
 import io.mokamint.node.api.Block;
@@ -82,10 +81,10 @@ public class BlockVerification {
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
 
-		if (block instanceof GenesisBlock)
-			verifyAsGenesis();
+		if (block instanceof NonGenesisBlock ngb)
+			verifyAsNonGenesis(ngb);
 		else
-			verifyAsNonGenesis();
+			verifyAsGenesis();
 	}
 
 	/**
@@ -106,16 +105,17 @@ public class BlockVerification {
 	 * It is guaranteed that the previous hash inside {@link #block} coincides with the hash
 	 * of {@link #previous} (hence this condition is not verified by this method).
 	 * 
+	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void verifyAsNonGenesis() throws VerificationException, DatabaseException, ClosedDatabaseException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
 		deadlineIsValid();
-		blockMatchesItsExpectedDescription();
+		blockMatchesItsExpectedDescription(block);
 	}
 
 	/**
@@ -155,35 +155,26 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineMatchesItsExpectedDescription() throws VerificationException {
-		if (!deadline.matches(previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines())))
-			throw new VerificationException("Deadline mismatch");
+		var description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
+		deadline.matchesOrException(description, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
+	}
+
+	private static String toLowerInitial(String message) {
+		if (message.isEmpty())
+			return message;
+		else
+			return Character.toLowerCase(message.charAt(0)) + message.substring(1);
 	}
 
 	/**
 	 * Checks if {@link #block} matches its expected description.
 	 * 
+	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if that condition in violated
 	 */
-	private void blockMatchesItsExpectedDescription() throws VerificationException {
+	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
-
-		if (block.getHeight() != description.getHeight())
-			throw new VerificationException("Height mismatch (expected " + description.getHeight() + " but found " + block.getHeight() + ")");
-
-		if (!block.getAcceleration().equals(description.getAcceleration()))
-			throw new VerificationException("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + block.getAcceleration() + ")");
-
-		if (!block.getPower().equals(description.getPower()))
-			throw new VerificationException("Power mismatch (expected " + description.getPower() + " but found " + block.getPower() + ")");
-
-		if (block.getTotalWaitingTime() != description.getTotalWaitingTime())
-			throw new VerificationException("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + block.getTotalWaitingTime() + ")");
-
-		if (block.getWeightedWaitingTime() != description.getWeightedWaitingTime())
-			throw new VerificationException("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + block.getWeightedWaitingTime() + ")");
-
-		if (!Arrays.equals(((NonGenesisBlock) block).getHashOfPreviousBlock(), description.getHashOfPreviousBlock()))
-			throw new VerificationException("Hash of previous block mismatch");
+		block.matchesOrException(description, VerificationException::new);
 	}
 
 	/**

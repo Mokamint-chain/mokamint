@@ -259,7 +259,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().startsWith("Deadline mismatch"));
+		assertTrue(e.getMessage().startsWith("Deadline mismatch: scoop number mismatch"));
 		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
@@ -284,7 +284,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().startsWith("Deadline mismatch"));
+		assertTrue(e.getMessage().startsWith("Deadline mismatch: data mismatch"));
 		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 
@@ -302,13 +302,13 @@ public class VerificationTests extends AbstractLoggedTests {
 		HashingAlgorithm sha256 = HashingAlgorithms.sha256();
 		HashingAlgorithm otherAlgorithm = deadline.getHashing().equals(sha256) ? HashingAlgorithms.shabal256() : sha256;
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-				deadline.getScoopNumber(), deadline.getData(), otherAlgorithm);
+			deadline.getScoopNumber(), deadline.getData(), otherAlgorithm);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+			modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-		assertTrue(e.getMessage().startsWith("Deadline mismatch"));
+		assertTrue(e.getMessage().startsWith("Deadline mismatch: hashing algorithm mismatch"));
 		assertBlockchainIsJustGenesis(blockchain, genesis, config);
 	}
 

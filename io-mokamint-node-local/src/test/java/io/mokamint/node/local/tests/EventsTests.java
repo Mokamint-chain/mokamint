@@ -125,7 +125,6 @@ public class EventsTests extends AbstractLoggedTests {
 				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
 				when(deadline.getValue()).thenReturn(deadlineValue);
 				when(deadline.getHashing()).thenReturn(description.getHashing());
-				when(deadline.matches(description)).thenReturn(true);
 
 				onDeadlineComputed.accept(deadline);
 			}

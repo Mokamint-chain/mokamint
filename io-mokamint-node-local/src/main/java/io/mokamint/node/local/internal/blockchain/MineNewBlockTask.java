@@ -349,20 +349,22 @@ public class MineNewBlockTask implements Task {
 
 			if (done)
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it arrived too late");
-			else if (!deadline.matches(description))
-				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not for the expected description");
-			else if (!currentDeadline.isWorseThan(deadline))
-				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
 			else {
 				try {
-					node.check(deadline);
+					deadline.matchesOrException(description, IllegalDeadlineException::new);
 
-					if (currentDeadline.updateIfWorseThan(deadline)) {
-						LOGGER.info(logPrefix + "improved deadline to " + deadline);
-						setWaker(deadline);
-					}
-					else
+					if (!currentDeadline.isWorseThan(deadline))
 						LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
+					else {
+						node.check(deadline);
+
+						if (currentDeadline.updateIfWorseThan(deadline)) {
+							LOGGER.info(logPrefix + "improved deadline to " + deadline);
+							setWaker(deadline);
+						}
+						else
+							LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
+					}
 				}
 				catch (IllegalDeadlineException e) {
 					LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());

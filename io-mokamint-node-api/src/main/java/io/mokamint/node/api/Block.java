@@ -59,7 +59,7 @@ public interface Block extends BlockDescription, Marshallable {
 	DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
 
 	/**
-	 * Yields the description of the next block, assuming that the latter has the given deadline.
+	 * Yields the description of the next block, assuming that it has the given deadline.
 	 * 
 	 * @param deadline the deadline of the next block
 	 * @param targetBlockCreationTime the target time interval, in milliseconds, between the creation of a block
