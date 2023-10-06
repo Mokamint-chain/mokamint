@@ -156,7 +156,7 @@ public class BlockVerification {
 	 */
 	private void deadlineMatchesItsExpectedDescription() throws VerificationException {
 		var description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
-		deadline.matchesOrException(description, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
+		deadline.matchesOrThrow(description, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
 	}
 
 	private static String toLowerInitial(String message) {
@@ -174,7 +174,7 @@ public class BlockVerification {
 	 */
 	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
-		block.matchesOrException(description, VerificationException::new);
+		block.matchesOrThrow(description, VerificationException::new);
 	}
 
 	/**

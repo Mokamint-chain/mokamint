@@ -97,6 +97,16 @@ public interface Prolog extends Marshallable {
 	@Override
 	String toString();
 
+	/**
+	 * A sanitized version of {@link #toString()}. It imposed a maximal length to the data reported
+	 * in the resulting string. This is important if the prolog comes from the network,
+	 * since it might contain arbitrarily long strings that might, for instance, pollute the logs.
+	 * For typical prologs, this usually coincides with {@link #toString()}.
+	 * 
+	 * @return the sanitized string
+	 */
+	String toStringSanitized();
+
 	@Override
 	boolean equals(Object other);
 

@@ -351,7 +351,7 @@ public class MineNewBlockTask implements Task {
 				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it arrived too late");
 			else {
 				try {
-					deadline.matchesOrException(description, IllegalDeadlineException::new);
+					deadline.matchesOrThrow(description, IllegalDeadlineException::new);
 
 					if (!currentDeadline.isWorseThan(deadline))
 						LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");

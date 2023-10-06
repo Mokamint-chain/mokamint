@@ -187,7 +187,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public <E extends Exception> void matchesOrException(DeadlineDescription description, Function<String, E> exceptionSupplier) throws E {
+	public <E extends Exception> void matchesOrThrow(DeadlineDescription description, Function<String, E> exceptionSupplier) throws E {
 		if (scoopNumber != description.getScoopNumber())
 			throw exceptionSupplier.apply("Scoop number mismatch (expected " + description.getScoopNumber() + " but found " + scoopNumber + ")");
 
@@ -206,6 +206,15 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public String toString() {
 		return "prolog: { " + prolog + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data)
+			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing;
+	}
+
+	@Override
+	public String toStringSanitized() {
+		var trimmedData = new byte[Math.min(256, data.length)];
+		System.arraycopy(data, 0, trimmedData, 0, trimmedData.length);
+		// no risk with the value, since its length is bound to the length of the hashing algorithm
+		return "prolog: { " + prolog.toStringSanitized() + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(trimmedData)
 			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing;
 	}
 

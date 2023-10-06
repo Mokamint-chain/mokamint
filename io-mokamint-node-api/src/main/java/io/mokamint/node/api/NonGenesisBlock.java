@@ -35,7 +35,7 @@ public interface NonGenesisBlock extends NonGenesisBlockDescription, Block {
 	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
 	 * @throws E if the match fails
 	 */
-	<E extends Exception> void matchesOrException(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E;
+	<E extends Exception> void matchesOrThrow(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E;
 
 	/**
 	 * Yields the signature of this node, computed from its hash by the node

@@ -242,6 +242,27 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
+	public String toStringSanitized() {
+		String chainIdTrimmed = chainId;
+		if (chainIdTrimmed.length() > 64)
+			chainIdTrimmed = chainIdTrimmed.substring(0, 64);
+
+		String publicKeyForSigningBlocksBase58Trimmed = publicKeyForSigningBlocksBase58;
+		if (publicKeyForSigningBlocksBase58Trimmed.length() > 64)
+			publicKeyForSigningBlocksBase58Trimmed = publicKeyForSigningBlocksBase58Trimmed.substring(0, 64);
+
+		String publicKeyForSigningDeadlinesBase58Trimmed = publicKeyForSigningDeadlinesBase58;
+		if (publicKeyForSigningDeadlinesBase58Trimmed.length() > 64)
+			publicKeyForSigningDeadlinesBase58Trimmed = publicKeyForSigningDeadlinesBase58Trimmed.substring(0, 64);
+
+		var trimmedExtra = new byte[Math.min(256, extra.length)];
+		System.arraycopy(extra, 0, trimmedExtra, 0, trimmedExtra.length);
+
+		return "chainId: " + chainIdTrimmed + ", nodeSignatureName: " + signatureForBlocks + ", nodePublicKey: " + publicKeyForSigningBlocksBase58Trimmed +
+			", plotSignatureName: " + signatureForDeadlines + ", plotPublicKey: " + publicKeyForSigningDeadlinesBase58Trimmed + ", extra: " + Hex.toHexString(trimmedExtra);
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		if (other instanceof Prolog p) {
 			return publicKeyForSigningDeadlines.equals(p.getPublicKeyForSigningDeadlines()) && publicKeyForSigningBlocks.equals(p.getPublicKeyForSigningBlocks())

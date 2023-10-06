@@ -349,7 +349,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	public <E extends Exception> void matchesOrException(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E {
+	public <E extends Exception> void matchesOrThrow(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E {
 		if (height != description.getHeight())
 			throw exceptionSupplier.apply("Height mismatch (expected " + description.getHeight() + " but found " + height + ")");
 
