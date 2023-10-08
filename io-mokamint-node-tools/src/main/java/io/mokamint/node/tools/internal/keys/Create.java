@@ -19,6 +19,7 @@ package io.mokamint.node.tools.internal.keys;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.util.Arrays;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Entropies;
@@ -33,7 +34,7 @@ import picocli.CommandLine.Option;
 public class Create extends AbstractCommand {
 
 	@Option(names = "--password", description = "the password that will be needed later to use the key pair", interactive = true, defaultValue = "")
-    private String password;
+    private char[] password;
 
 	@Option(names = "--signature", description = "the signature to use for the key pair (ed25519, sha256dsa, qtesla1, qtesla3)",
 			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
@@ -41,9 +42,11 @@ public class Create extends AbstractCommand {
 
 	@Override
 	protected void execute() throws CommandException {
+		String passwordAsString;
 		try {
 			var entropy = Entropies.random();
-			KeyPair keys = entropy.keys(password, signature);
+			passwordAsString = new String(password);
+			KeyPair keys = entropy.keys(passwordAsString, signature);
 			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
 			System.out.println("A new key pair has been created.");
 			if (publicKeyBase58.length() > 100) {
@@ -61,6 +64,10 @@ public class Create extends AbstractCommand {
 		}
 		catch (InvalidKeyException e) {
 			throw new CommandException("The new key pair is invalid!", e);
+		}
+		finally {
+			passwordAsString = null;
+			Arrays.fill(password, ' ');
 		}
 	}
 }

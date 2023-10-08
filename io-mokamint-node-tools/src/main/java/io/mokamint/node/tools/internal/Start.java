@@ -28,13 +28,13 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Entropies;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.ClosedNodeException;
@@ -59,7 +59,7 @@ import picocli.CommandLine.Parameters;
 @Command(name = "start", description = "Start a new node.")
 public class Start extends AbstractCommand {
 
-	@Parameters(index = "0", description = "the file containing the key of the node, used to sign the blocks that it mines")
+	@Parameters(index = "0", description = "the file containing the key pair of the node, used to sign the blocks that it mines")
 	private Path key;
 
 	@Parameters(index = "1..", description = "plot files that will be used for local mining")
@@ -83,8 +83,8 @@ public class Start extends AbstractCommand {
 	@Option(names = "--restricted-port", description = "network ports where the restricted API of the node will be published")
 	private int[] restrictedPorts;
 
-	@Option(names = "--password", description = "the password of the key of the node; if not specified, it will be asked interactively")
-    private String password;
+	@Option(names = "--password", description = "the password of the key pair of the node", interactive = true, defaultValue = "")
+    private char[] password;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
@@ -104,15 +104,7 @@ public class Start extends AbstractCommand {
 		if (restrictedPorts == null)
 			restrictedPorts = new int[0];
 
-		if (password == null)
-			password = askForPassword();
-
 		new Run();
-	}
-
-	private String askForPassword() {
-		System.out.print("Please insert the password of the new key (press ENTER to use the empty string): ");
-		return new String(System.console().readPassword());
 	}
 
 	private LocalNodeConfig getConfig() throws FileNotFoundException, NoSuchAlgorithmException, URISyntaxException {
@@ -127,26 +119,32 @@ public class Start extends AbstractCommand {
 
 		private Run() throws CommandException {
 			try {
-				this.keyPair = Entropies.load(key).keys(password, SignatureAlgorithms.ed25519());
+				this.config = getConfig();
+			}
+			catch (NoSuchAlgorithmException e) {
+				Arrays.fill(password, ' ');
+				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to an unknown hashing algorithm!", e);
+			}
+			catch (FileNotFoundException e) {
+				Arrays.fill(password, ' ');
+				throw new CommandException("The configuration file \"" + Start.this.config + "\" does not exist!", e);
+			}
+			catch (URISyntaxException e) {
+				Arrays.fill(password, ' ');
+				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to a URI with wrong syntax!", e);
+			}
+
+			String passwordAsString;
+			try {
+				passwordAsString = new String(password);
+				this.keyPair = Entropies.load(key).keys(passwordAsString, config.getSignatureForBlocks());
 			}
 			catch (IOException e) {
 				throw new CommandException("Cannot read the pem file " + key + "!", e);
 			}
-			catch (NoSuchAlgorithmException e) {
-				throw new CommandException("The ed25519 signature algorithm is not available!", e);
-			}
-
-			try {
-				this.config = getConfig();
-			}
-			catch (NoSuchAlgorithmException e) {
-				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to an unknown hashing algorithm!", e);
-			}
-			catch (FileNotFoundException e) {
-				throw new CommandException("The configuration file \"" + Start.this.config + "\" does not exist!", e);
-			}
-			catch (URISyntaxException e) {
-				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to a URI with wrong syntax!", e);
+			finally {
+				passwordAsString = null;
+				Arrays.fill(password, ' ');
 			}
 
 			loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(0);
