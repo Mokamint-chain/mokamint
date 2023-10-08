@@ -19,11 +19,11 @@ package io.mokamint.node.tools.internal.keys;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Entropies;
-import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.mokamint.node.tools.internal.SignatureOptionConverter;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
@@ -32,22 +32,27 @@ import picocli.CommandLine.Option;
 @Command(name = "create", description = "Create a new key pair")
 public class Create extends AbstractCommand {
 
-	@Option(names = { "--password" }, description = "the password that will be required later to use the key; if not specified, it will be asked interactively")
+	@Option(names = "--password", description = "the password that will be needed later to use the key pair", interactive = true, defaultValue = "")
     private String password;
+
+	@Option(names = "--signature", description = "the signature to use for the key pair (ed25519, sha256dsa, qtesla1, qtesla3)",
+			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
+	private SignatureAlgorithm signature;
 
 	@Override
 	protected void execute() throws CommandException {
-		if (password == null)
-			password = askForPassword();
-
 		try {
-			var signatureAlgorithmOfNewAccount = SignatureAlgorithms.ed25519();
 			var entropy = Entropies.random();
-			KeyPair keys = entropy.keys(password, signatureAlgorithmOfNewAccount);
-			byte[] publicKeyBytes = signatureAlgorithmOfNewAccount.encodingOf(keys.getPublic());
-			var publicKeyBase58 = Base58.encode(publicKeyBytes);
+			KeyPair keys = entropy.keys(password, signature);
+			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
 			System.out.println("A new key pair has been created.");
-			System.out.println("Its public key Base58 is " + publicKeyBase58 + ".");
+			if (publicKeyBase58.length() > 100) {
+				publicKeyBase58 = publicKeyBase58.substring(0, 100);
+				System.out.println("Its public key Base58 is " + publicKeyBase58 + "...");
+			}
+			else
+				System.out.println("Its public key Base58 is " + publicKeyBase58 + ".");
+
 			var fileName = entropy.dump(publicKeyBase58);
 			System.out.println("The key pair has been saved as \"" + fileName + "\".");
 		}
@@ -57,13 +62,5 @@ public class Create extends AbstractCommand {
 		catch (InvalidKeyException e) {
 			throw new CommandException("The new key pair is invalid!", e);
 		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The ed25519 signature algorithm is not available!", e);
-		}
-	}
-
-	private String askForPassword() {
-		System.out.print("Please insert the password of the new key (press ENTER to use the empty string): ");
-		return new String(System.console().readPassword());
 	}
 }

@@ -90,8 +90,10 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		var port2 = 8032;
 		var port3 = 8034;
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
+		var uri2 = new URI("ws://localhost:" + port2);
+		var peer2 = Peers.of(uri2);
+		var uri3 = new URI("ws://localhost:" + port3);
+		var peer3 = Peers.of(uri3);
 		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
@@ -112,7 +114,8 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		}
 
 		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, nodeKey, app, false);  var node3 = LocalNodes.of(config3, nodeKey, app, false);
-			 var service2 = PublicNodeServices.open(node2, port2); var service3 = PublicNodeServices.open(node3, port3)) {
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000L, Optional.of(uri2));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(uri3))) {
 
 			// node1 has peer2 and peer3 as peers
 			node1.add(peer2);
