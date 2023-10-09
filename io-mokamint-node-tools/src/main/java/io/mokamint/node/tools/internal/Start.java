@@ -62,6 +62,9 @@ public class Start extends AbstractCommand {
 	@Parameters(index = "0", description = "the file containing the key pair of the node, used to sign the blocks that it mines")
 	private Path key;
 
+	@Option(names = "--password", description = "the password of the key pair of the node", interactive = true, defaultValue = "")
+	private char[] password;
+
 	@Parameters(index = "1..", description = "plot files that will be used for local mining")
 	private Path[] plots;
 
@@ -82,9 +85,6 @@ public class Start extends AbstractCommand {
 
 	@Option(names = "--restricted-port", description = "network ports where the restricted API of the node will be published")
 	private int[] restrictedPorts;
-
-	@Option(names = "--password", description = "the password of the key pair of the node", interactive = true, defaultValue = "")
-    private char[] password;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
@@ -211,7 +211,7 @@ public class Start extends AbstractCommand {
 					}
 					catch (ClosedNodeException e) {
 						// unexpected: who could have closed the node?
-						throw new CommandException("The node has been unexpectedly closed", e);
+						throw new CommandException("The node has been unexpectedly closed!", e);
 					}
 				}
 

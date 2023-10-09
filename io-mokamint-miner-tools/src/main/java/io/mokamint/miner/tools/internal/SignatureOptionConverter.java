@@ -14,17 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements a command-line tool for working with Mokamint miners.
- */
-module io.mokamint.miner.tools {
-	exports io.mokamint.miner.tools;
-    opens io.mokamint.miner.tools.internal to info.picocli; // for injecting CLI options
+package io.mokamint.miner.tools.internal;
 
-    requires io.mokamint.miner.local;
-    requires io.mokamint.miner.service;
-    requires io.mokamint.plotter;
-    requires io.mokamint.tools;
-    requires io.hotmoka.crypto;
-	requires java.logging;
+import java.security.NoSuchAlgorithmException;
+
+import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
+import picocli.CommandLine.ITypeConverter;
+
+/**
+ * A converter of a string option into the signature algorithm with that name.
+ */
+public class SignatureOptionConverter implements ITypeConverter<SignatureAlgorithm> {
+
+	@Override
+	public SignatureAlgorithm convert(String value) throws NoSuchAlgorithmException {
+		return SignatureAlgorithms.of(value);
+	}
 }

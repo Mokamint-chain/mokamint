@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools.internal;
 
 import io.mokamint.node.tools.internal.keys.Create;
+import io.mokamint.node.tools.internal.keys.Show;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
@@ -24,7 +25,8 @@ import picocli.CommandLine.HelpCommand;
 	description = "Manage the cryptographical keys of a node.",
 	subcommands = {
 		Create.class,
-		HelpCommand.class
+		HelpCommand.class,
+		Show.class
 	})
 public class Keys {
 }

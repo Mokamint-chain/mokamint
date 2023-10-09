@@ -21,12 +21,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Path;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.crypto.Entropies;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
@@ -46,7 +50,17 @@ import picocli.CommandLine.Parameters;
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
-	@Parameters(description = "plot files that will be used for mining" , arity = "1..*")
+	@Parameters(index = "0", description = "the file containing the key pair of the miner, used to sign the deadlines that it finds")
+	private Path key;
+
+	@Option(names = "--password", description = "the password of the key pair of the miner", interactive = true, defaultValue = "")
+	private char[] password;
+
+	@Option(names = "--signature", description = "the signature to use for the key pair (ed25519, sha256dsa, qtesla1, qtesla3)",
+			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
+	private SignatureAlgorithm signature;
+
+	@Parameters(description = "plot files that will be used for mining", arity = "1..*")
 	private Path[] plots;
 
 	@Option(names = "--uri", description = "the address of the remote mining endpoint", defaultValue = "ws://localhost:8025")
@@ -56,9 +70,25 @@ public class Start extends AbstractCommand {
 
 	@Override
 	protected void execute() throws CommandException {
+		var keyPair = getPlotsKeyPair();
 		loadPlotsAndStartMiningService(0, new ArrayList<>());
 	}
 
+	private KeyPair getPlotsKeyPair() throws CommandException {
+		String passwordAsString;
+		try {
+			var entropy = Entropies.load(key);
+			passwordAsString = new String(password);
+			return entropy.keys(passwordAsString, signature);
+		}
+		catch (IOException e) {
+			throw new CommandException("The key pair could not be loaded from file " + key + "!", e);
+		}
+		finally {
+			passwordAsString = null;
+			Arrays.fill(password, ' ');
+		}
+	}
 	/**
 	 * Loads the given plots, start a local miner on them and run a mining service.
 	 * 

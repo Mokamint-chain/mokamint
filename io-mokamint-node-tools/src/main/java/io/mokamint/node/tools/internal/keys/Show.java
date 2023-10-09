@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools.internal.keys;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -31,43 +32,53 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "create", description = "Create a new key pair")
-public class Create extends AbstractCommand {
+@Command(name = "show", description = "Show a key pair")
+public class Show extends AbstractCommand {
 
-	@Parameters(index = "0", description = "the name of the file where the key pair will be stored")
-	private String name;
+	@Parameters(index = "0", description = "the file containing the key pair")
+	private Path key;
 
-	@Option(names = "--password", description = "the password that will be needed later to use the key pair", interactive = true, defaultValue = "")
+	@Option(names = "--password", description = "the password of the key pair", interactive = true, defaultValue = "")
     private char[] password;
 
 	@Option(names = "--signature", description = "the signature to use for the key pair (ed25519, sha256dsa, qtesla1, qtesla3)",
 			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
 	private SignatureAlgorithm signature;
 
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
+	@Option(names = "--full", description = "report keys in full, also if they are very long", defaultValue = "false")
+	private boolean full;
+
 	@Override
 	protected void execute() throws CommandException {
 		String passwordAsString;
 		try {
-			var entropy = Entropies.random();
+			var entropy = Entropies.load(key);
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
-			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
-			System.out.println("A new key pair has been created.");
-			if (publicKeyBase58.length() > 100) {
-				publicKeyBase58 = publicKeyBase58.substring(0, 100);
-				System.out.println("Its public key Base58 is " + publicKeyBase58 + "...");
-			}
-			else
-				System.out.println("Its public key Base58 is " + publicKeyBase58 + ".");
 
-			var fileName = entropy.dump(name);
-			System.out.println("The key pair has been saved as \"" + fileName + "\".");
+			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
+			if (!full && publicKeyBase58.length() > 100)
+				publicKeyBase58 = publicKeyBase58.substring(0, 100) + "...";
+			
+			var privateKeyBase58 = Base58.encode(signature.encodingOf(keys.getPrivate()));
+			if (!full && privateKeyBase58.length() > 100)
+				privateKeyBase58 = privateKeyBase58.substring(0, 100) + "...";
+
+			if (json)
+				System.out.println("{\"publicKeyBase58\": \"" + publicKeyBase58 + "\", \"privateKeyBase58\": \"" + privateKeyBase58 + "\"}");
+			else {
+				System.out.println("Public key (base58): " + publicKeyBase58);
+				System.out.println("Private key (base58): " + privateKeyBase58);
+			}
 		}
 		catch (IOException e) {
-			throw new CommandException("The key pair could not be dumped into a file!", e);
+			throw new CommandException("The key pair could not be loaded from file " + key + "!", e);
 		}
 		catch (InvalidKeyException e) {
-			throw new CommandException("The new key pair is invalid!", e);
+			throw new CommandException("The key pair is invalid!", e);
 		}
 		finally {
 			passwordAsString = null;
