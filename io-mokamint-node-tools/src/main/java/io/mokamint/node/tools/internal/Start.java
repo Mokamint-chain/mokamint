@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -53,6 +54,7 @@ import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
+import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -60,15 +62,46 @@ import picocli.CommandLine.Parameters;
 public class Start extends AbstractCommand {
 
 	@Parameters(index = "0", description = "the file containing the key pair of the node, used to sign the blocks that it mines")
-	private Path key;
+	private Path keys;
 
-	@Option(names = "--password", description = "the password of the key pair of the node", interactive = true, defaultValue = "")
+	private static class PlotWithKeys {
+
+		private PlotWithKeys(String s) {
+			int separator = s.indexOf(':');
+			if (separator <= 0 || separator == s.length() - 1)
+				throw new IllegalArgumentException("Plot files and their key pair file must be separated by a colon!");
+
+			this.plot = Paths.get(s.substring(0, separator));
+			this.keys = Paths.get(s.substring(separator + 1));
+		}
+
+		//@Parameters(index = "0", description = "plot file that will be used for local mining")
+		private final Path plot;
+
+		//@Parameters(index = "1", description = "key pair for signing the deadlines of the plot file")
+		private final Path keys;
+
+		@Override
+		public String toString() {
+			return plot + " " + keys;
+		}
+	}
+
+	private static class PlotWithKeysConverter implements ITypeConverter<PlotWithKeys> {
+
+		@Override
+		public PlotWithKeys convert(String value) {
+			return new PlotWithKeys(value);
+		}
+	}
+
+	@Parameters(index = "1..", description = "pairs of plot files and associated key pairs (separated by a colon)", converter = PlotWithKeysConverter.class)
+	private PlotWithKeys[] plotsWithKeys;
+
+    @Option(names = "--password", description = "the password of the key pair of the node", interactive = true, defaultValue = "")
 	private char[] password;
 
-	@Parameters(index = "1..", description = "plot files that will be used for local mining")
-	private Path[] plots;
-
-	@Option(names = "--config", description = "the toml config file of the node; if missing, defaults are used")
+    @Option(names = "--config", description = "the toml config file of the node; if missing, defaults are used")
 	private Path config;
 
 	@Option(names = "--broadcast-interval", description = "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers", defaultValue = "1800000")
@@ -95,8 +128,8 @@ public class Start extends AbstractCommand {
 			return;
 		}
 
-		if (plots == null)
-			plots = new Path[0];
+		if (plotsWithKeys == null)
+			plotsWithKeys = new PlotWithKeys[0];
 
 		if (publicPorts == null)
 			publicPorts = new int[0];
@@ -137,10 +170,10 @@ public class Start extends AbstractCommand {
 			String passwordAsString;
 			try {
 				passwordAsString = new String(password);
-				this.keyPair = Entropies.load(key).keys(passwordAsString, config.getSignatureForBlocks());
+				this.keyPair = Entropies.load(keys).keys(passwordAsString, config.getSignatureForBlocks());
 			}
 			catch (IOException e) {
-				throw new CommandException("Cannot read the pem file " + key + "!", e);
+				throw new CommandException("Cannot read the pem file " + keys + "!", e);
 			}
 			finally {
 				passwordAsString = null;
@@ -157,21 +190,27 @@ public class Start extends AbstractCommand {
 		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
 		private void loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(int pos) throws CommandException {
-			if (pos < Start.this.plots.length) {
-				System.out.print("Loading " + Start.this.plots[pos] + "... ");
-				try (var plot = Plots.load(Start.this.plots[pos])) {
+			if (pos < plotsWithKeys.length) {
+				Path plotPath = plotsWithKeys[pos].plot;
+				System.out.print("Loading " + plotPath + "... ");
+				try (var plot = Plots.load(plotPath)) {
+					var prolog = plot.getProlog();
+					if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
+						throw new IllegalArgumentException("Plot file " + plotPath + " uses the wrong signature algorithm for deadlines! (expected "
+							+ config.getSignatureForDeadlines() + " but found " + prolog.getSignatureForDeadlines() + ")");
+
 					System.out.println("done.");
 					plots.add(plot);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + Start.this.plots[pos] + "\"", e);
+					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + Start.this.plotsWithKeys[pos] + "\"", e);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-					LOGGER.log(Level.SEVERE, "the plot file \"" + Start.this.plots[pos] + "\" uses an unknown hashing algorithm", e);
+					LOGGER.log(Level.SEVERE, "the plot file \"" + Start.this.plotsWithKeys[pos] + "\" uses an unknown hashing algorithm", e);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 			}
@@ -203,7 +242,7 @@ public class Start extends AbstractCommand {
 					else
 						System.out.print("Starting a local miner with " + plots.size() + " plots... ");
 
-					try {
+					/*try {
 						if (node.add(LocalMiners.of(plots.toArray(Plot[]::new))))
 							System.out.println("done.");
 						else
@@ -212,7 +251,7 @@ public class Start extends AbstractCommand {
 					catch (ClosedNodeException e) {
 						// unexpected: who could have closed the node?
 						throw new CommandException("The node has been unexpectedly closed!", e);
-					}
+					}*/
 				}
 
 				publishPublicAndRestrictedNodeServices(0);

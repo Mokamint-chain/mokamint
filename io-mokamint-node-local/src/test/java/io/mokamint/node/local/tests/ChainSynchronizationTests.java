@@ -47,6 +47,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
@@ -78,7 +79,15 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	 */
 	private static Plot plot;
 
-	private static KeyPair nodeKey;
+	/**
+	 * The keys if the node.
+	 */
+	private static KeyPair nodeKeys;
+
+	/**
+	 * The keys of the plot file.
+	 */
+	private static KeyPair plotKeys;
 
 	/**
 	 * The number of blocks that must be mined.
@@ -95,8 +104,9 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
 		var ed25519 = SignatureAlgorithms.ed25519();
-		nodeKey = ed25519.getKeyPair();
-		var prolog = Prologs.of("octopus", ed25519, nodeKey.getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		nodeKeys = ed25519.getKeyPair();
+		plotKeys = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 
@@ -128,10 +138,10 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	private class MiningNode extends LocalNodeImpl {
 
 		private MiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-			super(config, nodeKey, app, true);
+			super(config, nodeKeys, app, true);
 
 			try {
-				add(LocalMiners.of(plot));
+				add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
 			}
 			catch (ClosedNodeException e) {
 				// impossible, the node is not closed at this stage!
@@ -152,7 +162,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	private class NonMiningNode extends LocalNodeImpl {
 
 		private NonMiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-			super(config, nodeKey, app, false); // <--- does not start mining by itself
+			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 
 		@Override

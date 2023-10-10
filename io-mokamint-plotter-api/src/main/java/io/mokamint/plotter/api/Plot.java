@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.plotter.api;
 
 import java.io.IOException;
+import java.security.PrivateKey;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -71,10 +72,11 @@ public interface Plot extends AutoCloseable {
 	 * with the smallest value.
 	 * 
 	 * @param description the description of the requested deadline
+	 * @param privateKey the private key used to sign the deadline
 	 * @return the smallest deadline
 	 * @throws IOException if the plot file cannot be read
 	 * @throws IllegalArgumentException if the description is for a deadline using a different
 	 *                                  hashing algorithm than that used to create this plot file
 	 */
-	Deadline getSmallestDeadline(DeadlineDescription description) throws IOException;
+	Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException;
 }

@@ -26,6 +26,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -270,11 +271,11 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(DeadlineDescription description) throws IOException {
+	public Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException {
 		if (!description.getHashing().equals(hashing))
 			throw new IllegalArgumentException("The deadline description and the plot file use different hashing algorithms");
 
-		return new SmallestDeadlineFinder(description).deadline;
+		return new SmallestDeadlineFinder(description, privateKey).deadline;
 	}
 
 	/**
@@ -297,11 +298,13 @@ public class PlotImpl implements Plot {
 		private final long groupSize = length * scoopSize;
 		private final int metadataSize = getMetadataSize();
 		private final Hasher<byte[]> hasher;
+		private final PrivateKey privateKey;
 
-		private SmallestDeadlineFinder(DeadlineDescription description) throws IOException {
+		private SmallestDeadlineFinder(DeadlineDescription description, PrivateKey privateKey) throws IOException {
 			this.scoopNumber = description.getScoopNumber();
 			this.data = description.getData();
 			this.hasher = hashing.getHasher(Function.identity());
+			this.privateKey = privateKey;
 			this.deadline = CheckSupplier.check(IOException.class, () ->
 				LongStream.range(start, start + length)
 					.mapToObj(Long::valueOf)

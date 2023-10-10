@@ -44,6 +44,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
@@ -73,26 +74,26 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	/**
 	 * The key of the first node.
 	 */
-	private static KeyPair nodeKey1;
+	private static KeyPair node1Keys;
 
 	/**
 	 * The key of the second node.
 	 */
-	private static KeyPair nodeKey2;
+	private static KeyPair node2Keys;
 
 	/**
 	 * The key of the miner.
 	 */
-	private static KeyPair minerKey;
+	private static KeyPair plotKeys;
 
 	@BeforeAll
 	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
 		var id25519 = SignatureAlgorithms.ed25519();
-		nodeKey1 = id25519.getKeyPair();
-		nodeKey2 = id25519.getKeyPair();
-		minerKey = id25519.getKeyPair();
+		node1Keys = id25519.getKeyPair();
+		node2Keys = id25519.getKeyPair();
+		plotKeys = id25519.getKeyPair();
 	}
 
 	@Test
@@ -110,7 +111,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var miningPort = 8025;
 
 		// the prolog of the plot file must be compatible with node1 (same key and same chain id)
-		var prolog = Prologs.of(config1.getChainId(), SignatureAlgorithms.ed25519(), nodeKey1.getPublic(), SignatureAlgorithms.ed25519(), minerKey.getPublic(), new byte[0]);
+		var prolog = Prologs.of(config1.getChainId(), SignatureAlgorithms.ed25519(), node1Keys.getPublic(), SignatureAlgorithms.ed25519(), plotKeys.getPublic(), new byte[0]);
 
 		var node1NoMinersAvailable = new Semaphore(0);
 		var minerClosing = new AtomicBoolean(false);
@@ -120,7 +121,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		class MyLocalNode1 extends LocalNodeImpl {
 
 			private MyLocalNode1() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config1, nodeKey1, app, true);
+				super(config1, node1Keys, app, true);
 			}
 
 			@Override
@@ -133,7 +134,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		class MyLocalNode2 extends LocalNodeImpl {
 
 			private MyLocalNode2() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(config2, nodeKey2, app, false);
+				super(config2, node2Keys, app, false);
 			}
 
 			@Override
@@ -149,7 +150,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			 var service1 = PublicNodeServices.open(node1, port1, 10000, node1.getConfig().getWhisperingMemorySize(), Optional.of(peer1.getURI()));
              var service2 = PublicNodeServices.open(node2, port2, 10000, node2.getConfig().getWhisperingMemorySize(), Optional.of(peer2.getURI()));
 			 var plot = Plots.create(chain1.resolve("small.plot"), prolog, 1000, 500, config1.getHashingForDeadlines(), __ -> {});
-			 var miner = LocalMiners.of(plot)) {
+			 var miner = LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys))) {
 
 			// we connect node1 and node2 with each other
 			assertTrue(node1.add(peer2));

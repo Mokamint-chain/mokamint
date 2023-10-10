@@ -70,9 +70,14 @@ public class EventsTests extends AbstractLoggedTests {
 	private static Application app;
 
 	/**
-	 * The key of the node.
+	 * The keys of the node.
 	 */
-	private static KeyPair nodeKey;
+	private static KeyPair nodeKeys;
+
+	/**
+	 * The keys of the plot.
+	 */
+	private static KeyPair plotKeys;
 
 	/**
 	 * The prolog of the deadlines.
@@ -88,9 +93,10 @@ public class EventsTests extends AbstractLoggedTests {
 	public static void beforeAll(@TempDir Path dir) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 		app = mock(Application.class);
 		when(app.prologExtraIsValid(any())).thenReturn(true);
-		var id25519 = SignatureAlgorithms.ed25519();
-		nodeKey = id25519.getKeyPair();
-		prolog = Prologs.of("octopus", id25519, nodeKey.getPublic(), id25519, id25519.getKeyPair().getPublic(), new byte[0]);
+		var ed25519 = SignatureAlgorithms.ed25519();
+		nodeKeys = ed25519.getKeyPair();
+		plotKeys = ed25519.getKeyPair();
+		prolog = Prologs.of("octopus", ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 100, mkConfig(dir).getHashingForDeadlines(), __ -> {});
 	}
 
@@ -141,7 +147,7 @@ public class EventsTests extends AbstractLoggedTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true);
+				super(mkConfig(dir), nodeKeys, app, true);
 
 				try {
 					add(myMiner);
@@ -178,7 +184,7 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				try {
-					var deadline = plot.getSmallestDeadline(description);
+					var deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
 					var illegalDeadline = Deadlines.of(
 							deadline.getProlog(),
 							Math.abs(deadline.getProgressive() + 1), deadline.getValue(),
@@ -201,7 +207,7 @@ public class EventsTests extends AbstractLoggedTests {
 		class MyLocalNode extends LocalNodeImpl {
 	
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true);
+				super(mkConfig(dir), nodeKeys, app, true);
 
 				try {
 					add(myMiner);
@@ -233,7 +239,7 @@ public class EventsTests extends AbstractLoggedTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
-				super(mkConfig(dir), nodeKey, app, true);
+				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
 			@Override
@@ -259,7 +265,7 @@ public class EventsTests extends AbstractLoggedTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(config, nodeKey, app, true);
+				super(config, nodeKeys, app, true);
 
 				try {
 					add(mock(Miner.class));
@@ -294,7 +300,7 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 				try {
-					var deadline = plot.getSmallestDeadline(description);
+					var deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
 					var prolog = deadline.getProlog();
 					var illegalDeadline = Deadlines.of(
 							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
@@ -319,7 +325,7 @@ public class EventsTests extends AbstractLoggedTests {
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
-				super(config, nodeKey, app, true);
+				super(config, nodeKeys, app, true);
 
 				try {
 					add(myMiner);

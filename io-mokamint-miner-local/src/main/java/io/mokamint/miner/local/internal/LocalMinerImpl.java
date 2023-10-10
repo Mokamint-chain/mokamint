@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.local.PlotAndKeyPair;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.plotter.api.Plot;
@@ -41,9 +42,10 @@ public class LocalMinerImpl implements Miner {
 	private final UUID uuid = UUID.randomUUID();
 
 	/**
-	 * The plot files used by the miner.
+	 * The plot files used by the miner, with their associated key pair for signing
+	 * the deadlines derived from them.
 	 */
-	private final Plot[] plots;
+	private final PlotAndKeyPair[] plotsAndKeyPairs;
 
 	/**
 	 * The prefix reported in the log messages.
@@ -55,13 +57,14 @@ public class LocalMinerImpl implements Miner {
 	/**
 	 * Builds a local miner.
 	 * 
-	 * @param plots the plot files used for mining. This cannot be empty
+	 * @param plotsAndKeyPairs the plot files used for mining and their associated key for signing the
+	 *                         deadlines generated from them; this cannot be empty
 	 */
-	public LocalMinerImpl(Plot... plots) {
-		if (plots.length < 1)
+	public LocalMinerImpl(PlotAndKeyPair... plotsAndKeyPairs) {
+		if (plotsAndKeyPairs.length < 1)
 			throw new IllegalArgumentException("A local miner needs at least one plot file");
 
-		this.plots = plots;
+		this.plotsAndKeyPairs = plotsAndKeyPairs;
 	}
 
 	@Override
@@ -73,9 +76,9 @@ public class LocalMinerImpl implements Miner {
 	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info(logPrefix + "received deadline request: " + description);
 
-		Stream.of(plots)
-			.filter(plot -> plot.getHashing().equals(description.getHashing()))
-			.map(plot -> getSmallestDeadline(plot, description))
+		Stream.of(plotsAndKeyPairs)
+			.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(description.getHashing()))
+			.map(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, description))
 			.flatMap(Optional::stream)
 			.min(Deadline::compareByValue)
 			.ifPresent(onDeadlineComputed::accept);
@@ -85,13 +88,13 @@ public class LocalMinerImpl implements Miner {
 	 * Yields the smallest deadline from the given plot file. If the plot file
 	 * cannot be read, an empty optional is returned.
 	 * 
-	 * @param plot the plot file
+	 * @param plotAndKeyPair the plot file with its associated key pair for signing deadlines
 	 * @param description the description of the deadline
 	 * @return the deadline, if any
 	 */
-	private Optional<Deadline> getSmallestDeadline(Plot plot, DeadlineDescription description) {
+	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, DeadlineDescription description) {
 		try {
-			return Optional.of(plot.getSmallestDeadline(description));
+			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(description, plotAndKeyPair.getKeyPair().getPrivate()));
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot access a plot file", e);
@@ -105,8 +108,8 @@ public class LocalMinerImpl implements Miner {
 
 	@Override
 	public String toString() {
-		long nonces = Stream.of(plots).mapToLong(Plot::getLength).sum();
-		String howManyPlots = plots.length == 1 ? "1 plot" : (plots.length + " plots");
+		long nonces = Stream.of(plotsAndKeyPairs).map(PlotAndKeyPair::getPlot).mapToLong(Plot::getLength).sum();
+		String howManyPlots = plotsAndKeyPairs.length == 1 ? "1 plot" : (plotsAndKeyPairs.length + " plots");
 		String howManyNonces = nonces == 1 ? "1 nonce" : (nonces + " nonces");
 		
 		return "a local miner with " + howManyPlots + ", with up to " + howManyNonces;

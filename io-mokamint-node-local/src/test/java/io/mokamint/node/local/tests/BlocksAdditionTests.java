@@ -79,6 +79,11 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	private static PrivateKey privateKey;
 
 	/**
+	 * The private key used to sign the deadlines.
+	 */
+	private static PrivateKey plotPrivateKey;
+
+	/**
 	 * The plots used for creating the deadlines.
 	 */
 	private static Plot plot1;
@@ -91,9 +96,12 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		var hashing = config.getHashingForDeadlines();
 		var signature = config.getSignatureForBlocks();
 		var keyPair = signature.getKeyPair();
+		var plotKeyPair = signature.getKeyPair();
 
 		privateKey = keyPair.getPrivate();
-		PROLOG = Prologs.of("octopus", signature, keyPair.getPublic(), signature, signature.getKeyPair().getPublic(), new byte[0]);
+		plotPrivateKey = plotKeyPair.getPrivate();
+
+		PROLOG = Prologs.of("octopus", signature, keyPair.getPublic(), signature, plotKeyPair.getPublic(), new byte[0]);
 		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
 		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
 		plot3 = Plots.create(plotDir.resolve("plot3.plot"), PROLOG, 15000L, 256L, hashing, __ -> {});
@@ -411,7 +419,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 
 	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException {
 		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
-		var deadline = plot.getSmallestDeadline(nextDeadlineDescription);
+		var deadline = plot.getSmallestDeadline(nextDeadlineDescription, plotPrivateKey);
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 		return Blocks.of(description.getHeight(), description.getPower(), description.getTotalWaitingTime(),
 			description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock(), privateKey);

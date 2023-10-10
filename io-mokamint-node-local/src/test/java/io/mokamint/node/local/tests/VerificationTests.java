@@ -77,7 +77,12 @@ public class VerificationTests extends AbstractLoggedTests {
 	/**
 	 * The private key used to sign the blocks.
 	 */
-	private static PrivateKey privateKey;
+	private static PrivateKey nodePrivateKey;
+
+	/**
+	 * The private key used to sign the deadlines.
+	 */
+	private static PrivateKey plotPrivateKey;
 
 	/**
 	 * The prolog of the deadlines.
@@ -89,9 +94,12 @@ public class VerificationTests extends AbstractLoggedTests {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var signature = config.getSignatureForBlocks();
 		var keyPair = signature.getKeyPair();
+		var plotKeys = signature.getKeyPair();
 
-		privateKey = keyPair.getPrivate();
-		prolog = Prologs.of("octopus", signature, keyPair.getPublic(), signature, signature.getKeyPair().getPublic(), new byte[0]);
+		nodePrivateKey = keyPair.getPrivate();
+		plotPrivateKey = plotKeys.getPrivate();
+
+		prolog = Prologs.of("octopus", signature, keyPair.getPublic(), signature, plotKeys.getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
@@ -119,7 +127,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			value[pos] = (byte) pos;
 		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
 		byte[] previous = genesis.getHash(hashingForBlocks);
-		var block = Blocks.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous, privateKey);
+		var block = Blocks.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous, nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -152,12 +160,12 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected block hash
 		var block = Blocks.of(expected.getHeight() + 1, expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				expected.getDeadline(), expected.getHashOfPreviousBlock(), privateKey);
+				expected.getDeadline(), expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -172,12 +180,12 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected acceleration
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration().add(BigInteger.ONE),
-				expected.getDeadline(), expected.getHashOfPreviousBlock(), privateKey);
+				expected.getDeadline(), expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -192,12 +200,12 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected power
 		var block = Blocks.of(expected.getHeight(), expected.getPower().add(BigInteger.ONE), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				expected.getDeadline(), expected.getHashOfPreviousBlock(), privateKey);
+				expected.getDeadline(), expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -212,12 +220,12 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected total waiting time
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime() + 1, expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				expected.getDeadline(), expected.getHashOfPreviousBlock(), privateKey);
+				expected.getDeadline(), expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -231,7 +239,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var config = mkConfig(dir);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the correct signature with a fake one
@@ -248,14 +256,14 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected deadline
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
 				(deadline.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+				modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -270,7 +278,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected deadline
@@ -280,7 +288,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
 				deadline.getScoopNumber(), modifiedData, deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+				modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -295,7 +303,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the expected deadline
@@ -304,7 +312,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
 			deadline.getScoopNumber(), deadline.getData(), otherAlgorithm);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-			modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -319,7 +327,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we create a different prolog
@@ -328,7 +336,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
 			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-			modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -343,7 +351,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we create a different prolog
@@ -372,7 +380,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we create a different prolog
@@ -385,7 +393,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
 			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-			modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -402,11 +410,11 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config, application);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expectedDescription = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 		var expected = Blocks.of(expectedDescription.getHeight(), expectedDescription.getPower(), expectedDescription.getTotalWaitingTime(),
 			expectedDescription.getWeightedWaitingTime(), expectedDescription.getAcceleration(), expectedDescription.getDeadline(), expectedDescription.getHashOfPreviousBlock(),
-			privateKey);
+			nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(expected));
@@ -421,14 +429,14 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we make the deadline invalid by changing its progressive
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive() + 1, deadline.getValue(),
 				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+				modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -443,7 +451,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE);
-		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines));
+		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we make the deadline invalid by changing its value (it is not empty since it is a hash)
@@ -452,7 +460,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), value,
 			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-			modifiedDeadline, expected.getHashOfPreviousBlock(), privateKey);
+			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
 		assertTrue(blockchain.add(genesis));
 		VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));

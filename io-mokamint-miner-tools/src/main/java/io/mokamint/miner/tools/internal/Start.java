@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.miner.tools.internal;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -33,6 +34,8 @@ import io.hotmoka.crypto.Entropies;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.miner.local.PlotAndKeyPair;
+import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.plotter.Plots;
@@ -40,6 +43,7 @@ import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -50,18 +54,28 @@ import picocli.CommandLine.Parameters;
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
-	@Parameters(index = "0", description = "the file containing the key pair of the miner, used to sign the deadlines that it finds")
-	private Path key;
+	/**
+	 * The args required for each plot file added to the miner.
+	 */
+	private static class PlotArgs {
 
-	@Option(names = "--password", description = "the password of the key pair of the miner", interactive = true, defaultValue = "")
-	private char[] password;
+		@Parameters(index = "0", description = "the file containing the plot")
+		private Path plot;
 
-	@Option(names = "--signature", description = "the signature to use for the key pair (ed25519, sha256dsa, qtesla1, qtesla3)",
-			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
-	private SignatureAlgorithm signature;
+		@Parameters(index = "1", description = "the file containing the key pair of the plot")
+		private Path keyPair;
 
-	@Parameters(description = "plot files that will be used for mining", arity = "1..*")
-	private Path[] plots;
+		@Option(names = "--password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
+		private char[] password;
+
+		@Override
+		public String toString() {
+			return plot + "+" + keyPair + " (" + new String(password) + ")";
+		}
+	}
+
+	@ArgGroup(exclusive = false, multiplicity = "1..*")
+	private PlotArgs[] plots;
 
 	@Option(names = "--uri", description = "the address of the remote mining endpoint", defaultValue = "ws://localhost:8025")
 	private URI uri;
@@ -70,97 +84,118 @@ public class Start extends AbstractCommand {
 
 	@Override
 	protected void execute() throws CommandException {
-		var keyPair = getPlotsKeyPair();
-		loadPlotsAndStartMiningService(0, new ArrayList<>());
+		new Run();
 	}
 
-	private KeyPair getPlotsKeyPair() throws CommandException {
-		String passwordAsString;
-		try {
-			var entropy = Entropies.load(key);
-			passwordAsString = new String(password);
-			return entropy.keys(passwordAsString, signature);
+	private class Run {
+		private final List<PlotAndKeyPair> plotsAndKeyPairs = new ArrayList<>();
+
+		private Run() throws CommandException {
+			System.out.println(Arrays.toString(plots));
+			loadPlotsAndStartMiningService(0);
 		}
-		catch (IOException e) {
-			throw new CommandException("The key pair could not be loaded from file " + key + "!", e);
+
+		private KeyPair getPlotsKeyPair(Path keyPair, char[] password, SignatureAlgorithm signature) throws CommandException {
+			String passwordAsString;
+			try {
+				var entropy = Entropies.load(keyPair);
+				passwordAsString = new String(password);
+				return entropy.keys(passwordAsString, signature);
+			}
+			catch (FileNotFoundException e) {
+				throw new CommandException("File " + keyPair + " cannot be found!", e);
+			}
+			catch (IOException e) {
+				throw new CommandException("The key pair could not be loaded from file " + keyPair + "!", e);
+			}
+			finally {
+				passwordAsString = null;
+				Arrays.fill(password, ' ');
+			}
 		}
-		finally {
-			passwordAsString = null;
-			Arrays.fill(password, ' ');
+
+		/**
+		 * Loads the plot files, start a local miner on them and run a mining service.
+		 * 
+		 * @param pos the index to the next plot to load
+		 * @throws CommandException if something erroneous must be logged and the user must be informed
+		 */
+		private void loadPlotsAndStartMiningService(int pos) throws CommandException {
+			if (pos < plots.length) {
+				System.out.print("Loading " + plots[pos].plot + "... ");
+				try (var plot = Plots.load(plots[pos].plot)) {
+					var prolog = plot.getProlog();
+					var keyPair = getPlotsKeyPair(plots[pos].keyPair, plots[pos].password, prolog.getSignatureForDeadlines());
+					if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic()))
+						throw new IllegalArgumentException("Plot file " + plots[pos].plot + " uses a wrong public key for signing deadlines!");
+
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+					plotsAndKeyPairs.add(PlotsAndKeyPairs.of(plot, keyPair));
+					loadPlotsAndStartMiningService(pos + 1);
+				}
+				catch (IllegalArgumentException e) {
+					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
+					LOGGER.log(Level.SEVERE, "plot prolog mismatch", e);
+					loadPlotsAndStartMiningService(pos + 1);
+				}
+				catch (IOException e) {
+					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
+					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plots[pos] + "\"", e);
+					loadPlotsAndStartMiningService(pos + 1);
+				}
+				catch (NoSuchAlgorithmException e) {
+					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
+					LOGGER.log(Level.SEVERE, "the plot file \"" + plots[pos] + "\" uses an unknown hashing algorithm", e);
+					loadPlotsAndStartMiningService(pos + 1);
+				}
+			}
+			else if (plotsAndKeyPairs.isEmpty()) {
+				throw new CommandException("No plot file could be loaded!");
+			}
+			else {
+				try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+					startMiningService(miner);
+				}
+				catch (IOException e) {
+					throw new CommandException("Failed to close the local miner", e);
+				}
+			}
 		}
-	}
-	/**
-	 * Loads the given plots, start a local miner on them and run a mining service.
-	 * 
-	 * @param pos the index to the next plot to load
-	 * @param plots the plots that are being loaded
-	 * @throws CommandException if something erroneous must be logged and the user must be informed
-	 */
-	private void loadPlotsAndStartMiningService(int pos, List<Plot> plots) throws CommandException {
-		if (pos < this.plots.length) {
-			System.out.print("Loading " + this.plots[pos] + "... ");
-			try (var plot = Plots.load(this.plots[pos])) {
+
+		private void startMiningService(Miner miner) throws CommandException {
+			System.out.print("Connecting to " + uri + "... ");
+		
+			try (var service = MinerServices.open(miner, uri)) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-				plots.add(plot);
-				loadPlotsAndStartMiningService(pos + 1, plots);
+				new Thread(() -> closeServiceIfKeyPressed(service)).start();
+				System.out.println("Service terminated: " + service.waitUntilDisconnected());
+			}
+			catch (DeploymentException | IOException e) {
+				throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
+			}
+			catch (InterruptedException e) {
+				// unexpected: who could interrupt this process?
+				throw new CommandException("Unexpected interruption", e);
+			}
+		}
+
+		private void closeServiceIfKeyPressed(MinerService service) {
+			try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
+				System.out.println(Ansi.AUTO.string("@|green Press any key to stop the miner.|@"));
+				reader.readLine();
 			}
 			catch (IOException e) {
-				System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
-				LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + this.plots[pos] + "\"", e);
-				loadPlotsAndStartMiningService(pos + 1, plots);
+				System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
+				LOGGER.log(Level.SEVERE, "cannot access the standard input", e);
 			}
-			catch (NoSuchAlgorithmException e) {
-				System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-				LOGGER.log(Level.SEVERE, "the plot file \"" + this.plots[pos] + "\" uses an unknown hashing algorithm", e);
-				loadPlotsAndStartMiningService(pos + 1, plots);
-			}
-		}
-		else if (plots.isEmpty()) {
-			throw new CommandException("No plot file could be loaded!");
-		}
-		else {
-			try (var miner = LocalMiners.of(plots.toArray(Plot[]::new))) {
-				startMiningService(miner);
+		
+			try {
+				service.close(); // this will unlock the waitUntilDisconnected() above
 			}
 			catch (IOException e) {
-				throw new CommandException("Failed to close the local miner", e);
+				System.out.println(Ansi.AUTO.string("@|red Cannot close the service!|@"));
+				LOGGER.log(Level.SEVERE, "cannot close the service", e);
 			}
-		}
-	}
-
-	private void startMiningService(Miner miner) throws CommandException {
-		System.out.print("Connecting to " + uri + "... ");
-
-		try (var service = MinerServices.open(miner, uri)) {
-			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-			new Thread(() -> closeServiceIfKeyPressed(service)).start();
-			System.out.println("Service terminated: " + service.waitUntilDisconnected());
-		}
-		catch (DeploymentException | IOException e) {
-			throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
-		}
-		catch (InterruptedException e) {
-			// unexpected: who could interrupt this process?
-			throw new CommandException("Unexpected interruption", e);
-		}
-	}
-
-	private void closeServiceIfKeyPressed(MinerService service) {
-		try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-			System.out.println(Ansi.AUTO.string("@|green Press any key to stop the miner.|@"));
-			reader.readLine();
-		}
-		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
-			LOGGER.log(Level.SEVERE, "cannot access the standard input", e);
-		}
-
-		try {
-			service.close(); // this will unlock the waitUntilDisconnected() above
-		}
-		catch (IOException e) {
-			System.out.println(Ansi.AUTO.string("@|red Cannot close the service!|@"));
-			LOGGER.log(Level.SEVERE, "cannot close the service", e);
 		}
 	}
 }

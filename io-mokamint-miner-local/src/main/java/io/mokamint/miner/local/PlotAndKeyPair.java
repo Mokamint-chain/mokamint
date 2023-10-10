@@ -14,26 +14,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * 
+ */
+
 package io.mokamint.miner.local;
 
-import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.local.internal.LocalMinerImpl;
+import java.security.KeyPair;
+
+import io.mokamint.plotter.api.Plot;
 
 /**
- * A provider of miners that work on the local machine.
+ * A plot file and the key pair that allows one to sign the deadlines
+ * generated from that plot file. The public key in the key pair coincides
+ * with the public key for signing deadlines in the prolog of the plot file.
  */
-public abstract class LocalMiners {
-
-	private LocalMiners() {}
+public interface PlotAndKeyPair {
 
 	/**
-	 * Yields a new local miner.
+	 * Yields the plot file.
 	 * 
-	 * @param plotsAndKeyPairs the plot files used for mining and their associated key for signing the
-	 *                         deadlines generated from them; this cannot be empty
-	 * @return the new local miner
+	 * @return the plot file
 	 */
-	public static Miner of(PlotAndKeyPair... plotsAndKeyPairs) {
-		return new LocalMinerImpl(plotsAndKeyPairs);
-	}
+	Plot getPlot();
+
+	/**
+	 * Yields the key pair.
+	 * 
+	 * @return the key pair
+	 */
+	KeyPair getKeyPair();
 }

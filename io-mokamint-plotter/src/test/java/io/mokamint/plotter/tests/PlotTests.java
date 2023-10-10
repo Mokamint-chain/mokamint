@@ -28,7 +28,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.Nonces;
@@ -42,13 +41,14 @@ public class PlotTests extends AbstractLoggedTests {
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
 	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;
-		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
+		var hashing = HashingAlgorithms.shabal256();
 		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
-			Deadline deadline1 = plot.getSmallestDeadline(description);
+			Deadline deadline1 = plot.getSmallestDeadline(description, plotKeyPair.getPrivate());
 			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description);
 			Assertions.assertEquals(deadline1, deadline2);
 		}
