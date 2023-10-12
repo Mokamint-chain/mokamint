@@ -39,7 +39,6 @@ import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
@@ -59,7 +58,7 @@ public class Start extends AbstractCommand {
 	 */
 	private static class PlotArgs {
 
-		@Parameters(index = "0", description = "the file containing the plot")
+		@Parameters(index = "0", description = "the file containing a plot")
 		private Path plot;
 
 		@Parameters(index = "1", description = "the file containing the key pair of the plot")
@@ -75,7 +74,7 @@ public class Start extends AbstractCommand {
 	}
 
 	@ArgGroup(exclusive = false, multiplicity = "1..*")
-	private PlotArgs[] plots;
+	private PlotArgs[] plotArgs;
 
 	@Option(names = "--uri", description = "the address of the remote mining endpoint", defaultValue = "ws://localhost:8025")
 	private URI uri;
@@ -91,7 +90,7 @@ public class Start extends AbstractCommand {
 		private final List<PlotAndKeyPair> plotsAndKeyPairs = new ArrayList<>();
 
 		private Run() throws CommandException {
-			System.out.println(Arrays.toString(plots));
+			System.out.println(Arrays.toString(plotArgs));
 			loadPlotsAndStartMiningService(0);
 		}
 
@@ -121,31 +120,31 @@ public class Start extends AbstractCommand {
 		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
 		private void loadPlotsAndStartMiningService(int pos) throws CommandException {
-			if (pos < plots.length) {
-				System.out.print("Loading " + plots[pos].plot + "... ");
-				try (var plot = Plots.load(plots[pos].plot)) {
+			if (pos < plotArgs.length) {
+				var plotArg = plotArgs[pos];
+				System.out.print("Loading " + plotArg.plot + "... ");
+				try (var plot = Plots.load(plotArg.plot)) {
 					var prolog = plot.getProlog();
-					var keyPair = getPlotsKeyPair(plots[pos].keyPair, plots[pos].password, prolog.getSignatureForDeadlines());
-					if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic()))
-						throw new IllegalArgumentException("Plot file " + plots[pos].plot + " uses a wrong public key for signing deadlines!");
-
-					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-					plotsAndKeyPairs.add(PlotsAndKeyPairs.of(plot, keyPair));
-					loadPlotsAndStartMiningService(pos + 1);
-				}
-				catch (IllegalArgumentException e) {
-					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
-					LOGGER.log(Level.SEVERE, "plot prolog mismatch", e);
+					var keyPair = getPlotsKeyPair(plotArg.keyPair, plotArg.password, prolog.getSignatureForDeadlines());
+					if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic())) {
+						System.out.println(Ansi.AUTO.string("@|red Illegal public key for signing the deadlines of plot file " + plotArg.plot + "!|@"));
+						LOGGER.log(Level.SEVERE, "illegal public key for plot " + plotArg.plot);
+					}
+					else {
+						System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+						plotsAndKeyPairs.add(PlotsAndKeyPairs.of(plot, keyPair));
+					}
+					
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plots[pos] + "\"", e);
+					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArgs[pos] + "\"", e);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-					LOGGER.log(Level.SEVERE, "the plot file \"" + plots[pos] + "\" uses an unknown hashing algorithm", e);
+					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArgs[pos] + "\" uses an unknown hashing algorithm", e);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 			}

@@ -24,7 +24,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -36,8 +35,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Entropies;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.miner.local.PlotAndKeyPair;
+import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -48,55 +50,43 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.api.Plot;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
-import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "start", description = "Start a new node.")
 public class Start extends AbstractCommand {
 
-	@Parameters(index = "0", description = "the file containing the key pair of the node, used to sign the blocks that it mines")
-	private Path keys;
+	/**
+	 * The args required for each plot file added to the miner.
+	 */
+	private static class PlotArgs {
 
-	private static class PlotWithKeys {
+		@Parameters(index = "0", description = "the file containing a plot")
+		private Path plot;
 
-		private PlotWithKeys(String s) {
-			int separator = s.indexOf(':');
-			if (separator <= 0 || separator == s.length() - 1)
-				throw new IllegalArgumentException("Plot files and their key pair file must be separated by a colon!");
+		@Parameters(index = "1", description = "the file containing the key pair of the plot")
+		private Path keyPair;
 
-			this.plot = Paths.get(s.substring(0, separator));
-			this.keys = Paths.get(s.substring(separator + 1));
-		}
-
-		//@Parameters(index = "0", description = "plot file that will be used for local mining")
-		private final Path plot;
-
-		//@Parameters(index = "1", description = "key pair for signing the deadlines of the plot file")
-		private final Path keys;
+		@Option(names = "--password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
+		private char[] password;
 
 		@Override
 		public String toString() {
-			return plot + " " + keys;
+			return plot + "+" + keyPair + " (" + new String(password) + ")";
 		}
 	}
 
-	private static class PlotWithKeysConverter implements ITypeConverter<PlotWithKeys> {
+	@ArgGroup(exclusive = false, multiplicity = "0..*")
+	private PlotArgs[] plotArgs;
 
-		@Override
-		public PlotWithKeys convert(String value) {
-			return new PlotWithKeys(value);
-		}
-	}
-
-	@Parameters(index = "1..", description = "pairs of plot files and associated key pairs (separated by a colon)", converter = PlotWithKeysConverter.class)
-	private PlotWithKeys[] plotsWithKeys;
+	@Parameters(index = "0", description = "the file containing the key pair of the node, used to sign the blocks that it mines")
+	private Path keys;
 
     @Option(names = "--password", description = "the password of the key pair of the node", interactive = true, defaultValue = "")
 	private char[] password;
@@ -128,8 +118,8 @@ public class Start extends AbstractCommand {
 			return;
 		}
 
-		if (plotsWithKeys == null)
-			plotsWithKeys = new PlotWithKeys[0];
+		if (plotArgs == null)
+			plotArgs = new PlotArgs[0];
 
 		if (publicPorts == null)
 			publicPorts = new int[0];
@@ -147,7 +137,7 @@ public class Start extends AbstractCommand {
 	private class Run {
 		private final KeyPair keyPair;
 		private final LocalNodeConfig config;
-		private final List<Plot> plots = new ArrayList<>();
+		private final List<PlotAndKeyPair> plotsAndKeyPairs = new ArrayList<>();
 		private LocalNode node;
 
 		private Run() throws CommandException {
@@ -173,7 +163,7 @@ public class Start extends AbstractCommand {
 				this.keyPair = Entropies.load(keys).keys(passwordAsString, config.getSignatureForBlocks());
 			}
 			catch (IOException e) {
-				throw new CommandException("Cannot read the pem file " + keys + "!", e);
+				throw new CommandException("Cannot read the key pair from file " + keys + "!", e);
 			}
 			finally {
 				passwordAsString = null;
@@ -190,32 +180,55 @@ public class Start extends AbstractCommand {
 		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
 		private void loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(int pos) throws CommandException {
-			if (pos < plotsWithKeys.length) {
-				Path plotPath = plotsWithKeys[pos].plot;
-				System.out.print("Loading " + plotPath + "... ");
-				try (var plot = Plots.load(plotPath)) {
+			if (pos < plotArgs.length) {
+				var plotArg = plotArgs[pos];
+				System.out.print("Loading " + plotArg.plot + "... ");
+				try (var plot = Plots.load(plotArg.plot)) {
 					var prolog = plot.getProlog();
-					if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
-						throw new IllegalArgumentException("Plot file " + plotPath + " uses the wrong signature algorithm for deadlines! (expected "
-							+ config.getSignatureForDeadlines() + " but found " + prolog.getSignatureForDeadlines() + ")");
-
-					System.out.println("done.");
-					plots.add(plot);
+					var keyPair = getPlotsKeyPair(plotArg.keyPair, plotArg.password, prolog.getSignatureForDeadlines());
+					if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic())) {
+						System.out.println(Ansi.AUTO.string("@|red Illegal public key for signing the deadlines of plot file " + plotArg.plot + "!|@"));
+						LOGGER.log(Level.SEVERE, "illegal public key for plot " + plotArg.plot);
+					}
+					else {
+						System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+						plotsAndKeyPairs.add(PlotsAndKeyPairs.of(plot, keyPair));
+					}
+					
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + Start.this.plotsWithKeys[pos] + "\"", e);
+					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArg.plot + "\"", e);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-					LOGGER.log(Level.SEVERE, "the plot file \"" + Start.this.plotsWithKeys[pos] + "\" uses an unknown hashing algorithm", e);
+					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArg.plot + "\" uses an unknown hashing algorithm", e);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 			}
 			else
 				startNodeOpenLocalMinerAndPublishNodeServices();
+		}
+
+		private KeyPair getPlotsKeyPair(Path keyPair, char[] password, SignatureAlgorithm signature) throws CommandException {
+			String passwordAsString;
+			try {
+				var entropy = Entropies.load(keyPair);
+				passwordAsString = new String(password);
+				return entropy.keys(passwordAsString, signature);
+			}
+			catch (FileNotFoundException e) {
+				throw new CommandException("File " + keyPair + " cannot be found!", e);
+			}
+			catch (IOException e) {
+				throw new CommandException("The key pair could not be loaded from file " + keyPair + "!", e);
+			}
+			finally {
+				passwordAsString = null;
+				Arrays.fill(password, ' ');
+			}
 		}
 
 		private void startNodeOpenLocalMinerAndPublishNodeServices() throws CommandException {
@@ -236,14 +249,14 @@ public class Start extends AbstractCommand {
 			try (var node = this.node = LocalNodes.of(config, keyPair, new TestApplication(), init)) {
 				System.out.println("done.");
 
-				if (plots.size() >= 1) {
-					if (plots.size() == 1)
+				if (plotsAndKeyPairs.size() >= 1) {
+					if (plotsAndKeyPairs.size() == 1)
 						System.out.print("Starting a local miner with 1 plot... ");
 					else
-						System.out.print("Starting a local miner with " + plots.size() + " plots... ");
+						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
 
-					/*try {
-						if (node.add(LocalMiners.of(plots.toArray(Plot[]::new))))
+					try {
+						if (node.add(LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))))
 							System.out.println("done.");
 						else
 							System.out.println("no miner has been created.");
@@ -251,7 +264,7 @@ public class Start extends AbstractCommand {
 					catch (ClosedNodeException e) {
 						// unexpected: who could have closed the node?
 						throw new CommandException("The node has been unexpectedly closed!", e);
-					}*/
+					}
 				}
 
 				publishPublicAndRestrictedNodeServices(0);
