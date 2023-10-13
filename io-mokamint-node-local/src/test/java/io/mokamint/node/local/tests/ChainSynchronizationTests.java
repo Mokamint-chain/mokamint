@@ -47,7 +47,6 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
@@ -61,6 +60,7 @@ import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.PlotsAndKeyPairs;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 

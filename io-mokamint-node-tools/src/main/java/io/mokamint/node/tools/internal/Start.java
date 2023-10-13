@@ -35,11 +35,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Entropies;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.miner.local.PlotAndKeyPair;
-import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -49,7 +46,8 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
-import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.AbstractPlotArgs;
+import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
@@ -65,7 +63,7 @@ public class Start extends AbstractCommand {
 	/**
 	 * The args required for each plot file added to the miner.
 	 */
-	private static class PlotArgs {
+	private static class PlotArgs extends AbstractPlotArgs {
 
 		@Parameters(index = "0", description = "the file containing a plot")
 		private Path plot;
@@ -73,20 +71,30 @@ public class Start extends AbstractCommand {
 		@Parameters(index = "1", description = "the file containing the key pair of the plot")
 		private Path keyPair;
 
-		@Option(names = "--password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
+		@Option(names = "--plot-password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
 		private char[] password;
 
 		@Override
-		public String toString() {
-			return plot + "+" + keyPair + " (" + new String(password) + ")";
+		public Path getPlot() {
+			return plot;
+		}
+
+		@Override
+		public Path getKeyPair() {
+			return keyPair;
+		}
+
+		@Override
+		public char[] getPassword() {
+			return password;
 		}
 	}
 
 	@ArgGroup(exclusive = false, multiplicity = "0..*")
 	private PlotArgs[] plotArgs;
 
-	@Parameters(index = "0", description = "the file containing the key pair of the node, used to sign the blocks that it mines")
-	private Path keys;
+	@Option(names = "--keys", description = "the file containing the key pair of the node, used to sign the blocks that it mines", required = true)
+	private Path keyPair;
 
     @Option(names = "--password", description = "the password of the key pair of the node", interactive = true, defaultValue = "")
 	private char[] password;
@@ -160,10 +168,10 @@ public class Start extends AbstractCommand {
 			String passwordAsString;
 			try {
 				passwordAsString = new String(password);
-				this.keyPair = Entropies.load(keys).keys(passwordAsString, config.getSignatureForBlocks());
+				this.keyPair = Entropies.load(Start.this.keyPair).keys(passwordAsString, config.getSignatureForBlocks());
 			}
 			catch (IOException e) {
-				throw new CommandException("Cannot read the key pair from file " + keys + "!", e);
+				throw new CommandException("Cannot read the key pair from file " + Start.this.keyPair + "!", e);
 			}
 			finally {
 				passwordAsString = null;
@@ -183,52 +191,24 @@ public class Start extends AbstractCommand {
 			if (pos < plotArgs.length) {
 				var plotArg = plotArgs[pos];
 				System.out.print("Loading " + plotArg.plot + "... ");
-				try (var plot = Plots.load(plotArg.plot)) {
-					var prolog = plot.getProlog();
-					var keyPair = getPlotsKeyPair(plotArg.keyPair, plotArg.password, prolog.getSignatureForDeadlines());
-					if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic())) {
-						System.out.println(Ansi.AUTO.string("@|red Illegal public key for signing the deadlines of plot file " + plotArg.plot + "!|@"));
-						LOGGER.log(Level.SEVERE, "illegal public key for plot " + plotArg.plot);
-					}
-					else {
-						System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-						plotsAndKeyPairs.add(PlotsAndKeyPairs.of(plot, keyPair));
-					}
-					
+				try (var plotAndKeyPair = plotArg.load()) {
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+					plotsAndKeyPairs.add(plotAndKeyPair);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists, it is not corrupted and you have the access rights?|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArg.plot + "\"", e);
+					System.out.println(Ansi.AUTO.string("@|red I/O error! " + e.getMessage() + "|@"));
+					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArg.getPlot() + "\" and its key pair", e);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArg.plot + "\" uses an unknown hashing algorithm", e);
+					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArg.getPlot() + "\" uses an unknown hashing algorithm", e);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 			}
 			else
 				startNodeOpenLocalMinerAndPublishNodeServices();
-		}
-
-		private KeyPair getPlotsKeyPair(Path keyPair, char[] password, SignatureAlgorithm signature) throws CommandException {
-			String passwordAsString;
-			try {
-				var entropy = Entropies.load(keyPair);
-				passwordAsString = new String(password);
-				return entropy.keys(passwordAsString, signature);
-			}
-			catch (FileNotFoundException e) {
-				throw new CommandException("File " + keyPair + " cannot be found!", e);
-			}
-			catch (IOException e) {
-				throw new CommandException("The key pair could not be loaded from file " + keyPair + "!", e);
-			}
-			finally {
-				passwordAsString = null;
-				Arrays.fill(password, ' ');
-			}
 		}
 
 		private void startNodeOpenLocalMinerAndPublishNodeServices() throws CommandException {
@@ -247,7 +227,7 @@ public class Start extends AbstractCommand {
 
 			System.out.print("Starting a local node... ");
 			try (var node = this.node = LocalNodes.of(config, keyPair, new TestApplication(), init)) {
-				System.out.println("done.");
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 
 				if (plotsAndKeyPairs.size() >= 1) {
 					if (plotsAndKeyPairs.size() == 1)
@@ -257,9 +237,9 @@ public class Start extends AbstractCommand {
 
 					try {
 						if (node.add(LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))))
-							System.out.println("done.");
+							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 						else
-							System.out.println("no miner has been created.");
+							throw new CommandException("The miner has not been added!");
 					}
 					catch (ClosedNodeException e) {
 						// unexpected: who could have closed the node?
@@ -288,7 +268,7 @@ public class Start extends AbstractCommand {
 			if (pos < publicPorts.length) {
 				System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
 				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().getWhisperingMemorySize(), Optional.ofNullable(uri))) {
-					System.out.println("done.");
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}
 				catch (IOException e) {
@@ -319,7 +299,7 @@ public class Start extends AbstractCommand {
 			if (pos < restrictedPorts.length) {
 				System.out.print("Opening a restricted node service at port " + restrictedPorts[pos] + " of localhost... ");
 				try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
-					System.out.println("done.");
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 					publishRestrictedNodeServices(pos + 1);
 				}
 				catch (IOException e) {

@@ -25,10 +25,10 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.local.PlotAndKeyPair;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.PlotAndKeyPair;
 
 /**
  * The implementation of a local miner.

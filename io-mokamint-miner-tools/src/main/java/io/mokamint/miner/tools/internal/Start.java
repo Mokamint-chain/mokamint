@@ -17,28 +17,22 @@ limitations under the License.
 package io.mokamint.miner.tools.internal;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.crypto.Entropies;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.miner.local.PlotAndKeyPair;
-import io.mokamint.miner.local.PlotsAndKeyPairs;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
-import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.AbstractPlotArgs;
+import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
@@ -56,7 +50,7 @@ public class Start extends AbstractCommand {
 	/**
 	 * The args required for each plot file added to the miner.
 	 */
-	private static class PlotArgs {
+	private static class PlotArgs extends AbstractPlotArgs {
 
 		@Parameters(index = "0", description = "the file containing a plot")
 		private Path plot;
@@ -64,12 +58,22 @@ public class Start extends AbstractCommand {
 		@Parameters(index = "1", description = "the file containing the key pair of the plot")
 		private Path keyPair;
 
-		@Option(names = "--password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
+		@Option(names = "--plot-password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
 		private char[] password;
 
 		@Override
-		public String toString() {
-			return plot + "+" + keyPair + " (" + new String(password) + ")";
+		public Path getPlot() {
+			return plot;
+		}
+
+		@Override
+		public Path getKeyPair() {
+			return keyPair;
+		}
+
+		@Override
+		public char[] getPassword() {
+			return password;
 		}
 	}
 
@@ -90,27 +94,7 @@ public class Start extends AbstractCommand {
 		private final List<PlotAndKeyPair> plotsAndKeyPairs = new ArrayList<>();
 
 		private Run() throws CommandException {
-			System.out.println(Arrays.toString(plotArgs));
 			loadPlotsAndStartMiningService(0);
-		}
-
-		private KeyPair getPlotsKeyPair(Path keyPair, char[] password, SignatureAlgorithm signature) throws CommandException {
-			String passwordAsString;
-			try {
-				var entropy = Entropies.load(keyPair);
-				passwordAsString = new String(password);
-				return entropy.keys(passwordAsString, signature);
-			}
-			catch (FileNotFoundException e) {
-				throw new CommandException("File " + keyPair + " cannot be found!", e);
-			}
-			catch (IOException e) {
-				throw new CommandException("The key pair could not be loaded from file " + keyPair + "!", e);
-			}
-			finally {
-				passwordAsString = null;
-				Arrays.fill(password, ' ');
-			}
 		}
 
 		/**
@@ -123,28 +107,19 @@ public class Start extends AbstractCommand {
 			if (pos < plotArgs.length) {
 				var plotArg = plotArgs[pos];
 				System.out.print("Loading " + plotArg.plot + "... ");
-				try (var plot = Plots.load(plotArg.plot)) {
-					var prolog = plot.getProlog();
-					var keyPair = getPlotsKeyPair(plotArg.keyPair, plotArg.password, prolog.getSignatureForDeadlines());
-					if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic())) {
-						System.out.println(Ansi.AUTO.string("@|red Illegal public key for signing the deadlines of plot file " + plotArg.plot + "!|@"));
-						LOGGER.log(Level.SEVERE, "illegal public key for plot " + plotArg.plot);
-					}
-					else {
-						System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-						plotsAndKeyPairs.add(PlotsAndKeyPairs.of(plot, keyPair));
-					}
-					
+				try (var plotAndKeyPair = plotArg.load()) {
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+					plotsAndKeyPairs.add(plotAndKeyPair);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error! Are you sure the file exists and you have the access rights?|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArgs[pos] + "\"", e);
+					System.out.println(Ansi.AUTO.string("@|red I/O error! " + e.getMessage() + "|@"));
+					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArg.getPlot() + "\" and its key pair", e);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArgs[pos] + "\" uses an unknown hashing algorithm", e);
+					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArg + "\" uses an unknown hashing algorithm", e);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 			}

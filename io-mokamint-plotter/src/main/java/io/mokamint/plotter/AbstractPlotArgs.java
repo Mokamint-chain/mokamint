@@ -17,31 +17,18 @@ limitations under the License.
 /**
  * 
  */
+package io.mokamint.plotter;
 
-package io.mokamint.miner.local;
-
-import java.security.KeyPair;
-
-import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.internal.PlotArgsImpl;
 
 /**
- * A plot file and the key pair that allows one to sign the deadlines
- * generated from that plot file. The public key in the key pair coincides
- * with the public key for signing deadlines in the prolog of the plot file.
+ * Partial implementation of the arguments specifying a plot, its key pair and the
+ * associated password. 
  */
-public interface PlotAndKeyPair {
+public abstract class AbstractPlotArgs extends PlotArgsImpl {
 
 	/**
-	 * Yields the plot file.
-	 * 
-	 * @return the plot file
+	 * Creates the arguments specifying a plot.
 	 */
-	Plot getPlot();
-
-	/**
-	 * Yields the key pair.
-	 * 
-	 * @return the key pair
-	 */
-	KeyPair getKeyPair();
+	protected AbstractPlotArgs() {}
 }

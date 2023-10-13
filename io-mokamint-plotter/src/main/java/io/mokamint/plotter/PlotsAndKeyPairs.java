@@ -17,17 +17,21 @@ limitations under the License.
 /**
  * 
  */
-package io.mokamint.miner.local;
+
+package io.mokamint.plotter;
 
 import java.security.KeyPair;
 
-import io.mokamint.miner.local.internal.PlotAndKeyPairImpl;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.PlotAndKeyPair;
+import io.mokamint.plotter.internal.PlotAndKeyPairImpl;
 
 /**
  * Suppliers of pairs of plots and key pairs.
  */
-public class PlotsAndKeyPairs {
+public abstract class PlotsAndKeyPairs {
+
+	private PlotsAndKeyPairs() {}
 
 	/**
 	 * Yields a new pair of a plot and of a key pair.

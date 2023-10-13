@@ -17,12 +17,13 @@ limitations under the License.
 /**
  * 
  */
-package io.mokamint.miner.local.internal;
+package io.mokamint.plotter.internal;
 
+import java.io.IOException;
 import java.security.KeyPair;
 
-import io.mokamint.miner.local.PlotAndKeyPair;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.PlotAndKeyPair;
 
 /**
  * Implementation of a plot file and of the key pair for signing the deadlines
@@ -64,5 +65,10 @@ public class PlotAndKeyPairImpl implements PlotAndKeyPair {
 	@Override
 	public KeyPair getKeyPair() {
 		return keyPair;
+	}
+
+	@Override
+	public void close() throws IOException {
+		plot.close();
 	}
 }

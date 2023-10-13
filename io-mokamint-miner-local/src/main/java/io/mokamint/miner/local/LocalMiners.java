@@ -18,6 +18,7 @@ package io.mokamint.miner.local;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.internal.LocalMinerImpl;
+import io.mokamint.plotter.api.PlotAndKeyPair;
 
 /**
  * A provider of miners that work on the local machine.
