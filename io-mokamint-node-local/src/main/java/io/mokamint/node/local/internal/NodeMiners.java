@@ -102,6 +102,19 @@ public class NodeMiners implements AutoCloseable {
 	}
 
 	/**
+	 * Pardons a miner, by increasing its points. There is a maximal
+	 * value to the resulting points. If the miner was not present in this
+	 * container, nothing happens.
+	 * 
+	 * @param miner the miner to pardon
+	 * @param points how many points get pardoned
+	 * @throws IllegalArgumentException if {@code points} is negative
+	 */
+	public void pardon(Miner miner, long points) {
+		miners.pardon(miner, points);
+	}
+
+	/**
 	 * Closes this container. All miners contained therein will be closed as well.
 	 * 
 	 * @throws IOException if some miner could not be closed

@@ -5,7 +5,7 @@
 ## Consensus parameters
 
 # the chain identifier of the blockchain
-chain_id = "octopus"
+chain_id = ""
 
 # the hashing algorithm used for the deadlines and hence for the plot files of the miners
 hashing_for_deadlines = "shabal256"
@@ -24,7 +24,7 @@ signature_for_blocks = "ed25519"
 initial_acceleration = 100000000000
 
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
-target_block_creation_time = 20000
+target_block_creation_time = 2000
 
 ## Local parameters
 

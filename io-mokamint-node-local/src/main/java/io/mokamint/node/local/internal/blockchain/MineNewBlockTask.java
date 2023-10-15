@@ -26,14 +26,14 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.exceptions.CheckRunnable;
-import io.hotmoka.exceptions.UncheckConsumer;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -159,43 +159,7 @@ public class MineNewBlockTask implements Task {
 
 		@Override
 		public void body() throws IOException {
-			// all miners timed-out
-			CheckRunnable.check(IOException.class, () -> miners.get().forEach(UncheckConsumer.uncheck(miner -> miners.punish(miner, config.getMinerPunishmentForTimeout()))));
 			node.submit(new DelayedMineNewBlockTask(node));
-		}
-
-		@Override
-		public String logPrefix() {
-			return logPrefix;
-		}
-	}
-
-	/**
-	 * An event fired to signal that a miner misbehaved.
-	 */
-	public class MinerMisbehaviorEvent implements Event {
-		public final Miner miner;
-		public final long points;
-
-		/**
-		 * Creates an event that expresses a miner's misbehavior.
-		 * 
-		 * @param miner the miner that misbehaved
-		 * @param points how many points should be removed for this misbehavior
-		 */
-		private MinerMisbehaviorEvent(Miner miner, long points) {
-			this.miner = miner;
-			this.points = points;
-		}
-
-		@Override
-		public String toString() {
-			return "miner " + miner.getUUID() + " misbehavior event [-" + points + " points]";
-		}
-
-		@Override
-		public void body() throws IOException {
-			miners.punish(miner, points);
 		}
 
 		@Override
@@ -207,15 +171,33 @@ public class MineNewBlockTask implements Task {
 	/**
 	 * An event fired to signal that the connection to a miner timed-out.
 	 */
-	public class IllegalDeadlineEvent extends MinerMisbehaviorEvent {
+	public class IllegalDeadlineEvent implements Event {
+		public final Miner miner;
+		public final long points;
 
+		 /**
+		  * Creates an event that expresses a miner's misbehavior.
+		  * 
+		  * @param miner the miner that misbehaved
+		  */
 		private IllegalDeadlineEvent(Miner miner) {
-			super(miner, config.getMinerPunishmentForIllegalDeadline());
+			this.miner = miner;
+			this.points = config.getMinerPunishmentForIllegalDeadline();
 		}
 
 		@Override
 		public String toString() {
-			return "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]";
+			return "miner " + miner.getUUID() + " computed an illegal deadline event [" + points + " points]";
+		}
+
+		@Override
+		public void body() throws IOException {
+			miners.punish(miner, points);
+		}
+
+		@Override
+		public String logPrefix() {
+			return logPrefix;
 		}
 	}
 
@@ -295,6 +277,11 @@ public class MineNewBlockTask implements Task {
 		private final Waker waker = new Waker();
 
 		/**
+		 * The set of miners that did not answer so far with a legal deadline.
+		 */
+		private Set<Miner> minersThatDidNotAnswer = new HashSet<>();
+
+		/**
 		 * Set to true when the task has completed, also in the case when
 		 * it could not find any deadline.
 		 */
@@ -321,13 +308,19 @@ public class MineNewBlockTask implements Task {
 			}
 			finally {
 				turnWakerOff();
+				punishMinersThatDidNotAnswer();
 				this.done = true;
 			}
 		}
 
 		private void requestDeadlineToEveryMiner() {
 			LOGGER.info(logPrefix + "asking miners for a deadline: " + description);
-			miners.get().forEach(miner -> miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner)));
+			miners.get().forEach(this::requestDeadlineTo);
+		}
+
+		private void requestDeadlineTo(Miner miner) {
+			minersThatDidNotAnswer.add(miner);
+			miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 		}
 
 		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
@@ -352,12 +345,15 @@ public class MineNewBlockTask implements Task {
 			else {
 				try {
 					deadline.matchesOrThrow(description, IllegalDeadlineException::new);
+					node.check(deadline);
+
+					// we increase the points of the miner, but only for the first deadline that it provides
+					if (minersThatDidNotAnswer.remove(miner))
+						miners.pardon(miner, config.getMinerPunishmentForTimeout());
 
 					if (!currentDeadline.isWorseThan(deadline))
 						LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is not better than the current deadline");
 					else {
-						node.check(deadline);
-
 						if (currentDeadline.updateIfWorseThan(deadline)) {
 							LOGGER.info(logPrefix + "improved deadline to " + deadline);
 							setWaker(deadline);
@@ -420,6 +416,19 @@ public class MineNewBlockTask implements Task {
 
 		private void turnWakerOff() {
 			waker.shutdownNow();
+		}
+
+		private void punishMinersThatDidNotAnswer() {
+			minersThatDidNotAnswer.forEach(this::punishMinerThatDidNotAnswer);
+		}
+
+		private void punishMinerThatDidNotAnswer(Miner miner) {
+			try {
+				miners.punish(miner, config.getMinerPunishmentForTimeout());
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, logPrefix + "cannot punish miner " + miner + " that did not answer: " + e.getMessage());
+			}
 		}
 	}
 }
