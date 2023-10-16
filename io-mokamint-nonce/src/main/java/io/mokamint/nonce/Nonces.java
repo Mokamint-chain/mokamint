@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Nonce;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.nonce.internal.NonceImpl;
@@ -39,15 +38,5 @@ public final class Nonces {
 	 */
 	public static Nonce of(Prolog prolog, long progressive, HashingAlgorithm hashing) {
 		return new NonceImpl(prolog, progressive, hashing);
-	}
-
-	/**
-	 * Yields the nonce corresponding to the given deadline.
-	 * 
-	 * @param deadline the deadline
-	 * @return the nonce
-	 */
-	public static Nonce from(Deadline deadline) {
-		return new NonceImpl(deadline.getProlog(), deadline.getProgressive(), deadline.getHashing());
 	}
 }

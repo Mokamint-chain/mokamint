@@ -39,15 +39,4 @@ public interface Nonce {
 	 * @throws IOException if the nonce could not be dumped into the file
 	 */
 	void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException;
-
-	/**
-	 * Yields the deadline of this nonce, with the given description.
-	 * 
-	 * @param description the description of requested deadline
-	 * @param signature the signature that will be used for the resulting deadline
-	 * @return the deadline
-	 * @throws IllegalArgumentException if the hashing algorithm in {@code description}
-	 *                                  does not match that used in the plot file for this nonce
-	 */
-	Deadline getDeadline(DeadlineDescription description, byte[] signature);
 }

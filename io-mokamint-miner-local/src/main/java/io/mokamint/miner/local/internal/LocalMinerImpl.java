@@ -99,7 +99,7 @@ public class LocalMinerImpl implements Miner {
 			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(description, plotAndKeyPair.getKeyPair().getPrivate()));
 		}
 		catch (IOException | InvalidKeyException | SignatureException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot access a plot file", e);
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot access a plot file: ", e.getMessage());
 			return Optional.empty();
 		}
 	}

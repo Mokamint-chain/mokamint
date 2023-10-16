@@ -242,8 +242,10 @@ public class VerificationTests extends AbstractLoggedTests {
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 		// we replace the correct signature with a fake one
-		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime() + 1, expected.getWeightedWaitingTime(), expected.getAcceleration(),
-			expected.getDeadline(), expected.getHashOfPreviousBlock(), new byte[] { 1 , 2 ,3 }));
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () ->
+			Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime() + 1,
+					expected.getWeightedWaitingTime(), expected.getAcceleration(),
+					expected.getDeadline(), expected.getHashOfPreviousBlock(), new byte[] { 1 , 2 ,3 }));
 
 		assertTrue(e.getMessage().startsWith("The block's signature cannot be verified"));
 	}

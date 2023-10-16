@@ -26,7 +26,6 @@ import java.util.function.Function;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.Nonce;
@@ -83,15 +82,16 @@ public class NonceImpl implements Nonce {
 		this.data = new Builder().data;
 	}
 
-	@Override
-	public Deadline getDeadline(DeadlineDescription description, byte[] signature) {
-		if (!description.getHashing().equals(hashing))
-			throw new IllegalArgumentException("The deadline description and the nonce use different hashing algorithms");
-
+	/**
+	 * Yields the value of the deadline of this nonce, with the given description.
+	 * 
+	 * @param description the description of requested deadline
+	 * @return the value
+	 */
+	byte[] getValueFor(DeadlineDescription description) {
 		byte[] data = description.getData();
 		int scoopNumber = description.getScoopNumber();
-		byte[] value = hashing.getHasher(Function.identity()).hash(extractScoopAndConcat(scoopNumber, data));
-		return Deadlines.of(prolog, progressive, value, scoopNumber, data, hashing, signature);
+		return hashing.getHasher(Function.identity()).hash(extractScoopAndConcat(scoopNumber, data));
 	}
 
 	/**
@@ -183,7 +183,7 @@ public class NonceImpl implements Nonce {
 			return buffer;
 		}
 
-		private void longToBytesBE(long l, byte[] target, int offset) {
+		private static void longToBytesBE(long l, byte[] target, int offset) {
 	        offset += 7;
 	        for (int i = 0; i <= 7; i++)
 	            target[offset - i] = (byte) ((l>>(8*i)) & 0xFF);

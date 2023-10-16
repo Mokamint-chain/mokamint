@@ -16,13 +16,14 @@ limitations under the License.
 
 package io.mokamint.plotter.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,7 +32,6 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.DeadlineDescriptions;
-import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
@@ -39,8 +39,8 @@ import io.mokamint.plotter.Plots;
 public class PlotTests extends AbstractLoggedTests {
 
 	@Test
-	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
-	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	@DisplayName("the best deadline of a plot respects the description and is valid")
+	public void testDeadlineFromPlotIsValid(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
@@ -49,9 +49,9 @@ public class PlotTests extends AbstractLoggedTests {
 		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
-			Deadline deadline1 = plot.getSmallestDeadline(description, plotKeyPair.getPrivate());
-			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description, deadline1.getSignature()); // TODO: simplify?
-			Assertions.assertEquals(deadline1, deadline2);
+			Deadline deadline = plot.getSmallestDeadline(description, plotKeyPair.getPrivate());
+			deadline.matchesOrThrow(description, IllegalArgumentException::new);
+			assertTrue(deadline.isValid());
 		}
 	}
 }
