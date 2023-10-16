@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -188,11 +189,12 @@ public class EventsTests extends AbstractLoggedTests {
 					var illegalDeadline = Deadlines.of(
 							deadline.getProlog(),
 							Math.abs(deadline.getProgressive() + 1), deadline.getValue(),
-							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(),
+							plotKeys.getPrivate());
 
 					onDeadlineComputed.accept(illegalDeadline);
 				}
-				catch (IOException e) {}
+				catch (IOException | InvalidKeyException | SignatureException e) {}
 			}
 
 			@Override
@@ -306,11 +308,12 @@ public class EventsTests extends AbstractLoggedTests {
 							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 							prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra()),
 							deadline.getProgressive(), deadline.getValue(),
-							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(),
+							plotKeys.getPrivate());
 
 					onDeadlineComputed.accept(illegalDeadline);
 				}
-				catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {}
+				catch (IOException | NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {}
 			}
 
 			@Override

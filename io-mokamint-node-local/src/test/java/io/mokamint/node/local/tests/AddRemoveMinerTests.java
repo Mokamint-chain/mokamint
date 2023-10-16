@@ -54,6 +54,7 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
 import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoDeadlineFoundEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
@@ -111,7 +112,8 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var miningPort = 8025;
 
 		// the prolog of the plot file must be compatible with node1 (same key and same chain id)
-		var prolog = Prologs.of(config1.getChainId(), SignatureAlgorithms.ed25519(), node1Keys.getPublic(), SignatureAlgorithms.ed25519(), plotKeys.getPublic(), new byte[0]);
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var prolog = Prologs.of(config1.getChainId(), ed25519, node1Keys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 
 		var node1NoMinersAvailable = new Semaphore(0);
 		var minerClosing = new AtomicBoolean(false);
@@ -126,7 +128,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onComplete(Event event) {
-				if (minerClosing.get() && event instanceof NoMinersAvailableEvent)
+				if (minerClosing.get() && (event instanceof NoMinersAvailableEvent || event instanceof NoDeadlineFoundEvent))
 					node1NoMinersAvailable.release();
 			}
 		}

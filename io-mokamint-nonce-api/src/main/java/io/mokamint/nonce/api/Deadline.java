@@ -59,6 +59,15 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	byte[] getValue();
 
 	/**
+	 * The signature of the deadline. This has been computed with the
+	 * private key corresponding to {@link Prolog#getPublicKeyForSigningDeadlines()}
+	 * in the prolog.
+	 * 
+	 * @return the signature
+	 */
+	byte[] getSignature();
+
+	/**
 	 * Yields the milliseconds to wait for this deadline, assuming the given acceleration.
 	 * 
 	 * @param acceleration the acceleration

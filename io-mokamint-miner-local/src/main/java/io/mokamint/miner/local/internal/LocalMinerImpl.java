@@ -17,6 +17,8 @@ limitations under the License.
 package io.mokamint.miner.local.internal;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -96,7 +98,7 @@ public class LocalMinerImpl implements Miner {
 		try {
 			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(description, plotAndKeyPair.getKeyPair().getPrivate()));
 		}
-		catch (IOException e) {
+		catch (IOException | InvalidKeyException | SignatureException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot access a plot file", e);
 			return Optional.empty();
 		}

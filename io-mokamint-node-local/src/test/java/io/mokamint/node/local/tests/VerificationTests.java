@@ -46,7 +46,6 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.Blocks;
@@ -93,13 +92,13 @@ public class VerificationTests extends AbstractLoggedTests {
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var signature = config.getSignatureForBlocks();
-		var keyPair = signature.getKeyPair();
+		var nodeKeys = signature.getKeyPair();
 		var plotKeys = signature.getKeyPair();
 
-		nodePrivateKey = keyPair.getPrivate();
+		nodePrivateKey = nodeKeys.getPrivate();
 		plotPrivateKey = plotKeys.getPrivate();
 
-		prolog = Prologs.of("octopus", signature, keyPair.getPublic(), signature, plotKeys.getPublic(), new byte[0]);
+		prolog = Prologs.of("octopus", signature, nodeKeys.getPublic(), signature, plotKeys.getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
@@ -125,7 +124,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines, plotPrivateKey);
 		byte[] previous = genesis.getHash(hashingForBlocks);
 		var block = Blocks.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous, nodePrivateKey);
 
@@ -261,7 +260,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 		// we replace the expected deadline
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-				(deadline.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, deadline.getData(), deadline.getHashing());
+				(deadline.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, deadline.getData(), deadline.getHashing(), plotPrivateKey);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
@@ -286,7 +285,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		// blocks' deadlines have a non-empty data array
 		modifiedData[0]++;
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-				deadline.getScoopNumber(), modifiedData, deadline.getHashing());
+				deadline.getScoopNumber(), modifiedData, deadline.getHashing(), plotPrivateKey);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
@@ -310,7 +309,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		HashingAlgorithm sha256 = HashingAlgorithms.sha256();
 		HashingAlgorithm otherAlgorithm = deadline.getHashing().equals(sha256) ? HashingAlgorithms.shabal256() : sha256;
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-			deadline.getScoopNumber(), deadline.getData(), otherAlgorithm);
+			deadline.getScoopNumber(), deadline.getData(), otherAlgorithm, plotPrivateKey);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
@@ -334,7 +333,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 			prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
-			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(), plotPrivateKey);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
@@ -363,7 +362,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var modifiedProlog = Prologs.of(prolog.getChainId(), newSignature, newKeyPair.getPublic(),
 			prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
-			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(), plotPrivateKey);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 			modifiedDeadline, expected.getHashOfPreviousBlock(), newKeyPair.getPrivate());
 
@@ -385,13 +384,14 @@ public class VerificationTests extends AbstractLoggedTests {
 
 		// we create a different prolog
 		var oldSignature = prolog.getSignatureForDeadlines();
-		SignatureAlgorithm ed25519 = SignatureAlgorithms.ed25519();
-		SignatureAlgorithm sha256dsa = SignatureAlgorithms.sha256dsa();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256dsa = SignatureAlgorithms.sha256dsa();
 		var newSignature = oldSignature.equals(ed25519) ? sha256dsa : ed25519;
+		var newKeyPair = newSignature.getKeyPair();
 		var modifiedProlog = Prologs.of(prolog.getChainId(), prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
-			newSignature, prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
+			newSignature, newKeyPair.getPublic(), prolog.getExtra());
 		var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
-			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(), newKeyPair.getPrivate());
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
@@ -434,7 +434,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 		// we make the deadline invalid by changing its progressive
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive() + 1, deadline.getValue(),
-				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+				deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(), plotPrivateKey);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 
@@ -458,7 +458,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var value = deadline.getValue();
 		value[0]++;
 		var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), value,
-			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing());
+			deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(), plotPrivateKey);
 		var block = Blocks.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 			modifiedDeadline, expected.getHashOfPreviousBlock(), nodePrivateKey);
 

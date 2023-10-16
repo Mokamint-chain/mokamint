@@ -44,9 +44,10 @@ public interface Nonce {
 	 * Yields the deadline of this nonce, with the given description.
 	 * 
 	 * @param description the description of requested deadline
+	 * @param signature the signature that will be used for the resulting deadline
 	 * @return the deadline
 	 * @throws IllegalArgumentException if the hashing algorithm in {@code description}
-	 *                                  does not match that used in plot file for this nonce
+	 *                                  does not match that used in the plot file for this nonce
 	 */
-	Deadline getDeadline(DeadlineDescription description);
+	Deadline getDeadline(DeadlineDescription description, byte[] signature);
 }

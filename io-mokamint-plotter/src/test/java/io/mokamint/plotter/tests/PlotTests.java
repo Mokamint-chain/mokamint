@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,7 @@ public class PlotTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("selects the best deadline of a plot, recomputes the nonce and then the deadline again")
-	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+	public void testDeadlineRecomputation(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
@@ -49,7 +50,7 @@ public class PlotTests extends AbstractLoggedTests {
 
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
 			Deadline deadline1 = plot.getSmallestDeadline(description, plotKeyPair.getPrivate());
-			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description);
+			Deadline deadline2 = Nonces.from(deadline1).getDeadline(description, deadline1.getSignature()); // TODO: simplify?
 			Assertions.assertEquals(deadline1, deadline2);
 		}
 	}

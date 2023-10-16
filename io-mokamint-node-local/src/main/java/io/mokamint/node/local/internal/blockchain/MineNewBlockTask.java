@@ -26,10 +26,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -279,7 +279,7 @@ public class MineNewBlockTask implements Task {
 		/**
 		 * The set of miners that did not answer so far with a legal deadline.
 		 */
-		private Set<Miner> minersThatDidNotAnswer = new HashSet<>();
+		private Set<Miner> minersThatDidNotAnswer = ConcurrentHashMap.newKeySet();
 
 		/**
 		 * Set to true when the task has completed, also in the case when
@@ -341,7 +341,7 @@ public class MineNewBlockTask implements Task {
 			LOGGER.info(logPrefix + "miner " + miner.getUUID() + " sent deadline " + deadline);
 
 			if (done)
-				LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it arrived too late");
+				LOGGER.warning(logPrefix + "discarding deadline " + deadline + " since it arrived too late");
 			else {
 				try {
 					deadline.matchesOrThrow(description, IllegalDeadlineException::new);
@@ -363,7 +363,7 @@ public class MineNewBlockTask implements Task {
 					}
 				}
 				catch (IllegalDeadlineException e) {
-					LOGGER.info(logPrefix + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());
+					LOGGER.warning(logPrefix + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());
 					node.submit(new IllegalDeadlineEvent(miner));
 				}
 			}

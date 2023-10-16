@@ -345,6 +345,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		if (hashingForGenerations.isPresent())
 			builder.append(" (" + hashingForGenerations.get() + ")");
 		builder.append("\n");
+		builder.append("  * signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + deadline.getHashing() + ")\n");
 	}

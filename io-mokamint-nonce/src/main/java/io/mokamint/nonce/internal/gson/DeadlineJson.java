@@ -37,6 +37,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	private int scoopNumber;
 	private String data;
 	private String hashing;
+	private String signature;
 
 	/**
 	 * Used by Gson.
@@ -50,10 +51,12 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 		this.scoopNumber = deadline.getScoopNumber();
 		this.data = Hex.toHexString(deadline.getData());
 		this.hashing = deadline.getHashing().getName();
+		this.signature = Hex.toHexString(deadline.getSignature());
 	}
 
 	@Override
 	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
-		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing));
+		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber,
+			Hex.fromHexString(data), HashingAlgorithms.of(hashing), Hex.fromHexString(signature));
 	}
 }

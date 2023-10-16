@@ -17,7 +17,10 @@ limitations under the License.
 package io.mokamint.nonce;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.SignatureException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -44,10 +47,31 @@ public final class Deadlines {
 	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
 	 * @param data the data used to compute the deadline
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
+	 * @param privateKey the private key that will be used to sign the deadline; it must match the
+	 *                   public key contained in the prolog
 	 * @return the deadline
+	 * @throws SignatureException if the signature of the deadline failed
+	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm hashing) {
-		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data);
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm hashing, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data, privateKey);
+	}
+
+	/**
+	 * Yields a deadline.
+	 * 
+	 * @param prolog the prolog of the nonce of the deadline
+	 * @param progressive the progressive number of the nonce of the deadline
+	 * @param value the value of the deadline
+	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
+	 * @param data the data used to compute the deadline
+	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
+	 * @param signature the signature of the resulting deadline
+	 * @return the deadline
+	 * @throws IllegalArgumentException if some argument is illegal
+	 */
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm hashing, byte[] signature) throws IllegalArgumentException {
+		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data, signature);
 	}
 
 	/**

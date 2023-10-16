@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -67,7 +68,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a client sends a deadline, it reaches the requester of the corresponding description")
-	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException {
+	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var value = new byte[shabal256.length()];
@@ -78,8 +79,9 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
-		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256);
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256, plotKeyPair.getPrivate());
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
@@ -96,7 +98,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a client sends a deadline, it does not reach the requester of another description")
-	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException {
+	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -107,8 +109,9 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
-		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber + 1, data, shabal256); // <-- +1
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber + 1, data, shabal256, plotKeyPair.getPrivate()); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))

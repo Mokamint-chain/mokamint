@@ -17,7 +17,9 @@ limitations under the License.
 package io.mokamint.plotter.api;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.PrivateKey;
+import java.security.SignatureException;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -77,6 +79,8 @@ public interface Plot extends AutoCloseable {
 	 * @throws IOException if the plot file cannot be read
 	 * @throws IllegalArgumentException if the description is for a deadline using a different
 	 *                                  hashing algorithm than that used to create this plot file
+	 * @throws InvalidKeyException if {@code privateKey} is invalid
+	 * @throws SignatureException if the deadline could not be signed
 	 */
-	Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException;
+	Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException;
 }

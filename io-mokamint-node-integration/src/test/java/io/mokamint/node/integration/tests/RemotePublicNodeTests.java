@@ -29,7 +29,6 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
@@ -484,10 +483,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
-		KeyPair keyPair = ed25519.getKeyPair();
-		var prolog = Prologs.of("octopus", ed25519, keyPair.getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
-		var block1 = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}, keyPair.getPrivate());
+		var nodeKeyPair = ed25519.getKeyPair();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		var block1 = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}, nodeKeyPair.getPrivate());
 		var hash = new byte[] { 67, 56, 43 };
 
 		class MyServer extends PublicTestServer {
@@ -765,10 +765,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
-		KeyPair keyPair = ed25519.getKeyPair();
-		var prolog = Prologs.of("octopus", ed25519, keyPair.getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing);
-		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}, keyPair.getPrivate());
+		var nodeKeyPair = ed25519.getKeyPair();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		var block = Blocks.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}, nodeKeyPair.getPrivate());
 		var semaphore = new Semaphore(0);
 
 		var whisperer = mock(Whisperer.class);

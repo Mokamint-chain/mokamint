@@ -25,8 +25,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -271,7 +273,7 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException {
+	public Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
 		if (!description.getHashing().equals(hashing))
 			throw new IllegalArgumentException("The deadline description and the plot file use different hashing algorithms");
 
@@ -300,12 +302,12 @@ public class PlotImpl implements Plot {
 		private final Hasher<byte[]> hasher;
 		private final PrivateKey privateKey;
 
-		private SmallestDeadlineFinder(DeadlineDescription description, PrivateKey privateKey) throws IOException {
+		private SmallestDeadlineFinder(DeadlineDescription description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
 			this.scoopNumber = description.getScoopNumber();
 			this.data = description.getData();
 			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
-			this.deadline = CheckSupplier.check(IOException.class, () ->
+			this.deadline = CheckSupplier.check(IOException.class, InvalidKeyException.class, SignatureException.class, () ->
 				LongStream.range(start, start + length)
 					.mapToObj(Long::valueOf)
 					.parallel()
@@ -315,8 +317,8 @@ public class PlotImpl implements Plot {
 			);
 		}
 
-		private Deadline mkDeadline(long n) throws IOException {
-			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing);
+		private Deadline mkDeadline(long n) throws IOException, InvalidKeyException, SignatureException {
+			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing, privateKey);
 		}
 
 		/**

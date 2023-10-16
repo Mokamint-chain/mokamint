@@ -505,7 +505,7 @@ public class LocalNodeImpl implements LocalNode {
 
 			if (miners.add(miner)) {
 				LOGGER.info("added miner " + miner.getUUID() + " (" + miner + ")");
-				// we require to mine, when there was no miners before this call
+				// we require to mine, if there were no miners before this call
 				if (count == 0L)
 					blockchain.startMining();
 
