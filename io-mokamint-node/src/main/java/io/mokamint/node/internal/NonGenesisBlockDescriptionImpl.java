@@ -70,7 +70,7 @@ public class NonGenesisBlockDescriptionImpl implements NonGenesisBlockDescriptio
 	private final byte[] hashOfPreviousBlock;
 
 	/**
-	 * Creates a new non-genesis block.
+	 * Creates a new non-genesis block description.
 	 */
 	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
 		this.height = height;

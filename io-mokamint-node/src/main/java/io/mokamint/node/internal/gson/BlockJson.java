@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -43,12 +44,17 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private BigInteger acceleration;
 	private Deadlines.Json deadline;
 	private String hashOfPreviousBlock;
+	private String signatureForBlocks;
+	private String publicKey;
 	private String signature;
 
 	protected BlockJson(Block block) {
 		if (block instanceof GenesisBlock gb) {
 			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gb.getStartDateTimeUTC());
 			this.acceleration = gb.getAcceleration();
+			this.signature = Hex.toHexString(gb.getSignature());
+			this.signatureForBlocks = gb.getSignatureForBlocks().getName();
+			this.publicKey = gb.getPublicKeyBase58();
 		}
 		else {
 			var ngb = (NonGenesisBlock) block;
@@ -68,6 +74,6 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 		if (startDateTimeUTC == null)
 			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), Hex.fromHexString(signature));
 		else
-			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME), acceleration);
+			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME), acceleration, SignatureAlgorithms.of(signatureForBlocks), publicKey, Hex.fromHexString(signature));
 	}
 }

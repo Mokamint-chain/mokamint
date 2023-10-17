@@ -19,11 +19,14 @@ package io.mokamint.node;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
@@ -96,13 +99,36 @@ public abstract class Blocks {
 	 * Yields a new genesis block.
 	 * 
 	 * @param startDateTimeUTC the moment when the block has been created
-	 * @param acceleration a value used to divide the deadline to derive the time needed to wait for it.
+	 * @param acceleration the initial value of the acceleration, that is,
+	 *                     a value used to divide deadlines to derive the time needed to wait for it.
 	 *                     The higher, the shorter the time. This value changes dynamically to cope with
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
+	 * @param signatureForBlocks the signature algorithm for the blocks
+	 * @param keys the key pair to use for signing the block
 	 * @return the genesis block
+	 * @throws SignatureException if the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static GenesisBlock genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration) {
-		return new GenesisBlockImpl(startDateTimeUTC, acceleration);
+	public static GenesisBlock genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, KeyPair keys) throws InvalidKeyException, SignatureException {
+		return new GenesisBlockImpl(startDateTimeUTC, acceleration, signatureForBlocks, keys);
+	}
+
+	/**
+	 * Yields a new genesis block.
+	 * 
+	 * @param startDateTimeUTC the moment when the block has been created
+	 * @param acceleration the initial value of the acceleration, that is,
+	 *                     a value used to divide deadlines to derive the time needed to wait for it.
+	 *                     The higher, the shorter the time. This value changes dynamically to cope with
+	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
+	 * @param signatureForBlocks the signature algorithm for the blocks
+	 * @param publicKey the public key corresponding to the private key used for generating the signature
+	 * @param signature the signature of the block
+	 * @return the genesis block
+	 * @throws InvalidKeySpecException if the public key is invalid
+	 */
+	public static GenesisBlock genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, String publicKey, byte[] signature) throws InvalidKeySpecException {
+		return new GenesisBlockImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKey, signature);
 	}
 
 	/**
@@ -110,7 +136,7 @@ public abstract class Blocks {
 	 * 
 	 * @param context the context
 	 * @return the block
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm in the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {

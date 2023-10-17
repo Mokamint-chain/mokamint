@@ -121,12 +121,11 @@ public class Show extends AbstractPublicRpcCommand {
 			var info = remote.getChainInfo();
 			var genesisHash = info.getGenesisHash();
 			if (genesisHash.isPresent()) {
-				var config = remote.getConfig();
 				var genesis = remote.getBlock(genesisHash.get()); // TODO: in the future, maybe a getBlockDescription() ?
 				if (genesis.isPresent()) {
 					var content = genesis.get();
 					if (content instanceof GenesisBlock gb)
-						System.out.println(block.toString(config, gb.getStartDateTimeUTC()));
+						System.out.println(block.toString(remote.getConfig(), gb.getStartDateTimeUTC()));
 					else
 						throw new DatabaseException("The initial block of the chain is not a genesis block!");
 				}

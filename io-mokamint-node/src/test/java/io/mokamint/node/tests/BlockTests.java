@@ -40,8 +40,9 @@ public class BlockTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("genesis blocks are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException {
-		var block1 = Blocks.genesis(LocalDateTime.now(), BigInteger.ONE);
+	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var block1 = Blocks.genesis(LocalDateTime.now(), BigInteger.ONE, ed25519, ed25519.getKeyPair());
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);

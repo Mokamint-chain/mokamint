@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -137,7 +138,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends LocalNodeImpl {
 
-		private MiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+		private MiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 			super(config, nodeKeys, app, true);
 
 			try {
@@ -161,7 +162,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends LocalNodeImpl {
 
-		private NonMiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException {
+		private NonMiningNode(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 
@@ -180,7 +181,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity synchronizes from its peer")
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
@@ -205,7 +206,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity, once stopped and restarted, synchronizes from its peer")
 	public void nodeWithoutMinerStopRestartFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
@@ -244,7 +245,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity, once disconnected and reconnected, synchronizes from its peer")
 	public void nodeWithoutMinerDisconnectConnectFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));

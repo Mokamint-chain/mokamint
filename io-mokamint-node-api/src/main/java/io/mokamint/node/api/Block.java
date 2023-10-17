@@ -31,6 +31,16 @@ import io.mokamint.nonce.api.DeadlineDescription;
 public interface Block extends BlockDescription, Marshallable {
 
 	/**
+	 * Yields the signature of this block, computed from its hash by the node
+	 * that mined this block. This signature must have been computed with the
+	 * private key corresponding to the node's public key, which is inside the prolog
+	 * of the deadline for non-genesis blocks or inside the genesis blocks themselves.
+	 * 
+	 * @return the signature
+	 */
+	byte[] getSignature();
+
+	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
 	 * This hash does not use the signature of the node (if any) which is, instead,
 	 * computed from this hash and the private key of the signer.

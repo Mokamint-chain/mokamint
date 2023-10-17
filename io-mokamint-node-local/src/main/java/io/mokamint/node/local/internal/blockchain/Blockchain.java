@@ -17,7 +17,9 @@ limitations under the License.
 package io.mokamint.node.local.internal.blockchain;
 
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -119,8 +121,10 @@ public class Blockchain implements AutoCloseable {
 	 * @param init if the blockchain must be initialized with a genesis block (if empty)
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
 	 * @throws AlreadyInitializedException if {@code init} is true but the blockchain has a genesis block already
+	 * @throws SignatureException if the genesis block cannot be signed
+	 * @throws InvalidKeyException if the private key of the node is invalid
 	 */
-	public Blockchain(LocalNodeImpl node, boolean init) throws DatabaseException, AlreadyInitializedException {
+	public Blockchain(LocalNodeImpl node, boolean init) throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 		this(node);
 
 		if (init)
@@ -461,20 +465,23 @@ public class Blockchain implements AutoCloseable {
 		}
 	}
 
-	private void initialize() throws DatabaseException, AlreadyInitializedException {
+	private void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 		try {
 			if (!isEmpty())
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
 
-			var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(node.getConfig().getInitialAcceleration()));
+			var genesis = Blocks.genesis(
+				LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(node.getConfig().getInitialAcceleration()),
+				node.getConfig().getSignatureForBlocks(), node.getKeys()
+			);
+
 			if (db.add(genesis, new AtomicReference<>()))
 				node.submit(new BlockAddedEvent(genesis, genesis.getHash(hashingForBlocks)));
 		}
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
 			// the database cannot be closed at this moment;
-			// moreover, if the database is empty, there is no way it can contain a non-genesis block (that contains a hashing algorithm)
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 }

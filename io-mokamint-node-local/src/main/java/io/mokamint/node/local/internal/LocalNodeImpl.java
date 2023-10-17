@@ -17,8 +17,10 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
@@ -163,8 +165,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
+	 * @throws SignatureException if the genesis block cannot be signed
+	 * @throws InvalidKeyException if the private key of the node is invalid
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 		try {
 			this.config = config;
 			this.keyPair = keyPair;

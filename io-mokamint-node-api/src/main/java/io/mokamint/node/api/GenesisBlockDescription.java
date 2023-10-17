@@ -16,36 +16,23 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.security.PublicKey;
+import java.time.LocalDateTime;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
 
 /**
- * The genesis block of a Mokamint blockchain.
+ * The description of a genesis block of the Mokamint blockchain.
+ * This is the header of a block, missing signature and transactions
+ * wrt an actual block.
  */
 @Immutable
-public interface GenesisBlock extends GenesisBlockDescription, Block {
+public interface GenesisBlockDescription extends BlockDescription {
 
 	/**
-	 * Yields the signature algorithm used for signing this block.
+	 * The moment when the block has been mined. This is the moment
+	 * when the blockchain started.
 	 * 
-	 * @return the signature algorithm
+	 * @return the moment when the block has been mined
 	 */
-	SignatureAlgorithm getSignatureForBlocks();
-
-	/**
-	 * Yields the public key that can be used to verify the
-	 * signature of this block.
-	 * 
-	 * @return the public key
-	 */
-	PublicKey getPublicKey();
-
-	/**
-	 * Yields a Base58 representation of {@link #getPublicKey()}.
-	 * 
-	 * @return the Base58 representation
-	 */
-	String getPublicKeyBase58();
+	LocalDateTime getStartDateTimeUTC();
 }
