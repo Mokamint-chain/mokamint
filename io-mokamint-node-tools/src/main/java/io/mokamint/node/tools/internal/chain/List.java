@@ -69,7 +69,7 @@ public class List extends AbstractPublicRpcCommand {
 			if (maybeHeadHash.isEmpty())
 				return;
 
-			var maybeHead = remote.getBlock(maybeHeadHash.get());
+			var maybeHead = remote.getBlock(maybeHeadHash.get()); // TODO: in the future, maybe a getBlockDescription() ?
 			if (maybeHead.isEmpty())
 				throw new DatabaseException("The node has a head hash but it is bound to no block!");
 
@@ -92,7 +92,7 @@ public class List extends AbstractPublicRpcCommand {
 				slotsForHeight = 0;
 			}
 			else {
-				var maybeGenesis = remote.getBlock(maybeGenesisHash.get());
+				var maybeGenesis = remote.getBlock(maybeGenesisHash.get()); // TODO: in the future, maybe a getBlockDescription() ?
 				if (maybeGenesis.isEmpty())
 					throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
 

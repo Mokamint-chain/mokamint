@@ -27,7 +27,6 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
-import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -75,71 +74,32 @@ public class Show extends AbstractPublicRpcCommand {
 					throw new CommandException("The hexadecimal hash is invalid!", e);
 				}
 			}
-			else if (head) {
-				var info = remote.getChainInfo();
-				var headHash = info.getHeadHash();
-				if (headHash.isPresent())
-					return remote.getBlock(headHash.get()).orElseThrow(() -> new DatabaseException("The node has a head hash but it is bound to no block!"));
-				else
-					throw new CommandException("There is no chain head in the node!");
-			}
-			else if (genesis) {
-				var info = remote.getChainInfo();
-				var genesisHash = info.getGenesisHash();
-				if (genesisHash.isPresent())
-					return remote.getBlock(genesisHash.get()).orElseThrow(() -> new DatabaseException("The node has a genesis hash but it is bound to no block!"));
-				else
-					throw new CommandException("There is no genesis block in the node!");
-			}
+			else if (head)
+				return getBlockAt(remote, remote.getChainInfo().getHeadHash(), "There is no chain head in the node!", "The node has a head hash but it is bound to no block!");
+			else if (genesis)
+				return getBlockAt(remote, remote.getChainInfo().getGenesisHash(), "There is no genesis block in the node!", "The node has a genesis hash but it is bound to no block!");
 			else {
 				// it must be --depth, since the {@code blockIdentifier} parameter is mandatory
 				if (depth < 0)
-					throw new CommandException("The depth of the block must be positive!");
-				else if (depth > 20)
-					throw new CommandException("Cannot show more than 20 blocks behind the head!");
+					throw new CommandException("The depth of the block cannot be negative!");
 				else {
-					var info = remote.getChainInfo();
-					var maybeHeadHash = info.getHeadHash();
-					if (maybeHeadHash.isPresent()) {
-						var head = remote.getBlock(maybeHeadHash.get()).orElseThrow(() -> new DatabaseException("The node has a head hash but it is bound to no block!"));
-						var height = head.getHeight();
-						if (height - depth < 0)
-							throw new CommandException("There is no block at depth " + depth + " since the chain has height " + height + "!");
-						else
-							return backwards(head, depth, remote);
-					}
+					var length = remote.getChainInfo().getLength();
+					if (length <= depth)
+						throw new CommandException("There is no block at depth " + depth + " since the chain has length " + length + "!");
 					else
-						throw new CommandException("There is no block at depth " + depth + " since the chain has no head!");
+						return getBlockAt(remote, remote.getChain(length - depth - 1, 1).getHashes().findFirst(),
+							"There node cannot find the hash of the block at depth " + depth + "!",
+							"The node contains a hash for the block at depth " + depth + " but it is bound to no block!");
 				}
 			}
         }
 
-        /**
-         * Goes {@code depth} blocks backwards from the given cursor.
-         * 
-         * @param cursor the starting block
-         * @param depth how much backwards it should go
-         * @param the remote node
-         * @return the resulting block
-         * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
-         * @throws DatabaseException if the database of the remote node is corrupted
-         * @throws TimeoutException if some connection timed-out
-         * @throws InterruptedException if some connection was interrupted while waiting
-         * @throws ClosedNodeException if the remote node is closed
-         */
-		private Block backwards(Block cursor, long depth, RemotePublicNode remote) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
-			if (depth == 0)
-				return cursor;
-			else if (cursor instanceof NonGenesisBlock ngb) {
-				Optional<Block> maybePrevious = remote.getBlock(ngb.getHashOfPreviousBlock());
-				if (maybePrevious.isPresent())
-					return backwards(maybePrevious.get(), depth - 1, remote);
-				else
-					throw new DatabaseException("Block " + cursor.getHexHash(remote.getConfig().getHashingForBlocks()) + " has a previous hash that does not refer to any existing block!");
-			}
+        private Block getBlockAt(RemotePublicNode remote, Optional<byte[]> hash, String ifEmpty, String ifMissing) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+        	if (hash.isPresent())
+				return remote.getBlock(hash.get()).orElseThrow(() -> new DatabaseException(ifMissing));
 			else
-				throw new DatabaseException("Block " + cursor.getHexHash(remote.getConfig().getHashingForBlocks()) + " is a genesis block but is not at height 0!");
-		}
+				throw new CommandException(ifEmpty);
+        }
 	}
 
     private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
@@ -162,7 +122,7 @@ public class Show extends AbstractPublicRpcCommand {
 			var genesisHash = info.getGenesisHash();
 			if (genesisHash.isPresent()) {
 				var config = remote.getConfig();
-				var genesis = remote.getBlock(genesisHash.get());
+				var genesis = remote.getBlock(genesisHash.get()); // TODO: in the future, maybe a getBlockDescription() ?
 				if (genesis.isPresent()) {
 					var content = genesis.get();
 					if (content instanceof GenesisBlock gb)

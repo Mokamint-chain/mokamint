@@ -181,10 +181,9 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 			// typically, node1 could have added 5 blocks only, but it might happen that
 			// more blocks are added before closing the miner above: better ask node1 then
-			// and wait until any extra block has reached node2 as well; moreover,
-			// consider that the genesis has height 0, hence 5 blocks means to have reached height 4
+			// and wait until any extra block has reached node2 as well
 			var node1ChainInfo = node1.getChainInfo();
-			assertTrue(node2HasAddedBlock.tryAcquire((int) node1ChainInfo.getHeight() - 5 + 1, 20, TimeUnit.SECONDS));
+			assertTrue(node2HasAddedBlock.tryAcquire((int) node1ChainInfo.getLength() - 5, 20, TimeUnit.SECONDS));
 
 			// both chain should coincide now
 			var node2ChainInfo = node2.getChainInfo();

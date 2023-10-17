@@ -30,9 +30,9 @@ import io.mokamint.node.api.ChainInfo;
 public class ChainInfoImpl implements ChainInfo {
 
 	/**
-	 * The height of the chain.
+	 * The length of the chain.
 	 */
-	private final long height;
+	private final long length;
 
 	/**
 	 * The hash of the genesis block, if any.
@@ -47,19 +47,19 @@ public class ChainInfoImpl implements ChainInfo {
 	/**
 	 * Constructs a new chain information object.
 	 * 
-	 * @param height the height of the chain
+	 * @param length the length of the chain
 	 * @param genesisHash the hash of the genesis block, if any
 	 * @param the hash of the head block, if any
 	 */
-	public ChainInfoImpl(long height, Optional<byte[]> genesisHash, Optional<byte[]> headHash) {
-		this.height = height;
+	public ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash) {
+		this.length = length;
 		this.genesisHash = genesisHash.map(byte[]::clone);
 		this.headHash = headHash.map(byte[]::clone);
 	}
 
 	@Override
-	public long getHeight() {
-		return height;
+	public long getLength() {
+		return length;
 	}
 
 	@Override
@@ -75,7 +75,7 @@ public class ChainInfoImpl implements ChainInfo {
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof ChainInfo otherChainInfo &&
-			height == otherChainInfo.getHeight() &&
+			length == otherChainInfo.getLength() &&
 			same(genesisHash, otherChainInfo.getGenesisHash()) &&
 			same(headHash, otherChainInfo.getHeadHash());
 	}
@@ -83,7 +83,7 @@ public class ChainInfoImpl implements ChainInfo {
 	@Override
 	public String toString() {
 		var builder = new StringBuilder();
-		builder.append("* height: " + height + "\n");
+		builder.append("* height: " + length + "\n");
 		builder.append("* hash of the head block: " + toString(headHash) + "\n");
 		builder.append("* hash of the genesis block: " + toString(genesisHash));
 	

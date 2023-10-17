@@ -396,7 +396,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 			@Override
 			public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
-				return ChainInfos.of(chainInfo.getHeight(), Optional.of(new byte[] { 10, 11, 23, 34, 56, 7 }), chainInfo.getHeadHash());
+				return ChainInfos.of(chainInfo.getLength(), Optional.of(new byte[] { 10, 11, 23, 34, 56, 7 }), chainInfo.getHeadHash());
 			}
 		}
 

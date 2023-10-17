@@ -33,7 +33,7 @@ public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
 	private String headHash;
 
 	protected ChainInfoJson(ChainInfo info) {
-		this.height = info.getHeight();
+		this.height = info.getLength();
 		var genesisHash = info.getGenesisHash();
 		this.genesisHash = genesisHash.isEmpty() ? null : Hex.toHexString(genesisHash.get());
 		var headHash = info.getHeadHash();

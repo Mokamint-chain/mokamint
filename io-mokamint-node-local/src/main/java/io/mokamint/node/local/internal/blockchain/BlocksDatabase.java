@@ -861,7 +861,7 @@ public class BlocksDatabase implements AutoCloseable {
 		if (chainHeight.isEmpty())
 			throw new DatabaseException("The hash of the genesis is set but the height of the current best chain is missing");
 
-		return ChainInfos.of(chainHeight.getAsLong(), maybeGenesisHash, maybeHeadHash);
+		return ChainInfos.of(chainHeight.getAsLong() + 1, maybeGenesisHash, maybeHeadHash);
 	}
 
 	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws DatabaseException {

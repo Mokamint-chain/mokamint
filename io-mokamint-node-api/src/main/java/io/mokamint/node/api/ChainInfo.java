@@ -27,11 +27,12 @@ import io.hotmoka.annotations.Immutable;
 public interface ChainInfo {
 
 	/**
-	 * Yields the height of the chain (number of blocks from genesis to head).
+	 * Yields the length of the chain (number of blocks from genesis to head).
+	 * Hence this is one more than the height of the head.
 	 * 
-	 * @return the height of the chain
+	 * @return the length of the chain
 	 */
-	long getHeight();
+	long getLength();
 
 	/**
 	 * Yields the hash of the genesis block of the chain, if any.
