@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
@@ -94,9 +93,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		this.signatureForBlocks = signatureForBlocks;
 		this.publicKey = keys.getPublic();
 		this.publicKeyBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKey));
-		this.signature = signatureForBlocks.getSigner(keys.getPrivate(), GenesisBlockImpl::toByteArrayWithoutSignature).sign(this);
-
-		verify();
+		verifyWithoutSignature();
+		this.signature = computeSignature(keys.getPrivate());
 	}
 
 	/**
@@ -111,7 +109,6 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		this.publicKey = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyBase58));
 		this.publicKeyBase58 = publicKeyBase58;
 		this.signature = signature.clone();
-
 		verify();
 	}
 
@@ -133,7 +130,6 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 			this.signature = context.readBytes(context.readCompactInt(), "Signature length mismatch");
-
 			verify();
 		}
 		catch (RuntimeException | InvalidKeySpecException e) {
@@ -141,32 +137,16 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		}
 	}
 
-	/**
-	 * Checks all constraints expected from a genesis block.
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
-	 */
-	private void verify() {
+	@Override
+	protected void verifyWithoutSignature() {
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
 		Objects.requireNonNull(publicKey, "publicKey cannot be null");
-		Objects.requireNonNull(signature, "signature cannot be null");
+		Objects.requireNonNull(publicKeyBase58, "publicKeyBase58 cannot be null");
 		
 		if (acceleration.signum() <= 0)
 			throw new IllegalArgumentException("acceleration must be strictly positive");
-
-		try {
-			if (!signatureForBlocks.getVerifier(publicKey, GenesisBlockImpl::toByteArrayWithoutSignature).verify(this, signature))
-				throw new IllegalArgumentException("The block's signature is invalid");
-		}
-		catch (SignatureException e) {
-			throw new IllegalArgumentException("The block's signature cannot be verified", e);
-		}
-		catch (InvalidKeyException e) {
-			throw new IllegalArgumentException("The public key is invalid", e);
-		}
 	}
 
 	@Override
@@ -205,12 +185,12 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public PublicKey getPublicKey() {
+	public PublicKey getPublicKeyForSigningThisBlock() {
 		return publicKey;
 	}
 
 	@Override
-	public String getPublicKeyBase58() {
+	public String getPublicKeyForSigningThisBlockBase58() {
 		return publicKeyBase58;
 	}
 
@@ -224,13 +204,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		return BLOCK_1_GENERATION_SIGNATURE;
 	}
 
-	/**
-	 * Marshals this block into the given context, without its signature.
-	 * 
-	 * @param context the context
-	 * @throws IOException if marshalling fails
-	 */
-	private void intoWithoutSignature(MarshallingContext context) throws IOException {
+	@Override
+	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
 		// we write the height of the block anyway, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
@@ -254,24 +229,6 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		intoWithoutSignature(context);
 		context.writeCompactInt(signature.length);
 		context.write(signature);
-	}
-
-	/**
-	 * Yields a marshalling of this object into a byte array, without considering
-	 * its signature.
-	 * 
-	 * @return the marshalled bytes
-	 */
-	private byte[] toByteArrayWithoutSignature() {
-		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
-			intoWithoutSignature(context);
-			context.flush();
-			return baos.toByteArray();
-		}
-		catch (IOException e) {
-			// impossible with a ByteArrayOutputStream
-			throw new RuntimeException("Unexpected exception", e);
-		}
 	}
 
 	@Override

@@ -16,9 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -26,6 +30,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NonGenesisBlockDescription;
@@ -60,6 +65,45 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	private final static BigInteger _20 = BigInteger.valueOf(20L);
 
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
+
+	/**
+	 * Computes the signature of this block. It is compute from its marshalling, without the signature itself.
+	 * 
+	 * @throws SignatureException if the computation of the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	protected final byte[] computeSignature(PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return getSignatureForBlocks().getSigner(privateKey, AbstractBlock::toByteArrayWithoutSignature).sign(this);
+	}
+
+	/**
+	 * Checks all constraints expected from this block, but not the validity of the signature.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	protected abstract void verifyWithoutSignature();
+
+	/**
+	 * Checks all constraints expected from this block.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	protected final void verify() {
+		verifyWithoutSignature();
+
+		try {
+			if (!getSignatureForBlocks().getVerifier(getPublicKeyForSigningThisBlock(), AbstractBlock::toByteArrayWithoutSignature).verify(this, getSignature()))
+				throw new IllegalArgumentException("The block's signature is invalid");
+		}
+		catch (SignatureException e) {
+			throw new IllegalArgumentException("The block's signature cannot be verified", e);
+		}
+		catch (InvalidKeyException e) {
+			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
+		}
+	}
 
 	/**
 	 * Unmarshals a block from the given context.
@@ -122,6 +166,31 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 
 		return new NonGenesisBlockDescriptionImpl(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
 			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
+	}
+
+	/**
+	 * Marshals this block into the given context, without its signature.
+	 * 
+	 * @param context the context
+	 * @throws IOException if marshalling fails
+	 */
+	protected abstract void intoWithoutSignature(MarshallingContext context) throws IOException;
+
+	/**
+	 * Yields a marshalling of this object into a byte array, without considering its signature.
+	 * 
+	 * @return the marshalled bytes
+	 */
+	protected final byte[] toByteArrayWithoutSignature() {
+		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
+			intoWithoutSignature(context);
+			context.flush();
+			return baos.toByteArray();
+		}
+		catch (IOException e) {
+			// impossible with a ByteArrayOutputStream
+			throw new RuntimeException("Unexpected exception", e);
+		}
 	}
 
 	private BigInteger computePower(Deadline deadline, HashingAlgorithm hashingForDeadlines) {

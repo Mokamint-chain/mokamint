@@ -62,14 +62,14 @@ public abstract class Blocks {
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @param deadline the deadline computed for this block
 	 * @param hashOfPreviousBlock the reference to the previous block
-	 * @param key the private key to use to sign the block; it must match the public key contained in the deadline
+	 * @param privateKey the private key to use to sign the block; it must match the public key contained in the deadline
 	 * @return the non-genesis block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public static NonGenesisBlock of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
-			Deadline deadline, byte[] hashOfPreviousBlock, PrivateKey key) throws InvalidKeyException, SignatureException {
-		return new NonGenesisBlockImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, key);
+			Deadline deadline, byte[] hashOfPreviousBlock, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new NonGenesisBlockImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, privateKey);
 	}
 
 	/**

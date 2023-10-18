@@ -16,36 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.security.PublicKey;
-
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
 
 /**
  * The genesis block of a Mokamint blockchain.
  */
 @Immutable
 public interface GenesisBlock extends GenesisBlockDescription, Block {
-
-	/**
-	 * Yields the signature algorithm used for signing this block.
-	 * 
-	 * @return the signature algorithm
-	 */
-	SignatureAlgorithm getSignatureForBlocks();
-
-	/**
-	 * Yields the public key that can be used to verify the
-	 * signature of this block.
-	 * 
-	 * @return the public key
-	 */
-	PublicKey getPublicKey();
-
-	/**
-	 * Yields a Base58 representation of {@link #getPublicKey()}.
-	 * 
-	 * @return the Base58 representation
-	 */
-	String getPublicKeyBase58();
 }

@@ -45,7 +45,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private Deadlines.Json deadline;
 	private String hashOfPreviousBlock;
 	private String signatureForBlocks;
-	private String publicKey;
+	private String publicKeyBase58;
 	private String signature;
 
 	protected BlockJson(Block block) {
@@ -54,7 +54,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 			this.acceleration = gb.getAcceleration();
 			this.signature = Hex.toHexString(gb.getSignature());
 			this.signatureForBlocks = gb.getSignatureForBlocks().getName();
-			this.publicKey = gb.getPublicKeyBase58();
+			this.publicKeyBase58 = gb.getPublicKeyForSigningThisBlockBase58();
 		}
 		else {
 			var ngb = (NonGenesisBlock) block;
@@ -72,8 +72,10 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
 		if (startDateTimeUTC == null)
-			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), Hex.fromHexString(signature));
+			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(),
+				Hex.fromHexString(hashOfPreviousBlock), Hex.fromHexString(signature));
 		else
-			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME), acceleration, SignatureAlgorithms.of(signatureForBlocks), publicKey, Hex.fromHexString(signature));
+			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+				acceleration, SignatureAlgorithms.of(signatureForBlocks), publicKeyBase58, Hex.fromHexString(signature));
 	}
 }

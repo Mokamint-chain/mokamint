@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -33,6 +33,7 @@ import java.util.function.Function;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.ConsensusConfig;
@@ -100,7 +101,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
-			Deadline deadline, byte[] hashOfPreviousBlock, PrivateKey key) throws InvalidKeyException, SignatureException {
+			Deadline deadline, byte[] hashOfPreviousBlock, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 
 		this.height = height;
 		this.power = power;
@@ -109,9 +110,8 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		this.acceleration = acceleration;
 		this.deadline = deadline;
 		this.hashOfPreviousBlock = hashOfPreviousBlock.clone();
-		this.signature = deadline.getProlog().getSignatureForBlocks().getSigner(key, NonGenesisBlockImpl::toByteArrayWithoutSignature).sign(this);
-
-		verify();
+		verifyWithoutSignature();
+		this.signature = computeSignature(privateKey);
 	}
 
 	/**
@@ -126,7 +126,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		this.deadline = deadline;
 		this.hashOfPreviousBlock = hashOfPreviousBlock.clone();
 		this.signature = signature.clone();
-
 		verify();
 	}
 
@@ -149,7 +148,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 			this.deadline = Deadlines.from(context);
 			this.hashOfPreviousBlock = context.readBytes(context.readCompactInt(), "Previous block hash length mismatch");
 			this.signature = context.readBytes(context.readCompactInt(), "Signature length mismatch");
-
 			verify();
 		}
 		catch (RuntimeException e) {
@@ -157,19 +155,12 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		}
 	}
 
-	/**
-	 * Checks all constraints expected from a non-genesis block, including the
-	 * validity of its signature.
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
-	 */
-	private void verify() {
+	@Override
+	protected void verifyWithoutSignature() {
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(deadline, "deadline cannot be null");
 		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
 		Objects.requireNonNull(power, "power cannot be null");
-		Objects.requireNonNull(signature, "signature cannot be null");
 
 		if (height < 1)
 			throw new IllegalArgumentException("A non-genesis block must have positive height");
@@ -185,19 +176,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 
 		if (totalWaitingTime < weightedWaitingTime)
 			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
-
-		var prolog = deadline.getProlog();
-
-		try {
-			if (!prolog.getSignatureForBlocks().getVerifier(prolog.getPublicKeyForSigningBlocks(), NonGenesisBlockImpl::toByteArrayWithoutSignature).verify(this, signature))
-				throw new IllegalArgumentException("The block's signature is invalid");
-		}
-		catch (SignatureException e) {
-			throw new IllegalArgumentException("The block's signature cannot be verified", e);
-		}
-		catch (InvalidKeyException e) {
-			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
-		}
 	}
 
 	@Override
@@ -241,6 +219,21 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
+	public SignatureAlgorithm getSignatureForBlocks() {
+		return deadline.getProlog().getSignatureForBlocks();
+	}
+
+	@Override
+	public PublicKey getPublicKeyForSigningThisBlock() {
+		return deadline.getProlog().getPublicKeyForSigningBlocks();
+	}
+
+	@Override
+	public String getPublicKeyForSigningThisBlockBase58() {
+		return deadline.getProlog().getPublicKeyForSigningBlocksBase58();
+	}
+
+	@Override
 	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
@@ -272,13 +265,8 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		context.write(signature);
 	}
 
-	/**
-	 * Marshals this block into the given context, without its signature.
-	 * 
-	 * @param context the context
-	 * @throws IOException if marshalling fails
-	 */
-	private void intoWithoutSignature(MarshallingContext context) throws IOException {
+	@Override
+	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
 		// we write the height of the block first, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
@@ -290,24 +278,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 		deadline.into(context);
 		context.writeCompactInt(hashOfPreviousBlock.length);
 		context.write(hashOfPreviousBlock);
-	}
-
-	/**
-	 * Yields a marshalling of this object into a byte array, without considering
-	 * its signature.
-	 * 
-	 * @return the marshalled bytes
-	 */
-	private byte[] toByteArrayWithoutSignature() {
-		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
-			intoWithoutSignature(context);
-			context.flush();
-			return baos.toByteArray();
-		}
-		catch (IOException e) {
-			// impossible with a ByteArrayOutputStream
-			throw new RuntimeException("Unexpected exception", e);
-		}
 	}
 
 	@Override

@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.security.PublicKey;
 import java.time.LocalDateTime;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -39,6 +41,27 @@ public interface Block extends BlockDescription, Marshallable {
 	 * @return the signature
 	 */
 	byte[] getSignature();
+
+	/**
+	 * Yields the signature algorithm used for signing this block.
+	 * 
+	 * @return the signature algorithm
+	 */
+	SignatureAlgorithm getSignatureForBlocks();
+
+	/**
+	 * Yields the public key that can be used to verify the signature of this block.
+	 * 
+	 * @return the public key
+	 */
+	PublicKey getPublicKeyForSigningThisBlock();
+
+	/**
+	 * Yields a Base58 representation of {@link #getPublicKeyForSigningThisBlock()}.
+	 * 
+	 * @return the Base58 representation
+	 */
+	String getPublicKeyForSigningThisBlockBase58();
 
 	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
