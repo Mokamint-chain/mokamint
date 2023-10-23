@@ -19,14 +19,18 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -34,7 +38,7 @@ import io.mokamint.nonce.api.Deadline;
 /**
  * The implementation of the description of a non-genesis block of the Mokamint blockchain.
  */
-public class NonGenesisBlockDescriptionImpl extends AbstractMarshallable implements NonGenesisBlockDescription {
+public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription implements NonGenesisBlockDescription {
 
 	/**
 	 * The block height, non-negative, counting from 0, which is the genesis block.
@@ -220,31 +224,58 @@ public class NonGenesisBlockDescriptionImpl extends AbstractMarshallable impleme
 	}
 
 	@Override
-	public String toString() {
-		var builder = new StringBuilder("Block:\n");
-		populate(builder);
-		
-		return builder.toString();
+	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+		var deadline = getDeadline();
+		byte[] previousGenerationSignature = deadline.getData();
+		byte[] previousProlog = deadline.getProlog().toByteArray();
+		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
 	}
 
-	private void populate(StringBuilder builder) {
-		builder.append("* height: " + getHeight() + "\n");
-		builder.append("* power: " + getPower() + "\n");
-		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
-		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
-		builder.append("* acceleration: " + getAcceleration() + "\n");
-		builder.append("* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + "\n");
+	private static byte[] concat(byte[] array1, byte[] array2) {
+		var merge = new byte[array1.length + array2.length];
+		System.arraycopy(array1, 0, merge, 0, array1.length);
+		System.arraycopy(array2, 0, merge, array1.length, array2.length);
+		return merge;
+	}
+
+	@Override
+	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+		if (startDateTimeUTC.isPresent())
+			builder.append("* creation date and time UTC: " + startDateTimeUTC.get().plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n");
+		super.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
+		builder.append("* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock));
+		if (hashingForBlocks.isPresent())
+			builder.append(" (" + hashingForBlocks.get() + ")");
+		builder.append("\n");
 		builder.append("* deadline:\n");
 		builder.append("  * prolog:\n");
 		var prolog = deadline.getProlog();
 		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
-		builder.append("    * node's public key: " + prolog.getPublicKeyForSigningBlocksBase58() + "\n");
-		builder.append("    * plot's public key: " + prolog.getPublicKeyForSigningDeadlinesBase58() + "\n");
+		builder.append("    * node's public key for signing blocks: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ")\n");
+		builder.append("    * plot's public key for signing deadlines: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ")\n");
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
 		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
-		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()) + "\n");
+		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()));
+		if (hashingForGenerations.isPresent())
+			builder.append(" (" + hashingForGenerations.get() + ")");
+		builder.append("\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()));
+	}
+
+	@Override
+	public String toString() {
+		var builder = new StringBuilder("Non-genesis block:\n");
+		populate(builder, Optional.empty(), Optional.empty(), Optional.empty());
+		return builder.toString();
+	}
+
+	@Override
+	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
+		var hashing = config.getHashingForBlocks();
+		var builder = new StringBuilder("Non-genesis block:\n");
+		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
+		return builder.toString();
 	}
 
 	@Override

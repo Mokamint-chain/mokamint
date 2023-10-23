@@ -118,7 +118,7 @@ public interface Block extends BlockDescription {
 	 * 
 	 * @param config the configuration used to interpret and reconstruct the extra
 	 *               information about the block
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the node
+	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block
 	 * @return the representation
 	 */
 	String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC);

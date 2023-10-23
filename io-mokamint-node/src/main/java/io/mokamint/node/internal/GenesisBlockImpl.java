@@ -27,17 +27,16 @@ import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.SignatureAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlock;
-import io.mokamint.node.api.GenesisBlockDescription;
 
 /**
  * The implementation of a genesis block of a Mokamint blockchain.
@@ -64,11 +63,6 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * The signature of this node.
 	 */
 	private final byte[] signature;
-
-	/**
-	 * The generation signature for the block on top of the genesis block. This is arbitrary.
-	 */
-	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
 	/**
 	 * Creates a genesis block and signs it with the given private key and signature algorithm.
@@ -127,8 +121,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	protected GenesisBlockDescription getDescription() {
-		return (GenesisBlockDescription) super.getDescription();
+	protected GenesisBlockDescriptionImpl getDescription() {
+		return (GenesisBlockDescriptionImpl) super.getDescription();
 	}
 
 	@Override
@@ -164,11 +158,6 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
-		return BLOCK_1_GENERATION_SIGNATURE;
-	}
-
-	@Override
 	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
 		super.intoWithoutSignature(context);
 		context.writeStringShared(signatureForBlocks.getName());
@@ -193,29 +182,10 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public String toString() {
-		var builder = new StringBuilder("Genesis Block:\n");
-		builder.append("* creation date and time UTC: " + getStartDateTimeUTC() + "\n");
-		populate(builder);
-		
-		return builder.toString();
-	}
-
-	@Override
 	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var builder = new StringBuilder("Genesis Block:\n");
-		builder.append("* creation date and time UTC: " + startDateTimeUTC + "\n");
-		builder.append("* hash: " + getHexHash(config.getHashingForBlocks()) + "\n");
-		populate(builder);
-
+		var hashing = config.getHashingForBlocks();
+		var builder = new StringBuilder("Genesis block with hash " + getHexHash(hashing) + " (" + hashing + "):\n");
+		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
 		return builder.toString();
-	}
-
-	private void populate(StringBuilder builder) {
-		builder.append("* height: " + getHeight() + "\n");
-		builder.append("* power: " + getPower() + "\n");
-		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
-		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
-		builder.append("* acceleration: " + getAcceleration() + "\n");
 	}
 }

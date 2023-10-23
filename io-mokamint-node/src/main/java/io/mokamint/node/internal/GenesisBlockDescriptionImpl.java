@@ -22,16 +22,18 @@ import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.Optional;
 
-import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 
 /**
  * The implementation of the description of a genesis block of the Mokamint blockchain.
  */
-public class GenesisBlockDescriptionImpl extends AbstractMarshallable implements GenesisBlockDescription {
+public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implements GenesisBlockDescription {
 
 	/**
 	 * The moment when the block has been mined. This is the moment when the blockchain started.
@@ -44,6 +46,11 @@ public class GenesisBlockDescriptionImpl extends AbstractMarshallable implements
 	 * varying mining power in the network. It is similar to Bitcoin's difficulty.
 	 */
 	private final BigInteger acceleration;
+
+	/**
+	 * The generation signature for the block on top of the genesis block. This is arbitrary.
+	 */
+	private final static byte[] BLOCK_1_GENERATION_SIGNATURE = new byte[] { 13, 1, 19, 73 };
 
 	/**
 	 * Creates a new genesis block description.
@@ -117,6 +124,11 @@ public class GenesisBlockDescriptionImpl extends AbstractMarshallable implements
 	}
 
 	@Override
+	protected byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
+		return BLOCK_1_GENERATION_SIGNATURE;
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof GenesisBlockDescription gbd &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
@@ -130,15 +142,23 @@ public class GenesisBlockDescriptionImpl extends AbstractMarshallable implements
 
 	@Override
 	public String toString() {
-		var builder = new StringBuilder("Genesis Block:\n");
-		builder.append("* creation date and time UTC: " + startDateTimeUTC + "\n");
-		builder.append("* height: " + getHeight() + "\n");
-		builder.append("* power: " + getPower() + "\n");
-		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
-		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
-		builder.append("* acceleration: " + getAcceleration() + "\n");
-		
+		var builder = new StringBuilder("Genesis block:\n");
+		populate(builder, Optional.empty(), Optional.empty(), Optional.empty());
 		return builder.toString();
+	}
+
+	@Override
+	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
+		var hashing = config.getHashingForBlocks();
+		var builder = new StringBuilder("Genesis block:\n");
+		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
+		return builder.toString();
+	}
+
+	@Override
+	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
+		super.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
 	}
 
 	@Override

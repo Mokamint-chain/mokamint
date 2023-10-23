@@ -24,14 +24,11 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.ConsensusConfig;
@@ -96,8 +93,8 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	protected NonGenesisBlockDescription getDescription() {
-		return (NonGenesisBlockDescription) super.getDescription();
+	protected NonGenesisBlockDescriptionImpl getDescription() {
+		return (NonGenesisBlockDescriptionImpl) super.getDescription();
 	}
 
 	@Override
@@ -135,67 +132,15 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
-		var deadline = getDeadline();
-		byte[] previousGenerationSignature = deadline.getData();
-		byte[] previousProlog = deadline.getProlog().toByteArray();
-		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
-	}
-
-	@Override
 	public boolean equals(Object other) {
 		return other instanceof NonGenesisBlock ngb && super.equals(other) && Arrays.equals(signature, ngb.getSignature());
 	}
 
 	@Override
-	public String toString() {
-		var builder = new StringBuilder("Block:\n");
-		populate(builder, Optional.empty());
-		populateWithDeadline(builder, Optional.empty());
-		
-		return builder.toString();
-	}
-
-	private void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForBlocks) {
-		builder.append("* height: " + getHeight() + "\n");
-		builder.append("* power: " + getPower() + "\n");
-		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
-		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
-		builder.append("* acceleration: " + getAcceleration() + "\n");
-		builder.append("* hash of previous block: " + Hex.toHexString(getHashOfPreviousBlock()));
-		if (hashingForBlocks.isPresent())
-			builder.append(" (" + hashingForBlocks.get() + ")");
-		builder.append("\n");
-		builder.append("* signature: " + Hex.toHexString(signature) + " (" + getDeadline().getProlog().getSignatureForBlocks() + ")\n");
-	}
-
-	private void populateWithDeadline(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations) {
-		var deadline = getDeadline();
-		var prolog = deadline.getProlog();
-		builder.append("* deadline:\n");
-		builder.append("  * prolog:\n");
-		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
-		builder.append("    * node's public key for signing blocks: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ")\n");
-		builder.append("    * plot's public key for signing deadlines: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ")\n");
-		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
-		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
-		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()));
-		if (hashingForGenerations.isPresent())
-			builder.append(" (" + hashingForGenerations.get() + ")");
-		builder.append("\n");
-		builder.append("  * signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")\n");
-		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
-		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + deadline.getHashing() + ")\n");
-	}
-
-	@Override
 	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var builder = new StringBuilder("Block with hash " + getHexHash(config.getHashingForBlocks()) + " (" + config.getHashingForBlocks() + "):\n");
-		builder.append("* creation date and time UTC: " + startDateTimeUTC.plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n");
-		populate(builder, Optional.of(config.getHashingForBlocks()));		
-		var hashingForGenerations = config.getHashingForGenerations();
-		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(hashingForGenerations)) + " (" + hashingForGenerations + ")\n");
-		populateWithDeadline(builder, Optional.of(config.getHashingForGenerations()));
+		var hashing = config.getHashingForBlocks();
+		var builder = new StringBuilder("Non-genesis block with hash " + getHexHash(hashing) + " (" + hashing + "):\n");
+		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
 		return builder.toString();
 	}
 

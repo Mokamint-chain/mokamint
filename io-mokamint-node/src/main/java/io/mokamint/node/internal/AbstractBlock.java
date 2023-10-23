@@ -23,7 +23,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -33,7 +35,6 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
@@ -47,7 +48,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	/**
 	 * The description of this block.
 	 */
-	private final BlockDescription description;
+	private final AbstractBlockDescription description;
 
 	/**
 	 * A lock for the {@link #lastHash} and {@link #lastHashingName} fields.
@@ -77,7 +78,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * 
 	 * @param description the description of the block
 	 */
-	protected AbstractBlock(BlockDescription description) {
+	protected AbstractBlock(AbstractBlockDescription description) {
 		this.description = description;
 	}
 
@@ -125,7 +126,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * 
 	 * @return the description
 	 */
-	protected BlockDescription getDescription() {
+	protected AbstractBlockDescription getDescription() {
 		return description;
 	}
 
@@ -197,7 +198,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 
 	@Override
 	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
-		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
+		var nextGenerationSignature = description.getNextGenerationSignature(hashingForGenerations);
 		return DeadlineDescriptions.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
@@ -223,6 +224,11 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	@Override
 	public int hashCode() {
 		return description.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return description.toString();
 	}
 
 	/**
@@ -316,8 +322,6 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
 	}
 
-	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
-
 	protected static byte[] concat(byte[] array1, byte[] array2) {
 		var merge = new byte[array1.length + array2.length];
 		System.arraycopy(array1, 0, merge, 0, array1.length);
@@ -331,5 +335,18 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 			target[7 - i] = (byte) ((l>>(8*i)) & 0xFF);
 
 		return target;
+	}
+
+	/**
+	 * Fills the given builder with the information inside this block.
+	 * 
+	 * @param builder the builder
+	 * @param hashingForGenerations the hashing algorithm used for deadline generations, if available
+	 * @param hashingForBlocks the hashing algorithm used for the blocks, if available
+	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
+	 */
+	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+		description.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
+		builder.append("* signature: " + Hex.toHexString(getSignature()) + " (" + getSignatureForBlocks() + ")\n");
 	}
 }
