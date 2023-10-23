@@ -19,12 +19,13 @@ package io.mokamint.node.api;
 import java.math.BigInteger;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * The description of a block of the Mokamint blockchain.
  */
 @Immutable
-public interface BlockDescription {
+public interface BlockDescription extends Marshallable {
 
 	/**
 	 * Yields the power of the block, computed as the sum, for each block from genesis to the block,

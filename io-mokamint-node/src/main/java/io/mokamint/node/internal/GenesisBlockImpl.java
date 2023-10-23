@@ -25,7 +25,7 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
@@ -37,24 +37,13 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.GenesisBlockDescription;
 
 /**
  * The implementation of a genesis block of a Mokamint blockchain.
  */
 @Immutable
 public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
-
-	/**
-	 * The moment when the block has been mined. This is the moment when the blockchain started.
-	 */
-	private final LocalDateTime startDateTimeUTC;
-
-	/**
-	 * A value used to divide the deadline to derive the time needed to wait for it.
-	 * The higher, the shorter the time. This value changes dynamically to cope with
-	 * varying mining power in the network. It is similar to Bitcoin's difficulty.
-	 */
-	private final BigInteger acceleration;
 
 	/**
 	 * The signature algorithm used to sign this block.
@@ -88,13 +77,13 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, KeyPair keys) throws InvalidKeyException, SignatureException {
-		this.startDateTimeUTC = startDateTimeUTC;
-		this.acceleration = acceleration;
+		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration));
+
 		this.signatureForBlocks = signatureForBlocks;
 		this.publicKey = keys.getPublic();
 		this.publicKeyBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKey));
-		verifyWithoutSignature();
 		this.signature = computeSignature(keys.getPrivate());
+		verifyWithoutSignature();
 	}
 
 	/**
@@ -103,8 +92,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws InvalidKeySpecException if the public key is invalid
 	 */
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, String publicKeyBase58, byte[] signature) throws InvalidKeySpecException {
-		this.startDateTimeUTC = startDateTimeUTC;
-		this.acceleration = acceleration;
+		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration));
+
 		this.signatureForBlocks = signatureForBlocks;
 		this.publicKey = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyBase58));
 		this.publicKeyBase58 = publicKeyBase58;
@@ -122,9 +111,9 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 */
 	GenesisBlockImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		super(new GenesisBlockDescriptionImpl(context));
+
 		try {
-			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-			this.acceleration = context.readBigInteger();
 			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared());
 			byte[] publicKeyEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the length of the public key");
 			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
@@ -138,40 +127,20 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
+	protected GenesisBlockDescription getDescription() {
+		return (GenesisBlockDescription) super.getDescription();
+	}
+
+	@Override
 	protected void verifyWithoutSignature() {
-		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
-		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
 		Objects.requireNonNull(publicKey, "publicKey cannot be null");
 		Objects.requireNonNull(publicKeyBase58, "publicKeyBase58 cannot be null");
-		
-		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("acceleration must be strictly positive");
 	}
 
 	@Override
 	public LocalDateTime getStartDateTimeUTC() {
-		return startDateTimeUTC;
-	}
-
-	@Override
-	public BigInteger getPower() {
-		return BigInteger.ZERO; // just started
-	}
-
-	@Override
-	public long getTotalWaitingTime() {
-		return 0L; // just started
-	}
-
-	@Override
-	public long getWeightedWaitingTime() {
-		return 0L; // just started
-	}
-
-	@Override
-	public BigInteger getAcceleration() {
-		return acceleration;
+		return getDescription().getStartDateTimeUTC();
 	}
 
 	@Override
@@ -195,25 +164,15 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public long getHeight() {
-		return 0L;
-	}
-
-	@Override
 	protected byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
 		return BLOCK_1_GENERATION_SIGNATURE;
 	}
 
 	@Override
 	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
-		// we write the height of the block anyway, so that, by reading the first long,
-		// it is possible to distinguish between a genesis block (height == 0)
-		// and a non-genesis block (height > 0)
-		context.writeLong(0L);
-		context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
-		context.writeBigInteger(acceleration);
+		super.intoWithoutSignature(context);
 		context.writeStringShared(signatureForBlocks.getName());
-		
+
 		try {
 			var publicKeyBytes = signatureForBlocks.encodingOf(publicKey);
 			context.writeCompactInt(publicKeyBytes.length);
@@ -225,27 +184,18 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public void into(MarshallingContext context) throws IOException {
-		intoWithoutSignature(context);
-		context.writeCompactInt(signature.length);
-		context.write(signature);
-	}
-
-	@Override
 	public boolean equals(Object other) {
-		return other instanceof GenesisBlock gb && startDateTimeUTC.equals(gb.getStartDateTimeUTC())
-			&& acceleration.equals(gb.getAcceleration());
-	}
-
-	@Override
-	public int hashCode() {
-		return startDateTimeUTC.hashCode() ^ acceleration.hashCode();
+		return other instanceof GenesisBlock gb && super.equals(other)
+			&& Arrays.equals(signature, gb.getSignature())
+			&& publicKey.equals(gb.getPublicKeyForSigningThisBlock())
+			&& publicKeyBase58.equals(gb.getPublicKeyForSigningThisBlockBase58())
+			&& signatureForBlocks.equals(gb.getSignatureForBlocks());
 	}
 
 	@Override
 	public String toString() {
 		var builder = new StringBuilder("Genesis Block:\n");
-		builder.append("* creation date and time UTC: " + startDateTimeUTC + "\n");
+		builder.append("* creation date and time UTC: " + getStartDateTimeUTC() + "\n");
 		populate(builder);
 		
 		return builder.toString();

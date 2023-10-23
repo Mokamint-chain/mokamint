@@ -16,16 +16,22 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
+import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.GenesisBlockDescription;
 
 /**
  * The implementation of the description of a genesis block of the Mokamint blockchain.
  */
-public class GenesisBlockDescriptionImpl implements GenesisBlockDescription {
+public class GenesisBlockDescriptionImpl extends AbstractMarshallable implements GenesisBlockDescription {
 
 	/**
 	 * The moment when the block has been mined. This is the moment when the blockchain started.
@@ -47,6 +53,24 @@ public class GenesisBlockDescriptionImpl implements GenesisBlockDescription {
 		this.acceleration = acceleration;
 
 		verify();
+	}
+
+	/**
+	 * Unmarshals a genesis block.
+	 * 
+	 * @param context the unmarshalling context
+	 * @throws IOException if unmarshalling failed
+	 */
+	GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException {
+		try {
+			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			this.acceleration = context.readBigInteger();
+	
+			verify();
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
 	}
 
 	/**
@@ -115,5 +139,17 @@ public class GenesisBlockDescriptionImpl implements GenesisBlockDescription {
 		builder.append("* acceleration: " + getAcceleration() + "\n");
 		
 		return builder.toString();
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		try {
+			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
+		}
+		catch (DateTimeException e) {
+			throw new IOException(e);
+		}
+
+		context.writeBigInteger(acceleration);
 	}
 }

@@ -33,6 +33,7 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
@@ -42,6 +43,11 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * Shared code of all classes implementing blocks.
  */
 public abstract class AbstractBlock extends AbstractMarshallable implements Block {
+
+	/**
+	 * The description of this block.
+	 */
+	private final BlockDescription description;
 
 	/**
 	 * A lock for the {@link #lastHash} and {@link #lastHashingName} fields.
@@ -65,6 +71,15 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	private final static BigInteger _20 = BigInteger.valueOf(20L);
 
 	private final static BigInteger _100 = BigInteger.valueOf(100L);
+
+	/**
+	 * Creates an abstract block with the given description.
+	 * 
+	 * @param description the description of the block
+	 */
+	protected AbstractBlock(BlockDescription description) {
+		this.description = description;
+	}
 
 	/**
 	 * Computes the signature of this block. It is compute from its marshalling, without the signature itself.
@@ -106,6 +121,15 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	}
 
 	/**
+	 * Yields the description of this block.
+	 * 
+	 * @return the description
+	 */
+	protected BlockDescription getDescription() {
+		return description;
+	}
+
+	/**
 	 * Unmarshals a block from the given context.
 	 * 
 	 * @param context the context
@@ -118,10 +142,33 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 		var height = context.readLong();
 		if (height == 0L)
 			return new GenesisBlockImpl(context);
-		else if (height > 0L)
-			return new NonGenesisBlockImpl(height, context);
 		else
-			throw new IOException("negative block height");
+			return new NonGenesisBlockImpl(height, context);
+	}
+
+	@Override
+	public BigInteger getPower() {
+		return description.getPower();
+	}
+
+	@Override
+	public long getTotalWaitingTime() {
+		return description.getTotalWaitingTime();
+	}
+
+	@Override
+	public long getWeightedWaitingTime() {
+		return description.getWeightedWaitingTime();
+	}
+
+	@Override
+	public BigInteger getAcceleration() {
+		return description.getAcceleration();
+	}
+
+	@Override
+	public long getHeight() {
+		return description.getHeight();
 	}
 
 	@Override
@@ -168,13 +215,37 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof AbstractBlock ab && description.equals(ab.description);
+	}
+
+	@Override
+	public int hashCode() {
+		return description.hashCode();
+	}
+
 	/**
 	 * Marshals this block into the given context, without its signature.
 	 * 
 	 * @param context the context
 	 * @throws IOException if marshalling fails
 	 */
-	protected abstract void intoWithoutSignature(MarshallingContext context) throws IOException;
+	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
+		// we write the height of the block anyway, so that, by reading the first long,
+		// it is possible to distinguish between a genesis block (height == 0)
+		// and a non-genesis block (height > 0)
+		context.writeLong(getHeight());
+		getDescription().into(context);
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		intoWithoutSignature(context);
+		var signature = getSignature();
+		context.writeCompactInt(signature.length);
+		context.write(signature);
+	}
 
 	/**
 	 * Yields a marshalling of this object into a byte array, without considering its signature.

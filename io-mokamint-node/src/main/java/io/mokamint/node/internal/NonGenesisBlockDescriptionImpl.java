@@ -16,18 +16,25 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * The implementation of the description of a non-genesis block of the Mokamint blockchain.
  */
-public class NonGenesisBlockDescriptionImpl implements NonGenesisBlockDescription {
+public class NonGenesisBlockDescriptionImpl extends AbstractMarshallable implements NonGenesisBlockDescription {
 
 	/**
 	 * The block height, non-negative, counting from 0, which is the genesis block.
@@ -83,6 +90,33 @@ public class NonGenesisBlockDescriptionImpl implements NonGenesisBlockDescriptio
 
 		verify();
 	}
+
+	/**
+	 * Unmarshals a non-genesis block. The height of the block has been already read.
+	 * 
+	 * param height the height of the block
+	 * @param context the unmarshalling context
+	 * @throws IOException if unmarshalling failed
+	 * @throws NoSuchAlgorithmException if the block uses some unknown signature or hashing algorithm
+	 */
+	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		this.height = height;
+
+		try {
+			this.power = context.readBigInteger();
+			this.totalWaitingTime = context.readLong();
+			this.weightedWaitingTime = context.readLong();
+			this.acceleration = context.readBigInteger();
+			this.deadline = Deadlines.from(context);
+			this.hashOfPreviousBlock = context.readBytes(context.readCompactInt(), "Previous block hash length mismatch");
+
+			verify();
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
+	}
+
 
 	/**
 	 * Checks all constraints expected from a non-genesis block.
@@ -165,6 +199,27 @@ public class NonGenesisBlockDescriptionImpl implements NonGenesisBlockDescriptio
 	}
 
 	@Override
+	public <E extends Exception> void matchesOrThrow(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E {
+		if (height != description.getHeight())
+			throw exceptionSupplier.apply("Height mismatch (expected " + description.getHeight() + " but found " + height + ")");
+
+		if (!acceleration.equals(description.getAcceleration()))
+			throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
+
+		if (!power.equals(description.getPower()))
+			throw exceptionSupplier.apply("Power mismatch (expected " + description.getPower() + " but found " + power + ")");
+
+		if (totalWaitingTime != description.getTotalWaitingTime())
+			throw exceptionSupplier.apply("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
+
+		if (weightedWaitingTime != description.getWeightedWaitingTime())
+			throw exceptionSupplier.apply("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
+
+		if (!Arrays.equals(hashOfPreviousBlock, description.getHashOfPreviousBlock()))
+			throw exceptionSupplier.apply("Hash of previous block mismatch");
+	}
+
+	@Override
 	public String toString() {
 		var builder = new StringBuilder("Block:\n");
 		populate(builder);
@@ -190,5 +245,16 @@ public class NonGenesisBlockDescriptionImpl implements NonGenesisBlockDescriptio
 		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()) + "\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()));
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		context.writeBigInteger(power);
+		context.writeLong(totalWaitingTime);
+		context.writeLong(weightedWaitingTime);
+		context.writeBigInteger(acceleration);
+		deadline.into(context);
+		context.writeCompactInt(hashOfPreviousBlock.length);
+		context.write(hashOfPreviousBlock);
 	}
 }

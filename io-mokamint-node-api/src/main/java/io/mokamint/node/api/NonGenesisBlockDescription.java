@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.function.Function;
+
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.nonce.api.Deadline;
 
@@ -40,4 +42,15 @@ public interface NonGenesisBlockDescription extends BlockDescription {
 	 * @return the reference to the previous block
 	 */
 	byte[] getHashOfPreviousBlock();
+
+	/**
+	 * Checks if this block description matches another.
+	 * If it doesn't, an exception is thrown by using the given supplier.
+	 * 
+	 * @param <E> the type of the thrown exception
+	 * @param description the description matched against this
+	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
+	 * @throws E if the match fails
+	 */
+	<E extends Exception> void matchesOrThrow(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E;
 }
