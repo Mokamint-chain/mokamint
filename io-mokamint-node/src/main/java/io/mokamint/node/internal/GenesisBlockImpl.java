@@ -21,19 +21,14 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.Base58;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlock;
@@ -43,21 +38,6 @@ import io.mokamint.node.api.GenesisBlock;
  */
 @Immutable
 public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
-
-	/**
-	 * The signature algorithm used to sign this block.
-	 */
-	private final SignatureAlgorithm signatureForBlocks;
-
-	/**
-	 * The public key of the node that signed this block.
-	 */
-	private final PublicKey publicKey;
-
-	/**
-	 * Base58 encoding of {@link #publicKey}.
-	 */
-	private final String publicKeyBase58;
 
 	/**
 	 * The signature of this node.
@@ -71,13 +51,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, KeyPair keys) throws InvalidKeyException, SignatureException {
-		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration));
-
-		this.signatureForBlocks = signatureForBlocks;
-		this.publicKey = keys.getPublic();
-		this.publicKeyBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKey));
+		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, keys));
 		this.signature = computeSignature(keys.getPrivate());
-		verifyWithoutSignature();
 	}
 
 	/**
@@ -86,11 +61,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws InvalidKeySpecException if the public key is invalid
 	 */
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, String publicKeyBase58, byte[] signature) throws InvalidKeySpecException {
-		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration));
-
-		this.signatureForBlocks = signatureForBlocks;
-		this.publicKey = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyBase58));
-		this.publicKeyBase58 = publicKeyBase58;
+		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKeyBase58));
 		this.signature = signature.clone();
 		verify();
 	}
@@ -108,14 +79,10 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 		super(new GenesisBlockDescriptionImpl(context));
 
 		try {
-			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared());
-			byte[] publicKeyEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the length of the public key");
-			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
-			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 			this.signature = context.readBytes(context.readCompactInt(), "Signature length mismatch");
 			verify();
 		}
-		catch (RuntimeException | InvalidKeySpecException e) {
+		catch (RuntimeException e) {
 			throw new IOException(e);
 		}
 	}
@@ -123,13 +90,6 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	@Override
 	protected GenesisBlockDescriptionImpl getDescription() {
 		return (GenesisBlockDescriptionImpl) super.getDescription();
-	}
-
-	@Override
-	protected void verifyWithoutSignature() {
-		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
-		Objects.requireNonNull(publicKey, "publicKey cannot be null");
-		Objects.requireNonNull(publicKeyBase58, "publicKeyBase58 cannot be null");
 	}
 
 	@Override
@@ -143,42 +103,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public SignatureAlgorithm getSignatureForBlocks() {
-		return signatureForBlocks;
-	}
-
-	@Override
-	public PublicKey getPublicKeyForSigningThisBlock() {
-		return publicKey;
-	}
-
-	@Override
-	public String getPublicKeyForSigningThisBlockBase58() {
-		return publicKeyBase58;
-	}
-
-	@Override
-	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
-		super.intoWithoutSignature(context);
-		context.writeStringShared(signatureForBlocks.getName());
-
-		try {
-			var publicKeyBytes = signatureForBlocks.encodingOf(publicKey);
-			context.writeCompactInt(publicKeyBytes.length);
-			context.write(publicKeyBytes);
-		}
-		catch (InvalidKeyException e) {
-			throw new IOException("Cannot marshal the genesis block into bytes", e);
-		}
-	}
-
-	@Override
 	public boolean equals(Object other) {
-		return other instanceof GenesisBlock gb && super.equals(other)
-			&& Arrays.equals(signature, gb.getSignature())
-			&& publicKey.equals(gb.getPublicKeyForSigningThisBlock())
-			&& publicKeyBase58.equals(gb.getPublicKeyForSigningThisBlockBase58())
-			&& signatureForBlocks.equals(gb.getSignatureForBlocks());
+		return other instanceof GenesisBlock gb && super.equals(other) && Arrays.equals(signature, gb.getSignature());
 	}
 
 	@Override

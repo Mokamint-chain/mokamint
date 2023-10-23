@@ -19,6 +19,7 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.ConsensusConfig;
@@ -173,6 +175,21 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 	@Override
 	public long getHeight() {
 		return height;
+	}
+
+	@Override
+	public SignatureAlgorithm getSignatureForBlocks() {
+		return deadline.getProlog().getSignatureForBlocks();
+	}
+
+	@Override
+	public PublicKey getPublicKeyForSigningThisBlock() {
+		return deadline.getProlog().getPublicKeyForSigningBlocks();
+	}
+
+	@Override
+	public String getPublicKeyForSigningThisBlockBase58() {
+		return deadline.getProlog().getPublicKeyForSigningBlocksBase58();
 	}
 
 	@Override

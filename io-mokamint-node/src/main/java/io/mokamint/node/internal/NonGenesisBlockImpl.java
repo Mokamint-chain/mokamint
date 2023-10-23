@@ -21,7 +21,6 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -29,7 +28,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -58,7 +56,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 			Deadline deadline, byte[] hashOfPreviousBlock, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 
 		super(new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock));
-		verifyWithoutSignature();
 		this.signature = computeSignature(privateKey);
 	}
 
@@ -98,10 +95,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	protected void verifyWithoutSignature() {
-	}
-
-	@Override
 	public Deadline getDeadline() {
 		return getDescription().getDeadline();
 	}
@@ -114,21 +107,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	@Override
 	public byte[] getSignature() {
 		return signature.clone();
-	}
-
-	@Override
-	public SignatureAlgorithm getSignatureForBlocks() {
-		return getDeadline().getProlog().getSignatureForBlocks();
-	}
-
-	@Override
-	public PublicKey getPublicKeyForSigningThisBlock() {
-		return getDeadline().getProlog().getPublicKeyForSigningBlocks();
-	}
-
-	@Override
-	public String getPublicKeyForSigningThisBlockBase58() {
-		return getDeadline().getProlog().getPublicKeyForSigningBlocksBase58();
 	}
 
 	@Override

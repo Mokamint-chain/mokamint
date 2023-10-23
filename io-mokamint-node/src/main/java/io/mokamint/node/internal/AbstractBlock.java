@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -31,6 +32,7 @@ import java.util.function.Function;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -93,22 +95,12 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	}
 
 	/**
-	 * Checks all constraints expected from this block, but not the validity of the signature.
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
-	 */
-	protected abstract void verifyWithoutSignature();
-
-	/**
 	 * Checks all constraints expected from this block.
 	 * 
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
 	 * @throws IllegalArgumentException if some value is illegal
 	 */
 	protected final void verify() {
-		verifyWithoutSignature();
-
 		try {
 			if (!getSignatureForBlocks().getVerifier(getPublicKeyForSigningThisBlock(), AbstractBlock::toByteArrayWithoutSignature).verify(this, getSignature()))
 				throw new IllegalArgumentException("The block's signature is invalid");
@@ -170,6 +162,21 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	@Override
 	public long getHeight() {
 		return description.getHeight();
+	}
+
+	@Override
+	public SignatureAlgorithm getSignatureForBlocks() {
+		return description.getSignatureForBlocks();
+	}
+
+	@Override
+	public PublicKey getPublicKeyForSigningThisBlock() {
+		return description.getPublicKeyForSigningThisBlock();
+	}
+
+	@Override
+	public String getPublicKeyForSigningThisBlockBase58() {
+		return description.getPublicKeyForSigningThisBlockBase58();
 	}
 
 	@Override
