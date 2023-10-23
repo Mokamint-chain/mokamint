@@ -27,7 +27,7 @@ import io.mokamint.nonce.DeadlineDescriptions;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class DeadlineDescriptionsTests extends AbstractLoggedTests {
+public class DeadlineDescriptionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deadline descriptions are correctly encoded into Json and decoded from Json")
