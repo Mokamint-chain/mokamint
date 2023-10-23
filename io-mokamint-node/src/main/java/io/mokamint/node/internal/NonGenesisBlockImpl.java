@@ -23,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -41,11 +40,6 @@ import io.mokamint.nonce.api.Deadline;
 public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBlock {
 
 	/**
-	 * The signature of this node.
-	 */
-	private final byte[] signature;
-
-	/**
 	 * Creates a new non-genesis block. It adds a signature to the resulting block,
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
@@ -55,17 +49,14 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
 			Deadline deadline, byte[] hashOfPreviousBlock, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 
-		super(new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock));
-		this.signature = computeSignature(privateKey);
+		super(new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock), privateKey);
 	}
 
 	/**
 	 * Creates a new non-genesis block.
 	 */
 	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, byte[] signature) {
-		super(new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock));
-		this.signature = signature.clone();
-		verify();
+		super(new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock), signature.clone());
 	}
 
 	/**
@@ -78,15 +69,7 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * @throws IOException if the block could not be unmarshalled
 	 */
 	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		super(new NonGenesisBlockDescriptionImpl(height, context));
-
-		try {
-			this.signature = context.readBytes(context.readCompactInt(), "Signature length mismatch");
-			verify();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
-		}
+		super(new NonGenesisBlockDescriptionImpl(height, context), context);
 	}
 
 	@Override
@@ -105,13 +88,8 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	@Override
-	public byte[] getSignature() {
-		return signature.clone();
-	}
-
-	@Override
 	public boolean equals(Object other) {
-		return other instanceof NonGenesisBlock ngb && super.equals(other) && Arrays.equals(signature, ngb.getSignature());
+		return other instanceof NonGenesisBlock && super.equals(other);
 	}
 
 	@Override

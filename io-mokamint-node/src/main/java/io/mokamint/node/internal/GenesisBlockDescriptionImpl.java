@@ -19,7 +19,6 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SignatureException;
@@ -97,11 +96,11 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, KeyPair keys) throws InvalidKeyException, SignatureException {
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException, SignatureException {
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
 		this.signatureForBlocks = signatureForBlocks;
-		this.publicKey = keys.getPublic();
+		this.publicKey = publicKey;
 		this.publicKeyBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKey));
 
 		verify();

@@ -25,6 +25,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -53,6 +54,11 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	private final AbstractBlockDescription description;
 
 	/**
+	 * The signature of this .
+	 */
+	private final byte[] signature;
+
+	/**
 	 * A lock for the {@link #lastHash} and {@link #lastHashingName} fields.
 	 */
 	private final Object lock = new Object();
@@ -79,37 +85,46 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * Creates an abstract block with the given description.
 	 * 
 	 * @param description the description of the block
+	 * @param signature the signature of the block
 	 */
-	protected AbstractBlock(AbstractBlockDescription description) {
+	protected AbstractBlock(AbstractBlockDescription description, byte[] signature) {
 		this.description = description;
+		this.signature = signature;
+		verify();
 	}
 
 	/**
-	 * Computes the signature of this block. It is compute from its marshalling, without the signature itself.
+	 * Creates an abstract block with the given description and signs it.
 	 * 
-	 * @throws SignatureException if the computation of the signature of the block failed
-	 * @throws InvalidKeyException if the private key is invalid
+	 * @param description the description of the block
+	 * @param privateKey the private key for signing the block
+	 * @throws SignatureException if signing failed
+	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
-	protected final byte[] computeSignature(PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return getSignatureForBlocks().getSigner(privateKey, AbstractBlock::toByteArrayWithoutSignature).sign(this);
+	protected AbstractBlock(AbstractBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		this.description = description;
+		verifyExceptSignature();
+		this.signature = computeSignature(privateKey);
 	}
 
 	/**
-	 * Checks all constraints expected from this block.
+	 * Unmarshals an abstract block from the given context.
+	 * The description of the block has been already read.
 	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
+	 * @param description the already unmarshalled description
+	 * @param context the context
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	protected final void verify() {
+	protected AbstractBlock(AbstractBlockDescription description, UnmarshallingContext context) throws IOException {
+		this.description = description;
+
 		try {
-			if (!getSignatureForBlocks().getVerifier(getPublicKeyForSigningThisBlock(), AbstractBlock::toByteArrayWithoutSignature).verify(this, getSignature()))
-				throw new IllegalArgumentException("The block's signature is invalid");
+			this.signature = context.readBytes(context.readCompactInt(), "Signature length mismatch");
+			verify();
 		}
-		catch (SignatureException e) {
-			throw new IllegalArgumentException("The block's signature cannot be verified", e);
-		}
-		catch (InvalidKeyException e) {
-			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
+		catch (RuntimeException e) {
+			throw new IOException(e);
 		}
 	}
 
@@ -140,42 +155,47 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	}
 
 	@Override
-	public BigInteger getPower() {
+	public final BigInteger getPower() {
 		return description.getPower();
 	}
 
 	@Override
-	public long getTotalWaitingTime() {
+	public final long getTotalWaitingTime() {
 		return description.getTotalWaitingTime();
 	}
 
 	@Override
-	public long getWeightedWaitingTime() {
+	public final long getWeightedWaitingTime() {
 		return description.getWeightedWaitingTime();
 	}
 
 	@Override
-	public BigInteger getAcceleration() {
+	public final BigInteger getAcceleration() {
 		return description.getAcceleration();
 	}
 
 	@Override
-	public long getHeight() {
+	public final long getHeight() {
 		return description.getHeight();
 	}
 
 	@Override
-	public SignatureAlgorithm getSignatureForBlocks() {
+	public final byte[] getSignature() {
+		return signature.clone();
+	}
+
+	@Override
+	public final SignatureAlgorithm getSignatureForBlocks() {
 		return description.getSignatureForBlocks();
 	}
 
 	@Override
-	public PublicKey getPublicKeyForSigningThisBlock() {
+	public final PublicKey getPublicKeyForSigningThisBlock() {
 		return description.getPublicKeyForSigningThisBlock();
 	}
 
 	@Override
-	public String getPublicKeyForSigningThisBlockBase58() {
+	public final String getPublicKeyForSigningThisBlockBase58() {
 		return description.getPublicKeyForSigningThisBlockBase58();
 	}
 
@@ -225,7 +245,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AbstractBlock ab && description.equals(ab.description);
+		return other instanceof AbstractBlock ab && description.equals(ab.description) && Arrays.equals(signature, ab.signature);
 	}
 
 	@Override
@@ -234,8 +254,57 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	}
 
 	@Override
-	public String toString() {
+	public final String toString() {
 		return description.toString();
+	}
+
+	@Override
+	public final void into(MarshallingContext context) throws IOException {
+		intoWithoutSignature(context);
+		context.writeCompactInt(signature.length);
+		context.write(signature);
+	}
+
+	/**
+	 * Computes the signature of this block. It is compute from its marshalling, without the signature itself.
+	 * 
+	 * @throws SignatureException if the computation of the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	private byte[] computeSignature(PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return getSignatureForBlocks().getSigner(privateKey, AbstractBlock::toByteArrayWithoutSignature).sign(this);
+	}
+
+	/**
+	 * Checks all constraints expected from this block.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	private void verify() {
+		verifyExceptSignature();
+		Objects.requireNonNull(signature, "signature cannot be null");
+	
+		try {
+			if (!getSignatureForBlocks().getVerifier(getPublicKeyForSigningThisBlock(), AbstractBlock::toByteArrayWithoutSignature).verify(this, signature))
+				throw new IllegalArgumentException("The block's signature is invalid");
+		}
+		catch (SignatureException e) {
+			throw new IllegalArgumentException("The block's signature cannot be verified", e);
+		}
+		catch (InvalidKeyException e) {
+			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
+		}
+	}
+
+	/**
+	 * Checks all constraints expected from this block, except the validity of its signature.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	private void verifyExceptSignature() {
+		Objects.requireNonNull(description, "description cannot be null");
 	}
 
 	/**
@@ -244,20 +313,12 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @param context the context
 	 * @throws IOException if marshalling fails
 	 */
-	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
+	private void intoWithoutSignature(MarshallingContext context) throws IOException {
 		// we write the height of the block anyway, so that, by reading the first long,
 		// it is possible to distinguish between a genesis block (height == 0)
 		// and a non-genesis block (height > 0)
 		context.writeLong(getHeight());
-		getDescription().into(context);
-	}
-
-	@Override
-	public void into(MarshallingContext context) throws IOException {
-		intoWithoutSignature(context);
-		var signature = getSignature();
-		context.writeCompactInt(signature.length);
-		context.write(signature);
+		description.into(context);
 	}
 
 	/**
@@ -265,7 +326,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * 
 	 * @return the marshalled bytes
 	 */
-	protected final byte[] toByteArrayWithoutSignature() {
+	private byte[] toByteArrayWithoutSignature() {
 		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
 			intoWithoutSignature(context);
 			context.flush();
@@ -329,7 +390,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
 	}
 
-	protected static byte[] concat(byte[] array1, byte[] array2) {
+	private static byte[] concat(byte[] array1, byte[] array2) {
 		var merge = new byte[array1.length + array2.length];
 		System.arraycopy(array1, 0, merge, 0, array1.length);
 		System.arraycopy(array2, 0, merge, array1.length, array2.length);
@@ -352,8 +413,8 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @param hashingForBlocks the hashing algorithm used for the blocks, if available
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
 	 */
-	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+	protected final void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
 		description.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
-		builder.append("* signature: " + Hex.toHexString(getSignature()) + " (" + getSignatureForBlocks() + ")\n");
+		builder.append("* signature: " + Hex.toHexString(signature) + " (" + getSignatureForBlocks() + ")\n");
 	}
 }

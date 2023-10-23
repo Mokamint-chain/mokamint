@@ -24,7 +24,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
@@ -40,19 +39,13 @@ import io.mokamint.node.api.GenesisBlock;
 public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	/**
-	 * The signature of this node.
-	 */
-	private final byte[] signature;
-
-	/**
 	 * Creates a genesis block and signs it with the given private key and signature algorithm.
 	 * 
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, KeyPair keys) throws InvalidKeyException, SignatureException {
-		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, keys));
-		this.signature = computeSignature(keys.getPrivate());
+		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, keys.getPublic()), keys.getPrivate());
 	}
 
 	/**
@@ -61,9 +54,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws InvalidKeySpecException if the public key is invalid
 	 */
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, String publicKeyBase58, byte[] signature) throws InvalidKeySpecException {
-		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKeyBase58));
-		this.signature = signature.clone();
-		verify();
+		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKeyBase58), signature.clone());
 	}
 
 	/**
@@ -76,15 +67,7 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 */
 	GenesisBlockImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(new GenesisBlockDescriptionImpl(context));
-
-		try {
-			this.signature = context.readBytes(context.readCompactInt(), "Signature length mismatch");
-			verify();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
-		}
+		super(new GenesisBlockDescriptionImpl(context), context);
 	}
 
 	@Override
@@ -98,13 +81,8 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	@Override
-	public byte[] getSignature() {
-		return signature.clone();
-	}
-
-	@Override
 	public boolean equals(Object other) {
-		return other instanceof GenesisBlock gb && super.equals(other) && Arrays.equals(signature, gb.getSignature());
+		return other instanceof GenesisBlock && super.equals(other);
 	}
 
 	@Override
