@@ -81,7 +81,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		this.data = data;
 		this.signature = prolog.getSignatureForDeadlines().getSigner(privateKey, DeadlineImpl::toByteArrayWithoutSignature).sign(this);
 
-		verify();
+		verifyWithoutSignature();
 	}
 
 	/**
@@ -135,17 +135,17 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	/**
-	 * Checks all constraints expected from a deadline.
+	 * Checks all constraints expected from a deadline, trusting the
+	 * signature to be correct (hence it is not verified).
 	 * 
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
 	 * @throws IllegalArgumentException if some value is illegal
 	 */
-	private void verify() {
+	private void verifyWithoutSignature() {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(value, "value cannot be null");
 		Objects.requireNonNull(data, "data cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
-		Objects.requireNonNull(signature, "signature cannot be null");
 	
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
@@ -155,7 +155,18 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	
 		if (value.length != hashing.length())
 			throw new IllegalArgumentException("Illegal deadline value: expected an array of length " + hashing.length() + " rather than " + value.length);
+	}
 
+	/**
+	 * Checks all constraints expected from a deadline (including the validity of the signature).
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	private void verify() {
+		verifyWithoutSignature();
+		Objects.requireNonNull(signature, "signature cannot be null");
+	
 		try {
 			if (!prolog.getSignatureForDeadlines().getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
 				throw new IllegalArgumentException("The deadline's signature is invalid");
