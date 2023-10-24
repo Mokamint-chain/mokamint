@@ -19,6 +19,7 @@ package io.mokamint.node.api;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -95,6 +96,17 @@ public interface BlockDescription extends Marshallable {
 	 * @return the Base58 representation
 	 */
 	String getPublicKeyForSigningThisBlockBase58();
+
+	/**
+	 * Checks if this block matches the given description.
+	 * If it doesn't, an exception is thrown by using the given supplier.
+	 * 
+	 * @param <E> the type of the thrown exception
+	 * @param description the description matched against this block
+	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
+	 * @throws E if the match fails
+	 */
+	<E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E;
 
 	/**
 	 * Checks if this block description is equal to another object.

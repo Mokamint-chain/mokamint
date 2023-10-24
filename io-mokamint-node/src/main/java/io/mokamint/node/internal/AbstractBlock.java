@@ -38,6 +38,7 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -267,6 +268,11 @@ public abstract class AbstractBlock<D extends AbstractBlockDescription> extends 
 		intoWithoutSignature(context);
 		context.writeCompactInt(signature.length);
 		context.write(signature);
+	}
+
+	@Override
+	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
+		this.description.matchesOrThrow(description, exceptionSupplier);
 	}
 
 	/**

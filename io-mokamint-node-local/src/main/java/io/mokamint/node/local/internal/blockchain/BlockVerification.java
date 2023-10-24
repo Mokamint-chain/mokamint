@@ -16,12 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.local.internal.blockchain;
 
+import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -29,7 +33,6 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.Prolog;
 
 /**
  * A verifier of the consensus rules of the blocks that gets added to a blockchain.
@@ -84,18 +87,20 @@ public class BlockVerification {
 		if (block instanceof NonGenesisBlock ngb)
 			verifyAsNonGenesis(ngb);
 		else
-			verifyAsGenesis();
+			verifyAsGenesis((GenesisBlock) block);
 	}
 
 	/**
 	 * Verifies if the genesis {@link #block} is valid for the blockchain in {@link #node}.
 	 * 
+	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void verifyAsGenesis() throws VerificationException, DatabaseException, ClosedDatabaseException {
+	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		creationTimeIsNotTooMuchInTheFuture();
+		blockMatchesItsExpectedDescription(block);
 	}
 
 	/**
@@ -134,7 +139,7 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineHasValidProlog() throws VerificationException {
-		Prolog prolog = deadline.getProlog();
+		var prolog = deadline.getProlog();
 
 		if (!prolog.getChainId().equals(config.getChainId()))
 			throw new VerificationException("Deadline prolog's chainId mismatch");
@@ -164,6 +169,25 @@ public class BlockVerification {
 			return message;
 		else
 			return Character.toLowerCase(message.charAt(0)) + message.substring(1);
+	}
+
+	/**
+	 * Checks if {@link #block} matches its expected description.
+	 * 
+	 * @param block the same as the field {@link #block}, but cast into its actual type
+	 * @throws VerificationException if that condition in violated
+	 */
+	private void blockMatchesItsExpectedDescription(GenesisBlock block) throws VerificationException {
+		BlockDescription description;
+
+		try {
+			description = BlockDescriptions.genesis(block.getStartDateTimeUTC(), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), block.getPublicKeyForSigningThisBlock());
+		}
+		catch (InvalidKeyException e) {
+			throw new VerificationException("The block contains an invalid key");
+		}
+
+		block.matchesOrThrow(description, VerificationException::new);
 	}
 
 	/**

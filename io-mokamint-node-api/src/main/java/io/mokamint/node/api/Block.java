@@ -76,13 +76,4 @@ public interface Block extends BlockDescription {
 	 * @return the description
 	 */
 	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines);
-
-	/**
-	 * Checks if this block is equal to another object.
-	 * 
-	 * @param other the other object
-	 * @return true if and only if {@code other} is a {@link Block} with the same data
-	 */
-	@Override
-	boolean equals(Object other);
 }

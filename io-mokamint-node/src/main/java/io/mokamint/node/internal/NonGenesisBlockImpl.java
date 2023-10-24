@@ -21,12 +21,10 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -80,10 +78,5 @@ public class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescriptio
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof NonGenesisBlock && super.equals(other);
-	}
-
-	@Override
-	public <E extends Exception> void matchesOrThrow(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E {
-		getDescription().matchesOrThrow(description, exceptionSupplier);
 	}
 }

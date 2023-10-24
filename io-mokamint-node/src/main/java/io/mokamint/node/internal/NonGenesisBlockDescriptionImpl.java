@@ -34,6 +34,7 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -222,24 +223,28 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 	}
 
 	@Override
-	public <E extends Exception> void matchesOrThrow(NonGenesisBlockDescription description, Function<String, E> exceptionSupplier) throws E {
-		if (height != description.getHeight())
-			throw exceptionSupplier.apply("Height mismatch (expected " + description.getHeight() + " but found " + height + ")");
+	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
+		if (description instanceof NonGenesisBlockDescription ngbg) {
+			if (height != description.getHeight())
+				throw exceptionSupplier.apply("Height mismatch (expected " + description.getHeight() + " but found " + height + ")");
 
-		if (!acceleration.equals(description.getAcceleration()))
-			throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
+			if (!acceleration.equals(description.getAcceleration()))
+				throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
 
-		if (!power.equals(description.getPower()))
-			throw exceptionSupplier.apply("Power mismatch (expected " + description.getPower() + " but found " + power + ")");
+			if (!power.equals(description.getPower()))
+				throw exceptionSupplier.apply("Power mismatch (expected " + description.getPower() + " but found " + power + ")");
 
-		if (totalWaitingTime != description.getTotalWaitingTime())
-			throw exceptionSupplier.apply("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
+			if (totalWaitingTime != description.getTotalWaitingTime())
+				throw exceptionSupplier.apply("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
 
-		if (weightedWaitingTime != description.getWeightedWaitingTime())
-			throw exceptionSupplier.apply("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
+			if (weightedWaitingTime != description.getWeightedWaitingTime())
+				throw exceptionSupplier.apply("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
 
-		if (!Arrays.equals(hashOfPreviousBlock, description.getHashOfPreviousBlock()))
-			throw exceptionSupplier.apply("Hash of previous block mismatch");
+			if (!Arrays.equals(hashOfPreviousBlock, ngbg.getHashOfPreviousBlock()))
+				throw exceptionSupplier.apply("Hash of previous block mismatch");
+		}
+		else
+			throw exceptionSupplier.apply("Block type mismatch (expected genesis but found non-genesis)");
 	}
 
 	@Override

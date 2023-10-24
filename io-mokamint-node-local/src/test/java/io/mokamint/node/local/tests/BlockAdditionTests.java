@@ -67,7 +67,7 @@ import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
-public class BlocksAdditionTests extends AbstractLoggedTests {
+public class BlockAdditionTests extends AbstractLoggedTests {
 
 	/**
 	 * The prolog of the plot files.
@@ -155,7 +155,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 
 		assertTrue(blockchain.add(genesis));
 		assertEquals(genesis, blockchain.getGenesis().get());
@@ -170,8 +170,8 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
-		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis1 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
+		var genesis2 = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 
 		assertTrue(blockchain.add(genesis1));
 		assertFalse(blockchain.add(genesis2));
@@ -188,7 +188,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -210,7 +210,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 		var block = computeNextBlock(genesis, config);
 
 		assertTrue(blockchain.add(genesis));
@@ -228,7 +228,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 		var block1 = computeNextBlock(genesis, config, plot1);
 		var added = computeNextBlock(genesis, config, plot2);
 		if (block1.getPower().compareTo(added.getPower()) < 0) {
@@ -262,7 +262,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 		var block1 = computeNextBlock(genesis, config, plot1);
 		var block0 = computeNextBlock(genesis, config, plot2);
 		if (block1.getPower().compareTo(block0.getPower()) < 0) {
@@ -328,7 +328,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 		var sorted = Stream.of(computeNextBlock(genesis, config, plot1), computeNextBlock(genesis, config, plot2), computeNextBlock(genesis, config, plot3))
 			.sorted(Comparator.comparing(NonGenesisBlock::getPower)).toArray(NonGenesisBlock[]::new);
 		var block3 = sorted[0]; // least powerful
@@ -376,7 +376,7 @@ public class BlocksAdditionTests extends AbstractLoggedTests {
 	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
-		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.ONE, config.getSignatureForBlocks(), nodeKeys);
+		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
 		var block1 = computeNextBlock(genesis, config);
 		var block2 = computeNextBlock(block1, config);
 		var block3 = computeNextBlock(block2, config);
