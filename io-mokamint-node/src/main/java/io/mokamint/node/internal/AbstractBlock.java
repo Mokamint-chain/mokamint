@@ -257,10 +257,12 @@ public abstract class AbstractBlock<D extends AbstractBlockDescription> extends 
 
 	@Override
 	public final String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var hashing = config.getHashingForBlocks();
-		var builder = new StringBuilder(description.nameInToString() + " with hash " + getHexHash(hashing) + " (" + hashing + "):\n");
-		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
-		return builder.toString();
+		return description.toString(config, getHash(config.getHashingForBlocks()), startDateTimeUTC);
+	}
+
+	@Override
+	public final String toString(ConsensusConfig<?,?> config, byte[] hash, LocalDateTime startDateTimeUTC) {
+		return description.toString(config, hash, startDateTimeUTC);
 	}
 
 	@Override

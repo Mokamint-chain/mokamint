@@ -16,47 +16,44 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetBlockResultMessage;
+import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#getBlock(byte[])} method.
+ * Implementation of the network message corresponding to the {@link PublicNode#getBlockDescription(byte[])} method of a node.
  */
-public class GetBlockResultMessageImpl extends AbstractRpcMessage implements GetBlockResultMessage {
-
-	private final Block block;
+public class GetBlockDescriptionMessageImpl extends AbstractRpcMessage implements GetBlockDescriptionMessage {
+	private final byte[] hash;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param block the block in the message, if any
+	 * @param hash the {@code hash} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public GetBlockResultMessageImpl(Optional<Block> block, String id) {
+	public GetBlockDescriptionMessageImpl(byte[] hash, String id) {
 		super(id);
 
-		Objects.requireNonNull(block, "block cannot be null");
-		block.map(Objects::requireNonNull);
-		this.block = block.orElse(null);
+		Objects.requireNonNull(hash);
+		this.hash = hash;
 	}
 
 	@Override
-	public Optional<Block> get() {
-		return Optional.ofNullable(block);
+	public byte[] getHash() {
+		return hash.clone();
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetBlockResultMessage gbrm && super.equals(other) && Objects.equals(get(), gbrm.get());
+		return other instanceof GetBlockDescriptionMessage gbdm && super.equals(other) && Arrays.equals(hash, gbdm.getHash());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetBlockResultMessage.class.getName();
+		return GetBlockDescriptionMessage.class.getName();
 	}
 }

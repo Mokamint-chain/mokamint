@@ -222,6 +222,7 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
 		super.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
+		builder.append("* public key of the node that signed the block: " + publicKeyBase58 + " (" + signatureForBlocks + ")\n");
 	}
 
 	@Override

@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
+import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_DESCRIPTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDPOINT;
@@ -42,6 +43,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -55,6 +57,8 @@ import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.GetBlockDescriptionMessages;
+import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
@@ -73,6 +77,7 @@ import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.ExceptionMessage;
+import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
 import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 import io.mokamint.node.messages.api.GetChainResultMessage;
@@ -139,6 +144,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
 		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
 		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
+		addSession(GET_BLOCK_DESCRIPTION_ENDPOINT, uri, GetBlockDescriptionEndpoint::new);
 		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
 		addSession(GET_CHAIN_ENDPOINT, uri, GetChainEndpoint::new);
@@ -244,6 +250,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetMinerInfosResult(gmrm.get());
 		else if (message instanceof GetBlockResultMessage gbrm)
 			onGetBlockResult(gbrm.get());
+		else if (message instanceof GetBlockDescriptionResultMessage gbrm)
+			onGetBlockDescriptionResult(gbrm.get());
 		else if (message instanceof GetConfigResultMessage gcrm)
 			onGetConfigResult(gcrm.get());
 		else if (message instanceof GetChainInfoResultMessage gcirm)
@@ -388,6 +396,42 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendGetBlockDescription(hash, id);
+		try {
+			return queues.waitForResult(id, this::processGetBlockDescriptionSuccess, this::processGetBlockDescriptionException);
+		}
+		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendGetBlockDescription(byte[] hash, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_BLOCK_DESCRIPTION_ENDPOINT), GetBlockDescriptionMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private Optional<BlockDescription> processGetBlockDescriptionSuccess(RpcMessage message) {
+		return message instanceof GetBlockDescriptionResultMessage gbrm ? gbrm.get() : null;
+	}
+
+	private boolean processGetBlockDescriptionException(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return DatabaseException.class.isAssignableFrom(clazz) ||
+			NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	@Override
 	public ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
@@ -492,6 +536,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetPeerInfosResult(Stream<PeerInfo> peers) {}
 	protected void onGetMinerInfosResult(Stream<MinerInfo> peers) {}
 	protected void onGetBlockResult(Optional<Block> block) {}
+	protected void onGetBlockDescriptionResult(Optional<BlockDescription> block) {}
 	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetChainResult(Chain chain) {}
@@ -521,6 +566,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockMessages.Encoder.class);
+		}
+	}
+
+	private class GetBlockDescriptionEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
 		}
 	}
 

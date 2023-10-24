@@ -274,8 +274,8 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 		builder.append("  * prolog:\n");
 		var prolog = deadline.getProlog();
 		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
-		builder.append("    * node's public key for signing blocks: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ")\n");
-		builder.append("    * plot's public key for signing deadlines: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ")\n");
+		builder.append("    * public key of the node that signed the block: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ")\n");
+		builder.append("    * public key of the miner that signed the deadline: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ")\n");
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
 		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
 		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()));
@@ -283,7 +283,8 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 			builder.append(" (" + hashingForGenerations.get() + ")");
 		builder.append("\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
-		builder.append("  * value: " + Hex.toHexString(deadline.getValue()));
+		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + deadline.getHashing() + ")\n");
+		builder.append("  * signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")\n");
 	}
 
 	@Override

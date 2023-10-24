@@ -46,6 +46,7 @@ import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -252,7 +253,24 @@ public class LocalNodeImpl implements LocalNode {
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed because this node is open
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	@Override
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			return blockchain.getBlockDescription(hash);
+		}
+		catch (ClosedDatabaseException e) {
+			// the database cannot be closed because this node is open
+			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 		finally {
 			closureLock.afterCall();

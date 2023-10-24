@@ -130,8 +130,9 @@ public interface BlockDescription extends Marshallable {
 	 * 
 	 * @param config the configuration used to interpret and reconstruct the extra
 	 *               information about the block description
+	 * @param hash the hash of the block having this description
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description
 	 * @return the representation
 	 */
-	String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC);
+	String toString(ConsensusConfig<?,?> config, byte[] hash, LocalDateTime startDateTimeUTC);
 }

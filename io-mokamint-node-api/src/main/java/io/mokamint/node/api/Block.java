@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.time.LocalDateTime;
+
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
@@ -76,4 +78,16 @@ public interface Block extends BlockDescription {
 	 * @return the description
 	 */
 	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines);
+
+	/**
+	 * Yields a string representation of this block. This yields a more informative
+	 * representation of the block description, with extra information computed by using the
+	 * given configuration for the node.
+	 * 
+	 * @param config the configuration used to interpret and reconstruct the extra
+	 *               information about the block
+	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block
+	 * @return the representation
+	 */
+	String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC);
 }

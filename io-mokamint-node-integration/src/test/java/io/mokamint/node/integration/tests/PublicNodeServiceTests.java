@@ -50,6 +50,7 @@ import org.mockito.stubbing.OngoingStubbing;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -60,6 +61,7 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.Chain;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -249,6 +251,38 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
 	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
 		var semaphore = new Semaphore(0);
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
+					semaphore.release();
+			}
+	
+			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
+				sendGetBlock(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetBlock(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getBlockDescription() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
+	public void serviceGetBlockDescriptionEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -257,22 +291,98 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onException(ExceptionMessage message) {
-				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
+			protected void onGetBlockDescriptionResult(Optional<BlockDescription> received) {
+				if (received.isEmpty())
 					semaphore.release();
 			}
 
-			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
-				sendGetBlock(hash, "id");
+			private void sendGetBlockDescription(byte[] hash) throws ClosedNodeException {
+				sendGetBlockDescription(hash, "id");
 			}
 		}
 
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
+		when(node.getBlockDescription(hash)).thenReturn(Optional.empty());
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			client.sendGetBlock(hash);
+			client.sendGetBlockDescription(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getBlockDescription() request reaches the service and there is a block with the requested hash, it sends back the description of that block")
+	public void serviceGetBlockDescriptionNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, InvalidKeyException, SignatureException {
+		var semaphore = new Semaphore(0);
+		HashingAlgorithm shabal256 = shabal256();
+		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
+		var value = new byte[shabal256.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		int scoopNumber = 42;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var nodeKeyPair = ed25519.getKeyPair();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256, plotKeyPair.getPrivate());
+		var description = BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
+
+		class MyTestClient extends RemotePublicNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+
+			@Override
+			protected void onGetBlockDescriptionResult(Optional<BlockDescription> received) {
+				if (description.equals(received.get()))
+					semaphore.release();
+			}
+
+			private void sendGetBlockDescription(byte[] hash) throws ClosedNodeException {
+				sendGetBlockDescription(hash, "id");
+			}
+		}
+
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getBlockDescription(hash)).thenReturn(Optional.of(description));
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetBlockDescription(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getBlockDescription() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
+	public void serviceGetBlockDescriptionUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
+					semaphore.release();
+			}
+	
+			private void sendGetBlockDescription(byte[] hash) throws ClosedNodeException {
+				sendGetBlockDescription(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getBlockDescription(hash)).thenThrow(NoSuchAlgorithmException.class);
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetBlockDescription(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

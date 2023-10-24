@@ -92,8 +92,8 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 	}
 
 	@Override
-	public final String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var builder = new StringBuilder(nameInToString() + ":\n");
+	public final String toString(ConsensusConfig<?,?> config, byte[] hash, LocalDateTime startDateTimeUTC) {
+		var builder = new StringBuilder(nameInToString() + " with hash " + Hex.toHexString(hash) + " (" + config.getHashingForBlocks() + "):\n");
 		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(config.getHashingForBlocks()), Optional.of(startDateTimeUTC));
 		return builder.toString();
 	}

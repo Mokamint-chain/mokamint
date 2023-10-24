@@ -51,6 +51,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -66,6 +67,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetChainResultMessages;
@@ -75,6 +77,7 @@ import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
 import io.mokamint.node.messages.api.GetChainMessage;
@@ -583,6 +586,118 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(DatabaseException.class, () -> remote.getBlock(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getBlockDescription() works if the block exists")
+	public void getBlockDescriptionWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, InvalidKeyException, SignatureException {
+		var hashing = HashingAlgorithms.shabal256();
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var nodeKeyPair = ed25519.getKeyPair();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
+		var hash = new byte[] { 67, 56, 43 };
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetBlockDescriptionResultMessages.of(Optional.of(description1), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var description2 = remote.getBlockDescription(hash);
+			assertEquals(description1, description2.get());
+		}
+	}
+
+	@Test
+	@DisplayName("getBlockDescription() works if the block is missing")
+	public void getBlockDescriptionWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+		var hash = new byte[] { 67, 56, 43 };
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetBlockDescriptionResultMessages.of(Optional.empty(), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var description = remote.getBlockDescription(hash);
+			assertTrue(description.isEmpty());
+		}
+	}
+
+	@Test
+	@DisplayName("getBlockDescription() works if it throws NoSuchAlgorithmException")
+	public void getBlockDescriptionWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "sha345";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.getBlockDescription(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getBlockDescription() works if it throws DatabaseException")
+	public void getBlockDescriptionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "corrupted database";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.getBlockDescription(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

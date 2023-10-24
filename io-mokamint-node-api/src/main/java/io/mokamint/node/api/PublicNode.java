@@ -105,12 +105,25 @@ public interface PublicNode extends Node, Whisperer {
 	 * @param hash the hash of the block
 	 * @return the block, if any
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing algorithm
+	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing or signature algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
 	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
+	 * Yields the description of the block with the given hash, if it has been seen by this node.
+	 * 
+	 * @param hash the hash of the block
+	 * @return the description of the block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing or signature algorithm
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node

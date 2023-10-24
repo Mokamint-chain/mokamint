@@ -39,6 +39,7 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Chains;
@@ -53,6 +54,8 @@ import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.CloseMinerMessages;
 import io.mokamint.node.messages.CloseMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.GetBlockDescriptionMessages;
+import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
@@ -114,7 +117,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("non-empty getBlockResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
+		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -137,6 +140,43 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
 		var getBlockResultMessage2 = new GetBlockResultMessages.Decoder().decode(encoded);
 		assertEquals(getBlockResultMessage1, getBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getBlockDescription messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetBlockDescription() throws EncodeException, DecodeException {
+		var getBlockDescriptionMessage1 = GetBlockDescriptionMessages.of(new byte[] { 1, 2, 3, 4, 5 }, "id");
+		String encoded = new GetBlockDescriptionMessages.Encoder().encode(getBlockDescriptionMessage1);
+		var getBlockDescriptionMessage2 = new GetBlockDescriptionMessages.Decoder().decode(encoded);
+		assertEquals(getBlockDescriptionMessage1, getBlockDescriptionMessage2);
+	}
+
+	@Test
+	@DisplayName("non-empty getBlockDescriptionResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetBlockDescriptionResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		var hashing = HashingAlgorithms.shabal256();
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var nodeKeyPair = ed25519.getKeyPair();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		var block = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
+		var getBlockDescriptionResultMessage1 = GetBlockDescriptionResultMessages.of(Optional.of(block), "id");
+		String encoded = new GetBlockDescriptionResultMessages.Encoder().encode(getBlockDescriptionResultMessage1);
+		var getBlockDescriptionResultMessage2 = new GetBlockDescriptionResultMessages.Decoder().decode(encoded);
+		assertEquals(getBlockDescriptionResultMessage1, getBlockDescriptionResultMessage2);
+	}
+
+	@Test
+	@DisplayName("empty getBlockDescriptionResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetBlockDescriptionResultEmpty() throws EncodeException, DecodeException {
+		var getBlockDescriptionResultMessage1 = GetBlockDescriptionResultMessages.of(Optional.empty(), "id");
+		String encoded = new GetBlockDescriptionResultMessages.Encoder().encode(getBlockDescriptionResultMessage1);
+		var getBlockDescriptionResultMessage2 = new GetBlockDescriptionResultMessages.Decoder().decode(encoded);
+		assertEquals(getBlockDescriptionResultMessage1, getBlockDescriptionResultMessage2);
 	}
 
 	@Test

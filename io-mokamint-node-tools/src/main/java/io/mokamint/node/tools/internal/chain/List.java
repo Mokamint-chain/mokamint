@@ -25,13 +25,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.Chain;
-import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -63,18 +61,11 @@ public class List extends AbstractPublicRpcCommand {
 			throw new CommandException("from cannot be smaller than -1!");
 
 		try {
-			ChainInfo info = remote.getChainInfo();
-
-			var maybeHeadHash = info.getHeadHash();
-			if (maybeHeadHash.isEmpty())
+			var info = remote.getChainInfo();
+			long height = info.getLength() - 1;
+			if (height < 0)
 				return;
 
-			var maybeHead = remote.getBlock(maybeHeadHash.get()); // TODO: in the future, maybe a getBlockDescription() ?
-			if (maybeHead.isEmpty())
-				throw new DatabaseException("The node has a head hash but it is bound to no block!");
-
-			Block head = maybeHead.get();
-			long height = head.getHeight();
 			if (from == -1L)
 				from = Math.max(0L, height - count + 1);
 
@@ -92,14 +83,14 @@ public class List extends AbstractPublicRpcCommand {
 				slotsForHeight = 0;
 			}
 			else {
-				var maybeGenesis = remote.getBlock(maybeGenesisHash.get()); // TODO: in the future, maybe a getBlockDescription() ?
+				var maybeGenesis = remote.getBlockDescription(maybeGenesisHash.get());
 				if (maybeGenesis.isEmpty())
 					throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
 
-				Block genesis = maybeGenesis.get();
-				if (genesis instanceof GenesisBlock gb) {
-					slotsForHeight = String.valueOf(head.getHeight()).length();
-					startDateTimeUTC = Optional.of(gb.getStartDateTimeUTC());
+				BlockDescription genesis = maybeGenesis.get();
+				if (genesis instanceof GenesisBlockDescription gbd) {
+					slotsForHeight = String.valueOf(height).length();
+					startDateTimeUTC = Optional.of(gbd.getStartDateTimeUTC());
 				}
 				else
 					throw new DatabaseException("The type of the genesis block is inconsistent!");
@@ -145,7 +136,7 @@ public class List extends AbstractPublicRpcCommand {
 				System.out.print("\"" + hash + "\"");
 			}
 			else {
-				var maybeBlockDescription = remote.getBlock(hashes[counter]); // TODO: in the future, maybe a getBlockDescription() ?
+				var maybeBlockDescription = remote.getBlockDescription(hashes[counter]);
 				String creationTime = maybeBlockDescription.map(BlockDescription::getTotalWaitingTime)
 					.map(total -> startDateTimeUTC.get().plus(total, ChronoUnit.MILLIS).format(FORMATTER))
 					.orElse("unknown");

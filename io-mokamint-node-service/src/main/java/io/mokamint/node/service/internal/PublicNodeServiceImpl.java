@@ -54,6 +54,8 @@ import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.ExceptionMessages;
+import io.mokamint.node.messages.GetBlockDescriptionMessages;
+import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
@@ -71,6 +73,7 @@ import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
+import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
 import io.mokamint.node.messages.api.GetChainMessage;
@@ -196,8 +199,9 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
-			GetBlockEndpoint.config(this), GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this),
-			GetChainEndpoint.config(this), WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
+			GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this), GetConfigEndpoint.config(this),
+			GetChainInfoEndpoint.config(this), GetChainEndpoint.config(this), WhisperPeersEndpoint.config(this),
+			WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
@@ -398,22 +402,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	};
 
-	protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + GET_MINER_INFOS_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetMinerInfosResultMessages.of(node.getMinerInfos(), message.getId()));
-			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
-				sendExceptionAsync(session, e, message.getId());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
-	};
-
 	public static class GetPeerInfosEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
@@ -424,6 +412,22 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetPeerInfosEndpoint.class, GET_PEER_INFOS_ENDPOINT,
 					GetPeerInfosMessages.Decoder.class, GetPeerInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_MINER_INFOS_ENDPOINT + " request");
+	
+		try {
+			try {
+				sendObjectAsync(session, GetMinerInfosResultMessages.of(node.getMinerInfos(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -466,6 +470,35 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT,
 					GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_BLOCK_DESCRIPTION_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, GetBlockDescriptionResultMessages.of(node.getBlockDescription(message.getHash()), message.getId()));
+			}
+			catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class GetBlockDescriptionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetBlockDescriptionMessage message) -> getServer().onGetBlockDescription(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetBlockDescriptionEndpoint.class, GET_BLOCK_DESCRIPTION_ENDPOINT,
+					GetBlockDescriptionMessages.Decoder.class, GetBlockDescriptionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

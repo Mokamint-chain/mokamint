@@ -40,6 +40,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
@@ -250,12 +251,25 @@ public class Blockchain implements AutoCloseable {
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown; this can only occur for non-genesis blocks
+	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing or signature algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		return db.getBlock(hash);
+	}
+
+	/**
+	 * Yields the description of the block with the given hash, if it is contained in this blockchain.
+	 * 
+	 * @param hash the hash
+	 * @return the description of the block, if any
+	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing or signature algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return db.getBlockDescription(hash);
 	}
 
 	/**

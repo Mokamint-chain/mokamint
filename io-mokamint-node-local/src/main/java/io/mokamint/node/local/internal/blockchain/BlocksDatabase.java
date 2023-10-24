@@ -43,9 +43,11 @@ import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
@@ -279,7 +281,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing or signature algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
@@ -289,6 +291,31 @@ public class BlocksDatabase implements AutoCloseable {
 		try {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
+			);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	/**
+	 * Yields the description of the block with the given hash, if it is contained in this database.
+	 * 
+	 * @param hash the hash
+	 * @return the description of the block, if any
+	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing or signature algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		closureLock.beforeCall(ClosedDatabaseException::new);
+	
+		try {
+			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(txn -> getBlockDescription(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -616,8 +643,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @param txn the transaction
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown; this can only
-	 *                                  occur if the block is a non-genesis block
+	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing or signature algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
@@ -628,6 +654,32 @@ public class BlocksDatabase implements AutoCloseable {
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				return Optional.of(Blocks.from(context));
+			}
+		}
+		catch (ExodusException | IOException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the description of the block with the given hash, if it is contained in this database,
+	 * running inside the given transaction.
+	 * 
+	 * @param txn the transaction
+	 * @param hash the hash
+	 * @return the description of the block, if any
+	 * @throws NoSuchAlgorithmException if the block uses an unknown hashing or signature algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<BlockDescription> getBlockDescription(Transaction txn, byte[] hash) throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
+			if (blockBI == null)
+				return Optional.empty();
+			
+			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
+				// the marshalling of a block starts with that of its description
+				return Optional.of(BlockDescriptions.from(context));
 			}
 		}
 		catch (ExodusException | IOException e) {
