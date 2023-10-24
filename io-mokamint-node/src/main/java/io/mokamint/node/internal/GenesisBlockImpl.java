@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
@@ -56,15 +55,15 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	}
 
 	/**
-	 * Unmarshals a genesis block from the given context. The height of the block has been already read.
+	 * Unmarshals a genesis block from the given context. The description of the block has been already read.
 	 * 
+	 * @param description the description of the block
 	 * @param context the context
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
-	 * @throws NoSuchAlgorithmException if some signature or hashing algorithm is not available
 	 */
-	GenesisBlockImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(new GenesisBlockDescriptionImpl(context), context);
+	GenesisBlockImpl(GenesisBlockDescriptionImpl description, UnmarshallingContext context) throws IOException {
+		super(description, context);
 	}
 
 	@Override

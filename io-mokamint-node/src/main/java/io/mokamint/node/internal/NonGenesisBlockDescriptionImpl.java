@@ -33,6 +33,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -294,5 +295,10 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 		deadline.into(context);
 		context.writeCompactInt(hashOfPreviousBlock.length);
 		context.write(hashOfPreviousBlock);
+	}
+
+	@Override
+	protected Block unmarshals(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+		return new NonGenesisBlockImpl(this, context);
 	}
 }

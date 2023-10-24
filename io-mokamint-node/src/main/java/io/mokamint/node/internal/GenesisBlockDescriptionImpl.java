@@ -21,7 +21,6 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
@@ -36,6 +35,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlockDescription;
 
 /**
@@ -94,10 +94,9 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	/**
 	 * Creates a genesis block description with the given keys and signature algorithm.
 	 * 
-	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException, SignatureException {
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException {
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
 		this.signatureForBlocks = signatureForBlocks;
@@ -236,5 +235,10 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 		catch (DateTimeException | InvalidKeyException e) {
 			throw new IOException(e);
 		}
+	}
+
+	@Override
+	protected Block unmarshals(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+		return new GenesisBlockImpl(this, context);
 	}
 }

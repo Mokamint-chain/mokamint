@@ -19,7 +19,6 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.function.Function;
@@ -57,15 +56,15 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	}
 
 	/**
-	 * Unmarshals a non-genesis block from the given context. The height of the block has been already read.
+	 * Unmarshals a non-genesis block from the given context. The description of the block has been already read.
 	 * 
-	 * @param height the height of the block
+	 * @param description the description of the block
 	 * @param context the context
-	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm is not available
-	 * @throws IOException if the block could not be unmarshalled
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		super(new NonGenesisBlockDescriptionImpl(height, context), context);
+	NonGenesisBlockImpl(NonGenesisBlockDescriptionImpl description, UnmarshallingContext context) throws IOException {
+		super(description, context);
 	}
 
 	@Override

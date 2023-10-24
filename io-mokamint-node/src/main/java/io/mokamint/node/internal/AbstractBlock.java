@@ -147,12 +147,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		// by reading the height, we can determine if it's a genesis block or not
-		var height = context.readLong();
-		if (height == 0L)
-			return new GenesisBlockImpl(context);
-		else
-			return new NonGenesisBlockImpl(height, context);
+		return AbstractBlockDescription.from(context).unmarshals(context);
 	}
 
 	@Override
@@ -409,7 +404,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	private static byte[] longToBytesBE(long l) {
 		var target = new byte[8];
 		for (int i = 0; i <= 7; i++)
-			target[7 - i] = (byte) ((l>>(8*i)) & 0xFF);
+			target[7 - i] = (byte) ((l >> (8 * i)) & 0xFF);
 
 		return target;
 	}

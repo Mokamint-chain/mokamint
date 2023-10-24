@@ -20,12 +20,16 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 
@@ -33,6 +37,33 @@ import io.mokamint.node.api.ConsensusConfig;
  * Shared code for block descriptions.
  */
 public abstract class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription {
+
+	/**
+	 * Unmarshals a block description from the given context.
+	 * 
+	 * @param context the context
+	 * @return the block description
+	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm is not available
+	 * @throws IOException if the block description cannot be unmarshalled
+	 */
+	public static AbstractBlockDescription from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+		// by reading the height, we can determine if it's a genesis block description or not
+		var height = context.readLong();
+		if (height == 0L)
+			return new GenesisBlockDescriptionImpl(context);
+		else
+			return new NonGenesisBlockDescriptionImpl(height, context);
+	}
+
+	/**
+	 * Unmarshals information from the given context, so that a block
+	 * can be unmarshalled from this description and the context.
+	 * 
+	 * @param context the context
+	 * @return the block, having this description
+	 * @throws IOException if unmarshalling fails
+	 */
+	protected abstract Block unmarshals(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException;
 
 	/**
 	 * Fills the given builder with the information inside this description.
