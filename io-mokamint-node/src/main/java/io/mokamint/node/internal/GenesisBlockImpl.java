@@ -24,12 +24,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlock;
 
 /**
@@ -39,7 +37,7 @@ import io.mokamint.node.api.GenesisBlock;
 public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 
 	/**
-	 * Creates a genesis block and signs it with the given private key and signature algorithm.
+	 * Creates a genesis block and signs it with the given keys and signature algorithm.
 	 * 
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
@@ -54,17 +52,16 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 * @throws InvalidKeySpecException if the public key is invalid
 	 */
 	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, String publicKeyBase58, byte[] signature) throws InvalidKeySpecException {
-		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKeyBase58), signature.clone());
+		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKeyBase58), signature);
 	}
 
 	/**
-	 * Unmarshals a genesis block from the given context.
-	 * The height of the block has been already read.
+	 * Unmarshals a genesis block from the given context. The height of the block has been already read.
 	 * 
 	 * @param context the context
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
-	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
+	 * @throws NoSuchAlgorithmException if some signature or hashing algorithm is not available
 	 */
 	GenesisBlockImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		super(new GenesisBlockDescriptionImpl(context), context);
@@ -83,13 +80,5 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof GenesisBlock && super.equals(other);
-	}
-
-	@Override
-	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var hashing = config.getHashingForBlocks();
-		var builder = new StringBuilder("Genesis block with hash " + getHexHash(hashing) + " (" + hashing + "):\n");
-		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
-		return builder.toString();
 	}
 }

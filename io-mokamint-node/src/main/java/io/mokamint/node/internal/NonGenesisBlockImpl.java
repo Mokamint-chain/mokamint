@@ -22,13 +22,10 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
-import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.api.Deadline;
@@ -56,16 +53,15 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 * Creates a new non-genesis block.
 	 */
 	public NonGenesisBlockImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, byte[] signature) {
-		super(new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock), signature.clone());
+		super(new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock), signature);
 	}
 
 	/**
-	 * Unmarshals a non-genesis block from the given context.
-	 * The height of the block has been already read.
+	 * Unmarshals a non-genesis block from the given context. The height of the block has been already read.
 	 * 
 	 * @param height the height of the block
 	 * @param context the context
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
+	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm is not available
 	 * @throws IOException if the block could not be unmarshalled
 	 */
 	NonGenesisBlockImpl(long height, UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
@@ -90,14 +86,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof NonGenesisBlock && super.equals(other);
-	}
-
-	@Override
-	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var hashing = config.getHashingForBlocks();
-		var builder = new StringBuilder("Non-genesis block with hash " + getHexHash(hashing) + " (" + hashing + "):\n");
-		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
-		return builder.toString();
 	}
 
 	@Override

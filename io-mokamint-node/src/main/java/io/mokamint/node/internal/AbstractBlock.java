@@ -38,6 +38,7 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
@@ -89,7 +90,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 */
 	protected AbstractBlock(AbstractBlockDescription description, byte[] signature) {
 		this.description = description;
-		this.signature = signature;
+		this.signature = signature.clone();
 		verify();
 	}
 
@@ -256,6 +257,14 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	@Override
 	public final String toString() {
 		return description.toString();
+	}
+
+	@Override
+	public final String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
+		var hashing = config.getHashingForBlocks();
+		var builder = new StringBuilder(description.nameInToString() + " with hash " + getHexHash(hashing) + " (" + hashing + "):\n");
+		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
+		return builder.toString();
 	}
 
 	@Override

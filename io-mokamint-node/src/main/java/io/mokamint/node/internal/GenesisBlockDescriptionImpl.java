@@ -29,18 +29,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 
 /**
  * The implementation of the description of a genesis block of the Mokamint blockchain.
  */
+@Immutable
 public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implements GenesisBlockDescription {
 
 	/**
@@ -212,18 +213,8 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	}
 
 	@Override
-	public String toString() {
-		var builder = new StringBuilder("Genesis block:\n");
-		populate(builder, Optional.empty(), Optional.empty(), Optional.empty());
-		return builder.toString();
-	}
-
-	@Override
-	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var hashing = config.getHashingForBlocks();
-		var builder = new StringBuilder("Genesis block:\n");
-		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
-		return builder.toString();
+	protected String nameInToString() {
+		return "Genesis block";
 	}
 
 	@Override

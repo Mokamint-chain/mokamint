@@ -27,12 +27,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -40,6 +40,7 @@ import io.mokamint.nonce.api.Deadline;
 /**
  * The implementation of the description of a non-genesis block of the Mokamint blockchain.
  */
+@Immutable
 public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription implements NonGenesisBlockDescription {
 
 	/**
@@ -199,7 +200,7 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 
 	@Override
 	public byte[] getHashOfPreviousBlock() {
-		return hashOfPreviousBlock;
+		return hashOfPreviousBlock.clone();
 	}
 
 	@Override
@@ -242,7 +243,6 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 
 	@Override
 	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
-		var deadline = getDeadline();
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
 		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
@@ -281,18 +281,8 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 	}
 
 	@Override
-	public String toString() {
-		var builder = new StringBuilder("Non-genesis block:\n");
-		populate(builder, Optional.empty(), Optional.empty(), Optional.empty());
-		return builder.toString();
-	}
-
-	@Override
-	public String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		var hashing = config.getHashingForBlocks();
-		var builder = new StringBuilder("Non-genesis block:\n");
-		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(hashing), Optional.of(startDateTimeUTC));
-		return builder.toString();
+	protected String nameInToString() {
+		return "Non-genesis block";
 	}
 
 	@Override

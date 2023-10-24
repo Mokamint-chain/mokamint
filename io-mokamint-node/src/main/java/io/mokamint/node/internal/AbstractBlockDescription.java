@@ -27,6 +27,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.mokamint.node.api.BlockDescription;
+import io.mokamint.node.api.ConsensusConfig;
 
 /**
  * Shared code for block descriptions.
@@ -52,6 +53,20 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 			builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(hashingForGenerations.get())) + " (" + hashingForGenerations.get() + ")\n");
 	}
 
+	@Override
+	public final String toString() {
+		var builder = new StringBuilder(nameInToString() + ":\n");
+		populate(builder, Optional.empty(), Optional.empty(), Optional.empty());
+		return builder.toString();
+	}
+
+	@Override
+	public final String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
+		var builder = new StringBuilder(nameInToString() + ":\n");
+		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(config.getHashingForBlocks()), Optional.of(startDateTimeUTC));
+		return builder.toString();
+	}
+
 	/**
 	 * Yields the generation signature of any block that can legally follow this block.
 	 * 
@@ -59,4 +74,11 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 	 * @return the generation signature
 	 */
 	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
+
+	/**
+	 * Yields the name to use to describe this block in the result of {@link #toString()}.
+	 * 
+	 * @return the name
+	 */
+	protected abstract String nameInToString();
 }
