@@ -47,12 +47,12 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract class AbstractBlock extends AbstractMarshallable implements Block {
+public abstract class AbstractBlock<D extends AbstractBlockDescription> extends AbstractMarshallable implements Block {
 
 	/**
 	 * The description of this block.
 	 */
-	private final AbstractBlockDescription description;
+	private final D description;
 
 	/**
 	 * The signature of this .
@@ -88,7 +88,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @param description the description of the block
 	 * @param signature the signature of the block
 	 */
-	protected AbstractBlock(AbstractBlockDescription description, byte[] signature) {
+	protected AbstractBlock(D description, byte[] signature) {
 		this.description = description;
 		this.signature = signature.clone();
 		verify();
@@ -102,7 +102,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @throws SignatureException if signing failed
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
-	protected AbstractBlock(AbstractBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	protected AbstractBlock(D description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		this.description = description;
 		verifyExceptSignature();
 		this.signature = computeSignature(privateKey);
@@ -117,7 +117,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	protected AbstractBlock(AbstractBlockDescription description, UnmarshallingContext context) throws IOException {
+	protected AbstractBlock(D description, UnmarshallingContext context) throws IOException {
 		this.description = description;
 
 		try {
@@ -134,7 +134,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * 
 	 * @return the description
 	 */
-	protected AbstractBlockDescription getDescription() {
+	protected final D getDescription() {
 		return description;
 	}
 
@@ -241,7 +241,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AbstractBlock ab && description.equals(ab.description) && Arrays.equals(signature, ab.signature);
+		return other instanceof AbstractBlock<?> ab && description.equals(ab.description) && Arrays.equals(signature, ab.signature);
 	}
 
 	@Override
@@ -276,7 +276,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	private byte[] computeSignature(PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return getSignatureForBlocks().getSigner(privateKey, AbstractBlock::toByteArrayWithoutSignature).sign(this);
+		return getSignatureForBlocks().getSigner(privateKey, AbstractBlock<D>::toByteArrayWithoutSignature).sign(this);
 	}
 
 	/**
@@ -290,7 +290,7 @@ public abstract class AbstractBlock extends AbstractMarshallable implements Bloc
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
 		try {
-			if (!getSignatureForBlocks().getVerifier(getPublicKeyForSigningThisBlock(), AbstractBlock::toByteArrayWithoutSignature).verify(this, signature))
+			if (!getSignatureForBlocks().getVerifier(getPublicKeyForSigningThisBlock(), AbstractBlock<D>::toByteArrayWithoutSignature).verify(this, signature))
 				throw new IllegalArgumentException("The block's signature is invalid");
 		}
 		catch (SignatureException e) {

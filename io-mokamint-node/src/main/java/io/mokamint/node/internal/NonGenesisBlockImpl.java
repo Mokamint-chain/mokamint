@@ -33,7 +33,7 @@ import io.mokamint.nonce.api.Deadline;
  * The implementation of a non-genesis block of the Mokamint blockchain.
  */
 @Immutable
-public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBlock {
+public class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescriptionImpl> implements NonGenesisBlock {
 
 	/**
 	 * Creates a new non-genesis block. It adds a signature to the resulting block,
@@ -65,11 +65,6 @@ public class NonGenesisBlockImpl extends AbstractBlock implements NonGenesisBloc
 	 */
 	NonGenesisBlockImpl(NonGenesisBlockDescriptionImpl description, UnmarshallingContext context) throws IOException {
 		super(description, context);
-	}
-
-	@Override
-	protected NonGenesisBlockDescriptionImpl getDescription() {
-		return (NonGenesisBlockDescriptionImpl) super.getDescription();
 	}
 
 	@Override

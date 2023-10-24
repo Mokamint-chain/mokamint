@@ -33,7 +33,7 @@ import io.mokamint.node.api.GenesisBlock;
  * The implementation of a genesis block of a Mokamint blockchain.
  */
 @Immutable
-public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
+public class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescriptionImpl> implements GenesisBlock {
 
 	/**
 	 * Creates a genesis block and signs it with the given keys and signature algorithm.
@@ -64,11 +64,6 @@ public class GenesisBlockImpl extends AbstractBlock implements GenesisBlock {
 	 */
 	GenesisBlockImpl(GenesisBlockDescriptionImpl description, UnmarshallingContext context) throws IOException {
 		super(description, context);
-	}
-
-	@Override
-	protected GenesisBlockDescriptionImpl getDescription() {
-		return (GenesisBlockDescriptionImpl) super.getDescription();
 	}
 
 	@Override
