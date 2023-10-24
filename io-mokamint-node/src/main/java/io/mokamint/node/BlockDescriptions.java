@@ -32,6 +32,9 @@ import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.internal.AbstractBlockDescription;
 import io.mokamint.node.internal.GenesisBlockDescriptionImpl;
 import io.mokamint.node.internal.NonGenesisBlockDescriptionImpl;
+import io.mokamint.node.internal.gson.BlockDescriptionDecoder;
+import io.mokamint.node.internal.gson.BlockDescriptionEncoder;
+import io.mokamint.node.internal.gson.BlockDescriptionJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -107,4 +110,41 @@ public abstract class BlockDescriptions {
 	public static BlockDescription from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		return AbstractBlockDescription.from(context);
 	}
+
+	/**
+	 * Gson encoder.
+	 */
+	public static class Encoder extends BlockDescriptionEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
+
+	/**
+	 * Gson decoder.
+	 */
+	public static class Decoder extends BlockDescriptionDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
+
+    /**
+     * Json representation.
+     */
+	public static class Json extends BlockDescriptionJson {
+
+    	/**
+    	 * Creates the Json representation for the given block.
+    	 * 
+    	 * @param description the block description
+    	 */
+    	public Json(BlockDescription description) {
+    		super(description);
+    	}
+    }
 }
