@@ -16,31 +16,31 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.util.UUID;
-
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.CloseMinerMessages;
-import io.mokamint.node.messages.api.CloseMinerMessage;
+import io.mokamint.node.messages.GetBlockDescriptionMessages;
+import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 
 /**
- * The JSON representation of a {@link CloseMinerMessage}.
+ * The JSON representation of a {@link GetBlockDescriptionMessage}.
  */
-public abstract class CloseMinerMessageJson extends AbstractRpcMessageJsonRepresentation<CloseMinerMessage> {
-	private String uuid;
+public abstract class GetBlockDescriptionMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockDescriptionMessage> {
+	private String hash;
 
-	protected CloseMinerMessageJson(CloseMinerMessage message) {
+	protected GetBlockDescriptionMessageJson(GetBlockDescriptionMessage message) {
 		super(message);
 
-		this.uuid = message.getUUID().toString();
+		this.hash = Hex.toHexString(message.getHash());
 	}
 
 	@Override
-	public CloseMinerMessage unmap() {
-		return CloseMinerMessages.of(UUID.fromString(uuid), getId());
+	public GetBlockDescriptionMessage unmap() throws HexConversionException {
+		return GetBlockDescriptionMessages.of(Hex.fromHexString(hash), getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CloseMinerMessage.class.getName();
+		return GetBlockDescriptionMessage.class.getName();
 	}
 }

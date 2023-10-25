@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.internal.GetBlockMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetBlockMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetBlockMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetBlockMessageJson;
 
 /**
  * A provider of {@link GetBlockMessage}.
@@ -60,4 +61,19 @@ public final class GetBlockMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetBlockMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetBlockMessage message) {
+    		super(message);
+    	}
+    }
 }

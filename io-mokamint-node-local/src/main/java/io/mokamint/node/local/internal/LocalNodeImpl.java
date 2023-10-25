@@ -24,7 +24,9 @@ import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -124,10 +126,14 @@ public class LocalNodeImpl implements LocalNode {
 	private final ExecutorService executors = Executors.newCachedThreadPool();
 
 	/**
-	 * The executor of periodic tasks. There might be more periodic tasks in execution
-	 * at the same time.
+	 * The executor of periodic tasks. There might be more periodic tasks in execution at the same time.
 	 */
-	private final ScheduledExecutorService periodExecutors = Executors.newScheduledThreadPool(5);
+	private final ScheduledExecutorService periodicExecutors = Executors.newScheduledThreadPool(5);
+
+	/**
+	 * The set of tasks currently executing inside {@link #executors} or {@link #periodicExecutors}.
+	 */
+	private final Set<Task> currentlyExecutingTasks = ConcurrentHashMap.newKeySet();
 
 	/**
 	 * The code to execute when this node gets closed.
@@ -375,7 +381,7 @@ public class LocalNodeImpl implements LocalNode {
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		if (closureLock.stopNewCalls()) {
 			executors.shutdownNow();
-			periodExecutors.shutdownNow();
+			periodicExecutors.shutdownNow();
 
 			InterruptedException interruptedException = null;
 			IOException ioException = null;
@@ -394,7 +400,7 @@ public class LocalNodeImpl implements LocalNode {
 
 			try {
 				executors.awaitTermination(3, TimeUnit.SECONDS);
-				periodExecutors.awaitTermination(3, TimeUnit.SECONDS);
+				periodicExecutors.awaitTermination(3, TimeUnit.SECONDS);
 			}
 			finally {
 				try {
@@ -763,6 +769,8 @@ public class LocalNodeImpl implements LocalNode {
 		public final void run() {
 			onStart(task);
 
+			currentlyExecutingTasks.add(task);
+
 			try {
 				task.body();
 			}
@@ -774,6 +782,9 @@ public class LocalNodeImpl implements LocalNode {
 			catch (Exception e) {
 				onFail(task, e);
 				return;
+			}
+			finally {
+				currentlyExecutingTasks.remove(task);
 			}
 
 			onComplete(task);
@@ -813,7 +824,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Runs the given task, periodically, with the {@link #periodExecutors} executor.
+	 * Runs the given task, periodically, with the {@link #periodicExecutors} executor.
 	 * 
 	 * @param task the task to run
 	 * @param initialDelay the time to wait before running the task
@@ -824,7 +835,7 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			LOGGER.info(task.logPrefix() + "scheduling periodic " + task);
 			onSubmit(task);
-			periodExecutors.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
+			periodicExecutors.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");

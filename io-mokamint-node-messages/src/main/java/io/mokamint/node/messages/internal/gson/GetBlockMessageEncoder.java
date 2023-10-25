@@ -16,17 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseEncoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.api.GetBlockMessage;
 
 /**
- * An encoder of {@code GetBlockMessage}.
+ * An encoder of a {@link GetBlockMessage}.
  */
-public class GetBlockMessageEncoder extends BaseEncoder<GetBlockMessage> {
+public class GetBlockMessageEncoder extends MappedEncoder<GetBlockMessage, GetBlockMessages.Json> {
 
-	/**
-	 * Creates the encoder.
-	 */
 	public GetBlockMessageEncoder() {
+		super(GetBlockMessages.Json::new);
 	}
 }

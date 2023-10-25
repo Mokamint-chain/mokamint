@@ -21,7 +21,7 @@ import io.mokamint.node.messages.CloseMinerMessages;
 import io.mokamint.node.messages.api.CloseMinerMessage;
 
 /**
- * An encoder of an {@code CloseMinerMessage}.
+ * An encoder of a {@link CloseMinerMessage}.
  */
 public class CloseMinerMessageEncoder extends MappedEncoder<CloseMinerMessage, CloseMinerMessages.Json> {
 
