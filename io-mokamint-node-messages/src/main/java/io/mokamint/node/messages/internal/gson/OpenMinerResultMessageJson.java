@@ -24,7 +24,7 @@ import io.mokamint.node.messages.api.OpenMinerResultMessage;
  * The JSON representation of a {@link OpenMinerResultMessage}.
  */
 public abstract class OpenMinerResultMessageJson extends AbstractRpcMessageJsonRepresentation<OpenMinerResultMessage> {
-	private boolean result;
+	private final boolean result;
 
 	protected OpenMinerResultMessageJson(OpenMinerResultMessage message) {
 		super(message);

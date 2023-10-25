@@ -27,7 +27,7 @@ import io.mokamint.node.api.Peer;
  * The JSON representation of a {@link Peer}.
  */
 public abstract class PeerJson implements JsonRepresentation<Peer> {
-	private String uri;
+	private final String uri;
 
 	protected PeerJson(Peer peer) {
 		this.uri = peer.getURI().toString();

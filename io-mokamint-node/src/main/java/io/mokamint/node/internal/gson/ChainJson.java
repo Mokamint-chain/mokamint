@@ -30,7 +30,7 @@ import io.mokamint.node.api.Chain;
  * The JSON representation of a {@link Chain}.
  */
 public abstract class ChainJson implements JsonRepresentation<Chain> {
-	private String[] hashes;
+	private final String[] hashes;
 
 	protected ChainJson(Chain chain) {
 		this.hashes = chain.getHashes().map(Hex::toHexString).toArray(String[]::new);

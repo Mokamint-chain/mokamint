@@ -26,7 +26,7 @@ import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
  * The JSON representation of a {@link GetBlockDescriptionMessage}.
  */
 public abstract class GetBlockDescriptionMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockDescriptionMessage> {
-	private String hash;
+	private final String hash;
 
 	protected GetBlockDescriptionMessageJson(GetBlockDescriptionMessage message) {
 		super(message);

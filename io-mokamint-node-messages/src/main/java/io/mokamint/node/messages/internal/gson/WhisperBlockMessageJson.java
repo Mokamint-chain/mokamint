@@ -29,7 +29,7 @@ import io.mokamint.node.messages.api.WhisperBlockMessage;
  * The JSON representation of an {@link WhisperBlockMessage}.
  */
 public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepresentation<WhisperBlockMessage> {
-	private Blocks.Json block;
+	private final Blocks.Json block;
 
 	protected WhisperBlockMessageJson(WhisperBlockMessage message) {
 		super(message);

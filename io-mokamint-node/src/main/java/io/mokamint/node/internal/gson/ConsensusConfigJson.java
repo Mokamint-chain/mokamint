@@ -28,14 +28,14 @@ import io.mokamint.node.api.ConsensusConfig;
  * The JSON representation of a {@code Config}.
  */
 public abstract class ConsensusConfigJson implements JsonRepresentation<ConsensusConfig<?,?>> {
-	private String chainId;
-	private String hashingForDeadlines;
-	private String hashingForGenerations;
-	private String hashingForBlocks;
-	private String signatureForBlocks;
-	private String signatureForDeadlines;
-	private long targetBlockCreationTime;
-	private long initialAcceleration;
+	private final String chainId;
+	private final String hashingForDeadlines;
+	private final String hashingForGenerations;
+	private final String hashingForBlocks;
+	private final String signatureForBlocks;
+	private final String signatureForDeadlines;
+	private final long targetBlockCreationTime;
+	private final long initialAcceleration;
 
 	protected ConsensusConfigJson(ConsensusConfig<?,?> config) {
 		this.chainId = config.getChainId();

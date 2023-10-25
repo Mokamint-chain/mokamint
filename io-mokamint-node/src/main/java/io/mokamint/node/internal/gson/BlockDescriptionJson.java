@@ -41,7 +41,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private BigInteger power;
 	private Long totalWaitingTime;
 	private Long weightedWaitingTime;
-	private BigInteger acceleration;
+	private final BigInteger acceleration;
 	private Deadlines.Json deadline;
 	private String hashOfPreviousBlock;
 	private String signatureForBlocks;

@@ -24,7 +24,7 @@ import io.mokamint.node.messages.api.OpenMinerMessage;
  * The JSON representation of an {@link OpenMinerMessage}.
  */
 public abstract class OpenMinerMessageJson extends AbstractRpcMessageJsonRepresentation<OpenMinerMessage> {
-	private int port;
+	private final int port;
 
 	protected OpenMinerMessageJson(OpenMinerMessage message) {
 		super(message);

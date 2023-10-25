@@ -27,7 +27,7 @@ import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
  * The JSON representation of a {@link GetMinerInfosResultMessage}.
  */
 public abstract class GetMinerInfosResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetMinerInfosResultMessage> {
-	private MinerInfos.Json[] miners;
+	private final MinerInfos.Json[] miners;
 
 	protected GetMinerInfosResultMessageJson(GetMinerInfosResultMessage message) {
 		super(message);

@@ -24,8 +24,8 @@ import io.mokamint.node.messages.api.ExceptionMessage;
  * The JSON representation of an {@link ExceptionMessage}.
  */
 public abstract class ExceptionResultMessageJson extends AbstractRpcMessageJsonRepresentation<ExceptionMessage> {
-	private String clazz;
-	private String message;
+	private final String clazz;
+	private final String message;
 
 	protected ExceptionResultMessageJson(ExceptionMessage message) {
 		super(message);

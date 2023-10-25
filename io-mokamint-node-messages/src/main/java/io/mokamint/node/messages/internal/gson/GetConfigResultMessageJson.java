@@ -27,7 +27,7 @@ import io.mokamint.node.messages.api.GetConfigResultMessage;
  * The JSON representation of a {@link GetConfigResultMessage}.
  */
 public abstract class GetConfigResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetConfigResultMessage> {
-	private ConsensusConfigBuilders.Json config;
+	private final ConsensusConfigBuilders.Json config;
 
 	protected GetConfigResultMessageJson(GetConfigResultMessage message) {
 		super(message);

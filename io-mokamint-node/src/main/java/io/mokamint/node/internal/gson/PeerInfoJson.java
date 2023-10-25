@@ -27,9 +27,9 @@ import io.mokamint.node.api.PeerInfo;
  * The JSON representation of a {@link PeerInfo}.
  */
 public abstract class PeerInfoJson implements JsonRepresentation<PeerInfo> {
-	private Peers.Json peer;
-	private long points;
-	private boolean connected;
+	private final Peers.Json peer;
+	private final long points;
+	private final boolean connected;
 
 	protected PeerInfoJson(PeerInfo info) {
 		this.peer = new Peers.Json(info.getPeer());

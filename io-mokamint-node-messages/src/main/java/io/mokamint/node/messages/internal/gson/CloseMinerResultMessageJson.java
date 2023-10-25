@@ -24,7 +24,7 @@ import io.mokamint.node.messages.api.CloseMinerResultMessage;
  * The JSON representation of a {@link CloseMinerResultMessage}.
  */
 public abstract class CloseMinerResultMessageJson extends AbstractRpcMessageJsonRepresentation<CloseMinerResultMessage> {
-	private boolean result;
+	private final boolean result;
 
 	protected CloseMinerResultMessageJson(CloseMinerResultMessage message) {
 		super(message);

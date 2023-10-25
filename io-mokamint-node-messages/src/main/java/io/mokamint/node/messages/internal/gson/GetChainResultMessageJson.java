@@ -26,7 +26,7 @@ import io.mokamint.node.messages.api.GetChainResultMessage;
  * The JSON representation of a {@link GetChainResultMessage}.
  */
 public abstract class GetChainResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetChainResultMessage> {
-	private Chains.Json chain;
+	private final Chains.Json chain;
 
 	protected GetChainResultMessageJson(GetChainResultMessage message) {
 		super(message);

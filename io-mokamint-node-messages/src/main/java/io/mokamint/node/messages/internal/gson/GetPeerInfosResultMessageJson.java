@@ -31,7 +31,7 @@ import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
  * The JSON representation of a {@link GetPeerInfosResultMessage}.
  */
 public abstract class GetPeerInfosResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetPeerInfosResultMessage> {
-	private PeerInfos.Json[] peers;
+	private final PeerInfos.Json[] peers;
 
 	protected GetPeerInfosResultMessageJson(GetPeerInfosResultMessage message) {
 		super(message);

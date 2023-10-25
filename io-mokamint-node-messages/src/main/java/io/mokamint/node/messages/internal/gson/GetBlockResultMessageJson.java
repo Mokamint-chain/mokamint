@@ -30,13 +30,12 @@ import io.mokamint.node.messages.api.GetBlockResultMessage;
  * The JSON representation of a {@link GetBlockResultMessage}.
  */
 public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockResultMessage> {
-	private Blocks.Json block;
+	private final Blocks.Json block;
 
 	protected GetBlockResultMessageJson(GetBlockResultMessage message) {
 		super(message);
 
-		if (message.get().isPresent())
-			this.block = new Blocks.Encoder().map(message.get().get());
+		this.block = message.get().map(new Blocks.Encoder()::map).orElse(null);
 	}
 
 	@Override

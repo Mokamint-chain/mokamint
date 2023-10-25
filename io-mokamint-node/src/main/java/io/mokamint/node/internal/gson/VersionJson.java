@@ -24,9 +24,9 @@ import io.mokamint.node.api.Version;
  * The JSON representation of a {@link Version}.
  */
 public abstract class VersionJson implements JsonRepresentation<Version> {
-	private int major;
-	private int minor;
-	private int patch;
+	private final int major;
+	private final int minor;
+	private final int patch;
 
 	protected VersionJson(Version version) {
 		this.major = version.getMajor();

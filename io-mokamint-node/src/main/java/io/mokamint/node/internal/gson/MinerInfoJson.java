@@ -26,9 +26,9 @@ import io.mokamint.node.api.MinerInfo;
  * The JSON representation of a {@link MinerInfo}.
  */
 public abstract class MinerInfoJson implements JsonRepresentation<MinerInfo> {
-	private String uuid;
-	private long points;
-	private String description;
+	private final String uuid;
+	private final long points;
+	private final String description;
 
 	protected MinerInfoJson(MinerInfo info) {
 		this.uuid = info.getUUID().toString();

@@ -28,9 +28,9 @@ import io.mokamint.node.api.ChainInfo;
  * The JSON representation of a {@link ChainInfo}.
  */
 public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
-	private long height;
-	private String genesisHash;
-	private String headHash;
+	private final long height;
+	private final String genesisHash;
+	private final String headHash;
 
 	protected ChainInfoJson(ChainInfo info) {
 		this.height = info.getLength();

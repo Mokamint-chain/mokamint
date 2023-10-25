@@ -30,9 +30,9 @@ import io.mokamint.node.api.NodeInfo;
  * The JSON representation of a {@link NodeInfo}.
  */
 public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
-	private Versions.Json version;
-	private String uuid;
-	private String localDateTimeUTC;
+	private final Versions.Json version;
+	private final String uuid;
+	private final String localDateTimeUTC;
 
 	protected NodeInfoJson(NodeInfo info) {
 		this.version = new Versions.Json(info.getVersion());

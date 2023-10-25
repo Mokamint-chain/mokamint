@@ -27,7 +27,7 @@ import io.mokamint.node.messages.api.AddPeerMessage;
  * The JSON representation of an {@link AddPeerMessage}.
  */
 public abstract class AddPeerMessageJson extends AbstractRpcMessageJsonRepresentation<AddPeerMessage> {
-	private Peers.Json peer;
+	private final Peers.Json peer;
 
 	protected AddPeerMessageJson(AddPeerMessage message) {
 		super(message);

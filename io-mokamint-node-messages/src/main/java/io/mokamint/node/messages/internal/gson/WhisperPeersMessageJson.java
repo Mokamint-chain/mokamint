@@ -31,7 +31,7 @@ import io.mokamint.node.messages.api.WhisperPeersMessage;
  * The JSON representation of an {@link WhisperPeersMessage}.
  */
 public abstract class WhisperPeersMessageJson extends AbstractRpcMessageJsonRepresentation<WhisperPeersMessage> {
-	private Peers.Json[] peers;
+	private final Peers.Json[] peers;
 
 	protected WhisperPeersMessageJson(WhisperPeersMessage message) {
 		super(message);

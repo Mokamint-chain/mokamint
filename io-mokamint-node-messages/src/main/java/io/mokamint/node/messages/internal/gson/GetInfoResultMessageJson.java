@@ -25,7 +25,7 @@ import io.mokamint.node.messages.api.GetInfoResultMessage;
  * The JSON representation of a {@link GetInfoResultMessage}.
  */
 public abstract class GetInfoResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetInfoResultMessage> {
-	private NodeInfos.Json info;
+	private final NodeInfos.Json info;
 
 	protected GetInfoResultMessageJson(GetInfoResultMessage message) {
 		super(message);

@@ -24,7 +24,7 @@ import io.mokamint.node.messages.api.RemovePeerResultMessage;
  * The JSON representation of a {@link RemovePeerResultMessage}.
  */
 public abstract class RemovePeerResultMessageJson extends AbstractRpcMessageJsonRepresentation<RemovePeerResultMessage> {
-	private boolean result;
+	private final boolean result;
 
 	protected RemovePeerResultMessageJson(RemovePeerResultMessage message) {
 		super(message);
