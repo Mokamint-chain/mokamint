@@ -39,8 +39,6 @@ public class List extends AbstractPublicRpcCommand {
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			MinerInfo[] infos = remote.getMinerInfos().sorted().toArray(MinerInfo[]::new);
-			if (infos.length == 0)
-				return;
 
 			if (json()) {
 				var encoder = new MinerInfos.Encoder();
@@ -48,7 +46,7 @@ public class List extends AbstractPublicRpcCommand {
 					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
 				));
 			}
-			else {
+			else if (infos.length > 0) {
 				System.out.println(Ansi.AUTO.string("@|green " + formatLine("UUID", "points", "description") + "|@"));
 				Stream.of(infos).map(info -> formatLine(info)).forEachOrdered(System.out::println);
 			}

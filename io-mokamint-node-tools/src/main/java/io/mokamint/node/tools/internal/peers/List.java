@@ -55,8 +55,6 @@ public class List extends AbstractPublicRpcCommand {
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			PeerInfo[] infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
-			if (infos.length == 0)
-				return;
 
 			if (json()) {
 				var encoder = new PeerInfos.Encoder();
@@ -64,7 +62,7 @@ public class List extends AbstractPublicRpcCommand {
 					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
 				));
 			}
-			else {
+			else if (infos.length > 0) {
 				int maxLength = Math.min(MAX_PEER_LENGTH, Stream.of(infos).mapToInt(info -> info.getPeer().toString().length()).max().getAsInt());
 				if (verbose)
 					System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", maxLength, "points", "status", "UUID", "version") + "|@"));

@@ -39,8 +39,6 @@ public class List extends AbstractPublicRpcCommand {
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			TaskInfo[] infos = remote.getTaskInfos().sorted().toArray(TaskInfo[]::new);
-			if (infos.length == 0)
-				return;
 
 			if (json()) {
 				var encoder = new TaskInfos.Encoder();
@@ -48,7 +46,7 @@ public class List extends AbstractPublicRpcCommand {
 					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
 				));
 			}
-			else {
+			else if (infos.length > 0){
 				System.out.println(Ansi.AUTO.string("@|green " + formatLine("description") + "|@"));
 				Stream.of(infos).map(info -> formatLine(info)).forEachOrdered(System.out::println);
 			}
@@ -63,7 +61,7 @@ public class List extends AbstractPublicRpcCommand {
 	}
 
 	private String formatLine(String description) {
-		return String.format("%-60s", description);
+		return String.format("%-80s", description);
 	}
 
 	@Override

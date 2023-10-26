@@ -63,8 +63,12 @@ public class List extends AbstractPublicRpcCommand {
 		try {
 			var info = remote.getChainInfo();
 			long height = info.getLength() - 1;
-			if (height < 0)
+			if (height < 0) {
+				if (json())
+					System.out.println("[]");
+
 				return;
+			}
 
 			if (from == -1L)
 				from = Math.max(0L, height - count + 1);
