@@ -572,7 +572,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 */
 	protected void onGetPeerInfosResult(Stream<PeerInfo> peers) {}
 	protected void onGetMinerInfosResult(Stream<MinerInfo> miners) {}
-	protected void onGetTaskInfosResult(Stream<TaskInfo> tasts) {}
+	protected void onGetTaskInfosResult(Stream<TaskInfo> tasks) {}
 	protected void onGetBlockResult(Optional<Block> block) {}
 	protected void onGetBlockDescriptionResult(Optional<BlockDescription> block) {}
 	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}

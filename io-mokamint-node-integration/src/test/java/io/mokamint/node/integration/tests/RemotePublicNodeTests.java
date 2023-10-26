@@ -60,6 +60,7 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
@@ -75,6 +76,7 @@ import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
@@ -85,6 +87,7 @@ import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
+import io.mokamint.node.messages.api.GetTaskInfosMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -186,7 +189,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
+			var exception = assertThrows(TimeoutException.class, remote::getPeerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -210,7 +213,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(ClosedNodeException.class, () -> remote.getPeerInfos());
+			var exception = assertThrows(ClosedNodeException.class, remote::getPeerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -234,7 +237,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.getPeerInfos());
+			var exception = assertThrows(InterruptedException.class, remote::getPeerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -264,7 +267,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
+			assertThrows(TimeoutException.class, remote::getPeerInfos);
 		}
 	}
 
@@ -285,7 +288,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
+			assertThrows(TimeoutException.class, remote::getPeerInfos);
 		}
 	}
 
@@ -306,7 +309,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getPeerInfos());
+			assertThrows(TimeoutException.class, remote::getPeerInfos);
 		}
 	}
 
@@ -354,7 +357,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
+			var exception = assertThrows(TimeoutException.class, remote::getMinerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -378,7 +381,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(ClosedNodeException.class, () -> remote.getMinerInfos());
+			var exception = assertThrows(ClosedNodeException.class, remote::getMinerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -402,7 +405,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.getMinerInfos());
+			var exception = assertThrows(InterruptedException.class, remote::getMinerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -432,7 +435,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
+			assertThrows(TimeoutException.class, remote::getMinerInfos);
 		}
 	}
 
@@ -453,7 +456,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
+			assertThrows(TimeoutException.class, remote::getMinerInfos);
 		}
 	}
 
@@ -474,7 +477,173 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertThrows(TimeoutException.class, () -> remote.getMinerInfos());
+			assertThrows(TimeoutException.class, remote::getMinerInfos);
+		}
+	}
+
+	@Test
+	@DisplayName("getTaskInfos() works")
+	public void getTaskInfosWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+		var taskInfos1 = Set.of(TaskInfos.of("a wonderful task"), TaskInfos.of("a special task"));
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetTaskInfosResultMessages.of(taskInfos1.stream(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var taskInfos2 = remote.getTaskInfos();
+			assertEquals(taskInfos1, taskInfos2.collect(Collectors.toSet()));
+		}
+	}
+
+	@Test
+	@DisplayName("getTaskInfos() works if it throws TimeoutException")
+	public void getTaskInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "time-out";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(TimeoutException.class, remote::getTaskInfos);
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getTaskInfos() works if it throws ClosedNodeException")
+	public void getTaskInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "node is closed";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new ClosedNodeException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(ClosedNodeException.class, remote::getTaskInfos);
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getTaskInfos() works if it throws InterruptedException")
+	public void getTaskInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException {
+		var exceptionMessage = "interrupted";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(InterruptedException.class, remote::getTaskInfos);
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("if getTaskInfos() is slow, it leads to a time-out")
+	public void getTaskInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, InterruptedException {
+		var taskInfos1 = Set.of(TaskInfos.of("a task"), TaskInfos.of("a special task"));
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+				try {
+					Thread.sleep(TIME_OUT * 4); // <----
+				}
+				catch (InterruptedException e) {}
+	
+				try {
+					sendObjectAsync(session, GetTaskInfosResultMessages.of(taskInfos1.stream(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, remote::getTaskInfos);
+		}
+	}
+
+	@Test
+	@DisplayName("getTaskInfos() ignores unexpected exceptions")
+	public void getTaskInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException {
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, remote::getTaskInfos);
+		}
+	}
+
+	@Test
+	@DisplayName("getTaskInfos() ignores unexpected messages")
+	public void getTaskInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException {
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, remote::getTaskInfos);
 		}
 	}
 

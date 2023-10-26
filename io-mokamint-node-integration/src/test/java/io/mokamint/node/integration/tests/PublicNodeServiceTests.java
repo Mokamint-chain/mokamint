@@ -59,6 +59,7 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -73,6 +74,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
@@ -167,6 +169,39 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetMinerInfos();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getTaskInfos() request reaches the service, it sends back the tasks of the node")
+	public void serviceGetTaskInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+		var semaphore = new Semaphore(0);
+		var taskInfo1 = TaskInfos.of("a great task");
+		var taskInfo2 = TaskInfos.of("a greater task");
+		var node = mkNode();
+		when(node.getTaskInfos()).thenReturn(Stream.of(taskInfo1, taskInfo2));
+
+		class MyTestClient extends RemotePublicNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+
+			@Override
+			protected void onGetTaskInfosResult(Stream<TaskInfo> received) {
+				var taskInfos = received.collect(Collectors.toList());
+				if (taskInfos.size() == 2 && taskInfos.contains(taskInfo1) && taskInfos.contains(taskInfo2))
+					semaphore.release();
+			}
+
+			private void sendGetTaskInfos() throws ClosedNodeException {
+				sendGetTaskInfos("id");
+			}
+		}
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetTaskInfos();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
