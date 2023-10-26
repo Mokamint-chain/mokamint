@@ -46,6 +46,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.Chains;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -310,8 +311,16 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
-		// TODO Auto-generated method stub
-		return null;
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			return currentlyExecutingTasks.stream()
+				.map(Object::toString)
+				.map(TaskInfos::of);
+		}
+		finally {
+			closureLock.afterCall();
+		}
 	}
 
 	@Override

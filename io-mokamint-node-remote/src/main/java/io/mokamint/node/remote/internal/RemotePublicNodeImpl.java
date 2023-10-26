@@ -24,6 +24,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
 
@@ -74,6 +75,8 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.GetTaskInfosMessages;
+import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
@@ -86,6 +89,7 @@ import io.mokamint.node.messages.api.GetConfigResultMessage;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -144,6 +148,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
 		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
+		addSession(GET_TASK_INFOS_ENDPOINT, uri, GetTaskInfosEndpoint::new);
 		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
 		addSession(GET_BLOCK_DESCRIPTION_ENDPOINT, uri, GetBlockDescriptionEndpoint::new);
 		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
@@ -249,6 +254,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetPeerInfosResult(gprm.get());
 		else if (message instanceof GetMinerInfosResultMessage gmrm)
 			onGetMinerInfosResult(gmrm.get());
+		else if (message instanceof GetTaskInfosResultMessage gtirm)
+			onGetTaskInfosResult(gtirm.get());
 		else if (message instanceof GetBlockResultMessage gbrm)
 			onGetBlockResult(gbrm.get());
 		else if (message instanceof GetBlockDescriptionResultMessage gbrm)
@@ -333,8 +340,31 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
-		// TODO Auto-generated method stub
-		return null;
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendGetTaskInfos(id);
+		try {
+			return queues.waitForResult(id, this::processGetTaskInfosSuccess, this::processStandardExceptions);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendGetTaskInfos(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_TASK_INFOS_ENDPOINT), GetTaskInfosMessages.of(id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private Stream<TaskInfo> processGetTaskInfosSuccess(RpcMessage message) {
+		return message instanceof GetTaskInfosResultMessage gtirm ? gtirm.get() : null;
 	}
 
 	@Override
@@ -541,7 +571,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * Hooks that can be overridden in subclasses.
 	 */
 	protected void onGetPeerInfosResult(Stream<PeerInfo> peers) {}
-	protected void onGetMinerInfosResult(Stream<MinerInfo> peers) {}
+	protected void onGetMinerInfosResult(Stream<MinerInfo> miners) {}
+	protected void onGetTaskInfosResult(Stream<TaskInfo> tasts) {}
 	protected void onGetBlockResult(Optional<Block> block) {}
 	protected void onGetBlockDescriptionResult(Optional<BlockDescription> block) {}
 	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}
@@ -565,6 +596,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
+		}
+	}
+
+	private class GetTaskInfosEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetTaskInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
 		}
 	}
 

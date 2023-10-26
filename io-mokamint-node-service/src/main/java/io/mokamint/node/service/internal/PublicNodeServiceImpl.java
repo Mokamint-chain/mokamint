@@ -70,6 +70,8 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.GetTaskInfosMessages;
+import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
@@ -81,6 +83,7 @@ import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
+import io.mokamint.node.messages.api.GetTaskInfosMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -199,9 +202,9 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
-			GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this), GetConfigEndpoint.config(this),
-			GetChainInfoEndpoint.config(this), GetChainEndpoint.config(this), WhisperPeersEndpoint.config(this),
-			WhisperBlockEndpoint.config(this));
+			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
+			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainEndpoint.config(this),
+			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
@@ -441,6 +444,35 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetMinerInfosEndpoint.class, GET_MINER_INFOS_ENDPOINT,
 					GetMinerInfosMessages.Decoder.class, GetMinerInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_TASK_INFOS_ENDPOINT + " request");
+	
+		try {
+			try {
+				sendObjectAsync(session, GetTaskInfosResultMessages.of(node.getTaskInfos(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	}
+
+	public static class GetTaskInfosEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetTaskInfosMessage message) -> getServer().onGetTaskInfos(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetTaskInfosEndpoint.class, GET_TASK_INFOS_ENDPOINT,
+					GetTaskInfosMessages.Decoder.class, GetTaskInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
