@@ -53,6 +53,7 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
@@ -328,6 +329,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private Stream<MinerInfo> processGetMinerInfosSuccess(RpcMessage message) {
 		return message instanceof GetMinerInfosResultMessage gmrm ? gmrm.get() : null;
+	}
+
+	@Override
+	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override

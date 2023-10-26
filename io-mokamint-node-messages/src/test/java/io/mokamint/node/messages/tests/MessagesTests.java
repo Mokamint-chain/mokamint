@@ -48,6 +48,7 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -70,6 +71,8 @@ import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
+import io.mokamint.node.messages.GetTaskInfosMessages;
+import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
@@ -188,6 +191,7 @@ public class MessagesTests extends AbstractLoggedTests {
 		assertEquals(getChainMessage1, getChainMessage2);
 	}
 
+	@Test
 	@DisplayName("getPeerInfos messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetPeerInfos() throws EncodeException, DecodeException {
 		var getPeerInfosMessage1 = GetPeerInfosMessages.of("id");
@@ -207,6 +211,7 @@ public class MessagesTests extends AbstractLoggedTests {
 		assertEquals(getPeerInfosResultMessage1, getPeerInfosResultMessage2);
 	}
 
+	@Test
 	@DisplayName("getMinerInfos messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetMinerInfos() throws EncodeException, DecodeException {
 		var getMinerInfosMessage1 = GetMinerInfosMessages.of("id");
@@ -224,6 +229,25 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new GetMinerInfosResultMessages.Encoder().encode(getMinerInfosResultMessage1);
 		var getMinerInfosResultMessage2 = new GetMinerInfosResultMessages.Decoder().decode(encoded);
 		assertEquals(getMinerInfosResultMessage1, getMinerInfosResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getTaskInfos messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTaskInfos() throws EncodeException, DecodeException {
+		var getTaskInfosMessage1 = GetTaskInfosMessages.of("id");
+		String encoded = new GetTaskInfosMessages.Encoder().encode(getTaskInfosMessage1);
+		var getTaskInfosMessage2 = new GetTaskInfosMessages.Decoder().decode(encoded);
+		assertEquals(getTaskInfosMessage1, getTaskInfosMessage2);
+	}
+
+	@Test
+	@DisplayName("getTaskInfosResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTaskInfosResult() throws EncodeException, DecodeException, URISyntaxException {
+		var tasks = Stream.of(TaskInfos.of("a beautiful task"), TaskInfos.of("another beautiful task"));
+		var getTaskInfosResultMessage1 = GetTaskInfosResultMessages.of(tasks, "id");
+		String encoded = new GetTaskInfosResultMessages.Encoder().encode(getTaskInfosResultMessage1);
+		var getTaskInfosResultMessage2 = new GetTaskInfosResultMessages.Decoder().decode(encoded);
+		assertEquals(getTaskInfosResultMessage1, getTaskInfosResultMessage2);
 	}
 
 	@Test

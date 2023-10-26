@@ -58,6 +58,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -305,6 +306,12 @@ public class LocalNodeImpl implements LocalNode {
 		finally {
 			closureLock.afterCall();
 		}
+	}
+
+	@Override
+	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override

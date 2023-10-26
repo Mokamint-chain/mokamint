@@ -74,6 +74,16 @@ public interface PublicNode extends Node, Whisperer {
 	Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
+	 * Yields information about the tasks currently running inside this node.
+	 * 
+	 * @return the tasks information
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
 	 * Yields information about the current chain of this node.
 	 * 
 	 * @return the information
