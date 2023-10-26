@@ -23,6 +23,7 @@ import io.mokamint.node.tools.internal.Keys;
 import io.mokamint.node.tools.internal.Miners;
 import io.mokamint.node.tools.internal.Peers;
 import io.mokamint.node.tools.internal.Start;
+import io.mokamint.node.tools.internal.Tasks;
 import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
@@ -44,7 +45,8 @@ import picocli.CommandLine.Command;
 		Keys.class,
 		Miners.class,
 		Peers.class,
-		Start.class
+		Start.class,
+		Tasks.class
 	}
 )
 public class MokamintNode extends AbstractTool {
