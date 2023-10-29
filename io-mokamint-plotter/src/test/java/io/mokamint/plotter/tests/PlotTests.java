@@ -40,7 +40,7 @@ public class PlotTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("the best deadline of a plot respects the description and is valid")
-	public void testDeadlineFromPlotIsValid(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void testDeadlineFromPlotIsValid(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, InterruptedException {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);

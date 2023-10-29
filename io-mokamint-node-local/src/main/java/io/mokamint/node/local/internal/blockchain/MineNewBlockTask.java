@@ -101,6 +101,9 @@ public class MineNewBlockTask implements Task {
 		this.miners = node.getMiners();
 		this.logPrefix = "";
 		this.toString = "next block mining";
+
+		// we interrupt already existing mining tasks, since this new task will likely mine on a more promising chain
+		blockchain.interruptAllMiningTasks();
 	}
 
 	@Override
@@ -119,8 +122,17 @@ public class MineNewBlockTask implements Task {
 			LOGGER.log(Level.SEVERE, "cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L)
 			node.submit(new NoMinersAvailableEvent());
-		else
-			new Run();
+		else {
+			try {
+				// only one mining task is allowed at a time, since concurrent mining would make
+				// the application API too complex and require applications to track more blocks open at the same time
+				blockchain.acquireMiningLock();
+				new Run();
+			}
+			finally {
+				blockchain.releaseMiningLock();
+			}
+		}
 	}
 
 	/**
@@ -314,11 +326,16 @@ public class MineNewBlockTask implements Task {
 		}
 
 		private void requestDeadlineToEveryMiner() {
-			LOGGER.info(logPrefix + "asking miners for a deadline: " + description);
 			miners.get().forEach(this::requestDeadlineTo);
 		}
 
 		private void requestDeadlineTo(Miner miner) {
+			if (Thread.currentThread().isInterrupted()) {
+				LOGGER.info(logPrefix + "not creating block on top of " + previousHex + " since the task has been interrupted");
+				return;
+			}
+
+			LOGGER.info(logPrefix + "asking miner " + miner.getUUID() + " for a deadline: " + description);
 			minersThatDidNotAnswer.add(miner);
 			miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 		}
@@ -396,6 +413,12 @@ public class MineNewBlockTask implements Task {
 			var nextBlock = Blocks.of(description.getHeight(), description.getPower(), description.getTotalWaitingTime(),
 				description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock(),
 				node.getKeys().getPrivate());
+
+			if (Thread.currentThread().isInterrupted()) {
+				LOGGER.info(logPrefix + "not creating block on top of " + previousHex + " since the task has been interrupted");
+				return Optional.empty();
+			}
+
 			// TODO: transactions should be added here
 
 			return Optional.of(nextBlock);

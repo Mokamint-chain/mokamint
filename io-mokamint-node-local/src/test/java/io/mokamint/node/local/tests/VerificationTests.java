@@ -111,7 +111,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException {
+	public static void afterAll() throws IOException, InterruptedException {
 		plot.close();
 	}
 
@@ -160,7 +160,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent height, verification rejects it")
-	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -180,7 +180,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent acceleration, verification rejects it")
-	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -200,7 +200,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent power, verification rejects it")
-	public void powerMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void powerMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -220,7 +220,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent total waiting time, verification rejects it")
-	public void totalWaitingTimeMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void totalWaitingTimeMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -240,7 +240,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has a wrong signature, its creation fails")
-	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
@@ -258,7 +258,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's scoop number, verification rejects it")
-	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -280,7 +280,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's data, verification rejects it")
-	public void deadlineDataMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void deadlineDataMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -305,7 +305,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's hashing algorithm, verification rejects it")
-	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -329,7 +329,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong deadline's prolog chain identifier, verification rejects it")
-	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -353,7 +353,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong blocks' signature algorithm, verification rejects it")
-	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -382,7 +382,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong deadlines' signature algorithm, verification rejects it")
-	public void deadlinePrologDeadlinesSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void deadlinePrologDeadlinesSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -411,7 +411,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has a wrong deadline's prolog extra, verification rejects it")
-	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var application = mock(Application.class);
 		when(application.prologExtraIsValid(any())).thenReturn(false);
@@ -432,7 +432,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has an invalid deadline progressive, verification rejects it")
-	public void invalidDeadlineProgressiveGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void invalidDeadlineProgressiveGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -454,7 +454,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has an invalid deadline value, verification rejects it")
-	public void invalidDeadlineValueGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void invalidDeadlineValueGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var hashingForDeadlines = config.getHashingForDeadlines();

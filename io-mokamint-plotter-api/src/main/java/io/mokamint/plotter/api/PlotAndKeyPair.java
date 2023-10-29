@@ -46,5 +46,5 @@ public interface PlotAndKeyPair extends AutoCloseable {
 	KeyPair getKeyPair();
 
 	@Override
-	void close() throws IOException;
+	void close() throws IOException, InterruptedException;
 }

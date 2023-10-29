@@ -114,7 +114,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException {
+	public static void afterAll() throws IOException, InterruptedException {
 		plot1.close();
 		plot2.close();
 		plot3.close();
@@ -207,7 +207,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
-	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
@@ -225,7 +225,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
-	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
@@ -259,7 +259,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
-	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void ifLongerChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
@@ -325,7 +325,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if more children of the head are added, the one with higher power becomes head")
-	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
@@ -373,7 +373,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException {
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var blockchain = mkTestBlockchain(config);
 		var genesis = Blocks.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys);
@@ -419,11 +419,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config) throws IOException, InvalidKeyException, SignatureException {
+	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
 		return computeNextBlock(previous, config, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException {
+	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription, plotPrivateKey);
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());

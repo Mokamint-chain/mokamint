@@ -26,6 +26,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -67,6 +69,7 @@ public class LocalMinerImpl implements Miner {
 			throw new IllegalArgumentException("A local miner needs at least one plot file");
 
 		this.plotsAndKeyPairs = plotsAndKeyPairs;
+		LOGGER.info("created miner " + uuid);
 	}
 
 	@Override
@@ -78,12 +81,19 @@ public class LocalMinerImpl implements Miner {
 	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info(logPrefix + "received deadline request: " + description);
 
-		Stream.of(plotsAndKeyPairs)
-			.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(description.getHashing()))
-			.map(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, description))
-			.flatMap(Optional::stream)
-			.min(Deadline::compareByValue)
-			.ifPresent(onDeadlineComputed::accept);
+		try {
+			CheckRunnable.check(InterruptedException.class, () -> {
+				Stream.of(plotsAndKeyPairs)
+					.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(description.getHashing()))
+					.map(UncheckFunction.uncheck(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, description)))
+					.flatMap(Optional::stream)
+					.min(Deadline::compareByValue)
+					.ifPresent(onDeadlineComputed::accept);
+			});
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	/**
@@ -93,8 +103,9 @@ public class LocalMinerImpl implements Miner {
 	 * @param plotAndKeyPair the plot file with its associated key pair for signing deadlines
 	 * @param description the description of the deadline
 	 * @return the deadline, if any
+	 * @throws InterruptedException if the thread is interrupted while computing the smallest deadline
 	 */
-	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, DeadlineDescription description) {
+	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, DeadlineDescription description) throws InterruptedException {
 		try {
 			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(description, plotAndKeyPair.getKeyPair().getPrivate()));
 		}

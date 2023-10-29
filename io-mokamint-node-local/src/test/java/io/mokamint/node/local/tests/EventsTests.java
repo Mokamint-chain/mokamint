@@ -102,7 +102,7 @@ public class EventsTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException {
+	public static void afterAll() throws IOException, InterruptedException {
 		plot.close();
 	}
 
@@ -194,7 +194,12 @@ public class EventsTests extends AbstractLoggedTests {
 
 					onDeadlineComputed.accept(illegalDeadline);
 				}
-				catch (IOException | InvalidKeyException | SignatureException e) {}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				catch (IOException | InvalidKeyException | SignatureException e) {
+					e.printStackTrace();
+				}
 			}
 
 			@Override
@@ -312,6 +317,9 @@ public class EventsTests extends AbstractLoggedTests {
 							plotKeys.getPrivate());
 
 					onDeadlineComputed.accept(illegalDeadline);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
 				catch (IOException | NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {}
 			}

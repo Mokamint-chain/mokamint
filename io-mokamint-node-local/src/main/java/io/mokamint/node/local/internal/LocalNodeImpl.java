@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -191,9 +192,9 @@ public class LocalNodeImpl implements LocalNode {
 			peers.connect();
 
 			if (init)
-				blockchain.startMining();
+				blockchain.requireMining();
 			else
-				blockchain.startSynchronization(0L);
+				blockchain.requireSynchronization(0L);
 		}
 		catch (ClosedDatabaseException | ClosedNodeException e) {
 			// the database and the node itself cannot be closed already
@@ -551,7 +552,7 @@ public class LocalNodeImpl implements LocalNode {
 				LOGGER.info("added miner " + miner.getUUID() + " (" + miner + ")");
 				// we require to mine, if there were no miners before this call
 				if (count == 0L)
-					blockchain.startMining();
+					blockchain.requireMining();
 
 				return true;
 			}
@@ -805,6 +806,11 @@ public class LocalNodeImpl implements LocalNode {
 
 			onComplete(task);
 		}
+
+		@Override
+		public String toString() {
+			return task.toString();
+		}
 	};
 
 	/**
@@ -812,14 +818,15 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param task the task to run
 	 */
-	public void submit(Task task) {
+	public Optional<Future<?>> submit(Task task) {
 		try {
 			LOGGER.info(task.logPrefix() + "scheduling " + task);
 			onSubmit(task);
-			executors.execute(new RunnableTask(task));
+			return Optional.of(executors.submit(new RunnableTask(task)));
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
+			return Optional.empty();
 		}
 	}
 

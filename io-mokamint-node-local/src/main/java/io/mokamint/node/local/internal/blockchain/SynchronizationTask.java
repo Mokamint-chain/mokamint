@@ -178,7 +178,7 @@ public class SynchronizationTask implements Task {
 			}
 
 			// after synchronization, we let the blockchain start to mine its blocks
-			blockchain.startMining();
+			blockchain.requireMining();
 		}
 
 		/**

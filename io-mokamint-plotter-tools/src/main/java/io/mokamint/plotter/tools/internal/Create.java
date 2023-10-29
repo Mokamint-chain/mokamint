@@ -91,6 +91,9 @@ public class Create extends AbstractCommand {
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The required hashing algorithm \"" + hashing + "\" does not exist!", e);
 		}
+		catch (InterruptedException e) {
+			throw new CommandException("Interrupted while waiting!", e);
+		}
 		catch (IOException e) {
 			throw new CommandException("Cannot write the plot file!", e);
 		}

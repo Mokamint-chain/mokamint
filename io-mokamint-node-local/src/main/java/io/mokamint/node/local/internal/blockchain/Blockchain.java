@@ -24,10 +24,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -99,6 +104,16 @@ public class Blockchain implements AutoCloseable {
 	 */
 	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
 
+	/**
+	 * The current mining tasks, if any.
+	 */
+	private final Set<Future<?>> miningTasks = ConcurrentHashMap.newKeySet();
+
+	/**
+	 * A semaphore to allow only one mining task to run at a time.
+	 */
+	private final Semaphore miningSemaphore = new Semaphore(1);
+
 	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
 	/**
@@ -138,14 +153,14 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
-	 * Triggers block mining on top of the current head, if this blockchain
-	 * is not currently performing a synchronization. Otherwise, nothing happens.
+	 * Starts a mining task for a new block on top of the current head of the blockchain.
+	 * This call is ignored also when this blockchain is synchronizing.
 	 * This method requires the blockchain to be non-empty.
 	 */
-	public void startMining() {
+	public void requireMining() {
 		// if synchronization is in progress, mining will be triggered at its end anyway
 		if (!isSynchronizing.get())
-			node.submit(new MineNewBlockTask(node));
+			node.submit(new MineNewBlockTask(node)).ifPresent(miningTasks::add);
 	}
 
 	/**
@@ -154,7 +169,7 @@ public class Blockchain implements AutoCloseable {
 	 * 
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
-	public void startSynchronization(long initialHeight) {
+	public void requireSynchronization(long initialHeight) {
 		if (!isSynchronizing.getAndSet(true))
 			node.submit(new SynchronizationTask(node, initialHeight, () -> isSynchronizing.set(false)));
 	}
@@ -376,15 +391,15 @@ public class Blockchain implements AutoCloseable {
 		while (!ws.isEmpty());
 
 		if (updatedHead.get() != null)
-			startMining();
+			requireMining();
 		else if (addedToOrphans) {
 			var powerOfHead = getPowerOfHead();
 			if (powerOfHead.isEmpty())
-				startSynchronization(0L);
+				requireSynchronization(0L);
 			else if (powerOfHead.get().compareTo(block.getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-				startSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));
+				requireSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));
 		}
 
 		return added;
@@ -423,6 +438,38 @@ public class Blockchain implements AutoCloseable {
 		public String logPrefix() {
 			return "height " + block.getHeight() + ": ";
 		}
+	}
+
+	/**
+	 * Acquires the lock that allows a mine new block task to be
+	 * the only allowed to mine new blocks. By allowing only one
+	 * mining task at a time, we simplify the API of the application,
+	 * since it does not need to deal with concurrent block creations.
+	 * 
+	 * @throws InterruptedException if the thread is interrupted while waiting for the lock
+	 */
+	void acquireMiningLock() throws InterruptedException {
+		miningSemaphore.acquire();
+	}
+
+	/**
+	 * Releases the lock that allows a mine new block task to be
+	 * the only allowed to mine new blocks.
+	 */
+	void releaseMiningLock() {
+		miningSemaphore.release();
+	}
+
+	/**
+	 * Interrupts all known tasks that have been spawned to mine a new block.
+	 * This avoids the accumulation of tasks, since a single task is enough
+	 * for mining a new block.
+	 */
+	void interruptAllMiningTasks() {
+		miningTasks.forEach(task -> {
+			task.cancel(true);
+			miningTasks.remove(task);
+		});
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)

@@ -115,7 +115,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException {
+	public static void afterAll() throws IOException, InterruptedException {
 		plot.close();
 	}
 

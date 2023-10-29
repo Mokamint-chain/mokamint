@@ -30,6 +30,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -92,6 +97,11 @@ public class PlotImpl implements Plot {
 	 * The hashing algorithm used by this plot.
 	 */
 	private final HashingAlgorithm hashing;
+
+	/**
+	 * The executors used to look for the smallest deadlines.
+	 */
+	private final ExecutorService executors = Executors.newCachedThreadPool();
 
 	/**
 	 * Loads a plot file already existing on disk.
@@ -273,11 +283,30 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
+	public Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
 		if (!description.getHashing().equals(hashing))
 			throw new IllegalArgumentException("The deadline description and the plot file use different hashing algorithms");
 
-		return new SmallestDeadlineFinder(description, privateKey).deadline;
+		// we run this is its own thread, since it uses nio channels that would be closed
+		// if the executing thread is interrupted, which is not what we want
+		try {
+			return executors.submit(() -> new SmallestDeadlineFinder(description, privateKey).deadline).get();
+		}
+		catch (RejectedExecutionException e) {
+			throw new IOException("Cannot look for the smallest deadline", e);
+		}
+		catch (ExecutionException e) {
+			var cause = e.getCause();
+
+			if (cause instanceof IOException io)
+				throw io;
+			else if (cause instanceof InvalidKeyException ike)
+				throw ike;
+			else if (cause instanceof SignatureException se)
+				throw se;
+			else
+				throw new IOException("Unexpected exception", e);
+		}
 	}
 
 	/**
@@ -340,12 +369,19 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() throws IOException, InterruptedException {
+		executors.shutdownNow();
+
 		try {
-			reader.close();
+			executors.awaitTermination(3, TimeUnit.SECONDS);
 		}
 		finally {
-			channel.close();
+			try {
+				reader.close();
+			}
+			finally {
+				channel.close();
+			}
 		}
 	}
 }

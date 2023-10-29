@@ -63,7 +63,7 @@ public interface Plot extends AutoCloseable {
 	HashingAlgorithm getHashing();
 
 	@Override
-	void close() throws IOException;
+	void close() throws IOException, InterruptedException;
 
 	/**
 	 * Yields the smallest deadline in this plot file, matching the given description.
@@ -76,11 +76,13 @@ public interface Plot extends AutoCloseable {
 	 * @param description the description of the requested deadline
 	 * @param privateKey the private key used to sign the deadline
 	 * @return the smallest deadline
+	 * @throws InterruptedException if the thread is interrupted while waiting for the computation
+	 *                              of the smallest deadline
 	 * @throws IOException if the plot file cannot be read
 	 * @throws IllegalArgumentException if the description is for a deadline using a different
 	 *                                  hashing algorithm than that used to create this plot file
 	 * @throws InvalidKeyException if {@code privateKey} is invalid
 	 * @throws SignatureException if the deadline could not be signed
 	 */
-	Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException;
+	Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException;
 }
