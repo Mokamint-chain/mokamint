@@ -72,6 +72,8 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.PostTransactionMessages;
+import io.mokamint.node.messages.PostTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
@@ -84,6 +86,7 @@ import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.api.PostTransactionMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -204,7 +207,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainEndpoint.config(this),
-			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
+			PostTransactionEndpoint.config(this), WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
@@ -618,6 +621,35 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetChainEndpoint.class, GET_CHAIN_ENDPOINT,
 					GetChainMessages.Decoder.class, GetChainResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onPostTransaction(PostTransactionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + POST_TRANSACTION_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, PostTransactionResultMessages.of(node.post(message.getTransaction()), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class PostTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (PostTransactionMessage message) -> getServer().onPostTransaction(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, PostTransactionEndpoint.class, POST_TRANSACTION_ENDPOINT,
+					PostTransactionMessages.Decoder.class, PostTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

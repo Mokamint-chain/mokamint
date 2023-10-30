@@ -25,6 +25,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.POST_TRANSACTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
 
@@ -55,6 +56,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.TaskInfo;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
@@ -77,6 +79,8 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.PostTransactionMessages;
+import io.mokamint.node.messages.PostTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
@@ -90,6 +94,7 @@ import io.mokamint.node.messages.api.GetInfoResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
+import io.mokamint.node.messages.api.PostTransactionResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -155,6 +160,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
 		addSession(GET_CHAIN_ENDPOINT, uri, GetChainEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
+		addSession(POST_TRANSACTION_ENDPOINT, uri, PostTransactionEndpoint::new);
 		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
 		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
 
@@ -266,6 +272,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetChainInfoResult(gcirm.get());
 		else if (message instanceof GetChainResultMessage gcrm)
 			onGetChainResult(gcrm.get());
+		else if (message instanceof PostTransactionResultMessage ptrm)
+			onPostTransactionResult(ptrm.get());
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
@@ -567,6 +575,41 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			processStandardExceptions(message);
 	}
 
+	@Override
+	public boolean post(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendPost(transaction, id);
+		try {
+			return queues.waitForResult(id, this::processPostTransactionSuccess, this::processPostTransactionException);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendPost(Transaction transaction, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(POST_TRANSACTION_ENDPOINT), PostTransactionMessages.of(transaction, id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private Boolean processPostTransactionSuccess(RpcMessage message) {
+		return message instanceof PostTransactionResultMessage ptrm ? ptrm.get() : null;
+	}
+
+	private boolean processPostTransactionException(ExceptionMessage message) {
+		//var clazz = message.getExceptionClass();
+		return // TODO DatabaseException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
 	/**
 	 * Hooks that can be overridden in subclasses.
 	 */
@@ -578,6 +621,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetChainResult(Chain chain) {}
+	protected void onPostTransactionResult(boolean success) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhisperPeers(Stream<Peer> peers) {}
@@ -652,6 +696,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInfoMessages.Encoder.class);
+		}
+	}
+
+	private class PostTransactionEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, PostTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, PostTransactionMessages.Encoder.class);
 		}
 	}
 

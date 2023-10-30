@@ -45,18 +45,6 @@ public abstract class Peers {
 	}
 
 	/**
-	 * Unmarshals a peer from the given bytes.
-	 * 
-	 * @param bytes the bytes
-	 * @return the peer
-	 * @throws IOException if the peer cannot be unmarshalled
-	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
-	 */
-	public static Peer from(byte[] bytes) throws IOException, URISyntaxException {
-		return PeerImpl.from(bytes);
-	}
-
-	/**
 	 * Unmarshals a peer from the given context.
 	 * 
 	 * @param context the context

@@ -17,72 +17,70 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Objects;
+import java.util.Arrays;
+import java.util.Base64;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.Transaction;
 
 /**
- * An implementation of a peer.
+ * An implementation of a transaction.
  */
 @Immutable
-public class PeerImpl extends AbstractMarshallable implements Peer {
-	private final URI uri;
+public class TransactionImpl extends AbstractMarshallable implements Transaction {
 
 	/**
-	 * Creates a peer with the given URI.
-	 * 
-	 * @param uri the URI of the peer
+	 * The bytes of the transaction.
 	 */
-	public PeerImpl(URI uri) {
-		Objects.requireNonNull(uri);
-		this.uri = uri;
+	private final byte[] bytes;
+
+	/**
+	 * Creates a transaction with the given bytes.
+	 * 
+	 * @param bytes the bytes
+	 */
+	public TransactionImpl(byte[] bytes) {
+		this.bytes = bytes.clone();
 	}
 
 	@Override
-	public URI getURI() {
-		return uri;
+	public byte[] getBytes() {
+		return bytes.clone();
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof Peer peer && uri.equals(peer.getURI());
+		return other instanceof Transaction t && Arrays.equals(bytes, t.getBytes());
 	}
 
 	@Override
 	public int hashCode() {
-		return uri.hashCode();
+		return Arrays.hashCode(bytes);
 	}
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		context.writeStringUnshared(uri.toString());
-	}
-
-	@Override
-	public int compareTo(Peer other) {
-		return uri.compareTo(other.getURI());
+		context.writeCompactInt(bytes.length);
+		context.write(bytes);
 	}
 
 	@Override
 	public String toString() {
-		return uri.toString();
+		return Base64.getEncoder().encodeToString(bytes);
 	}
 
 	/**
-	 * Unmarshals a peer from the given context.
+	 * Unmarshals a transaction from the given context.
 	 * 
 	 * @param context the context
-	 * @return the peer
-	 * @throws IOException if the peer cannot be unmarshalled
-	 * @throws URISyntaxException if the context contains a URI with illegal syntax
+	 * @return the transaction
+	 * @throws IOException if the transaction cannot be unmarshalled
 	 */
-	public static PeerImpl from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return new PeerImpl(new URI(context.readStringUnshared()));
+	public static TransactionImpl from(UnmarshallingContext context) throws IOException {
+		int length = context.readCompactInt();
+		return new TransactionImpl(context.readBytes(length, "Transaction length mismatch"));
 	}
 }

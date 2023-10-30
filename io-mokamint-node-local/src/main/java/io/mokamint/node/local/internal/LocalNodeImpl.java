@@ -61,6 +61,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.TaskInfo;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -496,6 +497,37 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
+	private static class AddToMempoolTask implements Task {
+		private final Transaction transaction;
+
+		private AddToMempoolTask(Transaction transaction) {
+			this.transaction = transaction;
+		}
+
+		@Override
+		public void body() throws Exception {
+			// TODO
+		}
+
+		@Override
+		public String logPrefix() {
+			return "transaction addition task to the mempool";
+		}
+	}
+
+	@Override
+	public boolean post(Transaction transaction) throws ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			submit(new AddToMempoolTask(transaction));
+			return true;
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
 	/**
 	 * Yields the application running over this node.
 	 * 
@@ -824,7 +856,7 @@ public class LocalNodeImpl implements LocalNode {
 			onSubmit(task);
 			return Optional.of(executors.submit(new RunnableTask(task)));
 		}
-		catch (RejectedExecutionException e) {
+		catch (RejectedExecutionException e) { // TODO: possibly throw this?
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
 			return Optional.empty();
 		}
@@ -860,7 +892,7 @@ public class LocalNodeImpl implements LocalNode {
 			onSubmit(task);
 			periodicExecutors.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
 		}
-		catch (RejectedExecutionException e) {
+		catch (RejectedExecutionException e) { // TODO: possibly throw this?
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
 		}
 	}

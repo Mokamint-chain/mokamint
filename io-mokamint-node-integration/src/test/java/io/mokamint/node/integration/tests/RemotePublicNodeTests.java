@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,11 +62,13 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
@@ -77,6 +80,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.PostTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
@@ -88,6 +92,7 @@ import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.api.PostTransactionMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -1012,6 +1017,32 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var info2 = remote.getInfo();
 			assertEquals(info1, info2);
+		}
+	}
+
+	@Test
+	@DisplayName("post(Transaction) works")
+	public void postTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
+		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var transaction2 = new AtomicReference<Transaction>();
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onPostTransaction(PostTransactionMessage message, Session session) {
+				transaction2.set(message.getTransaction());
+				try {
+					sendObjectAsync(session, PostTransactionResultMessages.of(true, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			assertTrue(remote.post(transaction1));
+			assertEquals(transaction1, transaction2.get());
 		}
 	}
 

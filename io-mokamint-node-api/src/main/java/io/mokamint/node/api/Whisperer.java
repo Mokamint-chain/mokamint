@@ -28,7 +28,7 @@ public interface Whisperer {
 	 * 
 	 * @param whisperedPeers the whispered peers
 	 * @param seen a predicate telling if a whisperer has already whispered the
-	 *             {@code message}. This is used in order to avoid infinite recursion
+	 *             {@code whisperedPeers}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle inside the same machine (this does not account
 	 *             for network connections among whisperers)
 	 */
@@ -39,7 +39,7 @@ public interface Whisperer {
 	 * 
 	 * @param whisperedBlock the whispered block
 	 * @param seen a predicate telling if a whisperer has already whispered the
-	 *             {@code message}. This is used in order to avoid infinite recursion
+	 *             {@code whisperedBlock}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle inside the same machine (this does not account
 	 *             for network connections among whisperers)
 	 */
@@ -53,8 +53,8 @@ public interface Whisperer {
 	 * among its peers, since they would end up being rejected (a peer cannot be added to itself).
 	 * 
 	 * @param itself the whispered peer itself
-	 * @param seen a predicate telling if a whisperer has already whispered the
-	 *             {@code message}. This is used in order to avoid infinite recursion
+	 * @param seen a predicate telling if a whisperer has already whispered
+	 *             {@code itself}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle
 	 */
 	void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen);

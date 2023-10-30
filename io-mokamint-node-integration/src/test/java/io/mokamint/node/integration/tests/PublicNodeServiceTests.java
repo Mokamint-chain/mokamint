@@ -20,6 +20,7 @@ import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -60,6 +61,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -513,6 +515,38 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetChain();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a postTransaction() request reaches the service, it post the transaction and sends back a result")
+	public void servicePostTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+		var semaphore = new Semaphore(0);
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		
+		class MyTestClient extends RemotePublicNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+
+			@Override
+			protected void onPostTransactionResult(boolean success) {
+				if (success)
+					semaphore.release();
+			}
+
+			private void sendPost() throws ClosedNodeException {
+				sendPost(transaction, "id");
+			}
+		}
+
+		var node = mkNode();
+		when(node.post(eq(transaction))).thenReturn(true);
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendPost();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
