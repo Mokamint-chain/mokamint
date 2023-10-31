@@ -55,10 +55,8 @@ public class Mempool {
 	 * checked for validity and, if valid, added to this mempool.
 	 * 
 	 * @param transaction the transaction to add
-	 * @return true if the addition has been successfully scheduled; this does not
-	 *              mean that the transaction is valid
 	 */
-	public boolean scheduleAddition(Transaction transaction) {
+	public void scheduleAddition(Transaction transaction) {
 		
 		class AddToMempoolTask implements Task {
 
@@ -79,6 +77,5 @@ public class Mempool {
 		}
 
 		node.submit(new AddToMempoolTask());
-		return true;
 	}
 }

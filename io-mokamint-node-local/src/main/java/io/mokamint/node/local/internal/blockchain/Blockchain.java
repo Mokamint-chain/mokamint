@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -98,12 +97,6 @@ public class Blockchain implements AutoCloseable {
 	private int orphansPos;
 
 	/**
-	 * True if and only if this blockchain is currently performing
-	 * a synchronization from the peers of the node.
-	 */
-	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
-
-	/**
 	 * The current mining tasks, if any.
 	 */
 	private final Set<Future<?>> miningTasks = ConcurrentHashMap.newKeySet();
@@ -112,6 +105,11 @@ public class Blockchain implements AutoCloseable {
 	 * A semaphore to allow only one mining task to run at a time.
 	 */
 	private final Semaphore miningSemaphore = new Semaphore(1);
+
+	/**
+	 * A semaphore to allow only one synchronization task to run at a time.
+	 */
+	private final Semaphore synchronizationSemaphore = new Semaphore(1);
 
 	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
@@ -152,25 +150,32 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
-	 * Starts a mining task for a new block on top of the current head of the blockchain.
+	 * Schedules a mining task for a new block on top of the current head of the blockchain.
 	 * This call is ignored also when this blockchain is synchronizing.
 	 * This method requires the blockchain to be non-empty.
 	 */
-	public void requireMining() {
+	public void scheduleMining() {
+		// it is possible to mine during synchronization, but it's a waste of resources
+		// since the head of the chain is likely not yet stable;
 		// if synchronization is in progress, mining will be triggered at its end anyway
-		if (!isSynchronizing.get())
-			node.submit(new MineNewBlockTask(node)).ifPresent(miningTasks::add);
+		if (tryToAcquireSynchronizationLock()) {
+			try {
+				node.submit(new MineNewBlockTask(node)).ifPresent(miningTasks::add);
+			}
+			finally {
+				releaseSynchronizationLock();
+			}
+		}
 	}
 
 	/**
-	 * Triggers a synchronization of this blockchain from the peers of the node,
+	 * Schedules a synchronization of this blockchain from the peers of the node,
 	 * if this blockchain is not currently performing a synchronization. Otherwise, nothing happens.
 	 * 
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
-	public void requireSynchronization(long initialHeight) {
-		if (!isSynchronizing.getAndSet(true))
-			node.submit(new SynchronizationTask(node, initialHeight, () -> isSynchronizing.set(false)));
+	public void scheduleSynchronization(long initialHeight) {
+		node.submit(new SynchronizationTask(node, initialHeight));
 	}
 
 	/**
@@ -390,15 +395,15 @@ public class Blockchain implements AutoCloseable {
 		while (!ws.isEmpty());
 
 		if (updatedHead.get() != null)
-			requireMining();
+			scheduleMining();
 		else if (addedToOrphans) {
 			var powerOfHead = getPowerOfHead();
 			if (powerOfHead.isEmpty())
-				requireSynchronization(0L);
+				scheduleSynchronization(0L);
 			else if (powerOfHead.get().compareTo(block.getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-				requireSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));
+				scheduleSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));
 		}
 
 		return added;
@@ -457,6 +462,23 @@ public class Blockchain implements AutoCloseable {
 	 */
 	void releaseMiningLock() {
 		miningSemaphore.release();
+	}
+
+	/**
+	 * Tries to acquire the lock for synchronization. This method returns
+	 * immediately and never waits.
+	 * 
+	 * @return true if and only if the lock has been acquired
+	 */
+	boolean tryToAcquireSynchronizationLock() {
+		return synchronizationSemaphore.tryAcquire();
+	}
+
+	/**
+	 * Release the synchronization lock.
+	 */
+	void releaseSynchronizationLock() {
+		synchronizationSemaphore.release();
 	}
 
 	/**

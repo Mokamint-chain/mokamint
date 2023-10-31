@@ -199,9 +199,9 @@ public class LocalNodeImpl implements LocalNode {
 			peers.connect();
 
 			if (init)
-				blockchain.requireMining();
+				blockchain.scheduleMining();
 			else
-				blockchain.requireSynchronization(0L);
+				blockchain.scheduleSynchronization(0L);
 		}
 		catch (ClosedDatabaseException | ClosedNodeException e) {
 			// the database and the node itself cannot be closed already
@@ -508,7 +508,8 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return mempool.scheduleAddition(transaction);
+			mempool.scheduleAddition(transaction);
+			return true;
 		}
 		finally {
 			closureLock.afterCall();
@@ -571,7 +572,7 @@ public class LocalNodeImpl implements LocalNode {
 				LOGGER.info("added miner " + miner.getUUID() + " (" + miner + ")");
 				// we require to mine, if there were no miners before this call
 				if (count == 0L)
-					blockchain.requireMining();
+					blockchain.scheduleMining();
 
 				return true;
 			}
@@ -836,6 +837,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * Runs the given task, asynchronously, in one thread from the {@link #executors} executor.
 	 * 
 	 * @param task the task to run
+	 * @return the future that can be used to wait for the completion of the task or
+	 *         to cancel the task, if the task has actually been submitted; this is
+	 *         an empty optional if the task has been rejected
 	 */
 	public Optional<Future<?>> submit(Task task) {
 		try {
@@ -843,7 +847,7 @@ public class LocalNodeImpl implements LocalNode {
 			onSubmit(task);
 			return Optional.of(executors.submit(new RunnableTask(task)));
 		}
-		catch (RejectedExecutionException e) { // TODO: possibly throw this?
+		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
 			return Optional.empty();
 		}
