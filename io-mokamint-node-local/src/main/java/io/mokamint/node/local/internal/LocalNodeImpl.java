@@ -115,6 +115,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final Blockchain blockchain;
 
 	/**
+	 * The mempool of this node.
+	 */
+	private final Mempool mempool;
+
+	/**
 	 * The version of this node.
 	 */
 	private final Version version;
@@ -186,6 +191,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.app = app;
 			this.version = Versions.current();
 			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
+			this.mempool = new Mempool(this);
 			this.miners = new NodeMiners(this);
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new NodePeers(this);
@@ -497,31 +503,12 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	private static class AddToMempoolTask implements Task {
-		private final Transaction transaction;
-
-		private AddToMempoolTask(Transaction transaction) {
-			this.transaction = transaction;
-		}
-
-		@Override
-		public void body() throws Exception {
-			// TODO
-		}
-
-		@Override
-		public String logPrefix() {
-			return "transaction addition task to the mempool";
-		}
-	}
-
 	@Override
 	public boolean post(Transaction transaction) throws ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			submit(new AddToMempoolTask(transaction));
-			return true;
+			return mempool.scheduleAddition(transaction);
 		}
 		finally {
 			closureLock.afterCall();
