@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.node.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.GetChainResultMessages;
-import io.mokamint.node.messages.api.GetChainResultMessage;
+import io.mokamint.node.ChainPortions;
+import io.mokamint.node.api.ChainPortion;
 
 /**
- * An encoder of {@code GetChainResultMessage}.
+ * An encoder for {@link ChainPortion}.
  */
-public class GetChainResultMessageEncoder extends MappedEncoder<GetChainResultMessage, GetChainResultMessages.Json> {
+public class ChainPortionEncoder extends MappedEncoder<ChainPortion, ChainPortions.Json> {
 
-	public GetChainResultMessageEncoder() {
-		super(GetChainResultMessages.Json::new);
+	public ChainPortionEncoder() {
+		super(ChainPortions.Json::new);
 	}
 }

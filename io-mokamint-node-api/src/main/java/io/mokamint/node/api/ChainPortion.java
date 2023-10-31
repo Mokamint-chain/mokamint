@@ -14,13 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.api;
 
-import io.mokamint.node.api.Chain;
-import io.mokamint.node.api.PublicNode;
+import java.util.stream.Stream;
+
+import io.hotmoka.annotations.Immutable;
 
 /**
- * The network message corresponding to the result of the {@link PublicNode#getChain(long, long)} method.
+ * Information about the hashes of a sequential portion of the
+ * current best chain of a Mokamint node.
  */
-public interface GetChainResultMessage extends ResultMessage<Chain> {
+@Immutable
+public interface ChainPortion {
+
+	/**
+	 * Yields the hashes of the sequential portion of the chain, starting
+	 * from blocks with lower height.
+	 * 
+	 * @return the hashes
+	 */
+	Stream<byte[]> getHashes();
+
+	@Override
+	boolean equals(Object other);
+
+	@Override
+	String toString();
 }

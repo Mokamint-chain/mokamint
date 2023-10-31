@@ -95,19 +95,19 @@ public interface PublicNode extends Node, Whisperer {
 	ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Yields the hashes of the blocks in the current best chain, starting at height {@code start}
+	 * Yields a portion of the current best chain, containing the hashes of the blocks starting at height {@code start}
 	 * (inclusive) and ending at height {@code start + count} (exclusive). The result
 	 * might actually be shorter if the current best chain is shorter than {@code start + count} blocks.
 	 * 
 	 * @param start the height of the first block whose hash is returned
 	 * @param count how many hashes (at most) must be reported
-	 * @return the hashes, in order
+	 * @return the portion with the hashes, in order
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	Chain getChain(long start, long count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	ChainPortion getChainPortion(long start, long count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
@@ -148,6 +148,55 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws ClosedNodeException if the node is closed
 	 */
 	boolean post(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
+	 * Yields information about the transaction with the given hash, if it has been already
+	 * inserted inside a block of the current chain.
+	 * 
+	 * @param hash the hash of the transaction
+	 * @return the transaction, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the transaction exists but is inside a block that uses an unknown hashing or signature algorithm
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	//Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
+	 * Yields information about the transaction with the given hash, if it is currently inside the mempool of the node.
+	 * 
+	 * @param hash the hash of the transaction
+	 * @return the transaction, if any
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	//Optional<Transaction> getMempoolTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
+	 * Yields information about the mempool of this node.
+	 * 
+	 * @return the information
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	//MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
+	 * Yields the portion of the node's mempool containing the entries starting at number {@code start}
+	 * (inclusive) and ending at number {@code start + count} (exclusive). The result
+	 * might actually be shorter if the current mempool is shorter than {@code start + count} blocks.
+	 * 
+	 * @param start the number of the first entry that is returned
+	 * @param count how many entries (at most) must be reported
+	 * @return the portion with the entries, in order
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	//MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node

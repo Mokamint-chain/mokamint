@@ -55,7 +55,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.Chains;
+import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
@@ -74,7 +74,7 @@ import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
-import io.mokamint.node.messages.GetChainResultMessages;
+import io.mokamint.node.messages.GetChainPortionResultMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
@@ -86,7 +86,7 @@ import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
-import io.mokamint.node.messages.api.GetChainMessage;
+import io.mokamint.node.messages.api.GetChainPortionMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
@@ -949,32 +949,32 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getChain() works")
-	public void getChainWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
-		var chain1 = Chains.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 17, 13, 19 }));
+	@DisplayName("getChainPortion() works")
+	public void getChainPortionWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		var chain1 = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 17, 13, 19 }));
 
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetChain(GetChainMessage message, Session session) {
+			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
 				try {
-					sendObjectAsync(session, GetChainResultMessages.of(chain1, message.getId()));
+					sendObjectAsync(session, GetChainPortionResultMessages.of(chain1, message.getId()));
 				}
 				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var chain2 = remote.getChain(10, 20);
+			var chain2 = remote.getChainPortion(10, 20);
 			assertEquals(chain1, chain2);
 		}
 	}
 
 	@Test
-	@DisplayName("getChain() works in case of DatabaseException")
-	public void getChainWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	@DisplayName("getChainPortion() works in case of DatabaseException")
+	public void getChainPortionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
 		var exceptionMessage = "exception message";
 
 		class MyServer extends PublicTestServer {
@@ -982,7 +982,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetChain(GetChainMessage message, Session session) {
+			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
 				try {
 					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
 				}
@@ -991,7 +991,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(DatabaseException.class, () -> remote.getChain(10, 20));
+			var exception = assertThrows(DatabaseException.class, () -> remote.getChainPortion(10, 20));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

@@ -23,23 +23,23 @@ import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.Chains;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.ChainPortions;
+import io.mokamint.node.api.ChainPortion;
 
 /**
- * The JSON representation of a {@link Chain}.
+ * The JSON representation of a {@link ChainPortion}.
  */
-public abstract class ChainJson implements JsonRepresentation<Chain> {
+public abstract class ChainPortionJson implements JsonRepresentation<ChainPortion> {
 	private final String[] hashes;
 
-	protected ChainJson(Chain chain) {
+	protected ChainPortionJson(ChainPortion chain) {
 		this.hashes = chain.getHashes().map(Hex::toHexString).toArray(String[]::new);
 	}
 
 	@Override
-	public Chain unmap() throws HexConversionException {
+	public ChainPortion unmap() throws HexConversionException {
 		return CheckSupplier.check(HexConversionException.class, () ->
-			Chains.of(Stream.of(hashes).map(UncheckFunction.uncheck(Hex::fromHexString)))
+			ChainPortions.of(Stream.of(hashes).map(UncheckFunction.uncheck(Hex::fromHexString)))
 		);
 	}
 }

@@ -19,16 +19,16 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetChainResultMessage;
+import io.mokamint.node.messages.api.GetChainPortionResultMessage;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#getChain(long, long)} method.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getChainPortion(long, long)} method.
  */
-public class GetChainResultMessageImpl extends AbstractRpcMessage implements GetChainResultMessage {
+public class GetChainPortionResultMessageImpl extends AbstractRpcMessage implements GetChainPortionResultMessage {
 
-	private final Chain chain;
+	private final ChainPortion chain;
 
 	/**
 	 * Creates the message.
@@ -36,7 +36,7 @@ public class GetChainResultMessageImpl extends AbstractRpcMessage implements Get
 	 * @param chain the chain hashes
 	 * @param id the identifier of the message
 	 */
-	public GetChainResultMessageImpl(Chain chain, String id) {
+	public GetChainPortionResultMessageImpl(ChainPortion chain, String id) {
 		super(id);
 
 		Objects.requireNonNull(chain, "chain cannot be null");
@@ -44,17 +44,17 @@ public class GetChainResultMessageImpl extends AbstractRpcMessage implements Get
 	}
 
 	@Override
-	public Chain get() {
+	public ChainPortion get() {
 		return chain;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetChainResultMessage gcrm && super.equals(other) && Objects.equals(get(), gcrm.get());
+		return other instanceof GetChainPortionResultMessage gcrm && super.equals(other) && Objects.equals(get(), gcrm.get());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetChainResultMessage.class.getName();
+		return GetChainPortionResultMessage.class.getName();
 	}
 }

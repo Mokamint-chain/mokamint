@@ -42,7 +42,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.Chains;
+import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
@@ -62,8 +62,8 @@ import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
-import io.mokamint.node.messages.GetChainMessages;
-import io.mokamint.node.messages.GetChainResultMessages;
+import io.mokamint.node.messages.GetChainPortionMessages;
+import io.mokamint.node.messages.GetChainPortionResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
@@ -186,12 +186,12 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getChain messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetChain() throws EncodeException, DecodeException {
-		var getChainMessage1 = GetChainMessages.of(13, 20, "id");
-		String encoded = new GetChainMessages.Encoder().encode(getChainMessage1);
-		var getChainMessage2 = new GetChainMessages.Decoder().decode(encoded);
-		assertEquals(getChainMessage1, getChainMessage2);
+	@DisplayName("getChainPortion messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetChainPortion() throws EncodeException, DecodeException {
+		var getChainPortionMessage1 = GetChainPortionMessages.of(13, 20, "id");
+		String encoded = new GetChainPortionMessages.Encoder().encode(getChainPortionMessage1);
+		var getChainPortionMessage2 = new GetChainPortionMessages.Decoder().decode(encoded);
+		assertEquals(getChainPortionMessage1, getChainPortionMessage2);
 	}
 
 	@Test
@@ -256,10 +256,10 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getChainResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetChainResult() throws EncodeException, DecodeException {
-		var chain = Chains.of(Stream.of(new byte[] { 1, 2, 3 }, new byte[] { 20, 50, 70, 88 }));
-		var getChainResultMessage1 = GetChainResultMessages.of(chain, "id");
-		String encoded = new GetChainResultMessages.Encoder().encode(getChainResultMessage1);
-		var getChainResultMessage2 = new GetChainResultMessages.Decoder().decode(encoded);
+		var chain = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3 }, new byte[] { 20, 50, 70, 88 }));
+		var getChainResultMessage1 = GetChainPortionResultMessages.of(chain, "id");
+		String encoded = new GetChainPortionResultMessages.Encoder().encode(getChainResultMessage1);
+		var getChainResultMessage2 = new GetChainPortionResultMessages.Decoder().decode(encoded);
 		assertEquals(getChainResultMessage1, getChainResultMessage2);
 	}
 

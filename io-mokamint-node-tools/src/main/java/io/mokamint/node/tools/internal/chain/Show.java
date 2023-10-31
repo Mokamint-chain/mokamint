@@ -85,7 +85,7 @@ public class Show extends AbstractPublicRpcCommand {
 					if (length <= depth)
 						throw new CommandException("There is no block at depth " + depth + " since the chain has length " + length + "!");
 					else
-						return remote.getChain(length - depth - 1, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at depth " + depth + "!"));
+						return remote.getChainPortion(length - depth - 1, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at depth " + depth + "!"));
 				}
 			}
         }

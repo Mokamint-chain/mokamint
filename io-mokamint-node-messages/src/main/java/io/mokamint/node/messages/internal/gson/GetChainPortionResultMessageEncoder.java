@@ -14,30 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node.messages.internal.gson;
 
-import java.util.stream.Stream;
-
-import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.GetChainPortionResultMessages;
+import io.mokamint.node.messages.api.GetChainPortionResultMessage;
 
 /**
- * Information about the hashes of a sequential portion of the
- * current best chain of a Mokamint node.
+ * An encoder of {@code GetChainResultMessage}.
  */
-@Immutable
-public interface Chain {
+public class GetChainPortionResultMessageEncoder extends MappedEncoder<GetChainPortionResultMessage, GetChainPortionResultMessages.Json> {
 
-	/**
-	 * Yields the hashes of the sequential portion of the chain, starting
-	 * from blocks with lower height.
-	 * 
-	 * @return the hashes
-	 */
-	Stream<byte[]> getHashes();
-
-	@Override
-	boolean equals(Object other);
-
-	@Override
-	String toString();
+	public GetChainPortionResultMessageEncoder() {
+		super(GetChainPortionResultMessages.Json::new);
+	}
 }

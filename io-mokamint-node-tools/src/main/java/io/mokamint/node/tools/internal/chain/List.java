@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
@@ -103,7 +103,7 @@ public class List extends AbstractPublicRpcCommand {
 			if (json())
 				System.out.print("[");
 			
-			Chain chain = remote.getChain(from, count);
+			ChainPortion chain = remote.getChainPortion(from, count);
 			list(chain, from + chain.getHashes().count() - 1, slotsForHeight, startDateTimeUTC, remote);
 			if (json())
 				System.out.println("]");
@@ -127,7 +127,7 @@ public class List extends AbstractPublicRpcCommand {
      * @throws InterruptedException if some connection was interrupted while waiting
      * @throws ClosedNodeException if the remote node is closed
      */
-	private void list(Chain chain, long height, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	private void list(ChainPortion chain, long height, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		var hashes = chain.getHashes().toArray(byte[][]::new);
 
 		for (int counter = hashes.length - 1; counter >= 0; counter--, height--) {

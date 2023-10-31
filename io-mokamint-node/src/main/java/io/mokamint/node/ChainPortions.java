@@ -18,19 +18,19 @@ package io.mokamint.node;
 
 import java.util.stream.Stream;
 
-import io.mokamint.node.api.Chain;
-import io.mokamint.node.internal.ChainImpl;
-import io.mokamint.node.internal.gson.ChainDecoder;
-import io.mokamint.node.internal.gson.ChainEncoder;
-import io.mokamint.node.internal.gson.ChainJson;
+import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.internal.ChainPortionImpl;
+import io.mokamint.node.internal.gson.ChainPortionDecoder;
+import io.mokamint.node.internal.gson.ChainPortionEncoder;
+import io.mokamint.node.internal.gson.ChainPortionJson;
 
 /**
- * Providers of objects containing the hashes of sequential portions
+ * Providers of objects containing the hashes of a sequential portion
  * of the current best chain.
  */
-public abstract class Chains {
+public abstract class ChainPortions {
 
-	private Chains() {}
+	private ChainPortions() {}
 
 	/**
 	 * Yields the hashes of a sequential
@@ -39,14 +39,14 @@ public abstract class Chains {
 	 * @param hashes the hashes
 	 * @return the object containing the sequential hashes
 	 */
-	public static Chain of(Stream<byte[]> hashes) {
-		return new ChainImpl(hashes);
+	public static ChainPortion of(Stream<byte[]> hashes) {
+		return new ChainPortionImpl(hashes);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends ChainEncoder {
+	public static class Encoder extends ChainPortionEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -57,7 +57,7 @@ public abstract class Chains {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends ChainDecoder {
+	public static class Decoder extends ChainPortionDecoder {
 
 		/**
 		 * Creates a new decoder.
@@ -68,14 +68,14 @@ public abstract class Chains {
     /**
      * Json representation.
      */
-    public static class Json extends ChainJson {
+    public static class Json extends ChainPortionJson {
 
     	/**
     	 * Creates the Json representation for the given portion of chain.
     	 * 
     	 * @param chain the portion of chain
     	 */
-    	public Json(Chain chain) {
+    	public Json(ChainPortion chain) {
     		super(chain);
     	}
     }

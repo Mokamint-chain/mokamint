@@ -66,9 +66,9 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String GET_CHAIN_INFO_ENDPOINT = "/get_chain_info";
 
 	/**
-	 * The network endpoint path where {@link PublicNode#getChain(long, long)} is published.
+	 * The network endpoint path where {@link PublicNode#getChainPortion(long, long)} is published.
 	 */
-	String GET_CHAIN_ENDPOINT = "/get_chain";
+	String GET_CHAIN_PORTION_ENDPOINT = "/get_chain_portion";
 
 	/**
 	 * The network endpoint path where {@link PublicNode#post(io.mokamint.node.api.Transaction)} is published.

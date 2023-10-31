@@ -16,35 +16,35 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.mokamint.node.api.Chain;
-import io.mokamint.node.messages.api.GetChainResultMessage;
-import io.mokamint.node.messages.internal.GetChainResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetChainResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetChainResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetChainResultMessageJson;
+import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.messages.api.GetChainPortionResultMessage;
+import io.mokamint.node.messages.internal.GetChainPortionResultMessageImpl;
+import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageDecoder;
+import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageJson;
 
 /**
- * A provider of {@link GetChainResultMessage}.
+ * A provider of {@link GetChainPortionResultMessage}.
  */
-public final class GetChainResultMessages {
+public final class GetChainPortionResultMessages {
 
-	private GetChainResultMessages() {}
+	private GetChainPortionResultMessages() {}
 
 	/**
-	 * Yields a {@link GetChainResultMessage}.
+	 * Yields a {@link GetChainPortionResultMessage}.
 	 * 
 	 * @param chain the hashes in the chain
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetChainResultMessage of(Chain chain, String id) {
-		return new GetChainResultMessageImpl(chain, id);
+	public static GetChainPortionResultMessage of(ChainPortion chain, String id) {
+		return new GetChainPortionResultMessageImpl(chain, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetChainResultMessageEncoder {
+	public static class Encoder extends GetChainPortionResultMessageEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -55,7 +55,7 @@ public final class GetChainResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetChainResultMessageDecoder {
+	public static class Decoder extends GetChainPortionResultMessageDecoder {
 
 		/**
 		 * Creates a new decoder.
@@ -66,14 +66,14 @@ public final class GetChainResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetChainResultMessageJson {
+    public static class Json extends GetChainPortionResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetChainResultMessage message) {
+    	public Json(GetChainPortionResultMessage message) {
     		super(message);
     	}
     }

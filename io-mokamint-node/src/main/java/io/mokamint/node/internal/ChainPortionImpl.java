@@ -22,14 +22,14 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.api.ChainPortion;
 
 /**
  * Implementation of information about the hashes of a sequential portion of the
  * current best chain of a Mokamint node.
  */
 @Immutable
-public class ChainImpl implements Chain {
+public class ChainPortionImpl implements ChainPortion {
 
 	/**
 	 * The hashes in the sequence.
@@ -42,7 +42,7 @@ public class ChainImpl implements Chain {
 	 * 
 	 * @param hashes the hashes
 	 */
-	public ChainImpl(Stream<byte[]> hashes) {
+	public ChainPortionImpl(Stream<byte[]> hashes) {
 		this.hashes = hashes.map(byte[]::clone).toArray(byte[][]::new);
 	}
 
@@ -53,8 +53,8 @@ public class ChainImpl implements Chain {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof Chain otherChain &&
-			Arrays.deepEquals(hashes, otherChain.getHashes().toArray(byte[][]::new));
+		return other instanceof ChainPortion ocp &&
+			Arrays.deepEquals(hashes, ocp.getHashes().toArray(byte[][]::new));
 	}
 
 	@Override

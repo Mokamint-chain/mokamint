@@ -14,18 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.node.api;
 
-import io.hotmoka.websockets.beans.BaseDecoder;
-import io.mokamint.node.messages.api.GetChainMessage;
-import io.mokamint.node.messages.internal.GetChainMessageImpl;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * A decoder for {@link GetChainMessage}.
+ * A transaction of the Mokamint blockchain.
  */
-public class GetChainMessageDecoder extends BaseDecoder<GetChainMessage> {
+@Immutable
+public interface TransactionDescription extends Marshallable {
 
-	public GetChainMessageDecoder() {
-		super(GetChainMessageImpl.class);
-	}
+	/**
+	 * Yields the bytes of the transaction. The meaning of these bytes if application-dependent.
+	 * 
+	 * @return the bytes of the transaction
+	 */
+	byte[] getBytes();
+
+	@Override
+	boolean equals(Object other);
+
+	@Override
+	int hashCode();
+
+	@Override
+	String toString();
 }

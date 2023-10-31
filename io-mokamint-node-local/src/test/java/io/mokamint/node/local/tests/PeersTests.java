@@ -57,7 +57,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.Chains;
+import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
@@ -128,7 +128,7 @@ public class PeersTests extends AbstractLoggedTests {
 		PublicNode node = mock();
 		when(node.getInfo()).thenReturn(info);
 		when(node.getChainInfo()).thenReturn(chainInfo);
-		when(node.getChain(anyLong(), anyLong())).thenReturn(Chains.of(Stream.empty()));
+		when(node.getChainPortion(anyLong(), anyLong())).thenReturn(ChainPortions.of(Stream.empty()));
 		OngoingStubbing<ConsensusConfig<?,?>> w = when(node.getConfig());
 		w.thenReturn(LocalNodeConfigBuilders.defaults().build());
 		return node;

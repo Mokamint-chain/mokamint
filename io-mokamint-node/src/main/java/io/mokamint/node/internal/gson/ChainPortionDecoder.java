@@ -17,15 +17,15 @@ limitations under the License.
 package io.mokamint.node.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.Chains;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.ChainPortions;
+import io.mokamint.node.api.ChainPortion;
 
 /**
- * A decoder for {@link Chain}.
+ * A decoder for {@link ChainPortion}.
  */
-public class ChainDecoder extends MappedDecoder<Chain, Chains.Json> {
+public class ChainPortionDecoder extends MappedDecoder<ChainPortion, ChainPortions.Json> {
 
-	public ChainDecoder() {
-		super(Chains.Json.class);
+	public ChainPortionDecoder() {
+		super(ChainPortions.Json.class);
 	}
 }

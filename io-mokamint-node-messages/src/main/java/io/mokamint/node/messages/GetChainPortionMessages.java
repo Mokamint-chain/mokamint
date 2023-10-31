@@ -16,34 +16,34 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.mokamint.node.messages.api.GetChainMessage;
-import io.mokamint.node.messages.internal.GetChainMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetChainMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetChainMessageEncoder;
+import io.mokamint.node.messages.api.GetChainPortionMessage;
+import io.mokamint.node.messages.internal.GetChainPortionMessageImpl;
+import io.mokamint.node.messages.internal.gson.GetChainPortionMessageDecoder;
+import io.mokamint.node.messages.internal.gson.GetChainPortionMessageEncoder;
 
 /**
- * A provider of {@link GetChainMessage}.
+ * A provider of {@link GetChainPortionMessage}.
  */
-public final class GetChainMessages {
+public final class GetChainPortionMessages {
 
-	private GetChainMessages() {}
+	private GetChainPortionMessages() {}
 
 	/**
-	 * Yields a {@link GetChainMessage}.
+	 * Yields a {@link GetChainPortionMessage}.
 	 * 
 	 * @param start the {@code start} parameter of the message
 	 * @param count the {@code count} parameter of the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetChainMessage of(long start, long count, String id) {
-		return new GetChainMessageImpl(start, count, id);
+	public static GetChainPortionMessage of(long start, long count, String id) {
+		return new GetChainPortionMessageImpl(start, count, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetChainMessageEncoder {
+	public static class Encoder extends GetChainPortionMessageEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -54,7 +54,7 @@ public final class GetChainMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetChainMessageDecoder {
+	public static class Decoder extends GetChainPortionMessageDecoder {
 
 		/**
 		 * Creates a new decoder.

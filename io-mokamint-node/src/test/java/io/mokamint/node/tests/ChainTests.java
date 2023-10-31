@@ -24,7 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.node.Chains;
+import io.mokamint.node.ChainPortions;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
@@ -35,18 +35,18 @@ public class ChainTests extends AbstractLoggedTests {
 	public void encodeDecodeWorksWithHashes() throws EncodeException, DecodeException {
 		var hash1 = new byte[] { 1, 2, 4, 100, 12 };
 		var hash2 = new byte[] { 13, 20, 4, 99, 12, 11 };
-		var chain1 = Chains.of(Stream.of(hash1, hash2));
-		String encoded = new Chains.Encoder().encode(chain1);
-		var chain2 = new Chains.Decoder().decode(encoded);
+		var chain1 = ChainPortions.of(Stream.of(hash1, hash2));
+		String encoded = new ChainPortions.Encoder().encode(chain1);
+		var chain2 = new ChainPortions.Decoder().decode(encoded);
 		assertEquals(chain1, chain2);
 	}
 
 	@Test
 	@DisplayName("chains with no hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksWithoutHashes() throws EncodeException, DecodeException {
-		var chain1 = Chains.of(Stream.empty());
-		String encoded = new Chains.Encoder().encode(chain1);
-		var chain2 = new Chains.Decoder().decode(encoded);
+		var chain1 = ChainPortions.of(Stream.empty());
+		String encoded = new ChainPortions.Encoder().encode(chain1);
+		var chain2 = new ChainPortions.Decoder().decode(encoded);
 		assertEquals(chain1, chain2);
 	}
 }

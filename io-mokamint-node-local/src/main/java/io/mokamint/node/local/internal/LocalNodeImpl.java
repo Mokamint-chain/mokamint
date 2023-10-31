@@ -45,13 +45,13 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
-import io.mokamint.node.Chains;
+import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -487,11 +487,11 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public Chain getChain(long start, long count) throws DatabaseException, ClosedNodeException {
+	public ChainPortion getChainPortion(long start, long count) throws DatabaseException, ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 		
 		try {
-			return Chains.of(blockchain.getChain(start, count));
+			return ChainPortions.of(blockchain.getChain(start, count));
 		}
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed because this node is open

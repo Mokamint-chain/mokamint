@@ -60,8 +60,8 @@ import io.mokamint.node.messages.GetBlockMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
-import io.mokamint.node.messages.GetChainMessages;
-import io.mokamint.node.messages.GetChainResultMessages;
+import io.mokamint.node.messages.GetChainPortionMessages;
+import io.mokamint.node.messages.GetChainPortionResultMessages;
 import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
@@ -80,7 +80,7 @@ import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
-import io.mokamint.node.messages.api.GetChainMessage;
+import io.mokamint.node.messages.api.GetChainPortionMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
@@ -206,7 +206,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
-			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainEndpoint.config(this),
+			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
 			PostTransactionEndpoint.config(this), WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
@@ -595,12 +595,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	protected void onGetChain(GetChainMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + GET_CHAIN_ENDPOINT + " request");
+	protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_CHAIN_PORTION_ENDPOINT + " request");
 
 		try {
 			try {
-				sendObjectAsync(session, GetChainResultMessages.of(node.getChain(message.getStart(), message.getCount()), message.getId()));
+				sendObjectAsync(session, GetChainPortionResultMessages.of(node.getChainPortion(message.getStart(), message.getCount()), message.getId()));
 			}
 			catch (TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
 				sendExceptionAsync(session, e, message.getId());
@@ -611,16 +611,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	};
 
-	public static class GetChainEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class GetChainPortionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetChainMessage message) -> getServer().onGetChain(message, session));
+			addMessageHandler(session, (GetChainPortionMessage message) -> getServer().onGetChainPortion(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetChainEndpoint.class, GET_CHAIN_ENDPOINT,
-					GetChainMessages.Decoder.class, GetChainResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetChainPortionEndpoint.class, GET_CHAIN_PORTION_ENDPOINT,
+					GetChainPortionMessages.Decoder.class, GetChainPortionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

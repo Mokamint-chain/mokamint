@@ -14,30 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.PublicNode;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.messages.GetChainPortionResultMessages;
+import io.mokamint.node.messages.api.GetChainPortionResultMessage;
 
 /**
- * The network message corresponding to the {@link PublicNode#getChain(long, long)} method.
+ * A decoder for {@link GetChainPortionResultMessage}.
  */
-public interface GetChainMessage extends RpcMessage {
+public class GetChainPortionResultMessageDecoder extends MappedDecoder<GetChainPortionResultMessage, GetChainPortionResultMessages.Json> {
 
-	/**
-	 * Yields the {@code start} parameter of the method.
-	 * 
-	 * @return the parameter
-	 */
-	long getStart();
-
-	/**
-	 * Yields the {@code count} parameter of the method.
-	 * 
-	 * @return the parameter
-	 */
-	long getCount();
-
-	@Override
-	boolean equals(Object obj);
+	public GetChainPortionResultMessageDecoder() {
+		super(GetChainPortionResultMessages.Json.class);
+	}
 }

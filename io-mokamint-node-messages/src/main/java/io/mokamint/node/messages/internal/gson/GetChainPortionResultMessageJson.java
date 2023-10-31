@@ -18,29 +18,29 @@ package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.Chains;
-import io.mokamint.node.messages.GetChainResultMessages;
-import io.mokamint.node.messages.api.GetChainResultMessage;
+import io.mokamint.node.ChainPortions;
+import io.mokamint.node.messages.GetChainPortionResultMessages;
+import io.mokamint.node.messages.api.GetChainPortionResultMessage;
 
 /**
- * The JSON representation of a {@link GetChainResultMessage}.
+ * The JSON representation of a {@link GetChainPortionResultMessage}.
  */
-public abstract class GetChainResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetChainResultMessage> {
-	private final Chains.Json chain;
+public abstract class GetChainPortionResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetChainPortionResultMessage> {
+	private final ChainPortions.Json chain;
 
-	protected GetChainResultMessageJson(GetChainResultMessage message) {
+	protected GetChainPortionResultMessageJson(GetChainPortionResultMessage message) {
 		super(message);
 
-		this.chain = new Chains.Encoder().map(message.get());
+		this.chain = new ChainPortions.Encoder().map(message.get());
 	}
 
 	@Override
-	public GetChainResultMessage unmap() throws HexConversionException {
-		return GetChainResultMessages.of(chain.unmap(), getId());
+	public GetChainPortionResultMessage unmap() throws HexConversionException {
+		return GetChainPortionResultMessages.of(chain.unmap(), getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetChainResultMessage.class.getName();
+		return GetChainPortionResultMessage.class.getName();
 	}
 }

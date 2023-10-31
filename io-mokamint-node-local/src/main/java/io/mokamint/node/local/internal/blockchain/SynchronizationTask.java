@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
@@ -219,7 +219,7 @@ public class SynchronizationTask implements Task {
 
 			var remote = maybeRemote.get();
 			try {
-				Chain chain = remote.getChain(height, GROUP_SIZE);
+				ChainPortion chain = remote.getChainPortion(height, GROUP_SIZE);
 				var hashes = chain.getHashes().toArray(byte[][]::new);
 
 				// if a peer sends inconsistent information, we ban it

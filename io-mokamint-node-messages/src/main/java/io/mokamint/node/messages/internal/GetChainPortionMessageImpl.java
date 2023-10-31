@@ -18,12 +18,12 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetChainMessage;
+import io.mokamint.node.messages.api.GetChainPortionMessage;
 
 /**
- * Implementation of the network message corresponding to the {@link PublicNode#getChain(long, long)} method.
+ * Implementation of the network message corresponding to the {@link PublicNode#getChainPortion(long, long)} method.
  */
-public class GetChainMessageImpl extends AbstractRpcMessage implements GetChainMessage {
+public class GetChainPortionMessageImpl extends AbstractRpcMessage implements GetChainPortionMessage {
 	private final long start;
 	private final long count;
 
@@ -34,7 +34,7 @@ public class GetChainMessageImpl extends AbstractRpcMessage implements GetChainM
 	 * @param count the {@code count} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public GetChainMessageImpl(long start, long count, String id) {
+	public GetChainPortionMessageImpl(long start, long count, String id) {
 		super(id);
 
 		this.start = start;
@@ -53,11 +53,11 @@ public class GetChainMessageImpl extends AbstractRpcMessage implements GetChainM
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetChainMessage gcm && super.equals(other) && start == gcm.getStart() && count == gcm.getCount();
+		return other instanceof GetChainPortionMessage gcm && super.equals(other) && start == gcm.getStart() && count == gcm.getCount();
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetChainMessage.class.getName();
+		return GetChainPortionMessage.class.getName();
 	}
 }

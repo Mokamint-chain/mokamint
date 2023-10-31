@@ -54,7 +54,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.Chains;
+import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
@@ -65,7 +65,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.Chain;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
@@ -488,10 +488,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getChain() request reaches the service, it sends back its chain hashes")
-	public void serviceGetChainWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+	@DisplayName("if a getChainPortion() request reaches the service, it sends back its chain hashes")
+	public void serviceGetChainPortionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
-		var chain = Chains.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 13, 17, 19 }));
+		var chain = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 13, 17, 19 }));
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -500,21 +500,21 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onGetChainResult(Chain received) {
+			protected void onGetChainResult(ChainPortion received) {
 				if (chain.equals(received))
 					semaphore.release();
 			}
 
-			private void sendGetChain() throws ClosedNodeException {
-				sendGetChain(5, 10, "id");
+			private void sendGetChainPortion() throws ClosedNodeException {
+				sendGetChainPortion(5, 10, "id");
 			}
 		}
 
 		var node = mkNode();
-		when(node.getChain(5, 10)).thenReturn(chain);
+		when(node.getChainPortion(5, 10)).thenReturn(chain);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			client.sendGetChain();
+			client.sendGetChainPortion();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
