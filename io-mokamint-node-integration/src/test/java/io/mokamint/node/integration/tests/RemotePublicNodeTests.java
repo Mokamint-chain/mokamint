@@ -80,7 +80,7 @@ import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
-import io.mokamint.node.messages.PostTransactionResultMessages;
+import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
@@ -92,7 +92,7 @@ import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
-import io.mokamint.node.messages.api.PostTransactionMessage;
+import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -1021,8 +1021,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("post(Transaction) works")
-	public void postTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
+	@DisplayName("add(Transaction) works")
+	public void addTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
 		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var transaction2 = new AtomicReference<Transaction>();
 
@@ -1031,17 +1031,17 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onPostTransaction(PostTransactionMessage message, Session session) {
+			protected void onAddTransaction(AddTransactionMessage message, Session session) {
 				transaction2.set(message.getTransaction());
 				try {
-					sendObjectAsync(session, PostTransactionResultMessages.of(true, message.getId()));
+					sendObjectAsync(session, AddTransactionResultMessages.of(true, message.getId()));
 				}
 				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertTrue(remote.post(transaction1));
+			assertTrue(remote.add(transaction1));
 			assertEquals(transaction1, transaction2.get());
 		}
 	}

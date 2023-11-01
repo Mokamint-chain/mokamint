@@ -136,18 +136,16 @@ public interface PublicNode extends Node, Whisperer {
 	Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Posts the given transaction to this node and returns immediately.
-	 * The node will afterwards, eventually ask the application
-	 * to check the transaction. If the outcome will be positive, the transaction
-	 * will be added to the mempool of the node and whispered to all its peers.
+	 * Checks the validity of the given transaction and adds it to the mempool of this node.
+	 * The node will afterwards whisper the transaction to all its peers.
 	 * 
 	 * @param transaction the transaction
-	 * @return true if and only if the transaction has been posted
+	 * @return true if and only if the transaction has been added to the mempool
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	boolean post(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException;
+	boolean add(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the transaction with the given hash, if it has been already

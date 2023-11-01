@@ -16,34 +16,35 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.mokamint.node.messages.api.PostTransactionResultMessage;
-import io.mokamint.node.messages.internal.PostTransactionResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.PostTransactionResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.PostTransactionResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.PostTransactionResultMessageJson;
+import io.mokamint.node.api.Transaction;
+import io.mokamint.node.messages.api.AddTransactionMessage;
+import io.mokamint.node.messages.internal.AddTransactionMessageImpl;
+import io.mokamint.node.messages.internal.gson.AddTransactionMessageDecoder;
+import io.mokamint.node.messages.internal.gson.AddTransactionMessageEncoder;
+import io.mokamint.node.messages.internal.gson.AddTransactionMessageJson;
 
 /**
- * A provider of {@link PostTransactionResultMessage}.
+ * A provider of {@link AddTransactionMessage}.
  */
-public final class PostTransactionResultMessages {
+public final class AddTransactionMessages {
 
-	private PostTransactionResultMessages() {}
+	private AddTransactionMessages() {}
 
 	/**
-	 * Yields an {@link PostTransactionResultMessage}.
+	 * Yields a {@link AddTransactionMessage}.
 	 * 
-	 * @param result the result of the call
+	 * @param transaction the {@code transaction} parameter of the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static PostTransactionResultMessage of(boolean result, String id) {
-		return new PostTransactionResultMessageImpl(result, id);
+	public static AddTransactionMessage of(Transaction transaction, String id) {
+		return new AddTransactionMessageImpl(transaction, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PostTransactionResultMessageEncoder {
+	public static class Encoder extends AddTransactionMessageEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -54,7 +55,7 @@ public final class PostTransactionResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PostTransactionResultMessageDecoder {
+	public static class Decoder extends AddTransactionMessageDecoder {
 
 		/**
 		 * Creates a new decoder.
@@ -65,14 +66,14 @@ public final class PostTransactionResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends PostTransactionResultMessageJson {
+    public static class Json extends AddTransactionMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(PostTransactionResultMessage message) {
+    	public Json(AddTransactionMessage message) {
     		super(message);
     	}
     }

@@ -72,8 +72,8 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
-import io.mokamint.node.messages.PostTransactionMessages;
-import io.mokamint.node.messages.PostTransactionResultMessages;
+import io.mokamint.node.messages.AddTransactionMessages;
+import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
@@ -86,7 +86,7 @@ import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
-import io.mokamint.node.messages.api.PostTransactionMessage;
+import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -207,7 +207,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
-			PostTransactionEndpoint.config(this), WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
+			AddTransactionEndpoint.config(this), WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
@@ -624,12 +624,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	protected void onPostTransaction(PostTransactionMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + POST_TRANSACTION_ENDPOINT + " request");
+	protected void onAddTransaction(AddTransactionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + ADD_TRANSACTION_ENDPOINT + " request");
 
 		try {
 			try {
-				sendObjectAsync(session, PostTransactionResultMessages.of(node.post(message.getTransaction()), message.getId()));
+				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
 			}
 			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
 				sendExceptionAsync(session, e, message.getId());
@@ -640,16 +640,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	};
 
-	public static class PostTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class AddTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (PostTransactionMessage message) -> getServer().onPostTransaction(message, session));
+			addMessageHandler(session, (AddTransactionMessage message) -> getServer().onAddTransaction(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, PostTransactionEndpoint.class, POST_TRANSACTION_ENDPOINT,
-					PostTransactionMessages.Decoder.class, PostTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, AddTransactionEndpoint.class, ADD_TRANSACTION_ENDPOINT,
+					AddTransactionMessages.Decoder.class, AddTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

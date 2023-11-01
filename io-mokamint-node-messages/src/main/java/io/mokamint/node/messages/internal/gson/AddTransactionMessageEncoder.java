@@ -14,24 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Transaction;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.AddTransactionMessages;
+import io.mokamint.node.messages.api.AddTransactionMessage;
 
 /**
- * The network message corresponding to the {@link PublicNode#post(io.mokamint.node.api.Transaction)} method.
+ * An encoder of a {@link AddTransactionMessage}.
  */
-public interface PostTransactionMessage extends RpcMessage {
+public class AddTransactionMessageEncoder extends MappedEncoder<AddTransactionMessage, AddTransactionMessages.Json> {
 
-	/**
-	 * Yields the transaction parameter of the method.
-	 * 
-	 * @return the parameter
-	 */
-	Transaction getTransaction();
-
-	@Override
-	boolean equals(Object obj);
+	public AddTransactionMessageEncoder() {
+		super(AddTransactionMessages.Json::new);
+	}
 }

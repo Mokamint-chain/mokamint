@@ -504,11 +504,11 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public boolean post(Transaction transaction) throws ClosedNodeException {
+	public boolean add(Transaction transaction) throws ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			mempool.scheduleAddition(transaction);
+			mempool.add(transaction);
 			return true;
 		}
 		finally {

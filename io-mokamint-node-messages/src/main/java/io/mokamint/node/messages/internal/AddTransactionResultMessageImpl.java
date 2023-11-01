@@ -18,12 +18,12 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.PostTransactionResultMessage;
+import io.mokamint.node.messages.api.AddTransactionResultMessage;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#post(io.mokamint.node.api.Transaction)} method.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method.
  */
-public class PostTransactionResultMessageImpl extends AbstractRpcMessage implements PostTransactionResultMessage {
+public class AddTransactionResultMessageImpl extends AbstractRpcMessage implements AddTransactionResultMessage {
 
 	/**
 	 * The result of the call.
@@ -36,7 +36,7 @@ public class PostTransactionResultMessageImpl extends AbstractRpcMessage impleme
 	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public PostTransactionResultMessageImpl(boolean result, String id) {
+	public AddTransactionResultMessageImpl(boolean result, String id) {
 		super(id);
 
 		this.result = result;
@@ -44,12 +44,12 @@ public class PostTransactionResultMessageImpl extends AbstractRpcMessage impleme
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof PostTransactionResultMessage ptrm && super.equals(other) && result == ptrm.get().booleanValue();
+		return other instanceof AddTransactionResultMessage atrm && super.equals(other) && result == atrm.get().booleanValue();
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return PostTransactionResultMessage.class.getName();
+		return AddTransactionResultMessage.class.getName();
 	}
 
 	@Override

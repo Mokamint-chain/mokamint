@@ -76,8 +76,8 @@ import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
-import io.mokamint.node.messages.PostTransactionMessages;
-import io.mokamint.node.messages.PostTransactionResultMessages;
+import io.mokamint.node.messages.AddTransactionMessages;
+import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
@@ -333,18 +333,18 @@ public class MessagesTests extends AbstractLoggedTests {
 	@DisplayName("post transaction messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForPostTransaction() throws EncodeException, DecodeException {
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5 });
-		var postTransactionMessage1 = PostTransactionMessages.of(transaction, "id");
-		String encoded = new PostTransactionMessages.Encoder().encode(postTransactionMessage1);
-		var postTransactionMessage2 = new PostTransactionMessages.Decoder().decode(encoded);
+		var postTransactionMessage1 = AddTransactionMessages.of(transaction, "id");
+		String encoded = new AddTransactionMessages.Encoder().encode(postTransactionMessage1);
+		var postTransactionMessage2 = new AddTransactionMessages.Decoder().decode(encoded);
 		assertEquals(postTransactionMessage1, postTransactionMessage2);
 	}
 
 	@Test
 	@DisplayName("post transaction result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForPostTransactionResult() throws EncodeException, DecodeException {
-		var postTransactionResultMessage1 = PostTransactionResultMessages.of(true, "id");
-		String encoded = new PostTransactionResultMessages.Encoder().encode(postTransactionResultMessage1);
-		var postTransactionResultMessage2 = new PostTransactionResultMessages.Decoder().decode(encoded);
+		var postTransactionResultMessage1 = AddTransactionResultMessages.of(true, "id");
+		String encoded = new AddTransactionResultMessages.Encoder().encode(postTransactionResultMessage1);
+		var postTransactionResultMessage2 = new AddTransactionResultMessages.Decoder().decode(encoded);
 		assertEquals(postTransactionResultMessage1, postTransactionResultMessage2);
 	}
 

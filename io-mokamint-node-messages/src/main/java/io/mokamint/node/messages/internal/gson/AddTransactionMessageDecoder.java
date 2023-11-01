@@ -17,15 +17,15 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.messages.PostTransactionResultMessages;
-import io.mokamint.node.messages.api.PostTransactionResultMessage;
+import io.mokamint.node.messages.AddTransactionMessages;
+import io.mokamint.node.messages.api.AddTransactionMessage;
 
 /**
- * A decoder for {@link PostTransactionResultMessage}.
+ * A decoder for a {@link AddTransactionMessage}.
  */
-public class PostTransactionResultMessageDecoder extends MappedDecoder<PostTransactionResultMessage, PostTransactionResultMessages.Json> {
+public class AddTransactionMessageDecoder extends MappedDecoder<AddTransactionMessage, AddTransactionMessages.Json> {
 
-	public PostTransactionResultMessageDecoder() {
-		super(PostTransactionResultMessages.Json.class);
+	public AddTransactionMessageDecoder() {
+		super(AddTransactionMessages.Json.class);
 	}
 }

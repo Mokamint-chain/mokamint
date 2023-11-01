@@ -21,13 +21,13 @@ import java.util.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.messages.api.PostTransactionMessage;
+import io.mokamint.node.messages.api.AddTransactionMessage;
 
 /**
  * Implementation of the network message corresponding to
  * the {@link PublicNode#post(io.mokamint.node.api.Transaction)} method of a node.
  */
-public class PostTransactionMessageImpl extends AbstractRpcMessage implements PostTransactionMessage {
+public class AddTransactionMessageImpl extends AbstractRpcMessage implements AddTransactionMessage {
 	private final Transaction transaction;
 
 	/**
@@ -36,7 +36,7 @@ public class PostTransactionMessageImpl extends AbstractRpcMessage implements Po
 	 * @param transaction the {@code transaction} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public PostTransactionMessageImpl(Transaction transaction, String id) {
+	public AddTransactionMessageImpl(Transaction transaction, String id) {
 		super(id);
 
 		Objects.requireNonNull(transaction);
@@ -50,11 +50,11 @@ public class PostTransactionMessageImpl extends AbstractRpcMessage implements Po
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof PostTransactionMessage ptm && super.equals(other) && transaction.equals(ptm.getTransaction());
+		return other instanceof AddTransactionMessage ptm && super.equals(other) && transaction.equals(ptm.getTransaction());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return PostTransactionMessage.class.getName();
+		return AddTransactionMessage.class.getName();
 	}
 }

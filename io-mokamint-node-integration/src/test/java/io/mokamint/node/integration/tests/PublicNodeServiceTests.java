@@ -520,8 +520,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a postTransaction() request reaches the service, it post the transaction and sends back a result")
-	public void servicePostTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
+	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		
@@ -532,21 +532,21 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPostTransactionResult(boolean success) {
+			protected void onAddTransactionResult(boolean success) {
 				if (success)
 					semaphore.release();
 			}
 
-			private void sendPost() throws ClosedNodeException {
-				sendPost(transaction, "id");
+			private void addTransaction() throws ClosedNodeException {
+				sendAddTransaction(transaction, "id");
 			}
 		}
 
 		var node = mkNode();
-		when(node.post(eq(transaction))).thenReturn(true);
+		when(node.add(eq(transaction))).thenReturn(true);
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			client.sendPost();
+			client.addTransaction();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

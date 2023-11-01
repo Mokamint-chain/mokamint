@@ -31,7 +31,6 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
@@ -81,38 +80,17 @@ public class Mempool {
 	}
 
 	/**
-	 * Schedules the addition of the given transaction to this mempool.
-	 * This method returns immediately. Eventually, the transaction will be
-	 * checked for validity and, if valid, added to this mempool.
+	 * Checks the validity of the given transaction and, if valid, adds it to this mempool.
 	 * 
 	 * @param transaction the transaction to add
 	 */
-	public void scheduleAddition(Transaction transaction) {
-		
-		class AddToMempoolTask implements Task {
+	public void add(Transaction transaction) {
+		var entry = new TransactionEntry(transaction, 0L, hasher);
 
-			@Override
-			public void body() {
-				var entry = new TransactionEntry(transaction, 0L, hasher);
-
-				synchronized (mempool) {
-					if (mempool.size() < MAX_MEMPOOL_SIZE)
-						mempool.add(entry);
-				}
-			}
-
-			@Override
-			public String toString() {
-				return "transaction addition to the mempool";
-			}
-
-			@Override
-			public String logPrefix() {
-				return "[mempool] ";
-			}
+		synchronized (mempool) {
+			if (mempool.size() < MAX_MEMPOOL_SIZE)
+				mempool.add(entry);
 		}
-
-		node.submit(new AddToMempoolTask());
 	}
 
 	/**

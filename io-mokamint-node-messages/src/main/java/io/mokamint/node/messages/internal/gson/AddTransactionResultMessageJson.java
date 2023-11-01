@@ -17,29 +17,28 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.Transactions;
-import io.mokamint.node.messages.PostTransactionMessages;
-import io.mokamint.node.messages.api.PostTransactionMessage;
+import io.mokamint.node.messages.AddTransactionResultMessages;
+import io.mokamint.node.messages.api.AddTransactionResultMessage;
 
 /**
- * The JSON representation of a {@link PostTransactionMessage}.
+ * The JSON representation of a {@link AddTransactionResultMessage}.
  */
-public abstract class PostTransactionMessageJson extends AbstractRpcMessageJsonRepresentation<PostTransactionMessage> {
-	private final Transactions.Json transaction;
+public abstract class AddTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<AddTransactionResultMessage> {
+	private final boolean result;
 
-	protected PostTransactionMessageJson(PostTransactionMessage message) {
+	protected AddTransactionResultMessageJson(AddTransactionResultMessage message) {
 		super(message);
 
-		this.transaction = new Transactions.Json(message.getTransaction());
+		this.result = message.get();
 	}
 
 	@Override
-	public PostTransactionMessage unmap() {
-		return PostTransactionMessages.of(transaction.unmap(), getId());
+	public AddTransactionResultMessage unmap() {
+		return AddTransactionResultMessages.of(result, getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return PostTransactionMessage.class.getName();
+		return AddTransactionResultMessage.class.getName();
 	}
 }

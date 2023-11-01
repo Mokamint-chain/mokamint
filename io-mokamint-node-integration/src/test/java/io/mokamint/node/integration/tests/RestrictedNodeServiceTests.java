@@ -61,7 +61,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if an addPeer() request reaches the service, it adds the peers to the node and it sends back a result")
+	@DisplayName("if an add(Peer) request reaches the service, it adds the peers to the node and it sends back a result")
 	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, PeerRejectedException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var allPeers = new HashSet<Peer>();
@@ -96,7 +96,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a removePeer() request reaches the service, it removes the peers from the node and it sends back a result")
+	@DisplayName("if a remove(Peer) request reaches the service, it removes the peers from the node and it sends back a result")
 	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, DatabaseException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
