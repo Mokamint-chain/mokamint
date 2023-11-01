@@ -42,7 +42,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 		private final RemoteRestrictedNode remote;
 		private final List<String> successes = new ArrayList<>();
 
-		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException {
+		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException {
 			this.remote = remote;
 
 			Optional<Exception> exception = Stream.of(uuids)
