@@ -325,7 +325,7 @@ public class Blockchain implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Stream<byte[]> getChain(long start, long count) throws DatabaseException, ClosedDatabaseException {
+	public Stream<byte[]> getChain(long start, int count) throws DatabaseException, ClosedDatabaseException {
 		return db.getChain(start, count);
 	}
 

@@ -119,7 +119,7 @@ public class Mempool {
 	 * An entry in the container of the transactions in this mempool.
 	 * It contains the transaction itself and extra information about the transaction.
 	 */
-	public static class TransactionEntry implements Comparable<TransactionEntry> {
+	private static class TransactionEntry implements Comparable<TransactionEntry> {
 		private final Transaction transaction;
 		private final long priority;
 		private final byte[] hash;

@@ -541,7 +541,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, long count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendGetChainPortion(start, count, id);
@@ -556,7 +556,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetChainPortion(long start, long count, String id) throws ClosedNodeException {
+	protected void sendGetChainPortion(long start, int count, String id) throws ClosedNodeException {
 		try {
 			sendObjectAsync(getSession(GET_CHAIN_PORTION_ENDPOINT), GetChainPortionMessages.of(start, count, id));
 		}

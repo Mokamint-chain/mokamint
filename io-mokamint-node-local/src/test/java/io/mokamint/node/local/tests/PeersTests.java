@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -128,7 +129,7 @@ public class PeersTests extends AbstractLoggedTests {
 		PublicNode node = mock();
 		when(node.getInfo()).thenReturn(info);
 		when(node.getChainInfo()).thenReturn(chainInfo);
-		when(node.getChainPortion(anyLong(), anyLong())).thenReturn(ChainPortions.of(Stream.empty()));
+		when(node.getChainPortion(anyLong(), anyInt())).thenReturn(ChainPortions.of(Stream.empty()));
 		OngoingStubbing<ConsensusConfig<?,?>> w = when(node.getConfig());
 		w.thenReturn(LocalNodeConfigBuilders.defaults().build());
 		return node;

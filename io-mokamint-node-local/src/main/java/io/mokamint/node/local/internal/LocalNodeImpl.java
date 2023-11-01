@@ -479,7 +479,7 @@ public class LocalNodeImpl implements LocalNode {
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed because this node is open
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 		finally {
 			closureLock.afterCall();
@@ -487,7 +487,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, long count) throws DatabaseException, ClosedNodeException {
+	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 		
 		try {
@@ -496,7 +496,7 @@ public class LocalNodeImpl implements LocalNode {
 		catch (ClosedDatabaseException e) {
 			// the database cannot be closed because this node is open
 			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 		finally {
 			closureLock.afterCall();

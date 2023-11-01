@@ -20,7 +20,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the {@link PublicNode#getChainPortion(long, long)} method.
+ * The network message corresponding to the {@link PublicNode#getChainPortion(long, int)} method.
  */
 public interface GetChainPortionMessage extends RpcMessage {
 
@@ -36,7 +36,7 @@ public interface GetChainPortionMessage extends RpcMessage {
 	 * 
 	 * @return the parameter
 	 */
-	long getCount();
+	int getCount();
 
 	@Override
 	boolean equals(Object obj);

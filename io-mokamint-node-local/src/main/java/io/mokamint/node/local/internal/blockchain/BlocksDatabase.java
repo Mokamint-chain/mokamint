@@ -380,7 +380,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Stream<byte[]> getChain(long start, long count) throws DatabaseException, ClosedDatabaseException {
+	public Stream<byte[]> getChain(long start, int count) throws DatabaseException, ClosedDatabaseException {
 		closureLock.beforeCall(ClosedDatabaseException::new);
 
 		try {
@@ -916,7 +916,7 @@ public class BlocksDatabase implements AutoCloseable {
 		return ChainInfos.of(chainHeight.getAsLong() + 1, maybeGenesisHash, maybeHeadHash);
 	}
 
-	private Stream<byte[]> getChain(Transaction txn, long start, long count) throws DatabaseException {
+	private Stream<byte[]> getChain(Transaction txn, long start, int count) throws DatabaseException {
 		try {
 			if (start < 0L || count <= 0L)
 				return Stream.empty();

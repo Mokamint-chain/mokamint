@@ -36,7 +36,7 @@ public final class GetChainPortionMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetChainPortionMessage of(long start, long count, String id) {
+	public static GetChainPortionMessage of(long start, int count, String id) {
 		return new GetChainPortionMessageImpl(start, count, id);
 	}
 

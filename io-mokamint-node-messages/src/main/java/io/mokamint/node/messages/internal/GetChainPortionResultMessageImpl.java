@@ -24,7 +24,7 @@ import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetChainPortionResultMessage;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#getChainPortion(long, long)} method.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getChainPortion(long, int)} method.
  */
 public class GetChainPortionResultMessageImpl extends AbstractRpcMessage implements GetChainPortionResultMessage {
 

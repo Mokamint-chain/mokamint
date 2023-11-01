@@ -21,11 +21,11 @@ import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetChainPortionMessage;
 
 /**
- * Implementation of the network message corresponding to the {@link PublicNode#getChainPortion(long, long)} method.
+ * Implementation of the network message corresponding to the {@link PublicNode#getChainPortion(long, int)} method.
  */
 public class GetChainPortionMessageImpl extends AbstractRpcMessage implements GetChainPortionMessage {
 	private final long start;
-	private final long count;
+	private final int count;
 
 	/**
 	 * Creates the message.
@@ -34,7 +34,7 @@ public class GetChainPortionMessageImpl extends AbstractRpcMessage implements Ge
 	 * @param count the {@code count} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public GetChainPortionMessageImpl(long start, long count, String id) {
+	public GetChainPortionMessageImpl(long start, int count, String id) {
 		super(id);
 
 		this.start = start;
@@ -47,13 +47,13 @@ public class GetChainPortionMessageImpl extends AbstractRpcMessage implements Ge
 	}
 
 	@Override
-	public long getCount() {
+	public int getCount() {
 		return count;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetChainPortionMessage gcm && super.equals(other) && start == gcm.getStart() && count == gcm.getCount();
+		return other instanceof GetChainPortionMessage gcpm && super.equals(other) && start == gcpm.getStart() && count == gcpm.getCount();
 	}
 
 	@Override

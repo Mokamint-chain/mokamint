@@ -20,7 +20,7 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the result of the {@link PublicNode#getChainPortion(long, long)} method.
+ * The network message corresponding to the result of the {@link PublicNode#getChainPortion(long, int)} method.
  */
 public interface GetChainPortionResultMessage extends ResultMessage<ChainPortion> {
 }
