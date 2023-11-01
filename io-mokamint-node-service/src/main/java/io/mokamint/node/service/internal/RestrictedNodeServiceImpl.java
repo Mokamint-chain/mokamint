@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.service.internal;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -28,6 +29,7 @@ import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Node.CloseHandler;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -126,7 +128,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		LOGGER.info(logPrefix + "received an " + ADD_PEER_ENDPOINT + " request");
 
 		try {
-			boolean result;
+			Optional<PeerInfo> result;
 
 			try {
 				result = node.add(message.getPeer());

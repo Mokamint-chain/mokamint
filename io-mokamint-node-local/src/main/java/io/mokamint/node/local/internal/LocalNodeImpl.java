@@ -332,7 +332,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public boolean add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {

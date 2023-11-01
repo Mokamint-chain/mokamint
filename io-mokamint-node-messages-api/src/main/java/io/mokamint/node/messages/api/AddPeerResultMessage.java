@@ -16,10 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import java.util.Optional;
+
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to the result of {@link RestrictedNode#add(io.mokamint.node.api.Peer)} method of a node.
  */
-public interface AddPeerResultMessage extends ResultMessage<Boolean> {
+public interface AddPeerResultMessage extends ResultMessage<Optional<PeerInfo>> {
 }

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -99,7 +101,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			protected void onAddPeer(AddPeerMessage message, Session session) {
 				peers2.add(message.getPeer());
 				try {
-					sendObjectAsync(session, AddPeerResultMessages.of(true, message.getId()));
+					sendObjectAsync(session, AddPeerResultMessages.of(Optional.of(PeerInfos.of(message.getPeer(), 1000, true)), message.getId()));
 				}
 				catch (IOException e) {}
 			}

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -33,7 +34,9 @@ public interface RestrictedNode extends Node {
 	 * Adds the given peer to the set of peers of this node, if it was not already there.
 	 * 
 	 * @param peer the peer to add
-	 * @return if and only if the peer has been actually added
+	 * @return the information about the added peer; this is empty if the peer has not been added,
+	 *         for instance because it was already present or the node has already reached a maximum
+	 *         number of peers
 	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws PeerRejectedException if {@code peer} was rejected for some reason
 	 * @throws DatabaseException if the database of this node is corrupted
@@ -41,7 +44,7 @@ public interface RestrictedNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	boolean add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node, if it was there.

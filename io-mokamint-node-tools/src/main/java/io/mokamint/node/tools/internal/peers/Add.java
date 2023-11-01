@@ -25,10 +25,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
@@ -66,15 +68,10 @@ public class Add extends AbstractRestrictedRpcCommand {
 
 		private Optional<Exception> addPeer(Peer peer) {
 			try {
-				if (remote.add(peer))
-					if (json())
-						successes.add(new Peers.Encoder().encode(peer));
-					else
-						System.out.println("Added " + peer + " to the set of peers");
-				else
+				return remote.add(peer).flatMap(this::process).or(() -> {
 					System.out.println("Peer " + peer + " has not been added to the set of peers");
-
-				return Optional.empty();
+					return Optional.empty();
+				});
 			}
 			catch (RuntimeException | ClosedNodeException | TimeoutException | InterruptedException | DatabaseException e) {
 				return Optional.of(e);
@@ -82,12 +79,24 @@ public class Add extends AbstractRestrictedRpcCommand {
 			catch (PeerRejectedException e) {
 				return Optional.of(new CommandException(e.getMessage(), e));
 			}
-			catch (EncodeException e) {
-				return Optional.of(new CommandException("Cannot encode " + peer + " in JSON", e));
-			}
 			catch (IOException e) {
 				return Optional.of(new CommandException("Cannot establish a connection to " + peer, e));
 			}
+		}
+
+		private Optional<Exception> process(PeerInfo info) {
+			if (json()) {
+				try {
+					successes.add(new PeerInfos.Encoder().encode(info));
+				}
+				catch (EncodeException e) {
+					return Optional.of(new CommandException("Cannot encode " + info + " in JSON", e));
+				}
+			}
+			else
+				System.out.println("Added " + info.getPeer() + " to the set of peers with " + info.getPoints() + " initial points");
+
+			return Optional.empty();
 		}
 	}
 

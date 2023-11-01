@@ -156,7 +156,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			 var miner = LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys))) {
 
 			// we connect node1 and node2 with each other
-			assertTrue(node1.add(peer2));
+			assertTrue(node1.add(peer2).isPresent());
 
 			// we wait until node2 has added node1 as peer
 			assertTrue(node2HasConnectedToNode1.tryAcquire(1, 1000, TimeUnit.MILLISECONDS));

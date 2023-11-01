@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.util.Objects;
+import java.util.Optional;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
 
@@ -28,23 +32,24 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 	/**
 	 * The result of the call.
 	 */
-	private final boolean result;
+	private final PeerInfo info;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param result the result of the call
+	 * @param info the result of the call
 	 * @param id the identifier of the message
 	 */
-	public AddPeerResultMessageImpl(boolean result, String id) {
+	public AddPeerResultMessageImpl(Optional<PeerInfo> info, String id) {
 		super(id);
 
-		this.result = result;
+		Objects.requireNonNull(info, "info cannot be null");
+		this.info = info.orElse(null);
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddPeerResultMessage aprm && super.equals(other) && result == aprm.get().booleanValue();
+		return other instanceof AddPeerResultMessage aprm && super.equals(other) && Objects.equals(get(), aprm.get());
 	}
 
 	@Override
@@ -53,7 +58,7 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 	}
 
 	@Override
-	public Boolean get() {
-		return result;
+	public Optional<PeerInfo> get() {
+		return Optional.ofNullable(info);
 	}
 }

@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.net.URISyntaxException;
+import java.util.Optional;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
 
@@ -24,17 +28,17 @@ import io.mokamint.node.messages.api.AddPeerResultMessage;
  * The JSON representation of a {@link AddPeerResultMessage}.
  */
 public abstract class AddPeerResultMessageJson extends AbstractRpcMessageJsonRepresentation<AddPeerResultMessage> {
-	private final boolean result;
+	private final PeerInfos.Json info;
 
 	protected AddPeerResultMessageJson(AddPeerResultMessage message) {
 		super(message);
 
-		this.result = message.get();
+		this.info = message.get().map(new PeerInfos.Encoder()::map).orElse(null);
 	}
 
 	@Override
-	public AddPeerResultMessage unmap() {
-		return AddPeerResultMessages.of(result, getId());
+	public AddPeerResultMessage unmap() throws URISyntaxException {
+		return AddPeerResultMessages.of(Optional.ofNullable(info == null ? null : info.unmap()), getId());
 	}
 
 	@Override

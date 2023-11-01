@@ -41,7 +41,6 @@ public class GetBlockResultMessageImpl extends AbstractRpcMessage implements Get
 		super(id);
 
 		Objects.requireNonNull(block, "block cannot be null");
-		block.map(Objects::requireNonNull);
 		this.block = block.orElse(null);
 	}
 

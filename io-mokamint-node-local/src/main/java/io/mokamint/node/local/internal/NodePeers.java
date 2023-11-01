@@ -167,7 +167,9 @@ public class NodePeers implements AutoCloseable {
 	 * @param peer the peer to add
 	 * @param force true if the peer must be added also if the maximum number of peers for the node has been reached
 	 * @param whisper true if and only if the added peer must be whispered to all peers after the addition
-	 * @return true if and only if the peer has been added
+	 * @return the information about the peer; this is empty if the peer has not been added,
+	 *         for instance, because it was already present or a maximum number of peers has been
+	 *         already reached
 	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws PeerRejectedException if the addition of {@code peer} was rejected for some reason
 	 * @throws DatabaseException if the database of the node is corrupted
@@ -176,10 +178,10 @@ public class NodePeers implements AutoCloseable {
 	 * @throws ClosedNodeException if the node is closed
 	 * @throws ClosedDatabaseException if the database of the node is closed
 	 */
-	public boolean add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
+	public Optional<PeerInfo> add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
 		if (containsDisconnected(peer)) {
 			tryToRecreateRemote(peer);
-			return false;
+			return Optional.empty();
 		}
 		else {
 			// we uncheck the exceptions of onAdd
@@ -192,10 +194,12 @@ public class NodePeers implements AutoCloseable {
 					ClosedDatabaseException.class,
 					() -> peers.add(peer, force));
 
-			if (result)
+			if (result) {
 				node.submit(new PeersAddedEvent(Stream.of(peer), whisper));
+				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
+			}
 
-			return result;
+			return Optional.empty();
 		}
 	}
 

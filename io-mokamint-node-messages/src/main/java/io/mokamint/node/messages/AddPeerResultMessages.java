@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import java.util.Optional;
+
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
 import io.mokamint.node.messages.internal.AddPeerResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.AddPeerResultMessageDecoder;
@@ -32,12 +35,12 @@ public final class AddPeerResultMessages {
 	/**
 	 * Yields an {@link AddPeerResultMessage}.
 	 * 
-	 * @param result the result of the call
+	 * @param info the result of the call
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static AddPeerResultMessage of(boolean result, String id) {
-		return new AddPeerResultMessageImpl(result, id);
+	public static AddPeerResultMessage of(Optional<PeerInfo> info, String id) {
+		return new AddPeerResultMessageImpl(info, id);
 	}
 
 	/**

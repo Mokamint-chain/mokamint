@@ -367,9 +367,18 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("addPeer result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForAddPeerResult() throws EncodeException, DecodeException {
-		var addPeerResultMessage1 = AddPeerResultMessages.of(true, "id");
+	@DisplayName("addPeer non-empty result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForNonEmptyAddPeerResult() throws EncodeException, DecodeException, URISyntaxException {
+		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.of(PeerInfos.of(Peers.of(new URI("ws://www.mokamint-io")), 800, true)), "id");
+		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
+		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
+		assertEquals(addPeerResultMessage1, addPeerResultMessage2);
+	}
+
+	@Test
+	@DisplayName("addPeer empty result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForEmptyAddPeerResult() throws EncodeException, DecodeException, URISyntaxException {
+		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.empty(), "id");
 		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
 		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
 		assertEquals(addPeerResultMessage1, addPeerResultMessage2);

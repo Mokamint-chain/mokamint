@@ -23,6 +23,7 @@ import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_END
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -33,6 +34,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -162,7 +164,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onException(ExceptionMessage message) {}
 
 	@Override
-	public boolean add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddPeer(peer, id);
@@ -185,7 +187,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
-	private Boolean processAddPeerSuccess(RpcMessage message) {
+	private Optional<PeerInfo> processAddPeerSuccess(RpcMessage message) {
 		return message instanceof AddPeerResultMessage aprm ? aprm.get() : null;
 	}
 
