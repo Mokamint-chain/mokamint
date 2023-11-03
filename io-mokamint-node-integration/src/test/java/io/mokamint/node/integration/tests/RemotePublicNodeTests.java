@@ -62,6 +62,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
@@ -1034,14 +1035,14 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
 				transaction2.set(message.getTransaction());
 				try {
-					sendObjectAsync(session, AddTransactionResultMessages.of(true, message.getId()));
+					sendObjectAsync(session, AddTransactionResultMessages.of(TransactionInfos.of(new byte[] { 1 , 2 }, 13L), message.getId()));
 				}
 				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			assertTrue(remote.add(transaction1));
+			remote.add(transaction1);
 			assertEquals(transaction1, transaction2.get());
 		}
 	}

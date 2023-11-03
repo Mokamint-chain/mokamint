@@ -49,10 +49,13 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
+import io.mokamint.node.messages.AddTransactionMessages;
+import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.CloseMinerMessages;
 import io.mokamint.node.messages.CloseMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -76,8 +79,6 @@ import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
-import io.mokamint.node.messages.AddTransactionMessages;
-import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
@@ -330,26 +331,26 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("post transaction messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("add transaction messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForPostTransaction() throws EncodeException, DecodeException {
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5 });
-		var postTransactionMessage1 = AddTransactionMessages.of(transaction, "id");
-		String encoded = new AddTransactionMessages.Encoder().encode(postTransactionMessage1);
-		var postTransactionMessage2 = new AddTransactionMessages.Decoder().decode(encoded);
-		assertEquals(postTransactionMessage1, postTransactionMessage2);
+		var addTransactionMessage1 = AddTransactionMessages.of(transaction, "id");
+		String encoded = new AddTransactionMessages.Encoder().encode(addTransactionMessage1);
+		var addTransactionMessage2 = new AddTransactionMessages.Decoder().decode(encoded);
+		assertEquals(addTransactionMessage1, addTransactionMessage2);
 	}
 
 	@Test
-	@DisplayName("post transaction result messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("add transaction result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForPostTransactionResult() throws EncodeException, DecodeException {
-		var postTransactionResultMessage1 = AddTransactionResultMessages.of(true, "id");
-		String encoded = new AddTransactionResultMessages.Encoder().encode(postTransactionResultMessage1);
-		var postTransactionResultMessage2 = new AddTransactionResultMessages.Decoder().decode(encoded);
-		assertEquals(postTransactionResultMessage1, postTransactionResultMessage2);
+		var addTransactionResultMessage1 = AddTransactionResultMessages.of(TransactionInfos.of(new byte[] { 1, 2, 3 }, 17L), "id");
+		String encoded = new AddTransactionResultMessages.Encoder().encode(addTransactionResultMessage1);
+		var addTransactionResultMessage2 = new AddTransactionResultMessages.Decoder().decode(encoded);
+		assertEquals(addTransactionResultMessage1, addTransactionResultMessage2);
 	}
 
 	@Test
-	@DisplayName("addPeers messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("add peer messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForAddPeers() throws EncodeException, DecodeException, URISyntaxException {
 		var addPeers1 = AddPeerMessages.of(Peers.of(new URI("ws://google.com:8011")), "id");
 		String encoded = new AddPeerMessages.Encoder().encode(addPeers1);
@@ -358,7 +359,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("removePeer messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("remove peer messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForRemovePeer() throws EncodeException, DecodeException, URISyntaxException {
 		var removePeers1 = RemovePeerMessages.of(Peers.of(new URI("ws://google.com:8011")), "id");
 		String encoded = new RemovePeerMessages.Encoder().encode(removePeers1);
@@ -367,7 +368,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("addPeer non-empty result messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("add peer non-empty result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForNonEmptyAddPeerResult() throws EncodeException, DecodeException, URISyntaxException {
 		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.of(PeerInfos.of(Peers.of(new URI("ws://www.mokamint-io")), 800, true)), "id");
 		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);

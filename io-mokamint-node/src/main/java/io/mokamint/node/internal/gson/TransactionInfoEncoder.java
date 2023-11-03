@@ -14,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.internal.gson;
 
-import io.mokamint.node.api.PublicNode;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.api.TransactionInfo;
 
-/**
- * The network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method of a node.
- */
-public interface AddTransactionResultMessage extends ResultMessage<TransactionInfo> {
+public class TransactionInfoEncoder extends MappedEncoder<TransactionInfo, TransactionInfos.Json> {
+
+	public TransactionInfoEncoder() {
+		super(TransactionInfos.Json::new);
+	}
 }

@@ -16,16 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
+import static io.mokamint.node.service.api.PublicNodeService.ADD_TRANSACTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_DESCRIPTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_BLOCK_ENDPOINT;
-import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_PORTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_PORTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
-import static io.mokamint.node.service.api.PublicNodeService.ADD_TRANSACTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
 
@@ -46,8 +46,8 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
@@ -57,9 +57,12 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionInfo;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.messages.AddTransactionMessages;
+import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
@@ -79,11 +82,10 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
-import io.mokamint.node.messages.AddTransactionMessages;
-import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
+import io.mokamint.node.messages.api.AddTransactionResultMessage;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
@@ -94,7 +96,6 @@ import io.mokamint.node.messages.api.GetInfoResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
-import io.mokamint.node.messages.api.AddTransactionResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -576,7 +577,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public boolean add(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException {
+	public TransactionInfo add(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddTransaction(transaction, id);
@@ -600,8 +601,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	private Boolean processAddTransactionSuccess(RpcMessage message) {
-		return message instanceof AddTransactionResultMessage ptrm ? ptrm.get() : null;
+	private TransactionInfo processAddTransactionSuccess(RpcMessage message) {
+		return message instanceof AddTransactionResultMessage atrm ? atrm.get() : null;
 	}
 
 	/**
@@ -615,7 +616,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetChainResult(ChainPortion chain) {}
-	protected void onAddTransactionResult(boolean success) {}
+	protected void onAddTransactionResult(TransactionInfo info) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhisperPeers(Stream<Peer> peers) {}

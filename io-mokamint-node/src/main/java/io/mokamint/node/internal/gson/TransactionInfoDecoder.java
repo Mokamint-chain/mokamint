@@ -14,30 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node.internal.gson;
 
-import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.api.Marshallable;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.api.TransactionInfo;
 
 /**
- * A transaction of the Mokamint blockchain.
+ * A decoder for {@link TransactionInfo}.
  */
-@Immutable
-public interface TransactionDescription extends Marshallable {
+public class TransactionInfoDecoder extends MappedDecoder<TransactionInfo, TransactionInfos.Json> {
 
-	/**
-	 * Yields the bytes of the transaction. The meaning of these bytes if application-dependent.
-	 * 
-	 * @return the bytes of the transaction
-	 */
-	byte[] getBytes();
-
-	@Override
-	boolean equals(Object other);
-
-	@Override
-	int hashCode();
-
-	@Override
-	String toString();
+	public TransactionInfoDecoder() {
+		super(TransactionInfos.Json.class);
+	}
 }

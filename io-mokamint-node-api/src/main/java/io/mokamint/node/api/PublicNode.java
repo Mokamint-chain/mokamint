@@ -140,12 +140,12 @@ public interface PublicNode extends Node, Whisperer {
 	 * The node will afterwards whisper the transaction to all its peers.
 	 * 
 	 * @param transaction the transaction
-	 * @return true if and only if the transaction has been added to the mempool
+	 * @return information about the transaction that has been added to the mempool
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	boolean add(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException;
+	TransactionInfo add(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the transaction with the given hash, if it has been already

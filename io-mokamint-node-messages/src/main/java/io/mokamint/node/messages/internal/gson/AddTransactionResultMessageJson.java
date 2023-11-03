@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 
@@ -24,17 +25,17 @@ import io.mokamint.node.messages.api.AddTransactionResultMessage;
  * The JSON representation of a {@link AddTransactionResultMessage}.
  */
 public abstract class AddTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<AddTransactionResultMessage> {
-	private final boolean result;
+	private final TransactionInfos.Json result;
 
 	protected AddTransactionResultMessageJson(AddTransactionResultMessage message) {
 		super(message);
 
-		this.result = message.get();
+		this.result = new TransactionInfos.Json(message.get());
 	}
 
 	@Override
 	public AddTransactionResultMessage unmap() {
-		return AddTransactionResultMessages.of(result, getId());
+		return AddTransactionResultMessages.of(result.unmap(), getId());
 	}
 
 	@Override

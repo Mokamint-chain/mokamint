@@ -42,12 +42,14 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -62,6 +64,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionInfo;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -504,12 +507,17 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public boolean add(Transaction transaction) throws ClosedNodeException {
+	public TransactionInfo add(Transaction transaction) throws ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
 			mempool.add(transaction);
-			return true;
+			// TODO
+			return TransactionInfos.of(HashingAlgorithms.sha256().getHasher(Transaction::toByteArray).hash(transaction), 13L);
+		}
+		catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Unexpected exception", e);
 		}
 		finally {
 			closureLock.afterCall();

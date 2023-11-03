@@ -16,8 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.util.Objects;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.TransactionInfo;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 
 /**
@@ -28,7 +31,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	/**
 	 * The result of the call.
 	 */
-	private final boolean result;
+	private final TransactionInfo result;
 
 	/**
 	 * Creates the message.
@@ -36,15 +39,16 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public AddTransactionResultMessageImpl(boolean result, String id) {
+	public AddTransactionResultMessageImpl(TransactionInfo result, String id) {
 		super(id);
 
+		Objects.requireNonNull(result, "result cannot be null");
 		this.result = result;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddTransactionResultMessage atrm && super.equals(other) && result == atrm.get().booleanValue();
+		return other instanceof AddTransactionResultMessage atrm && super.equals(other) && result.equals(atrm.get());
 	}
 
 	@Override
@@ -53,7 +57,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	}
 
 	@Override
-	public Boolean get() {
+	public TransactionInfo get() {
 		return result;
 	}
 }

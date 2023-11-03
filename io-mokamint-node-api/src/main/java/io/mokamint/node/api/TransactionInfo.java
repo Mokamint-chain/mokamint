@@ -20,17 +20,24 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * A transaction of the Mokamint blockchain.
+ * Information about a transaction of the Mokamint blockchain.
  */
 @Immutable
 public interface TransactionInfo extends Marshallable {
 
 	/**
-	 * Yields the bytes of the transaction. The meaning of these bytes if application-dependent.
+	 * Yields the hash of the transaction.
 	 * 
-	 * @return the bytes of the transaction
+	 * @return the hash of the transaction
 	 */
-	byte[] getBytes();
+	byte[] getHash();
+
+	/**
+	 * Yields the priority of the transaction.
+	 * 
+	 * @return the priority
+	 */
+	long getPriority();
 
 	@Override
 	boolean equals(Object other);

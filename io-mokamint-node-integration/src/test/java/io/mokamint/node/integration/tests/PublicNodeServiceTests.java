@@ -61,12 +61,13 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
@@ -77,6 +78,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TaskInfo;
+import io.mokamint.node.api.TransactionInfo;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
@@ -532,9 +534,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onAddTransactionResult(boolean success) {
-				if (success)
-					semaphore.release();
+			protected void onAddTransactionResult(TransactionInfo info) {
+				semaphore.release();
 			}
 
 			private void addTransaction() throws ClosedNodeException {
@@ -543,7 +544,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 
 		var node = mkNode();
-		when(node.add(eq(transaction))).thenReturn(true);
+		when(node.add(eq(transaction))).thenReturn(TransactionInfos.of(new byte[] { 1, 2, 3 }, 1000L));
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.addTransaction();
