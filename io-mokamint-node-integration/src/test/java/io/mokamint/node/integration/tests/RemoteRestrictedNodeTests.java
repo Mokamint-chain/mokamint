@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.node.MinerInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
@@ -384,7 +385,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
 				ports2.add(message.getPort());
 				try {
-					sendObjectAsync(session, OpenMinerResultMessages.of(true, message.getId()));
+					sendObjectAsync(session, OpenMinerResultMessages.of(Optional.of(MinerInfos.of(UUID.randomUUID(), 42, "a miner")), message.getId()));
 				}
 				catch (IOException e) {}
 			}

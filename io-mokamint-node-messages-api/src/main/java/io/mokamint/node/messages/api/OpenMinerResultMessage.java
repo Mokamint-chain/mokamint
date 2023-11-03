@@ -16,10 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import java.util.Optional;
+
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to the result of {@link RestrictedNode#openMiner(int)} method of a node.
  */
-public interface OpenMinerResultMessage extends ResultMessage<Boolean> {
+public interface OpenMinerResultMessage extends ResultMessage<Optional<MinerInfo>> {
 }

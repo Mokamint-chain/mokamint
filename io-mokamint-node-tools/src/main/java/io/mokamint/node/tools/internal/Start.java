@@ -240,7 +240,7 @@ public class Start extends AbstractCommand {
 						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
 
 					try {
-						if (node.add(LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))))
+						if (node.add(LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))).isPresent())
 							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 						else
 							throw new CommandException("The miner has not been added!");

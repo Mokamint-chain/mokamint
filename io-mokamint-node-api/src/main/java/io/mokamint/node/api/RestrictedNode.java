@@ -63,13 +63,13 @@ public interface RestrictedNode extends Node {
 	 * Opens a remote miner at the given port.
 	 * 
 	 * @param port the port
-	 * @return true if and only if the remote miner has been opened
+	 * @return the information about the opened miner; this is empty if the miner has not been opened
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws IOException if an I/O error occurred (for instance, if the port is already bound to some service)
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	boolean openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+	Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Closes a miner.

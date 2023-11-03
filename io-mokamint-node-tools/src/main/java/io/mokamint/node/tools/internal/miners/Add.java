@@ -24,10 +24,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
+import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
@@ -59,15 +62,11 @@ public class Add extends AbstractRestrictedRpcCommand {
 
 		private Optional<Exception> addMiner(int port) {
 			try {
-				if (remote.openMiner(port)) {
-					successes.add(String.valueOf(port));
-					if (!json())
-						System.out.println("Opened a remote miner at port " + port);
-				}
-				else if (!json())
+				return remote.openMiner(port).or(() -> {
 					System.out.println("No remote miner has been opened at port " + port);
-
-				return Optional.empty();
+					return Optional.empty();
+				})
+				.flatMap(this::process);
 			}
 			catch (RuntimeException | ClosedNodeException | TimeoutException | InterruptedException e) {
 				return Optional.of(e);
@@ -75,6 +74,21 @@ public class Add extends AbstractRestrictedRpcCommand {
 			catch (IOException e) {
 				return Optional.of(new CommandException("Cannot open a remote miner at port " + port + "!", e));
 			}
+		}
+
+		private Optional<Exception> process(MinerInfo info) {
+			if (json()) {
+				try {
+					successes.add(new MinerInfos.Encoder().encode(info));
+				}
+				catch (EncodeException e) {
+					return Optional.of(new CommandException("Cannot encode " + info + " in JSON", e));
+				}
+			}
+			else
+				System.out.println("Opened " + info);
+		
+			return Optional.empty();
 		}
 	}
 

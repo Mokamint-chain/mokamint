@@ -125,6 +125,6 @@ public class LocalMinerImpl implements Miner {
 		String howManyPlots = plotsAndKeyPairs.length == 1 ? "1 plot" : (plotsAndKeyPairs.length + " plots");
 		String howManyNonces = nonces == 1 ? "1 nonce" : (nonces + " nonces");
 		
-		return "a local miner with " + howManyPlots + ", with up to " + howManyNonces;
+		return "a local miner with " + howManyPlots + " and up to " + howManyNonces;
 	}
 }

@@ -275,7 +275,11 @@ public class EventsTests extends AbstractLoggedTests {
 				super(config, nodeKeys, app, true);
 
 				try {
-					add(mock(Miner.class));
+					var miner = mock(Miner.class);
+					var uuid = UUID.randomUUID();
+					when(miner.getUUID()).thenReturn(uuid);
+					when(miner.toString()).thenReturn("a miner");
+					add(miner);
 				}
 				catch (ClosedNodeException e) {
 					// impossible

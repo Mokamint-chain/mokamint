@@ -68,10 +68,11 @@ public class Add extends AbstractRestrictedRpcCommand {
 
 		private Optional<Exception> addPeer(Peer peer) {
 			try {
-				return remote.add(peer).flatMap(this::process).or(() -> {
+				return remote.add(peer).or(() -> {
 					System.out.println("Peer " + peer + " has not been added to the set of peers");
 					return Optional.empty();
-				});
+				})
+				.flatMap(this::process);
 			}
 			catch (RuntimeException | ClosedNodeException | TimeoutException | InterruptedException | DatabaseException e) {
 				return Optional.of(e);

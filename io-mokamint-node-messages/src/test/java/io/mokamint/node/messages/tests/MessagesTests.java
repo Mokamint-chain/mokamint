@@ -403,9 +403,19 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("openMiner result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForOpenMinerResult() throws EncodeException, DecodeException {
-		var openMinerResultMessage1 = OpenMinerResultMessages.of(true, "id");
+	@DisplayName("openMiner non-empty result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForOpenMinerNonEmptyResult() throws EncodeException, DecodeException {
+		var info = MinerInfos.of(UUID.randomUUID(), 1234, "a breautiful miner");
+		var openMinerResultMessage1 = OpenMinerResultMessages.of(Optional.of(info), "id");
+		String encoded = new OpenMinerResultMessages.Encoder().encode(openMinerResultMessage1);
+		var openMinerResultMessage2 = new OpenMinerResultMessages.Decoder().decode(encoded);
+		assertEquals(openMinerResultMessage1, openMinerResultMessage2);
+	}
+
+	@Test
+	@DisplayName("openMiner empty result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForOpenMinerEmptyResult() throws EncodeException, DecodeException {
+		var openMinerResultMessage1 = OpenMinerResultMessages.of(Optional.empty(), "id");
 		String encoded = new OpenMinerResultMessages.Encoder().encode(openMinerResultMessage1);
 		var openMinerResultMessage2 = new OpenMinerResultMessages.Decoder().decode(encoded);
 		assertEquals(openMinerResultMessage1, openMinerResultMessage2);

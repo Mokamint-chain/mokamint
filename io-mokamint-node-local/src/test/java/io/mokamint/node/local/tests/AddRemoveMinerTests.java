@@ -49,6 +49,7 @@ import io.mokamint.miner.service.MinerServices;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -162,10 +163,11 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			assertTrue(node2HasConnectedToNode1.tryAcquire(1, 1000, TimeUnit.MILLISECONDS));
 
 			// we open a remote miner on node1
-			assertTrue(node1.openMiner(miningPort));
+			Optional<MinerInfo> infoOfNewMiner = node1.openMiner(miningPort);
+			assertTrue(infoOfNewMiner.isPresent());
 
 			// we get the UUID of the only miner of the node
-			var uuid = node1.getMinerInfos().findFirst().get().getUUID();
+			var uuid = infoOfNewMiner.get().getUUID();
 
 			// TODO: it would be great to check that node1 and node2 are not mining at this stage
 

@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.util.Objects;
+import java.util.Optional;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 
@@ -28,7 +32,7 @@ public class OpenMinerResultMessageImpl extends AbstractRpcMessage implements Op
 	/**
 	 * The result of the call.
 	 */
-	private final boolean result;
+	private final Optional<MinerInfo> result;
 
 	/**
 	 * Creates the message.
@@ -36,7 +40,7 @@ public class OpenMinerResultMessageImpl extends AbstractRpcMessage implements Op
 	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public OpenMinerResultMessageImpl(boolean result, String id) {
+	public OpenMinerResultMessageImpl(Optional<MinerInfo> result, String id) {
 		super(id);
 
 		this.result = result;
@@ -44,7 +48,7 @@ public class OpenMinerResultMessageImpl extends AbstractRpcMessage implements Op
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof OpenMinerResultMessage omrm && super.equals(other) && result == omrm.get().booleanValue();
+		return other instanceof OpenMinerResultMessage omrm && super.equals(other) && Objects.equals(get(), omrm.get());
 	}
 
 	@Override
@@ -53,7 +57,7 @@ public class OpenMinerResultMessageImpl extends AbstractRpcMessage implements Op
 	}
 
 	@Override
-	public Boolean get() {
+	public Optional<MinerInfo> get() {
 		return result;
 	}
 }

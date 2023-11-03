@@ -28,6 +28,7 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
@@ -170,7 +171,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		LOGGER.info(logPrefix + "received an " + OPEN_MINER_ENDPOINT + " request");
 
 		try {
-			boolean result;
+			Optional<MinerInfo> result;
 
 			try {
 				result = node.openMiner(message.getPort());

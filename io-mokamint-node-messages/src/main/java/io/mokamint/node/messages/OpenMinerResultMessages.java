@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import java.util.Optional;
+
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 import io.mokamint.node.messages.internal.OpenMinerResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.OpenMinerResultMessageDecoder;
@@ -36,7 +39,7 @@ public final class OpenMinerResultMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static OpenMinerResultMessage of(boolean result, String id) {
+	public static OpenMinerResultMessage of(Optional<MinerInfo> result, String id) {
 		return new OpenMinerResultMessageImpl(result, id);
 	}
 

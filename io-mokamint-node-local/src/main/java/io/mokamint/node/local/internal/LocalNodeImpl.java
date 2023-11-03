@@ -51,8 +51,8 @@ import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
@@ -366,7 +366,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public boolean openMiner(int port) throws IOException, ClosedNodeException {
+	public Optional<MinerInfo> openMiner(int port) throws IOException, ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
@@ -562,22 +562,20 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public boolean add(Miner miner) throws ClosedNodeException {
+	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
 			var count = miners.get().count();
-
-			if (miners.add(miner)) {
-				LOGGER.info("added miner " + miner.getUUID() + " (" + miner + ")");
+			Optional<MinerInfo> result = miners.add(miner);
+			result.ifPresent(info -> {
+				LOGGER.info("added miner " + info.getUUID() + " (" + info.getDescription() + ")");
 				// we require to mine, if there were no miners before this call
 				if (count == 0L)
 					blockchain.scheduleMining();
+			});
 
-				return true;
-			}
-			else
-				return false;
+			return result;
 		}
 		finally {
 			closureLock.afterCall();

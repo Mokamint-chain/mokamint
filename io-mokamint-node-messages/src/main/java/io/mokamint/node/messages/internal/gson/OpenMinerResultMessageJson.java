@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.util.Optional;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.mokamint.node.MinerInfos;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 
@@ -24,17 +27,17 @@ import io.mokamint.node.messages.api.OpenMinerResultMessage;
  * The JSON representation of a {@link OpenMinerResultMessage}.
  */
 public abstract class OpenMinerResultMessageJson extends AbstractRpcMessageJsonRepresentation<OpenMinerResultMessage> {
-	private final boolean result;
+	private final MinerInfos.Json info;
 
 	protected OpenMinerResultMessageJson(OpenMinerResultMessage message) {
 		super(message);
 
-		this.result = message.get();
+		this.info = message.get().map(new MinerInfos.Encoder()::map).orElse(null);
 	}
 
 	@Override
 	public OpenMinerResultMessage unmap() {
-		return OpenMinerResultMessages.of(result, getId());
+		return OpenMinerResultMessages.of(Optional.ofNullable(info == null ? null : info.unmap()), getId());
 	}
 
 	@Override

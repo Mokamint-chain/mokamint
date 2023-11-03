@@ -16,10 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.local.api;
 
+import java.util.Optional;
+
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.FullNode;
+import io.mokamint.node.api.MinerInfo;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -36,8 +39,8 @@ public interface LocalNode extends FullNode {
 	 * the miner will be closed when the node will be closed.
 	 * 
 	 * @param miner the miner
-	 * @return true if and only if the miner has been added
+	 * @return the information about the added miner; this is empty if the miner has not been added
 	 * @throws ClosedNodeException if this node is closed
 	 */
-	boolean add(Miner miner) throws ClosedNodeException;
+	Optional<MinerInfo> add(Miner miner) throws ClosedNodeException;
 }

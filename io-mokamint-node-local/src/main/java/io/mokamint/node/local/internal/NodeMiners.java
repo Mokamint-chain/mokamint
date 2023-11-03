@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -25,6 +26,7 @@ import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**
  * The set of miners of a local node.
@@ -38,12 +40,18 @@ public class NodeMiners implements AutoCloseable {
 	private final PunishableSet<Miner> miners;
 
 	/**
+	 * The configuration of the node having these miners.
+	 */
+	private final LocalNodeConfig config;
+
+	/**
 	 * Creates a container for the miners of a local node.
 	 * 
 	 * @param node the node
 	 */
 	public NodeMiners(LocalNodeImpl node) {
-		this.miners = new PunishableSet<>(Stream.empty(), node.getConfig().getMinerInitialPoints(), (_miner, _force) -> true, this::onRemove);
+		this.config = node.getConfig();
+		this.miners = new PunishableSet<>(Stream.empty(), config.getMinerInitialPoints(), (_miner, _force) -> true, this::onRemove);
 	}
 
 	/**
@@ -68,10 +76,13 @@ public class NodeMiners implements AutoCloseable {
 	 * Adds the given miner to this container, if it was not already there.
 	 * 
 	 * @param miner the miner to add
-	 * @return true if and only if the miner has been added
+	 * @return the information about the added miner; this is empty if the miner has not been added
 	 */
-	public boolean add(Miner miner) {
-		return miners.add(miner);
+	public Optional<MinerInfo> add(Miner miner) {
+		if (miners.add(miner))
+			return Optional.of(MinerInfos.of(miner.getUUID(), config.getMinerInitialPoints(), miner.toString()));
+		else
+			return Optional.empty();
 	}
 
 	/**
