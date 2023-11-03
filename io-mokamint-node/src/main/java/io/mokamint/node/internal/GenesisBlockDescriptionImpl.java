@@ -31,6 +31,7 @@ import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -87,7 +88,14 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
 		this.signatureForBlocks = signatureForBlocks;
-		this.publicKey = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyBase58));
+		
+		try {
+			this.publicKey = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyBase58));
+		}
+		catch (Base58ConversionException e) {
+			throw new InvalidKeySpecException(e);
+		}
+
 		this.publicKeyBase58 = publicKeyBase58;
 
 		verify();

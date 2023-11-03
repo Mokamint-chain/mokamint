@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.util.Base64;
-
+import io.hotmoka.crypto.Base64;
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Transaction;
@@ -33,12 +33,11 @@ public abstract class TransactionJson implements JsonRepresentation<Transaction>
 	private final String bytes;
 
 	protected TransactionJson(Transaction transaction) {
-		this.bytes = Base64.getEncoder().encodeToString(transaction.getBytes());
+		this.bytes = Base64.toBase64String(transaction.getBytes());
 	}
 
 	@Override
-	public Transaction unmap() {
-		// TODO: exception
-		return Transactions.of(Base64.getDecoder().decode(bytes));
+	public Transaction unmap() throws Base64ConversionException {
+		return Transactions.of(Base64.fromBase64String(bytes));
 	}
 }

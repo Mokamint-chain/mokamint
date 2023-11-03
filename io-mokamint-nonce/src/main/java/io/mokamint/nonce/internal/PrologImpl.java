@@ -26,6 +26,7 @@ import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -152,9 +153,15 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 		this.chainId = chainId;
 		this.extra = extra.clone();
 		this.signatureForBlocks = signatureForBlocks;
-		this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyForSigningBlocksBase58));
-		this.signatureForDeadlines = signatureForDeadlines;
-		this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(Base58.decode(publicKeyForSigningDeadlinesBase58));
+
+		try {
+			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyForSigningBlocksBase58));
+			this.signatureForDeadlines = signatureForDeadlines;
+			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(Base58.decode(publicKeyForSigningDeadlinesBase58));
+		}
+		catch (Base58ConversionException e) {
+			throw new InvalidKeySpecException(e);
+		}
 
 		verify();
 

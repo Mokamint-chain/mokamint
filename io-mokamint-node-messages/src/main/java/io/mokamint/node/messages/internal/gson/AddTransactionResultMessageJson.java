@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -34,7 +35,7 @@ public abstract class AddTransactionResultMessageJson extends AbstractRpcMessage
 	}
 
 	@Override
-	public AddTransactionResultMessage unmap() {
+	public AddTransactionResultMessage unmap() throws Base64ConversionException {
 		return AddTransactionResultMessages.of(result.unmap(), getId());
 	}
 

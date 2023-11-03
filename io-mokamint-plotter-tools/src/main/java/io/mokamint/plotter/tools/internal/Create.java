@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.mokamint.nonce.Prologs;
@@ -123,7 +124,7 @@ public class Create extends AbstractCommand {
 		try {
 			return Base58.decode(base58);
 		}
-		catch (IllegalArgumentException e) {
+		catch (Base58ConversionException e) {
 			throw new CommandException("The string " + base58 + " is not in Base58 format!", e);
 		}
 	}

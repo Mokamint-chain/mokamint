@@ -18,9 +18,9 @@ package io.mokamint.node.internal;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Base64;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.Base64;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -69,7 +69,7 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 
 	@Override
 	public String toString() {
-		return Base64.getEncoder().encodeToString(bytes);
+		return Base64.toBase64String(bytes);
 	}
 
 	/**
