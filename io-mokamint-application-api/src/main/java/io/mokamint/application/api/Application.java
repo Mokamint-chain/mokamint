@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.application.api;
 
+import io.mokamint.node.api.Transaction;
+
 /**
  * An application for the Mokamint blockchain.
  */
@@ -30,4 +32,6 @@ public interface Application {
 	 * @return true if and only if the {@code extra} is valid according to this application
 	 */
 	boolean prologExtraIsValid(byte[] extra);
+
+	void checkTransaction(Transaction transaction);
 }

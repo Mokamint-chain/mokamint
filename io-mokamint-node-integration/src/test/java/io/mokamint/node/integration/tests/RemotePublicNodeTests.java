@@ -69,6 +69,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -1023,7 +1024,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works")
-	public void addTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
+	public void addTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, RejectedTransactionException {
 		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var transaction2 = new AtomicReference<Transaction>();
 
@@ -1044,6 +1045,31 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			remote.add(transaction1);
 			assertEquals(transaction1, transaction2.get());
+		}
+	}
+
+	@Test
+	@DisplayName("add(Transaction) works in case of RejectedTransactionException")
+	public void addTransactionWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+		var exceptionMessage = "exception message";
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAddTransaction(AddTransactionMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(RejectedTransactionException.class, () -> remote.add(transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 

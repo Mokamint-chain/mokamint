@@ -77,6 +77,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.TransactionInfo;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -523,7 +524,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
-	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, RejectedTransactionException {
 		var semaphore = new Semaphore(0);
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		

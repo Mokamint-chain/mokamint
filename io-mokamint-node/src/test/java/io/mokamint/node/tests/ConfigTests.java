@@ -28,6 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ConsensusConfigBuilders;
@@ -43,6 +44,7 @@ public class ConfigTests extends AbstractLoggedTests {
 			.setChainId("octopus")
 			.setSignatureForBlocks(SignatureAlgorithms.ed25519())
 			.setSignatureForDeadlines(SignatureAlgorithms.sha256dsa())
+			.setHashingForTransactions(HashingAlgorithms.shabal256())
 			.build();
 		String encoded = new ConsensusConfigBuilders.Encoder().encode(config1);
 		var config2 = new ConsensusConfigBuilders.Decoder().decode(encoded);
@@ -57,6 +59,7 @@ public class ConfigTests extends AbstractLoggedTests {
 				.setChainId("octopus")
 				.setSignatureForBlocks(SignatureAlgorithms.ed25519())
 				.setSignatureForDeadlines(SignatureAlgorithms.sha256dsa())
+				.setHashingForGenerations(HashingAlgorithms.identity32())
 				.build();
 		Files.writeString(path, config1.toToml(), StandardCharsets.UTF_8);
 		var config2 = ConsensusConfigBuilders.load(path).build();

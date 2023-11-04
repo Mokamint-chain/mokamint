@@ -50,6 +50,7 @@ import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
@@ -631,7 +632,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | ClosedNodeException | RejectedTransactionException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}

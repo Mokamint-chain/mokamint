@@ -13,6 +13,14 @@
     <version>parent</version>
   </parent>
 
+  <dependencies>
+	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+  </dependencies>
+
   <profiles>
     <profile>
       <id>release</id>

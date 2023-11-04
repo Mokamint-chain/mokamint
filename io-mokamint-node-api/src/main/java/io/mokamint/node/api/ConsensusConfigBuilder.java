@@ -62,6 +62,14 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	B setHashingForBlocks(HashingAlgorithm hashingForBlocks);
 
 	/**
+	 * Sets the hashing algorithm for identifying the transactions in the Mokamint blockchain.
+	 * 
+	 * @param hashingForTransactions the hashing algorithm
+	 * @return this builder
+	 */
+	B setHashingForTransactions(HashingAlgorithm hashingForTransactions);
+
+	/**
 	 * Sets the signature algorithm that the nodes use to sign the blocks.
 	 * 
 	 * @param signatureForBlocks the signature algorithm

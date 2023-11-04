@@ -40,6 +40,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
@@ -364,6 +365,10 @@ public class Start extends AbstractCommand {
 		@Override
 		public boolean prologExtraIsValid(byte[] extra) {
 			return true;
+		}
+
+		@Override
+		public void checkTransaction(Transaction transaction) {
 		}
 	}
 }

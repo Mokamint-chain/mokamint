@@ -32,6 +32,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	private final String hashingForDeadlines;
 	private final String hashingForGenerations;
 	private final String hashingForBlocks;
+	private final String hashingForTransactions;
 	private final String signatureForBlocks;
 	private final String signatureForDeadlines;
 	private final long targetBlockCreationTime;
@@ -42,6 +43,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 		this.hashingForDeadlines = config.getHashingForDeadlines().getName();
 		this.hashingForGenerations = config.getHashingForGenerations().getName();
 		this.hashingForBlocks = config.getHashingForBlocks().getName();
+		this.hashingForTransactions = config.getHashingForTransactions().getName();
 		this.signatureForBlocks = config.getSignatureForBlocks().getName();
 		this.signatureForDeadlines = config.getSignatureForDeadlines().getName();
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
@@ -55,6 +57,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 			.setHashingForDeadlines(HashingAlgorithms.of(hashingForDeadlines))
 			.setHashingForGenerations(HashingAlgorithms.of(hashingForGenerations))
 			.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks))
+			.setHashingForTransactions(HashingAlgorithms.of(hashingForTransactions))
 			.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks))
 			.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
 			.setTargetBlockCreationTime(targetBlockCreationTime)

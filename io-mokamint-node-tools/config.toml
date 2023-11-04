@@ -16,15 +16,21 @@ hashing_for_generations = "sha256"
 # the hashing algorithm used for the blocks of the blockchain
 hashing_for_blocks = "sha256"
 
-# the signature algorithm used for signing the blocks
+# the hashing algorithm used for the transactions of the blockchain
+hashing_for_transactions = "sha256"
+
+# the signature algorithm that nodes use to sign the blocks
 signature_for_blocks = "ed25519"
+
+# the signature algorithm that miners use to sign the deadlines
+signature_for_deadlines = "ed25519"
 
 # the initial acceleration of the blockchain, at the genesis block;
 # this might be increased if the network starts with very little mining power
 initial_acceleration = 100000000000
 
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
-target_block_creation_time = 2000
+target_block_creation_time = 4000
 
 ## Local parameters
 
@@ -32,7 +38,7 @@ target_block_creation_time = 2000
 dir = "mokamint-chain"
 
 # maximal milliseconds to wait between deadline request to the miners and first deadline reception
-deadline_wait_timeout = 1000
+deadline_wait_timeout = 20000
 
 # the initial points of a miner, freshly connected to a node
 miner_initial_points = 1000
@@ -62,7 +68,7 @@ peer_max_time_difference = 15000
 peer_punishment_for_unreachable = 1
 
 # the time (in milliseconds) for communications to the peers
-peer_timeout = 30000
+peer_timeout = 10000
 
 # the time, in milliseconds, between successive pings to a peer
 peer_ping_interval = 120000

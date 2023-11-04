@@ -66,6 +66,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final HashingAlgorithm hashingForBlocks;
 
 	/**
+	 * The hashing algorithm used for the identifying the transactions of
+	 * the Mokamint blockchain. It defaults to {@code sha256}.
+	 */
+	public final HashingAlgorithm hashingForTransactions;
+
+	/**
 	 * The signature algorithm that nodes must use to sign the blocks.
 	 */
 	public final SignatureAlgorithm signatureForBlocks;
@@ -102,6 +108,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
 		this.hashingForBlocks = builder.hashingForBlocks;
+		this.hashingForTransactions = builder.hashingForTransactions;
 		this.signatureForBlocks = builder.signatureForBlocks;
 		this.signatureForDeadlines = builder.signatureForDeadlines;
 		this.initialAcceleration = builder.initialAcceleration;
@@ -152,6 +159,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
 		sb.append("hashing_for_blocks = \"" + hashingForBlocks + "\"\n");
 		sb.append("\n");
+		sb.append("# the hashing algorithm used for the transactions of the blockchain\n");
+		sb.append("hashing_for_transactions = \"" + hashingForTransactions + "\"\n");
+		sb.append("\n");
 		sb.append("# the signature algorithm that nodes use to sign the blocks\n");
 		sb.append("signature_for_blocks = \"" + signatureForBlocks + "\"\n");
 		sb.append("\n");
@@ -189,6 +199,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
+	public HashingAlgorithm getHashingForTransactions() {
+		return hashingForTransactions;
+	}
+
+	@Override
 	public SignatureAlgorithm getSignatureForBlocks() {
 		return signatureForBlocks;
 	}
@@ -217,6 +232,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private HashingAlgorithm hashingForDeadlines;
 		private HashingAlgorithm hashingForGenerations;
 		private HashingAlgorithm hashingForBlocks;
+		private HashingAlgorithm hashingForTransactions;
 		private SignatureAlgorithm signatureForBlocks;
 		private SignatureAlgorithm signatureForDeadlines;
 		private long initialAcceleration = 100000000000L;
@@ -226,6 +242,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			setHashingForDeadlines(HashingAlgorithms.shabal256());
 			setHashingForGenerations(HashingAlgorithms.sha256());
 			setHashingForBlocks(HashingAlgorithms.sha256());
+			setHashingForTransactions(HashingAlgorithms.sha256());
 			setSignatureForBlocks(SignatureAlgorithms.ed25519());
 			setSignatureForDeadlines(SignatureAlgorithms.ed25519());
 		}
@@ -238,6 +255,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		 * @throws NoSuchAlgorithmException if some hashing algorithm cannot be found
 		 */
 		protected ConsensusConfigBuilderImpl(Toml toml) throws NoSuchAlgorithmException {
+			this();
+
 			var chainId = toml.getString("chain_id");
 			if (chainId != null)
 				setChainId(chainId);
@@ -245,32 +264,26 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			var hashingForDeadlines = toml.getString("hashing_for_deadlines");
 			if (hashingForDeadlines != null)
 				setHashingForDeadlines(hashingForDeadlines);
-			else
-				setHashingForDeadlines(HashingAlgorithms.shabal256());
 		
 			var hashingForGenerations = toml.getString("hashing_for_generations");
 			if (hashingForGenerations != null)
 				setHashingForGenerations(hashingForGenerations);
-			else
-				setHashingForGenerations(HashingAlgorithms.sha256());
 		
 			var hashingForBlocks = toml.getString("hashing_for_blocks");
 			if (hashingForBlocks != null)
 				setHashingForBlocks(hashingForBlocks);
-			else
-				setHashingForBlocks(HashingAlgorithms.sha256());
+
+			var hashingForTransactions = toml.getString("hashing_for_transactions");
+			if (hashingForTransactions != null)
+				setHashingForTransactions(hashingForTransactions);
 
 			var signatureForBlocks = toml.getString("signature_for_blocks");
 			if (signatureForBlocks != null)
 				setSignatureForBlocks(signatureForBlocks);
-			else
-				setSignatureForBlocks(SignatureAlgorithms.ed25519());
 
 			var signatureForDeadlines = toml.getString("signature_for_deadlines");
 			if (signatureForDeadlines != null)
 				setSignatureForDeadlines(signatureForDeadlines);
-			else
-				setSignatureForDeadlines(SignatureAlgorithms.ed25519());
 
 			var initialAcceleration = toml.getLong("initial_acceleration");
 			if (initialAcceleration != null)
@@ -291,6 +304,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForDeadlines = config.getHashingForDeadlines();
 			this.hashingForGenerations = config.getHashingForGenerations();
 			this.hashingForBlocks = config.getHashingForBlocks();
+			this.hashingForTransactions = config.getHashingForTransactions();
 			this.signatureForBlocks = config.getSignatureForBlocks();
 			this.signatureForDeadlines = config.getSignatureForDeadlines();
 			this.initialAcceleration = config.getInitialAcceleration();
@@ -316,6 +330,10 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks);
 		}
 
+		private void setHashingForTransactions(String hashingForTransactions) throws NoSuchAlgorithmException {
+			this.hashingForTransactions = HashingAlgorithms.of(hashingForTransactions);
+		}
+
 		private void setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
 			this.signatureForBlocks = SignatureAlgorithms.of(signatureForBlocks);
 		}
@@ -339,6 +357,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		@Override
 		public B setHashingForBlocks(HashingAlgorithm hashingForBlocks) {
 			this.hashingForBlocks = hashingForBlocks;
+			return getThis();
+		}
+
+		@Override
+		public B setHashingForTransactions(HashingAlgorithm hashingForTransactions) {
+			this.hashingForTransactions = hashingForTransactions;
 			return getThis();
 		}
 

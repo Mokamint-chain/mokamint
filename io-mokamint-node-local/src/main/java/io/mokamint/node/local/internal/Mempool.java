@@ -19,18 +19,19 @@ limitations under the License.
  */
 package io.mokamint.node.local.internal;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionInfo;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
@@ -70,26 +71,26 @@ public class Mempool {
 	public Mempool(LocalNodeImpl node) {
 		this.node = node;
 		this.app = node.getApplication();
-
-		try {
-			this.hasher = HashingAlgorithms.sha256().getHasher(Transaction::toByteArray);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
+		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 	}
 
 	/**
 	 * Checks the validity of the given transaction and, if valid, adds it to this mempool.
 	 * 
 	 * @param transaction the transaction to add
+	 * @return information about the transaction that has been added
 	 */
-	public void add(Transaction transaction) {
+	public TransactionInfo add(Transaction transaction) throws RejectedTransactionException {
+		app.checkTransaction(transaction);
 		var entry = new TransactionEntry(transaction, 0L, hasher);
 
 		synchronized (mempool) {
-			if (mempool.size() < MAX_MEMPOOL_SIZE)
+			if (mempool.size() < MAX_MEMPOOL_SIZE) { // TODO
 				mempool.add(entry);
+				return entry.getInfo();
+			}
+			else
+				throw new RejectedTransactionException("the mempool is full: all " + MAX_MEMPOOL_SIZE + " slots are used");
 		}
 	}
 
@@ -106,6 +107,10 @@ public class Mempool {
 			this.transaction = transaction;
 			this.priority = priority;
 			this.hash = hasher.hash(transaction);
+		}
+
+		private TransactionInfo getInfo() {
+			return TransactionInfos.of(hash, priority);
 		}
 
 		@Override

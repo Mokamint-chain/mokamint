@@ -141,11 +141,12 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param transaction the transaction
 	 * @return information about the transaction that has been added to the mempool
+	 * @throws RejectedTransactionException if {@code transaction} has been rejected, for instance because it is invalid
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	TransactionInfo add(Transaction transaction) throws TimeoutException, InterruptedException, ClosedNodeException;
+	TransactionInfo add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the transaction with the given hash, if it has been already
