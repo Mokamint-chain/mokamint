@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.Base64;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -65,7 +65,7 @@ public class TransactionInfoImpl extends AbstractMarshallable implements Transac
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof TransactionInfo ti && priority == ti.getPriority() && Arrays.equals(hash, ti.getHash());
+		return other instanceof TransactionInfo ti && Arrays.equals(hash, ti.getHash());
 	}
 
 	@Override
@@ -75,7 +75,7 @@ public class TransactionInfoImpl extends AbstractMarshallable implements Transac
 
 	@Override
 	public String toString() {
-		return Base64.toBase64String(hash) + " with priority " + priority;
+		return Hex.toHexString(hash) + " with priority " + priority;
 	}
 
 	@Override

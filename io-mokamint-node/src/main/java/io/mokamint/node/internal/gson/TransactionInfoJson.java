@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import io.hotmoka.crypto.Base64;
-import io.hotmoka.crypto.Base64ConversionException;
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.api.TransactionInfo;
@@ -28,7 +28,7 @@ import io.mokamint.node.api.TransactionInfo;
 public abstract class TransactionInfoJson implements JsonRepresentation<TransactionInfo> {
 
 	/**
-	 * The Base64-encoded hash of the transaction.
+	 * The hash of the transaction, in hexadecimal form.
 	 */
 	private final String hash;
 
@@ -38,12 +38,12 @@ public abstract class TransactionInfoJson implements JsonRepresentation<Transact
 	private final long priority;
 
 	protected TransactionInfoJson(TransactionInfo info) {
-		this.hash = Base64.toBase64String(info.getHash());
+		this.hash = Hex.toHexString(info.getHash());
 		this.priority = info.getPriority();
 	}
 
 	@Override
-	public TransactionInfo unmap() throws Base64ConversionException {
-		return TransactionInfos.of(Base64.fromBase64String(hash), priority);
+	public TransactionInfo unmap() throws HexConversionException {
+		return TransactionInfos.of(Hex.fromHexString(hash), priority);
 	}
 }

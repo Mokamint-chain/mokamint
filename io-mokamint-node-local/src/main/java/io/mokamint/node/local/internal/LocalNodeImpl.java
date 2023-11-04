@@ -55,6 +55,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
@@ -511,6 +512,18 @@ public class LocalNodeImpl implements LocalNode {
 
 		try {
 			return mempool.add(transaction);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	@Override
+	public MempoolInfo getMempoolInfo() throws ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			return mempool.getInfo();
 		}
 		finally {
 			closureLock.afterCall();

@@ -28,7 +28,9 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionInfo;
@@ -73,6 +75,9 @@ public class Mempool {
 	 * 
 	 * @param transaction the transaction to add
 	 * @return information about the transaction that has been added
+	 * @throws RejectedTransactionException if the transaction has been rejected; this happens,
+	 *                                      for instance, if the application considers the
+	 *                                      transaction as invalid or if its priority cannot be computed
 	 */
 	public TransactionInfo add(Transaction transaction) throws RejectedTransactionException {
 		byte[] hash = hasher.hash(transaction);
@@ -92,12 +97,24 @@ public class Mempool {
 
 		synchronized (mempool) {
 			if (mempool.size() < MAX_MEMPOOL_SIZE) { // TODO
-				mempool.add(entry);
+				if (!mempool.add(entry))
+					throw new RejectedTransactionException("Repeated transaction " + Hex.toHexString(hash));
+
 				return entry.getInfo();
 			}
 			else
 				throw new RejectedTransactionException("Mempool overflow: all its " + MAX_MEMPOOL_SIZE + " slots are full");
 		}
+	}
+
+	public MempoolInfo getInfo() {
+		long size;
+		
+		synchronized (mempool) {
+			size = mempool.size();
+		}
+
+		return MempoolInfos.of(size);
 	}
 
 	/**

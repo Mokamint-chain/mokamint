@@ -57,6 +57,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -72,6 +73,7 @@ import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
@@ -79,22 +81,23 @@ import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.GetChainPortionResultMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetMempoolInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
-import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
 import io.mokamint.node.messages.api.GetChainPortionMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
+import io.mokamint.node.messages.api.GetMempoolInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
-import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -1018,6 +1021,30 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var info2 = remote.getInfo();
+			assertEquals(info1, info2);
+		}
+	}
+
+	@Test
+	@DisplayName("getMempoolInfo() works")
+	public void getMempoolInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+		var info1 = MempoolInfos.of(17L);
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetMempoolInfo(GetMempoolInfoMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetMempoolInfoResultMessages.of(info1, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var info2 = remote.getMempoolInfo();
 			assertEquals(info1, info2);
 		}
 	}

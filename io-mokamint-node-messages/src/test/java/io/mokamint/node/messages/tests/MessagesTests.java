@@ -44,6 +44,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -71,6 +72,8 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetMempoolInfoMessages;
+import io.mokamint.node.messages.GetMempoolInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
@@ -283,7 +286,36 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getConfigResult messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("getInfo result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetInfoResult() throws EncodeException, DecodeException {
+		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
+		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
+		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);
+		assertEquals(getInfoResultMessage1, getInfoResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getMempoolInfo messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetMempoolInfo() throws EncodeException, DecodeException {
+		var getMempoolInfoMessage1 = GetMempoolInfoMessages.of("id");
+		String encoded = new GetMempoolInfoMessages.Encoder().encode(getMempoolInfoMessage1);
+		var getMempoolInfoMessage2 = new GetMempoolInfoMessages.Decoder().decode(encoded);
+		assertEquals(getMempoolInfoMessage1, getMempoolInfoMessage2);
+	}
+
+	@Test
+	@DisplayName("getMempoolInfo result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetMempoolInfoResult() throws EncodeException, DecodeException {
+		var info = MempoolInfos.of(1317L);
+		var getMempoolInfoResultMessage1 = GetMempoolInfoResultMessages.of(info, "id");
+		String encoded = new GetMempoolInfoResultMessages.Encoder().encode(getMempoolInfoResultMessage1);
+		var getMempoolInfoResultMessage2 = new GetMempoolInfoResultMessages.Decoder().decode(encoded);
+		assertEquals(getMempoolInfoResultMessage1, getMempoolInfoResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getConfig result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetConfigResult() throws EncodeException, DecodeException, NoSuchAlgorithmException {
 		var config = ConsensusConfigBuilders.defaults().build();
 		var getConfigResultMessage1 = GetConfigResultMessages.of(config, "id");
@@ -311,23 +343,13 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getChainInfoResult messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("getChainInfo result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetChainInfoResult() throws EncodeException, DecodeException {
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 3, 7, 8, 11 }));
 		var getChainInfoResultMessage1 = GetChainInfoResultMessages.of(info, "id");
 		String encoded = new GetChainInfoResultMessages.Encoder().encode(getChainInfoResultMessage1);
 		var getChainInfoResultMessage2 = new GetChainInfoResultMessages.Decoder().decode(encoded);
 		assertEquals(getChainInfoResultMessage1, getChainInfoResultMessage2);
-	}
-
-	@Test
-	@DisplayName("getInfoResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetInfoResult() throws EncodeException, DecodeException {
-		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
-		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
-		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
-		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);
-		assertEquals(getInfoResultMessage1, getInfoResultMessage2);
 	}
 
 	@Test

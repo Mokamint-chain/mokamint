@@ -23,6 +23,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_INFO_ENDP
 import static io.mokamint.node.service.api.PublicNodeService.GET_CHAIN_PORTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_CONFIG_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_INFO_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_MEMPOOL_INFO_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
@@ -51,6 +52,7 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
@@ -77,6 +79,8 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetMempoolInfoMessages;
+import io.mokamint.node.messages.GetMempoolInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
@@ -94,6 +98,7 @@ import io.mokamint.node.messages.api.GetChainInfoResultMessage;
 import io.mokamint.node.messages.api.GetChainPortionResultMessage;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
+import io.mokamint.node.messages.api.GetMempoolInfoResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
@@ -163,6 +168,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
 		addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
+		addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
 		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
 		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
 
@@ -276,6 +282,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetChainResult(gcrm.get());
 		else if (message instanceof AddTransactionResultMessage ptrm)
 			onAddTransactionResult(ptrm.get());
+		else if (message instanceof GetMempoolInfoResultMessage gmirm)
+			onGetMempoolInfoResult(gmirm.get());
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
@@ -612,6 +620,35 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			processStandardExceptions(message);
 	}
 
+	@Override
+	public MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendGetMempoolInfo(id);
+		try {
+			return queues.waitForResult(id, this::processGetMempoolInfoSuccess, this::processStandardExceptions);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendGetMempoolInfo(String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_MEMPOOL_INFO_ENDPOINT), GetMempoolInfoMessages.of(id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private MempoolInfo processGetMempoolInfoSuccess(RpcMessage message) {
+		return message instanceof GetMempoolInfoResultMessage gmirm ? gmirm.get() : null;
+	}
+
 	/**
 	 * Hooks that can be overridden in subclasses.
 	 */
@@ -625,6 +662,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetChainResult(ChainPortion chain) {}
 	protected void onAddTransactionResult(TransactionInfo info) {}
 	protected void onGetInfoResult(NodeInfo info) {}
+	protected void onGetMempoolInfoResult(MempoolInfo info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhisperPeers(Stream<Peer> peers) {}
 	protected void onWhisperBlock(Block block) {}
@@ -706,6 +744,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, AddTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddTransactionMessages.Encoder.class);
+		}
+	}
+
+	private class GetMempoolInfoEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetMempoolInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolInfoMessages.Encoder.class);
 		}
 	}
 

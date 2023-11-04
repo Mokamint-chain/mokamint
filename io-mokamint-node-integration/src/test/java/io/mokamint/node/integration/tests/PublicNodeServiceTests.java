@@ -56,6 +56,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -71,6 +72,7 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.NodeInfo;
@@ -549,6 +551,38 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.addTransaction();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getMempoolInfo() request reaches the service, it sends back its mempool information")
+	public void serviceGetMempoolInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+		var semaphore = new Semaphore(0);
+		var info = MempoolInfos.of(17L);
+
+		class MyTestClient extends RemotePublicNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+
+			@Override
+			protected void onGetMempoolInfoResult(MempoolInfo received) {
+				if (info.equals(received))
+					semaphore.release();
+			}
+
+			private void sendGetMempoolInfo() throws ClosedNodeException {
+				sendGetMempoolInfo("id");
+			}
+		}
+
+		var node = mkNode();
+		when(node.getMempoolInfo()).thenReturn(info);
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetMempoolInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

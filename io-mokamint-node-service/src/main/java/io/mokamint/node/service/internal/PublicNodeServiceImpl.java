@@ -54,6 +54,8 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.messages.AddTransactionMessages;
+import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
@@ -67,27 +69,28 @@ import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
+import io.mokamint.node.messages.GetMempoolInfoMessages;
+import io.mokamint.node.messages.GetMempoolInfoResultMessages;
 import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
-import io.mokamint.node.messages.AddTransactionMessages;
-import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperedMemories;
+import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
 import io.mokamint.node.messages.api.GetChainPortionMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
+import io.mokamint.node.messages.api.GetMempoolInfoMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
-import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -208,7 +211,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
-			AddTransactionEndpoint.config(this), WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
+			AddTransactionEndpoint.config(this), GetMempoolInfoEndpoint.config(this),
+			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
@@ -651,6 +655,35 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, AddTransactionEndpoint.class, ADD_TRANSACTION_ENDPOINT,
 					AddTransactionMessages.Decoder.class, AddTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetMempoolInfo(GetMempoolInfoMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_MEMPOOL_INFO_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, GetMempoolInfoResultMessages.of(node.getMempoolInfo(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class GetMempoolInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetMempoolInfoMessage message) -> getServer().onGetMempoolInfo(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetMempoolInfoEndpoint.class, GET_MEMPOOL_INFO_ENDPOINT,
+					GetMempoolInfoMessages.Decoder.class, GetMempoolInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

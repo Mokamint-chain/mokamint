@@ -22,6 +22,7 @@ module io.mokamint.node.tools {
 	
 	// needed to inject CLI options
     opens io.mokamint.node.tools.internal to info.picocli;
+    opens io.mokamint.node.tools.internal.mempool to info.picocli;
     opens io.mokamint.node.tools.internal.miners to info.picocli;
     opens io.mokamint.node.tools.internal.peers to info.picocli;
     opens io.mokamint.node.tools.internal.config to info.picocli;

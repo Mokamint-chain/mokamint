@@ -181,7 +181,7 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	//MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the portion of the node's mempool containing the entries starting at number {@code start}
