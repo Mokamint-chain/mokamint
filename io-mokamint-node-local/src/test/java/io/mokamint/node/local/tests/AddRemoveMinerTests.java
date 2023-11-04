@@ -92,7 +92,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
-		when(app.prologExtraIsValid(any())).thenReturn(true);
+		when(app.checkPrologExtra(any())).thenReturn(true);
 		var id25519 = SignatureAlgorithms.ed25519();
 		node1Keys = id25519.getKeyPair();
 		node2Keys = id25519.getKeyPair();

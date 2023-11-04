@@ -41,11 +41,6 @@ import io.mokamint.node.api.TransactionInfo;
 public class Mempool {
 
 	/**
-	 * The node having this mempool.
-	 */
-	private final LocalNodeImpl node;
-
-	/**
 	 * The application running in the node.
 	 */
 	private final Application app;
@@ -69,7 +64,6 @@ public class Mempool {
 	 * @param node the node
 	 */
 	public Mempool(LocalNodeImpl node) {
-		this.node = node;
 		this.app = node.getApplication();
 		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 	}
@@ -81,8 +75,20 @@ public class Mempool {
 	 * @return information about the transaction that has been added
 	 */
 	public TransactionInfo add(Transaction transaction) throws RejectedTransactionException {
-		app.checkTransaction(transaction);
-		var entry = new TransactionEntry(transaction, 0L, hasher);
+		byte[] hash = hasher.hash(transaction);
+		if (!app.checkTransaction(transaction))
+			throw new RejectedTransactionException("Invalid transaction " + Hex.toHexString(hash));
+
+		long priority;
+
+		try {
+			priority = app.getPriority(transaction);
+		}
+		catch (RejectedTransactionException e) {
+			throw new RejectedTransactionException("Cannot compute the priority of transaction " + Hex.toHexString(hash), e);
+		}
+
+		var entry = new TransactionEntry(transaction, priority, hash);
 
 		synchronized (mempool) {
 			if (mempool.size() < MAX_MEMPOOL_SIZE) { // TODO
@@ -90,7 +96,7 @@ public class Mempool {
 				return entry.getInfo();
 			}
 			else
-				throw new RejectedTransactionException("the mempool is full: all " + MAX_MEMPOOL_SIZE + " slots are used");
+				throw new RejectedTransactionException("Mempool overflow: all its " + MAX_MEMPOOL_SIZE + " slots are full");
 		}
 	}
 
@@ -103,10 +109,10 @@ public class Mempool {
 		private final long priority;
 		private final byte[] hash;
 
-		private TransactionEntry(Transaction transaction, long priority, Hasher<Transaction> hasher) {
+		private TransactionEntry(Transaction transaction, long priority, byte[] hash) {
 			this.transaction = transaction;
 			this.priority = priority;
-			this.hash = hasher.hash(transaction);
+			this.hash = hash;
 		}
 
 		private TransactionInfo getInfo() {

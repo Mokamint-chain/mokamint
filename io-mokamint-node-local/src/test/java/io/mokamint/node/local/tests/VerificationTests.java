@@ -111,7 +111,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		long length = 50L;
 		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
 		application = mock(Application.class);
-		when(application.prologExtraIsValid(any())).thenReturn(true);
+		when(application.checkPrologExtra(any())).thenReturn(true);
 	}
 
 	@AfterAll
@@ -457,7 +457,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has a wrong deadline's prolog extra, verification rejects it")
 	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException {
 		var application = mock(Application.class);
-		when(application.prologExtraIsValid(any())).thenReturn(false);
+		when(application.checkPrologExtra(any())).thenReturn(false);
 
 		try (var node = new TestNode(dir, application)) {
 			var blockchain = node.getBlockchain();

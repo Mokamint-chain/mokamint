@@ -78,7 +78,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
-		when(app.prologExtraIsValid(any())).thenReturn(true);
+		when(app.checkPrologExtra(any())).thenReturn(true);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 	}
 

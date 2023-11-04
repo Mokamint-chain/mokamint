@@ -75,7 +75,7 @@ public class TransactionInfoImpl extends AbstractMarshallable implements Transac
 
 	@Override
 	public String toString() {
-		return Base64.toBase64String(hash) + ", priority = " + priority;
+		return Base64.toBase64String(hash) + " with priority " + priority;
 	}
 
 	@Override

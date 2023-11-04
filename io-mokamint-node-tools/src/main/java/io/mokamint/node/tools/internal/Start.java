@@ -363,12 +363,18 @@ public class Start extends AbstractCommand {
 	private static class TestApplication implements Application {
 
 		@Override
-		public boolean prologExtraIsValid(byte[] extra) {
+		public boolean checkPrologExtra(byte[] extra) {
 			return true;
 		}
 
 		@Override
-		public void checkTransaction(Transaction transaction) {
+		public boolean checkTransaction(Transaction transaction) {
+			return true;
+		}
+
+		@Override
+		public long getPriority(Transaction transaction) {
+			return 0L;
 		}
 	}
 }

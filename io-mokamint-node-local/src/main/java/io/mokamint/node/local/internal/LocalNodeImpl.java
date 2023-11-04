@@ -610,7 +610,7 @@ public class LocalNodeImpl implements LocalNode {
 			throw new IllegalDeadlineException("Wrong blocks' signature algorithm in deadline");
 		else if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
 			throw new IllegalDeadlineException("Wrong deadlines' signature algorithm in deadline");
-		else if (!app.prologExtraIsValid(prolog.getExtra()))
+		else if (!app.checkPrologExtra(prolog.getExtra()))
 			throw new IllegalDeadlineException("Invalid extra data in deadline");
 	}
 

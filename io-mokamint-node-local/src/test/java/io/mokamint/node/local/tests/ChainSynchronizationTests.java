@@ -103,7 +103,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
-		when(app.prologExtraIsValid(any())).thenReturn(true);
+		when(app.checkPrologExtra(any())).thenReturn(true);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();

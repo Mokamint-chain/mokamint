@@ -150,7 +150,7 @@ public class BlockVerification {
 		if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
 			throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
 
-		if (!node.getApplication().prologExtraIsValid(prolog.getExtra()))
+		if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
 			throw new VerificationException("Invalid deadline prolog's extra");
 	}
 
