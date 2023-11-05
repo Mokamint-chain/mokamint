@@ -190,12 +190,12 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param start the number of the first entry that is returned
 	 * @param count how many entries (at most) must be reported
-	 * @return the portion with the entries, in order
+	 * @return the portion with the entries, in order of increasing priority
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	//MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node

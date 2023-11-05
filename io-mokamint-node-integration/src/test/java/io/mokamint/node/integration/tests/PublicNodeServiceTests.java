@@ -57,6 +57,7 @@ import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MempoolInfos;
+import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -73,6 +74,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolInfo;
+import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.NodeInfo;
@@ -505,7 +507,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onGetChainResult(ChainPortion received) {
+			protected void onGetChainPortionResult(ChainPortion received) {
 				if (chain.equals(received))
 					semaphore.release();
 			}
@@ -583,6 +585,41 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.sendGetMempoolInfo();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getMempoolPortion() request reaches the service, it sends back its mempool")
+	public void serviceGetMempoolPortionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+		var semaphore = new Semaphore(0);
+		var mempool = MempoolPortions.of(Stream.of(
+			TransactionInfos.of(new byte[] { 1, 2, 3, 4 }, 11L),
+			TransactionInfos.of(new byte[] { 13, 17, 19 }, 13L)
+		));
+
+		class MyTestClient extends RemotePublicNodeImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 1000);
+			}
+
+			@Override
+			protected void onGetMempoolPortionResult(MempoolPortion received) {
+				if (mempool.equals(received))
+					semaphore.release();
+			}
+
+			private void sendGetMempoolPortion() throws ClosedNodeException {
+				sendGetMempoolPortion(5, 10, "id");
+			}
+		}
+
+		var node = mkNode();
+		when(node.getMempoolPortion(5, 10)).thenReturn(mempool);
+
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetMempoolPortion();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

@@ -14,21 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.internal.gson;
 
-import io.mokamint.node.tools.internal.mempool.Add;
-import io.mokamint.node.tools.internal.mempool.Info;
-import io.mokamint.node.tools.internal.mempool.List;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.messages.GetMempoolPortionResultMessages;
+import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
 
-@Command(name = "mempool",
-	description = "Operate on the mempool of a node.",
-	subcommands = {
-		Add.class,
-		HelpCommand.class,
-		Info.class,
-		List.class
-	})
-public class Mempool {
+/**
+ * A decoder for {@link GetMempoolPortionResultMessage}.
+ */
+public class GetMempoolPortionResultMessageDecoder extends MappedDecoder<GetMempoolPortionResultMessage, GetMempoolPortionResultMessages.Json> {
+
+	public GetMempoolPortionResultMessageDecoder() {
+		super(GetMempoolPortionResultMessages.Json.class);
+	}
 }

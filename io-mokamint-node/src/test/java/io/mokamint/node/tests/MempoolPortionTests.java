@@ -24,29 +24,30 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.node.ChainPortions;
+import io.mokamint.node.MempoolPortions;
+import io.mokamint.node.TransactionInfos;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class ChainTests extends AbstractLoggedTests {
+public class MempoolPortionTests extends AbstractLoggedTests {
 
 	@Test
-	@DisplayName("chains with hashes are correctly encoded into Json and decoded from Json")
+	@DisplayName("mempool portions with hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksWithHashes() throws EncodeException, DecodeException {
-		var hash1 = new byte[] { 1, 2, 4, 100, 12 };
-		var hash2 = new byte[] { 13, 20, 4, 99, 12, 11 };
-		var chain1 = ChainPortions.of(Stream.of(hash1, hash2));
-		String encoded = new ChainPortions.Encoder().encode(chain1);
-		var chain2 = new ChainPortions.Decoder().decode(encoded);
-		assertEquals(chain1, chain2);
+		var info1 = TransactionInfos.of(new byte[] { 1, 2, 4, 100, 12 }, 13L);
+		var info2 = TransactionInfos.of(new byte[] { 13, 20, 4, 99, 12, 11 }, 17L);
+		var mempoolPortion1 = MempoolPortions.of(Stream.of(info1, info2));
+		String encoded = new MempoolPortions.Encoder().encode(mempoolPortion1);
+		var mempoolPortion2 = new MempoolPortions.Decoder().decode(encoded);
+		assertEquals(mempoolPortion1, mempoolPortion2);
 	}
 
 	@Test
-	@DisplayName("chains with no hashes are correctly encoded into Json and decoded from Json")
+	@DisplayName("mempool portions with no hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksWithoutHashes() throws EncodeException, DecodeException {
-		var chain1 = ChainPortions.of(Stream.empty());
-		String encoded = new ChainPortions.Encoder().encode(chain1);
-		var chain2 = new ChainPortions.Decoder().decode(encoded);
-		assertEquals(chain1, chain2);
+		var mempoolPortion1 = MempoolPortions.of(Stream.empty());
+		String encoded = new MempoolPortions.Encoder().encode(mempoolPortion1);
+		var mempoolPortion2 = new MempoolPortions.Decoder().decode(encoded);
+		assertEquals(mempoolPortion1, mempoolPortion2);
 	}
 }

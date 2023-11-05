@@ -58,6 +58,7 @@ import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MempoolInfos;
+import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -82,6 +83,7 @@ import io.mokamint.node.messages.GetChainPortionResultMessages;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetMempoolInfoResultMessages;
+import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
@@ -95,6 +97,7 @@ import io.mokamint.node.messages.api.GetChainPortionMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMempoolInfoMessage;
+import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
@@ -1097,6 +1100,33 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(RejectedTransactionException.class, () -> remote.add(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getMempoolPortion() works")
+	public void getMempoolPortionWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		var mempool1 = MempoolPortions.of(Stream.of(
+			TransactionInfos.of(new byte[] { 1, 2, 3, 4 }, 11L),
+			TransactionInfos.of(new byte[] { 17, 13, 19 }, 17L)
+		));
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetMempoolPortionResultMessages.of(mempool1, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var mempool2 = remote.getMempoolPortion(10, 20);
+			assertEquals(mempool1, mempool2);
 		}
 	}
 

@@ -918,7 +918,7 @@ public class BlocksDatabase implements AutoCloseable {
 
 	private Stream<byte[]> getChain(Transaction txn, long start, int count) throws DatabaseException {
 		try {
-			if (start < 0L || count <= 0L)
+			if (start < 0L || count <= 0)
 				return Stream.empty();
 
 			OptionalLong chainHeight = getHeightOfHead(txn);

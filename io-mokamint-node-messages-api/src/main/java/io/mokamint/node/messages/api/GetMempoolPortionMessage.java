@@ -14,18 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.node.messages.api;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.GetChainPortionResultMessages;
-import io.mokamint.node.messages.api.GetChainPortionResultMessage;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.PublicNode;
 
 /**
- * An encoder of {@code GetChainPortionResultMessage}.
+ * The network message corresponding to the {@link PublicNode#getMempoolPortion(int, int)} method.
  */
-public class GetChainPortionResultMessageEncoder extends MappedEncoder<GetChainPortionResultMessage, GetChainPortionResultMessages.Json> {
+public interface GetMempoolPortionMessage extends RpcMessage {
 
-	public GetChainPortionResultMessageEncoder() {
-		super(GetChainPortionResultMessages.Json::new);
-	}
+	/**
+	 * Yields the {@code start} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
+	int getStart();
+
+	/**
+	 * Yields the {@code count} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
+	int getCount();
+
+	@Override
+	boolean equals(Object obj);
 }

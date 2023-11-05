@@ -56,6 +56,7 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolInfo;
+import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
@@ -530,6 +531,18 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
+	@Override
+	public MempoolPortion getMempoolPortion(int start, int count) throws ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+
+		try {
+			return mempool.getPortion(start, count);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
 	/**
 	 * Yields the application running over this node.
 	 * 
@@ -895,7 +908,7 @@ public class LocalNodeImpl implements LocalNode {
 			onSubmit(task);
 			periodicExecutors.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
 		}
-		catch (RejectedExecutionException e) { // TODO: possibly throw this?
+		catch (RejectedExecutionException e) {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
 		}
 	}

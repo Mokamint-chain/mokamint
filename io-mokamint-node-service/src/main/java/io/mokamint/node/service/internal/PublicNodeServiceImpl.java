@@ -71,6 +71,8 @@ import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetMempoolInfoMessages;
 import io.mokamint.node.messages.GetMempoolInfoResultMessages;
+import io.mokamint.node.messages.GetMempoolPortionMessages;
+import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
@@ -88,6 +90,7 @@ import io.mokamint.node.messages.api.GetChainPortionMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.api.GetMempoolInfoMessage;
+import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
@@ -211,7 +214,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
-			AddTransactionEndpoint.config(this), GetMempoolInfoEndpoint.config(this),
+			AddTransactionEndpoint.config(this), GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this),
 			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
@@ -683,7 +686,36 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetMempoolInfoEndpoint.class, GET_MEMPOOL_INFO_ENDPOINT,
-					GetMempoolInfoMessages.Decoder.class, GetMempoolInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+				GetMempoolInfoMessages.Decoder.class, GetMempoolInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_MEMPOOL_PORTION_ENDPOINT + " request");
+	
+		try {
+			try {
+				sendObjectAsync(session, GetMempoolPortionResultMessages.of(node.getMempoolPortion(message.getStart(), message.getCount()), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	}
+
+	public static class GetMempoolPortionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetMempoolPortionMessage message) -> getServer().onGetMempoolPortion(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetMempoolPortionEndpoint.class, GET_MEMPOOL_PORTION_ENDPOINT,
+				GetMempoolPortionMessages.Decoder.class, GetMempoolPortionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

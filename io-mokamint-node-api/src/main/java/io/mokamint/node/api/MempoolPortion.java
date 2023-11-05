@@ -21,19 +21,19 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.Immutable;
 
 /**
- * Information about the hashes of a sorted, sequential portion of the
- * current best chain of a Mokamint node.
+ * Information about the transactions of a sorted, sequential portion of the
+ * mempool of a Mokamint node.
  */
 @Immutable
-public interface ChainPortion {
+public interface MempoolPortion {
 
 	/**
-	 * Yields the hashes of the sequential portion of the chain, in increasing
-	 * order of height.
+	 * Yields the information about the transactions of the sequential portion of the mempool, sorted
+	 * in increasing order of transaction priority.
 	 * 
-	 * @return the hashes
+	 * @return the transaction information objects
 	 */
-	Stream<byte[]> getHashes();
+	Stream<TransactionInfo> getTransactions();
 
 	@Override
 	boolean equals(Object other);

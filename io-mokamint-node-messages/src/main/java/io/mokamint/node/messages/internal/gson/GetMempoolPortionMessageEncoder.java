@@ -14,21 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.internal.gson;
 
-import io.mokamint.node.tools.internal.mempool.Add;
-import io.mokamint.node.tools.internal.mempool.Info;
-import io.mokamint.node.tools.internal.mempool.List;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import io.hotmoka.websockets.beans.BaseEncoder;
+import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 
-@Command(name = "mempool",
-	description = "Operate on the mempool of a node.",
-	subcommands = {
-		Add.class,
-		HelpCommand.class,
-		Info.class,
-		List.class
-	})
-public class Mempool {
+/**
+ * An encoder of {@link GetMempoolPortionMessage}.
+ */
+public class GetMempoolPortionMessageEncoder extends BaseEncoder<GetMempoolPortionMessage> {
+
+	/**
+	 * Creates the encoder.
+	 */
+	public GetMempoolPortionMessageEncoder() {
+	}
 }

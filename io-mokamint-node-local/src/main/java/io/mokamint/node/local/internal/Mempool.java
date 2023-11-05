@@ -19,9 +19,13 @@ limitations under the License.
  */
 package io.mokamint.node.local.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
@@ -29,8 +33,10 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.MempoolInfos;
+import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.api.MempoolInfo;
+import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionInfo;
@@ -57,6 +63,12 @@ public class Mempool {
 	 */
 	@GuardedBy("itself")
 	private final SortedSet<TransactionEntry> mempool = new TreeSet<>();
+
+	/**
+	 * The container of the transactions inside this mempool, as a list.
+	 */
+	@GuardedBy("this.mempool")
+	private List<TransactionEntry> mempoolAsList;
 
 	private final static long MAX_MEMPOOL_SIZE = 100_000L;
 
@@ -100,13 +112,20 @@ public class Mempool {
 				if (!mempool.add(entry))
 					throw new RejectedTransactionException("Repeated transaction " + Hex.toHexString(hash));
 
-				return entry.getInfo();
+				mempoolAsList = null; // invalidation
 			}
 			else
 				throw new RejectedTransactionException("Mempool overflow: all its " + MAX_MEMPOOL_SIZE + " slots are full");
 		}
+
+		return entry.getInfo();
 	}
 
+	/**
+	 * Yields information about this mempool.
+	 * 
+	 * @return the information
+	 */
 	public MempoolInfo getInfo() {
 		long size;
 		
@@ -115,6 +134,36 @@ public class Mempool {
 		}
 
 		return MempoolInfos.of(size);
+	}
+
+	/**
+	 * Yields a portion of this mempool.
+	 * 
+	 * @param start
+	 * @param count
+	 * @return
+	 */
+	public MempoolPortion getPortion(int start, int count) {
+		if (start < 0L || count <= 0)
+			return MempoolPortions.of(Stream.empty());
+
+		List<TransactionEntry> entries;
+
+		synchronized (mempool) {
+			if (start >= mempool.size())
+				return MempoolPortions.of(Stream.empty());
+
+			if (mempoolAsList == null)
+				mempoolAsList = new ArrayList<>(mempool);
+	
+			entries = mempoolAsList;
+		}
+
+		Stream<TransactionInfo> infos = IntStream.range(start, Math.min(start + count, entries.size()))
+			.mapToObj(entries::get)
+			.map(TransactionEntry::getInfo);
+
+		return MempoolPortions.of(infos);
 	}
 
 	/**

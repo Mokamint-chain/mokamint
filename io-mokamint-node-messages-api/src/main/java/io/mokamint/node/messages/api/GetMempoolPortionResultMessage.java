@@ -14,21 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.tools.internal.mempool.Add;
-import io.mokamint.node.tools.internal.mempool.Info;
-import io.mokamint.node.tools.internal.mempool.List;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import io.mokamint.node.api.MempoolPortion;
+import io.mokamint.node.api.PublicNode;
 
-@Command(name = "mempool",
-	description = "Operate on the mempool of a node.",
-	subcommands = {
-		Add.class,
-		HelpCommand.class,
-		Info.class,
-		List.class
-	})
-public class Mempool {
+/**
+ * The network message corresponding to the result of the {@link PublicNode#getMempoolPortion(int, int)} method.
+ */
+public interface GetMempoolPortionResultMessage extends ResultMessage<MempoolPortion> {
 }

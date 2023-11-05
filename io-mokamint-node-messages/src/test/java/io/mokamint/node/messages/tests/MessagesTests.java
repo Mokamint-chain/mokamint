@@ -45,6 +45,7 @@ import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.MempoolInfos;
+import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -74,6 +75,8 @@ import io.mokamint.node.messages.GetInfoMessages;
 import io.mokamint.node.messages.GetInfoResultMessages;
 import io.mokamint.node.messages.GetMempoolInfoMessages;
 import io.mokamint.node.messages.GetMempoolInfoResultMessages;
+import io.mokamint.node.messages.GetMempoolPortionMessages;
+import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosMessages;
@@ -199,6 +202,37 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@DisplayName("getChainPortion result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetChainPortionResult() throws EncodeException, DecodeException {
+		var chain = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3 }, new byte[] { 20, 50, 70, 88 }));
+		var getChainPortionResultMessage1 = GetChainPortionResultMessages.of(chain, "id");
+		String encoded = new GetChainPortionResultMessages.Encoder().encode(getChainPortionResultMessage1);
+		var getChainPortionResultMessage2 = new GetChainPortionResultMessages.Decoder().decode(encoded);
+		assertEquals(getChainPortionResultMessage1, getChainPortionResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getMempoolPortion messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetMempoolPortion() throws EncodeException, DecodeException {
+		var getMempoolPortionMessage1 = GetMempoolPortionMessages.of(13, 20, "id");
+		String encoded = new GetMempoolPortionMessages.Encoder().encode(getMempoolPortionMessage1);
+		var getMempoolPortionMessage2 = new GetMempoolPortionMessages.Decoder().decode(encoded);
+		assertEquals(getMempoolPortionMessage1, getMempoolPortionMessage2);
+	}
+
+	@Test
+	@DisplayName("getMempoolPortion result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetMempoolPortionResult() throws EncodeException, DecodeException {
+		var info1 = TransactionInfos.of(new byte[] { 1, 2, 3 }, 13L);
+		var info2 = TransactionInfos.of(new byte[] { 20, 50, 70, 88 }, 17L);
+		var mempool = MempoolPortions.of(Stream.of(info1, info2));
+		var getMempoolPortionResultMessage1 = GetMempoolPortionResultMessages.of(mempool, "id");
+		String encoded = new GetMempoolPortionResultMessages.Encoder().encode(getMempoolPortionResultMessage1);
+		var getMempoolPortionResultMessage2 = new GetMempoolPortionResultMessages.Decoder().decode(encoded);
+		assertEquals(getMempoolPortionResultMessage1, getMempoolPortionResultMessage2);
+	}
+
+	@Test
 	@DisplayName("getPeerInfos messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetPeerInfos() throws EncodeException, DecodeException {
 		var getPeerInfosMessage1 = GetPeerInfosMessages.of("id");
@@ -255,16 +289,6 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new GetTaskInfosResultMessages.Encoder().encode(getTaskInfosResultMessage1);
 		var getTaskInfosResultMessage2 = new GetTaskInfosResultMessages.Decoder().decode(encoded);
 		assertEquals(getTaskInfosResultMessage1, getTaskInfosResultMessage2);
-	}
-
-	@Test
-	@DisplayName("getChainResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetChainResult() throws EncodeException, DecodeException {
-		var chain = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3 }, new byte[] { 20, 50, 70, 88 }));
-		var getChainResultMessage1 = GetChainPortionResultMessages.of(chain, "id");
-		String encoded = new GetChainPortionResultMessages.Encoder().encode(getChainResultMessage1);
-		var getChainResultMessage2 = new GetChainPortionResultMessages.Decoder().decode(encoded);
-		assertEquals(getChainResultMessage1, getChainResultMessage2);
 	}
 
 	@Test

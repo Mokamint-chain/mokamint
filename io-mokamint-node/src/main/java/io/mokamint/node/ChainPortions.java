@@ -25,18 +25,18 @@ import io.mokamint.node.internal.gson.ChainPortionEncoder;
 import io.mokamint.node.internal.gson.ChainPortionJson;
 
 /**
- * Providers of objects containing the hashes of a sequential portion
- * of the current best chain.
+ * Providers of objects containing the hashes of a sorted, sequential portion
+ * of the current best chain of a Mokamint node.
  */
 public abstract class ChainPortions {
 
 	private ChainPortions() {}
 
 	/**
-	 * Yields the hashes of a sequential
+	 * Yields the container of the hashes of a sequential
 	 * portion of the current best chain of a Mokamint node.
 	 * 
-	 * @param hashes the hashes
+	 * @param hashes the hashes, in increasing order of height
 	 * @return the object containing the sequential hashes
 	 */
 	public static ChainPortion of(Stream<byte[]> hashes) {
