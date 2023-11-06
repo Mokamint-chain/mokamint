@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
@@ -89,6 +88,7 @@ import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -487,7 +487,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("whisperPeers messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("whisper peers messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForWhisperPeers() throws EncodeException, DecodeException, URISyntaxException {
 		var peer1 = Peers.of(new URI("ws://google.com:8011"));
 		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
@@ -499,9 +499,9 @@ public class MessagesTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("whisperBlock messages are correctly encoded into Json and decoded from Json")
+	@DisplayName("whisper block messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-		HashingAlgorithm hashing = HashingAlgorithms.shabal256();
+		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -515,6 +515,16 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new WhisperBlockMessages.Encoder().encode(whisperBlockMessage1);
 		var whisperBlockMessage2 = new WhisperBlockMessages.Decoder().decode(encoded);
 		assertEquals(whisperBlockMessage1, whisperBlockMessage2);
+	}
+
+	@Test
+	@DisplayName("whisper transaction messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForWhisperTransaction() throws EncodeException, DecodeException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5, 6});
+		var whisperTransactionMessage1 = WhisperTransactionMessages.of(transaction, "id");
+		String encoded = new WhisperTransactionMessages.Encoder().encode(whisperTransactionMessage1);
+		var whisperTransactionMessage2 = new WhisperTransactionMessages.Decoder().decode(encoded);
+		assertEquals(whisperTransactionMessage1, whisperTransactionMessage2);
 	}
 
 	@Test

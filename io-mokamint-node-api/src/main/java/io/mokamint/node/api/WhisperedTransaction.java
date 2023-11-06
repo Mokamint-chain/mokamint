@@ -14,18 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements Mokamint nodes that forwards all calls to a network node service.
- */
-module io.mokamint.node.remote {
-	exports io.mokamint.node.remote;
+package io.mokamint.node.api;
 
-	requires transitive io.mokamint.node.remote.api;
-	requires io.mokamint.node;
-	requires io.mokamint.node.service.api;
-	requires io.mokamint.node.messages;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.websockets.client;
-	requires io.hotmoka.annotations;
-	requires java.logging;
+/**
+ * Transaction information whispered among peers.
+ */
+public interface WhisperedTransaction extends Whispered {
+
+	/**
+	 * Yields the whispered transaction.
+	 * 
+	 * @return the whispered transaction
+	 */
+	Transaction getTransaction();
 }

@@ -30,6 +30,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDP
 import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.WHISPER_TRANSACTION_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,6 +44,8 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.SanitizedStrings;
@@ -65,6 +68,7 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionInfo;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
+import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -93,6 +97,7 @@ import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 import io.mokamint.node.messages.api.ExceptionMessage;
@@ -109,6 +114,7 @@ import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
@@ -139,6 +145,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * The hashing to use for the blocks.
 	 */
 	private final HashingAlgorithm hashingForBlocks;
+
+	/**
+	 * The hasher to use for the transactions.
+	 */
+	private final Hasher<Transaction> hasherForTransactions;
 
 	/**
 	 * The prefix used in the log messages;
@@ -177,11 +188,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
 		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
 		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
+		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 
 		this.queues = new NodeMessageQueues(timeout);
 
+		ConsensusConfig<?,?> config;
+
 		try {
-			this.hashingForBlocks = getConfig().getHashingForBlocks();
+			config = getConfig();
 		}
 		catch (ClosedNodeException e) {
 			throw unexpectedException(e);
@@ -189,6 +203,9 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		catch (TimeoutException | InterruptedException e) {
 			throw new IOException(e);
 		}
+
+		this.hashingForBlocks = config.getHashingForBlocks();
+		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 	}
 
 	@Override
@@ -216,6 +233,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		whisper(whisperedBlock, seen, true);
 	}
 
+	@Override
+	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen) {
+		whisper(whisperedTransaction, seen, true);
+	}
+
 	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, boolean includeNetwork) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
@@ -237,6 +259,29 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
+	}
+
+	private void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, boolean includeNetwork) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
+			return;
+
+		Transaction transaction = whisperedTransaction.getTransaction();
+		String hash = Hex.toHexString(hasherForTransactions.hash(transaction));
+		LOGGER.info(logPrefix + "got whispered transaction " + hash);
+
+		onWhisperTransaction(transaction);
+
+		if (includeNetwork) {
+			try {
+				sendObjectAsync(getSession(WHISPER_TRANSACTION_ENDPOINT), whisperedTransaction);
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper transaction " + hash + " to the connected service: the connection might be closed: " + e.getMessage());
+			}
+		}
+
+		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, newSeen));
 	}
 
 	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean includeNetwork) {
@@ -704,6 +749,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhisperPeers(Stream<Peer> peers) {}
 	protected void onWhisperBlock(Block block) {}
+	protected void onWhisperTransaction(Transaction transaction) {}
 
 	private class GetPeerInfosEndpoint extends Endpoint {
 
@@ -824,6 +870,19 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, WhisperBlockMessages.Decoder.class, WhisperBlockMessages.Encoder.class);
+		}
+	}
+
+	private class WhisperTransactionEndpoint extends Endpoint {
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (WhisperTransactionMessage message) -> whisper(message, _whisperer -> false, false));
+		}
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, WhisperTransactionMessages.Decoder.class, WhisperTransactionMessages.Encoder.class);
 		}
 	}
 }

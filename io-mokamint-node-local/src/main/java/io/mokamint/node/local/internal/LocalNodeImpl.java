@@ -69,12 +69,14 @@ import io.mokamint.node.api.TransactionInfo;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
+import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
+import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
@@ -261,6 +263,23 @@ public class LocalNodeImpl implements LocalNode {
 		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
 		peers.whisper(whisperedBlock, newSeen);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
+	}
+
+	@Override
+	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
+			return;
+
+		try {
+			mempool.add(whisperedTransaction.getTransaction());
+		}
+		catch (RejectedTransactionException e) {
+			LOGGER.log(Level.SEVERE, "a whispered transaction has been rejected: " + e.getMessage());
+		}
+
+		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		peers.whisper(whisperedTransaction, newSeen);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, newSeen));
 	}
 
 	@Override
@@ -512,7 +531,12 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return mempool.add(transaction);
+			try {
+				return mempool.add(transaction);
+			}
+			finally {
+				whisper(WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString()), _whisperer -> false);
+			}
 		}
 		finally {
 			closureLock.afterCall();

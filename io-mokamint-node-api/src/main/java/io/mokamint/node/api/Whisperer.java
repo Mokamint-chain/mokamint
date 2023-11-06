@@ -46,6 +46,17 @@ public interface Whisperer {
 	void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen);
 
 	/**
+	 * Whisper the given transaction.
+	 * 
+	 * @param whisperedTransaction the whispered transaction
+	 * @param seen a predicate telling if a whisperer has already whispered the
+	 *             {@code whisperedTransaction}. This is used in order to avoid infinite recursion
+	 *             if whisperers form a cycle inside the same machine (this does not account
+	 *             for network connections among whisperers)
+	 */
+	void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen);
+
+	/**
 	 * Whisper the given peer. This is a special case of {@link #whisper(WhisperedPeers, Predicate)}
 	 * when it is known that the whispered peers are actually a single peer, the one that
 	 * receives the call. In some cases, this can be useful for optimization. For instance,

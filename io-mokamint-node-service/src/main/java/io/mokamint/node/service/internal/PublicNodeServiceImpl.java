@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Peers;
@@ -51,8 +52,10 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
+import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -81,6 +84,7 @@ import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
@@ -96,6 +100,7 @@ import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
@@ -122,6 +127,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private final ConsensusConfig<?,?> config;
 
 	/**
+	 * The hasher for the transactions.
+	 */
+	private final Hasher<Transaction> hasherForTransactions;
+
+	/**
 	 * The public URI of the machine where this service is running. If this is missing,
 	 * the URI of the machine will not be suggested as a peer for the connected remotes.
 	 */
@@ -141,6 +151,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * The sessions connected to the {@link WhisperBlockEndpoint}.
 	 */
 	private final Set<Session> whisperBlockSessions = ConcurrentHashMap.newKeySet();
+
+	/**
+	 * The sessions connected to the {@link WhisperTransactionEndpoint}.
+	 */
+	private final Set<Session> whisperTransactionSessions = ConcurrentHashMap.newKeySet();
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -201,6 +216,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			throw new IOException(e);
 		}
 
+		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(u -> addPort(u, port)))));
 
@@ -215,7 +231,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
 			AddTransactionEndpoint.config(this), GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this),
-			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this));
+			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
 
 		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
 
@@ -245,6 +261,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	@Override
 	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
 		whisper(whisperedBlock, seen, null);
+	}
+
+	@Override
+	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen) {
+		whisper(whisperedTransaction, seen, null);
 	}
 
 	@Override
@@ -298,6 +319,20 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			.forEach(s -> whisperToSession(s, whisperedBlock));
 	
 		node.whisper(whisperedBlock, seen.or(Predicate.isEqual(this)));
+	}
+
+	private void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, Session excluded) {
+		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
+			return;
+
+		LOGGER.info(logPrefix + "got whispered transaction " + hasherForTransactions.hash(whisperedTransaction.getTransaction()));
+	
+		whisperBlockSessions.stream()
+			.filter(Session::isOpen)
+			.filter(session -> session != excluded)
+			.forEach(s -> whisperToSession(s, whisperedTransaction));
+	
+		node.whisper(whisperedTransaction, seen.or(Predicate.isEqual(this)));
 	}
 
 	private URI addPort(URI uri, int port) throws DeploymentException {
@@ -368,6 +403,15 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper block to session: it might be closed: " + e.getMessage());
+		}
+	}
+
+	private void whisperToSession(Session session, WhisperedTransaction whisperedTransaction) {
+		try {
+			sendObjectAsync(session, whisperedTransaction);
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper transaction to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -756,6 +800,26 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, WhisperBlockEndpoint.class, WHISPER_BLOCK_ENDPOINT, WhisperBlockMessages.Encoder.class, WhisperBlockMessages.Decoder.class);
+		}
+	}
+
+	public static class WhisperTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			var server = getServer();
+			server.whisperTransactionSessions.add(session);
+			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session));
+	    }
+
+		@SuppressWarnings("resource")
+		@Override
+		public void onClose(Session session, CloseReason closeReason) {
+			getServer().whisperTransactionSessions.remove(session);
+		}
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, WhisperTransactionEndpoint.class, WHISPER_TRANSACTION_ENDPOINT, WhisperTransactionMessages.Encoder.class, WhisperTransactionMessages.Decoder.class);
 		}
 	}
 }

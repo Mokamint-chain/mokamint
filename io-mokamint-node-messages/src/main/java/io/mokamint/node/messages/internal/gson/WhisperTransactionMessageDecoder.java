@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements Mokamint nodes that forwards all calls to a network node service.
- */
-module io.mokamint.node.remote {
-	exports io.mokamint.node.remote;
+package io.mokamint.node.messages.internal.gson;
 
-	requires transitive io.mokamint.node.remote.api;
-	requires io.mokamint.node;
-	requires io.mokamint.node.service.api;
-	requires io.mokamint.node.messages;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.websockets.client;
-	requires io.hotmoka.annotations;
-	requires java.logging;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.messages.WhisperTransactionMessages;
+import io.mokamint.node.messages.api.WhisperTransactionMessage;
+
+/**
+ * A decoder for an {@link WhisperTransactionMessage}.
+ */
+public class WhisperTransactionMessageDecoder extends MappedDecoder<WhisperTransactionMessage, WhisperTransactionMessages.Json> {
+
+	public WhisperTransactionMessageDecoder() {
+		super(WhisperTransactionMessages.Json.class);
+	}
 }

@@ -115,7 +115,8 @@ public class Mempool {
 				mempoolAsList = null; // invalidation
 			}
 			else
-				throw new RejectedTransactionException("Mempool overflow: all its " + MAX_MEMPOOL_SIZE + " slots are full");
+				throw new RejectedTransactionException("Cannot add transaction " + Hex.toHexString(hash)
+					+ ": all " + MAX_MEMPOOL_SIZE + " slots of the mempool are full");
 		}
 
 		return entry.getInfo();
