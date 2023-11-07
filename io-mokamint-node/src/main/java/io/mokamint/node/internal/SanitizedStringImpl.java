@@ -33,9 +33,21 @@ public class SanitizedStringImpl implements SanitizedString {
 	/**
 	 * Constructs a sanitized representation of the given peers. It contains their
 	 * URL, truncated to a maximal allowed length and for a maximal number of peers only.
+	 * 
+	 * @param peers the peers
 	 */
 	public SanitizedStringImpl(Stream<Peer> peers) {
 		this.sanitized = sanitize(peers);
+	}
+
+	/**
+	 * Constructs a sanitized representation of the given peer. It contains its
+	 * URL, truncated to a maximal allowed length.
+	 * 
+	 * @param peer the peer
+	 */
+	public SanitizedStringImpl(Peer peer) {
+		this.sanitized = truncate(peer);
 	}
 
 	/**

@@ -75,7 +75,6 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
-import io.mokamint.node.local.internal.blockchain.LocalNodeCallbacks;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
@@ -89,7 +88,7 @@ import jakarta.websocket.DeploymentException;
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public class LocalNodeImpl extends LocalNodeCallbacks implements LocalNode {
+public class LocalNodeImpl implements LocalNode {
 
 	/**
 	 * The configuration of the node.
@@ -710,27 +709,6 @@ public class LocalNodeImpl extends LocalNodeCallbacks implements LocalNode {
 	}
 
 	/**
-	 * Called when a peer has been added.
-	 * 
-	 * @param peer the added peer
-	 */
-	protected void onPeerAdded(Peer peer) {}
-
-	/**
-	 * Called when a peer has been removed.
-	 * 
-	 * @param peer the removed peer
-	 */
-	protected void onPeerRemoved(Peer peer) {}
-
-	/**
-	 * Called when a transaction has been added to the mempool.
-	 * 
-	 * @param transaction the added transaction
-	 */
-	protected void onTransactionAdded(Transaction transaction) {}
-
-	/**
 	 * Callback called when an event is submitted.
 	 * It can be useful for testing or monitoring events.
 	 * 
@@ -960,4 +938,44 @@ public class LocalNodeImpl extends LocalNodeCallbacks implements LocalNode {
 			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
 		}
 	}
+
+	/**
+	 * Called when a peer has been added.
+	 * 
+	 * @param peer the added peer
+	 */
+	public void onPeerAdded(Peer peer) {}
+
+	/**
+	 * Called when a peer has been removed.
+	 * 
+	 * @param peer the removed peer
+	 */
+	public void onPeerRemoved(Peer peer) {}
+
+	/**
+	 * Called when a transaction has been added to the mempool.
+	 * 
+	 * @param transaction the added transaction
+	 */
+	public void onTransactionAdded(Transaction transaction) {}
+
+	/**
+	 * Called when no deadline has been found.
+	 * 
+	 * @param previous the block for whose subsequent block the deadline was being looked up
+	 */
+	public void onNoDeadlineFound(Block previous) {}
+
+	/**
+	 * Called when a node cannot mine because it has no miners attached.
+	 */
+	public void onNoMinersAvailable() {}
+
+	/**
+	 * Called when a block gets added to the database of blocks.
+	 * 
+	 * @param block the added block
+	 */
+	public void onBlockAdded(Block block) {}
 }

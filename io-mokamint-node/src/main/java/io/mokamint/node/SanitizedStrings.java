@@ -37,4 +37,14 @@ public abstract class SanitizedStrings {
 	public static SanitizedString of(Stream<Peer> peers) {
 		return new SanitizedStringImpl(peers);
 	}
+
+	/**
+	 * Yields a sanitized string for the given peer.
+	 * 
+	 * @param peer the peer
+	 * @return the sanitized string
+	 */
+	public static SanitizedString of(Peer peer) {
+		return new SanitizedStringImpl(peer);
+	}
 }

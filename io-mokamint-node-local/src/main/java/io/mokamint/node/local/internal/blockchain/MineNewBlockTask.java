@@ -119,9 +119,11 @@ public class MineNewBlockTask implements Task {
 	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException {
 		if (blockchain.isEmpty())
-			LOGGER.log(Level.SEVERE, "cannot mine on an empty blockchain");
-		else if (miners.get().count() == 0L)
-			node.submit(new NoMinersAvailableEvent());
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot mine on an empty blockchain");
+		else if (miners.get().count() == 0L) {
+			LOGGER.log(Level.WARNING, logPrefix + "cannot mine because this node currently has no miners attached");
+			node.onNoMinersAvailable();
+		}
 		else {
 			try {
 				// only one mining task is allowed at a time, since concurrent mining would make
@@ -132,27 +134,6 @@ public class MineNewBlockTask implements Task {
 			finally {
 				blockchain.releaseMiningLock();
 			}
-		}
-	}
-
-	/**
-	 * An event fired when a new block task failed because there are no miners.
-	 */
-	public class NoMinersAvailableEvent implements Event {
-
-		private NoMinersAvailableEvent() {}
-
-		@Override
-		public String toString() {
-			return "no miners available event";
-		}
-
-		@Override
-		public void body() {}
-
-		@Override
-		public String logPrefix() {
-			return logPrefix;
 		}
 	}
 

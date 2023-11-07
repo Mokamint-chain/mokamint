@@ -47,6 +47,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
@@ -55,8 +56,6 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
-import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
@@ -130,11 +129,11 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			public void onNoDeadlineFound(io.mokamint.node.api.Block previous) {
 				super.onNoDeadlineFound(previous);
 				node1NoMinersAvailable.release();
-			};
+			}
 
-			@Override
-			protected void onComplete(Event event) {
-				if (minerClosing.get() && (event instanceof NoMinersAvailableEvent))
+			public void onNoMinersAvailable() {
+				super.onNoMinersAvailable();
+				if (minerClosing.get())
 					node1NoMinersAvailable.release();
 			}
 		}
@@ -149,8 +148,12 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			protected void onComplete(Event event) {
 				if (event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer1))
 					node2HasConnectedToNode1.release();
-				else if (event instanceof BlockAddedEvent)
-					node2HasAddedBlock.release();
+			}
+
+			@Override
+			public void onBlockAdded(Block block) {
+				super.onBlockAdded(block);
+				node2HasAddedBlock.release();
 			}
 		}
 

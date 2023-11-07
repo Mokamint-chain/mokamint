@@ -572,9 +572,9 @@ public class NodePeers implements AutoCloseable {
 
 				synchronized (lock) {
 					if (db.add(peer, force)) {
-						LOGGER.info("peers: added peer " + peer + " to the database");
 						storePeer(peer, remote, timeDifference);
 						remote = null; // so that it won't be closed in the finally clause
+						LOGGER.info("peers: added " + SanitizedStrings.of(peer));
 						node.onPeerAdded(peer);
 						return true;
 					}
@@ -601,8 +601,8 @@ public class NodePeers implements AutoCloseable {
 		try {
 			synchronized (lock) {
 				if (db.remove(peer)) {
-					LOGGER.info("peers: removed peer " + peer + " from the database");
 					deletePeer(peer, remotes.get(peer));
+					LOGGER.info("peers: removed " + SanitizedStrings.of(peer));
 					node.onPeerRemoved(peer);
 					return true;
 				}

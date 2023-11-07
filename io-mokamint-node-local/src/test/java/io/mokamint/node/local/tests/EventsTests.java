@@ -54,7 +54,6 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.BlockMinedEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.IllegalDeadlineEvent;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
@@ -250,11 +249,9 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onSubmit(Event event) {
-				if (event instanceof NoMinersAvailableEvent)
-					semaphore.release();
-					
-				super.onSubmit(event);
+			public void onNoMinersAvailable() {
+				super.onNoMinersAvailable();
+				semaphore.release();	
 			}
 		}
 

@@ -51,7 +51,6 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -410,41 +409,6 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
-	 * An event fired when a block gets added to the blockchain, not necessarily
-	 * to the main chain, but definitely connected to the genesis block.
-	 */
-	public static class BlockAddedEvent implements Event {
-
-		/**
-		 * The block that has been added.
-		 */
-		public final Block block;
-
-		/**
-		 * The hash of the block, as a hexadecimal string.
-		 */
-		public final String hexHashOfBlock;
-
-		private BlockAddedEvent(Block block, byte[] hashOfBlock) {
-			this.block = block;
-			this.hexHashOfBlock = Hex.toHexString(hashOfBlock);
-		}
-
-		@Override
-		public void body() throws Exception {}
-
-		@Override
-		public String toString() {
-			return "block added event for block " + hexHashOfBlock;
-		}
-
-		@Override
-		public String logPrefix() {
-			return "height " + block.getHeight() + ": ";
-		}
-	}
-
-	/**
 	 * Acquires the lock that allows a mine new block task to be
 	 * the only allowed to mine new blocks. By allowing only one
 	 * mining task at a time, we simplify the API of the application,
@@ -501,7 +465,6 @@ public class Blockchain implements AutoCloseable {
 
 			if (db.add(block, updatedHead)) {
 				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);
-				node.submit(new BlockAddedEvent(block, hashOfBlock));
 				if (first)
 					return true;
 			}
@@ -557,8 +520,7 @@ public class Blockchain implements AutoCloseable {
 				node.getConfig().getSignatureForBlocks(), node.getKeys()
 			);
 
-			if (db.add(genesis, new AtomicReference<>()))
-				node.submit(new BlockAddedEvent(genesis, genesis.getHash(hashingForBlocks)));
+			db.add(genesis, new AtomicReference<>());
 		}
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
 			// the database cannot be closed at this moment;

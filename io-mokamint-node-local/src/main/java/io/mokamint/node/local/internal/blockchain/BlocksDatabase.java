@@ -63,6 +63,11 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 public class BlocksDatabase implements AutoCloseable {
 
 	/**
+	 * The node using this database of blocks.
+	 */
+	private final LocalNodeImpl node;
+
+	/**
 	 * The lock used to block new calls when the database has been requested to close.
 	 */
 	private final ClosureLock closureLock = new ClosureLock();
@@ -121,6 +126,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public BlocksDatabase(LocalNodeImpl node) throws DatabaseException {
+		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.environment = createBlockchainEnvironment(node);
 		this.storeOfBlocks = openStore("blocks");
@@ -434,9 +440,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 */
 	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 		closureLock.beforeCall(ClosedDatabaseException::new);
-	
+
+		boolean hasBeenAdded;
+
 		try {
-			return check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
+			hasBeenAdded = check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -444,6 +452,13 @@ public class BlocksDatabase implements AutoCloseable {
 		finally {
 			closureLock.afterCall();
 		}
+
+		if (hasBeenAdded) {
+			LOGGER.info("height " + block.getHeight() + ": added block " + block.getHexHash(node.getConfig().getHashingForBlocks()));
+			node.onBlockAdded(block);
+		}
+
+		return hasBeenAdded;
 	}
 
 	/**

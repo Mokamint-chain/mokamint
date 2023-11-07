@@ -156,11 +156,10 @@ public class NodeMiners implements AutoCloseable {
 	private boolean onRemove(Miner miner) {
 		try {
 			miner.close();
+			return true;
 		}
 		catch (IOException e) {
 			throw new UncheckedException(e);
 		}
-	
-		return true;
 	}
 }

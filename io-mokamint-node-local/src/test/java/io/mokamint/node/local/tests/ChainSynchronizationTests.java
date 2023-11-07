@@ -57,7 +57,6 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
@@ -150,13 +149,13 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		}
 
 		@Override
-		protected void onComplete(Event event) {
-			if (event instanceof BlockAddedEvent bae && bae.block.getHeight() < HOW_MANY) {
-				miningBlocks.add(bae.block);
+		public void onBlockAdded(Block block) {
+			super.onBlockAdded(block);
+
+			if (block.getHeight() < HOW_MANY) {
+				miningBlocks.add(block);
 				miningSemaphore.release();
 			}
-
-			super.onComplete(event);
 		}
 	}
 
@@ -167,13 +166,13 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		}
 
 		@Override
-		protected void onComplete(Event event) {
-			if (event instanceof BlockAddedEvent bae && bae.block.getHeight() < HOW_MANY) { // these can only come by whispering from the mining node
-				nonMiningBlocks.add(bae.block);
+		public void onBlockAdded(Block block) {
+			super.onBlockAdded(block);
+
+			if (block.getHeight() < HOW_MANY) { // these can only come by whispering from the mining node
+				nonMiningBlocks.add(block);
 				nonMiningSemaphore.release();
 			}
-
-			super.onComplete(event);
 		}
 	}
 

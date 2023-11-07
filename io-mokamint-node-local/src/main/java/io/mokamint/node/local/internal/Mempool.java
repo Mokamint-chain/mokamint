@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -77,6 +78,8 @@ public class Mempool {
 
 	private final static long MAX_MEMPOOL_SIZE = 100_000L;
 
+	private final static Logger LOGGER = Logger.getLogger(Mempool.class.getName());
+
 	/**
 	 * Creates a mempool for the given node.
 	 * 
@@ -124,6 +127,8 @@ public class Mempool {
 				throw new RejectedTransactionException("Cannot add transaction " + Hex.toHexString(hash)
 					+ ": all " + MAX_MEMPOOL_SIZE + " slots of the mempool are full");
 		}
+
+		LOGGER.info("mempool: added transaction " + hasher.hash(transaction));
 
 		node.onTransactionAdded(transaction);
 
