@@ -41,7 +41,6 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodeMiners;
 import io.mokamint.node.messages.WhisperBlockMessages;
@@ -117,7 +116,7 @@ public class MineNewBlockTask implements Task {
 	}
 
 	@Override
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException, VerificationException {
 		if (blockchain.isEmpty())
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L) {
@@ -138,62 +137,23 @@ public class MineNewBlockTask implements Task {
 	}
 
 	/**
-	 * An event fired to signal that the connection to a miner timed-out.
+	 * A task that whispers a block to the peers.
 	 */
-	public class IllegalDeadlineEvent implements Event {
-		public final Miner miner;
-		public final long points;
+	private class WhisperBlockTask implements Task {
+		private final Block block;
 
-		 /**
-		  * Creates an event that expresses a miner's misbehavior.
-		  * 
-		  * @param miner the miner that misbehaved
-		  */
-		private IllegalDeadlineEvent(Miner miner) {
-			this.miner = miner;
-			this.points = config.getMinerPunishmentForIllegalDeadline();
-		}
-
-		@Override
-		public String toString() {
-			return "miner " + miner.getUUID() + " computed an illegal deadline event [" + points + " points]";
-		}
-
-		@Override
-		public void body() throws IOException {
-			miners.punish(miner, points);
-		}
-
-		@Override
-		public String logPrefix() {
-			return logPrefix;
-		}
-	}
-
-	/**
-	 * An event fired to signal that a block has been mined.
-	 * It adds it to the blockchain and whispers it to all peers.
-	 */
-	public class BlockMinedEvent implements Event {
-		public final Block block;
-		public final String hexBlockHash;
-
-		private BlockMinedEvent(Block block) {
+		private WhisperBlockTask(Block block) {
 			this.block = block;
-			this.hexBlockHash = block.getHexHash(config.getHashingForBlocks());
 		}
 
 		@Override
 		public String toString() {
-			return "block mined event for block " + hexBlockHash;
+			return "whispering of block " + block.getHexHash(config.getHashingForBlocks());
 		}
 
 		@Override
-		public void body() throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
-			if (blockchain.add(block)) {
-				LOGGER.info(logPrefix + "whispering block " + hexBlockHash + " to all peers");
-				node.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false);
-			}
+		public void body() {
+			node.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false);
 		}
 
 		@Override
@@ -256,7 +216,7 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException {
+		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
 			this.previous = blockchain.getHead().get();
 			this.heightOfNewBlock = previous.getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
@@ -269,7 +229,12 @@ public class MineNewBlockTask implements Task {
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
-				createNewBlock().ifPresent(this::informNodeAboutNewBlock);
+				var maybeBlock = createNewBlock();
+				if (maybeBlock.isPresent()) {
+					var block = maybeBlock.get();
+					node.onBlockMined(block);
+					addNodeToBlockchain(block);
+				}
 			}
 			catch (TimeoutException e) {
 				LOGGER.warning(logPrefix + MineNewBlockTask.this + ": no deadline found (timed out while waiting for a deadline)");
@@ -302,8 +267,9 @@ public class MineNewBlockTask implements Task {
 			currentDeadline.await(config.getDeadlineWaitTimeout(), MILLISECONDS);
 		}
 
-		private void informNodeAboutNewBlock(Block block) {
-			node.submit(new BlockMinedEvent(block));
+		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+			if (blockchain.add(block))
+				node.submit(new WhisperBlockTask(block));
 		}
 
 		/**
@@ -339,7 +305,17 @@ public class MineNewBlockTask implements Task {
 				}
 				catch (IllegalDeadlineException e) {
 					LOGGER.warning(logPrefix + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());
-					node.submit(new IllegalDeadlineEvent(miner));
+					node.onIllegalDeadlineComputed(deadline, miner);
+
+					long points = config.getMinerPunishmentForIllegalDeadline();
+					LOGGER.warning(logPrefix + "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]");
+
+					try {
+						miners.punish(miner, points);
+					}
+					catch (IOException e2) {
+						LOGGER.log(Level.SEVERE, "cannot punish a miner that computed an illegal deadline", e2);
+					}
 				}
 			}
 		}

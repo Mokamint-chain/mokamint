@@ -52,8 +52,6 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.BlockMinedEvent;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.IllegalDeadlineEvent;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
@@ -158,14 +156,10 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onSubmit(Event event) {
-				if (event instanceof BlockMinedEvent bde) {
-					var block = bde.block;
-					if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDeadline().getValue(), deadlineValue))
-						semaphore.release();
-				}
-					
-				super.onSubmit(event);
+			public void onBlockMined(Block block) {
+				super.onBlockMined(block);
+				if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDeadline().getValue(), deadlineValue))
+					semaphore.release();
 			}
 		}
 
@@ -224,11 +218,10 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onSubmit(Event event) {
-				if (event instanceof IllegalDeadlineEvent ide && ide.miner == myMiner)
+			public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
+				super.onIllegalDeadlineComputed(deadline, miner);
+				if (miner == myMiner)
 					semaphore.release();
-					
-				super.onSubmit(event);
 			}
 		}
 	
@@ -346,11 +339,9 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onSubmit(Event event) {
-				if (event instanceof IllegalDeadlineEvent)
-					semaphore.release();
-
-				super.onSubmit(event);
+			public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
+				super.onIllegalDeadlineComputed(deadline, miner);
+				semaphore.release();
 			}
 		}
 

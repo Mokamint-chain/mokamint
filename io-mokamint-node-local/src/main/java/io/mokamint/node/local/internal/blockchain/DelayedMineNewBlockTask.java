@@ -42,7 +42,7 @@ public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	}
 
 	@Override
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException, VerificationException {
 		LOGGER.info("I will start mining in " + delay / 1000L + " seconds");
 		Thread.sleep(delay);
 

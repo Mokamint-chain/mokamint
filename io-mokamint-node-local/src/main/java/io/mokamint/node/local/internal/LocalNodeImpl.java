@@ -667,7 +667,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Adverts to its peers the services published on this node.
+	 * Adverts to its peers the services published by this node.
 	 */
 	void whisperItsServices() {
 		for (var whisperer: boundWhisperers)
@@ -978,4 +978,19 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param block the added block
 	 */
 	public void onBlockAdded(Block block) {}
+
+	/**
+	 * Called when the node mines a new block.
+	 * 
+	 * @param block the mined block
+	 */
+	public void onBlockMined(Block block) {}
+
+	/**
+	 * Called when a miner computes an illegal deadline.
+	 * 
+	 * @param deadline the illegal deadline
+	 * @param miner the miner
+	 */
+	public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {}
 }

@@ -359,7 +359,7 @@ public class NodePeers implements AutoCloseable {
 	/**
 	 * A task that whispers peers to the peers.
 	 */
-	public class WhisperPeersTask implements Task {
+	private class WhisperPeersTask implements Task {
 		private final Peer[] peers;
 
 		private WhisperPeersTask(Peer[] peers) {
@@ -386,7 +386,7 @@ public class NodePeers implements AutoCloseable {
 	 * A task that pings all peers, tries to recreate their remote (if missing)
 	 * and collects their peers, in case they might be useful for the node.
 	 */
-	public class PingPeersRecreateRemotesAndCollectPeersTask implements Task {
+	private class PingPeersRecreateRemotesAndCollectPeersTask implements Task {
 
 		private PingPeersRecreateRemotesAndCollectPeersTask() {}
 
