@@ -157,30 +157,6 @@ public class MineNewBlockTask implements Task {
 	}
 
 	/**
-	 * An event fired when a new block task timed-out without finding a single deadline,
-	 * despite having at least a miner available.
-	 */
-	public class NoDeadlineFoundEvent implements Event {
-
-		private NoDeadlineFoundEvent() {}
-
-		@Override
-		public String toString() {
-			return "no deadline found event";
-		}
-
-		@Override
-		public void body() throws IOException {
-			node.submit(new DelayedMineNewBlockTask(node));
-		}
-
-		@Override
-		public String logPrefix() {
-			return logPrefix;
-		}
-	}
-
-	/**
 	 * An event fired to signal that the connection to a miner timed-out.
 	 */
 	public class IllegalDeadlineEvent implements Event {
@@ -315,8 +291,9 @@ public class MineNewBlockTask implements Task {
 				createNewBlock().ifPresent(this::informNodeAboutNewBlock);
 			}
 			catch (TimeoutException e) {
-				LOGGER.warning(logPrefix + MineNewBlockTask.this + ": timed out while waiting for a deadline");
-				node.submit(new NoDeadlineFoundEvent());
+				LOGGER.warning(logPrefix + MineNewBlockTask.this + ": no deadline found (timed out while waiting for a deadline)");
+				node.submit(new DelayedMineNewBlockTask(node));
+				node.onNoDeadlineFound(previous);
 			}
 			finally {
 				turnWakerOff();

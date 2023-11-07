@@ -44,6 +44,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -53,7 +54,6 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.BlockMinedEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.IllegalDeadlineEvent;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoDeadlineFoundEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -287,11 +287,9 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onSubmit(Event event) {
-				if (event instanceof NoDeadlineFoundEvent)
-					semaphore.release();
-					
-				super.onSubmit(event);
+			public void onNoDeadlineFound(Block previous) {
+				super.onNoDeadlineFound(previous);
+				semaphore.release();
 			}
 		}
 

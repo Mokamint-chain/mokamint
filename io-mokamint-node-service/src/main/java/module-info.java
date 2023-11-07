@@ -34,5 +34,6 @@ module io.mokamint.node.service {
 	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
+	requires io.hotmoka.crypto;
 	requires java.logging;
 }

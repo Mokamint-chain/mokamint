@@ -196,7 +196,11 @@ public class NodePeers implements AutoCloseable {
 					() -> peers.add(peer, force));
 
 			if (result) {
-				node.submit(new PeersAddedEvent(Stream.of(peer), whisper));
+				LOGGER.info("peers: added peer " + SanitizedStrings.of(Stream.of(peer)));
+				//node.onPeerAdded(peer);
+				if (whisper)
+					node.submit(new WhisperPeersTask(new Peer[] { peer }));
+
 				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 			}
 
@@ -353,35 +357,23 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * An event fired to signal that some peers have been added to the node.
+	 * A task that whispers peers to the peers.
 	 */
-	public class PeersAddedEvent implements Event {
+	public class WhisperPeersTask implements Task {
 		private final Peer[] peers;
-		private final boolean whisper;
 
-		private PeersAddedEvent(Stream<Peer> peers, boolean whisper) {
-			this.peers = peers.toArray(Peer[]::new);
-			this.whisper = whisper;
+		private WhisperPeersTask(Peer[] peers) {
+			this.peers = peers;
 		}
 
 		@Override
 		public String toString() {
-			return "addition event for peers " + SanitizedStrings.of(Stream.of(peers));
-		}
-
-		/**
-		 * Yields the added peers.
-		 * 
-		 * @return the added peers
-		 */
-		public Stream<Peer> getPeers() {
-			return Stream.of(peers);
+			return "whispering of peers " + SanitizedStrings.of(Stream.of(peers));
 		}
 
 		@Override
 		public void body() {
-			if (whisper)
-				node.whisper(WhisperPeersMessages.of(getPeers(), UUID.randomUUID().toString()), _whisperer -> false);
+			node.whisper(WhisperPeersMessages.of(Stream.of(peers), UUID.randomUUID().toString()), _whisperer -> false);
 		}
 
 		@Override
@@ -496,8 +488,8 @@ public class NodePeers implements AutoCloseable {
 				.toArray(Peer[]::new)
 			);
 	
-		if (added.length > 0) // just to avoid useless events
-			node.submit(new PeersAddedEvent(Stream.of(added), whisper));
+		if (added.length > 0 && whisper) // just to avoid useless tasks
+			node.submit(new WhisperPeersTask(added));
 	}
 
 	/**
@@ -583,6 +575,7 @@ public class NodePeers implements AutoCloseable {
 						LOGGER.info("peers: added peer " + peer + " to the database");
 						storePeer(peer, remote, timeDifference);
 						remote = null; // so that it won't be closed in the finally clause
+						node.onPeerAdded(peer);
 						return true;
 					}
 					else
@@ -610,6 +603,7 @@ public class NodePeers implements AutoCloseable {
 				if (db.remove(peer)) {
 					LOGGER.info("peers: removed peer " + peer + " from the database");
 					deletePeer(peer, remotes.get(peer));
+					node.onPeerRemoved(peer);
 					return true;
 				}
 				else
@@ -770,7 +764,7 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public String toString() {
-			return "connection event for peer " + peer;
+			return "connection event for peer " + SanitizedStrings.of(Stream.of(peer));
 		}
 
 		/**
@@ -787,8 +781,9 @@ public class NodePeers implements AutoCloseable {
 			node.whisperItsServices();
 
 			// if the blockchain was empty, it might be the right moment to attempt a synchronization
-			if (node.getBlockchain().isEmpty())
-				node.getBlockchain().scheduleSynchronization(0L);
+			var blockchain = node.getBlockchain();
+			if (blockchain.isEmpty())
+				blockchain.scheduleSynchronization(0L);
 		}
 
 		@Override
@@ -822,7 +817,7 @@ public class NodePeers implements AutoCloseable {
 
 		@Override
 		public String toString() {
-			return "disconnection event for peer " + peer;
+			return "disconnection event for peer " + SanitizedStrings.of(Stream.of(peer));
 		}
 
 		/**

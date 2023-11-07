@@ -49,6 +49,11 @@ import io.mokamint.node.api.TransactionInfo;
 public class Mempool {
 
 	/**
+	 * The node having this mempool.
+	 */
+	private final LocalNodeImpl node;
+
+	/**
 	 * The application running in the node.
 	 */
 	private final Application app;
@@ -78,6 +83,7 @@ public class Mempool {
 	 * @param node the node
 	 */
 	public Mempool(LocalNodeImpl node) {
+		this.node = node;
 		this.app = node.getApplication();
 		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 	}
@@ -118,6 +124,8 @@ public class Mempool {
 				throw new RejectedTransactionException("Cannot add transaction " + Hex.toHexString(hash)
 					+ ": all " + MAX_MEMPOOL_SIZE + " slots of the mempool are full");
 		}
+
+		node.onTransactionAdded(transaction);
 
 		return entry.getInfo();
 	}

@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
@@ -325,7 +326,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
 			return;
 
-		LOGGER.info(logPrefix + "got whispered transaction " + hasherForTransactions.hash(whisperedTransaction.getTransaction()));
+		LOGGER.info(logPrefix + "got whispered transaction " + Hex.toHexString(hasherForTransactions.hash(whisperedTransaction.getTransaction())));
 	
 		whisperBlockSessions.stream()
 			.filter(Session::isOpen)

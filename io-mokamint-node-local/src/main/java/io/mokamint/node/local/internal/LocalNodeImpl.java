@@ -75,6 +75,7 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
+import io.mokamint.node.local.internal.blockchain.LocalNodeCallbacks;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
@@ -88,7 +89,7 @@ import jakarta.websocket.DeploymentException;
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public class LocalNodeImpl implements LocalNode {
+public class LocalNodeImpl extends LocalNodeCallbacks implements LocalNode {
 
 	/**
 	 * The configuration of the node.
@@ -251,12 +252,14 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
 
+		var block = whisperedBlock.getBlock();
+
 		try {
-			blockchain.add(whisperedBlock.getBlock());
+			blockchain.add(block);
 		}
 		catch (NoSuchAlgorithmException | DatabaseException | VerificationException | ClosedDatabaseException e) {
 			LOGGER.log(Level.SEVERE, "the whispered block " +
-				whisperedBlock.getBlock().getHexHash(config.getHashingForBlocks()) +
+				block.getHexHash(config.getHashingForBlocks()) +
 				" could not be added to the blockchain: " + e.getMessage());
 		}
 
@@ -705,6 +708,27 @@ public class LocalNodeImpl implements LocalNode {
 		@Override
 		String toString();
 	}
+
+	/**
+	 * Called when a peer has been added.
+	 * 
+	 * @param peer the added peer
+	 */
+	protected void onPeerAdded(Peer peer) {}
+
+	/**
+	 * Called when a peer has been removed.
+	 * 
+	 * @param peer the removed peer
+	 */
+	protected void onPeerRemoved(Peer peer) {}
+
+	/**
+	 * Called when a transaction has been added to the mempool.
+	 * 
+	 * @param transaction the added transaction
+	 */
+	protected void onTransactionAdded(Transaction transaction) {}
 
 	/**
 	 * Callback called when an event is submitted.

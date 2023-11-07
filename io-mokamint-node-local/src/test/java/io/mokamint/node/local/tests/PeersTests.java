@@ -77,7 +77,6 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 
@@ -187,11 +186,10 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeersAddedEvent pae)
-					pae.getPeers()
-						.filter(stillToAccept::remove)
-						.forEach(_peer -> semaphore.release());
+			protected void onPeerAdded(Peer peer) {
+				super.onPeerAdded(peer);
+				if (stillToAccept.remove(peer))
+					semaphore.release();
 			}
 		}
 
@@ -261,11 +259,10 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeersAddedEvent pae)
-					pae.getPeers()
-						.filter(stillToAccept::remove)
-						.forEach(_peer -> semaphore.release());
+			protected void onPeerAdded(Peer peer) {
+				super.onPeerAdded(peer);
+				if (stillToAccept.remove(peer))
+					semaphore.release();
 			}
 		}
 

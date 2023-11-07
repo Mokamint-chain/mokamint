@@ -56,7 +56,6 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
 import io.mokamint.node.local.internal.blockchain.Blockchain.BlockAddedEvent;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoDeadlineFoundEvent;
 import io.mokamint.node.local.internal.blockchain.MineNewBlockTask.NoMinersAvailableEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
@@ -128,9 +127,14 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 				super(config1, node1Keys, app, true);
 			}
 
+			public void onNoDeadlineFound(io.mokamint.node.api.Block previous) {
+				super.onNoDeadlineFound(previous);
+				node1NoMinersAvailable.release();
+			};
+
 			@Override
 			protected void onComplete(Event event) {
-				if (minerClosing.get() && (event instanceof NoMinersAvailableEvent || event instanceof NoDeadlineFoundEvent))
+				if (minerClosing.get() && (event instanceof NoMinersAvailableEvent))
 					node1NoMinersAvailable.release();
 			}
 		}

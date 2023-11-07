@@ -58,7 +58,6 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.NodePeers.PeersAddedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
 
@@ -113,8 +112,9 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(peer4::equals))
+			protected void onPeerAdded(Peer peer) {
+				super.onPeerAdded(peer);
+				if (peer4.equals(peer))
 					semaphore.release();
 			}
 		}
@@ -181,12 +181,11 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeersAddedEvent pae) {
-					pae.getPeers().forEach(stillToRemove::remove);
-					if (stillToRemove.isEmpty())
-						semaphore.release();
-				}
+			protected void onPeerAdded(Peer peer) {
+				super.onPeerAdded(peer);
+				stillToRemove.remove(peer);
+				if (stillToRemove.isEmpty())
+					semaphore.release();
 			}
 		}
 
@@ -238,8 +237,9 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeersAddedEvent pae && pae.getPeers().anyMatch(expected::equals))
+			protected void onPeerAdded(Peer peer) {
+				super.onPeerAdded(peer);
+				if (expected.equals(peer))
 					semaphore.release();
 			}
 		}
