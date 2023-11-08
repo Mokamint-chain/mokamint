@@ -20,6 +20,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -200,13 +201,25 @@ public class PunishableSet<A> {
 	 * 
 	 * @param actor the actor to pardon
 	 * @param points how many points get pardoned
+	 * @return the number of points that have been actually gained by the {@code actor};
+	 *         if the {@code actor} had already the maximal number of points or if the
+	 *         {@code actor} was not in this container, this return value is 0
 	 * @throws IllegalArgumentException if {@code points} is negative
 	 */
-	public void pardon(A actor, long points) {
+	public long pardon(A actor, long points) {
 		if (points < 0)
 			throw new IllegalArgumentException("points cannot be negative");
 
-		actors.computeIfPresent(actor, (a, oldPoints) -> Math.min(initialPoints, oldPoints + points));
+		AtomicLong oldPoints = new AtomicLong(0L);
+		Long newPoints = actors.computeIfPresent(actor, (a, old) -> {
+			oldPoints.set(old);
+			return Math.min(initialPoints, old + points);
+		});
+
+		if (newPoints != null && newPoints.longValue() > oldPoints.get())
+			return newPoints.longValue() - oldPoints.get();
+		else
+			return 0L;
 	}
 
 	/**

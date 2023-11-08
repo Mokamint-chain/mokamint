@@ -48,6 +48,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -55,8 +56,6 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
-import io.mokamint.node.local.internal.NodePeers.PeerDisconnectedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
 
@@ -108,8 +107,9 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeerDisconnectedEvent pde && pde.getPeer().equals(peer2))
+			public void onPeerDisconnected(Peer peer) {
+				super.onPeerDisconnected(peer);
+				if (peer.equals(peer2))
 					semaphore.release();
 			}
 		}
@@ -169,15 +169,19 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (phase.get() == 1 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer2))
+			public void onPeerConnected(Peer peer) {
+				super.onPeerConnected(peer);
+				if (phase.get() == 1 && peer.equals(peer2))
 					connections.release();
-
-				if (phase.get() == 2 && event instanceof PeerDisconnectedEvent pde && pde.getPeer().equals(peer2))
-					disconnections.release();
-
-				if (phase.get() == 3 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer2))
+				else if (phase.get() == 3 && peer.equals(peer2))
 					reconnections.release();
+			}
+
+			@Override
+			public void onPeerDisconnected(Peer peer) {
+				super.onPeerDisconnected(peer);
+				if (phase.get() == 2 && peer.equals(peer2))
+					disconnections.release();
 			}
 		}
 
@@ -188,11 +192,11 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (phase.get() == 1 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer1))
+			public void onPeerConnected(Peer peer) {
+				super.onPeerConnected(peer);
+				if (phase.get() == 1 && peer.equals(peer1))
 					connections.release();
-
-				if (phase.get() == 3 && event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer1))
+				else if (phase.get() == 3 && peer.equals(peer1))
 					reconnections.release();
 			}
 		}

@@ -55,7 +55,6 @@ import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl.Event;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -383,6 +382,28 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
+	 * A task that whispers the services of a node to all its peers.
+	 */
+	private class WhisperItsServicesTask implements Task {
+		private WhisperItsServicesTask() {}
+
+		@Override
+		public String toString() {
+			return "whispering its services to all its peers task";
+		}
+
+		@Override
+		public void body() {
+			node.whisperItsServices();
+		}
+
+		@Override
+		public String logPrefix() {
+			return "peers: ";
+		}
+	}
+
+	/**
 	 * A task that pings all peers, tries to recreate their remote (if missing)
 	 * and collects their peers, in case they might be useful for the node.
 	 */
@@ -450,13 +471,19 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		long lost = config.getPeerPunishmentForUnreachable();
+
 		CheckRunnable.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class,
-			() -> peers.punish(peer, config.getPeerPunishmentForUnreachable())
+			() -> peers.punish(peer, lost)
 		);
+
+		LOGGER.warning("peers: " + SanitizedStrings.of(peer) + " lost " + lost + " points because it is unreachable");
 	}
 
 	public void pardonBecauseReachable(Peer peer) {
-		peers.pardon(peer, config.getPeerPunishmentForUnreachable());
+		long gained = peers.pardon(peer, config.getPeerPunishmentForUnreachable());
+		if (gained > 0L)
+			LOGGER.info("peers: " + SanitizedStrings.of(peer) + " gained " + gained + " points because it is reachable");
 	}
 
 	/**
@@ -631,7 +658,7 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private Optional<RemotePublicNode> tryToRecreateRemote(Peer peer) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		try {
-			LOGGER.info("peers: trying to create a connection to peer " + peer);
+			LOGGER.info("peers: trying to create a connection to " + SanitizedStrings.of(peer));
 			RemotePublicNode remote = null;
 
 			try {
@@ -656,7 +683,7 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (IOException | TimeoutException e) {
-			LOGGER.log(Level.WARNING, "peers: cannot contact peer " + peer + ": " + e.getMessage());
+			LOGGER.log(Level.WARNING, "peers: cannot contact " + SanitizedStrings.of(peer) + ": " + e.getMessage());
 			punishBecauseUnreachable(peer);
 		}
 		catch (PeerRejectedException e) {
@@ -743,53 +770,21 @@ public class NodePeers implements AutoCloseable {
 		return timeDifference;
 	}
 
-	private void storePeer(Peer peer, RemotePublicNode remote, long timeDifference) {
+	private void storePeer(Peer peer, RemotePublicNode remote, long timeDifference) throws DatabaseException, ClosedDatabaseException {
 		remotes.put(peer, remote);
 		timeDifferences.put(peer, timeDifference);
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnClosedHandler(() -> peerDisconnected(remote, peer));
-		node.submit(new PeerConnectedEvent(peer));
-	}
+		LOGGER.info("peers: opened connection to " + SanitizedStrings.of(peer));
+		node.onPeerConnected(peer);
 
-	/**
-	 * An event fired to signal that a peer of the node has been connected.
-	 */
-	public class PeerConnectedEvent implements Event {
-		private final Peer peer;
+		// if the blockchain was empty, it might be the right moment to attempt a synchronization
+		var blockchain = node.getBlockchain();
+		if (blockchain.isEmpty())
+			blockchain.scheduleSynchronization(0L);
 
-		private PeerConnectedEvent(Peer peer) {
-			this.peer = peer;
-		}
-
-		@Override
-		public String toString() {
-			return "connection event for peer " + SanitizedStrings.of(Stream.of(peer));
-		}
-
-		/**
-		 * Yields the connected peer.
-		 * 
-		 * @return the connected peer
-		 */
-		public Peer getPeer() {
-			return peer;
-		}
-
-		@Override
-		public void body() throws DatabaseException, ClosedDatabaseException {
-			node.whisperItsServices();
-
-			// if the blockchain was empty, it might be the right moment to attempt a synchronization
-			var blockchain = node.getBlockchain();
-			if (blockchain.isEmpty())
-				blockchain.scheduleSynchronization(0L);
-		}
-
-		@Override
-		public String logPrefix() {
-			return "peers: ";
-		}
+		node.submit(new WhisperItsServicesTask());
 	}
 
 	/**
@@ -802,41 +797,13 @@ public class NodePeers implements AutoCloseable {
 	 */
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) throws InterruptedException, IOException {
 		deletePeer(peer, remote);
-		node.submit(new PeerDisconnectedEvent(peer));
-	}
+		node.onPeerDisconnected(peer);
 
-	/**
-	 * An event fired to signal that a peer of the node have been disconnected.
-	 */
-	public class PeerDisconnectedEvent implements Event {
-		private final Peer peer;
-
-		private PeerDisconnectedEvent(Peer peer) {
-			this.peer = peer;
-		}
-
-		@Override
-		public String toString() {
-			return "disconnection event for peer " + SanitizedStrings.of(Stream.of(peer));
-		}
-
-		/**
-		 * Yields the disconnected peer.
-		 * 
-		 * @return the disconnected peer
-		 */
-		public Peer getPeer() {
-			return peer;
-		}
-
-		@Override
-		public void body() throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		try {
 			punishBecauseUnreachable(peer);
 		}
-
-		@Override
-		public String logPrefix() {
-			return "peers: ";
+		catch (ClosedDatabaseException | DatabaseException e) {
+			throw new IOException(e);
 		}
 	}
 

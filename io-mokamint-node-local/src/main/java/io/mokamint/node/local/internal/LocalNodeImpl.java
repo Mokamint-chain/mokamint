@@ -685,105 +685,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * An event.
-	 */
-	public interface Event {
-
-		/**
-		 * Main body of the event execution.
-		 * 
-		 * @throws Exception if the execution fails
-		 */
-		@OnThread("executors")
-		void body() throws Exception;
-
-		/**
-		 * Yields a prefix to be reported in the logs in front of the {@link #toString()} message.
-		 * 
-		 * @return the prefix
-		 */
-		String logPrefix();
-
-		@Override
-		String toString();
-	}
-
-	/**
-	 * Callback called when an event is submitted.
-	 * It can be useful for testing or monitoring events.
-	 * 
-	 * @param event the event
-	 */
-	protected void onSubmit(Event event) {}
-
-	/**
-	 * Callback called when an event begins being executed.
-	 * It can be useful for testing or monitoring events.
-	 * 
-	 * @param event the event
-	 */
-	protected void onStart(Event event) {}
-
-	/**
-	 * Callback called at the end of the successful execution of an event.
-	 * It can be useful for testing or monitoring events.
-	 * 
-	 * @param event the event
-	 */
-	protected void onComplete(Event event) {}
-
-	/**
-	 * Callback called at the end of the failed execution of an event.
-	 * It can be useful for testing or monitoring events.
-	 * 
-	 * @param event the event
-	 * @param exception the failure cause
-	 */
-	protected void onFail(Event event, Exception e) {
-		LOGGER.log(Level.SEVERE, "failed execution of " + event, e);
-	}
-
-	/**
-	 * Signals that an event occurred. This is typically called
-	 * to signal that something occurred and that the node must react accordingly.
-	 * 
-	 * @param event the submitted event
-	 */
-	public void submit(Event event) {
-		var runnable = new Runnable() {
-
-			@Override @OnThread("executors")
-			public final void run() {
-				onStart(event);
-
-				try {
-					event.body();
-				}
-				catch (InterruptedException e) {
-					LOGGER.log(Level.WARNING, event.logPrefix() + event + " interrupted");
-					Thread.currentThread().interrupt();
-					return;
-				}
-				catch (Exception e) {
-					onFail(event, e);
-					return;
-				}
-
-				onComplete(event);
-			}
-		};
-
-		try {
-			LOGGER.info(event.logPrefix() + "received " + event);
-			onSubmit(event);
-			executors.execute(runnable);
-		}
-		catch (RejectedExecutionException e) {
-			LOGGER.warning(event.logPrefix() + event + " rejected, probably because the node is shutting down");
-		}
-	}
-
-	/**
 	 * A task is a complex activity that can be run in its own thread. Once it completes,
 	 * it typically fires some events to signal something to the node.
 	 */
@@ -993,4 +894,18 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param miner the miner
 	 */
 	public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {}
+
+	/**
+	 * Called when a peer gets connected.
+	 * 
+	 * @param peer the peer
+	 */
+	public void onPeerConnected(Peer peer) {}
+
+	/**
+	 * Called when a peer gets disconnected.
+	 * 
+	 * @param peer the peer
+	 */
+	public void onPeerDisconnected(Peer peer) {}
 }

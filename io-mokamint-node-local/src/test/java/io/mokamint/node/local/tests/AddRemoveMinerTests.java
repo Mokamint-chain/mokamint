@@ -51,11 +51,11 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.NodePeers.PeerConnectedEvent;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
@@ -145,8 +145,9 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onComplete(Event event) {
-				if (event instanceof PeerConnectedEvent pce && pce.getPeer().equals(peer1))
+			public void onPeerConnected(Peer peer) {
+				super.onPeerConnected(peer);
+				if (peer.equals(peer1))
 					node2HasConnectedToNode1.release();
 			}
 
