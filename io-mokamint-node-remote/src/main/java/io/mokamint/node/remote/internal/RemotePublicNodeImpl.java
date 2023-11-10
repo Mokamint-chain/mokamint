@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -226,8 +227,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen) {
-		whisper(itself, seen, true);
+	public void initialWhisper(Peer peer) {
+		whisper(WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString()), _peer -> false, true);
 	}
 
 	@Override

@@ -28,7 +28,6 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -38,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
@@ -275,17 +273,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			LOGGER.warning(logPrefix + "not whispering itself since its public URI is unknown");
 		else {
 			LOGGER.info(logPrefix + "whispering itself to all peers");
-
-			var itself = Peers.of(uri.get());
-			var message = WhisperPeersMessages.of(Stream.of(itself), UUID.randomUUID().toString());
-
-			if (alreadyWhispered.add(message)) {
-				whisperPeersSessions.stream()
-					.filter(Session::isOpen)
-					.forEach(s -> whisperToSession(s, message));
-	
-				node.whisperItself(message, Predicate.isEqual(this));
-			}
+			node.initialWhisper(Peers.of(uri.get()));
 		}
 	}
 

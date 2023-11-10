@@ -242,12 +242,17 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
-		whisper(whisperedPeers, seen, true);
-	}
+		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
+			return;
+	
+		Predicate<Whisperer> newSeen = seen.or(isThis);
+		// we check if the node needs any of the whispered peers
+		var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> peers.getRemote(peer).isEmpty()).toArray(Peer[]::new);
+		if (usefulToAdd.length > 0)
+			submit(peers.new AddWhisperedPeersTask(usefulToAdd)); // TODO: move class
 
-	@Override
-	public void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen) {
-		whisper(itself, seen, false);
+		peers.whisper(whisperedPeers, newSeen);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
 	}
 
 	/**
@@ -286,7 +291,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	/**
 	 * Starts whispering a block that has been explicitly added to this node. It is
-	 * an optimization version of {@link #whisper(WhisperedBlock, Predicate)} for this special case.
+	 * an optimized version of {@link #whisper(WhisperedBlock, Predicate)} for this special case.
 	 * 
 	 * @param block the block to whisper
 	 */
@@ -316,7 +321,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	/**
 	 * Starts whispering a transaction that has been explicitly added to this node. It is
-	 * an optimization version of {@link #whisper(WhisperedTransaction, Predicate)} for this special case.
+	 * an optimized version of {@link #whisper(WhisperedTransaction, Predicate)} for this special case.
 	 * 
 	 * @param transaction the transaction to whisper
 	 */
@@ -335,9 +340,7 @@ public class LocalNodeImpl implements LocalNode {
 			return blockchain.getBlock(hash);
 		}
 		catch (ClosedDatabaseException e) {
-			// the database cannot be closed because this node is open
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
 		finally {
 			closureLock.afterCall();
@@ -352,9 +355,7 @@ public class LocalNodeImpl implements LocalNode {
 			return blockchain.getBlockDescription(hash);
 		}
 		catch (ClosedDatabaseException e) {
-			// the database cannot be closed because this node is open
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
 		finally {
 			closureLock.afterCall();
@@ -407,9 +408,7 @@ public class LocalNodeImpl implements LocalNode {
 			return peers.add(peer, true, true);
 		}
 		catch (ClosedDatabaseException e) {
-			// the database cannot be closed because this node is open
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
 		finally {
 			closureLock.afterCall();
@@ -424,9 +423,7 @@ public class LocalNodeImpl implements LocalNode {
 			return peers.remove(peer);
 		}
 		catch (ClosedDatabaseException e) {
-			// the database cannot be closed because this node is open
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
 		finally {
 			closureLock.afterCall();
@@ -537,9 +534,7 @@ public class LocalNodeImpl implements LocalNode {
 			return blockchain.getChainInfo();
 		}
 		catch (ClosedDatabaseException e) {
-			// the database cannot be closed because this node is open
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
 		finally {
 			closureLock.afterCall();
@@ -554,9 +549,7 @@ public class LocalNodeImpl implements LocalNode {
 			return ChainPortions.of(blockchain.getChain(start, count));
 		}
 		catch (ClosedDatabaseException e) {
-			// the database cannot be closed because this node is open
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
 		finally {
 			closureLock.afterCall();
@@ -656,11 +649,9 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			var count = miners.get().count();
 			Optional<MinerInfo> result = miners.add(miner);
-			result.ifPresent(info -> {
-				// we require to mine, if there were no miners before this call
-				if (count == 0L)
-					blockchain.scheduleMining();
-			});
+			// if there were no miners before this call, we require to mine
+			if (count == 0L && result.isPresent())
+				blockchain.scheduleMining();
 
 			return result;
 		}
@@ -709,13 +700,9 @@ public class LocalNodeImpl implements LocalNode {
 				service.whisperItself();
 	}
 
-	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean tryToAddToThePeers) {
-		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
-			return;
-
-		Predicate<Whisperer> newSeen = seen.or(isThis);
-		peers.whisper(whisperedPeers, newSeen, tryToAddToThePeers);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
+	private static RuntimeException unexpectedException(Exception e) {
+		LOGGER.log(Level.SEVERE, "unexpected exception", e);
+		return new RuntimeException("Unexpected exception", e);
 	}
 
 	/**

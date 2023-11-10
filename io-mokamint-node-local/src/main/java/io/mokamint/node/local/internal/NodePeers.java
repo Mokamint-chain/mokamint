@@ -222,27 +222,6 @@ public class NodePeers implements AutoCloseable {
 
 	/**
 	 * Whispers some peers to this container of peers. It forwards the message
-	 * to the peers in this container and adds the peers in the message to this
-	 * container, if requested.
-	 * 
-	 * @param whisperedPeers the whispered peers
-	 * @param seen the whisperers already seen during whispering
-	 * @param tryToAdd if the peers must be added to those in this container
-	 */
-	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean tryToAdd) {
-		if (tryToAdd) {
-			// we check if the node needs any of the whispered peers
-			var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> remotes.get(peer) == null).toArray(Peer[]::new);
-			if (usefulToAdd.length > 0)
-				node.submit(new AddWhisperedPeersTask(usefulToAdd));
-		}
-	
-		// in any case, we forward the message to our peers
-		whisper(whisperedPeers, seen);
-	}
-
-	/**
-	 * Whispers some peers to this container of peers. It forwards the message
 	 * to the peers in this container.
 	 * 
 	 * @param whisperedPeers the whispered peers
@@ -345,7 +324,7 @@ public class NodePeers implements AutoCloseable {
 	public class AddWhisperedPeersTask implements Task {
 		private final Peer[] peers;
 
-		private AddWhisperedPeersTask(Peer[] peers) {
+		public AddWhisperedPeersTask(Peer[] peers) {
 			this.peers = peers;
 		}
 
