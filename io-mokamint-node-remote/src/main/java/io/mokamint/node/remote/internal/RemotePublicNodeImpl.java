@@ -156,6 +156,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 */
 	private final String logPrefix;
 
+	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
+
 	private final static Logger LOGGER = Logger.getLogger(RemotePublicNodeImpl.class.getName());
 
 	/**
@@ -171,7 +173,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemotePublicNodeImpl(URI uri, long timeout, long whisperedMessagesSize) throws DeploymentException, IOException {
-		this.logPrefix = "remote to public service at " + uri + ": ";
+		this.logPrefix = "public remote(" + uri + "): ";
 		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
 
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
@@ -257,7 +259,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			}
 		}
 
-		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		Predicate<Whisperer> newSeen = seen.or(isThis);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
 	}
 
@@ -280,7 +282,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			}
 		}
 
-		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		Predicate<Whisperer> newSeen = seen.or(isThis);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, newSeen));
 	}
 
@@ -302,7 +304,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			}
 		}
 
-		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		Predicate<Whisperer> newSeen = seen.or(isThis);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
 	}
 

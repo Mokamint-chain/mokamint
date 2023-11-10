@@ -270,11 +270,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
-	public void whisperItself(WhisperedPeers itself, Predicate<Whisperer> seen) {
-		whisper(itself, seen, null);
-	}
-
-	@Override
 	public void whisperItself() {
 		if (uri.isEmpty())
 			LOGGER.warning(logPrefix + "not whispering itself since its public URI is unknown");

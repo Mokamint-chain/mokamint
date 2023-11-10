@@ -81,7 +81,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
-		this.logPrefix = "remote to restricted service at " + uri + ": ";
+		this.logPrefix = "restricted remote(" + uri + "): ";
 		this.queues = new NodeMessageQueues(timeout);
 		
 		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
