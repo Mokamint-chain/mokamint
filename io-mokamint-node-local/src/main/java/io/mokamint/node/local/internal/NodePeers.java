@@ -238,6 +238,18 @@ public class NodePeers implements AutoCloseable {
 		}
 	
 		// in any case, we forward the message to our peers
+		whisper(whisperedPeers, seen);
+	}
+
+	/**
+	 * Whispers some peers to this container of peers. It forwards the message
+	 * to the peers in this container.
+	 * 
+	 * @param whisperedPeers the whispered peers
+	 * @param seen the whisperers already seen during whispering
+	 */
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
+		// we forward the message to our peers
 		remotes.values().forEach(remote -> remote.whisper(whisperedPeers, seen));
 	}
 

@@ -28,7 +28,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -43,7 +42,6 @@ import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.NodeMiners;
-import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.IllegalDeadlineException;
@@ -153,7 +151,7 @@ public class MineNewBlockTask implements Task {
 
 		@Override
 		public void body() {
-			node.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false);
+			node.initialWhisper(block);
 		}
 
 		@Override

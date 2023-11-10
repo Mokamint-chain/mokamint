@@ -76,6 +76,8 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
+import io.mokamint.node.messages.WhisperBlockMessages;
+import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -171,6 +173,8 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final ClosureLock closureLock = new ClosureLock();
 
+	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -246,6 +250,19 @@ public class LocalNodeImpl implements LocalNode {
 		whisper(itself, seen, false);
 	}
 
+	/**
+	 * Starts whispering a peer that has been explicitly added to this node. It is
+	 * an optimization version of {@link #whisper(WhisperedPeers, Predicate)} for this special case.
+	 * 
+	 * @param peer the peer to whisper
+	 */
+	public void initialWhisper(Peer peer) {
+		var whisperedPeer = WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString());
+		alreadyWhispered.add(whisperedPeer);
+		peers.whisper(whisperedPeer, isThis);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeer, isThis));
+	}
+
 	@Override
 	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
@@ -262,9 +279,22 @@ public class LocalNodeImpl implements LocalNode {
 				" could not be added to the blockchain: " + e.getMessage());
 		}
 
-		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whisperedBlock, newSeen);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
+	}
+
+	/**
+	 * Starts whispering a block that has been explicitly added to this node. It is
+	 * an optimization version of {@link #whisper(WhisperedBlock, Predicate)} for this special case.
+	 * 
+	 * @param block the block to whisper
+	 */
+	public void initialWhisper(Block block) {
+		var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
+		alreadyWhispered.add(whisperedBlock);
+		peers.whisper(whisperedBlock, isThis);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, isThis));
 	}
 
 	@Override
@@ -279,9 +309,22 @@ public class LocalNodeImpl implements LocalNode {
 			LOGGER.log(Level.SEVERE, "a whispered transaction has been rejected: " + e.getMessage());
 		}
 
-		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whisperedTransaction, newSeen);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, newSeen));
+	}
+
+	/**
+	 * Starts whispering a transaction that has been explicitly added to this node. It is
+	 * an optimization version of {@link #whisper(WhisperedTransaction, Predicate)} for this special case.
+	 * 
+	 * @param transaction the transaction to whisper
+	 */
+	public void initialWhisper(Transaction transaction) {
+		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
+		alreadyWhispered.add(whisperedTransaction);
+		peers.whisper(whisperedTransaction, isThis);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, isThis));
 	}
 
 	@Override
@@ -529,7 +572,7 @@ public class LocalNodeImpl implements LocalNode {
 				return mempool.add(transaction);
 			}
 			finally {
-				whisper(WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString()), _whisperer -> false);
+				initialWhisper(transaction);
 			}
 		}
 		finally {
@@ -670,7 +713,7 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
 
-		Predicate<Whisperer> newSeen = seen.or(Predicate.isEqual(this));
+		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whisperedPeers, newSeen, tryToAddToThePeers);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
 	}
