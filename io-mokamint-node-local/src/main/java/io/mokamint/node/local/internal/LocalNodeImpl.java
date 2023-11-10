@@ -411,15 +411,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		try {
 			Optional<Miner> maybeMiner = miners.get().filter(miner -> miner.getUUID().equals(uuid)).findFirst();
-			if (maybeMiner.isPresent()) {
-				var miner = maybeMiner.get();
-				if (miners.remove(miner)) {
-					LOGGER.info("removed miner " + uuid + " (" + miner + ")");
-					return true;
-				}
-			}
-
-			return false;
+			return maybeMiner.isPresent() && miners.remove(maybeMiner.get());
 		}
 		finally {
 			closureLock.afterCall();
@@ -622,7 +614,6 @@ public class LocalNodeImpl implements LocalNode {
 			var count = miners.get().count();
 			Optional<MinerInfo> result = miners.add(miner);
 			result.ifPresent(info -> {
-				LOGGER.info("added miner " + info.getUUID() + " (" + info.getDescription() + ")");
 				// we require to mine, if there were no miners before this call
 				if (count == 0L)
 					blockchain.scheduleMining();
@@ -841,6 +832,13 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * Called when a peer gets connected.
+	 * 
+	 * @param peer the peer
+	 */
+	public void onPeerConnected(Peer peer) {}
+
+	/**
 	 * Called when a peer has been added.
 	 * 
 	 * @param peer the added peer
@@ -848,11 +846,32 @@ public class LocalNodeImpl implements LocalNode {
 	public void onPeerAdded(Peer peer) {}
 
 	/**
+	 * Called when a peer gets disconnected.
+	 * 
+	 * @param peer the peer
+	 */
+	public void onPeerDisconnected(Peer peer) {}
+
+	/**
 	 * Called when a peer has been removed.
 	 * 
 	 * @param peer the removed peer
 	 */
 	public void onPeerRemoved(Peer peer) {}
+
+	/**
+	 * Called when a miner has been added.
+	 * 
+	 * @param miner the added miner
+	 */
+	public void onMinerAdded(Miner miner) {}
+
+	/**
+	 * Called when a miner has been removed.
+	 * 
+	 * @param miner the removed miner
+	 */
+	public void onMinerRemoved(Miner miner) {}
 
 	/**
 	 * Called when a transaction has been added to the mempool.
@@ -867,6 +886,14 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param previous the block for whose subsequent block the deadline was being looked up
 	 */
 	public void onNoDeadlineFound(Block previous) {}
+
+	/**
+	 * Called when a miner computes an illegal deadline.
+	 * 
+	 * @param deadline the illegal deadline
+	 * @param miner the miner
+	 */
+	public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {}
 
 	/**
 	 * Called when a node cannot mine because it has no miners attached.
@@ -886,26 +913,4 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param block the mined block
 	 */
 	public void onBlockMined(Block block) {}
-
-	/**
-	 * Called when a miner computes an illegal deadline.
-	 * 
-	 * @param deadline the illegal deadline
-	 * @param miner the miner
-	 */
-	public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {}
-
-	/**
-	 * Called when a peer gets connected.
-	 * 
-	 * @param peer the peer
-	 */
-	public void onPeerConnected(Peer peer) {}
-
-	/**
-	 * Called when a peer gets disconnected.
-	 * 
-	 * @param peer the peer
-	 */
-	public void onPeerDisconnected(Peer peer) {}
 }

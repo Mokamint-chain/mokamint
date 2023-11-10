@@ -53,20 +53,30 @@ public class PunishableSet<A> {
 	 * A filter invoked when trying to add a new actor to the set.
 	 * Only iff it yields true the actor is actually added.
 	 */
-	private final OnAdd<A> onAdd;
+	private final AdditionFilter<A> additionFilter;
 
 	/**
 	 * A filter invoked when trying to remove an actor from the set.
 	 * 
 	 */
-	private final Predicate<A> onRemove;
+	private final Predicate<A> removaleFilter;
+
+	/**
+	 * Code invoked just after an actor has been added.
+	 */
+	private final Consumer<A> onAddition;
+
+	/**
+	 * Code invoked just after an actor has been removed.
+	 */
+	private final Consumer<A> onRemoval;
 
 	/**
 	 * The filter applied when trying to add an actor to a set.
 	 *
 	 * @param <A> the type of the actors
 	 */
-	public interface OnAdd<A> {
+	public interface AdditionFilter<A> {
 
 		/**
 		 * Determines if the given actor must be added.
@@ -89,7 +99,7 @@ public class PunishableSet<A> {
 	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
 	 */
 	public PunishableSet(Stream<A> actors, long initialPoints) {
-		this(actors, initialPoints, (_actor, _force) -> true, _actor -> true);
+		this(actors, initialPoints, (_actor, _force) -> true, _actor -> true, _actor -> {}, _actor -> {});
 	}
 
 	/**
@@ -99,17 +109,19 @@ public class PunishableSet<A> {
 	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
 	 *                      will be used also when adding a new actor to the set later
 	 *                      (see @link {@link PunishableSet#add(Object)})
-	 * @param onAdd a filter invoked when a new actor is added to the set
-	 * @param onRemove a filter invoked when an actor is removed from the set
+	 * @param additionFilter a filter invoked when a new actor is required to be added to the set
+	 * @param removalFilter a filter invoked when an actor is required to be removed from the set
 	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
 	 */
-	public PunishableSet(Stream<A> actors, long initialPoints, OnAdd<A> onAdd, Predicate<A> onRemove) {
+	public PunishableSet(Stream<A> actors, long initialPoints, AdditionFilter<A> additionFilter, Predicate<A> removalFilter, Consumer<A> onAddition, Consumer<A> onRemoval) {
 		if (initialPoints <= 0L)
 			throw new IllegalArgumentException("initialPoints must be positive");
 
 		this.initialPoints = initialPoints;
-		this.onAdd = onAdd;
-		this.onRemove = onRemove;
+		this.additionFilter = additionFilter;
+		this.removaleFilter = removalFilter;
+		this.onAddition = onAddition;
+		this.onRemoval = onRemoval;
 		
 		actors.forEach(actor -> this.actors.put(actor, initialPoints));
 	}
@@ -183,7 +195,7 @@ public class PunishableSet<A> {
 			var newPoints = oldPoints - points;
 			if (newPoints > 0L)
 				return newPoints;
-			else if (onRemove.test(a)) {
+			else if (removaleFilter.test(a)) {
 				result.set(true);
 				return null; // which means remove it
 			}
@@ -191,7 +203,11 @@ public class PunishableSet<A> {
 				return oldPoints;
 		});
 
-		return result.get();
+		boolean hasBeenRemoved = result.get();
+		if (hasBeenRemoved)
+			onRemoval.accept(actor);
+
+		return hasBeenRemoved;
 	}
 
 	/**
@@ -233,7 +249,7 @@ public class PunishableSet<A> {
 		var result = new AtomicBoolean();
 
 		actors.computeIfPresent(actor, (a, oldPoints) -> {
-			if (onRemove.test(a)) {
+			if (removaleFilter.test(a)) {
 				result.set(true);
 				return null; // which means remove it
 			}
@@ -241,7 +257,11 @@ public class PunishableSet<A> {
 				return oldPoints;
 		});
 
-		return result.get();
+		boolean hasBeenRemoved = result.get();
+		if (hasBeenRemoved)
+			onRemoval.accept(actor);
+
+		return hasBeenRemoved;
 	}
 
 	/**
@@ -258,7 +278,7 @@ public class PunishableSet<A> {
 		var result = new AtomicBoolean();
 
 		actors.computeIfAbsent(actor, a -> {
-			if (onAdd.apply(a, force)) {
+			if (additionFilter.apply(a, force)) {
 				result.set(true);
 				return initialPoints;
 			}
@@ -266,7 +286,11 @@ public class PunishableSet<A> {
 				return null;
 		});
 
-		return result.get();
+		boolean hasBeenAdded = result.get();
+		if (hasBeenAdded)
+			onAddition.accept(actor);
+
+		return hasBeenAdded;
 	}
 
 	/**

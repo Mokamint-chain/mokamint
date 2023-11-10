@@ -120,7 +120,7 @@ public class NodePeers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
-		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::onAdd, this::onRemove);
+		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, this::onAddition, this::onRemoval);
 	}
 
 	/**
@@ -195,8 +195,6 @@ public class NodePeers implements AutoCloseable {
 					() -> peers.add(peer, force));
 
 			if (result) {
-				LOGGER.info("peers: added peer " + SanitizedStrings.of(Stream.of(peer)));
-				//node.onPeerAdded(peer);
 				if (whisper)
 					node.submit(new WhisperPeersTask(new Peer[] { peer }));
 
@@ -463,7 +461,7 @@ public class NodePeers implements AutoCloseable {
 					return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(not(peers::contains));
 			}
 			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, logPrefix() + "cannot contact peer " + peer + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, logPrefix() + "cannot contact " + SanitizedStrings.of(peer) + ": " + e.getMessage());
 				punishBecauseUnreachable(peer);
 				return Stream.empty();
 			}
@@ -585,7 +583,7 @@ public class NodePeers implements AutoCloseable {
 		);
 	}
 
-	private boolean onAdd(Peer peer, boolean force) {
+	private boolean additionFilter(Peer peer, boolean force) {
 		// optimization: this avoids opening a remote for a peer that would not be added anyway
 		if (!force && peers.getElements().count() >= config.getMaxPeers())
 			return false;
@@ -601,8 +599,6 @@ public class NodePeers implements AutoCloseable {
 					if (db.add(peer, force)) {
 						storePeer(peer, remote, timeDifference);
 						remote = null; // so that it won't be closed in the finally clause
-						LOGGER.info("peers: added " + SanitizedStrings.of(peer));
-						node.onPeerAdded(peer);
 						return true;
 					}
 					else
@@ -614,23 +610,26 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "peers: interrupted while adding " + peer + " to the peers: " + e.getMessage());
+			LOGGER.log(Level.WARNING, "peers: interrupted while adding " + SanitizedStrings.of(peer) + ": " + e.getMessage());
 			Thread.currentThread().interrupt();
 			throw new UncheckedException(e);
 		}
 		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | ClosedDatabaseException | PeerRejectedException e) {
-			LOGGER.log(Level.WARNING, "peers: cannot add peer " + peer + ": " + e.getMessage());
+			LOGGER.log(Level.WARNING, "peers: cannot add " + SanitizedStrings.of(peer) + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
 	}
 
-	private boolean onRemove(Peer peer) {
+	private void onAddition(Peer peer) {
+		LOGGER.info("peers: added " + SanitizedStrings.of(peer));
+		node.onPeerAdded(peer);
+	}
+
+	private boolean removalFilter(Peer peer) {
 		try {
 			synchronized (lock) {
 				if (db.remove(peer)) {
 					deletePeer(peer, remotes.get(peer));
-					LOGGER.info("peers: removed " + SanitizedStrings.of(peer));
-					node.onPeerRemoved(peer);
 					return true;
 				}
 				else
@@ -638,9 +637,14 @@ public class NodePeers implements AutoCloseable {
 			}
 		}
 		catch (DatabaseException | ClosedDatabaseException | InterruptedException | IOException e) {
-			LOGGER.log(Level.SEVERE, "peers: cannot remove peer " + peer + ": " + e.getMessage());
+			LOGGER.log(Level.SEVERE, "peers: cannot remove " + SanitizedStrings.of(peer) + ": " + e.getMessage());
 			throw new UncheckedException(e);
 		}
+	}
+
+	private void onRemoval(Peer peer) {
+		LOGGER.info("peers: removed " + SanitizedStrings.of(peer));
+		node.onPeerRemoved(peer);
 	}
 
 	/**
@@ -697,7 +701,7 @@ public class NodePeers implements AutoCloseable {
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
 			var remote = RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), config.getWhisperingMemorySize());
-			LOGGER.info("peers: opened connection to peer " + peer);
+			LOGGER.info("peers: opened connection to " + SanitizedStrings.of(peer));
 			return remote;
 		}
 		catch (DeploymentException e) {
@@ -813,7 +817,7 @@ public class NodePeers implements AutoCloseable {
 			remotes.remove(peer);
 			timeDifferences.remove(peer);
 			remote.close();
-			LOGGER.info("peers: closed connection to peer " + peer);
+			LOGGER.info("peers: closed connection to " + SanitizedStrings.of(peer));
 		}
 	}
 }

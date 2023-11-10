@@ -169,11 +169,16 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onPeerConnected(Peer peer) {
-				super.onPeerConnected(peer);
+			public void onPeerAdded(Peer peer) {
+				super.onPeerAdded(peer);
 				if (phase.get() == 1 && peer.equals(peer2))
 					connections.release();
-				else if (phase.get() == 3 && peer.equals(peer2))
+			}
+
+			@Override
+			public void onPeerConnected(Peer peer) {
+				super.onPeerConnected(peer);
+				if (phase.get() == 3 && peer.equals(peer2))
 					reconnections.release();
 			}
 
@@ -192,11 +197,16 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onPeerConnected(Peer peer) {
-				super.onPeerConnected(peer);
+			public void onPeerAdded(Peer peer) {
+				super.onPeerAdded(peer);
 				if (phase.get() == 1 && peer.equals(peer1))
 					connections.release();
-				else if (phase.get() == 3 && peer.equals(peer1))
+			}
+
+			@Override
+			public void onPeerConnected(Peer peer) {
+				super.onPeerConnected(peer);
+				if (phase.get() == 3 && peer.equals(peer1))
 					reconnections.release();
 			}
 		}
