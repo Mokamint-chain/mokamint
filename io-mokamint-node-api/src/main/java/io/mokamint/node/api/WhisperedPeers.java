@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 /**
  * Peers information whispered among peers.
  */
-public interface WhisperedPeers extends Whispered {
+public non-sealed interface WhisperedPeers extends Whispered {
 
 	/**
 	 * Yields the whispered peers.

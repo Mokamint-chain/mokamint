@@ -19,7 +19,7 @@ package io.mokamint.node.api;
 /**
  * Transaction information whispered among peers.
  */
-public interface WhisperedTransaction extends Whispered {
+public non-sealed interface WhisperedTransaction extends Whispered {
 
 	/**
 	 * Yields the whispered transaction.

@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -255,18 +256,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
-	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description) {
-		whisper(whisperedPeers, seen, null, description);
-	}
-
-	@Override
-	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description) {
-		whisper(whisperedBlock, seen, null, description);
-	}
-
-	@Override
-	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description) {
-		whisper(whisperedTransaction, seen, null, description);
+	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
+		whisper(whispered, seen, null, description);
 	}
 
 	@Override
@@ -279,46 +270,30 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, Session excluded, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
+	private void whisper(Whispered whispered, Predicate<Whisperer> seen, Session excluded, String description) {
+		if (seen.test(this) || !alreadyWhispered.add(whispered))
 			return;
 	
 		LOGGER.info(logPrefix + "got whispered " + description);
-	
-		whisperPeersSessions.stream()
+
+		Set<Session> sessions;
+		if (whispered instanceof WhisperedPeers)
+			sessions = whisperPeersSessions;
+		else if (whispered instanceof WhisperedBlock)
+			sessions = whisperBlockSessions;
+		else if (whispered instanceof WhisperedTransaction)
+			sessions = whisperTransactionSessions;
+		else {
+			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());
+			sessions = Collections.emptySet();
+		}
+
+		sessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, whisperedPeers, description));
+			.forEach(s -> whisperToSession(s, whispered, description));
 	
-		node.whisper(whisperedPeers, seen.or(isThis), description);
-	}
-
-	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, Session excluded, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
-			return;
-
-		LOGGER.info(logPrefix + "got whispered " + description);
-	
-		whisperBlockSessions.stream()
-			.filter(Session::isOpen)
-			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, whisperedBlock, description));
-	
-		node.whisper(whisperedBlock, seen.or(isThis), description);
-	}
-
-	private void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, Session excluded, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
-			return;
-
-		LOGGER.info(logPrefix + "got whispered " + description);
-	
-		whisperBlockSessions.stream()
-			.filter(Session::isOpen)
-			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, whisperedTransaction, description));
-	
-		node.whisper(whisperedTransaction, seen.or(isThis), description);
+		node.whisper(whispered, seen.or(isThis), description);
 	}
 
 	private URI addPort(URI uri, int port) throws DeploymentException {

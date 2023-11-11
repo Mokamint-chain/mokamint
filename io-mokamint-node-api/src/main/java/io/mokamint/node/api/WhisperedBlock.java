@@ -19,7 +19,7 @@ package io.mokamint.node.api;
 /**
  * Block information whispered among peers.
  */
-public interface WhisperedBlock extends Whispered {
+public non-sealed interface WhisperedBlock extends Whispered {
 
 	/**
 	 * Yields the whispered block.

@@ -50,9 +50,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeers;
-import io.mokamint.node.api.WhisperedTransaction;
+import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.messages.WhisperPeersMessages;
@@ -224,39 +222,14 @@ public class NodePeers implements AutoCloseable {
 	}
 
 	/**
-	 * Whispers some peers to this container of peers. It forwards the message
-	 * to the peers in this container.
+	 * Whispers an object to this container of peers. It forwards it to the peers in this container.
 	 * 
-	 * @param whisperedPeers the whispered peers
+	 * @param whispered the whispered objects
 	 * @param seen the whisperers already seen during whispering
 	 */
-	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description) {
+	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
 		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(whisperedPeers, seen, description));
-	}
-
-	/**
-	 * Whispers a block to this container of peers. It forwards the message
-	 * to the peers in this container.
-	 * 
-	 * @param whisperedBlock the whispered block
-	 * @param seen the whisperers already seen during whispering
-	 */
-	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description) {
-		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(whisperedBlock, seen, description));
-	}
-
-	/**
-	 * Whispers a transaction to this container of peers. It forwards the message
-	 * to the peers in this container.
-	 * 
-	 * @param whisperedTransaction the whispered transaction
-	 * @param seen the whisperers already seen during whispering
-	 */
-	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description) {
-		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(whisperedTransaction, seen, description));
+		remotes.values().forEach(remote -> remote.whisper(whispered, seen, description));
 	}
 
 	/**

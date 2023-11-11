@@ -24,38 +24,14 @@ import java.util.function.Predicate;
 public interface Whisperer {
 
 	/**
-	 * Whisper the given peers.
+	 * Whisper the given object.
 	 * 
-	 * @param whisperedPeers the whispered peers
+	 * @param whispered the object to whisper
 	 * @param seen a predicate telling if a whisperer has already whispered the
-	 *             {@code whisperedPeers}. This is used in order to avoid infinite recursion
+	 *             {@code whispered} object. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle inside the same machine (this does not account
 	 *             for network connections among whisperers)
 	 * @param description a description of what is being whispered, for logging
 	 */
-	void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description);
-
-	/**
-	 * Whisper the given block.
-	 * 
-	 * @param whisperedBlock the whispered block
-	 * @param seen a predicate telling if a whisperer has already whispered the
-	 *             {@code whisperedBlock}. This is used in order to avoid infinite recursion
-	 *             if whisperers form a cycle inside the same machine (this does not account
-	 *             for network connections among whisperers)
-	 * @param description a description of what is being whispered, for logging
-	 */
-	void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description);
-
-	/**
-	 * Whisper the given transaction.
-	 * 
-	 * @param whisperedTransaction the whispered transaction
-	 * @param seen a predicate telling if a whisperer has already whispered the
-	 *             {@code whisperedTransaction}. This is used in order to avoid infinite recursion
-	 *             if whisperers form a cycle inside the same machine (this does not account
-	 *             for network connections among whisperers)
-	 * @param description a description of what is being whispered, for logging
-	 */
-	void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description);
+	void whisper(Whispered whispered, Predicate<Whisperer> seen, String description);
 }

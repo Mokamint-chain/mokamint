@@ -67,6 +67,7 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.WhisperedTransaction;
@@ -222,81 +223,45 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description) {
-		whisper(whisperedPeers, seen, true, description);
+	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
+		whisper(whispered, seen, true, description);
 	}
 
-	@Override
-	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description) {
-		whisper(whisperedBlock, seen, true, description);
-	}
-
-	@Override
-	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description) {
-		whisper(whisperedTransaction, seen, true, description);
-	}
-
-	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, boolean includeNetwork, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
+	private void whisper(Whispered whispered, Predicate<Whisperer> seen, boolean includeNetwork, String description) {
+		if (seen.test(this) || !alreadyWhispered.add(whispered))
 			return;
 
 		LOGGER.info(logPrefix + "got whispered " + description);
 
-		onWhisperBlock(whisperedBlock.getBlock());
-
-		if (includeNetwork) {
-			try {
-				sendObjectAsync(getSession(WHISPER_BLOCK_ENDPOINT), whisperedBlock);
-			}
-			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
-			}
+		if (whispered instanceof WhisperedPeers whisperedPeers) {
+			onWhisperPeers(whisperedPeers.getPeers());
+			if (includeNetwork)
+				sendWhisperedAsync(whisperedPeers, WHISPER_PEERS_ENDPOINT, description);
 		}
+		else if (whispered instanceof WhisperedBlock whisperedBlock) {
+			onWhisperBlock(whisperedBlock.getBlock());
+			if (includeNetwork)
+				sendWhisperedAsync(whisperedBlock, WHISPER_BLOCK_ENDPOINT, description);
+		}
+		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
+			onWhisperTransaction(whisperedTransaction.getTransaction());
+			if (includeNetwork)
+				sendWhisperedAsync(whisperedTransaction, WHISPER_TRANSACTION_ENDPOINT, description);
+		}
+		else
+			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen, description));
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
 	}
 
-	private void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, boolean includeNetwork, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
-			return;
-
-		LOGGER.info(logPrefix + "got whispered " + description);
-
-		onWhisperTransaction(whisperedTransaction.getTransaction());
-
-		if (includeNetwork) {
-			try {
-				sendObjectAsync(getSession(WHISPER_TRANSACTION_ENDPOINT), whisperedTransaction);
-			}
-			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
-			}
+	private void sendWhisperedAsync(Whispered whispered, String endpoint, String description) {
+		try {
+			sendObjectAsync(getSession(endpoint), whispered);
 		}
-
-		Predicate<Whisperer> newSeen = seen.or(isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, newSeen, description));
-	}
-
-	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, boolean includeNetwork, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
-			return;
-
-		LOGGER.info(logPrefix + "got whispered " + description);
-
-		onWhisperPeers(whisperedPeers.getPeers());
-
-		if (includeNetwork) {
-			try {
-				sendObjectAsync(getSession(WHISPER_PEERS_ENDPOINT), whisperedPeers);
-			}
-			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
-			}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
 		}
-
-		Predicate<Whisperer> newSeen = seen.or(isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen, description));
 	}
 
 	@Override
@@ -305,7 +270,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
+		LOGGER.log(Level.SEVERE, logPrefix + "remote: unexpected exception", e);
 		return new RuntimeException("Unexpected exception", e);
 	}
 
