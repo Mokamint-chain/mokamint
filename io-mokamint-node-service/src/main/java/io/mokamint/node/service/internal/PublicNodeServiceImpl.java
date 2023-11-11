@@ -39,7 +39,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
@@ -52,6 +51,7 @@ import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
 import io.mokamint.node.api.WhisperedTransaction;
@@ -255,18 +255,18 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
-	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
-		whisper(whisperedPeers, seen, null);
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description) {
+		whisper(whisperedPeers, seen, null, description);
 	}
 
 	@Override
-	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
-		whisper(whisperedBlock, seen, null);
+	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description) {
+		whisper(whisperedBlock, seen, null, description);
 	}
 
 	@Override
-	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen) {
-		whisper(whisperedTransaction, seen, null);
+	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description) {
+		whisper(whisperedTransaction, seen, null, description);
 	}
 
 	@Override
@@ -279,46 +279,46 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, Session excluded) {
+	private void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, Session excluded, String description) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
 	
-		LOGGER.info(logPrefix + "got whispered peers " + SanitizedStrings.of(whisperedPeers.getPeers()));
+		LOGGER.info(logPrefix + "got whispered " + description);
 	
 		whisperPeersSessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, whisperedPeers));
+			.forEach(s -> whisperToSession(s, whisperedPeers, description));
 	
-		node.whisper(whisperedPeers, seen.or(isThis));
+		node.whisper(whisperedPeers, seen.or(isThis), description);
 	}
 
-	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, Session excluded) {
+	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, Session excluded, String description) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
 
-		LOGGER.info(logPrefix + "got whispered block " + whisperedBlock.getBlock().getHexHash(config.getHashingForBlocks()));
+		LOGGER.info(logPrefix + "got whispered " + description);
 	
 		whisperBlockSessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, whisperedBlock));
+			.forEach(s -> whisperToSession(s, whisperedBlock, description));
 	
-		node.whisper(whisperedBlock, seen.or(isThis));
+		node.whisper(whisperedBlock, seen.or(isThis), description);
 	}
 
-	private void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, Session excluded) {
+	private void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, Session excluded, String description) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
 			return;
 
-		LOGGER.info(logPrefix + "got whispered transaction " + Hex.toHexString(hasherForTransactions.hash(whisperedTransaction.getTransaction())));
+		LOGGER.info(logPrefix + "got whispered " + description);
 	
 		whisperBlockSessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, whisperedTransaction));
+			.forEach(s -> whisperToSession(s, whisperedTransaction, description));
 	
-		node.whisper(whisperedTransaction, seen.or(isThis));
+		node.whisper(whisperedTransaction, seen.or(isThis), description);
 	}
 
 	private URI addPort(URI uri, int port) throws DeploymentException {
@@ -374,30 +374,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
-	private void whisperToSession(Session session, WhisperedPeers whisperedPeers) {
+	private void whisperToSession(Session session, Whispered whispered, String description) {
 		try {
-			sendObjectAsync(session, whisperedPeers);
+			sendObjectAsync(session, whispered);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper peers to session: it might be closed: " + e.getMessage());
-		}
-	}
-
-	private void whisperToSession(Session session, WhisperedBlock whisperedBlock) {
-		try {
-			sendObjectAsync(session, whisperedBlock);
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper block to session: it might be closed: " + e.getMessage());
-		}
-	}
-
-	private void whisperToSession(Session session, WhisperedTransaction whisperedTransaction) {
-		try {
-			sendObjectAsync(session, whisperedTransaction);
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper transaction to session: it might be closed: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -755,7 +737,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisper(message, _whisperer -> false, session));
+			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisper(message, _whisperer -> false, session, "peers " + SanitizedStrings.of(message.getPeers())));
 		}
 
 		@SuppressWarnings("resource")
@@ -775,7 +757,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperBlockSessions.add(session);
-			addMessageHandler(session, (WhisperBlockMessage message) -> server.whisper(message, _whisperer -> false, session));
+			addMessageHandler(session, (WhisperBlockMessage message) -> server.whisper(message, _whisperer -> false, session, "block " + message.getBlock().getHexHash(server.config.getHashingForBlocks())));
 	    }
 
 		@SuppressWarnings("resource")
@@ -795,7 +777,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperTransactionSessions.add(session);
-			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session));
+			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + server.hasherForTransactions.hash(message.getTransaction())));
 	    }
 
 		@SuppressWarnings("resource")

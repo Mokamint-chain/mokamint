@@ -62,6 +62,7 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.Transactions;
@@ -681,7 +682,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			service.whisper(WhisperPeersMessages.of(allPeers.stream(), UUID.randomUUID().toString()), _whisperer -> false);
+			service.whisper(WhisperPeersMessages.of(allPeers.stream(), UUID.randomUUID().toString()), _whisperer -> false, "peers " + SanitizedStrings.of(allPeers.stream()));
 			assertTrue(semaphore.tryAcquire(1, 5, TimeUnit.SECONDS));
 		}
 	}

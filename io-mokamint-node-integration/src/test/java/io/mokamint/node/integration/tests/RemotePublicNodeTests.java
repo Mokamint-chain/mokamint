@@ -63,6 +63,7 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
+import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.TransactionInfos;
 import io.mokamint.node.Transactions;
@@ -1146,11 +1147,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			return null;
 	    })
-		.when(whisperer).whisper(any(WhisperPeersMessage.class), any());
+		.when(whisperer).whisper(any(WhisperPeersMessage.class), any(), any());
 
 		try (var service = new PublicTestServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			remote.bindWhisperer(whisperer);
-			service.whisper(WhisperPeersMessages.of(peers.stream(), UUID.randomUUID().toString()), _whisperer -> false);
+			service.whisper(WhisperPeersMessages.of(peers.stream(), UUID.randomUUID().toString()), _whisperer -> false, "peers " + SanitizedStrings.of(peers.stream()));
 			semaphore.acquire();
 		}
 	}
@@ -1180,11 +1181,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			return null;
 	    })
-		.when(whisperer).whisper(any(WhisperBlockMessage.class), any());
+		.when(whisperer).whisper(any(WhisperBlockMessage.class), any(), any());
 
 		try (var service = new PublicTestServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			remote.bindWhisperer(whisperer);
-			service.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false);
+			service.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false, "block " + block.getHexHash(HashingAlgorithms.sha256()));
 			semaphore.acquire();
 		}
 	}

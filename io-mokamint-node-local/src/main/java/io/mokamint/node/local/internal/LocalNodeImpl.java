@@ -242,7 +242,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
 
@@ -252,8 +252,8 @@ public class LocalNodeImpl implements LocalNode {
 			submit(() -> peers.tryToAdd(Stream.of(usefulToAdd), false, false), "whispering: addition of peers " + SanitizedStrings.of(Stream.of(usefulToAdd)));
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
-		peers.whisper(whisperedPeers, newSeen);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
+		peers.whisper(whisperedPeers, newSeen, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen, description));
 	}
 
 	/**
@@ -265,12 +265,13 @@ public class LocalNodeImpl implements LocalNode {
 	public void initialWhisper(Peer peer) {
 		var whisperedPeer = WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString());
 		alreadyWhispered.add(whisperedPeer);
-		peers.whisper(whisperedPeer, isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeer, isThis));
+		String description = "peer " + SanitizedStrings.of(peer).toString();
+		peers.whisper(whisperedPeer, isThis, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeer, isThis, description));
 	}
 
 	@Override
-	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
+	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedBlock))
 			return;
 
@@ -280,14 +281,12 @@ public class LocalNodeImpl implements LocalNode {
 			blockchain.add(block);
 		}
 		catch (NoSuchAlgorithmException | DatabaseException | VerificationException | ClosedDatabaseException e) {
-			LOGGER.log(Level.SEVERE, "node: the whispered block " +
-				block.getHexHash(config.getHashingForBlocks()) +
-				" could not be added to the blockchain: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, "node: the whispered " + description + " could not be added to the blockchain: " + e.getMessage());
 		}
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
-		peers.whisper(whisperedBlock, newSeen);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen));
+		peers.whisper(whisperedBlock, newSeen, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, newSeen, description));
 	}
 
 	/**
@@ -299,12 +298,13 @@ public class LocalNodeImpl implements LocalNode {
 	public void initialWhisper(Block block) {
 		var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
 		alreadyWhispered.add(whisperedBlock);
-		peers.whisper(whisperedBlock, isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, isThis));
+		String description = "block " + block.getHexHash(config.getHashingForBlocks());
+		peers.whisper(whisperedBlock, isThis, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, isThis, description));
 	}
 
 	@Override
-	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen) {
+	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedTransaction))
 			return;
 
@@ -312,12 +312,12 @@ public class LocalNodeImpl implements LocalNode {
 			mempool.add(whisperedTransaction.getTransaction());
 		}
 		catch (RejectedTransactionException e) {
-			LOGGER.log(Level.SEVERE, "node: a whispered transaction has been rejected: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, "node: whispered " + description + " has been rejected: " + e.getMessage());
 		}
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
-		peers.whisper(whisperedTransaction, newSeen);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, newSeen));
+		peers.whisper(whisperedTransaction, newSeen, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, newSeen, description));
 	}
 
 	/**
@@ -329,8 +329,9 @@ public class LocalNodeImpl implements LocalNode {
 	public void initialWhisper(Transaction transaction) {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 		alreadyWhispered.add(whisperedTransaction);
-		peers.whisper(whisperedTransaction, isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, isThis));
+		String description = "transaction " + config.getHashingForTransactions().getHasher(Transaction::toByteArray).hash(transaction); // TODO
+		peers.whisper(whisperedTransaction, isThis, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, isThis, description));
 	}
 
 	@Override

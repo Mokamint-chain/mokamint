@@ -31,8 +31,9 @@ public interface Whisperer {
 	 *             {@code whisperedPeers}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle inside the same machine (this does not account
 	 *             for network connections among whisperers)
+	 * @param description a description of what is being whispered, for logging
 	 */
-	void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen);
+	void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description);
 
 	/**
 	 * Whisper the given block.
@@ -42,8 +43,9 @@ public interface Whisperer {
 	 *             {@code whisperedBlock}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle inside the same machine (this does not account
 	 *             for network connections among whisperers)
+	 * @param description a description of what is being whispered, for logging
 	 */
-	void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen);
+	void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description);
 
 	/**
 	 * Whisper the given transaction.
@@ -53,6 +55,7 @@ public interface Whisperer {
 	 *             {@code whisperedTransaction}. This is used in order to avoid infinite recursion
 	 *             if whisperers form a cycle inside the same machine (this does not account
 	 *             for network connections among whisperers)
+	 * @param description a description of what is being whispered, for logging
 	 */
-	void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen);
+	void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description);
 }

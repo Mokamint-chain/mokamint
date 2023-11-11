@@ -19,7 +19,6 @@ package io.mokamint.node.api;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -199,8 +198,7 @@ public interface PublicNode extends Node, Whisperer {
 	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Starts whispering a peer that has been explicitly added to this node. It is
-	 * an optimized version of {@link #whisper(WhisperedPeers, Predicate)} for this special case.
+	 * Starts whispering a peer that has been explicitly added to this node.
 	 * 
 	 * @param peer the peer to whisper
 	 */

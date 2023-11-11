@@ -134,7 +134,7 @@ public class NodePeers implements AutoCloseable {
 	void connect() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		openConnectionToPeers();
 		node.submitWithFixedDelay(this::pingPeersRecreateRemotesAndCollectPeers,
-			"peers: pinging to all peers to create missing remotes and collect their peers",
+			"peers: pinging all peers to create missing remotes and collect their peers",
 			0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
 		tryToAdd(config.getSeeds().map(Peers::of), true, true);
 	}
@@ -196,8 +196,10 @@ public class NodePeers implements AutoCloseable {
 					() -> peers.add(peer, force));
 
 			if (result) {
-				if (whisper)
-					node.submit(() -> node.whisper(WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString()), _whisperer -> false), "whispering of peers " + SanitizedStrings.of(Stream.of(peer)));
+				if (whisper) {
+					String description = "peer " + SanitizedStrings.of(Stream.of(peer));
+					node.submit(() -> node.whisper(WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString()), _whisperer -> false, description), "whispering of " + description);
+				}
 
 				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 			}
@@ -228,9 +230,9 @@ public class NodePeers implements AutoCloseable {
 	 * @param whisperedPeers the whispered peers
 	 * @param seen the whisperers already seen during whispering
 	 */
-	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
+	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen, String description) {
 		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(whisperedPeers, seen));
+		remotes.values().forEach(remote -> remote.whisper(whisperedPeers, seen, description));
 	}
 
 	/**
@@ -240,9 +242,9 @@ public class NodePeers implements AutoCloseable {
 	 * @param whisperedBlock the whispered block
 	 * @param seen the whisperers already seen during whispering
 	 */
-	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen) {
+	public void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, String description) {
 		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(whisperedBlock, seen));
+		remotes.values().forEach(remote -> remote.whisper(whisperedBlock, seen, description));
 	}
 
 	/**
@@ -252,9 +254,9 @@ public class NodePeers implements AutoCloseable {
 	 * @param whisperedTransaction the whispered transaction
 	 * @param seen the whisperers already seen during whispering
 	 */
-	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen) {
+	public void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, String description) {
 		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(whisperedTransaction, seen));
+		remotes.values().forEach(remote -> remote.whisper(whisperedTransaction, seen, description));
 	}
 
 	/**
@@ -356,13 +358,12 @@ public class NodePeers implements AutoCloseable {
 
 	private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
 		try {
-			Stream<PeerInfo> infos = remote.getPeerInfos();
 			pardonBecauseReachable(peer);
 
 			if (peers.getElements().count() >= config.getMaxPeers()) // optimization
 				return Stream.empty();
 			else
-				return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(not(peers::contains));
+				return remote.getPeerInfos().filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(not(peers::contains));
 		}
 		catch (TimeoutException | ClosedNodeException e) {
 			LOGGER.log(Level.WARNING, "peers: cannot contact " + SanitizedStrings.of(peer) + ": " + e.getMessage());
@@ -416,8 +417,10 @@ public class NodePeers implements AutoCloseable {
 				.toArray(Peer[]::new)
 			);
 	
-		if (added.length > 0 && whisper) // just to avoid useless tasks
-			node.submit(() -> node.whisper(WhisperPeersMessages.of(Stream.of(added), UUID.randomUUID().toString()), _whisperer -> false), "whispering: propagation of peers " + SanitizedStrings.of(Stream.of(added)));
+		if (added.length > 0 && whisper) { // just to avoid useless tasks
+			String description = "peers " + SanitizedStrings.of(Stream.of(added));
+			node.submit(() -> node.whisper(WhisperPeersMessages.of(Stream.of(added), UUID.randomUUID().toString()), _whisperer -> false, description), "whispering: propagation of " + description);
+		}
 	}
 
 	/**
