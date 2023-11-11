@@ -115,6 +115,8 @@ public class Mempool {
 			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash, e);
 		}
 
+		node.scheduleWhisperingWithoutAddition(transaction);
+
 		var entry = new TransactionEntry(transaction, priority, hash);
 
 		synchronized (mempool) {

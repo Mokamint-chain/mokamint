@@ -667,6 +667,10 @@ public class NodePeers implements AutoCloseable {
 		if (blockchain.isEmpty())
 			blockchain.scheduleSynchronization(0L);
 
+		// we make the new peer known to our peers
+		node.scheduleWhisperingWithoutAddition(peer);
+
+		// we inform the new peer about our services
 		node.scheduleWhisperingOfAllServices();
 	}
 

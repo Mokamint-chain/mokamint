@@ -280,11 +280,22 @@ public class LocalNodeImpl implements LocalNode {
 			}
 		}
 		else
-			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());
+			LOGGER.log(Level.SEVERE, "node: unexpected whispered object of class " + whispered.getClass().getName());
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whispered, newSeen, description);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
+	}
+
+	/**
+	 * Schedules the whispering of a peer, but does not add it to this node.
+	 * 
+	 * @param peer the peer to whisper
+	 */
+	public void scheduleWhisperingWithoutAddition(Peer peer) {
+		var whisperedPeer = WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString());
+		String description = "peer " + SanitizedStrings.of(peer);
+		submit(() -> whisperWithoutAddition(whisperedPeer, description), "node: whispering of " + description);
 	}
 
 	/**
@@ -303,7 +314,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param transaction the transaction to whisper
 	 */
-	private void scheduleWhisperingWithoutAddition(Transaction transaction) {
+	public void scheduleWhisperingWithoutAddition(Transaction transaction) {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 		String description = "transaction " + hasherForTransactions.hash(transaction);
 		submit(() -> whisperWithoutAddition(whisperedTransaction, description), "node: whispering of " + description);
@@ -313,7 +324,13 @@ public class LocalNodeImpl implements LocalNode {
 	 * Schedules the advertisement to its peers of the services published by this node.
 	 */
 	public void scheduleWhisperingOfAllServices() {
-		submit(this::whisperAllServices, "whispering of all node's services");
+		submit(this::whisperAllServices, "node: whispering of all node's services");
+	}
+
+	private void whisperWithoutAddition(Whispered whispered, String description) {
+		alreadyWhispered.add(whispered);
+		peers.whisper(whispered, isThis, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, isThis, description));
 	}
 
 	private void whisperAllServices() {
@@ -328,12 +345,6 @@ public class LocalNodeImpl implements LocalNode {
 		var whisperedPeers = WhisperPeersMessages.of(servicesAsPeers, UUID.randomUUID().toString());
 		String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
 		whisperWithoutAddition(whisperedPeers, description);
-	}
-
-	private void whisperWithoutAddition(Whispered whispered, String description) {
-		alreadyWhispered.add(whispered);
-		peers.whisper(whispered, isThis, description);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, isThis, description));
 	}
 
 	@Override
@@ -565,12 +576,7 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			try {
-				return mempool.add(transaction);
-			}
-			finally {
-				scheduleWhisperingWithoutAddition(transaction);
-			}
+			return mempool.add(transaction);
 		}
 		finally {
 			closureLock.afterCall();
@@ -773,22 +779,6 @@ public class LocalNodeImpl implements LocalNode {
 			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
 			return Optional.empty();
 		}
-	}
-
-	/**
-	 * A periodic spawner of a task.
-	 */
-	public interface TaskSpawnerWithFixedDelay {
-
-		/**
-		 * Spawns the given task after the {@code initialDelay} and then every {@code delay}.
-		 * 
-		 * @param task the task
-		 * @param initialDelay the initial delay
-		 * @param delay the periodic delay
-		 * @param unit the time unit of the delays
-		 */
-		void spawnWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit);
 	}
 
 	/**

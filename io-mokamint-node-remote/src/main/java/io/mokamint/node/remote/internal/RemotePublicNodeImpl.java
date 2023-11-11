@@ -257,18 +257,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		if (whispered instanceof WhisperedPeers whisperedPeers) {
 			onWhisperPeers(whisperedPeers.getPeers());
-			if (includeNetwork)
-				sendWhisperedAsync(whisperedPeers, WHISPER_PEERS_ENDPOINT, description);
+			sendWhisperedAsync(whisperedPeers, WHISPER_PEERS_ENDPOINT, description, includeNetwork);
 		}
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			onWhisperBlock(whisperedBlock.getBlock());
-			if (includeNetwork)
-				sendWhisperedAsync(whisperedBlock, WHISPER_BLOCK_ENDPOINT, description);
+			sendWhisperedAsync(whisperedBlock, WHISPER_BLOCK_ENDPOINT, description, includeNetwork);
 		}
 		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
 			onWhisperTransaction(whisperedTransaction.getTransaction());
-			if (includeNetwork)
-				sendWhisperedAsync(whisperedTransaction, WHISPER_TRANSACTION_ENDPOINT, description);
+			sendWhisperedAsync(whisperedTransaction, WHISPER_TRANSACTION_ENDPOINT, description, includeNetwork);
 		}
 		else
 			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());
@@ -277,12 +274,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
 	}
 
-	private void sendWhisperedAsync(Whispered whispered, String endpoint, String description) {
-		try {
-			sendObjectAsync(getSession(endpoint), whispered);
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
+	private void sendWhisperedAsync(Whispered whispered, String endpoint, String description, boolean includeNetwork) {
+		if (includeNetwork) {
+			try {
+				sendObjectAsync(getSession(endpoint), whispered);
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
+			}
 		}
 	}
 

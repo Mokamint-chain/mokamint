@@ -278,7 +278,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		node.whisper(whispered, seen.or(isThis), description);
 	}
 
-	private URI addPort(URI uri, int port) throws DeploymentException {
+	private void whisperToSession(Session session, Whispered whispered, String description) {
+		try {
+			sendObjectAsync(session, whispered);
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to session: it might be closed: " + e.getMessage());
+		}
+	}
+
+	private static URI addPort(URI uri, int port) throws DeploymentException {
 		try {
 			return new URI(uri.toString() + ":" + port);
 		}
@@ -329,15 +338,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
-	}
-
-	private void whisperToSession(Session session, Whispered whispered, String description) {
-		try {
-			sendObjectAsync(session, whispered);
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to session: it might be closed: " + e.getMessage());
-		}
 	}
 
 	protected void onGetInfo(GetInfoMessage message, Session session) {
