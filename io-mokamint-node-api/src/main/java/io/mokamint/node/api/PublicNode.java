@@ -198,13 +198,6 @@ public interface PublicNode extends Node, Whisperer {
 	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Starts whispering a peer that has been explicitly added to this node.
-	 * 
-	 * @param peer the peer to whisper
-	 */
-	public void initialWhisper(Peer peer);
-
-	/**
 	 * Binds a whisperer to this node. This means that whenever this node
 	 * has something to whisper, it will whisper to {@code whisperer} as well.
 	 * Note that this method does not state the converse.

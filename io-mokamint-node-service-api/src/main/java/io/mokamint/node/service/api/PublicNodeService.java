@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.service.api;
 
+import java.net.URI;
+import java.util.Optional;
+
 import io.hotmoka.websockets.server.api.WebSocketServer;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Whisperer;
@@ -104,9 +107,13 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String WHISPER_TRANSACTION_ENDPOINT = "/whisper_transaction";
 
 	/**
-	 * Broadcasts a whispering message containing itself.
+	 * Yields the URI under which this service is seen from the outside, if this
+	 * is possible. There is no guarantee that this URI is public and available
+	 * outside the local network where the service is running.
+	 * 
+	 * @return the URI, if any
 	 */
-	void whisperItself();
+	Optional<URI> getURI();
 
 	@Override
 	void close() throws InterruptedException;

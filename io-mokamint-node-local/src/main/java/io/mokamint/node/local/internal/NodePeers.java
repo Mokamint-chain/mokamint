@@ -667,7 +667,7 @@ public class NodePeers implements AutoCloseable {
 		if (blockchain.isEmpty())
 			blockchain.scheduleSynchronization(0L);
 
-		node.submit(node::whisperItsServices, "whispering: propagation of all node's services");
+		node.scheduleWhisperingOfAllServices();
 	}
 
 	/**

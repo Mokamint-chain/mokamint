@@ -42,11 +42,13 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
@@ -98,6 +100,11 @@ public class LocalNodeImpl implements LocalNode {
 	 * The configuration of the node.
 	 */
 	private final LocalNodeConfig config;
+
+	/**
+	 * The hasher for the transactions.
+	 */
+	private final Hasher<Transaction> hasherForTransactions;
 
 	/**
 	 * The key pair that the node uses to sign the blocks that it mines.
@@ -199,6 +206,7 @@ public class LocalNodeImpl implements LocalNode {
 	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 		try {
 			this.config = config;
+			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 			this.keyPair = keyPair;
 			this.app = app;
 			this.version = Versions.current();
@@ -214,6 +222,8 @@ public class LocalNodeImpl implements LocalNode {
 				blockchain.scheduleMining();
 			else
 				blockchain.scheduleSynchronization(0L);
+
+			periodicExecutors.scheduleWithFixedDelay(this::whisperAllServices, 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
 		}
 		catch (ClosedDatabaseException | ClosedNodeException e) {
 			// the database and the node itself cannot be closed already
@@ -251,7 +261,7 @@ public class LocalNodeImpl implements LocalNode {
 			// we check if the node needs any of the whispered peers
 			var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> peers.getRemote(peer).isEmpty()).toArray(Peer[]::new);
 			if (usefulToAdd.length > 0)
-				submit(() -> peers.tryToAdd(Stream.of(usefulToAdd), false, false), "whispering: addition of peers " + SanitizedStrings.of(Stream.of(usefulToAdd)));
+				submit(() -> peers.tryToAdd(Stream.of(usefulToAdd), false, false), "node: addition of whispered peers " + SanitizedStrings.of(Stream.of(usefulToAdd)));
 		}
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			try {
@@ -278,45 +288,52 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Starts whispering a peer that has been explicitly added to this node. It is
-	 * an optimization version of {@link #whisper(WhisperedPeers, Predicate)} for this special case.
-	 * 
-	 * @param peer the peer to whisper
-	 */
-	public void initialWhisper(Peer peer) {
-		var whisperedPeer = WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString());
-		alreadyWhispered.add(whisperedPeer);
-		String description = "peer " + SanitizedStrings.of(peer).toString();
-		peers.whisper(whisperedPeer, isThis, description);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeer, isThis, description));
-	}
-
-	/**
-	 * Starts whispering a block that has been explicitly added to this node. It is
-	 * an optimized version of {@link #whisper(WhisperedBlock, Predicate)} for this special case.
+	 * Schedules the whispering of a block, but does not add it to this node.
 	 * 
 	 * @param block the block to whisper
 	 */
-	public void initialWhisper(Block block) {
+	public void scheduleWhisperingWithoutAddition(Block block) {
 		var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
-		alreadyWhispered.add(whisperedBlock);
 		String description = "block " + block.getHexHash(config.getHashingForBlocks());
-		peers.whisper(whisperedBlock, isThis, description);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlock, isThis, description));
+		submit(() -> whisperWithoutAddition(whisperedBlock, description), "node: whispering of " + description);
 	}
 
 	/**
-	 * Starts whispering a transaction that has been explicitly added to this node. It is
-	 * an optimized version of {@link #whisper(WhisperedTransaction, Predicate)} for this special case.
+	 * Schedules the whispering of a transaction, but does not add it to this node.
 	 * 
 	 * @param transaction the transaction to whisper
 	 */
-	public void initialWhisper(Transaction transaction) {
+	private void scheduleWhisperingWithoutAddition(Transaction transaction) {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
-		alreadyWhispered.add(whisperedTransaction);
-		String description = "transaction " + config.getHashingForTransactions().getHasher(Transaction::toByteArray).hash(transaction); // TODO
-		peers.whisper(whisperedTransaction, isThis, description);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransaction, isThis, description));
+		String description = "transaction " + hasherForTransactions.hash(transaction);
+		submit(() -> whisperWithoutAddition(whisperedTransaction, description), "node: whispering of " + description);
+	}
+
+	/**
+	 * Schedules the advertisement to its peers of the services published by this node.
+	 */
+	public void scheduleWhisperingOfAllServices() {
+		submit(this::whisperAllServices, "whispering of all node's services");
+	}
+
+	private void whisperAllServices() {
+		// we check how the external world sees our services as peers
+		Stream<Peer> servicesAsPeers = boundWhisperers.stream()
+			.filter(whisperer -> whisperer instanceof PublicNodeService)
+			.map(whisperer -> (PublicNodeService) whisperer)
+			.map(PublicNodeService::getURI)
+			.flatMap(Optional::stream)
+			.map(Peers::of);
+
+		var whisperedPeers = WhisperPeersMessages.of(servicesAsPeers, UUID.randomUUID().toString());
+		String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
+		whisperWithoutAddition(whisperedPeers, description);
+	}
+
+	private void whisperWithoutAddition(Whispered whispered, String description) {
+		alreadyWhispered.add(whispered);
+		peers.whisper(whispered, isThis, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, isThis, description));
 	}
 
 	@Override
@@ -552,7 +569,7 @@ public class LocalNodeImpl implements LocalNode {
 				return mempool.add(transaction);
 			}
 			finally {
-				initialWhisper(transaction);
+				scheduleWhisperingWithoutAddition(transaction);
 			}
 		}
 		finally {
@@ -676,15 +693,6 @@ public class LocalNodeImpl implements LocalNode {
 			throw new IllegalDeadlineException("Wrong deadlines' signature algorithm in deadline");
 		else if (!app.checkPrologExtra(prolog.getExtra()))
 			throw new IllegalDeadlineException("Invalid extra data in deadline");
-	}
-
-	/**
-	 * Adverts to its peers the services published by this node.
-	 */
-	void whisperItsServices() {
-		for (var whisperer: boundWhisperers)
-			if (whisperer instanceof PublicNodeService service)
-				service.whisperItself();
 	}
 
 	private static RuntimeException unexpectedException(Exception e) {

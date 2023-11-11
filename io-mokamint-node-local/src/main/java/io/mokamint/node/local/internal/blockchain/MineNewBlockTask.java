@@ -224,7 +224,7 @@ public class MineNewBlockTask implements Task {
 
 		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 			if (blockchain.add(block))
-				node.submit(() -> node.initialWhisper(block), "whispering: propagation of block " + block.getHexHash(config.getHashingForBlocks()));
+				node.scheduleWhisperingWithoutAddition(block);
 		}
 
 		/**

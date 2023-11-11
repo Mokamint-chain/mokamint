@@ -30,9 +30,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -43,7 +40,6 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
@@ -138,11 +134,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private final Optional<URI> uri;
 
 	/**
-	 * A service used to schedule periodic tasks.
-	 */
-	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(1);
-
-	/**
 	 * The sessions connected to the {@link WhisperPeersEndpoint}.
 	 */
 	private final Set<Session> whisperPeersSessions = ConcurrentHashMap.newKeySet();
@@ -235,8 +226,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			AddTransactionEndpoint.config(this), GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this),
 			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
 
-		periodicTasks.scheduleWithFixedDelay(this::whisperItself, 0L, peerBroadcastInterval, TimeUnit.MILLISECONDS);
-
 		if (uri.isEmpty())
 			LOGGER.info(logPrefix + "published");
 		else
@@ -246,28 +235,21 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	@Override
 	public void close() throws InterruptedException {
 		if (!isClosed.getAndSet(true)) {
-			periodicTasks.shutdownNow();
 			node.removeOnCloseHandler(this_close);
 			node.unbindWhisperer(this);
 			stopContainer();
-			periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
 			LOGGER.info(logPrefix + "closed");
 		}
 	}
 
 	@Override
-	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
-		whisper(whispered, seen, null, description);
+	public Optional<URI> getURI() {
+		return uri;
 	}
 
 	@Override
-	public void whisperItself() {
-		if (uri.isEmpty())
-			LOGGER.warning(logPrefix + "not whispering itself since its public URI is unknown");
-		else {
-			LOGGER.info(logPrefix + "whispering itself to all peers");
-			node.initialWhisper(Peers.of(uri.get()));
-		}
+	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
+		whisper(whispered, seen, null, description);
 	}
 
 	private void whisper(Whispered whispered, Predicate<Whisperer> seen, Session excluded, String description) {

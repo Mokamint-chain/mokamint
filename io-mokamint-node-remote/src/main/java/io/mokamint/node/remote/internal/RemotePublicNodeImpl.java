@@ -38,6 +38,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -49,6 +52,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -119,6 +123,7 @@ import io.mokamint.node.messages.api.WhisperPeersMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.remote.api.RemotePublicNode;
+import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -130,7 +135,15 @@ import jakarta.websocket.Session;
 @ThreadSafe
 public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePublicNode {
 
+	/**
+	 * A queue of messages received from the external world.
+	 */
 	private final NodeMessageQueues queues;
+
+	/**
+	 * A service used to schedule periodic tasks.
+	 */
+	private final ScheduledExecutorService periodicTasks = Executors.newScheduledThreadPool(1);
 
 	/**
 	 * The whisperers bound to this node.
@@ -210,6 +223,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		this.hashingForBlocks = config.getHashingForBlocks();
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
+
+		periodicTasks.scheduleWithFixedDelay(this::whisperAllServices, 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
+	}
+
+	@Override
+	public void close() throws IOException, InterruptedException {
+		super.close();
+		periodicTasks.shutdownNow();
+		periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
 	}
 
 	@Override
@@ -264,9 +286,18 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	@Override
-	public void initialWhisper(Peer peer) {
-		whisper(WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString()), _peer -> false, "peer " + SanitizedStrings.of(peer).toString());
+	private void whisperAllServices() {
+		// we check how the external world sees our services as peers
+		Stream<Peer> servicesAsPeers = boundWhisperers.stream()
+			.filter(whisperer -> whisperer instanceof PublicNodeService)
+			.map(whisperer -> (PublicNodeService) whisperer)
+			.map(PublicNodeService::getURI)
+			.flatMap(Optional::stream)
+			.map(Peers::of);
+
+		var whisperedPeers = WhisperPeersMessages.of(servicesAsPeers, UUID.randomUUID().toString());
+		String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
+		whisper(whisperedPeers, _whisperer -> false, false, description);
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
