@@ -159,7 +159,7 @@ public class Blockchain implements AutoCloseable {
 		// if synchronization is in progress, mining will be triggered at its end anyway
 		if (tryToAcquireSynchronizationLock()) {
 			try {
-				node.submit(new MineNewBlockTask(node)).ifPresent(miningTasks::add);
+				node.submit(new MineNewBlockTask(node), "mining").ifPresent(miningTasks::add);
 			}
 			finally {
 				releaseSynchronizationLock();
@@ -174,7 +174,7 @@ public class Blockchain implements AutoCloseable {
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
 	public void scheduleSynchronization(long initialHeight) {
-		node.submit(new SynchronizationTask(node, initialHeight));
+		node.submit(new SynchronizationTask(node, initialHeight), "sync");
 	}
 
 	/**
@@ -473,7 +473,7 @@ public class Blockchain implements AutoCloseable {
 			if (first)
 				throw e;
 			else
-				LOGGER.warning("discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
+				LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
 		}
 
 		return false;
@@ -524,7 +524,7 @@ public class Blockchain implements AutoCloseable {
 		}
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
 			// the database cannot be closed at this moment;
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
 			throw new RuntimeException("Unexpected exception", e);
 		}
 	}

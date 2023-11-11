@@ -101,10 +101,10 @@ public class PeersDatabase implements AutoCloseable {
 		if (closureLock.stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
-				LOGGER.info("closed the peers database");
+				LOGGER.info("db: closed the peers database");
 			}
 			catch (ExodusException e) {
-				LOGGER.log(Level.WARNING, "failed to close the peers database", e);
+				LOGGER.log(Level.WARNING, "db: failed to close the peers database", e);
 				throw new DatabaseException("cannot close the peers database", e);
 			}
 		}
@@ -247,11 +247,11 @@ public class PeersDatabase implements AutoCloseable {
 					if (bi == null) {
 						var nodeUUID = java.util.UUID.randomUUID();
 						storeOfPeers.put(txn, UUID, fromBytes(new MarshallableUUID(nodeUUID).toByteArray()));
-						LOGGER.info("created a new UUID for the node: " + nodeUUID);
+						LOGGER.info("db: created a new UUID for the node: " + nodeUUID);
 					}
 					else {
 						var nodeUUID = uncheck(MarshallableUUID::from).apply(bi).uuid;
-						LOGGER.info("the UUID of the node is " + nodeUUID);
+						LOGGER.info("db: the UUID of the node is " + nodeUUID);
 					}
 				});
 			});
@@ -368,7 +368,7 @@ public class PeersDatabase implements AutoCloseable {
 
 	private Environment createBlockchainEnvironment(LocalNodeConfig config) {
 		var env = new Environment(config.getDir().resolve("peers").toString());
-		LOGGER.info("opened the peers database");
+		LOGGER.info("db: opened the peers database");
 		return env;
 	}
 
@@ -382,7 +382,7 @@ public class PeersDatabase implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 
-		LOGGER.info("opened the store of " + name + " inside the peers database");
+		LOGGER.info("db: opened the store of " + name);
 		return store.get();
 	}
 }

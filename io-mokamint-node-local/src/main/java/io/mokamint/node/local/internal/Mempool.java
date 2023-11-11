@@ -102,8 +102,9 @@ public class Mempool {
 	 */
 	public TransactionInfo add(Transaction transaction) throws RejectedTransactionException {
 		byte[] hash = hasher.hash(transaction);
+		String hexHash = Hex.toHexString(hash);
 		if (!app.checkTransaction(transaction))
-			throw new RejectedTransactionException("Invalid transaction " + Hex.toHexString(hash));
+			throw new RejectedTransactionException("Invalid transaction " + hexHash);
 
 		long priority;
 
@@ -111,7 +112,7 @@ public class Mempool {
 			priority = app.getPriority(transaction);
 		}
 		catch (RejectedTransactionException e) {
-			throw new RejectedTransactionException("Cannot compute the priority of transaction " + Hex.toHexString(hash), e);
+			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash, e);
 		}
 
 		var entry = new TransactionEntry(transaction, priority, hash);
@@ -119,16 +120,16 @@ public class Mempool {
 		synchronized (mempool) {
 			if (mempool.size() < MAX_MEMPOOL_SIZE) { // TODO
 				if (!mempool.add(entry))
-					throw new RejectedTransactionException("Repeated transaction " + Hex.toHexString(hash));
+					throw new RejectedTransactionException("Repeated transaction " + hexHash);
 
 				mempoolAsList = null; // invalidation
 			}
 			else
-				throw new RejectedTransactionException("Cannot add transaction " + Hex.toHexString(hash)
+				throw new RejectedTransactionException("Cannot add transaction " + hexHash
 					+ ": all " + MAX_MEMPOOL_SIZE + " slots of the mempool are full");
 		}
 
-		LOGGER.info("mempool: added transaction " + hasher.hash(transaction));
+		LOGGER.info("mempool: added transaction " + hexHash);
 
 		node.onTransactionAdded(transaction);
 

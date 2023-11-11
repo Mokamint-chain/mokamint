@@ -134,7 +134,9 @@ public class NodePeers implements AutoCloseable {
 	 */
 	void connect() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		openConnectionToPeers();
-		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(), 0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
+		node.submitWithFixedDelay(new PingPeersRecreateRemotesAndCollectPeersTask(),
+			"peers: pinging to all peers to create missing remotes and collect their peers",
+			0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
 		tryToAdd(config.getSeeds().map(Peers::of), true, true);
 	}
 
@@ -196,7 +198,7 @@ public class NodePeers implements AutoCloseable {
 
 			if (result) {
 				if (whisper)
-					node.submit(new WhisperPeersTask(new Peer[] { peer }));
+					node.submit(new WhisperPeersTask(new Peer[] { peer }), "whispering of peers " + SanitizedStrings.of(Stream.of(peer)));
 
 				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 			}
@@ -329,18 +331,8 @@ public class NodePeers implements AutoCloseable {
 		}
 
 		@Override
-		public String toString() {
-			return "addition of whispered peers " + SanitizedStrings.of(Stream.of(peers));
-		}
-
-		@Override
 		public void body() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 			tryToAdd(Stream.of(peers), false, false);
-		}
-
-		@Override
-		public String logPrefix() {
-			return "peers: ";
 		}
 	}
 
@@ -355,18 +347,8 @@ public class NodePeers implements AutoCloseable {
 		}
 
 		@Override
-		public String toString() {
-			return "whispering of peers " + SanitizedStrings.of(Stream.of(peers));
-		}
-
-		@Override
 		public void body() {
 			node.whisper(WhisperPeersMessages.of(Stream.of(peers), UUID.randomUUID().toString()), _whisperer -> false);
-		}
-
-		@Override
-		public String logPrefix() {
-			return "peers: ";
 		}
 	}
 
@@ -377,18 +359,8 @@ public class NodePeers implements AutoCloseable {
 		private WhisperItsServicesTask() {}
 
 		@Override
-		public String toString() {
-			return "whispering its services to all its peers task";
-		}
-
-		@Override
 		public void body() {
 			node.whisperItsServices();
-		}
-
-		@Override
-		public String logPrefix() {
-			return "peers: ";
 		}
 	}
 
@@ -407,16 +379,6 @@ public class NodePeers implements AutoCloseable {
 			);
 
 			tryToAdd(Stream.of(allPeers), false, true);
-		}
-
-		@Override
-		public String logPrefix() {
-			return "peers: ";
-		}
-
-		@Override
-		public String toString() {
-			return "pinging to all peers to create missing remotes and collect their peers";
 		}
 
 		/**
@@ -452,7 +414,7 @@ public class NodePeers implements AutoCloseable {
 					return infos.filter(PeerInfo::isConnected).map(PeerInfo::getPeer).filter(not(peers::contains));
 			}
 			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, logPrefix() + "cannot contact " + SanitizedStrings.of(peer) + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, "peers: cannot contact " + SanitizedStrings.of(peer) + ": " + e.getMessage());
 				punishBecauseUnreachable(peer);
 				return Stream.empty();
 			}
@@ -505,7 +467,7 @@ public class NodePeers implements AutoCloseable {
 			);
 	
 		if (added.length > 0 && whisper) // just to avoid useless tasks
-			node.submit(new WhisperPeersTask(added));
+			node.submit(new WhisperPeersTask(added), "whispering: propagation of peers " + SanitizedStrings.of(Stream.of(added)));
 	}
 
 	/**
@@ -779,7 +741,7 @@ public class NodePeers implements AutoCloseable {
 		if (blockchain.isEmpty())
 			blockchain.scheduleSynchronization(0L);
 
-		node.submit(new WhisperItsServicesTask());
+		node.submit(new WhisperItsServicesTask(), "whispering: propagation of all node's services");
 	}
 
 	/**

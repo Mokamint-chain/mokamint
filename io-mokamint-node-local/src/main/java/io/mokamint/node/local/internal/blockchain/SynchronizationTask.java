@@ -77,16 +77,6 @@ public class SynchronizationTask implements Task {
 	}
 
 	@Override
-	public String logPrefix() {
-		return "sync: ";
-	}
-
-	@Override
-	public String toString() {
-		return "chain synchronization from the peers";
-	}
-
-	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, IOException, InterruptedException {
 		var blockchain = node.getBlockchain();
 
@@ -156,7 +146,7 @@ public class SynchronizationTask implements Task {
 		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, IOException, InterruptedException {
 			do {
 				if (!downloadNextGroups()) {
-					LOGGER.info(logPrefix() + "synchronization stops here since the peers do not provide more block hashes to download");
+					LOGGER.info("sync: stop here since the peers do not provide more block hashes to download");
 					break;
 				}
 
@@ -164,7 +154,7 @@ public class SynchronizationTask implements Task {
 				downloadBlocks();
 
 				if (!addBlocksToBlockchain()) {
-					LOGGER.info(logPrefix() + "synchronization stops here since nomore verifiable blocks can be downloaded");
+					LOGGER.info("sync: stop here since nomore verifiable blocks can be downloaded");
 					break;
 				}
 
@@ -188,7 +178,7 @@ public class SynchronizationTask implements Task {
 		 * @throws ClosedDatabaseException if the database of the node is closed
 		 */
 		private boolean downloadNextGroups() throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
-			LOGGER.info(logPrefix() + "downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
+			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
 
 			groups.clear();
 
@@ -357,7 +347,7 @@ public class SynchronizationTask implements Task {
 			semaphores = new Semaphore[chosenGroup.length];
 			Arrays.setAll(semaphores, _index -> new Semaphore(1));
 
-			LOGGER.info(logPrefix() + "downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
+			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
 
 			check(InterruptedException.class, DatabaseException.class, ClosedDatabaseException.class, IOException.class, () -> {
 				peers.get().parallel()
@@ -469,7 +459,7 @@ public class SynchronizationTask implements Task {
 						blockchain.add(block);
 					}
 					catch (VerificationException e) {
-						LOGGER.log(Level.SEVERE, "verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
+						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
 						return false;
 					}
 				}

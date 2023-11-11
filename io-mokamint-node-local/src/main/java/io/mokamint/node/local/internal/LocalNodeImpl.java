@@ -47,6 +47,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
+import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
@@ -150,7 +151,7 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The set of tasks currently executing inside {@link #executors} or {@link #periodicExecutors}.
 	 */
-	private final Set<Task> currentlyExecutingTasks = ConcurrentHashMap.newKeySet();
+	private final Set<RunnableTask> currentlyExecutingTasks = ConcurrentHashMap.newKeySet();
 
 	/**
 	 * The code to execute when this node gets closed.
@@ -215,7 +216,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 		catch (ClosedDatabaseException | ClosedNodeException e) {
 			// the database and the node itself cannot be closed already
-			LOGGER.log(Level.SEVERE, "unexpected exception", e);
+			LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
 			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
@@ -244,13 +245,13 @@ public class LocalNodeImpl implements LocalNode {
 	public void whisper(WhisperedPeers whisperedPeers, Predicate<Whisperer> seen) {
 		if (seen.test(this) || !alreadyWhispered.add(whisperedPeers))
 			return;
-	
-		Predicate<Whisperer> newSeen = seen.or(isThis);
+
 		// we check if the node needs any of the whispered peers
 		var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> peers.getRemote(peer).isEmpty()).toArray(Peer[]::new);
 		if (usefulToAdd.length > 0)
-			submit(peers.new AddWhisperedPeersTask(usefulToAdd)); // TODO: move class
+			submit(peers.new AddWhisperedPeersTask(usefulToAdd), "whispering: addition of peers " + SanitizedStrings.of(Stream.of(usefulToAdd))); // TODO: move class
 
+		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whisperedPeers, newSeen);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeers, newSeen));
 	}
@@ -279,7 +280,7 @@ public class LocalNodeImpl implements LocalNode {
 			blockchain.add(block);
 		}
 		catch (NoSuchAlgorithmException | DatabaseException | VerificationException | ClosedDatabaseException e) {
-			LOGGER.log(Level.SEVERE, "the whispered block " +
+			LOGGER.log(Level.SEVERE, "node: the whispered block " +
 				block.getHexHash(config.getHashingForBlocks()) +
 				" could not be added to the blockchain: " + e.getMessage());
 		}
@@ -311,7 +312,7 @@ public class LocalNodeImpl implements LocalNode {
 			mempool.add(whisperedTransaction.getTransaction());
 		}
 		catch (RejectedTransactionException e) {
-			LOGGER.log(Level.SEVERE, "a whispered transaction has been rejected: " + e.getMessage());
+			LOGGER.log(Level.SEVERE, "node: a whispered transaction has been rejected: " + e.getMessage());
 		}
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
@@ -701,7 +702,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	private static RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "unexpected exception", e);
+		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
 		return new RuntimeException("Unexpected exception", e);
 	}
 
@@ -718,51 +719,6 @@ public class LocalNodeImpl implements LocalNode {
 		 */
 		@OnThread("executors")
 		void body() throws Exception;
-
-		/**
-		 * Yields a prefix to be reported in the logs in front of the {@link #toString()} message.
-		 * 
-		 * @return the prefix
-		 */
-		String logPrefix();
-
-		@Override
-		String toString();
-	}
-
-	/**
-	 * Callback called when a task is submitted.
-	 * It can be useful for testing or monitoring tasks.
-	 * 
-	 * @param task the task
-	 */
-	protected void onSubmit(Task task) {}
-
-	/**
-	 * Callback called when a task begins being executed.
-	 * It can be useful for testing or monitoring events.
-	 * 
-	 * @param task the task
-	 */
-	protected void onStart(Task task) {}
-
-	/**
-	 * Callback called at the end of the successful execution of a task.
-	 * It can be useful for testing or monitoring events.
-	 * 
-	 * @param task the task
-	 */
-	protected void onComplete(Task task) {}
-
-	/**
-	 * Callback called at the end of the failed execution of a task.
-	 * It can be useful for testing or monitoring events.
-	 * 
-	 * @param task the task
-	 * @param exception the failure cause
-	 */
-	protected void onFail(Task task, Exception e) {
-		LOGGER.log(Level.SEVERE, task.logPrefix() + "failed execution of " + task, e);
 	}
 
 	/**
@@ -770,39 +726,37 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private class RunnableTask implements Runnable {
 		private final Task task;
+		private final String description;
 
-		private RunnableTask(Task task) {
+		private RunnableTask(Task task, String description) {
 			this.task = task;
+			this.description = description;
 		}
 
 		@Override @OnThread("executors")
 		public final void run() {
-			onStart(task);
-
-			currentlyExecutingTasks.add(task);
+			currentlyExecutingTasks.add(this);
 
 			try {
 				task.body();
 			}
 			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, task.logPrefix() + task + " interrupted");
+				LOGGER.log(Level.WARNING, this + ": interrupted");
 				Thread.currentThread().interrupt();
 				return;
 			}
 			catch (Exception e) {
-				onFail(task, e);
+				LOGGER.log(Level.SEVERE, this + ": failed", e);
 				return;
 			}
 			finally {
-				currentlyExecutingTasks.remove(task);
+				currentlyExecutingTasks.remove(this);
 			}
-
-			onComplete(task);
 		}
 
 		@Override
 		public String toString() {
-			return task.toString();
+			return description;
 		}
 	};
 
@@ -814,14 +768,15 @@ public class LocalNodeImpl implements LocalNode {
 	 *         to cancel the task, if the task has actually been submitted; this is
 	 *         an empty optional if the task has been rejected
 	 */
-	public Optional<Future<?>> submit(Task task) {
+	public Optional<Future<?>> submit(Task task, String description) {
+		var runnable = new RunnableTask(task, description);
 		try {
-			LOGGER.info(task.logPrefix() + "scheduling " + task);
-			onSubmit(task);
-			return Optional.of(executors.submit(new RunnableTask(task)));
+			Optional<Future<?>> result = Optional.of(executors.submit(runnable));
+			LOGGER.info(runnable + ": scheduled");
+			return result;
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
+			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
 			return Optional.empty();
 		}
 	}
@@ -850,14 +805,15 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param delay the time interval between successive, iterated executions
 	 * @param unit the time interval unit
 	 */
-	public void submitWithFixedDelay(Task task, long initialDelay, long delay, TimeUnit unit) {
+	public void submitWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) {
+		var runnable = new RunnableTask(task, description);
+
 		try {
-			LOGGER.info(task.logPrefix() + "scheduling periodic " + task);
-			onSubmit(task);
-			periodicExecutors.scheduleWithFixedDelay(new RunnableTask(task), initialDelay, delay, unit);
+			periodicExecutors.scheduleWithFixedDelay(runnable, initialDelay, delay, unit);
+			LOGGER.info(runnable + ": scheduled periodically");
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning(task.logPrefix() + task + " rejected, probably because the node is shutting down");
+			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
 		}
 	}
 

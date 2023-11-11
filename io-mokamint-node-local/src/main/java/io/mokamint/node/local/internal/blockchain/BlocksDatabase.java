@@ -139,13 +139,13 @@ public class BlocksDatabase implements AutoCloseable {
 		if (closureLock.stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
-				LOGGER.info("closed the blocks database");
+				LOGGER.info("db: closed the blocks database");
 			}
 			catch (ExodusException e) {
 				// TODO
 				// not sure while this happens, it seems there might be transactions run for garbage collection,
 				// that will consequently find a closed environment
-				LOGGER.log(Level.WARNING, "failed to close the blocks database", e);
+				LOGGER.log(Level.WARNING, "db: failed to close the blocks database", e);
 				throw new DatabaseException("Cannot close the blocks database", e);
 			}
 		}
@@ -454,7 +454,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 
 		if (hasBeenAdded) {
-			LOGGER.info("height " + block.getHeight() + ": added block " + block.getHexHash(node.getConfig().getHashingForBlocks()));
+			LOGGER.info("db: height " + block.getHeight() + ": added block " + block.getHexHash(node.getConfig().getHashingForBlocks()));
 			node.onBlockAdded(block);
 		}
 
@@ -481,7 +481,7 @@ public class BlocksDatabase implements AutoCloseable {
 		byte[] hashOfBlock = block.getHash(hashingForBlocks);
 	
 		if (containsBlock(txn, hashOfBlock)) {
-			LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
+			LOGGER.warning("db: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
@@ -496,7 +496,7 @@ public class BlocksDatabase implements AutoCloseable {
 				return true;
 			}
 			else {
-				LOGGER.warning("not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
+				LOGGER.warning("db: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
 				return false;
 			}
 		}
@@ -519,7 +519,7 @@ public class BlocksDatabase implements AutoCloseable {
 
 	private Environment createBlockchainEnvironment(LocalNodeImpl node) {
 		var env = new Environment(node.getConfig().getDir().resolve("blocks").toString());
-		LOGGER.info("opened the blocks database");
+		LOGGER.info("db: opened the blocks database");
 		return env;
 	}
 
@@ -533,7 +533,7 @@ public class BlocksDatabase implements AutoCloseable {
 			throw new DatabaseException(e);
 		}
 
-		LOGGER.info("opened the store of " + name + " inside the blocks database");
+		LOGGER.info("db: opened the store of " + name + " inside the blocks database");
 		return store.get();
 	}
 
@@ -817,7 +817,7 @@ public class BlocksDatabase implements AutoCloseable {
 	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws DatabaseException {
 		try {
 			storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
-			LOGGER.info("height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
+			LOGGER.info("db: height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -840,7 +840,7 @@ public class BlocksDatabase implements AutoCloseable {
 			long heightOfHead = newHead.getHeight();
 			storeOfBlocks.put(txn, height, fromBytes(longToBytes(heightOfHead)));
 			updateChain(txn, newHead, newHeadHash);
-			LOGGER.info("height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
+			LOGGER.info("db: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);

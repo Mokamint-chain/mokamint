@@ -92,7 +92,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	 */
 	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws DeploymentException, IOException {
 		this.node = node;
-		this.logPrefix = "restricted service at ws://localhost:" + port + ": ";
+		this.logPrefix = "restricted service(ws://localhost:" + port + "): ";
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);

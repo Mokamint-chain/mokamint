@@ -178,6 +178,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 */
 	private final String logPrefix;
 
+	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
+
 	private final static Logger LOGGER = Logger.getLogger(PublicNodeServiceImpl.class.getName());
 
 	/**
@@ -206,7 +208,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 */
 	public PublicNodeServiceImpl(PublicNode node, int port, long peerBroadcastInterval, long whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
-		this.logPrefix = "public service at ws://localhost:" + port + ": ";
+		this.logPrefix = "public service(ws://localhost:" + port + "): ";
 
 		try {
 			this.config = node.getConfig();
@@ -288,7 +290,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			.filter(session -> session != excluded)
 			.forEach(s -> whisperToSession(s, whisperedPeers));
 	
-		node.whisper(whisperedPeers, seen.or(Predicate.isEqual(this)));
+		node.whisper(whisperedPeers, seen.or(isThis));
 	}
 
 	private void whisper(WhisperedBlock whisperedBlock, Predicate<Whisperer> seen, Session excluded) {
@@ -302,7 +304,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			.filter(session -> session != excluded)
 			.forEach(s -> whisperToSession(s, whisperedBlock));
 	
-		node.whisper(whisperedBlock, seen.or(Predicate.isEqual(this)));
+		node.whisper(whisperedBlock, seen.or(isThis));
 	}
 
 	private void whisper(WhisperedTransaction whisperedTransaction, Predicate<Whisperer> seen, Session excluded) {
@@ -316,7 +318,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			.filter(session -> session != excluded)
 			.forEach(s -> whisperToSession(s, whisperedTransaction));
 	
-		node.whisper(whisperedTransaction, seen.or(Predicate.isEqual(this)));
+		node.whisper(whisperedTransaction, seen.or(isThis));
 	}
 
 	private URI addPort(URI uri, int port) throws DeploymentException {
