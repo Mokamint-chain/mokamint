@@ -673,7 +673,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onWhisperPeers(Stream<Peer> peers) {
+			protected void onWhispered(Stream<Peer> peers) {
 				// we must use containsAll since the suggested peers might include
 				// the public URI of the machine where the test is running
 				if (peers.collect(Collectors.toSet()).containsAll(allPeers))

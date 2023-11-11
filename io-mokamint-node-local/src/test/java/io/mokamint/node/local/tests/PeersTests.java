@@ -186,7 +186,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onPeerAdded(Peer peer) {
+			protected void onPeerAdded(Peer peer) {
 				super.onPeerAdded(peer);
 				if (stillToAccept.remove(peer))
 					semaphore.release();
@@ -259,7 +259,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onPeerAdded(Peer peer) {
+			protected void onPeerAdded(Peer peer) {
 				super.onPeerAdded(peer);
 				if (stillToAccept.remove(peer))
 					semaphore.release();

@@ -285,6 +285,13 @@ public class LocalNodeImpl implements LocalNode {
 		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whispered, newSeen, description);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
+
+		if (whispered instanceof WhisperedPeers whisperedPeers)
+			onWhispered(whisperedPeers.getPeers());
+		else if (whispered instanceof WhisperedBlock whisperedBlock)
+			onWhispered(whisperedBlock.getBlock());
+		else if (whispered instanceof WhisperedTransaction whisperedTransaction)
+			onWhispered(whisperedTransaction.getTransaction());
 	}
 
 	/**
@@ -806,49 +813,49 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param peer the peer
 	 */
-	public void onPeerConnected(Peer peer) {}
+	protected void onPeerConnected(Peer peer) {}
 
 	/**
 	 * Called when a peer has been added.
 	 * 
 	 * @param peer the added peer
 	 */
-	public void onPeerAdded(Peer peer) {}
+	protected void onPeerAdded(Peer peer) {}
 
 	/**
 	 * Called when a peer gets disconnected.
 	 * 
 	 * @param peer the peer
 	 */
-	public void onPeerDisconnected(Peer peer) {}
+	protected void onPeerDisconnected(Peer peer) {}
 
 	/**
 	 * Called when a peer has been removed.
 	 * 
 	 * @param peer the removed peer
 	 */
-	public void onPeerRemoved(Peer peer) {}
+	protected void onPeerRemoved(Peer peer) {}
 
 	/**
 	 * Called when a miner has been added.
 	 * 
 	 * @param miner the added miner
 	 */
-	public void onMinerAdded(Miner miner) {}
+	protected void onMinerAdded(Miner miner) {}
 
 	/**
 	 * Called when a miner has been removed.
 	 * 
 	 * @param miner the removed miner
 	 */
-	public void onMinerRemoved(Miner miner) {}
+	protected void onMinerRemoved(Miner miner) {}
 
 	/**
 	 * Called when a transaction has been added to the mempool.
 	 * 
 	 * @param transaction the added transaction
 	 */
-	public void onTransactionAdded(Transaction transaction) {}
+	protected void onTransactionAdded(Transaction transaction) {}
 
 	/**
 	 * Called when no deadline has been found.
@@ -883,4 +890,25 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param block the mined block
 	 */
 	public void onBlockMined(Block block) {}
+
+	/**
+	 * Called when some peers have been whispered to our peers.
+	 * 
+	 * @param peers the whispered peers
+	 */
+	protected void onWhispered(Stream<Peer> peers) {}
+
+	/**
+	 * Called when a block has been whispered to our peers.
+	 * 
+	 * @param block the whispered block
+	 */
+	protected void onWhispered(Block block) {}
+
+	/**
+	 * Called when a transaction has been whispered to our peers.
+	 * 
+	 * @param transaction the whispered transaction
+	 */
+	protected void onWhispered(Transaction transaction) {}
 }

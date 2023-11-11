@@ -145,7 +145,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onPeerConnected(Peer peer) {
+			protected void onPeerConnected(Peer peer) {
 				super.onPeerConnected(peer);
 				if (peer.equals(peer1))
 					node2HasConnectedToNode1.release();

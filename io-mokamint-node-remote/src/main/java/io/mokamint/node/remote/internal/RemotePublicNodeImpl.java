@@ -255,23 +255,23 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		LOGGER.info(logPrefix + "got whispered " + description);
 
+		Predicate<Whisperer> newSeen = seen.or(isThis);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
+
 		if (whispered instanceof WhisperedPeers whisperedPeers) {
-			onWhisperPeers(whisperedPeers.getPeers());
 			sendWhisperedAsync(whisperedPeers, WHISPER_PEERS_ENDPOINT, description, includeNetwork);
+			onWhispered(whisperedPeers.getPeers());
 		}
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
-			onWhisperBlock(whisperedBlock.getBlock());
 			sendWhisperedAsync(whisperedBlock, WHISPER_BLOCK_ENDPOINT, description, includeNetwork);
+			onWhispered(whisperedBlock.getBlock());
 		}
 		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
-			onWhisperTransaction(whisperedTransaction.getTransaction());
 			sendWhisperedAsync(whisperedTransaction, WHISPER_TRANSACTION_ENDPOINT, description, includeNetwork);
+			onWhispered(whisperedTransaction.getTransaction());
 		}
 		else
 			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());
-
-		Predicate<Whisperer> newSeen = seen.or(isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
 	}
 
 	private void sendWhisperedAsync(Whispered whispered, String endpoint, String description, boolean includeNetwork) {
@@ -740,9 +740,9 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetMempoolInfoResult(MempoolInfo info) {}
 	protected void onGetMempoolPortionResult(MempoolPortion chain) {}
 	protected void onException(ExceptionMessage message) {}
-	protected void onWhisperPeers(Stream<Peer> peers) {}
-	protected void onWhisperBlock(Block block) {}
-	protected void onWhisperTransaction(Transaction transaction) {}
+	protected void onWhispered(Stream<Peer> peers) {}
+	protected void onWhispered(Block block) {}
+	protected void onWhispered(Transaction transaction) {}
 
 	private class GetPeerInfosEndpoint extends Endpoint {
 
