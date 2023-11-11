@@ -114,22 +114,6 @@ public class MineNewBlockTask implements Task {
 	}
 
 	/**
-	 * A task that whispers a block to the peers.
-	 */
-	private class WhisperBlockTask implements Task {
-		private final Block block;
-
-		private WhisperBlockTask(Block block) {
-			this.block = block;
-		}
-
-		@Override
-		public void body() {
-			node.initialWhisper(block);
-		}
-	}
-
-	/**
 	 * Run environment.
 	 */
 	private class Run {
@@ -240,7 +224,7 @@ public class MineNewBlockTask implements Task {
 
 		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 			if (blockchain.add(block))
-				node.submit(new WhisperBlockTask(block), "whispering: propagation of block " + block.getHexHash(config.getHashingForBlocks()));
+				node.submit(() -> node.initialWhisper(block), "whispering: propagation of block " + block.getHexHash(config.getHashingForBlocks()));
 		}
 
 		/**

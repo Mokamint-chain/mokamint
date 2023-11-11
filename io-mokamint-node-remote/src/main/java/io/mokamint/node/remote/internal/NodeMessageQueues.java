@@ -85,17 +85,17 @@ class NodeMessageQueues {
 							exc = em.getExceptionClass().getConstructor(String.class).newInstance(em.getMessage());
 						}
 						catch (Exception e) {
-							LOGGER.log(Level.SEVERE, "cannot instantiate the exception type", e);
+							LOGGER.log(Level.SEVERE, "remote: cannot instantiate the exception type", e);
 							continue;
 						}
 
 						throw exc;
 					}
 
-					LOGGER.warning("received unexpected exception of type " + ((ExceptionMessage) message).getExceptionClass().getName());
+					LOGGER.warning("remote: received unexpected exception of type " + em.getExceptionClass().getName());
 				}
 				else
-					LOGGER.warning("received unexpected message of type " + message.getClass().getName());
+					LOGGER.warning("remote: received unexpected message of type " + message.getClass().getName());
 			}
 			catch (InterruptedException e) {
 				queues.remove(id);
@@ -113,10 +113,10 @@ class NodeMessageQueues {
 			var queue = queues.get(message.getId());
 			if (queue != null) {
 				if (!queue.offer(message))
-					LOGGER.log(Level.SEVERE, "could not enqueue a message since the queue was full");
+					LOGGER.log(Level.SEVERE, "remote: could not enqueue a message since the queue was full");
 			}
 			else
-				LOGGER.log(Level.SEVERE, "received a message of type " + message.getClass().getName() + " but its id " + message.getId() + " has no corresponding waiting queue");
+				LOGGER.log(Level.SEVERE, "remote: received a message of type " + message.getClass().getName() + " but its id " + message.getId() + " has no corresponding waiting queue");
 		}
 	}
 }

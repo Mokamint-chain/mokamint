@@ -249,7 +249,7 @@ public class LocalNodeImpl implements LocalNode {
 		// we check if the node needs any of the whispered peers
 		var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> peers.getRemote(peer).isEmpty()).toArray(Peer[]::new);
 		if (usefulToAdd.length > 0)
-			submit(peers.new AddWhisperedPeersTask(usefulToAdd), "whispering: addition of peers " + SanitizedStrings.of(Stream.of(usefulToAdd))); // TODO: move class
+			submit(() -> peers.tryToAdd(Stream.of(usefulToAdd), false, false), "whispering: addition of peers " + SanitizedStrings.of(Stream.of(usefulToAdd)));
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whisperedPeers, newSeen);
