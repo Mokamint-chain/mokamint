@@ -85,12 +85,12 @@ public class PeersTests extends AbstractLoggedTests {
 	/**
 	 * The node information of the nodes used in the tests.
 	 */
-	private static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+	private final static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 
 	/**
 	 * The chain information of the nodes used in the tests.
 	 */
-	private static ChainInfo chainInfo = ChainInfos.of(2L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 5, 6, 7, 8 }));
+	private final static ChainInfo chainInfo = ChainInfos.of(2L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 5, 6, 7, 8 }));
 
 	/**
 	 * The application of the node used for testing.
@@ -124,7 +124,7 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 	}
 
-	private static PublicNode mkNode() throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, NoSuchAlgorithmException {
+	private static PublicNode mkNode(NodeInfo info) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, NoSuchAlgorithmException {
 		PublicNode node = mock();
 		when(node.getInfo()).thenReturn(info);
 		when(node.getChainInfo()).thenReturn(chainInfo);
@@ -143,12 +143,13 @@ public class PeersTests extends AbstractLoggedTests {
 		/**
 		 * Creates a new test server.
 		 * 
+		 * @param info the information about the node
 		 * @param port the port where the server is published
 		 * @throws DeploymentException if the service cannot be deployed
 		 * @throws NoSuchAlgorithmException if some hashing algorithm is missing
 		 */
-		private PublicTestServer(int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, NoSuchAlgorithmException {
-			super(mkNode(), port, 180000L, 1000, Optional.empty());
+		private PublicTestServer(NodeInfo info, int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, NoSuchAlgorithmException {
+			super(mkNode(info), port, 180000L, 1000, Optional.empty());
 		}
 	}
 
@@ -193,7 +194,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2); var node = new MyLocalNode()) {
+		try (var service1 = new PublicTestServer(info, port1); var service2 = new PublicTestServer(info, port2); var node = new MyLocalNode()) {
 			semaphore.acquire(2);
 			assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
@@ -216,7 +217,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
+		try (var service1 = new PublicTestServer(info, port1); var service2 = new PublicTestServer(info, port2)) {
 			try (var node = new MyLocalNode()) {
 				assertTrue(node.getPeerInfos().count() == 0L);
 				node.add(peer1);
@@ -266,7 +267,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service1 = new PublicTestServer(port1); var service2 = new PublicTestServer(port2)) {
+		try (var service1 = new PublicTestServer(info, port1); var service2 = new PublicTestServer(info, port2)) {
 			try (var node = new MyLocalNode()) {
 				assertTrue(semaphore.tryAcquire(2, 10, TimeUnit.SECONDS));
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
@@ -293,15 +294,11 @@ public class PeersTests extends AbstractLoggedTests {
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
-
-			@Override
-			public NodeInfo getInfo() {
-				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3), UUID.randomUUID(), info.getLocalDateTimeUTC());
-			}
 		}
 
-		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+		var version = info.getVersion();
+		var otherInfo = NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3), UUID.randomUUID(), info.getLocalDateTimeUTC());
+		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			node.add(peer);
 			assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 		}
@@ -318,17 +315,13 @@ public class PeersTests extends AbstractLoggedTests {
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
-
-			@Override
-			public NodeInfo getInfo() {
-				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
-			}
 		}
 
-		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+		var version = info.getVersion();
+		var otherInfo = NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
+		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
-			assertTrue(e.getMessage().startsWith("Peer version 0.0.1 is incompatible with this node's version 0.3.1"));
+			assertTrue(e.getMessage().startsWith("Peer version " + otherInfo.getVersion() + " is incompatible with this node's version " + info.getVersion()));
 		}
 	}
 
@@ -343,17 +336,13 @@ public class PeersTests extends AbstractLoggedTests {
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
-
-			@Override
-			public NodeInfo getInfo() {
-				var version = info.getVersion();
-				return NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
-			}
 		}
 
-		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+		var version = info.getVersion();
+		var otherInfo = NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
+		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
-			assertTrue(e.getMessage().startsWith("Peer version 0.0.1 is incompatible with this node's version 1.0.1"));
+			assertTrue(e.getMessage().startsWith("Peer version " + otherInfo.getVersion() + " is incompatible with this node's version " + info.getVersion()));
 		}
 	}
 
@@ -363,19 +352,17 @@ public class PeersTests extends AbstractLoggedTests {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
+		var config = mkConfig(dir);
+
 		class MyLocalNode extends LocalNodeImpl {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
-				super(mkConfig(dir), nodeKey, app, false);
-			}
-
-			@Override
-			public NodeInfo getInfo() {
-				return NodeInfos.of(info.getVersion(), UUID.randomUUID(), info.getLocalDateTimeUTC().plus(getConfig().getPeerMaxTimeDifference() + 1000L, ChronoUnit.MILLIS));
+				super(config, nodeKey, app, false);
 			}
 		}
 
-		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+		var otherInfo = NodeInfos.of(info.getVersion(), UUID.randomUUID(), info.getLocalDateTimeUTC().minus(config.getPeerMaxTimeDifference() + 1000L, ChronoUnit.MILLIS));
+		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().startsWith("The time of the peer is more than " + node.getConfig().getPeerMaxTimeDifference() + " ms away"));
 		}
@@ -399,7 +386,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service = new PublicTestServer(port); var node = new MyLocalNode()) {
+		try (var service = new PublicTestServer(info, port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().startsWith("The peers have distinct genesis blocks"));
 		}

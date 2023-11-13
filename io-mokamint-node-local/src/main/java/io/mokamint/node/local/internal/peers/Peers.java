@@ -20,6 +20,7 @@ import static java.util.function.Predicate.not;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
@@ -40,8 +41,10 @@ import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.exceptions.UncheckPredicate;
 import io.hotmoka.exceptions.UncheckedException;
+import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.SanitizedStrings;
+import io.mokamint.node.Versions;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -49,6 +52,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.api.Version;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -86,6 +90,11 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	private final UUID uuid;
 
 	/**
+	 * The version of the node having these peers.
+	 */
+	private final Version version;
+
+	/**
 	 * The peers of the node.
 	 */
 	private final PunishableSet<Peer> peers;
@@ -115,26 +124,18 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * @param node the node having these peers
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database of {@code node} is already closed
+	 * @throws IOException if an I/O error occurs
+	 * @throws InterruptedException if the thread is interrupted while contacting the peers
+	 * @throws ClosedNodeException if the node is closed
 	 */
-	public Peers(LocalNodeImpl node) throws DatabaseException, ClosedDatabaseException {
+	public Peers(LocalNodeImpl node) throws DatabaseException, ClosedDatabaseException, IOException, ClosedNodeException, InterruptedException {
 		super(node);
 
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
 		this.uuid = db.getUUID();
+		this.version = Versions.current();
 		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, this::onAddition, this::onRemoval);
-	}
-
-	/**
-	 * Connects to the peers.
-	 * 
-	 * @throws ClosedNodeException if the node is already closed
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws InterruptedException if the connection gets interrupted
-	 * @throws IOException if an I/O error occurs
-	 */
-	public void connect() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		openConnectionToPeers();
 		getNode().submitWithFixedDelay(this::pingPeersRecreateRemotesAndCollectPeers,
 			"peers: pinging all peers to create missing remotes and collect their peers",
@@ -152,12 +153,12 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the UUID of the node having these peers.
+	 * Yields information about the node having these peers, extracted from the database.
 	 * 
-	 * @return the UUID
+	 * @return the node information
 	 */
-	public UUID getUUID() {
-		return uuid;
+	public NodeInfo getNodeInfo() {
+		return NodeInfos.of(version, uuid, LocalDateTime.now(ZoneId.of("UTC")));
 	}
 
 	/**
@@ -603,9 +604,8 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * @throws InterruptedException if the connection to the peer though {@code remote} was interrupted
 	 * @throws ClosedNodeException if {@link #node} is closed
 	 * @throws DatabaseException if the database of {@link #node} is corrupted
-	 * @throws ClosedDatabaseException  if the database is already closed
 	 */
-	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {
+	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
 		NodeInfo peerInfo;
 
 		try {
@@ -616,14 +616,14 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 			throw new PeerRejectedException("The peer is closed", e);
 		}
 
-		NodeInfo nodeInfo = getNode().getInfo();
+		var nodeInfo = getNodeInfo();
 
 		long timeDifference = ChronoUnit.MILLIS.between(nodeInfo.getLocalDateTimeUTC(), peerInfo.getLocalDateTimeUTC());
 		if (Math.abs(timeDifference) > config.getPeerMaxTimeDifference())
 			throw new PeerRejectedException("The time of the peer is more than " + config.getPeerMaxTimeDifference() + " ms away from the time of this node");
 			
-		UUID peerUUID = peerInfo.getUUID();
-		if (peerUUID.equals(db.getUUID()))
+		var peerUUID = peerInfo.getUUID();
+		if (peerUUID.equals(uuid))
 			throw new PeerRejectedException("A peer cannot be added as a peer of itself: same UUID " + peerUUID);
 
 		var peerVersion = peerInfo.getVersion();
@@ -647,7 +647,7 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 
 		Optional<byte[]> peerGenesisHash = peerChainInfo.getGenesisHash();
 		if (peerGenesisHash.isPresent()) {
-			ChainInfo nodeChainInfo = getNode().getChainInfo();
+			var nodeChainInfo = getNode().getChainInfo();
 			Optional<byte[]> nodeGenesisHash = nodeChainInfo.getGenesisHash();
 			if (nodeGenesisHash.isPresent() && !Arrays.equals(peerGenesisHash.get(), nodeGenesisHash.get()))
 				throw new PeerRejectedException("The peers have distinct genesis blocks");

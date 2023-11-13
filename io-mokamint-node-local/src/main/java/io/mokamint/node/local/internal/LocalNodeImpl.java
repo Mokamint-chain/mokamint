@@ -21,8 +21,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -47,10 +45,8 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.NodeInfos;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
@@ -68,7 +64,6 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionInfo;
-import io.mokamint.node.api.Version;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -139,11 +134,6 @@ public class LocalNodeImpl implements LocalNode {
 	private final Mempool mempool;
 
 	/**
-	 * The version of this node.
-	 */
-	private final Version version;
-
-	/**
 	 * The executor of tasks and events. There might be more tasks and events in execution at the same time.
 	 */
 	private final ExecutorService executors = Executors.newCachedThreadPool();
@@ -206,13 +196,11 @@ public class LocalNodeImpl implements LocalNode {
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 			this.keyPair = keyPair;
 			this.app = app;
-			this.version = Versions.current();
 			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
 			this.mempool = new Mempool(this);
 			this.miners = new Miners(this);
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new Peers(this);
-			peers.connect();
 
 			if (init)
 				blockchain.scheduleMining();
@@ -222,9 +210,7 @@ public class LocalNodeImpl implements LocalNode {
 			periodicExecutors.scheduleWithFixedDelay(this::whisperAllServices, 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
 		}
 		catch (ClosedDatabaseException | ClosedNodeException e) {
-			// the database and the node itself cannot be closed already
-			LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw unexpectedException(e);
 		}
 	}
 
@@ -527,7 +513,7 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return NodeInfos.of(version, peers.getUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+			return peers.getNodeInfo();
 		}
 		finally {
 			closureLock.afterCall();
