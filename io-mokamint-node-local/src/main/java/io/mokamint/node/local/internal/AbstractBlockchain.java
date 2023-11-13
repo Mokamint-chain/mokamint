@@ -95,4 +95,25 @@ public abstract class AbstractBlockchain {
 	protected void scheduleWhisperingWithoutAddition(Block block) {
 		node.scheduleWhisperingWithoutAddition(block);
 	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleSynchronization(long).
+	 */
+	protected void scheduleSynchronization(long initialHeight) {
+		node.scheduleSynchronization(initialHeight);
+	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleMining().
+	 */
+	protected void scheduleMining() {
+		node.scheduleMining();
+	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleDelayedMining().
+	 */
+	protected void scheduleDelayedMining() {
+		node.scheduleDelayedMining();
+	}
 }

@@ -28,9 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -94,16 +91,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	private int orphansPos;
 
 	/**
-	 * The current mining tasks, if any.
-	 */
-	private final Set<Future<?>> miningTasks = ConcurrentHashMap.newKeySet();
-
-	/**
-	 * A semaphore to allow only one mining task to run at a time.
-	 */
-	private final Semaphore miningSemaphore = new Semaphore(1);
-
-	/**
 	 * A semaphore to allow only one synchronization task to run at a time.
 	 */
 	private final Semaphore synchronizationSemaphore = new Semaphore(1);
@@ -145,35 +132,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	@Override
 	public void close() throws InterruptedException, DatabaseException {
 		db.close();
-	}
-
-	/**
-	 * Schedules a mining task for a new block on top of the current head of the blockchain.
-	 * This call is ignored also when this blockchain is synchronizing.
-	 * This method requires the blockchain to be non-empty.
-	 */
-	public void scheduleMining() {
-		// it is possible to mine during synchronization, but it's a waste of resources
-		// since the head of the chain is likely not yet stable;
-		// if synchronization is in progress, mining will be triggered at its end anyway
-		if (tryToAcquireSynchronizationLock()) { // TODO: this should go inside the task
-			try {
-				getNode().submit(new MineNewBlockTask(getNode()), "mining of next block").ifPresent(miningTasks::add);
-			}
-			finally {
-				releaseSynchronizationLock();
-			}
-		}
-	}
-
-	/**
-	 * Schedules a synchronization of this blockchain from the peers of the node,
-	 * if this blockchain is not currently performing a synchronization. Otherwise, nothing happens.
-	 * 
-	 * @param initialHeight the height of the blockchain from where synchronization must be applied
-	 */
-	public void scheduleSynchronization(long initialHeight) {
-		getNode().submit(new SynchronizationTask(getNode(), initialHeight), "synchronization from the peers");
 	}
 
 	/**
@@ -437,24 +395,18 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		super.scheduleWhisperingWithoutAddition(block);
 	}
 
-	/**
-	 * Acquires the lock that allows a mine new block task to be
-	 * the only allowed to mine new blocks. By allowing only one
-	 * mining task at a time, we simplify the API of the application,
-	 * since it does not need to deal with concurrent block creations.
-	 * 
-	 * @throws InterruptedException if the thread is interrupted while waiting for the lock
-	 */
-	void acquireMiningLock() throws InterruptedException {
-		miningSemaphore.acquire();
+	@Override
+	protected void scheduleMining() {
+		// if synchronization is in progress, mining will be triggered at its end anyway
+		if (!isSynchronizing())
+			super.scheduleMining();
 	}
 
-	/**
-	 * Releases the lock that allows a mine new block task to be
-	 * the only allowed to mine new blocks.
-	 */
-	void releaseMiningLock() {
-		miningSemaphore.release();
+	@Override
+	protected void scheduleDelayedMining() {
+		// if synchronization is in progress, mining will be triggered at its end anyway
+		if (!isSynchronizing())
+			super.scheduleDelayedMining();
 	}
 
 	/**
@@ -474,16 +426,13 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		synchronizationSemaphore.release();
 	}
 
-	/**
-	 * Interrupts all known tasks that have been spawned to mine a new block.
-	 * This avoids the accumulation of tasks, since a single task is enough
-	 * for mining a new block.
-	 */
-	void interruptAllMiningTasks() {
-		miningTasks.forEach(task -> {
-			task.cancel(true);
-			miningTasks.remove(task);
-		});
+	boolean isSynchronizing() {
+		try {
+			return !tryToAcquireSynchronizationLock();
+		}
+		finally {
+			releaseSynchronizationLock();
+		}
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)

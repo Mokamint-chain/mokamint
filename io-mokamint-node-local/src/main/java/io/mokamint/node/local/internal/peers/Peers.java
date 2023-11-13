@@ -673,9 +673,8 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 		onPeerConnected(peer);
 
 		// if the blockchain was empty, it might be the right moment to attempt a synchronization
-		var blockchain = getNode().getBlockchain();
-		if (blockchain.isEmpty())
-			blockchain.scheduleSynchronization(0L); // TODO: possibly moved into LocalNodeImpl ?
+		if (getNode().getBlockchain().isEmpty())
+			scheduleSynchronization(0L);
 
 		// we make the new peer known to our peers
 		scheduleWhisperingWithoutAddition(Stream.of(peer));

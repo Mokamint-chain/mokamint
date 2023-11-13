@@ -515,7 +515,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
-	private Environment createBlockchainEnvironment(LocalNodeImpl node) {
+	private static Environment createBlockchainEnvironment(LocalNodeImpl node) {
 		var env = new Environment(node.getConfig().getDir().resolve("blocks").toString());
 		LOGGER.info("db: opened the blocks database");
 		return env;

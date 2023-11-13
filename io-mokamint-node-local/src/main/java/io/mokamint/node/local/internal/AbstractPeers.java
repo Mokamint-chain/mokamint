@@ -95,4 +95,11 @@ public abstract class AbstractPeers {
 	protected void scheduleWhisperingWithoutAddition(Stream<Peer> peers) {
 		node.scheduleWhisperingWithoutAddition(peers);
 	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleSynchronization(long).
+	 */
+	protected void scheduleSynchronization(long initialHeight) {
+		node.scheduleSynchronization(initialHeight);
+	}
 }

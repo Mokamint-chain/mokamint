@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -73,6 +72,9 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
+import io.mokamint.node.local.internal.blockchain.DelayedMineNewBlockTask;
+import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
+import io.mokamint.node.local.internal.blockchain.SynchronizationTask;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.local.internal.mempool.Mempool;
 import io.mokamint.node.local.internal.miners.Miners;
@@ -202,9 +204,9 @@ public class LocalNodeImpl implements LocalNode {
 			this.peers = new Peers(this);
 
 			if (init)
-				blockchain.scheduleMining();
+				scheduleMining();
 			else
-				blockchain.scheduleSynchronization(0L);
+				scheduleSynchronization(0L);
 
 			periodicExecutors.scheduleWithFixedDelay(this::whisperAllServices, 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
 		}
@@ -589,7 +591,7 @@ public class LocalNodeImpl implements LocalNode {
 			Optional<MinerInfo> result = miners.add(miner);
 			// if there were no miners before this call, we require to mine
 			if (count == 0L && result.isPresent())
-				blockchain.scheduleMining();
+				scheduleMining();
 
 			return result;
 		}
@@ -684,27 +686,6 @@ public class LocalNodeImpl implements LocalNode {
 	};
 
 	/**
-	 * Runs the given task, asynchronously, in one thread from the {@link #executors} executor.
-	 * 
-	 * @param task the task to run
-	 * @return the future that can be used to wait for the completion of the task or
-	 *         to cancel the task, if the task has actually been submitted; this is
-	 *         an empty optional if the task has been rejected
-	 */
-	public Optional<Future<?>> submit(Task task, String description) {
-		var runnable = new RunnableTask(task, description);
-		try {
-			Optional<Future<?>> result = Optional.of(executors.submit(runnable));
-			LOGGER.info(runnable + ": scheduled");
-			return result;
-		}
-		catch (RejectedExecutionException e) {
-			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
-			return Optional.empty();
-		}
-	}
-
-	/**
 	 * Runs the given task, periodically, with the {@link #periodicExecutors} executor.
 	 * 
 	 * @param task the task to run
@@ -722,6 +703,30 @@ public class LocalNodeImpl implements LocalNode {
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
 		}
+	}
+
+	/**
+	 * Schedules a synchronization of the blockchain in this node, from the peers of the node,
+	 * if the node is not currently performing a synchronization. Otherwise, nothing happens.
+	 * 
+	 * @param initialHeight the height of the blockchain from where synchronization must be applied
+	 */
+	protected void scheduleSynchronization(long initialHeight) {
+		submit(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
+	}
+
+	/**
+	 * Schedules the mining of a next block on top of the current head.
+	 */
+	protected void scheduleMining() {
+		submit(new MineNewBlockTask(this), "mining of next block");
+	}
+
+	/**
+	 * Schedules the mining of a next block on top of the current head, after a delay.
+	 */
+	protected void scheduleDelayedMining() {
+		submit(new DelayedMineNewBlockTask(this), "mining in " + config.getDeadlineWaitTimeout() + " ms");
 	}
 
 	/**
@@ -868,6 +873,22 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param transaction the whispered transaction
 	 */
 	protected void onWhispered(Transaction transaction) {}
+
+	/**
+	 * Runs the given task, asynchronously, in one thread from the {@link #executors} executor.
+	 * 
+	 * @param task the task to run
+	 */
+	private void submit(Task task, String description) {
+		var runnable = new RunnableTask(task, description);
+		try {
+			executors.execute(runnable);
+			LOGGER.info(runnable + ": scheduled");
+		}
+		catch (RejectedExecutionException e) {
+			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
+		}
+	}
 
 	private void whisperWithoutAddition(Whispered whispered, String description) {
 		alreadyWhispered.add(whispered);

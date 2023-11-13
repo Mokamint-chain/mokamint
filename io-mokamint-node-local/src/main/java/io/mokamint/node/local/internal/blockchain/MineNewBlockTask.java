@@ -82,35 +82,26 @@ public class MineNewBlockTask implements Task {
 	 * 
 	 * @param node the node performing the mining
 	 */
-	MineNewBlockTask(LocalNodeImpl node) {
+	public MineNewBlockTask(LocalNodeImpl node) {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.config = node.getConfig();
 		this.miners = node.getMiners();
-
-		// we interrupt already existing mining tasks, since this new task will likely mine on a more promising chain
-		blockchain.interruptAllMiningTasks();
 	}
 
 	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException, VerificationException {
-		if (blockchain.isEmpty())
+		if (blockchain.isSynchronizing())
+			// if synchronization is in progress, mining will be triggered at its end anyway
+			return;
+		else if (blockchain.isEmpty())
 			LOGGER.log(Level.SEVERE, "mining: cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L) {
 			LOGGER.log(Level.WARNING, "mining: cannot mine because this node currently has no miners attached");
 			blockchain.onNoMinersAvailable();
 		}
-		else {
-			try {
-				// only one mining task is allowed at a time, since concurrent mining would make
-				// the application API too complex and require applications to track more blocks open at the same time
-				blockchain.acquireMiningLock();
-				new Run();
-			}
-			finally {
-				blockchain.releaseMiningLock();
-			}
-		}
+		else
+			new Run();
 	}
 
 	/**
@@ -193,7 +184,7 @@ public class MineNewBlockTask implements Task {
 			}
 			catch (TimeoutException e) {
 				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
-				node.submit(new DelayedMineNewBlockTask(node), "delayed mining for " + node.getConfig().getDeadlineWaitTimeout() + " ms");
+				blockchain.scheduleDelayedMining();
 				blockchain.onNoDeadlineFound(previous);
 			}
 			finally {

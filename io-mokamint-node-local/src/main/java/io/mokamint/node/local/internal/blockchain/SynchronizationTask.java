@@ -71,7 +71,7 @@ public class SynchronizationTask implements Task {
 	 * @param node the node for which synchronization is performed
 	 * @param initialHeight the height of the blockchain from where synchronization is applied
 	 */
-	SynchronizationTask(LocalNodeImpl node, long initialHeight) {
+	public SynchronizationTask(LocalNodeImpl node, long initialHeight) {
 		this.node = node;
 		this.initialHeight = initialHeight;
 	}
