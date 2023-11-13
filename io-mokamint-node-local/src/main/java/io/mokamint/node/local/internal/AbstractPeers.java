@@ -19,6 +19,8 @@ limitations under the License.
  */
 package io.mokamint.node.local.internal;
 
+import java.util.stream.Stream;
+
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.Peer;
 
@@ -78,5 +80,19 @@ public abstract class AbstractPeers {
 	 */
 	protected void onPeerDisconnected(Peer peer) {
 		node.onPeerDisconnected(peer);
+	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleWhisperingOfAllServices().
+	 */
+	protected void scheduleWhisperingOfAllServices() {
+		node.scheduleWhisperingOfAllServices();
+	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleWhisperingWithoutAddition(Stream).
+	 */
+	protected void scheduleWhisperingWithoutAddition(Stream<Peer> peers) {
+		node.scheduleWhisperingWithoutAddition(peers);
 	}
 }

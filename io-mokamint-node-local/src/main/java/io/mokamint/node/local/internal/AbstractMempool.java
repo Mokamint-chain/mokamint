@@ -58,4 +58,11 @@ public abstract class AbstractMempool {
 	protected void onTransactionAdded(Transaction transaction) {
 		node.onTransactionAdded(transaction);
 	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleWhisperingWithoutAddition(Transaction).
+	 */
+	protected void scheduleWhisperingWithoutAddition(Transaction transaction) {
+		node.scheduleWhisperingWithoutAddition(transaction);
+	}
 }

@@ -113,7 +113,7 @@ public class Mempool extends AbstractMempool {
 			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash, e);
 		}
 
-		getNode().scheduleWhisperingWithoutAddition(transaction);
+		scheduleWhisperingWithoutAddition(transaction);
 
 		var entry = new TransactionEntry(transaction, priority, hash);
 

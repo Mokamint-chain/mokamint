@@ -193,7 +193,7 @@ public class MineNewBlockTask implements Task {
 			}
 			catch (TimeoutException e) {
 				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
-				node.submit(new DelayedMineNewBlockTask(node), "mining: resumption in " + node.getConfig().getDeadlineWaitTimeout() + " ms");
+				node.submit(new DelayedMineNewBlockTask(node), "delayed mining for " + node.getConfig().getDeadlineWaitTimeout() + " ms");
 				blockchain.onNoDeadlineFound(previous);
 			}
 			finally {
@@ -224,7 +224,7 @@ public class MineNewBlockTask implements Task {
 
 		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
 			if (blockchain.add(block))
-				node.scheduleWhisperingWithoutAddition(block);
+				blockchain.scheduleWhisperingWithoutAddition(block);
 		}
 
 		/**

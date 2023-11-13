@@ -128,7 +128,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 
-		private TestNode(LocalNodeConfig config) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
+		private TestNode(LocalNodeConfig config) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
 			super(config, nodeKeys, application, false);
 		}
 	}

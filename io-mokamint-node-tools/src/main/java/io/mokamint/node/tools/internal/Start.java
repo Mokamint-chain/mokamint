@@ -254,9 +254,6 @@ public class Start extends AbstractCommand {
 
 				publishPublicAndRestrictedNodeServices(0);
 			}
-			catch (NoSuchAlgorithmException e) {
-				throw new CommandException("The database refers to an unknown hashing algorithm!", e);
-			}
 			catch (DatabaseException | IOException e) {
 				throw new CommandException("The database seems corrupted!", e);
 			}

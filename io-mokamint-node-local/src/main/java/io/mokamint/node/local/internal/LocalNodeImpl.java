@@ -181,7 +181,6 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the initialization of the node was interrupted
@@ -190,7 +189,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws SignatureException if the genesis block cannot be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 		try {
 			this.config = config;
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
@@ -209,7 +208,7 @@ public class LocalNodeImpl implements LocalNode {
 
 			periodicExecutors.scheduleWithFixedDelay(this::whisperAllServices, 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
 		}
-		catch (ClosedDatabaseException | ClosedNodeException e) {
+		catch (ClosedNodeException e) {
 			throw unexpectedException(e);
 		}
 	}
@@ -243,7 +242,7 @@ public class LocalNodeImpl implements LocalNode {
 			// we check if the node needs any of the whispered peers
 			var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> peers.getRemote(peer).isEmpty()).toArray(Peer[]::new);
 			if (usefulToAdd.length > 0)
-				submit(() -> peers.tryToAdd(Stream.of(usefulToAdd), false, false), "node: addition of whispered peers " + SanitizedStrings.of(Stream.of(usefulToAdd)));
+				submit(() -> peers.tryToAdd(Stream.of(usefulToAdd)), "addition of whispered peers " + SanitizedStrings.of(Stream.of(usefulToAdd)));
 		}
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			try {
@@ -274,66 +273,6 @@ public class LocalNodeImpl implements LocalNode {
 			onWhispered(whisperedBlock.getBlock());
 		else if (whispered instanceof WhisperedTransaction whisperedTransaction)
 			onWhispered(whisperedTransaction.getTransaction());
-	}
-
-	/**
-	 * Schedules the whispering of a peer, but does not add it to this node.
-	 * 
-	 * @param peer the peer to whisper
-	 */
-	public void scheduleWhisperingWithoutAddition(Peer peer) {
-		var whisperedPeer = WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString());
-		String description = "peer " + SanitizedStrings.of(peer);
-		submit(() -> whisperWithoutAddition(whisperedPeer, description), "node: whispering of " + description);
-	}
-
-	/**
-	 * Schedules the whispering of a block, but does not add it to this node.
-	 * 
-	 * @param block the block to whisper
-	 */
-	public void scheduleWhisperingWithoutAddition(Block block) {
-		var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
-		String description = "block " + block.getHexHash(config.getHashingForBlocks());
-		submit(() -> whisperWithoutAddition(whisperedBlock, description), "node: whispering of " + description);
-	}
-
-	/**
-	 * Schedules the whispering of a transaction, but does not add it to this node.
-	 * 
-	 * @param transaction the transaction to whisper
-	 */
-	public void scheduleWhisperingWithoutAddition(Transaction transaction) {
-		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
-		String description = "transaction " + hasherForTransactions.hash(transaction);
-		submit(() -> whisperWithoutAddition(whisperedTransaction, description), "node: whispering of " + description);
-	}
-
-	/**
-	 * Schedules the advertisement to its peers of the services published by this node.
-	 */
-	public void scheduleWhisperingOfAllServices() {
-		submit(this::whisperAllServices, "node: whispering of all node's services");
-	}
-
-	private void whisperWithoutAddition(Whispered whispered, String description) {
-		alreadyWhispered.add(whispered);
-		peers.whisper(whispered, isThis, description);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, isThis, description));
-	}
-
-	private void whisperAllServices() {
-		// we check how the external world sees our services as peers
-		Stream<Peer> servicesAsPeers = boundWhisperers.stream()
-			.filter(whisperer -> whisperer instanceof PublicNodeService)
-			.map(whisperer -> (PublicNodeService) whisperer)
-			.map(PublicNodeService::getURI)
-			.flatMap(Optional::stream)
-			.map(io.mokamint.node.Peers::of);
-
-		var whisperedPeers = WhisperPeersMessages.of(servicesAsPeers, UUID.randomUUID().toString());
-		String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
-		whisperWithoutAddition(whisperedPeers, description);
 	}
 
 	@Override
@@ -409,7 +348,7 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return peers.add(peer, true, true);
+			return peers.add(peer);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
@@ -690,11 +629,6 @@ public class LocalNodeImpl implements LocalNode {
 			throw new IllegalDeadlineException("Invalid extra data in deadline");
 	}
 
-	private static RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
-	}
-
 	/**
 	 * A task is a complex activity that can be run in its own thread. Once it completes,
 	 * it typically fires some events to signal something to the node.
@@ -722,7 +656,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.description = description;
 		}
 
-		@Override @OnThread("executors")
+		@Override
 		public final void run() {
 			currentlyExecutingTasks.add(this);
 
@@ -788,6 +722,47 @@ public class LocalNodeImpl implements LocalNode {
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
 		}
+	}
+
+	/**
+	 * Schedules the advertisement to its peers of the services published by this node.
+	 */
+	protected void scheduleWhisperingOfAllServices() {
+		submit(this::whisperAllServices, "whispering of all node's services");
+	}
+
+	/**
+	 * Schedules the whispering of some peers, but does not add them to this node.
+	 * 
+	 * @param peers the peers to whisper
+	 */
+	protected void scheduleWhisperingWithoutAddition(Stream<Peer> peers) {
+		var peersAsArray = peers.toArray(Peer[]::new);
+		var whisperedPeer = WhisperPeersMessages.of(Stream.of(peersAsArray), UUID.randomUUID().toString());
+		String description = "peers " + SanitizedStrings.of(whisperedPeer.getPeers());
+		submit(() -> whisperWithoutAddition(whisperedPeer, description), "whispering of " + description);
+	}
+
+	/**
+	 * Schedules the whispering of a block, but does not add it to this node.
+	 * 
+	 * @param block the block to whisper
+	 */
+	protected void scheduleWhisperingWithoutAddition(Block block) {
+		var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
+		String description = "block " + block.getHexHash(config.getHashingForBlocks());
+		submit(() -> whisperWithoutAddition(whisperedBlock, description), "whispering of " + description);
+	}
+
+	/**
+	 * Schedules the whispering of a transaction, but does not add it to this node.
+	 * 
+	 * @param transaction the transaction to whisper
+	 */
+	protected void scheduleWhisperingWithoutAddition(Transaction transaction) {
+		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
+		String description = "transaction " + hasherForTransactions.hash(transaction);
+		submit(() -> whisperWithoutAddition(whisperedTransaction, description), "whispering of " + description);
 	}
 
 	/**
@@ -893,4 +868,32 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param transaction the whispered transaction
 	 */
 	protected void onWhispered(Transaction transaction) {}
+
+	private void whisperWithoutAddition(Whispered whispered, String description) {
+		alreadyWhispered.add(whispered);
+		peers.whisper(whispered, isThis, description);
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, isThis, description));
+	}
+
+	private void whisperAllServices() {
+		// we check how the external world sees our services as peers
+		var servicesAsPeers = boundWhisperers.stream()
+			.filter(whisperer -> whisperer instanceof PublicNodeService)
+			.map(whisperer -> (PublicNodeService) whisperer)
+			.map(PublicNodeService::getURI)
+			.flatMap(Optional::stream)
+			.map(io.mokamint.node.Peers::of)
+			.toArray(Peer[]::new);
+
+		if (servicesAsPeers.length > 0) {
+			var whisperedPeers = WhisperPeersMessages.of(Stream.of(servicesAsPeers), UUID.randomUUID().toString());
+			String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
+			whisperWithoutAddition(whisperedPeers, description);
+		}
+	}
+
+	private static RuntimeException unexpectedException(Exception e) {
+		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
+		return new RuntimeException("Unexpected exception", e);
+	}
 }

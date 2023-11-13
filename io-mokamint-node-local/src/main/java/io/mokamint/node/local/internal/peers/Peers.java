@@ -60,7 +60,6 @@ import io.mokamint.node.local.internal.AbstractPeers;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.PunishableSet;
-import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
@@ -119,28 +118,41 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	private final static Logger LOGGER = Logger.getLogger(Peers.class.getName());
 
 	/**
-	 * Creates the set of peers of a local node.
+	 * Creates the set of peers of a local node. If a database of peers already exists,
+	 * this constructor will recover the peers saved in the database and attempt
+	 * to create a connection to them. In any case, it adds the seeds of the node
+	 * and attempts a connection to them.
 	 * 
 	 * @param node the node having these peers
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database of {@code node} is already closed
 	 * @throws IOException if an I/O error occurs
 	 * @throws InterruptedException if the thread is interrupted while contacting the peers
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	public Peers(LocalNodeImpl node) throws DatabaseException, ClosedDatabaseException, IOException, ClosedNodeException, InterruptedException {
+	public Peers(LocalNodeImpl node) throws DatabaseException, IOException, ClosedNodeException, InterruptedException {
 		super(node);
 
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
-		this.uuid = db.getUUID();
-		this.version = Versions.current();
-		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, this::onAddition, this::onRemoval);
-		openConnectionToPeers();
-		getNode().submitWithFixedDelay(this::pingPeersRecreateRemotesAndCollectPeers,
-			"peers: pinging all peers to create missing remotes and collect their peers",
-			0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
-		tryToAdd(config.getSeeds().map(io.mokamint.node.Peers::of), true, true);
+
+		try {
+			this.uuid = db.getUUID();
+			this.version = Versions.current();
+			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, this::onAddition, this::onRemoval);
+			openConnectionToPeers();
+			getNode().submitWithFixedDelay(this::pingPeersRecreateRemotesAndAddTheirPeers,
+					"peers: pinging all peers to create missing remotes and collect their peers",
+					0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
+			tryToAddThenScheduleWhispering(config.getSeeds().map(io.mokamint.node.Peers::of), true);
+		}
+		catch (ClosedDatabaseException e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	private static RuntimeException unexpectedException(Exception e) {
+		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
+		return new RuntimeException("Unexpected exception", e);
 	}
 
 	/**
@@ -168,8 +180,6 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * If the peer was present but was disconnected, it tries to reconnect it.
 	 * 
 	 * @param peer the peer to add
-	 * @param force true if the peer must be added also if the maximum number of peers for the node has been reached
-	 * @param whisper true if and only if the added peer must be whispered to all peers after the addition
 	 * @return the information about the peer; this is empty if the peer has not been added,
 	 *         for instance, because it was already present or a maximum number of peers has been
 	 *         already reached
@@ -181,12 +191,10 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * @throws ClosedNodeException if the node is closed
 	 * @throws ClosedDatabaseException if the database of the node is closed
 	 */
-	public Optional<PeerInfo> add(Peer peer, boolean force, boolean whisper) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
-		if (containsDisconnected(peer)) {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
+		if (containsDisconnected(peer))
 			tryToRecreateRemote(peer);
-			return Optional.empty();
-		}
-		else {
+		else if (!peers.contains(peer)) {
 			// we uncheck the exceptions of onAdd
 			boolean result = CheckSupplier.check(TimeoutException.class,
 					InterruptedException.class,
@@ -195,19 +203,15 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 					DatabaseException.class,
 					ClosedNodeException.class,
 					ClosedDatabaseException.class,
-					() -> peers.add(peer, force));
+					() -> peers.add(peer, true));
 
 			if (result) {
-				if (whisper) {
-					String description = "peer " + SanitizedStrings.of(Stream.of(peer));
-					getNode().submit(() -> getNode().whisper(WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString()), _whisperer -> false, description), "whispering of " + description); // TODO: needed?
-				}
-
+				scheduleWhisperingWithoutAddition(Stream.of(peer));
 				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 			}
-
-			return Optional.empty();
 		}
+
+		return Optional.empty();
 	}
 
 	/**
@@ -232,8 +236,7 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * @param seen the whisperers already seen during whispering
 	 */
 	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
-		// we forward the message to our peers
-		remotes.values().forEach(remote -> remote.whisper(whispered, seen, description));
+		remotes.values().forEach(remote -> remote.whisper(whispered, seen, description)); // we forward the message to our peers
 	}
 
 	/**
@@ -303,12 +306,12 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * and collects their peers, in case they might be useful for the node.
 	 */
 
-	private void pingPeersRecreateRemotesAndCollectPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	private void pingPeersRecreateRemotesAndAddTheirPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		var allPeers = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
 			peers.getElements().parallel().flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers)).toArray(Peer[]::new)
 		);
 
-		tryToAdd(Stream.of(allPeers), false, true);
+		tryToAddThenScheduleWhispering(Stream.of(allPeers), false);
 	}
 
 	/**
@@ -375,15 +378,13 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * @param peers the peers to add
 	 * @param force true if and only if the peers must be added also when the maximal number of peers
 	 *              for the node has been reached
-	 * @param whisper true if and only if the added peers must be whispered to all peers
-	 *                after the addition
 	 * @throws InterruptedException if the execution was interrupted
 	 * @throws ClosedDatabaseException if the database of {@link #node} is closed
 	 * @throws DatabaseException if the database of {@link #node} is corrupted
 	 * @throws ClosedNodeException if {@link #node} is closed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public void tryToAdd(Stream<Peer> peers, boolean force, boolean whisper) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	private void tryToAddThenScheduleWhispering(Stream<Peer> peers, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		var peersAsArray = peers.toArray(Peer[]::new);
 
 		var added = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
@@ -394,51 +395,14 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 				.toArray(Peer[]::new)
 			);
 	
-		if (added.length > 0 && whisper) { // just to avoid useless tasks
-			String description = "peers " + SanitizedStrings.of(Stream.of(added));
-			getNode().submit(() -> getNode().whisper(WhisperPeersMessages.of(Stream.of(added), UUID.randomUUID().toString()), _whisperer -> false, description), "whispering: propagation of " + description); // TODO: needed?
-		}
+		if (added.length > 0) // just to avoid useless tasks
+			scheduleWhisperingWithoutAddition(Stream.of(added));
 	}
 
-	/**
-	 * If the peer is not in this container, adds it, if possible.
-	 * This might fail if the peer was already
-	 * present, or a connection to the peer cannot be established, or the peer
-	 * is incompatible with the node. In such cases, this method just ignores
-	 * the addition and nothing happens. If the peer was already in this container,
-	 * but was disconnected, tries to reconnect to it.
-	 * 
-	 * @param peer the peer to add
-	 * @param force true if and only if the addition must be performed also if
-	 *              the maximal number of peers for the node has been reached
-	 * @return true if and only if the peer has been added
-	 * @throws InterruptedException if the execution was interrupted
-	 * @throws ClosedDatabaseException if the database of {@link #node} is closed
-	 * @throws DatabaseException if the database of {@link #node} is corrupted
-	 * @throws ClosedNodeException if {@link #node} is closed
-	 * @throws IOException if an I/O error occurred
-	 */
-	private boolean reconnectOrAdd(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		if (containsDisconnected(peer)) {
-			tryToRecreateRemote(peer);
-			return false;
-		}
-		else {
-			try {
-				// we do not spawn an event since we will spawn one at the end for all peers
-				return CheckSupplier.check(TimeoutException.class,
-						ClosedNodeException.class,
-						ClosedDatabaseException.class,
-						InterruptedException.class,
-						IOException.class,
-						PeerRejectedException.class,
-						DatabaseException.class,
-						() -> peers.add(peer, force));
-			}
-			catch (PeerRejectedException | IOException | TimeoutException e) {
-				return false;
-			}
-		}
+	public void tryToAdd(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		CheckRunnable.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
+			peers.parallel().distinct().forEach(UncheckConsumer.uncheck(peer -> reconnectOrAdd(peer, false)))
+		);
 	}
 
 	/**
@@ -581,6 +545,49 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 		return Optional.empty();
 	}
 
+	/**
+	 * If the peer is not in this container, adds it, if possible.
+	 * This might fail if the peer was already
+	 * present, or a connection to the peer cannot be established, or the peer
+	 * is incompatible with the node. In such cases, this method just ignores
+	 * the addition and nothing happens. If the peer was already in this container,
+	 * but was disconnected, tries to reconnect to it.
+	 * 
+	 * @param peer the peer to add
+	 * @param force true if and only if the addition must be performed also if
+	 *              the maximal number of peers for the node has been reached
+	 * @return true if and only if the peer has been added
+	 * @throws InterruptedException if the execution was interrupted
+	 * @throws ClosedDatabaseException if the database of {@link #node} is closed
+	 * @throws DatabaseException if the database of {@link #node} is corrupted
+	 * @throws ClosedNodeException if {@link #node} is closed
+	 * @throws IOException if an I/O error occurred
+	 */
+	private boolean reconnectOrAdd(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		if (containsDisconnected(peer)) {
+			tryToRecreateRemote(peer);
+			return false;
+		}
+		else if (!peers.contains(peer)){
+			try {
+				// we do not spawn an event since we will spawn one at the end for all peers
+				return CheckSupplier.check(TimeoutException.class,
+						ClosedNodeException.class,
+						ClosedDatabaseException.class,
+						InterruptedException.class,
+						IOException.class,
+						PeerRejectedException.class,
+						DatabaseException.class,
+						() -> peers.add(peer, force));
+			}
+			catch (PeerRejectedException | IOException | TimeoutException e) {
+				return false;
+			}
+		}
+		else
+			return false;
+	}
+
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
 			var remote = RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), config.getWhisperingMemorySize());
@@ -671,10 +678,10 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 			blockchain.scheduleSynchronization(0L); // TODO: possibly moved into LocalNodeImpl ?
 
 		// we make the new peer known to our peers
-		getNode().scheduleWhisperingWithoutAddition(peer);
+		scheduleWhisperingWithoutAddition(Stream.of(peer));
 
 		// we inform the new peer about our services
-		getNode().scheduleWhisperingOfAllServices();
+		scheduleWhisperingOfAllServices();
 	}
 
 	/**

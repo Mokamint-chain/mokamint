@@ -287,16 +287,19 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private void whisperAllServices() {
 		// we check how the external world sees our services as peers
-		Stream<Peer> servicesAsPeers = boundWhisperers.stream()
+		var servicesAsPeers = boundWhisperers.stream()
 			.filter(whisperer -> whisperer instanceof PublicNodeService)
 			.map(whisperer -> (PublicNodeService) whisperer)
 			.map(PublicNodeService::getURI)
 			.flatMap(Optional::stream)
-			.map(Peers::of);
+			.map(Peers::of)
+			.toArray(Peer[]::new);
 
-		var whisperedPeers = WhisperPeersMessages.of(servicesAsPeers, UUID.randomUUID().toString());
-		String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
-		whisper(whisperedPeers, _whisperer -> false, false, description);
+		if (servicesAsPeers.length > 0) {
+			var whisperedPeers = WhisperPeersMessages.of(Stream.of(servicesAsPeers), UUID.randomUUID().toString());
+			String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
+			whisper(whisperedPeers, _whisperer -> false, false, description);
+		}
 	}
 
 	private RuntimeException unexpectedException(Exception e) {

@@ -19,7 +19,6 @@ package io.mokamint.node.local;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 
 import io.mokamint.application.api.Application;
@@ -44,7 +43,6 @@ public abstract class LocalNodes {
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
 	 * @return the local node
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws IOException if the database is corrupted
 	 * @throws InterruptedException if the initialization of the node was interrupted
@@ -54,7 +52,7 @@ public abstract class LocalNodes {
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 */
 	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
-			throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+			throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}

@@ -156,9 +156,9 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		// it is possible to mine during synchronization, but it's a waste of resources
 		// since the head of the chain is likely not yet stable;
 		// if synchronization is in progress, mining will be triggered at its end anyway
-		if (tryToAcquireSynchronizationLock()) {
+		if (tryToAcquireSynchronizationLock()) { // TODO: this should go inside the task
 			try {
-				getNode().submit(new MineNewBlockTask(getNode()), "mining").ifPresent(miningTasks::add);
+				getNode().submit(new MineNewBlockTask(getNode()), "mining of next block").ifPresent(miningTasks::add);
 			}
 			finally {
 				releaseSynchronizationLock();
@@ -173,7 +173,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
 	public void scheduleSynchronization(long initialHeight) {
-		getNode().submit(new SynchronizationTask(getNode(), initialHeight), "sync");
+		getNode().submit(new SynchronizationTask(getNode(), initialHeight), "synchronization from the peers");
 	}
 
 	/**
@@ -430,6 +430,11 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	@Override
 	protected void onNoMinersAvailable() {
 		super.onNoMinersAvailable();
+	}
+
+	@Override
+	protected void scheduleWhisperingWithoutAddition(Block block) {
+		super.scheduleWhisperingWithoutAddition(block);
 	}
 
 	/**

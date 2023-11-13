@@ -88,4 +88,11 @@ public abstract class AbstractBlockchain {
 	protected void onNoMinersAvailable() {
 		node.onNoMinersAvailable();
 	}
+
+	/**
+	 * @see LocalNodeImpl#scheduleWhisperingWithoutAddition(Block).
+	 */
+	protected void scheduleWhisperingWithoutAddition(Block block) {
+		node.scheduleWhisperingWithoutAddition(block);
+	}
 }
