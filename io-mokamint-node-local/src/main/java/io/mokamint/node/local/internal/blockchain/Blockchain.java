@@ -41,6 +41,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -49,8 +50,10 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AlreadyInitializedException;
+import io.mokamint.node.local.internal.AbstractBlockchain;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -59,12 +62,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
  * which is the most powerful block in the chain.
  */
 @ThreadSafe
-public class Blockchain implements AutoCloseable {
-
-	/**
-	 * The node having this blockchain.
-	 */
-	private final LocalNodeImpl node;
+public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 
 	/**
 	 * The hashing algorithm used for the blocks.
@@ -120,7 +118,8 @@ public class Blockchain implements AutoCloseable {
 	 * @throws DatabaseException if the database of blocks is corrupted
 	 */
 	public Blockchain(LocalNodeImpl node) throws DatabaseException {
-		this.node = node;
+		super(node);
+
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.db = new BlocksDatabase(node);
 	}
@@ -159,7 +158,7 @@ public class Blockchain implements AutoCloseable {
 		// if synchronization is in progress, mining will be triggered at its end anyway
 		if (tryToAcquireSynchronizationLock()) {
 			try {
-				node.submit(new MineNewBlockTask(node), "mining").ifPresent(miningTasks::add);
+				getNode().submit(new MineNewBlockTask(getNode()), "mining").ifPresent(miningTasks::add);
 			}
 			finally {
 				releaseSynchronizationLock();
@@ -174,7 +173,7 @@ public class Blockchain implements AutoCloseable {
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
 	public void scheduleSynchronization(long initialHeight) {
-		node.submit(new SynchronizationTask(node, initialHeight), "sync");
+		getNode().submit(new SynchronizationTask(getNode(), initialHeight), "sync");
 	}
 
 	/**
@@ -408,6 +407,31 @@ public class Blockchain implements AutoCloseable {
 		return added;
 	}
 
+	@Override
+	protected void onBlockAdded(Block block) {
+		super.onBlockAdded(block);
+	}
+
+	@Override
+	protected void onBlockMined(Block block) {
+		super.onBlockMined(block);
+	}
+
+	@Override
+	protected void onNoDeadlineFound(Block previous) {
+		super.onNoDeadlineFound(previous);
+	}
+
+	@Override
+	protected void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
+		super.onIllegalDeadlineComputed(deadline, miner);
+	}
+
+	@Override
+	protected void onNoMinersAvailable() {
+		super.onNoMinersAvailable();
+	}
+
 	/**
 	 * Acquires the lock that allows a mine new block task to be
 	 * the only allowed to mine new blocks. By allowing only one
@@ -461,9 +485,10 @@ public class Blockchain implements AutoCloseable {
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
-			new BlockVerification(node, block, previous);
+			new BlockVerification(getNode(), block, previous);
 
 			if (db.add(block, updatedHead)) {
+				onBlockAdded(block);
 				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);
 				if (first)
 					return true;
@@ -515,12 +540,14 @@ public class Blockchain implements AutoCloseable {
 			if (!isEmpty())
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
 
+			var node = getNode();
 			var genesis = Blocks.genesis(
 				LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(node.getConfig().getInitialAcceleration()),
 				node.getConfig().getSignatureForBlocks(), node.getKeys()
 			);
 
 			db.add(genesis, new AtomicReference<>());
+			onBlockAdded(genesis);
 		}
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
 			// the database cannot be closed at this moment;

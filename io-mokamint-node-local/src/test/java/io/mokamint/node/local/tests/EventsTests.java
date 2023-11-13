@@ -156,7 +156,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onBlockMined(Block block) {
+			protected void onBlockMined(Block block) {
 				super.onBlockMined(block);
 				if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDeadline().getValue(), deadlineValue))
 					semaphore.release();
@@ -218,7 +218,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
+			protected void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
 				super.onIllegalDeadlineComputed(deadline, miner);
 				if (miner == myMiner)
 					semaphore.release();
@@ -237,12 +237,12 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			public MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
 				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
 			@Override
-			public void onNoMinersAvailable() {
+			protected void onNoMinersAvailable() {
 				super.onNoMinersAvailable();
 				semaphore.release();	
 			}
@@ -277,7 +277,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onNoDeadlineFound(Block previous) {
+			protected void onNoDeadlineFound(Block previous) {
 				super.onNoDeadlineFound(previous);
 				semaphore.release();
 			}
@@ -339,7 +339,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
+			protected void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
 				super.onIllegalDeadlineComputed(deadline, miner);
 				semaphore.release();
 			}

@@ -41,7 +41,7 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.NodeMiners;
+import io.mokamint.node.local.internal.miners.Miners;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.IllegalDeadlineException;
@@ -73,7 +73,7 @@ public class MineNewBlockTask implements Task {
 	/**
 	 * The miners of the node.
 	 */
-	private final NodeMiners miners;
+	private final Miners miners;
 
 	private final static Logger LOGGER = Logger.getLogger(MineNewBlockTask.class.getName());
 
@@ -98,7 +98,7 @@ public class MineNewBlockTask implements Task {
 			LOGGER.log(Level.SEVERE, "mining: cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L) {
 			LOGGER.log(Level.WARNING, "mining: cannot mine because this node currently has no miners attached");
-			node.onNoMinersAvailable();
+			blockchain.onNoMinersAvailable();
 		}
 		else {
 			try {
@@ -187,14 +187,14 @@ public class MineNewBlockTask implements Task {
 				var maybeBlock = createNewBlock();
 				if (maybeBlock.isPresent()) {
 					var block = maybeBlock.get();
-					node.onBlockMined(block);
+					blockchain.onBlockMined(block);
 					addNodeToBlockchain(block);
 				}
 			}
 			catch (TimeoutException e) {
 				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
 				node.submit(new DelayedMineNewBlockTask(node), "mining: resumption in " + node.getConfig().getDeadlineWaitTimeout() + " ms");
-				node.onNoDeadlineFound(previous);
+				blockchain.onNoDeadlineFound(previous);
 			}
 			finally {
 				turnWakerOff();
@@ -260,7 +260,7 @@ public class MineNewBlockTask implements Task {
 				}
 				catch (IllegalDeadlineException e) {
 					LOGGER.warning(heightMessage + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());
-					node.onIllegalDeadlineComputed(deadline, miner);
+					blockchain.onIllegalDeadlineComputed(deadline, miner);
 
 					long points = config.getMinerPunishmentForIllegalDeadline();
 					LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]");

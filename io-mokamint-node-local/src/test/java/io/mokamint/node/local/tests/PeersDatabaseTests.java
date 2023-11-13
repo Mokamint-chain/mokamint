@@ -39,7 +39,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.PeersDatabase;
+import io.mokamint.node.local.internal.peers.PeersDatabase;
 
 public class PeersDatabaseTests extends AbstractLoggedTests {
 

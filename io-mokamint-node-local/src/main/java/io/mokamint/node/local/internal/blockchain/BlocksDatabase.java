@@ -453,10 +453,8 @@ public class BlocksDatabase implements AutoCloseable {
 			closureLock.afterCall();
 		}
 
-		if (hasBeenAdded) {
+		if (hasBeenAdded)
 			LOGGER.info("db: height " + block.getHeight() + ": added block " + block.getHexHash(node.getConfig().getHashingForBlocks()));
-			node.onBlockAdded(block);
-		}
 
 		return hasBeenAdded;
 	}

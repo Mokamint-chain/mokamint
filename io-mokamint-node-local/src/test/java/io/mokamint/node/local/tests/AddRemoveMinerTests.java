@@ -126,12 +126,12 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 				super(config1, node1Keys, app, true);
 			}
 
-			public void onNoDeadlineFound(io.mokamint.node.api.Block previous) {
+			protected void onNoDeadlineFound(io.mokamint.node.api.Block previous) {
 				super.onNoDeadlineFound(previous);
 				node1NoMinersAvailable.release();
 			}
 
-			public void onNoMinersAvailable() {
+			protected void onNoMinersAvailable() {
 				super.onNoMinersAvailable();
 				if (minerClosing.get())
 					node1NoMinersAvailable.release();
@@ -152,7 +152,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void onBlockAdded(Block block) {
+			protected void onBlockAdded(Block block) {
 				super.onBlockAdded(block);
 				node2HasAddedBlock.release();
 			}

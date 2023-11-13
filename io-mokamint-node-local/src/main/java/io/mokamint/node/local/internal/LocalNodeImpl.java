@@ -48,7 +48,6 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
-import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Versions;
@@ -80,6 +79,9 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
+import io.mokamint.node.local.internal.mempool.Mempool;
+import io.mokamint.node.local.internal.miners.Miners;
+import io.mokamint.node.local.internal.peers.Peers;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
@@ -119,12 +121,12 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * The miners connected to the node.
 	 */
-	private final NodeMiners miners;
+	private final Miners miners;
 
 	/**
 	 * The peers of the node.
 	 */
-	private final NodePeers peers;
+	private final Peers peers;
 
 	/**
 	 * The blockchain of this node.
@@ -140,11 +142,6 @@ public class LocalNodeImpl implements LocalNode {
 	 * The version of this node.
 	 */
 	private final Version version;
-
-	/**
-	 * The UUID of this node.
-	 */
-	private final UUID uuid;
 
 	/**
 	 * The executor of tasks and events. There might be more tasks and events in execution at the same time.
@@ -212,10 +209,9 @@ public class LocalNodeImpl implements LocalNode {
 			this.version = Versions.current();
 			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
 			this.mempool = new Mempool(this);
-			this.miners = new NodeMiners(this);
+			this.miners = new Miners(this);
 			this.blockchain = new Blockchain(this, init);
-			this.peers = new NodePeers(this);
-			this.uuid = peers.getUUID();
+			this.peers = new Peers(this);
 			peers.connect();
 
 			if (init)
@@ -347,7 +343,7 @@ public class LocalNodeImpl implements LocalNode {
 			.map(whisperer -> (PublicNodeService) whisperer)
 			.map(PublicNodeService::getURI)
 			.flatMap(Optional::stream)
-			.map(Peers::of);
+			.map(io.mokamint.node.Peers::of);
 
 		var whisperedPeers = WhisperPeersMessages.of(servicesAsPeers, UUID.randomUUID().toString());
 		String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
@@ -531,7 +527,7 @@ public class LocalNodeImpl implements LocalNode {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {
-			return NodeInfos.of(version, uuid, LocalDateTime.now(ZoneId.of("UTC")));
+			return NodeInfos.of(version, peers.getUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 		}
 		finally {
 			closureLock.afterCall();
@@ -628,7 +624,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @return the peers
 	 */
-	public NodePeers getPeers() {
+	public Peers getPeers() {
 		return peers;
 	}
 
@@ -637,7 +633,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @return the miners
 	 */
-	public NodeMiners getMiners() {
+	public Miners getMiners() {
 		return miners;
 	}
 
@@ -862,7 +858,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param previous the block for whose subsequent block the deadline was being looked up
 	 */
-	public void onNoDeadlineFound(Block previous) {}
+	protected void onNoDeadlineFound(Block previous) {}
 
 	/**
 	 * Called when a miner computes an illegal deadline.
@@ -870,26 +866,26 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param deadline the illegal deadline
 	 * @param miner the miner
 	 */
-	public void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {}
+	protected void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {}
 
 	/**
 	 * Called when a node cannot mine because it has no miners attached.
 	 */
-	public void onNoMinersAvailable() {}
+	protected void onNoMinersAvailable() {}
 
 	/**
 	 * Called when a block gets added to the database of blocks.
 	 * 
 	 * @param block the added block
 	 */
-	public void onBlockAdded(Block block) {}
+	protected void onBlockAdded(Block block) {}
 
 	/**
 	 * Called when the node mines a new block.
 	 * 
 	 * @param block the mined block
 	 */
-	public void onBlockMined(Block block) {}
+	protected void onBlockMined(Block block) {}
 
 	/**
 	 * Called when some peers have been whispered to our peers.

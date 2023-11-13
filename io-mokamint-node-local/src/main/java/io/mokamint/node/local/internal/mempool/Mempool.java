@@ -17,7 +17,7 @@ limitations under the License.
 /**
  * 
  */
-package io.mokamint.node.local.internal;
+package io.mokamint.node.local.internal.mempool;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,18 +41,15 @@ import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.local.internal.AbstractMempool;
+import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
  * to be processed and included in the blocks of the blockchain.
  */
 @ThreadSafe
-public class Mempool {
-
-	/**
-	 * The node having this mempool.
-	 */
-	private final LocalNodeImpl node;
+public class Mempool extends AbstractMempool {
 
 	/**
 	 * The application running in the node.
@@ -86,7 +83,8 @@ public class Mempool {
 	 * @param node the node
 	 */
 	public Mempool(LocalNodeImpl node) {
-		this.node = node;
+		super(node);
+
 		this.app = node.getApplication();
 		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 	}
@@ -115,7 +113,7 @@ public class Mempool {
 			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash, e);
 		}
 
-		node.scheduleWhisperingWithoutAddition(transaction);
+		getNode().scheduleWhisperingWithoutAddition(transaction);
 
 		var entry = new TransactionEntry(transaction, priority, hash);
 
@@ -133,7 +131,7 @@ public class Mempool {
 
 		LOGGER.info("mempool: added transaction " + hexHash);
 
-		node.onTransactionAdded(transaction);
+		onTransactionAdded(transaction);
 
 		return entry.getInfo();
 	}
