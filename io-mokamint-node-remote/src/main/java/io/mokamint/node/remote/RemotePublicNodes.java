@@ -33,7 +33,8 @@ public abstract class RemotePublicNodes {
 
 	/**
 	 * Opens and yields a new public remote node for the public API of a network service.
-	 * The resulting remote uses 1000 as the size of the memory used to avoid whispering the same message again.
+	 * The resulting remote uses 1000 as the size of the memory used to avoid whispering the same message again
+	 * and does not broadcast the services opened on the node.
 	 * 
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
@@ -43,7 +44,7 @@ public abstract class RemotePublicNodes {
 	 * @throws IOException if the remote node could not be created
 	 */
 	public static RemotePublicNode of(URI uri, long timeout) throws DeploymentException, IOException {
-		return new RemotePublicNodeImpl(uri, timeout, 1000);
+		return new RemotePublicNodeImpl(uri, timeout, -1L, 1000);
 	}
 
 	/**
@@ -52,6 +53,9 @@ public abstract class RemotePublicNodes {
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
+	 * @param serviceBroadcastInterval the time (in milliseconds) between successive broadcasts
+	 *                                 of the services opened on this node; use a negative value to
+	 *                                 disable service broadcasting
 	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
 	 *                              message again; higher numbers reduce the circulation of
 	 *                              spurious messages
@@ -59,7 +63,7 @@ public abstract class RemotePublicNodes {
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemotePublicNode of(URI uri, long timeout, long whisperedMessagesSize) throws DeploymentException, IOException {
-		return new RemotePublicNodeImpl(uri, timeout, whisperedMessagesSize);
+	public static RemotePublicNode of(URI uri, long timeout, long serviceBroadcastInterval, long whisperedMessagesSize) throws DeploymentException, IOException {
+		return new RemotePublicNodeImpl(uri, timeout, serviceBroadcastInterval, whisperedMessagesSize);
 	}
 }

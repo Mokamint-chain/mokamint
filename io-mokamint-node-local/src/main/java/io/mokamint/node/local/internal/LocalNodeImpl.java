@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -961,7 +960,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * Schedules a periodic task that whispers the services open on this node.
 	 */
 	private void schedulePeriodicWhisperingOfAllServices() {
-		submitWithFixedDelay(this::whisperAllServices, "whispering of all node's services", 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
+		long serviceBroadcastInterval = config.getServiceBrodcastInterval();
+		if (serviceBroadcastInterval >= 0)
+			submitWithFixedDelay(this::whisperAllServices, "whispering of all node's services", 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
 	}
 
 	/**

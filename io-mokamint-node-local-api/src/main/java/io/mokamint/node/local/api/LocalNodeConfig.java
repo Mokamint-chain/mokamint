@@ -135,6 +135,15 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	long getPeerPingInterval();
 
 	/**
+	 * Yields the time interval, in milliseconds, between successive broadcasts
+	 * of a service open on a node. It defaults to 240,000 (ie, 4 minutes).
+	 * 
+	 * @return the time interval, in milliseconds, between successive broadcasts;
+	 *         a negative value means that broadcast is disabled
+	 */
+	long getServiceBrodcastInterval();
+
+	/**
 	 * Yields the size of the memory used to avoid whispering the same
 	 * message again; higher numbers reduce the circulation of spurious messages.
 	 * It defaults to 1000.

@@ -129,7 +129,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -162,7 +162,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -195,7 +195,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -224,7 +224,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -268,7 +268,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -300,7 +300,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 	
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 	
 			@Override
@@ -332,7 +332,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -376,7 +376,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -408,7 +408,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 	
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 	
 			@Override
@@ -441,7 +441,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -472,7 +472,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -504,7 +504,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -536,7 +536,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -567,7 +567,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -602,7 +602,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -634,7 +634,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -669,7 +669,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemotePublicNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 1000);
+				super(URI, 2000L, 240000L, 1000);
 			}
 
 			@Override
@@ -695,7 +695,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyRemotePublicNode extends RemotePublicNodeImpl {
 			MyRemotePublicNode() throws DeploymentException, IOException, URISyntaxException {
-				super(new URI("ws://localhost:8030"), 2000L, 1000);
+				super(new URI("ws://localhost:8030"), 2000L, 240000L, 1000);
 			}
 
 			@Override

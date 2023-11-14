@@ -31,7 +31,6 @@ import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "ls", description = "List the tasks of a node.")
 public class List extends AbstractPublicRpcCommand {
@@ -46,10 +45,8 @@ public class List extends AbstractPublicRpcCommand {
 					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
 				));
 			}
-			else if (infos.length > 0){
-				System.out.println(Ansi.AUTO.string("@|green " + formatLine("description") + "|@"));
+			else if (infos.length > 0)
 				Stream.of(infos).map(info -> formatLine(info)).forEachOrdered(System.out::println);
-			}
 		}
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode the tasks of the node at " + publicUri() + " in JSON format!", e);

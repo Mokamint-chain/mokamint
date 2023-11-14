@@ -142,6 +142,14 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval);
 
 	/**
+	 * Sets the time interval, in milliseconds, between successive broadcasts of a service open on a node.
+	 * 
+	 * @param serviceBroadcastInterval the time interval; use a negative value to disable broadcasting
+	 * @return this builder
+	 */
+	LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval);
+
+	/**
 	 * Sets the time interval, in milliseconds, between successive pings to a peer.
 	 * Every time the peer does not answer, its points are reduced by {@link LocalNodeConfig#getPeerPunishmentForUnreachable()},
 	 * until they reach zero and the peer is removed.  During a successful ping, its peers are collected

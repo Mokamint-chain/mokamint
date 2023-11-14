@@ -126,6 +126,12 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	public final long peerPingInterval;
 
 	/**
+	 * The time interval, in milliseconds, between successive broadcasts
+	 * of a service open on a node. It defaults to 240,000 (ie, 4 minutes).
+	 */
+	public final long serviceBroadcastInterval;
+
+	/**
 	 * The size of the memory used to avoid whispering the same
 	 * message again; higher numbers reduce the circulation of spurious messages.
 	 * It defaults to 1000.
@@ -157,6 +163,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		this.peerPunishmentForUnreachable = builder.peerPunishmentForUnreachable;
 		this.peerTimeout = builder.peerTimeout;
 		this.peerPingInterval = builder.peerPingInterval;
+		this.serviceBroadcastInterval = builder.serviceBroadcastInterval;
 		this.whisperingMemorySize = builder.whisperingMemorySize;
 		this.blockMaxTimeInTheFuture = builder.blockMaxTimeInTheFuture;
 	}
@@ -222,6 +229,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
+	public long getServiceBrodcastInterval() {
+		return serviceBroadcastInterval;
+	}
+
+	@Override
 	public long getWhisperingMemorySize() {
 		return whisperingMemorySize;
 	}
@@ -277,6 +289,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("# the time, in milliseconds, between successive pings to a peer\n");
 		sb.append("peer_ping_interval = " + peerPingInterval + "\n");
 		sb.append("\n");
+		sb.append("# the time, in milliseconds, between successive broadcasts of a service\n");
+		sb.append("service_broadcast_interval = " + serviceBroadcastInterval + "\n");
+		sb.append("\n");
 		sb.append("# the size of the memory used to avoid whispering the same message again\n");
 		sb.append("whispering_memory_size = " + whisperingMemorySize + "\n");
 		sb.append("\n");
@@ -308,6 +323,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				peerPunishmentForUnreachable == otherConfig.peerPunishmentForUnreachable &&
 				peerTimeout == otherConfig.peerTimeout &&
 				peerPingInterval == otherConfig.peerPingInterval &&
+				serviceBroadcastInterval == otherConfig.serviceBroadcastInterval &&
 				whisperingMemorySize == otherConfig.whisperingMemorySize &&
 				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture;
 		}
@@ -331,6 +347,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private long peerPunishmentForUnreachable = 1L;
 		private long peerTimeout = 10000L;
 		private long peerPingInterval = 120000L;
+		private long serviceBroadcastInterval = 240000L;
 		private long whisperingMemorySize = 1000L;
 		private long blockMaxTimeInTheFuture = 15000L;
 
@@ -398,6 +415,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (peerPingInterval != null)
 				setPeerPingInterval(peerPingInterval);
 
+			var serviceBroadcastInterval = toml.getLong("service_broadcast_interval");
+			if (serviceBroadcastInterval != null)
+				setServiceBroadcastInterval(serviceBroadcastInterval);
+
 			var whisperingMemorySize = toml.getLong("whispering_memory_size");
 			if (whisperingMemorySize != null)
 				setWhisperingMemorySize(whisperingMemorySize);
@@ -440,6 +461,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			this.peerPunishmentForUnreachable = config.peerPunishmentForUnreachable;
 			this.peerTimeout = config.peerTimeout;
 			this.peerPingInterval = config.peerPingInterval;
+			this.serviceBroadcastInterval = config.serviceBroadcastInterval;
 			this.whisperingMemorySize = config.whisperingMemorySize;
 			this.blockMaxTimeInTheFuture = config.blockMaxTimeInTheFuture;
 		}
@@ -545,6 +567,12 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				throw new IllegalArgumentException("peerPingInterval must be non-negative");
 
 			this.peerPingInterval = peerPingInterval;
+			return getThis();
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval) {
+			this.serviceBroadcastInterval = serviceBroadcastInterval;
 			return getThis();
 		}
 

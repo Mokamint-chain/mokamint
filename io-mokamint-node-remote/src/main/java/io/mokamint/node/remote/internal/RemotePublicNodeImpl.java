@@ -181,13 +181,16 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
+	 * @param serviceBroadcastInterval the time (in milliseconds) between successive broadcasts
+	 *                                 of the services opened on this node; use a negative value to
+	 *                                 disable service broadcasting
 	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
 	 *                              message again; higher numbers reduce the circulation of
 	 *                              spurious messages
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public RemotePublicNodeImpl(URI uri, long timeout, long whisperedMessagesSize) throws DeploymentException, IOException {
+	public RemotePublicNodeImpl(URI uri, long timeout, long serviceBroadcastInterval, long whisperedMessagesSize) throws DeploymentException, IOException {
 		this.logPrefix = "public remote(" + uri + "): ";
 		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
 
@@ -209,10 +212,10 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		this.queues = new NodeMessageQueues(timeout);
 
-		ConsensusConfig<?,?> config;
-
 		try {
-			config = getConfig();
+			var config = getConfig();
+			this.hashingForBlocks = config.getHashingForBlocks();
+			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
 		catch (ClosedNodeException e) {
 			throw unexpectedException(e);
@@ -221,10 +224,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			throw new IOException(e);
 		}
 
-		this.hashingForBlocks = config.getHashingForBlocks();
-		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
-
-		periodicTasks.scheduleWithFixedDelay(this::whisperAllServices, 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
+		if (serviceBroadcastInterval >= 0)
+			periodicTasks.scheduleWithFixedDelay(this::whisperAllServices, 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
 	}
 
 	@Override

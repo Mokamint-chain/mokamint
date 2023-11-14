@@ -594,7 +594,8 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
-			var remote = RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), config.getWhisperingMemorySize());
+			// -1L: to disable the periodic broadcast of the remote node's services
+			var remote = RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1L, config.getWhisperingMemorySize());
 			LOGGER.info("peers: opened connection to " + SanitizedStrings.of(peer));
 			return remote;
 		}
