@@ -97,8 +97,12 @@ public class MineNewBlockTask implements Task {
 			LOGGER.log(Level.WARNING, "mining: cannot mine because this node currently has no miners attached");
 			blockchain.onNoMinersAvailable();
 		}
-		else
-			new Run();
+		else {
+			Block previous = blockchain.getHead().get();
+			// if somebody else is mining over the same block, it is useless to do the same
+			if (!blockchain.isMiningOver(previous))
+				new Run(previous);
+		}
 	}
 
 	/**
@@ -160,8 +164,8 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private Run() throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
-			this.previous = blockchain.getHead().get();
+		private Run(Block previous) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
+			this.previous = previous;
 			this.heightOfNewBlock = previous.getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
 			this.heightMessage = "mining: height " + heightOfNewBlock + ": ";
@@ -169,6 +173,7 @@ public class MineNewBlockTask implements Task {
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 
 			try {
+				blockchain.onMiningStarted(previous);
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
@@ -188,6 +193,7 @@ public class MineNewBlockTask implements Task {
 				turnWakerOff();
 				punishMinersThatDidNotAnswer();
 				this.done = true;
+				blockchain.onMiningCompleted(previous);
 			}
 		}
 

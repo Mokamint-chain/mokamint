@@ -63,6 +63,27 @@ public abstract class AbstractBlockchain {
 	}
 
 	/**
+	 * @see LocalNodeImpl#isMiningOver(Block).
+	 */
+	protected boolean isMiningOver(Block previous) {
+		return node.isMiningOver(previous);
+	}
+
+	/**
+	 * @see LocalNodeImpl#onMiningStarted(Block).
+	 */
+	protected void onMiningStarted(Block previous) {
+		node.onMiningStarted(previous);
+	}
+
+	/**
+	 * @see LocalNodeImpl#onMiningCompleted(Block).
+	 */
+	protected void onMiningCompleted(Block previous) {
+		node.onMiningCompleted(previous);
+	}
+
+	/**
 	 * @see LocalNodeImpl#onBlockAdded(Block).
 	 */
 	protected void onBlockAdded(Block block) {

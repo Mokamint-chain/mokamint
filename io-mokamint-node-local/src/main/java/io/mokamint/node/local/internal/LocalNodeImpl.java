@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -182,9 +183,9 @@ public class LocalNodeImpl implements LocalNode {
 	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
 
 	/**
-	 * True if and only if the head of the current chain changed since the last mining task.
+	 * The set of blocks over which mining is currently in progress.
 	 */
-	private final AtomicBoolean headHasChangedSinceLastMining = new AtomicBoolean(true);
+	private final Set<Block> blocksOverWhichMiningIsInProgress = ConcurrentHashMap.newKeySet();
 
 	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
 
@@ -659,6 +660,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * Determines if some mining task is currently mining immediately over the given block.
+	 * 
+	 * @param previous the block
+	 * @return true if and only if that condition holds
+	 */
+	protected boolean isMiningOver(Block previous) {
+		return blocksOverWhichMiningIsInProgress.contains(previous);
+	}
+
+	/**
 	 * Schedules a synchronization of the blockchain in this node, from the peers of the node,
 	 * if the node is not currently performing a synchronization. Otherwise, nothing happens.
 	 * 
@@ -676,9 +687,7 @@ public class LocalNodeImpl implements LocalNode {
 	protected void scheduleMining() {
 		// we avoid to mine during synchronization
 		if (!isSynchronizing.get())
-			// we avoid mining if the head has not changed since the last request of mining
-			//if (headHasChangedSinceLastMining.getAndSet(false))
-				submit(new MineNewBlockTask(this), "mining of next block");
+			submit(new MineNewBlockTask(this), "mining of next block");
 	}
 
 	/**
@@ -805,6 +814,24 @@ public class LocalNodeImpl implements LocalNode {
 	protected void onNoMinersAvailable() {}
 
 	/**
+	 * Called when mining immediately over the given block has been started.
+	 * 
+	 * @param previous the block
+	 */
+	protected void onMiningStarted(Block previous) {
+		blocksOverWhichMiningIsInProgress.add(previous);
+	}
+
+	/**
+	 * Called when mining immediately over the given block stopped.
+	 * 
+	 * @param previous the block
+	 */
+	protected void onMiningCompleted(Block previous) {
+		blocksOverWhichMiningIsInProgress.remove(previous);
+	}
+
+	/**
 	 * Called when a synchronization from the peers has been completed.
 	 */
 	protected void onSynchronizationCompleted() {
@@ -825,9 +852,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param newHead the new head
 	 */
-	protected void onHeadChanged(Block newHead) {
-		headHasChangedSinceLastMining.set(true);
-	}
+	protected void onHeadChanged(Block newHead) {}
 
 	/**
 	 * Called when the node mines a new block.

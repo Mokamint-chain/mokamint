@@ -368,6 +368,21 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	}
 
 	@Override
+	protected boolean isMiningOver(Block previous) {
+		return super.isMiningOver(previous);
+	}
+
+	@Override
+	protected void onMiningStarted(Block previous) {
+		super.onMiningStarted(previous);
+	}
+
+	@Override
+	protected void onMiningCompleted(Block previous) {
+		super.onMiningCompleted(previous);
+	}
+
+	@Override
 	protected void onSynchronizationCompleted() {
 		super.onSynchronizationCompleted();
 	}
@@ -462,9 +477,10 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
 
 			var node = getNode();
+			var config = node.getConfig();
 			var genesis = Blocks.genesis(
-				LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(node.getConfig().getInitialAcceleration()),
-				node.getConfig().getSignatureForBlocks(), node.getKeys()
+				LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()),
+				config.getSignatureForBlocks(), node.getKeys()
 			);
 
 			db.add(genesis, new AtomicReference<>());
