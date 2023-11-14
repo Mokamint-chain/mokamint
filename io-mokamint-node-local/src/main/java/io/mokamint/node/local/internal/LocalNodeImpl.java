@@ -37,7 +37,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.OnThread;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
@@ -136,6 +135,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final Mempool mempool;
 
 	/**
+	 * The UUID of this node.
+	 */
+	private final UUID uuid;
+
+	/**
 	 * The executor of tasks and events. There might be more tasks and events in execution at the same time.
 	 */
 	private final ExecutorService executors = Executors.newCachedThreadPool();
@@ -202,6 +206,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.miners = new Miners(this);
 			this.blockchain = new Blockchain(this, init);
 			this.peers = new Peers(this);
+			this.uuid = getInfo().getUUID();
 
 			if (init)
 				scheduleMining();
@@ -242,13 +247,13 @@ public class LocalNodeImpl implements LocalNode {
 			return;
 
 		if (whispered instanceof WhisperedPeers whisperedPeers)
-			submit(() -> peers.add(whisperedPeers.getPeers()), "addition of whispered " + description);
+			submit(() -> peers.reconnectOrTryToAdd(whisperedPeers.getPeers()), "reconnection or addition of whispered " + description);
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			try {
 				blockchain.add(whisperedBlock.getBlock());
 			}
 			catch (NoSuchAlgorithmException | DatabaseException | VerificationException | ClosedDatabaseException e) {
-				LOGGER.log(Level.SEVERE, "node: whispered " + description + " could not be added to the blockchain: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the blockchain: " + e.getMessage());
 			}
 		}
 		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
@@ -256,7 +261,7 @@ public class LocalNodeImpl implements LocalNode {
 				mempool.add(whisperedTransaction.getTransaction());
 			}
 			catch (RejectedTransactionException e) {
-				LOGGER.log(Level.SEVERE, "node: whispered " + description + " has been rejected: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " has been rejected: " + e.getMessage());
 			}
 		}
 		else
@@ -598,6 +603,20 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * A task is a complex activity that can be run in its own thread. Once it completes,
+	 * it typically fires some events to signal something to the node.
+	 */
+	public interface Task {
+
+		/**
+		 * Main body of the task execution.
+		 * 
+		 * @throws Exception if the execution fails
+		 */
+		void body() throws Exception;
+	}
+
+	/**
 	 * Determines if a deadline is legal for this node. This means that:
 	 * <ul>
 	 * <li> it is valid
@@ -611,9 +630,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if {@code deadline} is illegal
 	 */
-	public void check(Deadline deadline) throws IllegalDeadlineException {
+	protected void check(Deadline deadline) throws IllegalDeadlineException {
 		var prolog = deadline.getProlog();
-
+	
 		if (!deadline.isValid())
 			throw new IllegalDeadlineException("Invalid deadline");
 		else if (!prolog.getChainId().equals(config.getChainId()))
@@ -627,60 +646,6 @@ public class LocalNodeImpl implements LocalNode {
 		else if (!app.checkPrologExtra(prolog.getExtra()))
 			throw new IllegalDeadlineException("Invalid extra data in deadline");
 	}
-
-	/**
-	 * A task is a complex activity that can be run in its own thread. Once it completes,
-	 * it typically fires some events to signal something to the node.
-	 */
-	public interface Task {
-
-		/**
-		 * Main body of the task execution.
-		 * 
-		 * @throws Exception if the execution fails
-		 */
-		@OnThread("executors")
-		void body() throws Exception;
-	}
-
-	/**
-	 * An adapter of a task into a runnable with logs.
-	 */
-	private class RunnableTask implements Runnable {
-		private final Task task;
-		private final String description;
-
-		private RunnableTask(Task task, String description) {
-			this.task = task;
-			this.description = description;
-		}
-
-		@Override
-		public final void run() {
-			currentlyExecutingTasks.add(this);
-
-			try {
-				task.body();
-			}
-			catch (InterruptedException e) {
-				LOGGER.log(Level.WARNING, this + ": interrupted");
-				Thread.currentThread().interrupt();
-				return;
-			}
-			catch (Exception e) {
-				LOGGER.log(Level.SEVERE, this + ": failed", e);
-				return;
-			}
-			finally {
-				currentlyExecutingTasks.remove(this);
-			}
-		}
-
-		@Override
-		public String toString() {
-			return description;
-		}
-	};
 
 	/**
 	 * Schedules a synchronization of the blockchain in this node, from the peers of the node,
@@ -719,10 +684,14 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param peers the peers to whisper
 	 */
 	protected void scheduleWhisperingWithoutAddition(Stream<Peer> peers) {
-		var peersAsArray = peers.toArray(Peer[]::new);
-		var whisperedPeer = WhisperPeersMessages.of(Stream.of(peersAsArray), UUID.randomUUID().toString());
-		String description = "peers " + SanitizedStrings.of(whisperedPeer.getPeers());
-		submit(() -> whisperWithoutAddition(whisperedPeer, description), "whispering of " + description);
+		var peersAsArray = peers.distinct().toArray(Peer[]::new);
+
+		int length = peersAsArray.length;
+		if (length > 0) {
+			var whisperedPeer = WhisperPeersMessages.of(Stream.of(peersAsArray), UUID.randomUUID().toString());
+			String description = length == 1 ? ("peer " + SanitizedStrings.of(peersAsArray[0])) : ("peers " + SanitizedStrings.of(whisperedPeer.getPeers()));
+			submit(() -> whisperWithoutAddition(whisperedPeer, description), "whispering of " + description);
+		}
 	}
 
 	/**
@@ -745,22 +714,6 @@ public class LocalNodeImpl implements LocalNode {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 		String description = "transaction " + hasherForTransactions.hash(transaction);
 		submit(() -> whisperWithoutAddition(whisperedTransaction, description), "whispering of " + description);
-	}
-
-	/**
-	 * Schedules a periodic task that whispers the services open on this node.
-	 */
-	private void schedulePeriodicWhisperingOfAllServices() {
-		submitWithFixedDelay(this::whisperAllServices, "periodic whispering of all node's services every " + 2000L + " ms", 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
-	}
-
-	/**
-	 * Schedules a periodic task that pings all peers, recreates their remotes and adds the peers of such peers.
-	 */
-	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
-		submitWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
-				"pinging all peers every " + config.getPeerPingInterval() + " ms to create missing remotes and collect their peers",
-				0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -868,6 +821,45 @@ public class LocalNodeImpl implements LocalNode {
 	protected void onWhispered(Transaction transaction) {}
 
 	/**
+	 * An adapter of a task into a runnable with logs.
+	 */
+	private class RunnableTask implements Runnable {
+		private final Task task;
+		private final String description;
+	
+		private RunnableTask(Task task, String description) {
+			this.task = task;
+			this.description = description;
+		}
+	
+		@Override
+		public final void run() {
+			currentlyExecutingTasks.add(this);
+	
+			try {
+				task.body();
+			}
+			catch (InterruptedException e) {
+				LOGGER.log(Level.WARNING, "node " + uuid + ": " + this + " interrupted");
+				Thread.currentThread().interrupt();
+				return;
+			}
+			catch (Exception e) {
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " failed", e);
+				return;
+			}
+			finally {
+				currentlyExecutingTasks.remove(this);
+			}
+		}
+	
+		@Override
+		public String toString() {
+			return description;
+		}
+	}
+
+	/**
 	 * Runs the given task, asynchronously, in one thread from the {@link #executors} executor.
 	 * 
 	 * @param task the task to run
@@ -876,10 +868,10 @@ public class LocalNodeImpl implements LocalNode {
 		var runnable = new RunnableTask(task, description);
 		try {
 			executors.execute(runnable);
-			LOGGER.info(runnable + ": scheduled");
+			LOGGER.info("node " + uuid + ": " + runnable + " scheduled");
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
+			LOGGER.warning("node " + uuid + ": " + runnable + " rejected, probably because the node is shutting down");
 		}
 	}
 
@@ -896,11 +888,27 @@ public class LocalNodeImpl implements LocalNode {
 	
 		try {
 			periodicExecutors.scheduleWithFixedDelay(runnable, initialDelay, delay, unit);
-			LOGGER.info(runnable + ": scheduled periodically");
+			LOGGER.info("node " + uuid + ": " + runnable + " scheduled every " + delay + " " + unit);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
+			LOGGER.warning("node " + uuid + ": " + runnable + " rejected, probably because the node is shutting down");
 		}
+	}
+
+	/**
+	 * Schedules a periodic task that whispers the services open on this node.
+	 */
+	private void schedulePeriodicWhisperingOfAllServices() {
+		submitWithFixedDelay(this::whisperAllServices, "whispering of all node's services", 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
+	}
+
+	/**
+	 * Schedules a periodic task that pings all peers, recreates their remotes and adds the peers of such peers.
+	 */
+	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
+		submitWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
+				"pinging all peers to create missing remotes and collect their peers",
+				0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
 	}
 
 	private void whisperWithoutAddition(Whispered whispered, String description) {
@@ -917,17 +925,19 @@ public class LocalNodeImpl implements LocalNode {
 			.map(PublicNodeService::getURI)
 			.flatMap(Optional::stream)
 			.map(io.mokamint.node.Peers::of)
+			.distinct()
 			.toArray(Peer[]::new);
 
-		if (servicesAsPeers.length > 0) {
+		int length = servicesAsPeers.length;
+		if (length > 0) {
 			var whisperedPeers = WhisperPeersMessages.of(Stream.of(servicesAsPeers), UUID.randomUUID().toString());
-			String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
+			String description = length == 1 ? ("peer " + SanitizedStrings.of(servicesAsPeers[0])) : ("peers " + SanitizedStrings.of(whisperedPeers.getPeers()));
 			whisperWithoutAddition(whisperedPeers, description);
 		}
 	}
 
-	private static RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
+	private RuntimeException unexpectedException(Exception e) {
+		LOGGER.log(Level.SEVERE, "node " + uuid + ": unexpected exception", e);
 		return new RuntimeException("Unexpected exception", e);
 	}
 }

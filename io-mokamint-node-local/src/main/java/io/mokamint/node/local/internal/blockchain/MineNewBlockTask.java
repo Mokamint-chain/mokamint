@@ -232,7 +232,7 @@ public class MineNewBlockTask implements Task {
 			else {
 				try {
 					deadline.matchesOrThrow(description, IllegalDeadlineException::new);
-					node.check(deadline);
+					blockchain.check(deadline);
 
 					// we increase the points of the miner, but only for the first deadline that it provides
 					if (minersThatDidNotAnswer.remove(miner))

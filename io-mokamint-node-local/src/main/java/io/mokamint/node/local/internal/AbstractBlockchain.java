@@ -23,6 +23,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * Bridge class to give access to protected methods to its subclass,
@@ -52,6 +53,13 @@ public abstract class AbstractBlockchain {
 	 */
 	protected final LocalNodeImpl getNode() {
 		return node;
+	}
+
+	/**
+	 * @see LocalNodeImpl#check(Deadline).
+	 */
+	protected void check(Deadline deadline) throws IllegalDeadlineException {
+		node.check(deadline);
 	}
 
 	/**

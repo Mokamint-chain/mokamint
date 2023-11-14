@@ -51,6 +51,7 @@ import io.mokamint.node.local.internal.AbstractBlockchain;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -407,6 +408,11 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		// if synchronization is in progress, mining will be triggered at its end anyway
 		if (!isSynchronizing())
 			super.scheduleDelayedMining();
+	}
+
+	@Override
+	protected void check(Deadline deadline) throws IllegalDeadlineException {
+		super.check(deadline);
 	}
 
 	/**
