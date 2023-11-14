@@ -208,7 +208,8 @@ public class LocalNodeImpl implements LocalNode {
 			else
 				scheduleSynchronization(0L);
 
-			periodicExecutors.scheduleWithFixedDelay(this::whisperAllServices, 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
+			schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
+			schedulePeriodicWhisperingOfAllServices();
 		}
 		catch (ClosedNodeException e) {
 			throw unexpectedException(e);
@@ -240,12 +241,8 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !alreadyWhispered.add(whispered))
 			return;
 
-		if (whispered instanceof WhisperedPeers whisperedPeers) {
-			// we check if the node needs any of the whispered peers
-			var usefulToAdd = whisperedPeers.getPeers().distinct().filter(peer -> peers.getRemote(peer).isEmpty()).toArray(Peer[]::new);
-			if (usefulToAdd.length > 0)
-				submit(() -> peers.tryToAdd(Stream.of(usefulToAdd)), "addition of whispered peers " + SanitizedStrings.of(Stream.of(usefulToAdd)));
-		}
+		if (whispered instanceof WhisperedPeers whisperedPeers)
+			submit(() -> peers.add(whisperedPeers.getPeers()), "addition of whispered " + description);
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			try {
 				blockchain.add(whisperedBlock.getBlock());
@@ -537,6 +534,24 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
+	@Override
+	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
+		closureLock.beforeCall(ClosedNodeException::new);
+	
+		try {
+			var count = miners.get().count();
+			Optional<MinerInfo> result = miners.add(miner);
+			// if there were no miners before this call, we require to mine
+			if (count == 0L && result.isPresent())
+				scheduleMining();
+	
+			return result;
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
 	/**
 	 * Yields the application running over this node.
 	 * 
@@ -580,24 +595,6 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public KeyPair getKeys() {
 		return keyPair;
-	}
-
-	@Override
-	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
-			var count = miners.get().count();
-			Optional<MinerInfo> result = miners.add(miner);
-			// if there were no miners before this call, we require to mine
-			if (count == 0L && result.isPresent())
-				scheduleMining();
-
-			return result;
-		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	/**
@@ -686,26 +683,6 @@ public class LocalNodeImpl implements LocalNode {
 	};
 
 	/**
-	 * Runs the given task, periodically, with the {@link #periodicExecutors} executor.
-	 * 
-	 * @param task the task to run
-	 * @param initialDelay the time to wait before running the task
-	 * @param delay the time interval between successive, iterated executions
-	 * @param unit the time interval unit
-	 */
-	public void submitWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) {
-		var runnable = new RunnableTask(task, description);
-
-		try {
-			periodicExecutors.scheduleWithFixedDelay(runnable, initialDelay, delay, unit);
-			LOGGER.info(runnable + ": scheduled periodically");
-		}
-		catch (RejectedExecutionException e) {
-			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
-		}
-	}
-
-	/**
 	 * Schedules a synchronization of the blockchain in this node, from the peers of the node,
 	 * if the node is not currently performing a synchronization. Otherwise, nothing happens.
 	 * 
@@ -768,6 +745,22 @@ public class LocalNodeImpl implements LocalNode {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 		String description = "transaction " + hasherForTransactions.hash(transaction);
 		submit(() -> whisperWithoutAddition(whisperedTransaction, description), "whispering of " + description);
+	}
+
+	/**
+	 * Schedules a periodic task that whispers the services open on this node.
+	 */
+	private void schedulePeriodicWhisperingOfAllServices() {
+		submitWithFixedDelay(this::whisperAllServices, "periodic whispering of all node's services every " + 2000L + " ms", 0L, 2000L, TimeUnit.MILLISECONDS); // TODO
+	}
+
+	/**
+	 * Schedules a periodic task that pings all peers, recreates their remotes and adds the peers of such peers.
+	 */
+	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
+		submitWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
+				"pinging all peers every " + config.getPeerPingInterval() + " ms to create missing remotes and collect their peers",
+				0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -884,6 +877,26 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			executors.execute(runnable);
 			LOGGER.info(runnable + ": scheduled");
+		}
+		catch (RejectedExecutionException e) {
+			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");
+		}
+	}
+
+	/**
+	 * Runs the given task, periodically, with the {@link #periodicExecutors} executor.
+	 * 
+	 * @param task the task to run
+	 * @param initialDelay the time to wait before running the task
+	 * @param delay the time interval between successive, iterated executions
+	 * @param unit the time interval unit
+	 */
+	private void submitWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) {
+		var runnable = new RunnableTask(task, description);
+	
+		try {
+			periodicExecutors.scheduleWithFixedDelay(runnable, initialDelay, delay, unit);
+			LOGGER.info(runnable + ": scheduled periodically");
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning(runnable + ": rejected, probably because the node is shutting down");

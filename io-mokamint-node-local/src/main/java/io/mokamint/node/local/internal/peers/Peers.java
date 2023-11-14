@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -140,19 +139,11 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 			this.version = Versions.current();
 			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, this::onAddition, this::onRemoval);
 			openConnectionToPeers();
-			getNode().submitWithFixedDelay(this::pingPeersRecreateRemotesAndAddTheirPeers,
-					"peers: pinging all peers to create missing remotes and collect their peers",
-					0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
 			tryToAddThenScheduleWhispering(config.getSeeds().map(io.mokamint.node.Peers::of), true);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e);
 		}
-	}
-
-	private static RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
 	}
 
 	/**
@@ -306,7 +297,7 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 	 * and collects their peers, in case they might be useful for the node.
 	 */
 
-	private void pingPeersRecreateRemotesAndAddTheirPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	public void pingAllRecreateRemotesAndAddTheirPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		var allPeers = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
 			peers.getElements().parallel().flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers)).toArray(Peer[]::new)
 		);
@@ -399,10 +390,17 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 			scheduleWhisperingWithoutAddition(Stream.of(added));
 	}
 
-	public void tryToAdd(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	public void add(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		// we check if we actually need any of the peers to add
+		var usefulToAdd = peers.distinct().filter(peer -> remotes.get(peer) == null);
 		CheckRunnable.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			peers.parallel().distinct().forEach(UncheckConsumer.uncheck(peer -> reconnectOrAdd(peer, false)))
+			usefulToAdd.parallel().distinct().forEach(UncheckConsumer.uncheck(peer -> reconnectOrAdd(peer, false)))
 		);
+	}
+
+	private static RuntimeException unexpectedException(Exception e) {
+		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
+		return new RuntimeException("Unexpected exception", e);
 	}
 
 	/**
