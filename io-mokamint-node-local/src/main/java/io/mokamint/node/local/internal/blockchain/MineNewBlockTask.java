@@ -91,10 +91,7 @@ public class MineNewBlockTask implements Task {
 
 	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, InvalidKeyException, SignatureException, VerificationException {
-		if (blockchain.isSynchronizing())
-			// if synchronization is in progress, mining will be triggered at its end anyway
-			return;
-		else if (blockchain.isEmpty())
+		if (blockchain.isEmpty())
 			LOGGER.log(Level.SEVERE, "mining: cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L) {
 			LOGGER.log(Level.WARNING, "mining: cannot mine because this node currently has no miners attached");

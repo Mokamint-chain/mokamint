@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -90,11 +89,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 */
 	@GuardedBy("orphans")
 	private int orphansPos;
-
-	/**
-	 * A semaphore to allow only one synchronization task to run at a time.
-	 */
-	private final Semaphore synchronizationSemaphore = new Semaphore(1);
 
 	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
@@ -351,8 +345,10 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		}
 		while (!ws.isEmpty());
 
-		if (updatedHead.get() != null)
+		if (updatedHead.get() != null) {
+			onHeadChanged(updatedHead.get());
 			scheduleMining();
+		}
 		else if (addedToOrphans) {
 			var powerOfHead = getPowerOfHead();
 			if (powerOfHead.isEmpty())
@@ -367,13 +363,13 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	}
 
 	@Override
-	protected void onBlockAdded(Block block) {
-		super.onBlockAdded(block);
+	protected void onBlockMined(Block block) {
+		super.onBlockMined(block);
 	}
 
 	@Override
-	protected void onBlockMined(Block block) {
-		super.onBlockMined(block);
+	protected void onSynchronizationCompleted() {
+		super.onSynchronizationCompleted();
 	}
 
 	@Override
@@ -397,48 +393,13 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	}
 
 	@Override
-	protected void scheduleMining() {
-		// if synchronization is in progress, mining will be triggered at its end anyway
-		if (!isSynchronizing())
-			super.scheduleMining();
-	}
-
-	@Override
 	protected void scheduleDelayedMining() {
-		// if synchronization is in progress, mining will be triggered at its end anyway
-		if (!isSynchronizing())
-			super.scheduleDelayedMining();
+		super.scheduleDelayedMining();
 	}
 
 	@Override
 	protected void check(Deadline deadline) throws IllegalDeadlineException {
 		super.check(deadline);
-	}
-
-	/**
-	 * Tries to acquire the lock for synchronization. This method returns
-	 * immediately and never waits.
-	 * 
-	 * @return true if and only if the lock has been acquired
-	 */
-	boolean tryToAcquireSynchronizationLock() {
-		return synchronizationSemaphore.tryAcquire();
-	}
-
-	/**
-	 * Release the synchronization lock.
-	 */
-	void releaseSynchronizationLock() {
-		synchronizationSemaphore.release();
-	}
-
-	boolean isSynchronizing() {
-		try {
-			return !tryToAcquireSynchronizationLock();
-		}
-		finally {
-			releaseSynchronizationLock();
-		}
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
@@ -508,6 +469,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 
 			db.add(genesis, new AtomicReference<>());
 			onBlockAdded(genesis);
+			onHeadChanged(genesis);
 		}
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
 			// the database cannot be closed at this moment;

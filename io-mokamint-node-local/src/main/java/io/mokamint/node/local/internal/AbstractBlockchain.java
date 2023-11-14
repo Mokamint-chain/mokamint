@@ -70,6 +70,13 @@ public abstract class AbstractBlockchain {
 	}
 
 	/**
+	 * @see {@link LocalNodeImpl#onHeadChanged(Block)}.
+	 */
+	protected void onHeadChanged(Block newHead) {
+		node.onHeadChanged(newHead);
+	}
+
+	/**
 	 * @see LocalNodeImpl#onBlockMined(Block).
 	 */
 	protected void onBlockMined(Block block) {
@@ -95,6 +102,13 @@ public abstract class AbstractBlockchain {
 	 */
 	protected void onNoMinersAvailable() {
 		node.onNoMinersAvailable();
+	}
+
+	/**
+	 * @see LocalNodeImpl#onSynchronizationCompleted().
+	 */
+	protected void onSynchronizationCompleted() {
+		node.onSynchronizationCompleted();
 	}
 
 	/**

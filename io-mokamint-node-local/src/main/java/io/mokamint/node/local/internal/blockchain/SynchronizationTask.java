@@ -78,17 +78,11 @@ public class SynchronizationTask implements Task {
 
 	@Override
 	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, IOException, InterruptedException {
-		var blockchain = node.getBlockchain();
-
-		if (blockchain.tryToAcquireSynchronizationLock()) {
-			try {
-				new Run();
-			}
-			finally {
-				blockchain.releaseSynchronizationLock();
-				// after synchronization, we let the blockchain start to mine its blocks
-				blockchain.scheduleMining();
-			}
+		try {
+			new Run();
+		}
+		finally {
+			node.getBlockchain().onSynchronizationCompleted();
 		}
 	}
 

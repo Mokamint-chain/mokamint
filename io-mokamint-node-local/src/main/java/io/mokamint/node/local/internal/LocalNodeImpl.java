@@ -32,6 +32,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -174,6 +175,16 @@ public class LocalNodeImpl implements LocalNode {
 	 * The lock used to block new calls when the node has been requested to close.
 	 */
 	private final ClosureLock closureLock = new ClosureLock();
+
+	/**
+	 * True if and only if a synchronization task is in process.
+	 */
+	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
+
+	/**
+	 * True if and only if the head of the current chain changed since the last mining task.
+	 */
+	private final AtomicBoolean headHasChangedSinceLastMining = new AtomicBoolean(true);
 
 	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
 
@@ -654,21 +665,29 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
 	protected void scheduleSynchronization(long initialHeight) {
-		submit(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
+		// we avoid to synchronize if synchronization is already in process
+		if (isSynchronizing.getAndSet(true) == false)
+			submit(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
 	}
 
 	/**
 	 * Schedules the mining of a next block on top of the current head.
 	 */
 	protected void scheduleMining() {
-		submit(new MineNewBlockTask(this), "mining of next block");
+		// we avoid to mine during synchronization
+		if (!isSynchronizing.get())
+			// we avoid mining if the head has not changed since the last request of mining
+			//if (headHasChangedSinceLastMining.getAndSet(false))
+				submit(new MineNewBlockTask(this), "mining of next block");
 	}
 
 	/**
 	 * Schedules the mining of a next block on top of the current head, after a delay.
 	 */
 	protected void scheduleDelayedMining() {
-		submit(new DelayedMineNewBlockTask(this), "mining in " + config.getDeadlineWaitTimeout() + " ms");
+		// we avoid to mine during synchronization
+		if (!isSynchronizing.get())
+			submit(new DelayedMineNewBlockTask(this), "mining in " + config.getDeadlineWaitTimeout() + " ms");
 	}
 
 	/**
@@ -786,11 +805,29 @@ public class LocalNodeImpl implements LocalNode {
 	protected void onNoMinersAvailable() {}
 
 	/**
-	 * Called when a block gets added to the database of blocks.
+	 * Called when a synchronization from the peers has been completed.
+	 */
+	protected void onSynchronizationCompleted() {
+		isSynchronizing.set(false);
+		// after synchronization, we let the blockchain start to mine its blocks
+		scheduleMining();
+	}
+
+	/**
+	 * Called when a block gets added to the blockchain.
 	 * 
 	 * @param block the added block
 	 */
 	protected void onBlockAdded(Block block) {}
+
+	/**
+	 * Called when the head of the blockchain has been updated.
+	 * 
+	 * @param newHead the new head
+	 */
+	protected void onHeadChanged(Block newHead) {
+		headHasChangedSinceLastMining.set(true);
+	}
 
 	/**
 	 * Called when the node mines a new block.
