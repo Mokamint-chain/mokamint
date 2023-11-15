@@ -82,7 +82,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 * their previous block arrives later.
 	 */
 	@GuardedBy("itself")
-	private final NonGenesisBlock[] orphans = new NonGenesisBlock[20]; // TODO
+	private final NonGenesisBlock[] orphans;
 
 	/**
 	 * The next insertion position inside the {@link #orphans} array.
@@ -102,7 +102,10 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	public Blockchain(LocalNodeImpl node) throws DatabaseException {
 		super(node);
 
-		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
+		var config = node.getConfig();
+
+		this.hashingForBlocks = config.getHashingForBlocks();
+		this.orphans = new NonGenesisBlock[config.getOrphansMemorySize()];
 		this.db = new BlocksDatabase(node);
 	}
 

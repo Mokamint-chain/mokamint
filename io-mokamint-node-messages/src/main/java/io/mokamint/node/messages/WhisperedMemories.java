@@ -33,7 +33,7 @@ public final class WhisperedMemories {
 	 * @return the memory
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public static WhisperingMemory of(long size) {
+	public static WhisperingMemory of(int size) {
 		return new WhisperedMemoryImpl(size);
 	}
 }

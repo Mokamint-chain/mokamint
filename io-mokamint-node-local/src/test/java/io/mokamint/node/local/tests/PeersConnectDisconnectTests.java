@@ -115,8 +115,8 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		}
 
 		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, nodeKey, app, false);  var node3 = LocalNodes.of(config3, nodeKey, app, false);
-			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000L, Optional.of(uri2));
-			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(uri3))) {
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000, Optional.of(uri2));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000, Optional.of(uri3))) {
 
 			// node1 has peer2 and peer3 as peers
 			node1.add(peer2);

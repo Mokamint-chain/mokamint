@@ -150,15 +150,23 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval);
 
 	/**
-	 * Sets the time interval, in milliseconds, between successive pings to a peer.
-	 * Every time the peer does not answer, its points are reduced by {@link LocalNodeConfig#getPeerPunishmentForUnreachable()},
-	 * until they reach zero and the peer is removed.  During a successful ping, its peers are collected
-	 * if they are useful for the node (for instance, if the node has too few peers).
+	 * Sets the size of the memory used to avoid whispering the same
+	 * message again; higher numbers reduce the circulation of spurious messages.
 	 * 
 	 * @param whisperingMemorySize the size
 	 * @return this builder
 	 */
 	LocalNodeConfigBuilder setWhisperingMemorySize(long whisperingMemorySize);
+
+	/**
+	 * Sets the size of the memory used to hold orphan nodes, that is, nodes received
+	 * from the network but having no parent in the blockchain. Larger sizes allow for
+	 * out of order reception of blocks, without synchronization.
+	 * 
+	 * @param orphansMemorySize the size
+	 * @return this builder
+	 */
+	LocalNodeConfigBuilder setOrphansMemorySize(long orphansMemorySize);
 
 	/**
 	 * Sets the maximal time (in milliseconds) a block can be created in the future,

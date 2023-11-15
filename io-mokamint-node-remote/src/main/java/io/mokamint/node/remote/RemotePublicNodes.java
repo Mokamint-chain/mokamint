@@ -63,7 +63,7 @@ public abstract class RemotePublicNodes {
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemotePublicNode of(URI uri, long timeout, long serviceBroadcastInterval, long whisperedMessagesSize) throws DeploymentException, IOException {
+	public static RemotePublicNode of(URI uri, long timeout, long serviceBroadcastInterval, int whisperedMessagesSize) throws DeploymentException, IOException {
 		return new RemotePublicNodeImpl(uri, timeout, serviceBroadcastInterval, whisperedMessagesSize);
 	}
 }

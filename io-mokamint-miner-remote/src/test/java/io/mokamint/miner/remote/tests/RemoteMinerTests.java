@@ -34,7 +34,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -50,7 +49,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	@DisplayName("if a deadline description is requested to a remote miner, it gets forwarded to the connected service(s)")
 	public void remoteMinerForwardsToServices() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
-		HashingAlgorithm shabal256 = shabal256();
+		var shabal256 = shabal256();
 		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 
 		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = received -> {
@@ -70,7 +69,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	@DisplayName("if a client sends a deadline, it reaches the requester of the corresponding description")
 	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
-		HashingAlgorithm shabal256 = shabal256();
+		var shabal256 = shabal256();
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -100,7 +99,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	@DisplayName("if a client sends a deadline, it does not reach the requester of another description")
 	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
-		HashingAlgorithm shabal256 = shabal256();
+		var shabal256 = shabal256();
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
 		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);

@@ -62,7 +62,7 @@ public class WhisperedMemoryImpl implements WhisperingMemory {
 	 * @param size the size (maximal number of stored things)
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public WhisperedMemoryImpl(long size) {
+	public WhisperedMemoryImpl(int size) {
 		if (size < 0)
 			throw new IllegalArgumentException("size cannot be negative");
 
@@ -72,10 +72,12 @@ public class WhisperedMemoryImpl implements WhisperingMemory {
 	@Override
 	public boolean add(Whispered whispered) {
 		synchronized (lock) {
+			boolean reachedMax = seen.size() == size;
+
 			if (seen.add(whispered)) {
 				elements.add(whispered);
 
-				if (seen.size() > size) {
+				if (reachedMax) {
 					var toRemove = elements.removeFirst();
 					seen.remove(toRemove);
 				}

@@ -150,7 +150,16 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * 
 	 * @return the size of the memory used to avoid whispering the same message again
 	 */
-	long getWhisperingMemorySize();
+	int getWhisperingMemorySize();
+
+	/**
+	 * Yields the size of the memory used to hold orphan nodes, that is, nodes received
+	 * from the network but having no parent in the blockchain. Larger sizes allow for
+	 * out of order reception of blocks, without synchronization. It defaults to 1000.
+	 * 
+	 * @return the size of the memory used to hold orphan nodes
+	 */
+	int getOrphansMemorySize();
 
 	/**
 	 * Yields the maximal time (in milliseconds) a block can be created in the future,

@@ -121,10 +121,10 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		try (var node1 = new MyLocalNode(config1); var node2 = new MyLocalNode(config2);
 			 var node3 = new MyLocalNode(config3); var node4 = new MyLocalNode(config4);
-			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000L, Optional.of(peer1.getURI()));
-			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000L, Optional.of(peer2.getURI()));
-			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(peer3.getURI()));
-			 var service4 = PublicNodeServices.open(node4, port4, 1800000L, 1000L, Optional.of(peer4.getURI()))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000, Optional.of(peer1.getURI()));
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000, Optional.of(peer2.getURI()));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000, Optional.of(peer3.getURI()));
+			 var service4 = PublicNodeServices.open(node4, port4, 1800000L, 1000, Optional.of(peer4.getURI()))) {
 
 			node1.add(peer2);
 			node2.add(peer3);
@@ -191,9 +191,9 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		try (var node1 = LocalNodes.of(config1, nodeKey, app, false); var node2 = LocalNodes.of(config2, nodeKey, app, false);
 			 var node3 = LocalNodes.of(config3, nodeKey, app, false); var node4 = new MyLocalNode(config4);
-			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000L, Optional.of(peer1.getURI()));
-			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000L, Optional.of(peer2.getURI()));
-			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000L, Optional.of(peer3.getURI()))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000, Optional.of(peer1.getURI()));
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000, Optional.of(peer2.getURI()));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000, Optional.of(peer3.getURI()))) {
 
 			// node1 has peer2 and peer3 as peers
 			node1.add(peer2);

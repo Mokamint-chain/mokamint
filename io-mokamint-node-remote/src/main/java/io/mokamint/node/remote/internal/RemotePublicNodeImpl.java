@@ -190,7 +190,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public RemotePublicNodeImpl(URI uri, long timeout, long serviceBroadcastInterval, long whisperedMessagesSize) throws DeploymentException, IOException {
+	public RemotePublicNodeImpl(URI uri, long timeout, long serviceBroadcastInterval, int whisperedMessagesSize) throws DeploymentException, IOException {
 		this.logPrefix = "public remote(" + uri + "): ";
 		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
 

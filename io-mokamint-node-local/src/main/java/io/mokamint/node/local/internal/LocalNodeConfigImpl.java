@@ -136,7 +136,14 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * message again; higher numbers reduce the circulation of spurious messages.
 	 * It defaults to 1000.
 	 */
-	public final long whisperingMemorySize;
+	public final int whisperingMemorySize;
+
+	/**
+	 * The size of the memory used to hold orphan nodes, that is, nodes received
+	 * from the network but having no parent in the blockchain. Larger sizes allow for
+	 * out of order reception of blocks, without synchronization. It defaults to 1000.
+	 */
+	public final int orphansMemorySize;
 
 	/**
 	 * The maximal time (in milliseconds) a block can be created in the future,
@@ -165,6 +172,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		this.peerPingInterval = builder.peerPingInterval;
 		this.serviceBroadcastInterval = builder.serviceBroadcastInterval;
 		this.whisperingMemorySize = builder.whisperingMemorySize;
+		this.orphansMemorySize = builder.orphansMemorySize;
 		this.blockMaxTimeInTheFuture = builder.blockMaxTimeInTheFuture;
 	}
 
@@ -234,8 +242,13 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
-	public long getWhisperingMemorySize() {
+	public int getWhisperingMemorySize() {
 		return whisperingMemorySize;
+	}
+
+	@Override
+	public int getOrphansMemorySize() {
+		return orphansMemorySize;
 	}
 
 	@Override
@@ -295,6 +308,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("# the size of the memory used to avoid whispering the same message again\n");
 		sb.append("whispering_memory_size = " + whisperingMemorySize + "\n");
 		sb.append("\n");
+		sb.append("# the size of the memory used to hold orphan nodes\n");
+		sb.append("orphans_memory_size = " + orphansMemorySize + "\n");
+		sb.append("\n");
 		sb.append("# the maximal creation time in the future (in milliseconds) of a block\n");
 		sb.append("block_max_time_in_the_future = " + blockMaxTimeInTheFuture + "\n");
 
@@ -325,6 +341,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				peerPingInterval == otherConfig.peerPingInterval &&
 				serviceBroadcastInterval == otherConfig.serviceBroadcastInterval &&
 				whisperingMemorySize == otherConfig.whisperingMemorySize &&
+				orphansMemorySize == otherConfig.orphansMemorySize &&
 				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture;
 		}
 		else
@@ -348,7 +365,8 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private long peerTimeout = 10000L;
 		private long peerPingInterval = 120000L;
 		private long serviceBroadcastInterval = 240000L;
-		private long whisperingMemorySize = 1000L;
+		private int whisperingMemorySize = 1000;
+		private int orphansMemorySize = 1000;
 		private long blockMaxTimeInTheFuture = 15000L;
 
 		/**
@@ -423,6 +441,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (whisperingMemorySize != null)
 				setWhisperingMemorySize(whisperingMemorySize);
 
+			var orphansMemorySize = toml.getLong("orphans_memory_size");
+			if (orphansMemorySize != null)
+				setOrphansMemorySize(orphansMemorySize);
+
 			var blockMaxTimeInTheFuture = toml.getLong("block_max_time_in_the_future");
 			if (blockMaxTimeInTheFuture != null)
 				setBlockMaxTimeInTheFuture(blockMaxTimeInTheFuture);
@@ -463,6 +485,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			this.peerPingInterval = config.peerPingInterval;
 			this.serviceBroadcastInterval = config.serviceBroadcastInterval;
 			this.whisperingMemorySize = config.whisperingMemorySize;
+			this.orphansMemorySize = config.orphansMemorySize;
 			this.blockMaxTimeInTheFuture = config.blockMaxTimeInTheFuture;
 		}
 
@@ -581,7 +604,22 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (whisperingMemorySize < 0L)
 				throw new IllegalArgumentException("whisperingMemorySize must be non-negative");
 
-			this.whisperingMemorySize = whisperingMemorySize;
+			if (whisperingMemorySize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("whisperingMemorySize cannot be larger than " + Integer.MAX_VALUE);
+
+			this.whisperingMemorySize = (int) whisperingMemorySize;
+			return getThis();
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setOrphansMemorySize(long orphansMemorySize) {
+			if (orphansMemorySize < 0L)
+				throw new IllegalArgumentException("orphansMemorySize must be non-negative");
+
+			if (orphansMemorySize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("orphansMemorySize cannot be larger than " + Integer.MAX_VALUE);
+
+			this.orphansMemorySize = (int) orphansMemorySize;
 			return getThis();
 		}
 
