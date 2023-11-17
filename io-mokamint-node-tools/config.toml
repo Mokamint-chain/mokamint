@@ -79,5 +79,11 @@ service_broadcast_interval = 240000
 # the size of the memory used to avoid whispering the same message again
 whispering_memory_size = 1000
 
+# the size of the memory used to hold orphan nodes
+orphans_memory_size = 1000
+
+# the size of the memory used to hold incoming transactions before they get put into blocks
+mempool_size = 100000
+
 # the maximal creation time in the future (in milliseconds) of a block
 block_max_time_in_the_future = 15000

@@ -136,7 +136,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * until they reach zero and the peer is removed.  During a successful ping, its peers are collected
 	 * if they are useful for the node (for instance, if the node has too few peers).
 	 * 
-	 * @param peerPingInterval the time interval
+	 * @param peerPingInterval the time interval; use a negative value to disable pinging
 	 * @return this builder
 	 */
 	LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval);
@@ -156,7 +156,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param whisperingMemorySize the size
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setWhisperingMemorySize(long whisperingMemorySize);
+	LocalNodeConfigBuilder setWhisperingMemorySize(int whisperingMemorySize);
 
 	/**
 	 * Sets the size of the memory used to hold orphan nodes, that is, nodes received
@@ -166,7 +166,16 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param orphansMemorySize the size
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setOrphansMemorySize(long orphansMemorySize);
+	LocalNodeConfigBuilder setOrphansMemorySize(int orphansMemorySize);
+
+	/**
+	 * Sets the maximal size of the mempool of the node, that is, of the area
+	 * of memory where incoming transactions are held before being verified and added to blocks
+	 * 
+	 * @param mempoolSize the size
+	 * @return this builder
+	 */
+	LocalNodeConfigBuilder setMempoolSize(int mempoolSize);
 
 	/**
 	 * Sets the maximal time (in milliseconds) a block can be created in the future,

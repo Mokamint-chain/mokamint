@@ -969,9 +969,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * Schedules a periodic task that pings all peers, recreates their remotes and adds the peers of such peers.
 	 */
 	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
-		submitWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
-				"pinging all peers to create missing remotes and collect their peers",
-				0L, config.getPeerPingInterval(), TimeUnit.MILLISECONDS);
+		var interval = config.getPeerPingInterval();
+		if (interval >= 0)
+			submitWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
+				"pinging all peers to create missing remotes and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
 	private void whisperWithoutAddition(Whispered whispered, String description) {

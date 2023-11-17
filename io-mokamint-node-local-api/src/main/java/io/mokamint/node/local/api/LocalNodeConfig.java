@@ -130,7 +130,8 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * if they are useful for the node (for instance, if the node has too few peers).
 	 * It defaults to 120,000 (ie, 2 minutes).
 	 * 
-	 * @return the time interval, in milliseconds, between successive pings to a peer
+	 * @return the time interval, in milliseconds, between successive pings to a peer;
+	 *         a negative value means that pinging is disabled
 	 */
 	long getPeerPingInterval();
 
@@ -160,6 +161,14 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * @return the size of the memory used to hold orphan nodes
 	 */
 	int getOrphansMemorySize();
+
+	/**
+	 * Yields the maximal size of the mempool of the node, that is, of the area
+	 * of memory where incoming transactions are held before being verified and added to blocks.
+	 * 
+	 * @return the size of the mempool of the node
+	 */
+	int getMempoolSize();
 
 	/**
 	 * Yields the maximal time (in milliseconds) a block can be created in the future,

@@ -146,6 +146,12 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	public final int orphansMemorySize;
 
 	/**
+	 * The size of the mempool of the node, that is, the area
+	 * of memory where incoming transactions are held before being verified and added to blocks.
+	 */
+	public final int mempoolSize;
+
+	/**
 	 * The maximal time (in milliseconds) a block can be created in the future,
 	 * from now (intended as network time now). Block verification will reject blocks created
 	 * beyond this threshold. It defaults to 15,000 (15 seconds).
@@ -173,6 +179,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		this.serviceBroadcastInterval = builder.serviceBroadcastInterval;
 		this.whisperingMemorySize = builder.whisperingMemorySize;
 		this.orphansMemorySize = builder.orphansMemorySize;
+		this.mempoolSize = builder.mempoolSize;
 		this.blockMaxTimeInTheFuture = builder.blockMaxTimeInTheFuture;
 	}
 
@@ -252,6 +259,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
+	public int getMempoolSize() {
+		return mempoolSize;
+	}
+
+	@Override
 	public long getBlockMaxTimeInTheFuture() {
 		return blockMaxTimeInTheFuture;
 	}
@@ -311,6 +323,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("# the size of the memory used to hold orphan nodes\n");
 		sb.append("orphans_memory_size = " + orphansMemorySize + "\n");
 		sb.append("\n");
+		sb.append("# the size of the memory used to hold incoming transactions before they get put into blocks\n");
+		sb.append("mempool_size = " + mempoolSize + "\n");		
+		sb.append("\n");
 		sb.append("# the maximal creation time in the future (in milliseconds) of a block\n");
 		sb.append("block_max_time_in_the_future = " + blockMaxTimeInTheFuture + "\n");
 
@@ -342,6 +357,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				serviceBroadcastInterval == otherConfig.serviceBroadcastInterval &&
 				whisperingMemorySize == otherConfig.whisperingMemorySize &&
 				orphansMemorySize == otherConfig.orphansMemorySize &&
+				mempoolSize == otherConfig.mempoolSize &&
 				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture;
 		}
 		else
@@ -367,6 +383,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private long serviceBroadcastInterval = 240000L;
 		private int whisperingMemorySize = 1000;
 		private int orphansMemorySize = 1000;
+		private int mempoolSize = 100000;
 		private long blockMaxTimeInTheFuture = 15000L;
 
 		/**
@@ -445,6 +462,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (orphansMemorySize != null)
 				setOrphansMemorySize(orphansMemorySize);
 
+			var mempoolSize = toml.getLong("mempool_size");
+			if (mempoolSize != null)
+				setMempoolSize(mempoolSize);
+
 			var blockMaxTimeInTheFuture = toml.getLong("block_max_time_in_the_future");
 			if (blockMaxTimeInTheFuture != null)
 				setBlockMaxTimeInTheFuture(blockMaxTimeInTheFuture);
@@ -486,6 +507,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			this.serviceBroadcastInterval = config.serviceBroadcastInterval;
 			this.whisperingMemorySize = config.whisperingMemorySize;
 			this.orphansMemorySize = config.orphansMemorySize;
+			this.mempoolSize = config.mempoolSize;
 			this.blockMaxTimeInTheFuture = config.blockMaxTimeInTheFuture;
 		}
 
@@ -586,9 +608,6 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 
 		@Override
 		public LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval) {
-			if (peerPingInterval < 0L)
-				throw new IllegalArgumentException("peerPingInterval must be non-negative");
-
 			this.peerPingInterval = peerPingInterval;
 			return getThis();
 		}
@@ -599,27 +618,51 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			return getThis();
 		}
 
-		@Override
-		public LocalNodeConfigBuilder setWhisperingMemorySize(long whisperingMemorySize) {
-			if (whisperingMemorySize < 0L)
-				throw new IllegalArgumentException("whisperingMemorySize must be non-negative");
-
+		private LocalNodeConfigBuilder setWhisperingMemorySize(long whisperingMemorySize) {
 			if (whisperingMemorySize > Integer.MAX_VALUE)
 				throw new IllegalArgumentException("whisperingMemorySize cannot be larger than " + Integer.MAX_VALUE);
 
-			this.whisperingMemorySize = (int) whisperingMemorySize;
-			return getThis();
+			return setWhisperingMemorySize((int) whisperingMemorySize);
 		}
 
 		@Override
-		public LocalNodeConfigBuilder setOrphansMemorySize(long orphansMemorySize) {
-			if (orphansMemorySize < 0L)
-				throw new IllegalArgumentException("orphansMemorySize must be non-negative");
+		public LocalNodeConfigBuilder setWhisperingMemorySize(int whisperingMemorySize) {
+			if (whisperingMemorySize < 0)
+				throw new IllegalArgumentException("whisperingMemorySize must be non-negative");
 
+			this.whisperingMemorySize = whisperingMemorySize;
+			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setOrphansMemorySize(long orphansMemorySize) {
 			if (orphansMemorySize > Integer.MAX_VALUE)
 				throw new IllegalArgumentException("orphansMemorySize cannot be larger than " + Integer.MAX_VALUE);
 
-			this.orphansMemorySize = (int) orphansMemorySize;
+			return setOrphansMemorySize((int) orphansMemorySize);
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setOrphansMemorySize(int orphansMemorySize) {
+			if (orphansMemorySize < 0)
+				throw new IllegalArgumentException("orphansMemorySize must be non-negative");
+
+			this.orphansMemorySize = orphansMemorySize;
+			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setMempoolSize(long mempoolSize) {
+			if (mempoolSize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("mempoolSize cannot be larger than " + Integer.MAX_VALUE);
+
+			return setMempoolSize((int) mempoolSize);
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setMempoolSize(int mempoolSize) {
+			if (mempoolSize < 0)
+				throw new IllegalArgumentException("mempoolSize must be non-negative");
+
+			this.mempoolSize = mempoolSize;
 			return getThis();
 		}
 

@@ -57,6 +57,11 @@ public class Mempool extends AbstractMempool {
 	private final Application app;
 
 	/**
+	 * The maximal size of the mempool (number of slots).
+	 */
+	private final int maxSize;
+
+	/**
 	 * The hasher of the transactions.
 	 */
 	private final Hasher<Transaction> hasher;
@@ -73,8 +78,6 @@ public class Mempool extends AbstractMempool {
 	@GuardedBy("this.mempool")
 	private List<TransactionEntry> mempoolAsList;
 
-	private final static long MAX_MEMPOOL_SIZE = 100_000L;
-
 	private final static Logger LOGGER = Logger.getLogger(Mempool.class.getName());
 
 	/**
@@ -86,6 +89,7 @@ public class Mempool extends AbstractMempool {
 		super(node);
 
 		this.app = node.getApplication();
+		this.maxSize = node.getConfig().getMempoolSize();
 		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 	}
 
@@ -118,15 +122,14 @@ public class Mempool extends AbstractMempool {
 		var entry = new TransactionEntry(transaction, priority, hash);
 
 		synchronized (mempool) {
-			if (mempool.size() < MAX_MEMPOOL_SIZE) { // TODO
+			if (mempool.size() < maxSize) {
 				if (!mempool.add(entry))
 					throw new RejectedTransactionException("Repeated transaction " + hexHash);
 
 				mempoolAsList = null; // invalidation
 			}
 			else
-				throw new RejectedTransactionException("Cannot add transaction " + hexHash
-					+ ": all " + MAX_MEMPOOL_SIZE + " slots of the mempool are full");
+				throw new RejectedTransactionException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
 		}
 
 		LOGGER.info("mempool: added transaction " + hexHash);

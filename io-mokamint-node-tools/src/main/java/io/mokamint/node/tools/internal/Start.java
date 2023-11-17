@@ -153,7 +153,6 @@ public class Start extends AbstractCommand {
 		private Run() throws CommandException {
 			try {
 				this.config = getConfig();
-				System.out.println(config);
 			}
 			catch (NoSuchAlgorithmException e) {
 				Arrays.fill(password, ' ');
