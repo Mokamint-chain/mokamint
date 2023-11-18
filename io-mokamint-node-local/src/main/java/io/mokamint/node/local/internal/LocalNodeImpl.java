@@ -215,12 +215,12 @@ public class LocalNodeImpl implements LocalNode {
 			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
 			this.mempool = new Mempool(this);
 			this.miners = new Miners(this);
-			this.blockchain = new Blockchain(this, init);
+			this.blockchain = new Blockchain(this);
 			this.peers = new Peers(this);
 			this.uuid = getInfo().getUUID();
 
 			if (init)
-				scheduleMining();
+				blockchain.initialize();
 			else
 				scheduleSynchronization(0L);
 

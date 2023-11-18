@@ -109,24 +109,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		this.db = new BlocksDatabase(node);
 	}
 
-	/**
-	 * Creates the blockchain of a node. It restores the block from the persistent
-	 * state of the blocks database, if any. Moreover, it allows initialization with a new genesis block.
-	 * 
-	 * @param node the node
-	 * @param init if the blockchain must be initialized with a genesis block (if empty)
-	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
-	 * @throws AlreadyInitializedException if {@code init} is true but the blockchain has a genesis block already
-	 * @throws SignatureException if the genesis block cannot be signed
-	 * @throws InvalidKeyException if the private key of the node is invalid
-	 */
-	public Blockchain(LocalNodeImpl node, boolean init) throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
-		this(node);
-
-		if (init)
-			initialize();
-	}
-
 	@Override
 	public void close() throws InterruptedException, DatabaseException {
 		db.close();
@@ -365,6 +347,36 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		return added;
 	}
 
+	/**
+	 * Initializes this blockchain, which must be empty. It adds a genesis block.
+	 * 
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
+	 * @throws InvalidKeyException if the key of the node is invalid
+	 * @throws SignatureException if the genesis block could not be signed
+	 */
+	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+		try {
+			if (!isEmpty())
+				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
+	
+			var node = getNode();
+			var config = node.getConfig();
+			var genesis = Blocks.genesis(
+				LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()),
+				config.getSignatureForBlocks(), node.getKeys()
+			);
+
+			add(genesis);
+		}
+		catch (NoSuchAlgorithmException | ClosedDatabaseException | VerificationException e) {
+			// the database cannot be closed at this moment;
+			// moreover, the genesis should be created correctly, hence should be verifiable
+			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
+		}
+	}
+
 	@Override
 	protected void onBlockMined(Block block) {
 		super.onBlockMined(block);
@@ -471,29 +483,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 			return Stream.of(orphans)
 					.filter(Objects::nonNull)
 					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
-		}
-	}
-
-	private void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
-		try {
-			if (!isEmpty())
-				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
-
-			var node = getNode();
-			var config = node.getConfig();
-			var genesis = Blocks.genesis(
-				LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()),
-				config.getSignatureForBlocks(), node.getKeys()
-			);
-
-			db.add(genesis, new AtomicReference<>());
-			onBlockAdded(genesis);
-			onHeadChanged(genesis);
-		}
-		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
-			// the database cannot be closed at this moment;
-			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 }

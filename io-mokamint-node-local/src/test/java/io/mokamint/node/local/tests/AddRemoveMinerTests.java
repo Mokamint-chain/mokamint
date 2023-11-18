@@ -34,7 +34,6 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +52,7 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -115,8 +115,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var prolog = Prologs.of(config1.getChainId(), ed25519, node1Keys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 
-		var node1NoMinersAvailable = new Semaphore(0);
-		var minerClosing = new AtomicBoolean(false);
+		var node1CannotMine = new Semaphore(0);
 		var node2HasConnectedToNode1 = new Semaphore(0);
 		var node2HasAddedBlock = new Semaphore(0);
 
@@ -128,13 +127,12 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 			protected void onNoDeadlineFound(io.mokamint.node.api.Block previous) {
 				super.onNoDeadlineFound(previous);
-				node1NoMinersAvailable.release();
+				node1CannotMine.release();
 			}
 
 			protected void onNoMinersAvailable() {
 				super.onNoMinersAvailable();
-				if (minerClosing.get())
-					node1NoMinersAvailable.release();
+				node1CannotMine.release();
 			}
 		}
 
@@ -164,11 +162,18 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			 var plot = Plots.create(chain1.resolve("small.plot"), prolog, 1000, 500, config1.getHashingForDeadlines(), __ -> {});
 			 var miner = LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys))) {
 
+			// without any miner, eventually node1 will realize that it cannot mine
+			assertTrue(node1CannotMine.tryAcquire(1, 20, TimeUnit.SECONDS));
+
+			// we check that node1 and node2 are not mining at this stage
+			assertTrue(node1.getTaskInfos().map(TaskInfo::getDescription).noneMatch(description -> description.contains("mining")));
+			assertTrue(node2.getTaskInfos().map(TaskInfo::getDescription).noneMatch(description -> description.contains("mining")));
+
 			// we connect node1 and node2 with each other
 			assertTrue(node1.add(peer2).isPresent());
 
 			// we wait until node2 has added node1 as peer
-			assertTrue(node2HasConnectedToNode1.tryAcquire(1, 1000, TimeUnit.MILLISECONDS));
+			assertTrue(node2HasConnectedToNode1.tryAcquire(1, 2000, TimeUnit.MILLISECONDS));
 
 			// we open a remote miner on node1
 			Optional<MinerInfo> infoOfNewMiner = node1.openMiner(miningPort);
@@ -177,24 +182,21 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			// we get the UUID of the only miner of the node
 			var uuid = infoOfNewMiner.get().getUUID();
 
-			// TODO: it would be great to check that node1 and node2 are not mining at this stage
-
 			// we connect the local miner to the mining service of node1
 			try (var service = MinerServices.open(miner, new URI("ws://localhost:" + miningPort))) {
 				// miner works for node1, which whispers block to node2: eventually node2 will receive 5 blocks
 				assertTrue(node2HasAddedBlock.tryAcquire(5, 1, TimeUnit.MINUTES));
-				minerClosing.set(true);
 				node1.closeMiner(uuid);
 			}
 
 			// we wait until node1 stops mining, since it has no more miners
-			assertTrue(node1NoMinersAvailable.tryAcquire(1, 20, TimeUnit.SECONDS));
+			assertTrue(node1CannotMine.tryAcquire(1, 20, TimeUnit.SECONDS));
 
 			// typically, node1 could have added 5 blocks only, but it might happen that
 			// more blocks are added before closing the miner above: better ask node1 then
 			// and wait until any extra block has reached node2 as well
 			var node1ChainInfo = node1.getChainInfo();
-			assertTrue(node2HasAddedBlock.tryAcquire((int) node1ChainInfo.getLength() - 5, 20, TimeUnit.SECONDS));
+			assertTrue(node2HasAddedBlock.tryAcquire((int) (node1ChainInfo.getLength() - 5), 20, TimeUnit.SECONDS));
 
 			// both chain should coincide now
 			var node2ChainInfo = node2.getChainInfo();
