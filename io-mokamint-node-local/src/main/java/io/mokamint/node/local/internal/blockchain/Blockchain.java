@@ -38,6 +38,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -362,10 +363,9 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	
 			var node = getNode();
 			var config = node.getConfig();
-			var genesis = Blocks.genesis(
-				LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()),
-				config.getSignatureForBlocks(), node.getKeys()
-			);
+			var keys = node.getKeys();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
+			var genesis = Blocks.genesis(description, keys.getPrivate());
 
 			add(genesis);
 		}

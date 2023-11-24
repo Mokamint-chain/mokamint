@@ -26,6 +26,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
@@ -36,7 +37,7 @@ import io.mokamint.nonce.Deadlines;
  * The JSON representation of a {@link Block}.
  */
 public abstract class BlockJson implements JsonRepresentation<Block> {
-	private String startDateTimeUTC;
+	private String startDateTimeUTC; // TODO: use BlockDescriptionJson
 	private Long height;
 	private BigInteger power;
 	private Long totalWaitingTime;
@@ -71,10 +72,10 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
 		if (startDateTimeUTC == null)
-			return Blocks.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(),
-				Hex.fromHexString(hashOfPreviousBlock), Hex.fromHexString(signature));
+			return Blocks.of(BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(),
+				Hex.fromHexString(hashOfPreviousBlock)), Hex.fromHexString(signature));
 		else
-			return Blocks.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-				acceleration, SignatureAlgorithms.of(signatureForBlocks), publicKeyBase58, Hex.fromHexString(signature));
+			return Blocks.genesis(BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+				acceleration, SignatureAlgorithms.of(signatureForBlocks), publicKeyBase58), Hex.fromHexString(signature));
 	}
 }

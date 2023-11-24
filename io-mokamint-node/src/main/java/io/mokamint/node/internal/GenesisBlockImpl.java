@@ -17,16 +17,12 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
@@ -50,22 +46,13 @@ public class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription> imp
 	}
 
 	/**
-	 * Creates a genesis block and signs it with the given keys and signature algorithm.
-	 * 
-	 * @throws SignatureException if the signature of the block failed
-	 * @throws InvalidKeyException if the private key is invalid
-	 */
-	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, KeyPair keys) throws InvalidKeyException, SignatureException {
-		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, keys.getPublic()), keys.getPrivate());
-	}
-
-	/**
-	 * Creates a new genesis block.
+	 * Creates a new genesis block with the given description and signature.
 	 *
-	 * @throws InvalidKeySpecException if the public key is invalid
+	 * @param description the description
+	 * @param signature the signature
 	 */
-	public GenesisBlockImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, String publicKeyBase58, byte[] signature) throws InvalidKeySpecException {
-		super(new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKeyBase58), signature);
+	public GenesisBlockImpl(GenesisBlockDescription description, byte[] signature) {
+		super(description, signature);
 	}
 
 	/**
@@ -76,7 +63,7 @@ public class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription> imp
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	GenesisBlockImpl(GenesisBlockDescriptionImpl description, UnmarshallingContext context) throws IOException {
+	GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
 	}
 

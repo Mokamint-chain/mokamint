@@ -103,7 +103,7 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 	/**
 	 * Unmarshals a non-genesis block. The height of the block has been already read.
 	 * 
-	 * param height the height of the block
+	 * @param height the height of the block
 	 * @param context the unmarshalling context
 	 * @throws IOException if unmarshalling failed
 	 * @throws NoSuchAlgorithmException if the block uses some unknown signature or hashing algorithm
@@ -117,7 +117,7 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 			this.weightedWaitingTime = context.readLong();
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context);
-			this.hashOfPreviousBlock = context.readBytes(context.readCompactInt(), "Previous block hash length mismatch");
+			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
 
 			verify();
 		}
@@ -299,8 +299,7 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 		context.writeLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
 		deadline.into(context);
-		context.writeCompactInt(hashOfPreviousBlock.length);
-		context.write(hashOfPreviousBlock);
+		context.writeLengthAndBytes(hashOfPreviousBlock);
 	}
 
 	@Override
