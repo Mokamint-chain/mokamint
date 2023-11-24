@@ -23,10 +23,11 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
-import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.internal.GenesisBlockImpl;
+import io.mokamint.node.internal.NonGenesisBlockImpl;
 
 /**
  * The JSON representation of a {@link Block}.
@@ -44,8 +45,8 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
 		var description = this.description.unmap();
 		if (description instanceof GenesisBlockDescription gbd)
-			return Blocks.genesis(gbd, Hex.fromHexString(signature));
+			return new GenesisBlockImpl(gbd, Hex.fromHexString(signature));
 		else
-			return Blocks.of((NonGenesisBlockDescription) description, Hex.fromHexString(signature));
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, Hex.fromHexString(signature));
 	}
 }

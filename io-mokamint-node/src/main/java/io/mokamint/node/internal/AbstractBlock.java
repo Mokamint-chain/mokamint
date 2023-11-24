@@ -105,8 +105,8 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 */
 	protected AbstractBlock(D description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		this.description = description;
-		verifyExceptSignature();
 		this.signature = computeSignature(privateKey);
+		verify();
 	}
 
 	/**
@@ -295,10 +295,10 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 * Checks all constraints expected from this block.
 	 * 
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
+	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid)
 	 */
 	private void verify() {
-		verifyExceptSignature();
+		Objects.requireNonNull(description, "description cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
 		try {
@@ -311,16 +311,6 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 		catch (InvalidKeyException e) {
 			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
 		}
-	}
-
-	/**
-	 * Checks all constraints expected from this block, except the validity of its signature.
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
-	 */
-	private void verifyExceptSignature() {
-		Objects.requireNonNull(description, "description cannot be null");
 	}
 
 	/**

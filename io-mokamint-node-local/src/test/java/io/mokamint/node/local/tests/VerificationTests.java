@@ -278,7 +278,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if an added non-genesis block has a wrong signature, its creation fails")
+	@DisplayName("if a non-genesis block is signed with the wrong key, its creation fails")
 	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var hashingForDeadlines = config.getHashingForDeadlines();
@@ -287,11 +287,9 @@ public class VerificationTests extends AbstractLoggedTests {
 		var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 		// we replace the correct signature with a fake one
-		var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime() + 1,
-			expected.getWeightedWaitingTime(), expected.getAcceleration(), expected.getDeadline(), expected.getHashOfPreviousBlock());
-
-		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Blocks.of(actual, new byte[] { 1 , 2 ,3 }));
-		assertTrue(e.getMessage().startsWith("The block's signature cannot be verified"));
+		var newKeys = config.getSignatureForBlocks().getKeyPair();
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Blocks.of(expected, newKeys.getPrivate()));
+		assertTrue(e.getMessage().startsWith("The block's signature is invalid"));
 	}
 
 	@Test

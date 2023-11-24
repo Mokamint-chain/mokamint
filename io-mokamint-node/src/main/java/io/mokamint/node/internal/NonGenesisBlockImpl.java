@@ -50,7 +50,7 @@ public class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescriptio
 	 * Creates a new non-genesis block with the given description and signature.
 	 * 
 	 * @param description the description
-	 * @param signature the signature that will be put inthe block
+	 * @param signature the signature that will be put in the block
 	 */
 	public NonGenesisBlockImpl(NonGenesisBlockDescription description, byte[] signature) {
 		super(description, signature);

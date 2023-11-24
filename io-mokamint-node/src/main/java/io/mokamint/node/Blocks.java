@@ -43,7 +43,7 @@ public abstract class Blocks {
 	private Blocks() {}
 
 	/**
-	 * Yields a new non-genesis block with the given description. It adds a signature to the resulting block,
+	 * Yields a non-genesis block with the given description. It adds a signature to the resulting block,
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description
@@ -57,18 +57,8 @@ public abstract class Blocks {
 	}
 
 	/**
-	 * Yields a new non-genesis block with the given description and signature.
-	 * 
-	 * @param description the description
-	 * @param signature the signature of the block
-	 * @return the non-genesis block
-	 */
-	public static NonGenesisBlock of(NonGenesisBlockDescription description, byte[] signature) {
-		return new NonGenesisBlockImpl(description, signature);
-	}
-
-	/**
-	 * Yields a new genesis block.
+	 * Yields a genesis block with the given description. It adds a signature to the resulting block,
+	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description of the block
 	 * @param privateKey the key used for signing the block
@@ -78,17 +68,6 @@ public abstract class Blocks {
 	 */
 	public static GenesisBlock genesis(GenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		return new GenesisBlockImpl(description, privateKey);
-	}
-
-	/**
-	 * Yields a genesis block with the given description and signature.
-	 * 
-	 * @param description the description of the block
-	 * @param signature the signature of the block
-	 * @return the genesis block
-	 */
-	public static GenesisBlock genesis(GenesisBlockDescription description, byte[] signature) {
-		return new GenesisBlockImpl(description, signature);
 	}
 
 	/**
