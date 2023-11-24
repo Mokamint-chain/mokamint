@@ -54,6 +54,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final HashingAlgorithm hashing;
 	private final byte[] signature;
 
+	private final static BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
+
 	/**
 	 * Yields a deadline.
 	 * 
@@ -199,9 +201,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public long getMillisecondsToWaitFor(BigInteger acceleration) {
 		byte[] valueAsBytes = getValue();
-		var value = new BigInteger(1, valueAsBytes);
-		value = value.divide(acceleration);
-		byte[] newValueAsBytes = value.toByteArray();
+		var newValueAsBytes = new BigInteger(1, valueAsBytes).divide(acceleration).toByteArray();
 		// we recreate an array of the same length as at the beginning
 		var dividedValueAsBytes = new byte[valueAsBytes.length];
 		System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
@@ -212,8 +212,13 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],
 			dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
 		};
-		// TODO: theoretically, there might be an overflow when converting into long
-		return new BigInteger(1, firstEightBytes).longValue();
+		var result = new BigInteger(1, firstEightBytes);
+		if (result.subtract(MAX_LONG_VALUE).signum() == 1)
+			// theoretically, there might be an overflow when converting into long,
+			// but this would mean that the waiting time is larger than the life of the universe...
+			throw new ArithmeticException("Overflow in the waiting time!");
+
+		return result.longValue();
 	}
 
 	@Override

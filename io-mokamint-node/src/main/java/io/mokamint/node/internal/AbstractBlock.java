@@ -361,9 +361,10 @@ public abstract class AbstractBlock<D extends AbstractBlockDescription> extends 
 	}
 
 	private long computeWeightedWaitingTime(long waitingTime) {
-		var previousWeightedWaitingTime_95 = getWeightedWaitingTime() * 95L;
-		var waitingTime_5 = waitingTime * 5L;
-		return (previousWeightedWaitingTime_95 + waitingTime_5) / 100L;
+		// probably irrelevant, but by using BigInteger we reduce the risk of overflow
+		var previousWeightedWaitingTime_95 = BigInteger.valueOf(getWeightedWaitingTime()).multiply(BigInteger.valueOf(95L));
+		var waitingTime_5 = BigInteger.valueOf(waitingTime).multiply(BigInteger.valueOf(5L));
+		return previousWeightedWaitingTime_95.add(waitingTime_5).divide(BigInteger.valueOf(100L)).longValue();
 	}
 
 	/**

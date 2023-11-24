@@ -69,7 +69,7 @@ public class Waker {
 	 */
 	public void await(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
 		if (!latch.await(timeout, unit))
-			throw new TimeoutException("timeout expired");
+			throw new TimeoutException("Timeout expired");
 	}
 
 	/**
