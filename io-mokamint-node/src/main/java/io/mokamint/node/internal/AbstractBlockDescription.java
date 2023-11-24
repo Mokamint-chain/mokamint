@@ -65,23 +65,14 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 	 */
 	protected abstract Block unmarshals(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException;
 
-	/**
-	 * Fills the given builder with the information inside this description.
-	 * 
-	 * @param builder the builder
-	 * @param hashingForGenerations the hashing algorithm used for deadline generations, if available
-	 * @param hashingForBlocks the hashing algorithm used for the blocks, if available
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
-	 */
-	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+	@Override
+	public void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
 		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
 		builder.append("* acceleration: " + getAcceleration() + "\n");
-
-		if (hashingForGenerations.isPresent())
-			builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(hashingForGenerations.get())) + " (" + hashingForGenerations.get() + ")\n");
+		hashingForGenerations.ifPresent(h -> builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(h)) + " (" + h + ")\n"));
 	}
 
 	@Override
@@ -97,14 +88,6 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(config.getHashingForBlocks()), Optional.of(startDateTimeUTC));
 		return builder.toString();
 	}
-
-	/**
-	 * Yields the generation signature of any block that can legally follow this block.
-	 * 
-	 * @param hashingForGenerations the hashing used for the generation of deadlines.
-	 * @return the generation signature
-	 */
-	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
 
 	/**
 	 * Yields the name to use to describe this block in the result of {@link #toString()}.

@@ -248,7 +248,7 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+	public byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
 		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
@@ -262,7 +262,7 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 	}
 
 	@Override
-	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+	public void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
 		if (startDateTimeUTC.isPresent())
 			builder.append("* creation date and time UTC: " + startDateTimeUTC.get().plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n");
 		super.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);

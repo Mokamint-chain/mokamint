@@ -30,7 +30,9 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.internal.AbstractBlock;
 import io.mokamint.node.internal.GenesisBlockImpl;
 import io.mokamint.node.internal.NonGenesisBlockImpl;
@@ -45,6 +47,20 @@ import io.mokamint.nonce.api.Deadline;
 public abstract class Blocks {
 
 	private Blocks() {}
+
+	/**
+	 * Yields a new non-genesis block with the given description. It adds a signature to the resulting block,
+	 * by using the signature algorithm in the prolog of the deadline and the given private key.
+	 * 
+	 * @param description the description
+	 * @param privateKey the private key for signing the block
+	 * @return the non-genesis block
+	 * @throws SignatureException if the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	public static NonGenesisBlock of(NonGenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new NonGenesisBlockImpl(description, privateKey);
+	}
 
 	/**
 	 * Yields a new non-genesis block. The signature will be computed from its hash by using the
@@ -93,6 +109,19 @@ public abstract class Blocks {
 	public static NonGenesisBlock of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
 			Deadline deadline, byte[] hashOfPreviousBlock, byte[] signature) {
 		return new NonGenesisBlockImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, signature);
+	}
+
+	/**
+	 * Yields a new genesis block.
+	 * 
+	 * @param description the description of the block
+	 * @param privateKey the key used for signing the block
+	 * @return the genesis block
+	 * @throws SignatureException if the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	public static GenesisBlock genesis(GenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new GenesisBlockImpl(description, privateKey);
 	}
 
 	/**

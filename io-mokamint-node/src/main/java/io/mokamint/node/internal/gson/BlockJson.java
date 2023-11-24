@@ -49,10 +49,11 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private String signature;
 
 	protected BlockJson(Block block) {
+		this.signature = Hex.toHexString(block.getSignature());
+		this.acceleration = block.getAcceleration();
+
 		if (block instanceof GenesisBlock gb) {
 			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gb.getStartDateTimeUTC());
-			this.acceleration = gb.getAcceleration();
-			this.signature = Hex.toHexString(gb.getSignature());
 			this.signatureForBlocks = gb.getSignatureForBlocks().getName();
 			this.publicKeyBase58 = gb.getPublicKeyForSigningThisBlockBase58();
 		}
@@ -62,10 +63,8 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 			this.power = ngb.getPower();
 			this.totalWaitingTime = ngb.getTotalWaitingTime();
 			this.weightedWaitingTime = ngb.getWeightedWaitingTime();
-			this.acceleration = ngb.getAcceleration();
 			this.deadline = new Deadlines.Encoder().map(ngb.getDeadline());
 			this.hashOfPreviousBlock = Hex.toHexString(ngb.getHashOfPreviousBlock());
-			this.signature = Hex.toHexString(ngb.getSignature());
 		}
 	}
 

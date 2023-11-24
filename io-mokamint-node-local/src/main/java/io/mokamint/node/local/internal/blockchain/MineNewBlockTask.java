@@ -293,9 +293,7 @@ public class MineNewBlockTask implements Task {
 				return Optional.empty();
 			}
 
-			var nextBlock = Blocks.of(description.getHeight(), description.getPower(), description.getTotalWaitingTime(),
-				description.getWeightedWaitingTime(), description.getAcceleration(), description.getDeadline(), description.getHashOfPreviousBlock(),
-				node.getKeys().getPrivate());
+			var nextBlock = Blocks.of(description, node.getKeys().getPrivate());
 
 			if (Thread.currentThread().isInterrupted()) {
 				LOGGER.info(heightMessage + "not creating block on top of " + previousHex + " since the task has been interrupted");

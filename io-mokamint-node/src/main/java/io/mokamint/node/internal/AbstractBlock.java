@@ -48,7 +48,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract class AbstractBlock<D extends AbstractBlockDescription> extends AbstractMarshallable implements Block {
+public abstract class AbstractBlock<D extends BlockDescription> extends AbstractMarshallable implements Block {
 
 	/**
 	 * The description of this block.
@@ -122,7 +122,7 @@ public abstract class AbstractBlock<D extends AbstractBlockDescription> extends 
 		this.description = description;
 
 		try {
-			this.signature = context.readBytes(context.readCompactInt(), "Signature length mismatch");
+			this.signature = context.readLengthAndBytes("Signature length mismatch");
 			verify();
 		}
 		catch (RuntimeException e) {
@@ -268,13 +268,17 @@ public abstract class AbstractBlock<D extends AbstractBlockDescription> extends 
 	@Override
 	public final void into(MarshallingContext context) throws IOException {
 		intoWithoutSignature(context);
-		context.writeCompactInt(signature.length);
-		context.write(signature);
+		context.writeLengthAndBytes(signature);
 	}
 
 	@Override
 	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
 		this.description.matchesOrThrow(description, exceptionSupplier);
+	}
+
+	@Override
+	public byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+		return description.getNextGenerationSignature(hashingForGenerations);
 	}
 
 	/**
@@ -418,15 +422,8 @@ public abstract class AbstractBlock<D extends AbstractBlockDescription> extends 
 		return target;
 	}
 
-	/**
-	 * Fills the given builder with the information inside this block.
-	 * 
-	 * @param builder the builder
-	 * @param hashingForGenerations the hashing algorithm used for deadline generations, if available
-	 * @param hashingForBlocks the hashing algorithm used for the blocks, if available
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
-	 */
-	protected final void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+	@Override
+	public final void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
 		description.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
 		builder.append("* signature: " + Hex.toHexString(signature) + " (" + getSignatureForBlocks() + ")\n");
 	}

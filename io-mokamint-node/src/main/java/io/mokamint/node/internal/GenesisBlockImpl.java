@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
@@ -28,12 +29,25 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.GenesisBlockDescription;
 
 /**
  * The implementation of a genesis block of a Mokamint blockchain.
  */
 @Immutable
-public class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescriptionImpl> implements GenesisBlock {
+public class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription> implements GenesisBlock {
+
+	/**
+	 * Creates a genesis block with the given description and signs it with the given keys and signature algorithm.
+	 * 
+	 * @param description the description
+	 * @param privateKey the key used for signing the block
+	 * @throws SignatureException if the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	public GenesisBlockImpl(GenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, privateKey);
+	}
 
 	/**
 	 * Creates a genesis block and signs it with the given keys and signature algorithm.

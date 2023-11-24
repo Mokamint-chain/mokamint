@@ -19,9 +19,11 @@ package io.mokamint.node.api;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 
@@ -135,4 +137,22 @@ public interface BlockDescription extends Marshallable {
 	 * @return the representation
 	 */
 	String toString(ConsensusConfig<?,?> config, byte[] hash, LocalDateTime startDateTimeUTC);
+
+	/**
+	 * Fills the given builder with the information inside this description.
+	 * 
+	 * @param builder the builder
+	 * @param hashingForGenerations the hashing algorithm used for deadline generations, if available
+	 * @param hashingForBlocks the hashing algorithm used for the blocks, if available
+	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
+	 */
+	void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC);
+
+	/**
+	 * Yields the generation signature of any block that can legally follow this block.
+	 * 
+	 * @param hashingForGenerations the hashing used for the generation of deadlines.
+	 * @return the generation signature
+	 */
+	byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
 }

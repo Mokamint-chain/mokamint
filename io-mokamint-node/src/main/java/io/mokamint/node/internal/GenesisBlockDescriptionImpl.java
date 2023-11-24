@@ -202,7 +202,7 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
+	public byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
 		return BLOCK_1_GENERATION_SIGNATURE;
 	}
 
@@ -227,7 +227,7 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	}
 
 	@Override
-	protected void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+	public void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
 		super.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
 		builder.append("* public key of the node that signed the block: " + publicKeyBase58 + " (" + signatureForBlocks + ")\n");

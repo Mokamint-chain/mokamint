@@ -25,13 +25,27 @@ import java.security.SignatureException;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.api.Deadline;
 
 /**
  * The implementation of a non-genesis block of the Mokamint blockchain.
  */
 @Immutable
-public class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescriptionImpl> implements NonGenesisBlock {
+public class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescription> implements NonGenesisBlock {
+
+	/**
+	 * Creates a new non-genesis block with the given description. It adds a signature to the resulting block,
+	 * by using the signature algorithm in the prolog of the deadline and the given private key.
+	 * 
+	 * @param description the description
+	 * @param privateKey the private key for signing the block
+	 * @throws SignatureException if the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, privateKey);
+	}
 
 	/**
 	 * Creates a new non-genesis block. It adds a signature to the resulting block,
