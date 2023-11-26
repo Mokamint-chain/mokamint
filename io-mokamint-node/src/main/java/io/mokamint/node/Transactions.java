@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.io.IOException;
+
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.internal.TransactionImpl;
 import io.mokamint.node.internal.gson.TransactionDecoder;
@@ -37,6 +40,17 @@ public abstract class Transactions {
 	 */
 	public static Transaction of(byte[] bytes) {
 		return new TransactionImpl(bytes);
+	}
+
+	/**
+	 * Unmarshals a transaction from the given context.
+	 * 
+	 * @param context the context
+	 * @return the transaction
+	 * @throws IOException if the transaction cannot be unmarshalled
+	 */
+	public static Transaction from(UnmarshallingContext context) throws IOException {
+		return TransactionImpl.from(context);
 	}
 
 	/**

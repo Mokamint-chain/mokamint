@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Blocks;
@@ -38,7 +39,7 @@ public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepr
 	}
 
 	@Override
-	public WhisperBlockMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
+	public WhisperBlockMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException {
 		return WhisperBlockMessages.of(block.unmap(), getId());
 	}
 

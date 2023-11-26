@@ -63,8 +63,7 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		context.writeCompactInt(bytes.length);
-		context.write(bytes);
+		context.writeLengthAndBytes(bytes);
 	}
 
 	@Override
@@ -80,7 +79,6 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 * @throws IOException if the transaction cannot be unmarshalled
 	 */
 	public static TransactionImpl from(UnmarshallingContext context) throws IOException {
-		int length = context.readCompactInt();
-		return new TransactionImpl(context.readBytes(length, "Transaction length mismatch"));
+		return new TransactionImpl(context.readLengthAndBytes("Transaction length mismatch"));
 	}
 }

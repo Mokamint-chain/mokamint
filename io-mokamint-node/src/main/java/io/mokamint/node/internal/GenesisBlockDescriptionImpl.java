@@ -239,9 +239,7 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
 			context.writeStringShared(signatureForBlocks.getName());
-			var publicKeyBytes = signatureForBlocks.encodingOf(publicKey);
-			context.writeCompactInt(publicKeyBytes.length);
-			context.write(publicKeyBytes);
+			context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKey));
 		}
 		catch (DateTimeException | InvalidKeyException e) {
 			throw new IOException(e);
@@ -249,7 +247,7 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	}
 
 	@Override
-	protected Block unmarshals(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+	protected Block unmarshalsIntoBlock(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		return new GenesisBlockImpl(this, context);
 	}
 

@@ -21,6 +21,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.util.stream.Stream;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
@@ -53,7 +54,7 @@ public abstract class Blocks {
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public static NonGenesisBlock of(NonGenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new NonGenesisBlockImpl(description, privateKey);
+		return new NonGenesisBlockImpl(description, Stream.empty(), privateKey);
 	}
 
 	/**
@@ -67,7 +68,7 @@ public abstract class Blocks {
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public static GenesisBlock genesis(GenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new GenesisBlockImpl(description, privateKey);
+		return new GenesisBlockImpl(description, Stream.empty(), privateKey);
 	}
 
 	/**

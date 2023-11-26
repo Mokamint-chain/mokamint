@@ -21,11 +21,13 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
+import io.mokamint.node.api.Transaction;
 
 /**
  * The implementation of a genesis block of a Mokamint blockchain.
@@ -37,22 +39,24 @@ public class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription> imp
 	 * Creates a genesis block with the given description and signs it with the given keys and signature algorithm.
 	 * 
 	 * @param description the description
+	 * @param transactions the transactions inside the block
 	 * @param privateKey the key used for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, privateKey);
+	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, transactions, privateKey);
 	}
 
 	/**
 	 * Creates a new genesis block with the given description and signature.
 	 *
 	 * @param description the description
+	 * @param transactions the transactions inside the block
 	 * @param signature the signature
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, byte[] signature) {
-		super(description, signature);
+	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, byte[] signature) {
+		super(description, transactions, signature);
 	}
 
 	/**

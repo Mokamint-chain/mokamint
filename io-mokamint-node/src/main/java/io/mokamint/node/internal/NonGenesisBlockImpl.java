@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -38,22 +40,24 @@ public class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescriptio
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description
+	 * @param transactions the transactions in the block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, privateKey);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, transactions, privateKey);
 	}
 
 	/**
 	 * Creates a new non-genesis block with the given description and signature.
 	 * 
 	 * @param description the description
+	 * @param transactions the transactions in the block
 	 * @param signature the signature that will be put in the block
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, byte[] signature) {
-		super(description, signature);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] signature) {
+		super(description, transactions, signature);
 	}
 
 	/**

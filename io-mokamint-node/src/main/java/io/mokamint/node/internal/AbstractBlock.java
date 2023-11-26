@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
@@ -37,10 +38,12 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -54,6 +57,11 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 * The description of this block.
 	 */
 	private final D description;
+
+	/**
+	 * The transactions inside this block.
+	 */
+	private final Transaction[] transactions;
 
 	/**
 	 * The signature of this .
@@ -87,10 +95,12 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 * Creates an abstract block with the given description.
 	 * 
 	 * @param description the description of the block
+	 * @param transactions the transactions inside the block
 	 * @param signature the signature of the block
 	 */
-	protected AbstractBlock(D description, byte[] signature) {
+	protected AbstractBlock(D description, Stream<Transaction> transactions, byte[] signature) {
 		this.description = description;
+		this.transactions = transactions.toArray(Transaction[]::new);
 		this.signature = signature.clone();
 		verify();
 	}
@@ -99,19 +109,21 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 * Creates an abstract block with the given description and signs it.
 	 * 
 	 * @param description the description of the block
+	 * @param transactions the transactions inside the block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if signing failed
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
-	protected AbstractBlock(D description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	protected AbstractBlock(D description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		this.description = description;
+		this.transactions = transactions.toArray(Transaction[]::new);
 		this.signature = computeSignature(privateKey);
 		verify();
 	}
 
 	/**
 	 * Unmarshals an abstract block from the given context.
-	 * The description of the block has been already read.
+	 * The description of the block has been already unmarshalled.
 	 * 
 	 * @param description the already unmarshalled description
 	 * @param context the context
@@ -122,6 +134,7 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 		this.description = description;
 
 		try {
+			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
 			this.signature = context.readLengthAndBytes("Signature length mismatch");
 			verify();
 		}
@@ -148,7 +161,7 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		return AbstractBlockDescription.from(context).unmarshals(context);
+		return AbstractBlockDescription.from(context).unmarshalsIntoBlock(context);
 	}
 
 	@Override
@@ -179,6 +192,11 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	@Override
 	public final byte[] getSignature() {
 		return signature.clone();
+	}
+
+	@Override
+	public final Stream<Transaction> getTransactions() {
+		return Stream.of(transactions);
 	}
 
 	@Override
@@ -272,13 +290,19 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	}
 
 	@Override
-	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
+	public final <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
 		this.description.matchesOrThrow(description, exceptionSupplier);
 	}
 
 	@Override
-	public byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+	public final byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
 		return description.getNextGenerationSignature(hashingForGenerations);
+	}
+
+	@Override
+	public final void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+		description.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
+		builder.append("* signature: " + Hex.toHexString(signature) + " (" + getSignatureForBlocks() + ")\n");
 	}
 
 	/**
@@ -325,6 +349,7 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 		// and a non-genesis block (height > 0)
 		context.writeLong(getHeight());
 		description.into(context);
+		context.writeLengthAndArray(transactions);
 	}
 
 	/**
@@ -410,11 +435,5 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 			target[7 - i] = (byte) ((l >> (8 * i)) & 0xFF);
 
 		return target;
-	}
-
-	@Override
-	public final void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
-		description.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
-		builder.append("* signature: " + Hex.toHexString(signature) + " (" + getSignatureForBlocks() + ")\n");
 	}
 }

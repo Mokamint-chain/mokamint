@@ -303,7 +303,7 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 	}
 
 	@Override
-	protected Block unmarshals(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+	protected Block unmarshalsIntoBlock(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		return new NonGenesisBlockImpl(this, context);
 	}
 }

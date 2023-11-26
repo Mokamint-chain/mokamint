@@ -18,14 +18,20 @@ package io.mokamint.node.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.stream.Stream;
 
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.internal.GenesisBlockImpl;
 import io.mokamint.node.internal.NonGenesisBlockImpl;
 
@@ -34,19 +40,27 @@ import io.mokamint.node.internal.NonGenesisBlockImpl;
  */
 public abstract class BlockJson implements JsonRepresentation<Block> {
 	private BlockDescriptions.Json description;
+	private Transactions.Json[] transactions;
 	private String signature;
 
 	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Encoder().map(block);
+		var transactionEncoder = new Transactions.Encoder();
+		this.transactions = block.getTransactions().map(transactionEncoder::map).toArray(Transactions.Json[]::new);
 		this.signature = Hex.toHexString(block.getSignature());
 	}
 
 	@Override
-	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
+	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException {
 		var description = this.description.unmap();
+
+		Stream<Transaction> transactions = Stream.of(CheckSupplier.check(Base64ConversionException.class, () ->
+			Stream.of(this.transactions).map(UncheckFunction.uncheck(Transactions.Json::unmap)).toArray(Transaction[]::new)
+		));
+
 		if (description instanceof GenesisBlockDescription gbd)
-			return new GenesisBlockImpl(gbd, Hex.fromHexString(signature));
+			return new GenesisBlockImpl(gbd, transactions, Hex.fromHexString(signature));
 		else
-			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, Hex.fromHexString(signature));
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, transactions, Hex.fromHexString(signature));
 	}
 }

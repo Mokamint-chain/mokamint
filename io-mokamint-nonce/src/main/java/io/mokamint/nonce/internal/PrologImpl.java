@@ -180,12 +180,12 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 		try {
 			this.chainId = context.readStringUnshared();
 			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared());
-			byte[] publicKeyForSigningBlocksEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the length of the public key for signing blocks");
+			byte[] publicKeyForSigningBlocksEncoding = context.readLengthAndBytes("Mismatch in the length of the public key for signing blocks");
 			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
 			this.signatureForDeadlines = SignatureAlgorithms.of(context.readStringShared());
-			byte[] plotPublicKeyEncoding = context.readBytes(context.readCompactInt(), "Mismatch in the plot's public key length");
+			byte[] plotPublicKeyEncoding = context.readLengthAndBytes("Mismatch in the plot's public key length");
 			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
-			this.extra = context.readBytes(context.readCompactInt(), "Mismatch in prolog's extra length");
+			this.extra = context.readLengthAndBytes("Mismatch in prolog's extra length");
 
 			verify();
 
@@ -289,15 +289,10 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 		try {
 			context.writeStringUnshared(chainId);
 			context.writeStringShared(signatureForBlocks.getName());
-			var nodePublicKeyBytes = signatureForBlocks.encodingOf(publicKeyForSigningBlocks);
-			context.writeCompactInt(nodePublicKeyBytes.length);
-			context.write(nodePublicKeyBytes);
-			var plotPublicKeyBytes = signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines);
+			context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
 			context.writeStringShared(signatureForDeadlines.getName());
-			context.writeCompactInt(plotPublicKeyBytes.length);
-			context.write(plotPublicKeyBytes);
-			context.writeCompactInt(extra.length);
-			context.write(extra);
+			context.writeLengthAndBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+			context.writeLengthAndBytes(extra);
 		}
 		catch (InvalidKeyException e) {
 			throw new IOException("Cannot marshal the prolog into bytes", e);

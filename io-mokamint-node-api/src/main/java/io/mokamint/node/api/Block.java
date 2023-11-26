@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -28,6 +29,13 @@ import io.mokamint.nonce.api.DeadlineDescription;
  */
 @Immutable
 public interface Block extends BlockDescription {
+
+	/**
+	 * Yields the transactions inside this block.
+	 * 
+	 * @return the transactions
+	 */
+	Stream<Transaction> getTransactions();
 
 	/**
 	 * Yields the signature of this block, computed from its hash by the node

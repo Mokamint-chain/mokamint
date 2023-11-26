@@ -55,16 +55,6 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 			return new NonGenesisBlockDescriptionImpl(height, context);
 	}
 
-	/**
-	 * Unmarshals information from the given context, so that a block
-	 * can be unmarshalled from this description and the context.
-	 * 
-	 * @param context the context
-	 * @return the block, having this description
-	 * @throws IOException if unmarshalling fails
-	 */
-	protected abstract Block unmarshals(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException;
-
 	@Override
 	public void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* height: " + getHeight() + "\n");
@@ -88,6 +78,16 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(config.getHashingForBlocks()), Optional.of(startDateTimeUTC));
 		return builder.toString();
 	}
+
+	/**
+	 * Unmarshals information from the given context, so that a block
+	 * can be unmarshalled from this description and the context.
+	 * 
+	 * @param context the context
+	 * @return the block, having this description
+	 * @throws IOException if unmarshalling fails
+	 */
+	protected abstract Block unmarshalsIntoBlock(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException;
 
 	/**
 	 * Yields the name to use to describe this block in the result of {@link #toString()}.

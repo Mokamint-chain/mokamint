@@ -324,16 +324,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		prolog.into(context);
 		context.writeLong(progressive);
 		// we do not write value.length, since it coincides with hashing.length()
-		context.write(value);
+		context.writeBytes(value);
 		context.writeInt(scoopNumber);
-		context.writeCompactInt(data.length);
-		context.write(data);
+		context.writeLengthAndBytes(data);
 	}
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		intoWithoutSignature(context);
-		context.writeCompactInt(signature.length);
-		context.write(signature);
+		context.writeLengthAndBytes(signature);
 	}
 }

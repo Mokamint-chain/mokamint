@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Blocks;
@@ -39,7 +40,7 @@ public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRe
 	}
 
 	@Override
-	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
+	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException {
 		return GetBlockResultMessages.of(Optional.ofNullable(block == null ? null : block.unmap()), getId());
 	}
 
