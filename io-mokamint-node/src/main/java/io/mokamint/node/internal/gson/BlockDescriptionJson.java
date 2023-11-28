@@ -52,7 +52,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
 			this.acceleration = gbd.getAcceleration();
 			this.signatureForBlocks = gbd.getSignatureForBlocks().getName();
-			this.publicKeyBase58 = gbd.getPublicKeyForSigningThisBlockBase58();
+			this.publicKeyBase58 = gbd.getPublicKeyForSigningBlocksBase58();
 		}
 		else {
 			var ngbd = (NonGenesisBlockDescription) description;

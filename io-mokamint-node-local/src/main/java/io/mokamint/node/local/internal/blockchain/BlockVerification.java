@@ -181,7 +181,7 @@ public class BlockVerification {
 		BlockDescription description;
 
 		try {
-			description = BlockDescriptions.genesis(block.getStartDateTimeUTC(), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), block.getPublicKeyForSigningThisBlock());
+			description = BlockDescriptions.genesis(block.getStartDateTimeUTC(), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), block.getDescription().getPublicKeyForSigningBlocks());
 		}
 		catch (InvalidKeyException e) {
 			throw new VerificationException("The block contains an invalid key");
@@ -214,7 +214,7 @@ public class BlockVerification {
 		else
 			return node.getBlockchain().getGenesis()
 				.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
-				.getStartDateTimeUTC().plus(block.getTotalWaitingTime(), ChronoUnit.MILLIS);
+				.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 	}
 
 	/**

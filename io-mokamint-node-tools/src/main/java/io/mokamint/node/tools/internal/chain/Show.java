@@ -100,7 +100,10 @@ public class Show extends AbstractPublicRpcCommand {
     private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
 		try {
 			byte[] hash = blockIdentifier.getHashOfBlock(remote);
-			print(remote, getBlockDescription(remote, hash).orElseThrow(() -> new CommandException("The node does not contain any block at the requested hash!")), hash);
+			if (full)
+				print(remote, remote.getBlock(hash).orElseThrow(() -> new CommandException("The node does not contain any block at the requested hash!")), hash);
+			else
+				print(remote, remote.getBlockDescription(hash).orElseThrow(() -> new CommandException("The node does not contain any block at the requested hash!")), hash);
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown cryptographical algorithm in a block of \"" + publicUri() + "\"", e);
@@ -110,20 +113,9 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-	protected Optional<? extends BlockDescription> getBlockDescription(RemotePublicNode remote, byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
-		if (full)
-			return remote.getBlock(hash);
-		else
-			return remote.getBlockDescription(hash);
-	}
-
     private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
-    	if (json()) {
-    		if (description instanceof Block block)
-    			System.out.println(new Blocks.Encoder().encode(block));
-    		else
-    			System.out.println(new BlockDescriptions.Encoder().encode(description));
-    	}
+    	if (json())
+    		System.out.println(new BlockDescriptions.Encoder().encode(description));
 		else {
 			var info = remote.getChainInfo();
 			var genesisHash = info.getGenesisHash();
@@ -133,9 +125,8 @@ public class Show extends AbstractPublicRpcCommand {
 					var content = genesis.get();
 					if (content instanceof GenesisBlockDescription gbd) {
 						var config = remote.getConfig();
-						if (!(description instanceof Block)) // blocks report the hash themselves
-							System.out.println("* hash: " + Hex.toHexString(hash) + " (" + config.getHashingForBlocks() + ")");
-						System.out.println(description.toString(config, gbd.getStartDateTimeUTC()));
+						System.out.println("* hash: " + Hex.toHexString(hash) + " (" + config.getHashingForBlocks() + ")");
+						System.out.println(description.toString(Optional.of(config), Optional.of(gbd.getStartDateTimeUTC())));
 					}
 					else
 						throw new DatabaseException("The initial block of the chain is not a genesis block!");
@@ -145,6 +136,31 @@ public class Show extends AbstractPublicRpcCommand {
 			}
 			else
 				System.out.println(description);
+		}	
+    }
+
+    private void print(RemotePublicNode remote, Block block, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+    	if (json())
+    		System.out.println(new Blocks.Encoder().encode(block));
+		else {
+			var info = remote.getChainInfo();
+			var genesisHash = info.getGenesisHash();
+			if (genesisHash.isPresent()) {
+				var genesis = remote.getBlockDescription(genesisHash.get());
+				if (genesis.isPresent()) {
+					var content = genesis.get();
+					if (content instanceof GenesisBlockDescription gbd) {
+						var config = remote.getConfig();
+						System.out.println(block.toString(Optional.of(config), Optional.of(gbd.getStartDateTimeUTC())));
+					}
+					else
+						throw new DatabaseException("The initial block of the chain is not a genesis block!");
+				}
+				else
+					System.out.println(block);
+			}
+			else
+				System.out.println(block);
 		}	
     }
 

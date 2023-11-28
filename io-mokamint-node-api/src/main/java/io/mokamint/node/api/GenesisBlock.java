@@ -16,11 +16,21 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.time.LocalDateTime;
+
 import io.hotmoka.annotations.Immutable;
 
 /**
  * The genesis block of a Mokamint blockchain.
  */
 @Immutable
-public interface GenesisBlock extends GenesisBlockDescription, Block {
+public interface GenesisBlock extends Block {
+
+	/**
+	 * The moment when the block has been mined. This is the moment
+	 * when the blockchain started.
+	 * 
+	 * @return the moment when the block has been mined
+	 */
+	LocalDateTime getStartDateTimeUTC();
 }

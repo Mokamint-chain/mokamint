@@ -166,10 +166,10 @@ public class MineNewBlockTask implements Task {
 
 		private Run(Block previous) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
 			this.previous = previous;
-			this.heightOfNewBlock = previous.getHeight() + 1;
+			this.heightOfNewBlock = previous.getDescription().getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
 			this.heightMessage = "mining: height " + heightOfNewBlock + ": ";
-			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getTotalWaitingTime(), ChronoUnit.MILLIS);
+			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 
 			try {
@@ -311,7 +311,7 @@ public class MineNewBlockTask implements Task {
 		 * @param deadline the deadline
 		 */
 		private void setWaker(Deadline deadline) {
-			long millisecondsToWait = deadline.getMillisecondsToWaitFor(previous.getAcceleration());
+			long millisecondsToWait = deadline.getMillisecondsToWaitFor(previous.getDescription().getAcceleration());
 			long millisecondsAlreadyPassed = Duration.between(startTime, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
 			long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
 			if (waker.set(stillToWait))

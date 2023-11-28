@@ -244,7 +244,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var genesis = Blocks.genesis(description, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, config, plot1);
 			var added = computeNextBlock(genesis, config, plot2);
-			if (block1.getPower().compareTo(added.getPower()) < 0) {
+			if (block1.getDescription().getPower().compareTo(added.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of added
 				var temp = block1;
 				block1 = added;
@@ -281,7 +281,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var genesis = Blocks.genesis(description, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, config, plot1);
 			var block0 = computeNextBlock(genesis, config, plot2);
-			if (block1.getPower().compareTo(block0.getPower()) < 0) {
+			if (block1.getDescription().getPower().compareTo(block0.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of block0
 				var temp = block1;
 				block1 = block0;
@@ -349,7 +349,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, nodeKeys.getPrivate());
 			var sorted = Stream.of(computeNextBlock(genesis, config, plot1), computeNextBlock(genesis, config, plot2), computeNextBlock(genesis, config, plot3))
-					.sorted(Comparator.comparing(NonGenesisBlock::getPower)).toArray(NonGenesisBlock[]::new);
+					.sorted(Comparator.comparing(block -> block.getDescription().getPower())).toArray(NonGenesisBlock[]::new);
 			var block3 = sorted[0]; // least powerful
 			var block1 = sorted[1]; // medium
 			var block2 = sorted[2]; // most powerful

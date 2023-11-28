@@ -152,7 +152,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		protected void onBlockAdded(Block block) {
 			super.onBlockAdded(block);
 
-			if (block.getHeight() < HOW_MANY) {
+			if (block.getDescription().getHeight() < HOW_MANY) {
 				miningBlocks.add(block);
 				miningSemaphore.release();
 			}
@@ -169,7 +169,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		protected void onBlockAdded(Block block) {
 			super.onBlockAdded(block);
 
-			if (block.getHeight() < HOW_MANY) { // these can only come by whispering from the mining node
+			if (block.getDescription().getHeight() < HOW_MANY) { // these can only come by whispering from the mining node
 				nonMiningBlocks.add(block);
 				nonMiningSemaphore.release();
 			}

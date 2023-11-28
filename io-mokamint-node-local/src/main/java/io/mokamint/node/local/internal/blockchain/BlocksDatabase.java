@@ -454,7 +454,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 
 		if (hasBeenAdded)
-			LOGGER.info("db: height " + block.getHeight() + ": added block " + block.getHexHash(node.getConfig().getHashingForBlocks()));
+			LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(node.getConfig().getHashingForBlocks()));
 
 		return hasBeenAdded;
 	}
@@ -797,7 +797,7 @@ public class BlocksDatabase implements AutoCloseable {
 			throw new DatabaseException("the database of blocks is non-empty but the power of the head is not set");
 
 		// we choose the branch with more power
-		if (block.getPower().compareTo(maybePowerOfHead.get()) > 0) {
+		if (block.getDescription().getPower().compareTo(maybePowerOfHead.get()) > 0) {
 			setHeadHash(txn, block, hashOfBlock);
 			return true;
 		}
@@ -834,8 +834,8 @@ public class BlocksDatabase implements AutoCloseable {
 	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
-			storeOfBlocks.put(txn, power, fromBytes(newHead.getPower().toByteArray()));
-			long heightOfHead = newHead.getHeight();
+			storeOfBlocks.put(txn, power, fromBytes(newHead.getDescription().getPower().toByteArray()));
+			long heightOfHead = newHead.getDescription().getHeight();
 			storeOfBlocks.put(txn, height, fromBytes(longToBytes(heightOfHead)));
 			updateChain(txn, newHead, newHeadHash);
 			LOGGER.info("db: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
@@ -857,7 +857,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 */
 	private void updateChain(Transaction txn, Block block, byte[] blockHash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
-			long height = block.getHeight();
+			long height = block.getDescription().getHeight();
 			var heightBI = fromBytes(longToBytes(height));
 			var _new = fromBytes(blockHash);
 			var old = storeOfChain.get(txn, heightBI);

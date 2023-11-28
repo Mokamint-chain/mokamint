@@ -126,34 +126,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 
-	/**
-	 * Checks all constraints expected from a non-genesis block.
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
-	 */
-	private void verify() {
-		Objects.requireNonNull(acceleration, "acceleration cannot be null");
-		Objects.requireNonNull(deadline, "deadline cannot be null");
-		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
-		Objects.requireNonNull(power, "power cannot be null");
-
-		if (height < 1)
-			throw new IllegalArgumentException("A non-genesis block must have positive height");
-
-		if (power.signum() < 0)
-			throw new IllegalArgumentException("The power cannot be negative");
-
-		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("The acceleration must be strictly positive");
-
-		if (weightedWaitingTime < 0)
-			throw new IllegalArgumentException("The weighted waiting time cannot be negative");
-
-		if (totalWaitingTime < weightedWaitingTime)
-			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
-	}
-
 	@Override
 	public BigInteger getPower() {
 		return power;
@@ -185,12 +157,12 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public PublicKey getPublicKeyForSigningThisBlock() {
+	public PublicKey getPublicKeyForSigningBlocks() {
 		return deadline.getProlog().getPublicKeyForSigningBlocks();
 	}
 
 	@Override
-	public String getPublicKeyForSigningThisBlockBase58() {
+	public String getPublicKeyForSigningBlocksBase58() {
 		return deadline.getProlog().getPublicKeyForSigningBlocksBase58();
 	}
 
@@ -228,15 +200,19 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
 	}
 
-	private static byte[] concat(byte[] array1, byte[] array2) {
-		var merge = new byte[array1.length + array2.length];
-		System.arraycopy(array1, 0, merge, 0, array1.length);
-		System.arraycopy(array2, 0, merge, array1.length, array2.length);
-		return merge;
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		context.writeLong(height);
+		context.writeBigInteger(power);
+		context.writeLong(totalWaitingTime);
+		context.writeLong(weightedWaitingTime);
+		context.writeBigInteger(acceleration);
+		deadline.into(context);
+		context.writeLengthAndBytes(hashOfPreviousBlock);
 	}
 
 	@Override
-	public void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		startDateTimeUTC.ifPresent(sd -> builder.append("* creation date and time UTC: " + sd.plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n"));
 		super.populate(builder, config, startDateTimeUTC);
 		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock));
@@ -258,14 +234,38 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("  * signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")");
 	}
 
-	@Override
-	public void into(MarshallingContext context) throws IOException {
-		context.writeLong(height);
-		context.writeBigInteger(power);
-		context.writeLong(totalWaitingTime);
-		context.writeLong(weightedWaitingTime);
-		context.writeBigInteger(acceleration);
-		deadline.into(context);
-		context.writeLengthAndBytes(hashOfPreviousBlock);
+	/**
+	 * Checks all constraints expected from a non-genesis block.
+	 * 
+	 * @throws NullPointerException if some value is unexpectedly {@code null}
+	 * @throws IllegalArgumentException if some value is illegal
+	 */
+	private void verify() {
+		Objects.requireNonNull(acceleration, "acceleration cannot be null");
+		Objects.requireNonNull(deadline, "deadline cannot be null");
+		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
+		Objects.requireNonNull(power, "power cannot be null");
+	
+		if (height < 1)
+			throw new IllegalArgumentException("A non-genesis block must have positive height");
+	
+		if (power.signum() < 0)
+			throw new IllegalArgumentException("The power cannot be negative");
+	
+		if (acceleration.signum() <= 0)
+			throw new IllegalArgumentException("The acceleration must be strictly positive");
+	
+		if (weightedWaitingTime < 0)
+			throw new IllegalArgumentException("The weighted waiting time cannot be negative");
+	
+		if (totalWaitingTime < weightedWaitingTime)
+			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
+	}
+
+	private static byte[] concat(byte[] array1, byte[] array2) {
+		var merge = new byte[array1.length + array2.length];
+		System.arraycopy(array1, 0, merge, 0, array1.length);
+		System.arraycopy(array2, 0, merge, array1.length, array2.length);
+		return merge;
 	}
 }

@@ -339,7 +339,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 			var powerOfHead = getPowerOfHead();
 			if (powerOfHead.isEmpty())
 				scheduleSynchronization(0L);
-			else if (powerOfHead.get().compareTo(block.getPower()) < 0)
+			else if (powerOfHead.get().compareTo(block.getDescription().getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
 				scheduleSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));

@@ -16,11 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.Marshallable;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 
@@ -28,7 +31,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * A block of the Mokamint blockchain.
  */
 @Immutable
-public interface Block extends BlockDescription {
+public interface Block extends Marshallable {
 
 	/**
 	 * Yields the description of this block.
@@ -104,4 +107,19 @@ public interface Block extends BlockDescription {
 	 * @throws E if the match fails
 	 */
 	<E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E;
+
+	@Override
+	String toString();
+
+	/**
+	 * Yields a string representation of this block description. This yields a more informative
+	 * representation of the block description than {@link #toString()}, with extra information
+	 * computed by using the given configuration for the node.
+	 * 
+	 * @param config the configuration used to interpret and reconstruct the extra
+	 *               information about the block description, if any
+	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description, if any
+	 * @return the representation
+	 */
+	String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
 }

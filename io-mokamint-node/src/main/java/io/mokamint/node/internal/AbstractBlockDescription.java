@@ -34,10 +34,7 @@ import io.mokamint.node.api.ConsensusConfig;
 /**
  * Shared code for block descriptions.
  */
-// suppressing warning because otherwise "permits AbstractBlock" generates a warning;
-// tried with "permits AbstractBlock<?>", but it does not compile with openjdk 19
-@SuppressWarnings("rawtypes")
-public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits AbstractBlock, GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
+public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 	/**
 	 * Unmarshals a block description from the given context.
@@ -56,8 +53,14 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 			return new NonGenesisBlockDescriptionImpl(height, context);
 	}
 
-	@Override
-	public void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	/**
+	 * Fills the given builder with information inside this description.
+	 * 
+	 * @param builder the builder
+	 * @param config the configuration of the node, if available
+	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
+	 */
+	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
@@ -75,9 +78,9 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	@Override
-	public final String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
+	public final String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
-		populate(builder, Optional.of(config), Optional.of(startDateTimeUTC));
+		populate(builder, config, startDateTimeUTC);
 		return builder.toString();
 	}
 }

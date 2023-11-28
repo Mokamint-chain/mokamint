@@ -88,23 +88,23 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	@Override
 	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
 		if (description instanceof NonGenesisBlockDescription ngbg) {
-			var height = getHeight();
+			var height = getDescription().getHeight();
 			if (height != description.getHeight())
 				throw exceptionSupplier.apply("Height mismatch (expected " + description.getHeight() + " but found " + height + ")");
 
-			var acceleration = getAcceleration();
+			var acceleration = getDescription().getAcceleration();
 			if (!acceleration.equals(description.getAcceleration()))
 				throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
 
-			var power = getPower();
+			var power = getDescription().getPower();
 			if (!power.equals(description.getPower()))
 				throw exceptionSupplier.apply("Power mismatch (expected " + description.getPower() + " but found " + power + ")");
 
-			var totalWaitingTime = getTotalWaitingTime();
+			var totalWaitingTime = getDescription().getTotalWaitingTime();
 			if (totalWaitingTime != description.getTotalWaitingTime())
 				throw exceptionSupplier.apply("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
 
-			var weightedWaitingTime = getWeightedWaitingTime();
+			var weightedWaitingTime = getDescription().getWeightedWaitingTime();
 			if (weightedWaitingTime != description.getWeightedWaitingTime())
 				throw exceptionSupplier.apply("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
 

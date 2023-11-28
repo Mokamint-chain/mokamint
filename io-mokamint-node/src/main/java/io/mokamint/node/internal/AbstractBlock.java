@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -34,7 +33,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.Transactions;
@@ -51,7 +50,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract sealed class AbstractBlock<D extends BlockDescription> extends AbstractBlockDescription implements Block permits GenesisBlockImpl, NonGenesisBlockImpl {
+public abstract sealed class AbstractBlock<D extends BlockDescription> extends AbstractMarshallable implements Block permits GenesisBlockImpl, NonGenesisBlockImpl {
 
 	/**
 	 * The description of this block.
@@ -169,31 +168,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final BigInteger getPower() {
-		return description.getPower();
-	}
-
-	@Override
-	public final long getTotalWaitingTime() {
-		return description.getTotalWaitingTime();
-	}
-
-	@Override
-	public final long getWeightedWaitingTime() {
-		return description.getWeightedWaitingTime();
-	}
-
-	@Override
-	public final BigInteger getAcceleration() {
-		return description.getAcceleration();
-	}
-
-	@Override
-	public final long getHeight() {
-		return description.getHeight();
-	}
-
-	@Override
 	public final byte[] getSignature() {
 		return signature.clone();
 	}
@@ -201,21 +175,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	@Override
 	public final Stream<Transaction> getTransactions() {
 		return Stream.of(transactions);
-	}
-
-	@Override
-	public final SignatureAlgorithm getSignatureForBlocks() {
-		return description.getSignatureForBlocks();
-	}
-
-	@Override
-	public final PublicKey getPublicKeyForSigningThisBlock() {
-		return description.getPublicKeyForSigningThisBlock();
-	}
-
-	@Override
-	public final String getPublicKeyForSigningThisBlockBase58() {
-		return description.getPublicKeyForSigningThisBlockBase58();
 	}
 
 	@Override
@@ -244,15 +203,15 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 	@Override
 	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
-		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
+		var nextGenerationSignature = description.getNextGenerationSignature(hashingForGenerations);
 		return DeadlineDescriptions.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
 	@Override
 	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines) {
-		var heightForNewBlock = getHeight() + 1;
+		var heightForNewBlock = description.getHeight() + 1;
 		var powerForNewBlock = computePower(deadline, hashingForDeadlines);
-		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(getAcceleration());
+		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(description.getAcceleration());
 		var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 		var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, targetBlockCreationTime);
@@ -281,15 +240,16 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
-		return description.getNextGenerationSignature(hashingForGenerations);
+	public final String toString() {
+		return toString(Optional.empty(), Optional.empty());
 	}
 
 	@Override
-	public final void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	public final String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+		var builder = new StringBuilder();
 		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
-		builder.append("* signature: " + Hex.toHexString(signature) + " (" + getSignatureForBlocks() + ")\n");
-		description.populate(builder, config, startDateTimeUTC);
+		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlocks() + ")\n");
+		builder.append(description.toString(config, startDateTimeUTC));
 		builder.append("\n");
 
 		if (transactions.length == 0)
@@ -305,6 +265,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 			builder.append(transaction);
 			builder.append(" (base64)");
 		}
+
+		return builder.toString();
 	}
 
 	/**
@@ -314,7 +276,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	private byte[] computeSignature(PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return getSignatureForBlocks().getSigner(privateKey, AbstractBlock<D>::toByteArrayWithoutSignature).sign(this);
+		return description.getSignatureForBlocks().getSigner(privateKey, AbstractBlock<D>::toByteArrayWithoutSignature).sign(this);
 	}
 
 	/**
@@ -328,7 +290,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
 		try {
-			if (!getSignatureForBlocks().getVerifier(getPublicKeyForSigningThisBlock(), AbstractBlock<D>::toByteArrayWithoutSignature).verify(this, signature))
+			if (!description.getSignatureForBlocks().getVerifier(description.getPublicKeyForSigningBlocks(), AbstractBlock<D>::toByteArrayWithoutSignature).verify(this, signature))
 				throw new IllegalArgumentException("The block's signature is invalid");
 		}
 		catch (SignatureException e) {
@@ -370,16 +332,16 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private BigInteger computePower(Deadline deadline, HashingAlgorithm hashingForDeadlines) {
 		byte[] valueAsBytes = deadline.getValue();
 		var value = new BigInteger(1, valueAsBytes);
-		return getPower().add(BigInteger.TWO.shiftLeft(hashingForDeadlines.length() * 8).divide(value.add(BigInteger.ONE)));
+		return description.getPower().add(BigInteger.TWO.shiftLeft(hashingForDeadlines.length() * 8).divide(value.add(BigInteger.ONE)));
 	}
 
 	private long computeTotalWaitingTime(long waitingTime) {
-		return getTotalWaitingTime() + waitingTime;
+		return description.getTotalWaitingTime() + waitingTime;
 	}
 
 	private long computeWeightedWaitingTime(long waitingTime) {
 		// probably irrelevant, but by using BigInteger we reduce the risk of overflow
-		var previousWeightedWaitingTime_95 = BigInteger.valueOf(getWeightedWaitingTime()).multiply(BigInteger.valueOf(95L));
+		var previousWeightedWaitingTime_95 = BigInteger.valueOf(description.getWeightedWaitingTime()).multiply(BigInteger.valueOf(95L));
 		var waitingTime_5 = BigInteger.valueOf(waitingTime).multiply(BigInteger.valueOf(5L));
 		return previousWeightedWaitingTime_95.add(waitingTime_5).divide(BigInteger.valueOf(100L)).longValue();
 	}
@@ -392,7 +354,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * @return the acceleration for the new block
 	 */
 	private BigInteger computeAcceleration(long weightedWaitingTimeForNewBlock, long targetBlockCreationTime) {
-		var oldAcceleration = getAcceleration();
+		var oldAcceleration = description.getAcceleration();
 		var delta = oldAcceleration
 			.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
 			.divide(BigInteger.valueOf(targetBlockCreationTime))
@@ -416,7 +378,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {
-		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
+		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(description.getHeight() + 1)));
 		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
 	}
 

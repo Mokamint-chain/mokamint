@@ -81,11 +81,11 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	@Override
 	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
 		if (description instanceof GenesisBlockDescription) {
-			var acceleration = getAcceleration();
+			var acceleration = getDescription().getAcceleration();
 			if (!acceleration.equals(description.getAcceleration()))
 				throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
 
-			var signatureForBlocks = getSignatureForBlocks();
+			var signatureForBlocks = getDescription().getSignatureForBlocks();
 			if (!signatureForBlocks.equals(description.getSignatureForBlocks()))
 				throw exceptionSupplier.apply("Block signature algorithm mismatch (expected " + description.getSignatureForBlocks() + " but found " + signatureForBlocks + ")");
 

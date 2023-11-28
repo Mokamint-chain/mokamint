@@ -185,12 +185,12 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
-	public PublicKey getPublicKeyForSigningThisBlock() {
+	public PublicKey getPublicKeyForSigningBlocks() {
 		return publicKey;
 	}
 
 	@Override
-	public String getPublicKeyForSigningThisBlockBase58() {
+	public String getPublicKeyForSigningBlocksBase58() {
 		return publicKeyBase58;
 	}
 
@@ -209,8 +209,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		return other instanceof GenesisBlockDescription gbd &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
 			acceleration.equals(gbd.getAcceleration()) &&
-			publicKey.equals(gbd.getPublicKeyForSigningThisBlock()) &&
-			publicKeyBase58.equals(gbd.getPublicKeyForSigningThisBlockBase58()) &&
+			publicKey.equals(gbd.getPublicKeyForSigningBlocks()) &&
+			publicKeyBase58.equals(gbd.getPublicKeyForSigningBlocksBase58()) &&
 			signatureForBlocks.equals(gbd.getSignatureForBlocks());
 	}
 
@@ -220,7 +220,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
-	public void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
 		super.populate(builder, config, startDateTimeUTC);
 		builder.append("\n* public key of the node that signed the block: " + publicKeyBase58 + " (" + signatureForBlocks + ")");

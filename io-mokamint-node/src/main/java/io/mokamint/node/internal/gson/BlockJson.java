@@ -44,7 +44,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private String signature;
 
 	protected BlockJson(Block block) {
-		this.description = new BlockDescriptions.Encoder().map(block);
+		this.description = new BlockDescriptions.Encoder().map(block.getDescription());
 		var transactionEncoder = new Transactions.Encoder();
 		this.transactions = block.getTransactions().map(transactionEncoder::map).toArray(Transactions.Json[]::new);
 		this.signature = Hex.toHexString(block.getSignature());

@@ -85,18 +85,18 @@ public interface BlockDescription extends Marshallable {
 	SignatureAlgorithm getSignatureForBlocks();
 
 	/**
-	 * Yields the public key that can be used to verify the signature of this block.
+	 * Yields the public key used for signing the blocks described by this description.
 	 * 
 	 * @return the public key
 	 */
-	PublicKey getPublicKeyForSigningThisBlock();
+	PublicKey getPublicKeyForSigningBlocks();
 
 	/**
-	 * Yields a Base58 representation of {@link #getPublicKeyForSigningThisBlock()}.
+	 * Yields a Base58 representation of {@link #getPublicKeyForSigningBlocks()}.
 	 * 
 	 * @return the Base58 representation
 	 */
-	String getPublicKeyForSigningThisBlockBase58();
+	String getPublicKeyForSigningBlocksBase58();
 
 	/**
 	 * Checks if this block description is equal to another object.
@@ -119,20 +119,11 @@ public interface BlockDescription extends Marshallable {
 	 * computed by using the given configuration for the node.
 	 * 
 	 * @param config the configuration used to interpret and reconstruct the extra
-	 *               information about the block description
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description
+	 *               information about the block description, if any
+	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description, if any
 	 * @return the representation
 	 */
-	String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC);
-
-	/**
-	 * Fills the given builder with information inside this description.
-	 * 
-	 * @param builder the builder
-	 * @param config the configuration of the node, if available
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
-	 */
-	void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
+	String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
 
 	/**
 	 * Yields the generation signature of any block that can legally follow this block.
