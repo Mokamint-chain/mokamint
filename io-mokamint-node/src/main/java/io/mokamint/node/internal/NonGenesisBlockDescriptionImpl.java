@@ -33,7 +33,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.BlockDescription;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -222,31 +222,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
-		if (description instanceof NonGenesisBlockDescription ngbg) {
-			if (height != description.getHeight())
-				throw exceptionSupplier.apply("Height mismatch (expected " + description.getHeight() + " but found " + height + ")");
-
-			if (!acceleration.equals(description.getAcceleration()))
-				throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
-
-			if (!power.equals(description.getPower()))
-				throw exceptionSupplier.apply("Power mismatch (expected " + description.getPower() + " but found " + power + ")");
-
-			if (totalWaitingTime != description.getTotalWaitingTime())
-				throw exceptionSupplier.apply("Total waiting time mismatch (expected " + description.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
-
-			if (weightedWaitingTime != description.getWeightedWaitingTime())
-				throw exceptionSupplier.apply("Weighted waiting time mismatch (expected " + description.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
-
-			if (!Arrays.equals(hashOfPreviousBlock, ngbg.getHashOfPreviousBlock()))
-				throw exceptionSupplier.apply("Hash of previous block mismatch");
-		}
-		else
-			throw exceptionSupplier.apply("Block type mismatch (expected genesis but found non-genesis)");
-	}
-
-	@Override
 	public byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
 		byte[] previousGenerationSignature = deadline.getData();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
@@ -261,13 +236,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
-		if (startDateTimeUTC.isPresent())
-			builder.append("* creation date and time UTC: " + startDateTimeUTC.get().plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n");
-		super.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
-		builder.append("* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock));
-		if (hashingForBlocks.isPresent())
-			builder.append(" (" + hashingForBlocks.get() + ")");
+	public void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+		startDateTimeUTC.ifPresent(sd -> builder.append("* creation date and time UTC: " + sd.plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n"));
+		super.populate(builder, config, startDateTimeUTC);
+		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock));
+		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append(" (" + hashingForBlocks + ")"));
 		builder.append("\n");
 		builder.append("* deadline:\n");
 		builder.append("  * prolog:\n");
@@ -278,17 +251,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
 		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
 		builder.append("  * generation signature: " + Hex.toHexString(deadline.getData()));
-		if (hashingForGenerations.isPresent())
-			builder.append(" (" + hashingForGenerations.get() + ")");
+		config.map(ConsensusConfig::getHashingForGenerations).ifPresent(hashingForGenerations -> builder.append(" (" + hashingForGenerations + ")"));
 		builder.append("\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + deadline.getHashing() + ")\n");
-		builder.append("  * signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")\n");
-	}
-
-	@Override
-	protected String nameInToString() {
-		return "Non-genesis block";
+		builder.append("  * signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")");
 	}
 
 	@Override

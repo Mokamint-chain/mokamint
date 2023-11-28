@@ -17,11 +17,14 @@ limitations under the License.
 package io.mokamint.node.tools.internal.chain;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.Blocks;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -39,6 +42,9 @@ public class Show extends AbstractPublicRpcCommand {
 
 	@ArgGroup(exclusive = true, multiplicity = "1")
 	private BlockIdentifier blockIdentifier;
+
+	@Option(names = "--full", description = "show full information about the block", defaultValue = "false")
+	private boolean full;
 
 	/**
 	 * The alternative ways of specifying the block to show.
@@ -94,7 +100,7 @@ public class Show extends AbstractPublicRpcCommand {
     private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
 		try {
 			byte[] hash = blockIdentifier.getHashOfBlock(remote);
-			print(remote, remote.getBlockDescription(hash).orElseThrow(() -> new CommandException("The node does not contain any block at the requested hash!")), hash);
+			print(remote, getBlockDescription(remote, hash).orElseThrow(() -> new CommandException("The node does not contain any block at the requested hash!")), hash);
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown cryptographical algorithm in a block of \"" + publicUri() + "\"", e);
@@ -104,9 +110,20 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
+	protected Optional<? extends BlockDescription> getBlockDescription(RemotePublicNode remote, byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+		if (full)
+			return remote.getBlock(hash);
+		else
+			return remote.getBlockDescription(hash);
+	}
+
     private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
-    	if (json())
-			System.out.println(new BlockDescriptions.Encoder().encode(description));
+    	if (json()) {
+    		if (description instanceof Block block)
+    			System.out.println(new Blocks.Encoder().encode(block));
+    		else
+    			System.out.println(new BlockDescriptions.Encoder().encode(description));
+    	}
 		else {
 			var info = remote.getChainInfo();
 			var genesisHash = info.getGenesisHash();
@@ -114,8 +131,12 @@ public class Show extends AbstractPublicRpcCommand {
 				var genesis = remote.getBlockDescription(genesisHash.get());
 				if (genesis.isPresent()) {
 					var content = genesis.get();
-					if (content instanceof GenesisBlockDescription gbd)
-						System.out.print(description.toString(remote.getConfig(), hash, gbd.getStartDateTimeUTC()));
+					if (content instanceof GenesisBlockDescription gbd) {
+						var config = remote.getConfig();
+						if (!(description instanceof Block)) // blocks report the hash themselves
+							System.out.println("* hash: " + Hex.toHexString(hash) + " (" + config.getHashingForBlocks() + ")");
+						System.out.println(description.toString(config, gbd.getStartDateTimeUTC()));
+					}
 					else
 						throw new DatabaseException("The initial block of the chain is not a genesis block!");
 				}

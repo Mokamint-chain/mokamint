@@ -20,7 +20,6 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -100,17 +99,6 @@ public interface BlockDescription extends Marshallable {
 	String getPublicKeyForSigningThisBlockBase58();
 
 	/**
-	 * Checks if this block matches the given description.
-	 * If it doesn't, an exception is thrown by using the given supplier.
-	 * 
-	 * @param <E> the type of the thrown exception
-	 * @param description the description matched against this block
-	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
-	 * @throws E if the match fails
-	 */
-	<E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E;
-
-	/**
 	 * Checks if this block description is equal to another object.
 	 * 
 	 * @param other the other object
@@ -127,26 +115,24 @@ public interface BlockDescription extends Marshallable {
 
 	/**
 	 * Yields a string representation of this block description. This yields a more informative
-	 * representation of the block description, with extra information computed by using the
-	 * given configuration for the node.
+	 * representation of the block description than {@link #toString()}, with extra information
+	 * computed by using the given configuration for the node.
 	 * 
 	 * @param config the configuration used to interpret and reconstruct the extra
 	 *               information about the block description
-	 * @param hash the hash of the block having this description
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description
 	 * @return the representation
 	 */
-	String toString(ConsensusConfig<?,?> config, byte[] hash, LocalDateTime startDateTimeUTC);
+	String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC);
 
 	/**
-	 * Fills the given builder with the information inside this description.
+	 * Fills the given builder with information inside this description.
 	 * 
 	 * @param builder the builder
-	 * @param hashingForGenerations the hashing algorithm used for deadline generations, if available
-	 * @param hashingForBlocks the hashing algorithm used for the blocks, if available
+	 * @param config the configuration of the node, if available
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
 	 */
-	void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC);
+	void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
 
 	/**
 	 * Yields the generation signature of any block that can legally follow this block.

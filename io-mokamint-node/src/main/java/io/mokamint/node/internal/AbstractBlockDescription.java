@@ -26,7 +26,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
@@ -35,7 +34,10 @@ import io.mokamint.node.api.ConsensusConfig;
 /**
  * Shared code for block descriptions.
  */
-public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
+// suppressing warning because otherwise "permits AbstractBlock" generates a warning;
+// tried with "permits AbstractBlock<?>", but it does not compile with openjdk 19
+@SuppressWarnings("rawtypes")
+public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits AbstractBlock, GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 	/**
 	 * Unmarshals a block description from the given context.
@@ -45,7 +47,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm is not available
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
-	public static AbstractBlockDescription from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+	public static BlockDescription from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		// by reading the height, we can determine if it's a genesis block description or not
 		var height = context.readLong();
 		if (height == 0L)
@@ -55,33 +57,27 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	@Override
-	public void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
+	public void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
 		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
-		builder.append("* acceleration: " + getAcceleration() + "\n");
-		hashingForGenerations.ifPresent(h -> builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(h)) + " (" + h + ")\n"));
+		config.map(ConsensusConfig::getHashingForGenerations).ifPresent(hashingForGenerations ->
+			builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(hashingForGenerations)) + " (" + hashingForGenerations + ")\n"));
+		builder.append("* acceleration: " + getAcceleration());
 	}
 
 	@Override
 	public final String toString() {
-		var builder = new StringBuilder(nameInToString() + ":\n");
-		populate(builder, Optional.empty(), Optional.empty(), Optional.empty());
+		var builder = new StringBuilder();
+		populate(builder, Optional.empty(), Optional.empty());
 		return builder.toString();
 	}
 
 	@Override
-	public final String toString(ConsensusConfig<?,?> config, byte[] hash, LocalDateTime startDateTimeUTC) {
-		var builder = new StringBuilder(nameInToString() + " with hash " + Hex.toHexString(hash) + " (" + config.getHashingForBlocks() + "):\n");
-		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(config.getHashingForBlocks()), Optional.of(startDateTimeUTC));
+	public final String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
+		var builder = new StringBuilder();
+		populate(builder, Optional.of(config), Optional.of(startDateTimeUTC));
 		return builder.toString();
 	}
-
-	/**
-	 * Yields the name to use to describe this block in the result of {@link #toString()}.
-	 * 
-	 * @return the name
-	 */
-	protected abstract String nameInToString();
 }

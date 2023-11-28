@@ -35,7 +35,6 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.Transactions;
@@ -52,7 +51,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract sealed class AbstractBlock<D extends BlockDescription> extends AbstractMarshallable implements Block permits GenesisBlockImpl, NonGenesisBlockImpl {
+public abstract sealed class AbstractBlock<D extends BlockDescription> extends AbstractBlockDescription implements Block permits GenesisBlockImpl, NonGenesisBlockImpl {
 
 	/**
 	 * The description of this block.
@@ -149,7 +148,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * 
 	 * @return the description
 	 */
-	protected final D getDescription() {
+	public final D getDescription() {
 		return description;
 	}
 
@@ -245,7 +244,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 	@Override
 	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
-		var nextGenerationSignature = description.getNextGenerationSignature(hashingForGenerations);
+		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
 		return DeadlineDescriptions.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
@@ -265,27 +264,14 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AbstractBlock<?> ab && description.equals(ab.description) && Arrays.equals(signature, ab.signature);
+		return other instanceof Block block && description.equals(block.getDescription())
+			&& Arrays.equals(signature, block.getSignature())
+			&& Arrays.equals(transactions, block.getTransactions().toArray(Transaction[]::new));
 	}
 
 	@Override
 	public int hashCode() {
 		return description.hashCode();
-	}
-
-	@Override
-	public final String toString() {
-		return description.toString();
-	}
-
-	@Override
-	public final String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC) {
-		return description.toString(config, getHash(config.getHashingForBlocks()), startDateTimeUTC);
-	}
-
-	@Override
-	public final String toString(ConsensusConfig<?,?> config, byte[] hash, LocalDateTime startDateTimeUTC) {
-		return description.toString(config, hash, startDateTimeUTC);
 	}
 
 	@Override
@@ -295,19 +281,30 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
-		this.description.matchesOrThrow(description, exceptionSupplier);
-	}
-
-	@Override
 	public final byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
 		return description.getNextGenerationSignature(hashingForGenerations);
 	}
 
 	@Override
-	public final void populate(StringBuilder builder, Optional<HashingAlgorithm> hashingForGenerations, Optional<HashingAlgorithm> hashingForBlocks, Optional<LocalDateTime> startDateTimeUTC) {
-		description.populate(builder, hashingForGenerations, hashingForBlocks, startDateTimeUTC);
+	public final void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
 		builder.append("* signature: " + Hex.toHexString(signature) + " (" + getSignatureForBlocks() + ")\n");
+		description.populate(builder, config, startDateTimeUTC);
+		builder.append("\n");
+
+		if (transactions.length == 0)
+			builder.append("* 0 transactions");
+		else if (transactions.length == 1)
+			builder.append("* 1 transaction:");
+		else
+			builder.append("* " + transactions.length + " transactions:");
+
+		int n = 0;
+		for (var transaction: transactions) {
+			builder.append("\n * #" + n++ + ": ");
+			builder.append(transaction);
+			builder.append(" (base64)");
+		}
 	}
 
 	/**

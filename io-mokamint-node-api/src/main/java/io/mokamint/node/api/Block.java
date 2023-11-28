@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.time.LocalDateTime;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
@@ -29,6 +29,13 @@ import io.mokamint.nonce.api.DeadlineDescription;
  */
 @Immutable
 public interface Block extends BlockDescription {
+
+	/**
+	 * Yields the description of this block.
+	 * 
+	 * @return the description
+	 */
+	BlockDescription getDescription();
 
 	/**
 	 * Yields the transactions inside this block.
@@ -88,14 +95,13 @@ public interface Block extends BlockDescription {
 	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines);
 
 	/**
-	 * Yields a string representation of this block. This yields a more informative
-	 * representation of the block description, with extra information computed by using the
-	 * given configuration for the node.
+	 * Checks if this block matches the given description.
+	 * If it doesn't, an exception is thrown by using the given supplier.
 	 * 
-	 * @param config the configuration used to interpret and reconstruct the extra
-	 *               information about the block
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block
-	 * @return the representation
+	 * @param <E> the type of the thrown exception
+	 * @param description the description matched against this block
+	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
+	 * @throws E if the match fails
 	 */
-	String toString(ConsensusConfig<?,?> config, LocalDateTime startDateTimeUTC);
+	<E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E;
 }
