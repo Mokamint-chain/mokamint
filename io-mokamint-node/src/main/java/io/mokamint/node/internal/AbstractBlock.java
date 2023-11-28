@@ -42,6 +42,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.DeadlineDescriptions;
@@ -51,7 +52,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract class AbstractBlock<D extends BlockDescription> extends AbstractMarshallable implements Block {
+public abstract sealed class AbstractBlock<D extends BlockDescription> extends AbstractMarshallable implements Block permits GenesisBlockImpl, NonGenesisBlockImpl {
 
 	/**
 	 * The description of this block.
@@ -161,7 +162,11 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		return AbstractBlockDescription.from(context).unmarshalsIntoBlock(context);
+		var description = AbstractBlockDescription.from(context);
+		if (description instanceof GenesisBlockDescription gbd)
+			return new GenesisBlockImpl(gbd, context);
+		else
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context); // cast verified by sealedness
 	}
 
 	@Override
@@ -344,10 +349,6 @@ public abstract class AbstractBlock<D extends BlockDescription> extends Abstract
 	 * @throws IOException if marshalling fails
 	 */
 	private void intoWithoutSignature(MarshallingContext context) throws IOException {
-		// we write the height of the block anyway, so that, by reading the first long,
-		// it is possible to distinguish between a genesis block (height == 0)
-		// and a non-genesis block (height > 0)
-		context.writeLong(getHeight());
 		description.into(context);
 		context.writeLengthAndArray(transactions);
 	}

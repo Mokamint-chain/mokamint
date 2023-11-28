@@ -24,8 +24,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
 
     <properties>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-      <maven.compiler.source>19</maven.compiler.source>
-      <maven.compiler.target>19</maven.compiler.target>
+      <maven.compiler.release>17</maven.compiler.release>
       <hotmoka.version>1.3.2</hotmoka.version>
       <mokamint.version>0.0.1</mokamint.version>
       <io.hotmoka.websockets.version>1.2.2</io.hotmoka.websockets.version>
@@ -225,10 +224,6 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.11.0</version>
-        <configuration>
-          <source>${maven.compiler.source}</source>
-          <target>${maven.compiler.target}</target>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

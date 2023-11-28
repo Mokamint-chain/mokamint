@@ -33,7 +33,6 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.Deadlines;
@@ -43,7 +42,7 @@ import io.mokamint.nonce.api.Deadline;
  * The implementation of the description of a non-genesis block of the Mokamint blockchain.
  */
 @Immutable
-public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription implements NonGenesisBlockDescription {
+public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription implements NonGenesisBlockDescription {
 
 	/**
 	 * The block height, non-negative, counting from 0, which is the genesis block.
@@ -294,16 +293,12 @@ public class NonGenesisBlockDescriptionImpl extends AbstractBlockDescription imp
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
+		context.writeLong(height);
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
 		context.writeLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
 		deadline.into(context);
 		context.writeLengthAndBytes(hashOfPreviousBlock);
-	}
-
-	@Override
-	protected Block unmarshalsIntoBlock(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		return new NonGenesisBlockImpl(this, context);
 	}
 }

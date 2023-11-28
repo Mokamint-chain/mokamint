@@ -33,7 +33,7 @@ import io.mokamint.node.api.Transaction;
  * The implementation of a genesis block of a Mokamint blockchain.
  */
 @Immutable
-public class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription> implements GenesisBlock {
+public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription> implements GenesisBlock {
 
 	/**
 	 * Creates a genesis block with the given description and signs it with the given keys and signature algorithm.

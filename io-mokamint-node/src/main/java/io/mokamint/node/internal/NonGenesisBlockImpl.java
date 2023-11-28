@@ -33,7 +33,7 @@ import io.mokamint.nonce.api.Deadline;
  * The implementation of a non-genesis block of the Mokamint blockchain.
  */
 @Immutable
-public class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescription> implements NonGenesisBlock {
+public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescription> implements NonGenesisBlock {
 
 	/**
 	 * Creates a new non-genesis block with the given description. It adds a signature to the resulting block,

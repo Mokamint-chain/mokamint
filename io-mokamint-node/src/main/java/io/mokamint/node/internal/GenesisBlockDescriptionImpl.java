@@ -37,7 +37,6 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlockDescription;
 
@@ -45,7 +44,7 @@ import io.mokamint.node.api.GenesisBlockDescription;
  * The implementation of the description of a genesis block of the Mokamint blockchain.
  */
 @Immutable
-public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implements GenesisBlockDescription {
+public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescription implements GenesisBlockDescription {
 
 	/**
 	 * The moment when the block has been mined. This is the moment when the blockchain started.
@@ -236,6 +235,10 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		try {
+			// we write the height of the block anyway, so that, by reading the first long,
+			// it is possible to distinguish between a genesis block (height == 0)
+			// and a non-genesis block (height > 0)
+			context.writeLong(0L);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
 			context.writeStringShared(signatureForBlocks.getName());
@@ -244,11 +247,6 @@ public class GenesisBlockDescriptionImpl extends AbstractBlockDescription implem
 		catch (DateTimeException | InvalidKeyException e) {
 			throw new IOException(e);
 		}
-	}
-
-	@Override
-	protected Block unmarshalsIntoBlock(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		return new GenesisBlockImpl(this, context);
 	}
 
 	@Override

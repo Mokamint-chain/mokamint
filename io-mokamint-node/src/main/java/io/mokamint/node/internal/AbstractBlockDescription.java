@@ -29,14 +29,13 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 
 /**
  * Shared code for block descriptions.
  */
-public abstract class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription {
+public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 	/**
 	 * Unmarshals a block description from the given context.
@@ -78,16 +77,6 @@ public abstract class AbstractBlockDescription extends AbstractMarshallable impl
 		populate(builder, Optional.of(config.getHashingForGenerations()), Optional.of(config.getHashingForBlocks()), Optional.of(startDateTimeUTC));
 		return builder.toString();
 	}
-
-	/**
-	 * Unmarshals information from the given context, so that a block
-	 * can be unmarshalled from this description and the context.
-	 * 
-	 * @param context the context
-	 * @return the block, having this description
-	 * @throws IOException if unmarshalling fails
-	 */
-	protected abstract Block unmarshalsIntoBlock(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException;
 
 	/**
 	 * Yields the name to use to describe this block in the result of {@link #toString()}.
