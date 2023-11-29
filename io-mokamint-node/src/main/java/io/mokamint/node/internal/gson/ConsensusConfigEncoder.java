@@ -23,6 +23,6 @@ import io.mokamint.node.api.ConsensusConfig;
 public class ConsensusConfigEncoder extends MappedEncoder<ConsensusConfig<?,?>, ConsensusConfigBuilders.Json> {
 
 	public ConsensusConfigEncoder() {
-		super(ConsensusConfigBuilders.Json::new);
+		super(config -> new ConsensusConfigBuilders.Json(config));
 	}
 }

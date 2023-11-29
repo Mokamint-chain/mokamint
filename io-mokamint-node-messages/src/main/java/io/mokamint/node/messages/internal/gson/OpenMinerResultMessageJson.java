@@ -32,7 +32,7 @@ public abstract class OpenMinerResultMessageJson extends AbstractRpcMessageJsonR
 	protected OpenMinerResultMessageJson(OpenMinerResultMessage message) {
 		super(message);
 
-		this.info = message.get().map(new MinerInfos.Encoder()::map).orElse(null);
+		this.info = message.get().map(MinerInfos.Json::new).orElse(null);
 	}
 
 	@Override

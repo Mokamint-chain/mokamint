@@ -31,7 +31,7 @@ public abstract class GetChainPortionResultMessageJson extends AbstractRpcMessag
 	protected GetChainPortionResultMessageJson(GetChainPortionResultMessage message) {
 		super(message);
 
-		this.chain = new ChainPortions.Encoder().map(message.get());
+		this.chain = new ChainPortions.Json(message.get());
 	}
 
 	@Override

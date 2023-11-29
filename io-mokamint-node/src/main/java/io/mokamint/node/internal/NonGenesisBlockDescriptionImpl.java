@@ -152,18 +152,13 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public SignatureAlgorithm getSignatureForBlocks() {
+	public SignatureAlgorithm getSignatureForBlock() {
 		return deadline.getProlog().getSignatureForBlocks();
 	}
 
 	@Override
-	public PublicKey getPublicKeyForSigningBlocks() {
+	public PublicKey getPublicKeyForSigningBlock() {
 		return deadline.getProlog().getPublicKeyForSigningBlocks();
-	}
-
-	@Override
-	public String getPublicKeyForSigningBlocksBase58() {
-		return deadline.getProlog().getPublicKeyForSigningBlocksBase58();
 	}
 
 	@Override

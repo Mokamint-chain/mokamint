@@ -248,7 +248,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	public final String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
 		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
-		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlocks() + ")\n");
+		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
 		builder.append(description.toString(config, startDateTimeUTC));
 		builder.append("\n");
 
@@ -276,7 +276,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	private byte[] computeSignature(PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return description.getSignatureForBlocks().getSigner(privateKey, AbstractBlock<D>::toByteArrayWithoutSignature).sign(this);
+		return description.getSignatureForBlock().getSigner(privateKey, AbstractBlock<D>::toByteArrayWithoutSignature).sign(this);
 	}
 
 	/**
@@ -290,7 +290,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
 		try {
-			if (!description.getSignatureForBlocks().getVerifier(description.getPublicKeyForSigningBlocks(), AbstractBlock<D>::toByteArrayWithoutSignature).verify(this, signature))
+			if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), AbstractBlock<D>::toByteArrayWithoutSignature).verify(this, signature))
 				throw new IllegalArgumentException("The block's signature is invalid");
 		}
 		catch (SignatureException e) {

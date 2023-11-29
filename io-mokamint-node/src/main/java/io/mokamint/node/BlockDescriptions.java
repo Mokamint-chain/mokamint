@@ -21,7 +21,6 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -76,27 +75,10 @@ public abstract class BlockDescriptions {
 	 * @param signatureForBlocks the signature algorithm for the blocks
 	 * @param publicKey the public key of the signer of the block
 	 * @return the genesis block description
-	 * @throws InvalidKeyException if the publi ckey is invalid
+	 * @throws InvalidKeyException if the public key is invalid
 	 */
 	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException {
 		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKey);
-	}
-
-	/**
-	 * Yields a new genesis block description.
-	 * 
-	 * @param startDateTimeUTC the moment when the block has been created
-	 * @param acceleration the initial value of the acceleration, that is,
-	 *                     a value used to divide deadlines to derive the time needed to wait for it.
-	 *                     The higher, the shorter the time. This value changes dynamically to cope with
-	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
-	 * @param signatureForBlocks the signature algorithm for the blocks
-	 * @param publicKeyBase58 the public key of the signer of the block, in Base58 format
-	 * @return the genesis block description
-	 * @throws InvalidKeySpecException if the public key is invalid
-	 */
-	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, String publicKeyBase58) throws InvalidKeySpecException {
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlocks, publicKeyBase58);
 	}
 
 	/**
@@ -142,8 +124,9 @@ public abstract class BlockDescriptions {
     	 * Creates the Json representation for the given block.
     	 * 
     	 * @param description the block description
+    	 * @throws InvalidKeyException if the description contains an invalid key
     	 */
-    	public Json(BlockDescription description) {
+    	public Json(BlockDescription description) throws InvalidKeyException {
     		super(description);
     	}
     }

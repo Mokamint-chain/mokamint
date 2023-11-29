@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import java.security.InvalidKeyException;
+
 import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.internal.WhisperBlockMessageImpl;
@@ -72,8 +74,9 @@ public final class WhisperBlockMessages {
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
+    	 * @throws InvalidKeyException if the whispered block contains an invalid key
     	 */
-    	public Json(WhisperBlockMessage message) {
+    	public Json(WhisperBlockMessage message) throws InvalidKeyException {
     		super(message);
     	}
     }

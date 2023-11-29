@@ -78,25 +78,18 @@ public interface BlockDescription extends Marshallable {
 	long getHeight();
 
 	/**
-	 * Yields the signature algorithm used for signing this block.
+	 * Yields the signature algorithm used for signing the block.
 	 * 
 	 * @return the signature algorithm
 	 */
-	SignatureAlgorithm getSignatureForBlocks();
+	SignatureAlgorithm getSignatureForBlock();
 
 	/**
-	 * Yields the public key used for signing the blocks described by this description.
+	 * Yields the public key used for signing the block.
 	 * 
 	 * @return the public key
 	 */
-	PublicKey getPublicKeyForSigningBlocks();
-
-	/**
-	 * Yields a Base58 representation of {@link #getPublicKeyForSigningBlocks()}.
-	 * 
-	 * @return the Base58 representation
-	 */
-	String getPublicKeyForSigningBlocksBase58();
+	PublicKey getPublicKeyForSigningBlock();
 
 	/**
 	 * Checks if this block description is equal to another object.

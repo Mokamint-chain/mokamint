@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import java.security.InvalidKeyException;
 import java.util.Optional;
 
 import io.mokamint.node.api.Block;
@@ -74,8 +75,9 @@ public final class GetBlockResultMessages {
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
+    	 * @throws InvalidKeyException if the block contains an invalid key
     	 */
-    	public Json(GetBlockResultMessage message) {
+    	public Json(GetBlockResultMessage message) throws InvalidKeyException {
     		super(message);
     	}
     }

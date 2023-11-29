@@ -16,14 +16,17 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
 
@@ -33,14 +36,18 @@ import io.mokamint.node.messages.api.GetBlockResultMessage;
 public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockResultMessage> {
 	private final Blocks.Json block;
 
-	protected GetBlockResultMessageJson(GetBlockResultMessage message) {
+	protected GetBlockResultMessageJson(GetBlockResultMessage message) throws InvalidKeyException {
 		super(message);
 
-		this.block = message.get().map(new Blocks.Encoder()::map).orElse(null);
+		Optional<Block> maybeBlock = message.get();
+		if (maybeBlock.isPresent())
+			this.block = new Blocks.Json(maybeBlock.get());
+		else
+			this.block = null;
 	}
 
 	@Override
-	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException {
+	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException, InvalidKeyException, Base58ConversionException {
 		return GetBlockResultMessages.of(Optional.ofNullable(block == null ? null : block.unmap()), getId());
 	}
 

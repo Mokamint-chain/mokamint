@@ -85,9 +85,9 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 			if (!acceleration.equals(description.getAcceleration()))
 				throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
 
-			var signatureForBlocks = getDescription().getSignatureForBlocks();
-			if (!signatureForBlocks.equals(description.getSignatureForBlocks()))
-				throw exceptionSupplier.apply("Block signature algorithm mismatch (expected " + description.getSignatureForBlocks() + " but found " + signatureForBlocks + ")");
+			var signatureForBlocks = getDescription().getSignatureForBlock();
+			if (!signatureForBlocks.equals(description.getSignatureForBlock()))
+				throw exceptionSupplier.apply("Block signature algorithm mismatch (expected " + description.getSignatureForBlock() + " but found " + signatureForBlocks + ")");
 
 			// TODO: in the future, maybe check for the public key as well
 		}

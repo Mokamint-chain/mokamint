@@ -33,7 +33,7 @@ public abstract class AddPeerResultMessageJson extends AbstractRpcMessageJsonRep
 	protected AddPeerResultMessageJson(AddPeerResultMessage message) {
 		super(message);
 
-		this.info = message.get().map(new PeerInfos.Encoder()::map).orElse(null);
+		this.info = message.get().map(PeerInfos.Json::new).orElse(null);
 	}
 
 	@Override

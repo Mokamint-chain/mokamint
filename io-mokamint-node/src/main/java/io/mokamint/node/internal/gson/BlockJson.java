@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.stream.Stream;
 
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
@@ -43,15 +45,14 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private Transactions.Json[] transactions;
 	private String signature;
 
-	protected BlockJson(Block block) {
-		this.description = new BlockDescriptions.Encoder().map(block.getDescription());
-		var transactionEncoder = new Transactions.Encoder();
-		this.transactions = block.getTransactions().map(transactionEncoder::map).toArray(Transactions.Json[]::new);
+	protected BlockJson(Block block) throws InvalidKeyException {
+		this.description = new BlockDescriptions.Json(block.getDescription());
+		this.transactions = block.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new);
 		this.signature = Hex.toHexString(block.getSignature());
 	}
 
 	@Override
-	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException {
+	public Block unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException, InvalidKeyException, Base58ConversionException {
 		var description = this.description.unmap();
 
 		Stream<Transaction> transactions = Stream.of(CheckSupplier.check(Base64ConversionException.class, () ->

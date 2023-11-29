@@ -31,7 +31,7 @@ public abstract class GetMempoolPortionResultMessageJson extends AbstractRpcMess
 	protected GetMempoolPortionResultMessageJson(GetMempoolPortionResultMessage message) {
 		super(message);
 
-		this.mempool = new MempoolPortions.Encoder().map(message.get());
+		this.mempool = new MempoolPortions.Json(message.get());
 	}
 
 	@Override

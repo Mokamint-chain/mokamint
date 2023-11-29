@@ -181,7 +181,7 @@ public class BlockVerification {
 		BlockDescription description;
 
 		try {
-			description = BlockDescriptions.genesis(block.getStartDateTimeUTC(), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), block.getDescription().getPublicKeyForSigningBlocks());
+			description = BlockDescriptions.genesis(block.getStartDateTimeUTC(), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), block.getDescription().getPublicKeyForSigningBlock());
 		}
 		catch (InvalidKeyException e) {
 			throw new VerificationException("The block contains an invalid key");

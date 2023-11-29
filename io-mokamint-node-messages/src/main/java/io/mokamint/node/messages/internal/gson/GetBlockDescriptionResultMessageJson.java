@@ -16,13 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 
@@ -32,14 +35,18 @@ import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 public abstract class GetBlockDescriptionResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockDescriptionResultMessage> {
 	private final BlockDescriptions.Json description;
 
-	protected GetBlockDescriptionResultMessageJson(GetBlockDescriptionResultMessage message) {
+	protected GetBlockDescriptionResultMessageJson(GetBlockDescriptionResultMessage message) throws InvalidKeyException {
 		super(message);
 
-		this.description = message.get().map(new BlockDescriptions.Encoder()::map).orElse(null);
+		Optional<BlockDescription> maybeDescription = message.get();
+		if (maybeDescription.isPresent())
+			this.description = new BlockDescriptions.Json(maybeDescription.get());
+		else
+			this.description = null;
 	}
 
 	@Override
-	public GetBlockDescriptionResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
+	public GetBlockDescriptionResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, Base58ConversionException {
 		return GetBlockDescriptionResultMessages.of(Optional.ofNullable(description == null ? null : description.unmap()), getId());
 	}
 

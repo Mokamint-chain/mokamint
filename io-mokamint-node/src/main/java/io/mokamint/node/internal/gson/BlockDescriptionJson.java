@@ -17,11 +17,14 @@ limitations under the License.
 package io.mokamint.node.internal.gson;
 
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
@@ -45,14 +48,15 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private Deadlines.Json deadline;
 	private String hashOfPreviousBlock;
 	private String signatureForBlocks;
-	private String publicKeyBase58;
+	private String publicKey;
 
-	protected BlockDescriptionJson(BlockDescription description) {
+	protected BlockDescriptionJson(BlockDescription description) throws InvalidKeyException {
 		if (description instanceof GenesisBlockDescription gbd) {
 			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
 			this.acceleration = gbd.getAcceleration();
-			this.signatureForBlocks = gbd.getSignatureForBlocks().getName();
-			this.publicKeyBase58 = gbd.getPublicKeyForSigningBlocksBase58();
+			var signature = gbd.getSignatureForBlock();
+			this.signatureForBlocks = signature.getName();
+			this.publicKey = Base58.encode(signature.encodingOf(gbd.getPublicKeyForSigningBlock()));
 		}
 		else {
 			var ngbd = (NonGenesisBlockDescription) description;
@@ -61,17 +65,20 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 			this.totalWaitingTime = ngbd.getTotalWaitingTime();
 			this.weightedWaitingTime = ngbd.getWeightedWaitingTime();
 			this.acceleration = ngbd.getAcceleration();
-			this.deadline = new Deadlines.Encoder().map(ngbd.getDeadline());
+			this.deadline = new Deadlines.Json(ngbd.getDeadline());
 			this.hashOfPreviousBlock = Hex.toHexString(ngbd.getHashOfPreviousBlock());
 		}
 	}
 
 	@Override
-	public BlockDescription unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
+	public BlockDescription unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, Base58ConversionException {
 		if (startDateTimeUTC == null)
 			return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
-		else
+		else {
+			var signature = SignatureAlgorithms.of(signatureForBlocks);
+
 			return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-				acceleration, SignatureAlgorithms.of(signatureForBlocks), publicKeyBase58);
+				acceleration, signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
+		}
 	}
 }
