@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -57,28 +56,6 @@ public final class Prologs {
 			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)
 					throws NoSuchAlgorithmException, InvalidKeyException {
 		return new PrologImpl(chainId, signatureForBlocks, publicKeyForSigningBlocks, signatureForDeadlines, publicKeyForSigningDeadlines, extra);
-	}
-
-	/**
-	 * yields the prolog of a plot file.
-	 * 
-	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 * @param signatureForBlocks the signature algorithm that nodes must use to sign the
-	 *                            blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocksBase58}
-	 * @param publicKeyForSigningBlocksBase58 the public key that the nodes must use to sign the
-	 *                                        blocks having a deadline with the prolog, in Base58 format
-	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
-	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
-	 * @param publicKeyForSigningDeadlinesBase58 the public key that miners must use to sign the deadlines with the prolog,
-	 *                                           in Base58 format
-	 * @param extra application-specific extra information
-	 * @return the prolog
-	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
-	 * @throws InvalidKeySpecException if some of the keys is not valid
-	 */
-	public static Prolog of(String chainId, SignatureAlgorithm signatureForBlocks, String publicKeyForSigningBlocksBase58,
-			SignatureAlgorithm signatureForDeadlines, String publicKeyForSigningDeadlinesBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
-		return new PrologImpl(chainId, signatureForBlocks, publicKeyForSigningBlocksBase58, signatureForDeadlines, publicKeyForSigningDeadlinesBase58, extra);
 	}
 
 	/**

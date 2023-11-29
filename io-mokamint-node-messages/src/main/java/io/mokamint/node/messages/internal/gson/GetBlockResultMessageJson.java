@@ -26,7 +26,6 @@ import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
 
@@ -36,14 +35,10 @@ import io.mokamint.node.messages.api.GetBlockResultMessage;
 public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockResultMessage> {
 	private final Blocks.Json block;
 
-	protected GetBlockResultMessageJson(GetBlockResultMessage message) throws InvalidKeyException {
+	protected GetBlockResultMessageJson(GetBlockResultMessage message) {
 		super(message);
 
-		Optional<Block> maybeBlock = message.get();
-		if (maybeBlock.isPresent())
-			this.block = new Blocks.Json(maybeBlock.get());
-		else
-			this.block = null;
+		this.block = message.get().map(Blocks.Json::new).orElse(null);
 	}
 
 	@Override

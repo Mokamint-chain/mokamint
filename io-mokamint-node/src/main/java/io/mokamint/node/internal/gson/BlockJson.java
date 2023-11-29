@@ -45,7 +45,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	private Transactions.Json[] transactions;
 	private String signature;
 
-	protected BlockJson(Block block) throws InvalidKeyException {
+	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Json(block.getDescription());
 		this.transactions = block.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new);
 		this.signature = Hex.toHexString(block.getSignature());

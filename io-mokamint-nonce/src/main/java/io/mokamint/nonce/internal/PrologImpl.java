@@ -26,7 +26,6 @@ import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
-import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -122,51 +121,6 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 
 		this.publicKeyForSigningBlocksBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
 		this.publicKeyForSigningDeadlinesBase58 = Base58.encode(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
-	}
-
-	/**
-	 * Creates the prolog of a plot file.
-	 * 
-	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
-	 *  @param signatureForBlocks the signature algorithm that nodes must use to sign the
-	 *                            blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocksBase58}
-	 * @param publicKeyForSigningBlocksBase58 the public key that the nodes must use to sign the
-	 *                                        blocks having a deadline with the prolog, in Base58 format
-	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
-	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
-	 * @param publicKeyForSigningDeadlinesBase58 the public key that miners must use to sign the deadlines with the prolog,
-	 *                                           in Base58 format
-	 * @param extra application-specific extra information
-	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
-	 * @throws InvalidKeySpecException if some of the keys is not valid
-	 */
-	public PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, String publicKeyForSigningBlocksBase58,
-			SignatureAlgorithm signatureForDeadlines, String publicKeyForSigningDeadlinesBase58, byte[] extra) throws NoSuchAlgorithmException, InvalidKeySpecException {
-
-		Objects.requireNonNull(chainId, "chainId cannot be null");
-		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
-		Objects.requireNonNull(publicKeyForSigningBlocksBase58, "publicKeyForSigningBlocksBase58 cannot be null");
-		Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null");
-		Objects.requireNonNull(publicKeyForSigningDeadlinesBase58, "publicKeyForSigningDeadlinesBase58 cannot be null");
-		Objects.requireNonNull(extra, "extra cannot be null");
-
-		this.chainId = chainId;
-		this.extra = extra.clone();
-		this.signatureForBlocks = signatureForBlocks;
-
-		try {
-			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKeyForSigningBlocksBase58));
-			this.signatureForDeadlines = signatureForDeadlines;
-			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(Base58.decode(publicKeyForSigningDeadlinesBase58));
-		}
-		catch (Base58ConversionException e) {
-			throw new InvalidKeySpecException(e);
-		}
-
-		verify();
-
-		this.publicKeyForSigningBlocksBase58 = publicKeyForSigningBlocksBase58;
-		this.publicKeyForSigningDeadlinesBase58 = publicKeyForSigningDeadlinesBase58;
 	}
 
 	/**

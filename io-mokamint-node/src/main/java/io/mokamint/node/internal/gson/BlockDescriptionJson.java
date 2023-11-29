@@ -50,13 +50,13 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private String signatureForBlocks;
 	private String publicKey;
 
-	protected BlockDescriptionJson(BlockDescription description) throws InvalidKeyException {
+	protected BlockDescriptionJson(BlockDescription description) {
 		if (description instanceof GenesisBlockDescription gbd) {
 			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
 			this.acceleration = gbd.getAcceleration();
 			var signature = gbd.getSignatureForBlock();
 			this.signatureForBlocks = signature.getName();
-			this.publicKey = Base58.encode(signature.encodingOf(gbd.getPublicKeyForSigningBlock()));
+			this.publicKey = gbd.getPublicKeyForSigningBlockBase58();
 		}
 		else {
 			var ngbd = (NonGenesisBlockDescription) description;

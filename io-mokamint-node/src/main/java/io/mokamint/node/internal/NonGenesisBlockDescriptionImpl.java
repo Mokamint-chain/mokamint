@@ -162,6 +162,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
+	public String getPublicKeyForSigningBlockBase58() {
+		return deadline.getProlog().getPublicKeyForSigningBlocksBase58();
+	}
+
+	@Override
 	public Deadline getDeadline() {
 		return deadline;
 	}

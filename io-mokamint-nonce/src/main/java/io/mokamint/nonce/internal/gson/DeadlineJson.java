@@ -16,9 +16,11 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
@@ -55,7 +57,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	}
 
 	@Override
-	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
+	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, IllegalArgumentException, Base58ConversionException {
 		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber,
 			Hex.fromHexString(data), HashingAlgorithms.of(hashing), Hex.fromHexString(signature));
 	}

@@ -16,9 +16,12 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
+import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
@@ -46,14 +49,17 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 		this.chainId = prolog.getChainId();
 		this.nodeSignatureName = prolog.getSignatureForBlocks().getName();
 		this.nodePublicKey = prolog.getPublicKeyForSigningBlocksBase58();
-		this.plotSignatureName = prolog.getSignatureForBlocks().getName();
+		this.plotSignatureName = prolog.getSignatureForDeadlines().getName();
 		this.plotPublicKey = prolog.getPublicKeyForSigningDeadlinesBase58();
 		this.extra = Hex.toHexString(prolog.getExtra());
 	}
 
 	@Override
-	public Prolog unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException {
-		return Prologs.of(chainId, SignatureAlgorithms.of(nodeSignatureName), nodePublicKey,
-			SignatureAlgorithms.of(plotSignatureName), plotPublicKey, Hex.fromHexString(extra));
+	public Prolog unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, Base58ConversionException {
+		var nodeSignature = SignatureAlgorithms.of(nodeSignatureName);
+		var plotSignature = SignatureAlgorithms.of(plotSignatureName);
+
+		return Prologs.of(chainId, nodeSignature, nodeSignature.publicKeyFromEncoding(Base58.decode(nodePublicKey)),
+				plotSignature, plotSignature.publicKeyFromEncoding(Base58.decode(plotPublicKey)), Hex.fromHexString(extra));
 	}
 }

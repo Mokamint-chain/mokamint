@@ -114,9 +114,8 @@ public abstract class Blocks {
     	 * Creates the Json representation for the given block.
     	 * 
     	 * @param block the block
-    	 * @throws InvalidKeyException if the block contains an invalid key
     	 */
-    	public Json(Block block) throws InvalidKeyException {
+    	public Json(Block block) {
     		super(block);
     	}
     }

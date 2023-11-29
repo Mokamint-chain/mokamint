@@ -34,7 +34,7 @@ import io.mokamint.node.messages.api.WhisperBlockMessage;
 public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepresentation<WhisperBlockMessage> {
 	private final Blocks.Json block;
 
-	protected WhisperBlockMessageJson(WhisperBlockMessage message) throws InvalidKeyException {
+	protected WhisperBlockMessageJson(WhisperBlockMessage message) {
 		super(message);
 
 		this.block = new Blocks.Json(message.getBlock());

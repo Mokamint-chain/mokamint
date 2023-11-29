@@ -92,6 +92,13 @@ public interface BlockDescription extends Marshallable {
 	PublicKey getPublicKeyForSigningBlock();
 
 	/**
+	 * Yields the public key used for signing the block, in Base58 format.
+	 * 
+	 * @return the public key, in Base58 format
+	 */
+	String getPublicKeyForSigningBlockBase58();
+
+	/**
 	 * Checks if this block description is equal to another object.
 	 * 
 	 * @param other the other object

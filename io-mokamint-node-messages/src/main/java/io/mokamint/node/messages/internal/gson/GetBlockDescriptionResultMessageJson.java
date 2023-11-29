@@ -25,7 +25,6 @@ import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
-import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 
@@ -35,14 +34,10 @@ import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 public abstract class GetBlockDescriptionResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockDescriptionResultMessage> {
 	private final BlockDescriptions.Json description;
 
-	protected GetBlockDescriptionResultMessageJson(GetBlockDescriptionResultMessage message) throws InvalidKeyException {
+	protected GetBlockDescriptionResultMessageJson(GetBlockDescriptionResultMessage message) {
 		super(message);
 
-		Optional<BlockDescription> maybeDescription = message.get();
-		if (maybeDescription.isPresent())
-			this.description = new BlockDescriptions.Json(maybeDescription.get());
-		else
-			this.description = null;
+		this.description = message.get().map(BlockDescriptions.Json::new).orElse(null);
 	}
 
 	@Override

@@ -166,6 +166,11 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
+	public String getPublicKeyForSigningBlockBase58() {
+		return publicKeyBase58;
+	}
+
+	@Override
 	public LocalDateTime getStartDateTimeUTC() {
 		return startDateTimeUTC;
 	}

@@ -124,9 +124,8 @@ public abstract class BlockDescriptions {
     	 * Creates the Json representation for the given block.
     	 * 
     	 * @param description the block description
-    	 * @throws InvalidKeyException if the description contains an invalid key
     	 */
-    	public Json(BlockDescription description) throws InvalidKeyException {
+    	public Json(BlockDescription description) {
     		super(description);
     	}
     }
