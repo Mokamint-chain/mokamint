@@ -58,6 +58,22 @@ public interface Block extends Marshallable {
 	byte[] getSignature();
 
 	/**
+	 * Yields the number of transactions inside this block.
+	 * 
+	 * @return the number of transactions
+	 */
+	int getTransactionsCount();
+
+	/**
+	 * Yields the {@code progressive}th transaction inside this block.
+	 * 
+	 * @param progressive the index of the transaction
+	 * @return the transaction
+	 * @throws IndexOutOfBoundsException if there is no transaction with that progressive index
+	 */
+	Transaction getTransaction(int progressive);
+
+	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
 	 * This hash does not use the signature of the node (if any) which is, instead,
 	 * computed from this hash and the private key of the signer.

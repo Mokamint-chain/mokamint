@@ -224,8 +224,7 @@ public class SynchronizationTask implements Task {
 		}
 
 		/**
-		 * Determines if the given group of hashes can be discarded since it does not firt with some
-		 * expected constraints.
+		 * Determines if the given group of hashes can be discarded since it does not match some expected constraints.
 		 * 
 		 * @param hashes the group of hashes
 		 * @return true if and only if it can be discarded

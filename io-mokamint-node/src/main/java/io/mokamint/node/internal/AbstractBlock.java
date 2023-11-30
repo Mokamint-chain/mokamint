@@ -178,6 +178,19 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
+	public int getTransactionsCount() {
+		return transactions.length;
+	}
+
+	@Override
+	public Transaction getTransaction(int progressive) {
+		if (progressive < 0 || progressive >= transactions.length)
+			throw new IndexOutOfBoundsException(progressive);
+
+		return transactions[progressive];
+	}
+
+	@Override
 	public final byte[] getHash(HashingAlgorithm hashing) {
 		// it uses a cache for optimization, since the computation might be expensive
 	

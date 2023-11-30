@@ -36,8 +36,11 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
+import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
@@ -94,9 +97,22 @@ public class BlocksDatabase implements AutoCloseable {
 	private final Store storeOfChain;
 
 	/**
+	 * The Xodus store that holds the position of the transactions in the current best chain.
+	 * It maps the hash of each transaction in the chain to a pair consisting
+	 * of the height of the block in the current chain where the transaction is contained
+	 * and of the progressive number inside the table of transactions in that block.
+	 */
+	private final Store storeOfTransactions;
+
+	/**
 	 * The hashing used for the blocks in the node.
 	 */
 	private final HashingAlgorithm hashingForBlocks;
+
+	/**
+	 * A hasher for the transactions.
+	 */
+	private final Hasher<io.mokamint.node.api.Transaction> hasherForTransactions;
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.
@@ -128,10 +144,12 @@ public class BlocksDatabase implements AutoCloseable {
 	public BlocksDatabase(LocalNodeImpl node) throws DatabaseException {
 		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
+		this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.environment = createBlockchainEnvironment(node);
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
 		this.storeOfChain = openStore("chain");
+		this.storeOfTransactions = openStore("transactions");
 	}
 
 	@Override
@@ -322,6 +340,31 @@ public class BlocksDatabase implements AutoCloseable {
 		try {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlockDescription(txn, hash)))
+			);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+		finally {
+			closureLock.afterCall();
+		}
+	}
+
+	/**
+	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this database.
+	 * 
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction, if any
+	 * @throws NoSuchAlgorithmException if the block containing the transaction refers to an unknown hashing or signature algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
+		closureLock.beforeCall(ClosedDatabaseException::new);
+		
+		try {
+			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(txn -> getTransaction(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -701,6 +744,38 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
+	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this database,
+	 * running inside the given transaction.
+	 * 
+	 * @param txn the database transaction
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction, if any
+	 * @throws NoSuchAlgorithmException if the block containing the transaction refers to an unknown hashing or signature algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<io.mokamint.node.api.Transaction> getTransaction(Transaction txn, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
+			if (txBI == null)
+				return Optional.empty();
+
+			var ref = TransactionRef.from(txBI);
+			ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
+			if (blockHash == null)
+				throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
+
+			Optional<Block> block = getBlock(txn, blockHash.getBytes());
+			if (block.isEmpty())
+				throw new DatabaseException("The current best chain misses the block at height " + ref.height  + " with hash " + Hex.toHexString(blockHash.getBytes()));
+
+			return Optional.of(block.get().getTransaction(ref.progressive));
+		}
+		catch (ExodusException | IOException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
 	 * Yields the head of the best chain in this database, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -718,7 +793,7 @@ public class BlocksDatabase implements AutoCloseable {
 			if (maybeHead.isPresent())
 				return maybeHead;
 			else
-				throw new DatabaseException("the head hash is set but it is not in the database");
+				throw new DatabaseException("The head hash is set but it is not in the database");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -743,7 +818,7 @@ public class BlocksDatabase implements AutoCloseable {
 				if (maybeGenesis.get() instanceof GenesisBlock gb)
 					return Optional.of(gb);
 				else
-					throw new DatabaseException("the genesis hash is set but it refers to a non-genesis block in the database");
+					throw new DatabaseException("The genesis hash is set but it refers to a non-genesis block in the database");
 			}
 			else
 				throw new DatabaseException("the genesis hash is set but it is not in the database");
@@ -865,6 +940,16 @@ public class BlocksDatabase implements AutoCloseable {
 			do {
 				storeOfChain.put(txn, heightBI, _new);
 
+				if (old != null) {
+					Optional<Block> oldBlock = getBlock(txn, old.getBytes());
+					if (oldBlock.isEmpty())
+						throw new DatabaseException("The current best chain misses the block at height " + height  + " with hash " + Hex.toHexString(old.getBytes()));
+
+					removeReferencesToTransactionsInside(txn, oldBlock.get());
+				}
+
+				addReferencesToTransactionsInside(txn, block);
+
 				if (block instanceof NonGenesisBlock ngb) {
 					if (height <= 0L)
 						throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(blockHash) + " at height " + height);
@@ -889,6 +974,21 @@ public class BlocksDatabase implements AutoCloseable {
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
+	}
+
+	private void addReferencesToTransactionsInside(Transaction txn, Block block) {
+		long height = block.getDescription().getHeight();
+		int count = block.getTransactionsCount();
+		for (int pos = 0; pos < count; pos++) {
+			var ref = new TransactionRef(height, pos);
+			storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(block.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
+		};
+	}
+
+	private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
+		int count = block.getTransactionsCount();
+		for (int pos = 0; pos < count; pos++)
+			storeOfTransactions.remove(txn, ByteIterable.fromBytes(hasherForTransactions.hash(block.getTransaction(pos))));
 	}
 
 	private static byte[] longToBytes(long l) {
@@ -969,5 +1069,45 @@ public class BlocksDatabase implements AutoCloseable {
 		System.arraycopy(array1, 0, merge, 0, array1.length);
 		System.arraycopy(array2, 0, merge, array1.length, array2.length);
 		return merge;
+	}
+
+	/**
+	 * A marshallable reference to a transaction inside a block.
+	 */
+	private static class TransactionRef extends AbstractMarshallable {
+
+		/**
+		 * The height of the block in the current chain containing the transaction.
+		 */
+		private final long height;
+
+		/**
+		 * The progressive number of the transaction inside the array of transactions inside the block.
+		 */
+		private final int progressive;
+	
+		private TransactionRef(long height, int progressive) {
+			this.height = height;
+			this.progressive = progressive;
+		}
+	
+		@Override
+		public void into(MarshallingContext context) throws IOException {
+			context.writeLong(height);
+			context.writeInt(progressive);
+		}
+	
+		/**
+		 * Unmarshals a reference to a transaction from the given byte iterable.
+		 * 
+		 * @param bi the byte iterable
+		 * @return the reference t a transaction
+		 * @throws IOException if the reference cannot be unmarshalled
+		 */
+		private static TransactionRef from(ByteIterable bi) throws IOException {
+			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
+				return new TransactionRef(context.readLong(), context.readInt());
+			}
+		}
 	}
 }
