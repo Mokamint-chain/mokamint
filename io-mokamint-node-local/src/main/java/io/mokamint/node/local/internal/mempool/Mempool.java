@@ -35,12 +35,12 @@ import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.local.internal.AbstractMempool;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
@@ -102,7 +102,7 @@ public class Mempool extends AbstractMempool {
 	 *                                      for instance, if the application considers the
 	 *                                      transaction as invalid or if its priority cannot be computed
 	 */
-	public TransactionInfo add(Transaction transaction) throws RejectedTransactionException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
 		if (!app.checkTransaction(transaction))
@@ -136,7 +136,7 @@ public class Mempool extends AbstractMempool {
 
 		onTransactionAdded(transaction);
 
-		return entry.getInfo();
+		return entry.getEntry();
 	}
 
 	/**
@@ -165,7 +165,7 @@ public class Mempool extends AbstractMempool {
 		if (start < 0L || count <= 0)
 			return MempoolPortions.of(Stream.empty());
 
-		List<TransactionEntry> entries;
+		List<TransactionEntry> list;
 
 		synchronized (mempool) {
 			if (start >= mempool.size())
@@ -174,14 +174,14 @@ public class Mempool extends AbstractMempool {
 			if (mempoolAsList == null)
 				mempoolAsList = new ArrayList<>(mempool);
 	
-			entries = mempoolAsList;
+			list = mempoolAsList;
 		}
 
-		Stream<TransactionInfo> infos = IntStream.range(start, Math.min(start + count, entries.size()))
-			.mapToObj(entries::get)
-			.map(TransactionEntry::getInfo);
+		Stream<MempoolEntry> entries = IntStream.range(start, Math.min(start + count, list.size()))
+			.mapToObj(list::get)
+			.map(TransactionEntry::getEntry);
 
-		return MempoolPortions.of(infos);
+		return MempoolPortions.of(entries);
 	}
 
 	/**
@@ -199,8 +199,8 @@ public class Mempool extends AbstractMempool {
 			this.hash = hash;
 		}
 
-		private TransactionInfo getInfo() {
-			return TransactionInfos.of(hash, priority);
+		private MempoolEntry getEntry() {
+			return MempoolEntries.of(hash, priority);
 		}
 
 		@Override

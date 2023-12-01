@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.MempoolPortion;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 
 /**
  * Implementation of information about the transactions of a sorted, sequential portion of the
@@ -34,31 +34,31 @@ public class MempoolPortionImpl implements MempoolPortion {
 	/**
 	 * The transaction information objects in the sequence, in increasing order of transaction priority.
 	 */
-	private final TransactionInfo[] transactions;
+	private final MempoolEntry[] entries;
 
 	/**
-	 * Constructs an object containing information transaction objects of a sequential
+	 * Constructs an object containing the entries of a sequential
 	 * portion of the mempool of a Mokamint node.
 	 * 
-	 * @param transactions the transaction information objects, in increasing order of transaction priority
+	 * @param entries the mempool entries, in increasing order of transaction priority
 	 */
-	public MempoolPortionImpl(Stream<TransactionInfo> transactions) {
-		this.transactions = transactions.toArray(TransactionInfo[]::new);
+	public MempoolPortionImpl(Stream<MempoolEntry> entries) {
+		this.entries = entries.toArray(MempoolEntry[]::new);
 	}
 
 	@Override
-	public Stream<TransactionInfo> getTransactions() {
-		return Stream.of(transactions);
+	public Stream<MempoolEntry> getEntries() {
+		return Stream.of(entries);
 	}
 
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof MempoolPortion mpp &&
-			Arrays.deepEquals(transactions, mpp.getTransactions().toArray(TransactionInfo[]::new));
+			Arrays.deepEquals(entries, mpp.getEntries().toArray(MempoolEntry[]::new));
 	}
 
 	@Override
 	public String toString() {
-		return getTransactions().map(TransactionInfo::toString).collect(Collectors.joining("\n"));
+		return getEntries().map(MempoolEntry::toString).collect(Collectors.joining("\n"));
 	}
 }

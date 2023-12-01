@@ -70,7 +70,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -636,7 +636,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public TransactionInfo add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, ClosedNodeException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddTransaction(transaction, id);
@@ -660,7 +660,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	private TransactionInfo processAddTransactionSuccess(RpcMessage message) {
+	private MempoolEntry processAddTransactionSuccess(RpcMessage message) {
 		return message instanceof AddTransactionResultMessage atrm ? atrm.get() : null;
 	}
 
@@ -739,7 +739,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetChainPortionResult(ChainPortion chain) {}
-	protected void onAddTransactionResult(TransactionInfo info) {}
+	protected void onAddTransactionResult(MempoolEntry info) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onGetMempoolInfoResult(MempoolInfo info) {}
 	protected void onGetMempoolPortionResult(MempoolPortion chain) {}

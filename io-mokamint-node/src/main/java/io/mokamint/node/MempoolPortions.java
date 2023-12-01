@@ -19,7 +19,7 @@ package io.mokamint.node;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.MempoolPortion;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.internal.MempoolPortionImpl;
 import io.mokamint.node.internal.gson.MempoolPortionDecoder;
 import io.mokamint.node.internal.gson.MempoolPortionEncoder;
@@ -40,7 +40,7 @@ public abstract class MempoolPortions {
 	 * @param transactions the transaction information objects, in increasing order of priority
 	 * @return the object containing the sequential information transaction objects
 	 */
-	public static MempoolPortion of(Stream<TransactionInfo> transactions) {
+	public static MempoolPortion of(Stream<MempoolEntry> transactions) {
 		return new MempoolPortionImpl(transactions);
 	}
 

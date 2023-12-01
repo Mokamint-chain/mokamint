@@ -16,16 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.TransactionInfos;
-import io.mokamint.node.api.TransactionInfo;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.MempoolEntries;
+import io.mokamint.node.api.MempoolEntry;
 
-/**
- * A decoder for {@link TransactionInfo}.
- */
-public class TransactionInfoDecoder extends MappedDecoder<TransactionInfo, TransactionInfos.Json> {
+public class MempoolEntryEncoder extends MappedEncoder<MempoolEntry, MempoolEntries.Json> {
 
-	public TransactionInfoDecoder() {
-		super(TransactionInfos.Json.class);
+	public MempoolEntryEncoder() {
+		super(MempoolEntries.Json::new);
 	}
 }

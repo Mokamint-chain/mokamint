@@ -62,7 +62,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -515,7 +515,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public TransactionInfo add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException {
 		closureLock.beforeCall(ClosedNodeException::new);
 
 		try {

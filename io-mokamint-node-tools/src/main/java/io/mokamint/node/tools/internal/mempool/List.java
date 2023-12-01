@@ -21,7 +21,7 @@ import java.util.logging.Logger;
 
 import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -63,7 +63,7 @@ public class List extends AbstractPublicRpcCommand {
 			}
 		}
 		else {
-			var infos = mempool.getTransactions().toArray(TransactionInfo[]::new);
+			var infos = mempool.getEntries().toArray(MempoolEntry[]::new);
 			int height = from + infos.length - 1;
 			int slotsForHeight = String.valueOf(height).length();
 

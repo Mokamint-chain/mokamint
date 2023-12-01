@@ -18,7 +18,7 @@ package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 
@@ -26,12 +26,12 @@ import io.mokamint.node.messages.api.AddTransactionResultMessage;
  * The JSON representation of a {@link AddTransactionResultMessage}.
  */
 public abstract class AddTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<AddTransactionResultMessage> {
-	private final TransactionInfos.Json result;
+	private final MempoolEntries.Json result;
 
 	protected AddTransactionResultMessageJson(AddTransactionResultMessage message) {
 		super(message);
 
-		this.result = new TransactionInfos.Json(message.get());
+		this.result = new MempoolEntries.Json(message.get());
 	}
 
 	@Override

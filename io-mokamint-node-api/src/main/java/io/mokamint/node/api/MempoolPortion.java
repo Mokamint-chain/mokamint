@@ -31,9 +31,9 @@ public interface MempoolPortion {
 	 * Yields the information about the transactions of the sequential portion of the mempool, sorted
 	 * in increasing order of transaction priority.
 	 * 
-	 * @return the transaction information objects
+	 * @return the mempool entries containing the transactions
 	 */
-	Stream<TransactionInfo> getTransactions();
+	Stream<MempoolEntry> getEntries();
 
 	@Override
 	boolean equals(Object other);

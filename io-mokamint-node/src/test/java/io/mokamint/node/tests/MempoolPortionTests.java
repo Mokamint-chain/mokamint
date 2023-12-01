@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.MempoolPortions;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
@@ -34,8 +34,8 @@ public class MempoolPortionTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("mempool portions with hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksWithHashes() throws EncodeException, DecodeException {
-		var info1 = TransactionInfos.of(new byte[] { 1, 2, 4, 100, 12 }, 13L);
-		var info2 = TransactionInfos.of(new byte[] { 13, 20, 4, 99, 12, 11 }, 17L);
+		var info1 = MempoolEntries.of(new byte[] { 1, 2, 4, 100, 12 }, 13L);
+		var info2 = MempoolEntries.of(new byte[] { 13, 20, 4, 99, 12, 11 }, 17L);
 		var mempoolPortion1 = MempoolPortions.of(Stream.of(info1, info2));
 		String encoded = new MempoolPortions.Encoder().encode(mempoolPortion1);
 		var mempoolPortion2 = new MempoolPortions.Decoder().decode(encoded);

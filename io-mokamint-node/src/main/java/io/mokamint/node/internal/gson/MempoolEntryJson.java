@@ -19,31 +19,31 @@ package io.mokamint.node.internal.gson;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.TransactionInfos;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.MempoolEntries;
+import io.mokamint.node.api.MempoolEntry;
 
 /**
- * The JSON representation of a {@link TransactionInfo}.
+ * The JSON representation of a {@link MempoolEntry}.
  */
-public abstract class TransactionInfoJson implements JsonRepresentation<TransactionInfo> {
+public abstract class MempoolEntryJson implements JsonRepresentation<MempoolEntry> {
 
 	/**
-	 * The hash of the transaction, in hexadecimal form.
+	 * The hash of the transaction in the entry, in hexadecimal form.
 	 */
 	private final String hash;
 
 	/**
-	 * The priority of the transaction.
+	 * The priority of the transaction in the entry.
 	 */
 	private final long priority;
 
-	protected TransactionInfoJson(TransactionInfo info) {
-		this.hash = Hex.toHexString(info.getHash());
-		this.priority = info.getPriority();
+	protected MempoolEntryJson(MempoolEntry entry) {
+		this.hash = Hex.toHexString(entry.getHash());
+		this.priority = entry.getPriority();
 	}
 
 	@Override
-	public TransactionInfo unmap() throws HexConversionException {
-		return TransactionInfos.of(Hex.fromHexString(hash), priority);
+	public MempoolEntry unmap() throws HexConversionException {
+		return MempoolEntries.of(Hex.fromHexString(hash), priority);
 	}
 }

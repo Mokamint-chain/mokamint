@@ -20,20 +20,22 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * Information about a transaction of the Mokamint blockchain.
+ * Information about an entry of the mempool of a Mokamint node.
+ * It refers to a transaction that is going to be executed and added
+ * to a block, eventually.
  */
 @Immutable
-public interface TransactionInfo extends Marshallable {
+public interface MempoolEntry extends Marshallable {
 
 	/**
-	 * Yields the hash of the transaction.
+	 * Yields the hash of the transaction in the entry.
 	 * 
 	 * @return the hash of the transaction
 	 */
 	byte[] getHash();
 
 	/**
-	 * Yields the priority of the transaction.
+	 * Yields the priority of the transaction in the entry.
 	 * 
 	 * @return the priority
 	 */

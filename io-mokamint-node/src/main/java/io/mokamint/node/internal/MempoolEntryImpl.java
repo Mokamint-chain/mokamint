@@ -24,31 +24,33 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 
 /**
- * An implementation of a transaction information object.
+ * An implementation of an entry of the mempool of a Mokamint node.
+ * It refers to a transaction that is going to be executed and added
+ * to a block, eventually.
  */
 @Immutable
-public class TransactionInfoImpl extends AbstractMarshallable implements TransactionInfo {
+public class MempoolEntryImpl extends AbstractMarshallable implements MempoolEntry {
 
 	/**
-	 * The hash of the transaction.
+	 * The hash of the transaction in the entry.
 	 */
 	private final byte[] hash;
 
 	/**
-	 * The priority of the transaction.
+	 * The priority of the transaction in the entry.
 	 */
 	private final long priority;
 
 	/**
-	 * Creates a transaction information object.
+	 * Creates an entry of the mempool of a Mokamint node.
 	 * 
-	 * @param hash the hash of the transaction
-	 * @param priority the priority of the transaction
+	 * @param hash the hash of the transaction in the entry
+	 * @param priority the priority of the transaction in the entry
 	 */
-	public TransactionInfoImpl(byte[] hash, long priority) {
+	public MempoolEntryImpl(byte[] hash, long priority) {
 		this.hash = hash.clone();
 		this.priority = priority;
 	}
@@ -65,7 +67,8 @@ public class TransactionInfoImpl extends AbstractMarshallable implements Transac
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof TransactionInfo ti && Arrays.equals(hash, ti.getHash());
+		// the priority is implied by the transaction
+		return other instanceof MempoolEntry ti && Arrays.equals(hash, ti.getHash());
 	}
 
 	@Override
@@ -85,15 +88,15 @@ public class TransactionInfoImpl extends AbstractMarshallable implements Transac
 	}
 
 	/**
-	 * Unmarshals a transaction information object from the given context.
+	 * Unmarshals a mempool entry from the given context.
 	 * 
 	 * @param context the context
-	 * @return the transaction information object
-	 * @throws IOException if the transaction information object cannot be unmarshalled
+	 * @return the mempool entry
+	 * @throws IOException if the mempool entry cannot be unmarshalled
 	 */
-	public static TransactionInfoImpl from(UnmarshallingContext context) throws IOException {
-		return new TransactionInfoImpl(
-			context.readLengthAndBytes("Transaction information hash length mismatch"),
+	public static MempoolEntryImpl from(UnmarshallingContext context) throws IOException {
+		return new MempoolEntryImpl(
+			context.readLengthAndBytes("Transaction hash length mismatch"),
 			context.readLong()
 		);
 	}

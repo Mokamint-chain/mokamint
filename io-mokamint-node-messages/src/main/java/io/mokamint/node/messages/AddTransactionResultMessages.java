@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 import io.mokamint.node.messages.internal.AddTransactionResultMessageImpl;
 import io.mokamint.node.messages.internal.gson.AddTransactionResultMessageDecoder;
@@ -37,7 +37,7 @@ public final class AddTransactionResultMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static AddTransactionResultMessage of(TransactionInfo result, String id) {
+	public static AddTransactionResultMessage of(MempoolEntry result, String id) {
 		return new AddTransactionResultMessageImpl(result, id);
 	}
 

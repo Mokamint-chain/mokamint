@@ -23,23 +23,23 @@ import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.MempoolPortions;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.api.MempoolPortion;
 
 /**
  * The JSON representation of a {@link MempoolPortion}.
  */
 public abstract class MempoolPortionJson implements JsonRepresentation<MempoolPortion> {
-	private final TransactionInfos.Json[] transactions;
+	private final MempoolEntries.Json[] transactions;
 
 	protected MempoolPortionJson(MempoolPortion mempool) {
-		this.transactions = mempool.getTransactions().map(TransactionInfos.Json::new).toArray(TransactionInfos.Json[]::new);
+		this.transactions = mempool.getEntries().map(MempoolEntries.Json::new).toArray(MempoolEntries.Json[]::new);
 	}
 
 	@Override
 	public MempoolPortion unmap() throws HexConversionException {
 		return CheckSupplier.check(HexConversionException.class, () ->
-			MempoolPortions.of(Stream.of(transactions).map(UncheckFunction.uncheck(TransactionInfoJson::unmap)))
+			MempoolPortions.of(Stream.of(transactions).map(UncheckFunction.uncheck(MempoolEntryJson::unmap)))
 		);
 	}
 }

@@ -64,7 +64,7 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
@@ -84,7 +84,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
@@ -540,7 +540,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onAddTransactionResult(TransactionInfo info) {
+			protected void onAddTransactionResult(MempoolEntry info) {
 				semaphore.release();
 			}
 
@@ -550,7 +550,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 
 		var node = mkNode();
-		when(node.add(eq(transaction))).thenReturn(TransactionInfos.of(new byte[] { 1, 2, 3 }, 1000L));
+		when(node.add(eq(transaction))).thenReturn(MempoolEntries.of(new byte[] { 1, 2, 3 }, 1000L));
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
 			client.addTransaction();
@@ -595,8 +595,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	public void serviceGetMempoolPortionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var mempool = MempoolPortions.of(Stream.of(
-			TransactionInfos.of(new byte[] { 1, 2, 3, 4 }, 11L),
-			TransactionInfos.of(new byte[] { 13, 17, 19 }, 13L)
+			MempoolEntries.of(new byte[] { 1, 2, 3, 4 }, 11L),
+			MempoolEntries.of(new byte[] { 13, 17, 19 }, 13L)
 		));
 
 		class MyTestClient extends RemotePublicNodeImpl {

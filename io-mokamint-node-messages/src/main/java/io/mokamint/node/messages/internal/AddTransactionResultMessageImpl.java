@@ -20,7 +20,7 @@ import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 
 /**
@@ -31,7 +31,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	/**
 	 * The result of the call.
 	 */
-	private final TransactionInfo result;
+	private final MempoolEntry result;
 
 	/**
 	 * Creates the message.
@@ -39,7 +39,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public AddTransactionResultMessageImpl(TransactionInfo result, String id) {
+	public AddTransactionResultMessageImpl(MempoolEntry result, String id) {
 		super(id);
 
 		Objects.requireNonNull(result, "result cannot be null");
@@ -57,7 +57,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	}
 
 	@Override
-	public TransactionInfo get() {
+	public MempoolEntry get() {
 		return result;
 	}
 }

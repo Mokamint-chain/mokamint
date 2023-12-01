@@ -65,7 +65,7 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
@@ -1067,7 +1067,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
 				transaction2.set(message.getTransaction());
 				try {
-					sendObjectAsync(session, AddTransactionResultMessages.of(TransactionInfos.of(new byte[] { 1 , 2 }, 13L), message.getId()));
+					sendObjectAsync(session, AddTransactionResultMessages.of(MempoolEntries.of(new byte[] { 1 , 2 }, 13L), message.getId()));
 				}
 				catch (IOException e) {}
 			}
@@ -1108,8 +1108,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@DisplayName("getMempoolPortion() works")
 	public void getMempoolPortionWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		var mempool1 = MempoolPortions.of(Stream.of(
-			TransactionInfos.of(new byte[] { 1, 2, 3, 4 }, 11L),
-			TransactionInfos.of(new byte[] { 17, 13, 19 }, 17L)
+			MempoolEntries.of(new byte[] { 1, 2, 3, 4 }, 11L),
+			MempoolEntries.of(new byte[] { 17, 13, 19 }, 17L)
 		));
 
 		class MyServer extends PublicTestServer {

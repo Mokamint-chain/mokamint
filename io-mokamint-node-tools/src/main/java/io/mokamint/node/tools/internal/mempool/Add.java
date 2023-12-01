@@ -21,11 +21,11 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.EncodeException;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.RejectedTransactionException;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -39,7 +39,7 @@ public class Add extends AbstractPublicRpcCommand {
 	private String tx;
 
 	private void body(RemotePublicNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException {
-		TransactionInfo info;
+		MempoolEntry info;
 
 		try {
 			info = remote.add(Transactions.of(Base64.fromBase64String(tx)));
@@ -53,7 +53,7 @@ public class Add extends AbstractPublicRpcCommand {
 
 		if (json()) {
 			try {
-				System.out.println(new TransactionInfos.Encoder().encode(info));
+				System.out.println(new MempoolEntries.Encoder().encode(info));
 			}
 			catch (EncodeException e) {
 				throw new CommandException("Cannot encode " + info + " in JSON!", e);

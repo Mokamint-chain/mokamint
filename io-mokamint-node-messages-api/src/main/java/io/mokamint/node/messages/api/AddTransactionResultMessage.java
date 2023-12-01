@@ -17,10 +17,10 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.TransactionInfo;
+import io.mokamint.node.api.MempoolEntry;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method of a node.
  */
-public interface AddTransactionResultMessage extends ResultMessage<TransactionInfo> {
+public interface AddTransactionResultMessage extends ResultMessage<MempoolEntry> {
 }

@@ -50,7 +50,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.TransactionInfos;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -223,8 +223,8 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getMempoolPortion result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetMempoolPortionResult() throws EncodeException, DecodeException {
-		var info1 = TransactionInfos.of(new byte[] { 1, 2, 3 }, 13L);
-		var info2 = TransactionInfos.of(new byte[] { 20, 50, 70, 88 }, 17L);
+		var info1 = MempoolEntries.of(new byte[] { 1, 2, 3 }, 13L);
+		var info2 = MempoolEntries.of(new byte[] { 20, 50, 70, 88 }, 17L);
 		var mempool = MempoolPortions.of(Stream.of(info1, info2));
 		var getMempoolPortionResultMessage1 = GetMempoolPortionResultMessages.of(mempool, "id");
 		String encoded = new GetMempoolPortionResultMessages.Encoder().encode(getMempoolPortionResultMessage1);
@@ -389,7 +389,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("add transaction result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForPostTransactionResult() throws EncodeException, DecodeException {
-		var addTransactionResultMessage1 = AddTransactionResultMessages.of(TransactionInfos.of(new byte[] { 1, 2, 3 }, 17L), "id");
+		var addTransactionResultMessage1 = AddTransactionResultMessages.of(MempoolEntries.of(new byte[] { 1, 2, 3 }, 17L), "id");
 		String encoded = new AddTransactionResultMessages.Encoder().encode(addTransactionResultMessage1);
 		var addTransactionResultMessage2 = new AddTransactionResultMessages.Decoder().decode(encoded);
 		assertEquals(addTransactionResultMessage1, addTransactionResultMessage2);

@@ -776,6 +776,38 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
+	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this database,
+	 * running inside the given transaction.
+	 * 
+	 * @param txn the database transaction
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction, if any
+	 * @throws NoSuchAlgorithmException if the block containing the transaction refers to an unknown hashing or signature algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<io.mokamint.node.api.Transaction> getTransactionAddress(Transaction txn, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
+			if (txBI == null)
+				return Optional.empty();
+
+			var ref = TransactionRef.from(txBI);
+			ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
+			if (blockHash == null)
+				throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
+
+			Optional<Block> block = getBlock(txn, blockHash.getBytes());
+			if (block.isEmpty())
+				throw new DatabaseException("The current best chain misses the block at height " + ref.height  + " with hash " + Hex.toHexString(blockHash.getBytes()));
+
+			return Optional.of(block.get().getTransaction(ref.progressive));
+		}
+		catch (ExodusException | IOException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
 	 * Yields the head of the best chain in this database, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
