@@ -108,7 +108,7 @@ public class PeersDatabase implements AutoCloseable {
 			}
 			catch (ExodusException e) {
 				LOGGER.log(Level.WARNING, "db: failed to close the peers database", e);
-				throw new DatabaseException("cannot close the peers database", e);
+				throw new DatabaseException("Cannot close the peers database", e);
 			}
 		}
 	}

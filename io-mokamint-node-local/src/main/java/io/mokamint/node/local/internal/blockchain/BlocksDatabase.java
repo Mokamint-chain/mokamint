@@ -50,12 +50,14 @@ import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.ClosureLock;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -768,7 +770,7 @@ public class BlocksDatabase implements AutoCloseable {
 			if (blockHash == null)
 				throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
-			return Optional.of(new TransactionAddress(blockHash.getBytes(), ref.progressive));
+			return Optional.of(TransactionAddresses.of(blockHash.getBytes(), ref.progressive));
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
@@ -812,14 +814,14 @@ public class BlocksDatabase implements AutoCloseable {
 					if (blockHash2 == null)
 						throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
-					return Optional.of(new TransactionAddress(blockHash2.getBytes(), ref.progressive));
+					return Optional.of(TransactionAddresses.of(blockHash2.getBytes(), ref.progressive));
 				}
 				else {
 					// we check if the transaction is inside the table of transactions of the block
 					int length = block.getTransactionsCount();
 					for (int pos = 0; pos < length; pos++)
 						if (Arrays.equals(hash, hasherForTransactions.hash(block.getTransaction(pos))))
-							return Optional.of(new TransactionAddress(cursor, pos));
+							return Optional.of(TransactionAddresses.of(cursor, pos));
 
 					// otherwise we continue with the previous block
 					if (block instanceof NonGenesisBlock ngb)

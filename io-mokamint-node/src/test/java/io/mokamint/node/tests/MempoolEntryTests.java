@@ -26,14 +26,14 @@ import io.mokamint.node.MempoolEntries;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class TransactionInfoTests extends AbstractLoggedTests {
+public class MempoolEntryTests extends AbstractLoggedTests {
 
 	@Test
-	@DisplayName("transaction information objects are correctly encoded into Json and decoded from Json")
+	@DisplayName("mempool entries are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorks() throws EncodeException, DecodeException {
-		var transactionInfo1 = MempoolEntries.of(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, 1317L);
-		String encoded = new MempoolEntries.Encoder().encode(transactionInfo1);
-		var transactionInfo2 = new MempoolEntries.Decoder().decode(encoded);
-		assertEquals(transactionInfo1, transactionInfo2);
+		var mempoolEntry1 = MempoolEntries.of(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, 1317L);
+		String encoded = new MempoolEntries.Encoder().encode(mempoolEntry1);
+		var mempoolEntry2 = new MempoolEntries.Decoder().decode(encoded);
+		assertEquals(mempoolEntry1, mempoolEntry2);
 	}
 }

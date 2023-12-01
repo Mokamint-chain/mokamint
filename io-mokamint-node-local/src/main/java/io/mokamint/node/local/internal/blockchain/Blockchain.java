@@ -46,6 +46,8 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.internal.AbstractBlockchain;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
@@ -238,6 +240,47 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException, ClosedDatabaseException {
 		return db.getForwards(hash);
+	}
+
+	/**
+	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of the blockchain.
+	 * 
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction, if any
+	 * @throws NoSuchAlgorithmException if the block containing the transaction refers to an unknown hashing or signature algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<Transaction> getTransaction(byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
+		return db.getTransaction(hash);
+	}
+
+	/**
+	 * Yields the address of the transaction with the given hash, if it is contained in some block
+	 * of the best chain of this database.
+	 * 
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction address, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedDatabaseException, DatabaseException {
+		return db.getTransactionAddress(hash);
+	}
+
+	/**
+	 * Yields the address of the transaction with the given hash, if it is contained in the
+	 * chain from the block with hash {@code blockHash} towards the genesis block of this blockchain.
+	 * 
+	 * @param blockHash the hash of the block
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction address, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown hashing algorithm
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<TransactionAddress> getTransactionAddress(byte[] blockHash, byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
+		return db.getTransactionAddress(blockHash, hash);
 	}
 
 	/**

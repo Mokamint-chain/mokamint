@@ -14,16 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.internal;
+
+import java.util.Arrays;
 
 import io.hotmoka.annotations.Immutable;
+import io.mokamint.node.api.TransactionAddress;
 
 /**
- * The address of a transaction inside the blockchain (block hash and position inside
- * the transactions' table of that block).
+ * The implementation of the address of a transaction inside a blockchain
+ * (block hash and position inside the table of the transactions of that block).
  */
 @Immutable
-public class TransactionAddress {
+public class TransactionAddressImpl implements TransactionAddress {
 
 	/**
 	 * The hash of the block containing the transaction.
@@ -43,26 +46,23 @@ public class TransactionAddress {
 	 * @param progressive the progressive number of the transaction inside the table of the
 	 *                    transactions inside the block
 	 */
-	TransactionAddress(byte[] blockHash, int progressive) {
+	public TransactionAddressImpl(byte[] blockHash, int progressive) {
 		this.blockHash = blockHash.clone();
 		this.progressive = progressive;
 	}
 
-	/**
-	 * Yields the hash of the block containing the transaction.
-	 * 
-	 * @return the hash of the block containing the transaction
-	 */
+	@Override
 	public byte[] getBlockHash() {
 		return blockHash.clone();
 	}
 
-	/**
-	 * Yields the progressive number of the transaction inside the table of the transactions inside the block.
-	 *                    
-	 * @return the progressive number
-	 */
+	@Override
 	public int getProgressive() {
 		return progressive;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof TransactionAddress ta && ta.getProgressive() == progressive && Arrays.equals(ta.getBlockHash(), blockHash);
 	}
 }
