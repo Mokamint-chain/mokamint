@@ -22,8 +22,8 @@ import io.hotmoka.annotations.GuardedBy;
 import io.mokamint.node.api.ClosedNodeException;
 
 /**
- * An object used in autocloseable whose methods must be blocked
- * with an exception after the object is closed. Moreover, the close
+ * An object used in objects whose methods must disabled by throwing
+ * an exception after they have been closed. Moreover, the close
  * operation must wait for all methods to complete before closing the object.
  */
 public class ClosureLock {
@@ -39,12 +39,29 @@ public class ClosureLock {
 	@GuardedBy("lock")
 	private int currentCallsCount;
 
+	public interface Scope extends AutoCloseable {
+		void close(); // no exception
+	}
+
+	/**
+	 * Yields a scope during which the object cannot be closed.
+	 * 
+	 * @param <E> the type of the {@code exception}
+	 * @param exception the supplier of the exception thrown if the object is already closed
+	 * @return the scope
+	 * @throws E if the object is already closed
+	 */
+	public <E extends Exception> Scope scope(Supplier<E> exception) throws E {
+		beforeCall(exception);
+		return this::afterCall;
+	}
+
 	/**
 	 * Guarantees that the node is open if a call starts.
 	 * 
 	 * @throws ClosedNodeException if the node was closed
 	 */
-	public <E extends Exception> void beforeCall(Supplier<E> exception) throws E {
+	private <E extends Exception> void beforeCall(Supplier<E> exception) throws E {
 		synchronized (lock) {
 			if (isClosed)
 				throw exception.get();
@@ -56,7 +73,7 @@ public class ClosureLock {
 	/**
 	 * At the end of the last call, it signals every thread waiting for this event.
 	 */
-	public void afterCall() {
+	private void afterCall() {
 		synchronized (lock) {
 			if (--currentCallsCount == 0)
 				lock.notifyAll();

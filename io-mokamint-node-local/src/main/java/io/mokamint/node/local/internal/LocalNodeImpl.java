@@ -292,127 +292,82 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return blockchain.getBlock(hash);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	@Override
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return blockchain.getBlockDescription(hash);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	@Override
 	public Stream<PeerInfo> getPeerInfos() throws ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return peers.get();
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
 	@Override
 	public Stream<MinerInfo> getMinerInfos() throws ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return miners.getInfos();
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
 	@Override
 	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return currentlyExecutingTasks.stream()
 				.map(Object::toString)
 				.map(TaskInfos::of);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
 	@Override
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return peers.add(peer);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	@Override
 	public boolean remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return peers.remove(peer);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws IOException, ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return add(RemoteMiners.of(port, this::check));
 		}
 		catch (DeploymentException e) {
 			throw new IOException(e);
 		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	@Override
 	public boolean closeMiner(UUID uuid) throws ClosedNodeException, IOException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			Optional<Miner> maybeMiner = miners.get().filter(miner -> miner.getUUID().equals(uuid)).findFirst();
 			return maybeMiner.isPresent() && miners.remove(maybeMiner.get());
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -464,13 +419,8 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public NodeInfo getInfo() throws ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return peers.getNodeInfo();
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -486,75 +436,48 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return blockchain.getChainInfo();
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	@Override
 	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-		
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return ChainPortions.of(blockchain.getChain(start, count));
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
-		finally {
-			closureLock.afterCall();
-		}
 	}
 
 	@Override
 	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return mempool.add(transaction);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
 	@Override
 	public MempoolInfo getMempoolInfo() throws ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return mempool.getInfo();
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
 	@Override
 	public MempoolPortion getMempoolPortion(int start, int count) throws ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			return mempool.getPortion(start, count);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
 	@Override
 	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
-		closureLock.beforeCall(ClosedNodeException::new);
-	
-		try {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			var count = miners.get().count();
 			Optional<MinerInfo> result = miners.add(miner);
 			// if there were no miners before this call, we require to mine
@@ -562,9 +485,6 @@ public class LocalNodeImpl implements LocalNode {
 				scheduleMining();
 	
 			return result;
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 

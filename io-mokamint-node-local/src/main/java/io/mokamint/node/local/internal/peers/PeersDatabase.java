@@ -121,9 +121,7 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public UUID getUUID() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, UUID));
 			if (bi == null)
 				throw new DatabaseException("The UUID of the node is not in the peers database");
@@ -132,9 +130,6 @@ public class PeersDatabase implements AutoCloseable {
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -146,17 +141,12 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<Peer> getPeers() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, PEERS));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -174,17 +164,12 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(Peer peer, boolean force) throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 				() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -198,17 +183,12 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 

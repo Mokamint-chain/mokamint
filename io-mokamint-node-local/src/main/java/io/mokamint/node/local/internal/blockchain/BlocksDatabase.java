@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -145,7 +146,7 @@ public class BlocksDatabase implements AutoCloseable {
 		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
-		this.environment = createBlockchainEnvironment(node);
+		this.environment = createBlockchainEnvironment();
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
 		this.storeOfChain = openStore("chain");
@@ -177,16 +178,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getGenesisHash() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-	
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -198,18 +194,13 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getGenesis))
 			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -222,18 +213,13 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getHead))
 			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -245,16 +231,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getHeadHash() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -266,16 +247,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-	
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -287,16 +263,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-	
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -310,18 +281,13 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-	
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -335,18 +301,13 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-	
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlockDescription(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -360,9 +321,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-		
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getTransaction(txn, hash)))
 			);
@@ -370,8 +329,47 @@ public class BlocksDatabase implements AutoCloseable {
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-		finally {
-			closureLock.afterCall();
+	}
+
+	/**
+	 * Yields the address of the transaction with the given hash, if it is contained in some block
+	 * of the best chain of this database.
+	 * 
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction address, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedDatabaseException, DatabaseException {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+			return check(DatabaseException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, hash)))
+			);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the address of the transaction with the given hash, if it is contained in the
+	 * chain from the block with hash {@code blockHash} towards the genesis block.
+	 * 
+	 * @param blockHash the hash of the block
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction address, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown hashing algorithm
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<TransactionAddress> getTransactionAddress(byte[] blockHash, byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+			return check(DatabaseException.class, NoSuchAlgorithmException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, blockHash, hash)))
+			);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
 		}
 	}
 
@@ -384,16 +382,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -405,16 +398,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public ChainInfo getChainInfo() throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getChainInfo)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -430,16 +418,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<byte[]> getChain(long start, int count) throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -452,16 +435,11 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean containsBlock(byte[] hash) throws DatabaseException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> containsBlock(txn, hash))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 	}
 
@@ -482,18 +460,13 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
-		closureLock.beforeCall(ClosedDatabaseException::new);
-
 		boolean hasBeenAdded;
 
-		try {
+		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			hasBeenAdded = check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
-		}
-		finally {
-			closureLock.afterCall();
 		}
 
 		if (hasBeenAdded)
@@ -558,7 +531,7 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
-	private static Environment createBlockchainEnvironment(LocalNodeImpl node) {
+	private Environment createBlockchainEnvironment() {
 		var env = new Environment(node.getConfig().getDir().resolve("blocks").toString());
 		LOGGER.info("db: opened the blocks database");
 		return env;
@@ -776,16 +749,15 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this database,
-	 * running inside the given transaction.
+	 * Yields the address of the transaction with the given hash, if it is contained in some block
+	 * of the best chain of this database, running inside the given transaction.
 	 * 
 	 * @param txn the database transaction
 	 * @param hash the hash of the transaction to search
-	 * @return the transaction, if any
-	 * @throws NoSuchAlgorithmException if the block containing the transaction refers to an unknown hashing or signature algorithm
+	 * @return the transaction address, if any
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private Optional<io.mokamint.node.api.Transaction> getTransactionAddress(Transaction txn, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
+	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] hash) throws DatabaseException {
 		try {
 			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
 			if (txBI == null)
@@ -796,15 +768,76 @@ public class BlocksDatabase implements AutoCloseable {
 			if (blockHash == null)
 				throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
-			Optional<Block> block = getBlock(txn, blockHash.getBytes());
-			if (block.isEmpty())
-				throw new DatabaseException("The current best chain misses the block at height " + ref.height  + " with hash " + Hex.toHexString(blockHash.getBytes()));
-
-			return Optional.of(block.get().getTransaction(ref.progressive));
+			return Optional.of(new TransactionAddress(blockHash.getBytes(), ref.progressive));
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
 		}
+	}
+
+	/**
+	 * Yields the address of the transaction with the given hash, if it is contained in the
+	 * chain from the block with hash {@code blockHash} towards the genesis block.
+	 * 
+	 * @param txn the database transaction
+	 * @param blockHash the hash of the block
+	 * @param hash the hash of the transaction to search
+	 * @return the transaction address, if any
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown hashing algorithm
+	 */
+	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] blockHash, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			byte[] cursor = blockHash;
+
+			while (true) {
+				Optional<Block> maybeBlock = getBlock(txn, cursor);
+				if (maybeBlock.isEmpty())
+					throw new DatabaseException("The database has no block with hash " + Hex.toHexString(cursor));
+
+				Block block = maybeBlock.get();
+
+				if (isContainedInTheBestChain(txn, block, cursor)) {
+					// since the block is inside the best chain, we can use the storeOfTransactions for it
+					ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
+					if (txBI == null)
+						return Optional.empty();
+
+					var ref = TransactionRef.from(txBI);
+					if (ref.height > block.getDescription().getHeight())
+						// the transaction is present above the block
+						return Optional.empty();
+
+					ByteIterable blockHash2 = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
+					if (blockHash2 == null)
+						throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
+
+					return Optional.of(new TransactionAddress(blockHash2.getBytes(), ref.progressive));
+				}
+				else {
+					// we check if the transaction is inside the table of transactions of the block
+					int length = block.getTransactionsCount();
+					for (int pos = 0; pos < length; pos++)
+						if (Arrays.equals(hash, hasherForTransactions.hash(block.getTransaction(pos))))
+							return Optional.of(new TransactionAddress(cursor, pos));
+
+					// otherwise we continue with the previous block
+					if (block instanceof NonGenesisBlock ngb)
+						cursor = ngb.getHashOfPreviousBlock();
+					else
+						throw new DatabaseException("The block with hash " + Hex.toHexString(blockHash) + " is not connected to the best chain");
+				}
+			}
+		}
+		catch (ExodusException | IOException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	private boolean isContainedInTheBestChain(Transaction txn, Block block, byte[] blockHash) {
+		var height = block.getDescription().getHeight();
+		var hashOfBlockFromBestChain = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height)));
+		return hashOfBlockFromBestChain != null && Arrays.equals(hashOfBlockFromBestChain.getBytes(), blockHash);
 	}
 
 	/**
