@@ -376,6 +376,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 
 		if (updatedHead.get() != null) {
 			onHeadChanged(updatedHead.get());
+			// TODO: update the mempool to the new head
 			scheduleMining();
 		}
 		else if (addedToOrphans) {

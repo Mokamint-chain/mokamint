@@ -506,8 +506,10 @@ public class BlocksDatabase implements AutoCloseable {
 				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
 				putInStore(txn, hashOfBlock, bytesOfBlock);
 				addToForwards(txn, ngb, hashOfBlock);
-				if (updateHead(txn, ngb, hashOfBlock))
+				if (isBetterThanHead(txn, ngb, hashOfBlock)) {
+					setHeadHash(txn, block, hashOfBlock);
 					updatedHead.set(ngb);
+				}
 	
 				return true;
 			}
@@ -933,18 +935,12 @@ public class BlocksDatabase implements AutoCloseable {
 		}
 	}
 
-	private boolean updateHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
+	private boolean isBetterThanHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException, NoSuchAlgorithmException {
 		Optional<BigInteger> maybePowerOfHead = getPowerOfHead(txn);
 		if (maybePowerOfHead.isEmpty())
-			throw new DatabaseException("the database of blocks is non-empty but the power of the head is not set");
+			throw new DatabaseException("The database of blocks is non-empty but the power of the head is not set");
 
-		// we choose the branch with more power
-		if (block.getDescription().getPower().compareTo(maybePowerOfHead.get()) > 0) {
-			setHeadHash(txn, block, hashOfBlock);
-			return true;
-		}
-		else
-			return false;
+		return block.getDescription().getPower().compareTo(maybePowerOfHead.get()) > 0;
 	}
 
 	/**

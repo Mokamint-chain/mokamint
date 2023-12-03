@@ -213,9 +213,9 @@ public class LocalNodeImpl implements LocalNode {
 			this.keyPair = keyPair;
 			this.app = app;
 			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
-			this.mempool = new Mempool(this);
 			this.miners = new Miners(this);
 			this.blockchain = new Blockchain(this);
+			this.mempool = new Mempool(this);
 			this.peers = new Peers(this);
 			this.uuid = getInfo().getUUID();
 
