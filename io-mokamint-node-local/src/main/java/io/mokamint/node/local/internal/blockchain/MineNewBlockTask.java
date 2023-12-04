@@ -37,10 +37,14 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
+import io.mokamint.node.local.internal.mempool.Mempool;
 import io.mokamint.node.local.internal.miners.Miners;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -98,22 +102,28 @@ public class MineNewBlockTask implements Task {
 			blockchain.onNoMinersAvailable();
 		}
 		else {
-			Block previous = blockchain.getHead().get();
+			var headHash = blockchain.getHeadHash().get();
+			Optional<Block> previous = blockchain.getBlock(headHash);
 			// if somebody else is mining over the same block, it is useless to do the same
-			if (!blockchain.isMiningOver(previous))
-				new Run(previous);
+			if (previous.isPresent() && !blockchain.isMiningOver(previous.get()))
+				new Run(previous.get(), headHash);
 		}
 	}
 
 	/**
 	 * Run environment.
 	 */
-	private class Run {
+	private class Run implements OnAddedTransactionHandler {
 
 		/**
 		 * The block over which mining is performed.
 		 */
 		private final Block previous;
+
+		/**
+		 * The mempool containing the transactions that can be added to the new block.
+		 */
+		private final Mempool mempool;
 
 		/**
 		 * The height of the new block that is being mined.
@@ -164,8 +174,9 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private Run(Block previous) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
+		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
 			this.previous = previous;
+			this.mempool = blockchain.getMempoolAt(hashOfPrevious);
 			this.heightOfNewBlock = previous.getDescription().getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
 			this.heightMessage = "mining: height " + heightOfNewBlock + ": ";
@@ -173,7 +184,7 @@ public class MineNewBlockTask implements Task {
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 
 			try {
-				blockchain.onMiningStarted(previous);
+				blockchain.onMiningStarted(previous, this);
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
@@ -193,7 +204,17 @@ public class MineNewBlockTask implements Task {
 				turnWakerOff();
 				punishMinersThatDidNotAnswer();
 				this.done = true;
-				blockchain.onMiningCompleted(previous);
+				blockchain.onMiningCompleted(previous, this);
+			}
+		}
+
+		@Override
+		public void add(Transaction transaction) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+			try {
+				mempool.add(transaction);
+			}
+			catch (RejectedTransactionException e) {
+				LOGGER.warning("transaction " + node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray).hash(transaction) + " has been rejected: " + e.getMessage());
 			}
 		}
 

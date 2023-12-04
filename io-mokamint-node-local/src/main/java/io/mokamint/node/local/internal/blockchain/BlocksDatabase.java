@@ -450,8 +450,8 @@ public class BlocksDatabase implements AutoCloseable {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
-	 * @param updatedHead the new head of the best chain resulting from the addition,
-	 *                    if it changed wrt the previous head; otherwise it is left unchanged
+	 * @param updatedHead the hash of the new head of the best chain resulting from the addition,
+	 *                    if it changed wrt the previous head
 	 * @return true if the block has been actually added to the database, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
 	 *         if {@code block} was already in the database, or if {@code block} is
@@ -461,7 +461,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+	public boolean add(Block block, AtomicReference<byte[]> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 		boolean hasBeenAdded;
 
 		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
@@ -484,8 +484,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * 
 	 * @param txn the transaction
 	 * @param block the block to add
-	 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head;
-	 *                    otherwise it is left unchanged
+	 * @param updatedHead the hash of the new head resulting from the addition, if it changed wrt the previous head
 	 * @return true if and only if the block has been added. False means that
 	 *         the block was already in the tree; or that {@code block} is a genesis
 	 *         block and there is already a genesis block in the tree; or that {@code block}
@@ -493,7 +492,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
+	private boolean add(Transaction txn, Block block, AtomicReference<byte[]> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
 		byte[] hashOfBlock = block.getHash(hashingForBlocks);
 	
 		if (containsBlock(txn, hashOfBlock)) {
@@ -508,7 +507,7 @@ public class BlocksDatabase implements AutoCloseable {
 				addToForwards(txn, ngb, hashOfBlock);
 				if (isBetterThanHead(txn, ngb, hashOfBlock)) {
 					setHeadHash(txn, block, hashOfBlock);
-					updatedHead.set(ngb);
+					updatedHead.set(hashOfBlock);
 				}
 	
 				return true;
@@ -525,7 +524,7 @@ public class BlocksDatabase implements AutoCloseable {
 				putInStore(txn, hashOfBlock, bytesOfBlock);
 				setGenesisHash(txn, hashOfBlock);
 				setHeadHash(txn, block, hashOfBlock);
-				updatedHead.set(block);
+				updatedHead.set(hashOfBlock);
 				return true;
 			}
 			else {

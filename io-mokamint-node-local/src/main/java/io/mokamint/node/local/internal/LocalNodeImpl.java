@@ -186,6 +186,8 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final Set<Block> blocksOverWhichMiningIsInProgress = ConcurrentHashMap.newKeySet();
 
+	private final Set<OnAddedTransactionHandler> onAddedTransactionHandlers = ConcurrentHashMap.newKeySet();
+
 	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
@@ -268,12 +270,15 @@ public class LocalNodeImpl implements LocalNode {
 			}
 		}
 		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
+			var tx = whisperedTransaction.getTransaction();
 			try {
-				mempool.add(whisperedTransaction.getTransaction());
+				mempool.add(tx);
 			}
-			catch (RejectedTransactionException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " has been rejected: " + e.getMessage());
+			catch (RejectedTransactionException | NoSuchAlgorithmException | ClosedDatabaseException | DatabaseException e) {
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the mempool: " + e.getMessage());
 			}
+
+			onTransactionAdded(tx);
 		}
 		else
 			LOGGER.log(Level.SEVERE, "node: unexpected whispered object of class " + whispered.getClass().getName());
@@ -455,10 +460,25 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException {
+		MempoolEntry result;
+
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			return mempool.add(transaction);
+			result = mempool.add(transaction);
+
+			// TODO: maybe in its own thread?
+			// we send the transaction also to all currently running mining tasks
+			for (var handler: onAddedTransactionHandlers)
+				handler.add(transaction);
 		}
+		catch (ClosedDatabaseException e) {
+			throw unexpectedException(e); // the database cannot be closed because this node is open
+		}
+
+		scheduleWhisperingWithoutAddition(transaction);
+		onTransactionAdded(transaction);
+
+		return result;
 	}
 
 	@Override
@@ -533,6 +553,10 @@ public class LocalNodeImpl implements LocalNode {
 		return keyPair;
 	}
 
+	public interface OnAddedTransactionHandler {
+		void add(Transaction transaction) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException;
+	}
+
 	/**
 	 * A task is a complex activity that can be run in its own thread. Once it completes,
 	 * it typically fires some events to signal something to the node.
@@ -586,6 +610,16 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	protected boolean isMiningOver(Block previous) {
 		return blocksOverWhichMiningIsInProgress.contains(previous);
+	}
+
+	protected void rebaseMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		mempool.rebaseAt(newHeadHash);
+	}
+
+	protected Mempool getMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		var result = new Mempool(mempool);
+		result.rebaseAt(newHeadHash);
+		return result;
 	}
 
 	/**
@@ -737,8 +771,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param previous the block
 	 */
-	protected void onMiningStarted(Block previous) {
+	protected void onMiningStarted(Block previous, OnAddedTransactionHandler handler) {
 		blocksOverWhichMiningIsInProgress.add(previous);
+		onAddedTransactionHandlers.add(handler);
 	}
 
 	/**
@@ -746,8 +781,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param previous the block
 	 */
-	protected void onMiningCompleted(Block previous) {
+	protected void onMiningCompleted(Block previous, OnAddedTransactionHandler handler) {
 		blocksOverWhichMiningIsInProgress.remove(previous);
+		onAddedTransactionHandlers.remove(handler);
 	}
 
 	/**
@@ -769,9 +805,9 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * Called when the head of the blockchain has been updated.
 	 * 
-	 * @param newHead the new head
+	 * @param newHeadHash the hash of the new head
 	 */
-	protected void onHeadChanged(Block newHead) {}
+	protected void onHeadChanged(byte[] newHeadHash) {}
 
 	/**
 	 * Called when the node mines a new block.

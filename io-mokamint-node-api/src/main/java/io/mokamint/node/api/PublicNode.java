@@ -128,7 +128,7 @@ public interface PublicNode extends Node, Whisperer {
 	 * @param hash the hash of the block
 	 * @return the description of the block, if any
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing or signature algorithm
+	 * @throws NoSuchAlgorithmException if the block exists but refers to an unknown hashing or signature algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is closed
@@ -144,9 +144,11 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws RejectedTransactionException if {@code transaction} has been rejected, for instance because it is invalid
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException;
 
 	/**
 	 * Yields information about the transaction with the given hash, if it has been already

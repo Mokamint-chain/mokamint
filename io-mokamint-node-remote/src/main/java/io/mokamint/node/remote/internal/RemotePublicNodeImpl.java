@@ -636,14 +636,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, ClosedNodeException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException {
 		ensureIsOpen();
 		var id = queues.nextId();
 		sendAddTransaction(transaction, id);
 		try {
 			return queues.waitForResult(id, this::processAddTransactionSuccess, this::processAddTransactionException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | RejectedTransactionException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | NoSuchAlgorithmException | DatabaseException | RejectedTransactionException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -666,7 +666,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private boolean processAddTransactionException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+		return RejectedTransactionException.class.isAssignableFrom(clazz) || NoSuchAlgorithmException.class.isAssignableFrom(clazz) || DatabaseException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 

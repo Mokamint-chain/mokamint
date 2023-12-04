@@ -82,18 +82,18 @@ public class Mempool extends AbstractMempool {
 	private final Hasher<Transaction> hasher;
 
 	/**
-	 * The container of the transactions inside this mempool.
-	 */
-	@GuardedBy("itself")
-	private final SortedSet<TransactionEntry> mempool = new TreeSet<>();
-
-	/**
 	 * The hash of the base block of the mempool: the transactions inside {@link #mempool}
 	 * have arrived after the creation of this block. If missing, the transactions
 	 * have arrived after the creation of the blockchain itself.
 	 */
 	@GuardedBy("this.mempool")
 	private Optional<byte[]> base;
+
+	/**
+	 * The container of the transactions inside this mempool.
+	 */
+	@GuardedBy("itself")
+	private final SortedSet<TransactionEntry> mempool;
 
 	/**
 	 * The container of the transactions inside this mempool, as a list.
@@ -104,129 +104,133 @@ public class Mempool extends AbstractMempool {
 	private final static Logger LOGGER = Logger.getLogger(Mempool.class.getName());
 
 	/**
-	 * Creates a mempool for the given node.
+	 * Creates a mempool for the given node, initially empty.
 	 * 
 	 * @param node the node
 	 */
 	public Mempool(LocalNodeImpl node) {
-		this(node, Optional.empty());
+		super(node);
+		
+		this.blockchain = node.getBlockchain();
+		this.app = node.getApplication();
+		this.maxSize = node.getConfig().getMempoolSize();
+		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
+		this.base = Optional.empty();
+		this.mempool = new TreeSet<>();
 	}
 
-	public Mempool(Mempool parent, byte[] newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		this(parent.getNode(), Optional.of(newBase));
+	public Mempool(Mempool parent) {
+		super(parent.getNode());
 
-		Optional<byte[]> baseOfParent;
+		this.blockchain = parent.blockchain;
+		this.app = parent.app;
+		this.maxSize = parent.maxSize;
+		this.hasher = parent.hasher;
 
 		synchronized (parent.mempool) {
-			baseOfParent = parent.base;
-			this.mempool.addAll(parent.mempool);
+			this.base = parent.base;
+			this.mempool = new TreeSet<>(parent.mempool);
 		}
+	}
 
-		if (baseOfParent.isEmpty()) {
-			while (!mempool.isEmpty()) {
+	public void rebaseAt(byte[] newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		synchronized (mempool) {
+			if (base.isEmpty()) {
+				while (!mempool.isEmpty()) {
+					var newBlock = getBlock(newBase);
+					var toRemove = newBlock.getTransactions().collect(Collectors.toCollection(HashSet::new));
+					new HashSet<>(mempool).stream()
+					.filter(entry -> toRemove.contains(entry.transaction))
+					.forEach(mempool::remove);
+
+					if (newBlock instanceof NonGenesisBlock ngb)
+						newBase = ngb.getHashOfPreviousBlock();
+					else
+						break;
+				}
+			}
+			else {
+				var oldBase = base.get();
+				var oldBlock = getBlock(oldBase);
 				var newBlock = getBlock(newBase);
-				var toRemove = newBlock.getTransactions().collect(Collectors.toCollection(HashSet::new));
-				new HashSet<>(mempool).stream()
+				Set<Transaction> toRemove = new HashSet<>();
+				Set<TransactionEntry> toAdd = new HashSet<>();
+
+				while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight()) {
+					if (newBlock instanceof NonGenesisBlock ngb) {
+						newBlock.getTransactions().forEach(toRemove::add);
+						newBase = ngb.getHashOfPreviousBlock();
+						newBlock = getBlock(newBase);
+					}
+					else
+						throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(newBase) + " at height " + newBlock.getDescription().getHeight());
+				}
+
+				while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight()) {
+					if (oldBlock instanceof NonGenesisBlock ngb) {
+						for (int pos = 0; pos < oldBlock.getTransactionsCount(); pos++) {
+							var transaction = oldBlock.getTransaction(pos);
+
+							try {
+								toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));
+							}
+							catch (RejectedTransactionException e) {
+								// the database contains a block with a rejected transaction: it should not be there!
+								throw new DatabaseException(e);
+							}
+						}
+
+						oldBase = ngb.getHashOfPreviousBlock();
+						oldBlock = getBlock(oldBase);
+					}
+					else
+						throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(oldBase) + " at height " + oldBlock.getDescription().getHeight());
+				}
+
+				while (!Arrays.equals(newBase, oldBase)) {
+					if (newBlock.getDescription().getHeight() == 0 || oldBlock.getDescription().getHeight() == 0)
+						throw new DatabaseException("Cannot identify a shared ancestor block between " + Hex.toHexString(oldBase) + " and " + Hex.toHexString(newBase));
+
+					if (newBlock instanceof NonGenesisBlock ngb1) {
+						newBlock.getTransactions().forEach(toRemove::add);
+						newBase = ngb1.getHashOfPreviousBlock();
+						newBlock = getBlock(newBase);
+					}
+					else
+						throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(newBase) + " at height " + newBlock.getDescription().getHeight());
+
+					if (oldBlock instanceof NonGenesisBlock ngb2) {
+						for (int pos = 0; pos < oldBlock.getTransactionsCount(); pos++) {
+							var transaction = oldBlock.getTransaction(pos);
+
+							try {
+								toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));
+							}
+							catch (RejectedTransactionException e) {
+								// the database contains a block with a rejected transaction: it should not be there!
+								throw new DatabaseException(e);
+							}
+						}
+
+						oldBase = ngb2.getHashOfPreviousBlock();
+						oldBlock = getBlock(oldBase);
+					}
+					else
+						throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(oldBase) + " at height " + oldBlock.getDescription().getHeight());				
+				}
+
+				mempool.addAll(toAdd);
+
+				if (!mempool.isEmpty())
+					new HashSet<>(mempool).stream()
 					.filter(entry -> toRemove.contains(entry.transaction))
 					.forEach(mempool::remove);
-
-				if (newBlock instanceof NonGenesisBlock ngb)
-					newBase = ngb.getHashOfPreviousBlock();
-				else
-					break;
 			}
-		}
-		else {
-			var oldBase = baseOfParent.get();
-			var oldBlock = getBlock(oldBase);
-			var newBlock = getBlock(newBase);
-			Set<Transaction> toRemove = new HashSet<>();
-			Set<TransactionEntry> toAdd = new HashSet<>();
-
-			while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight()) {
-				if (newBlock instanceof NonGenesisBlock ngb) {
-					newBlock.getTransactions().forEach(toRemove::add);
-					newBase = ngb.getHashOfPreviousBlock();
-					newBlock = getBlock(newBase);
-				}
-				else
-					throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(newBase) + " at height " + newBlock.getDescription().getHeight());
-			}
-
-			while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight()) {
-				if (oldBlock instanceof NonGenesisBlock ngb) {
-					for (int pos = 0; pos < oldBlock.getTransactionsCount(); pos++) {
-						var transaction = oldBlock.getTransaction(pos);
-
-						try {
-							toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));
-						}
-						catch (RejectedTransactionException e) {
-							// the database contains a block with a rejected transaction: it should not be there!
-							throw new DatabaseException(e);
-						}
-					}
-
-					oldBase = ngb.getHashOfPreviousBlock();
-					oldBlock = getBlock(oldBase);
-				}
-				else
-					throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(oldBase) + " at height " + oldBlock.getDescription().getHeight());
-			}
-
-			while (!Arrays.equals(newBase, oldBase)) {
-				if (newBlock.getDescription().getHeight() == 0 || oldBlock.getDescription().getHeight() == 0)
-					throw new DatabaseException("Cannot identify a shared ancestor block between " + Hex.toHexString(oldBase) + " and " + Hex.toHexString(newBase));
-
-				if (newBlock instanceof NonGenesisBlock ngb1) {
-					newBlock.getTransactions().forEach(toRemove::add);
-					newBase = ngb1.getHashOfPreviousBlock();
-					newBlock = getBlock(newBase);
-				}
-				else
-					throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(newBase) + " at height " + newBlock.getDescription().getHeight());
-
-				if (oldBlock instanceof NonGenesisBlock ngb2) {
-					for (int pos = 0; pos < oldBlock.getTransactionsCount(); pos++) {
-						var transaction = oldBlock.getTransaction(pos);
-
-						try {
-							toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));
-						}
-						catch (RejectedTransactionException e) {
-							// the database contains a block with a rejected transaction: it should not be there!
-							throw new DatabaseException(e);
-						}
-					}
-
-					oldBase = ngb2.getHashOfPreviousBlock();
-					oldBlock = getBlock(oldBase);
-				}
-				else
-					throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(oldBase) + " at height " + oldBlock.getDescription().getHeight());				
-			}
-
-			mempool.addAll(toAdd);
-
-			if (!mempool.isEmpty())
-				new HashSet<>(mempool).stream()
-					.filter(entry -> toRemove.contains(entry.transaction))
-					.forEach(mempool::remove);
 		}
 	}
 
 	private Block getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		return blockchain.getBlock(hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
-	}
-
-	private Mempool(LocalNodeImpl node, Optional<byte[]> base) {
-		super(node);
-
-		this.blockchain = node.getBlockchain();
-		this.app = node.getApplication();
-		this.maxSize = node.getConfig().getMempoolSize();
-		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
-		this.base = base;
 	}
 
 	/**
@@ -237,10 +241,18 @@ public class Mempool extends AbstractMempool {
 	 * @throws RejectedTransactionException if the transaction has been rejected; this happens,
 	 *                                      for instance, if the application considers the
 	 *                                      transaction as invalid or if its priority cannot be computed
+	 * @throws DatabaseException if the blocks database is corrupted
+	 * @throws ClosedDatabaseException if the blocks database is already closed
+	 * @throws NoSuchAlgorithmException if the database contains a block referring to a non-available cryptographic algorithm
 	 */
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
+
+		if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
+			//the transaction was already in the blockchain
+			throw new RejectedTransactionException("Repeated transaction " + hexHash);
+
 		if (!app.checkTransaction(transaction))
 			throw new RejectedTransactionException("Invalid transaction " + hexHash);
 
@@ -253,13 +265,12 @@ public class Mempool extends AbstractMempool {
 			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash, e);
 		}
 
-		scheduleWhisperingWithoutAddition(transaction);
-
 		var entry = new TransactionEntry(transaction, priority, hash);
 
 		synchronized (mempool) {
 			if (mempool.size() < maxSize) {
 				if (!mempool.add(entry))
+					// the transaction was already in the mempool
 					throw new RejectedTransactionException("Repeated transaction " + hexHash);
 
 				mempoolAsList = null; // invalidation
@@ -269,8 +280,6 @@ public class Mempool extends AbstractMempool {
 		}
 
 		LOGGER.info("mempool: added transaction " + hexHash);
-
-		onTransactionAdded(transaction);
 
 		return entry.getEntry();
 	}

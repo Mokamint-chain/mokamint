@@ -52,6 +52,8 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.internal.AbstractBlockchain;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
+import io.mokamint.node.local.internal.mempool.Mempool;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
@@ -167,7 +169,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getHeadHash() throws DatabaseException, ClosedDatabaseException {
-		return db.getGenesisHash();
+		return db.getHeadHash();
 	}
 
 	/**
@@ -341,13 +343,13 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 *         or if the block has a previous block in the tree but it cannot be
 	 *         correctly verified as a legal child of that previous block
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown cryptographic algorithm
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 		boolean added = false, addedToOrphans = false;
-		var updatedHead = new AtomicReference<Block>();
+		var updatedHead = new AtomicReference<byte[]>();
 
 		// we use a working set, since the addition of a single block might
 		// trigger the further addition of orphan blocks, recursively
@@ -374,9 +376,10 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		}
 		while (!ws.isEmpty());
 
-		if (updatedHead.get() != null) {
-			onHeadChanged(updatedHead.get());
-			// TODO: update the mempool to the new head
+		byte[] newHeadHash = updatedHead.get();
+		if (newHeadHash != null) {
+			rebaseMempoolAt(newHeadHash);
+			onHeadChanged(newHeadHash);
 			scheduleMining();
 		}
 		else if (addedToOrphans) {
@@ -422,6 +425,11 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	}
 
 	@Override
+	protected Mempool getMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return super.getMempoolAt(newHeadHash);
+	}
+
+	@Override
 	protected void onBlockMined(Block block) {
 		super.onBlockMined(block);
 	}
@@ -432,13 +440,13 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	}
 
 	@Override
-	protected void onMiningStarted(Block previous) {
-		super.onMiningStarted(previous);
+	protected void onMiningStarted(Block previous, OnAddedTransactionHandler handler) {
+		super.onMiningStarted(previous, handler);
 	}
 
 	@Override
-	protected void onMiningCompleted(Block previous) {
-		super.onMiningCompleted(previous);
+	protected void onMiningCompleted(Block previous, OnAddedTransactionHandler handler) {
+		super.onMiningCompleted(previous, handler);
 	}
 
 	@Override
@@ -476,7 +484,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		super.check(deadline);
 	}
 
-	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
+	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<byte[]> updatedHead)
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {

@@ -1055,7 +1055,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works")
-	public void addTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, RejectedTransactionException {
+	public void addTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, RejectedTransactionException, NoSuchAlgorithmException {
 		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var transaction2 = new AtomicReference<Transaction>();
 
@@ -1100,6 +1100,56 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(RejectedTransactionException.class, () -> remote.add(transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("add(Transaction) works in case of NoSuchAlgorithmException")
+	public void addTransactionWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+		var exceptionMessage = "exception message";
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAddTransaction(AddTransactionMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new NoSuchAlgorithmException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(NoSuchAlgorithmException.class, () -> remote.add(transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("add(Transaction) works in case of DatabaseException")
+	public void addTransactionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+		var exceptionMessage = "exception message";
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAddTransaction(AddTransactionMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.add(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

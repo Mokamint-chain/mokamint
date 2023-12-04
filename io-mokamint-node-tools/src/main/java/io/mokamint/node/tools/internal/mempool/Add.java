@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.mempool;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Base64;
@@ -24,8 +25,9 @@ import io.hotmoka.websockets.beans.EncodeException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -38,7 +40,7 @@ public class Add extends AbstractPublicRpcCommand {
 	@Parameters(description = "the transaction to add, in Base64 format")
 	private String tx;
 
-	private void body(RemotePublicNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException {
+	private void body(RemotePublicNode remote) throws ClosedNodeException, DatabaseException, TimeoutException, InterruptedException, CommandException {
 		MempoolEntry info;
 
 		try {
@@ -46,6 +48,9 @@ public class Add extends AbstractPublicRpcCommand {
 		}
 		catch (Base64ConversionException e) {
 			throw new CommandException("Illegal Base64 encoding of the transaction!", e);
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new CommandException("The databse of the node contains a block that refers to an unknown cryptographic algorithm: " + e.getMessage(), e);
 		}
 		catch (RejectedTransactionException e) {
 			throw new CommandException("The transaction has been rejected: " + e.getMessage(), e);

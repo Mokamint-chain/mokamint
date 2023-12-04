@@ -19,9 +19,14 @@ limitations under the License.
  */
 package io.mokamint.node.local.internal;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
+import io.mokamint.node.local.internal.mempool.Mempool;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
@@ -70,17 +75,17 @@ public abstract class AbstractBlockchain {
 	}
 
 	/**
-	 * @see LocalNodeImpl#onMiningStarted(Block).
+	 * @see LocalNodeImpl#onMiningStarted(Block, OnAddedTransactionHandler).
 	 */
-	protected void onMiningStarted(Block previous) {
-		node.onMiningStarted(previous);
+	protected void onMiningStarted(Block previous, OnAddedTransactionHandler handler) {
+		node.onMiningStarted(previous, handler);
 	}
 
 	/**
-	 * @see LocalNodeImpl#onMiningCompleted(Block).
+	 * @see LocalNodeImpl#onMiningCompleted(Block, OnAddedTransactionHandler).
 	 */
-	protected void onMiningCompleted(Block previous) {
-		node.onMiningCompleted(previous);
+	protected void onMiningCompleted(Block previous, OnAddedTransactionHandler handler) {
+		node.onMiningCompleted(previous, handler);
 	}
 
 	/**
@@ -91,10 +96,24 @@ public abstract class AbstractBlockchain {
 	}
 
 	/**
-	 * @see {@link LocalNodeImpl#onHeadChanged(Block)}.
+	 * @see {@link LocalNodeImpl#onHeadChanged(byte[])}.
 	 */
-	protected void onHeadChanged(Block newHead) {
-		node.onHeadChanged(newHead);
+	protected void onHeadChanged(byte[] newHeadHash) {
+		node.onHeadChanged(newHeadHash);
+	}
+
+	/**
+	 * @see {@link LocalNodeImpl#rebaseMempoolAt(byte[])}.
+	 */
+	protected void rebaseMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		node.rebaseMempoolAt(newHeadHash);
+	}
+
+	/**
+	 * @see {@link LocalNodeImpl#getMempoolAt(byte[])}.
+	 */
+	protected Mempool getMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return node.getMempoolAt(newHeadHash);
 	}
 
 	/**
