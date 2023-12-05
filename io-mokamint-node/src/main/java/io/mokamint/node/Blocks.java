@@ -29,6 +29,7 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.internal.AbstractBlock;
 import io.mokamint.node.internal.GenesisBlockImpl;
 import io.mokamint.node.internal.NonGenesisBlockImpl;
@@ -48,13 +49,14 @@ public abstract class Blocks {
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description
+	 * @param transactions the transactions inside the block
 	 * @param privateKey the private key for signing the block
 	 * @return the non-genesis block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static NonGenesisBlock of(NonGenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new NonGenesisBlockImpl(description, Stream.empty(), privateKey);
+	public static NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new NonGenesisBlockImpl(description, transactions, privateKey);
 	}
 
 	/**
@@ -62,13 +64,14 @@ public abstract class Blocks {
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description of the block
+	 * @param transactions the transactions inside the block
 	 * @param privateKey the key used for signing the block
 	 * @return the genesis block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static GenesisBlock genesis(GenesisBlockDescription description, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new GenesisBlockImpl(description, Stream.empty(), privateKey);
+	public static GenesisBlock genesis(GenesisBlockDescription description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new GenesisBlockImpl(description, transactions, privateKey);
 	}
 
 	/**

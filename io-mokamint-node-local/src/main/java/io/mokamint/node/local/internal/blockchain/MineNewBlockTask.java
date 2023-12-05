@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -314,14 +315,13 @@ public class MineNewBlockTask implements Task {
 				return Optional.empty();
 			}
 
-			var nextBlock = Blocks.of(description, node.getKeys().getPrivate());
+			// TODO: transactions should be added here
+			var nextBlock = Blocks.of(description, Stream.empty(), node.getKeys().getPrivate());
 
 			if (Thread.currentThread().isInterrupted()) {
 				LOGGER.info(heightMessage + "not creating block on top of " + previousHex + " since the task has been interrupted");
 				return Optional.empty();
 			}
-
-			// TODO: transactions should be added here
 
 			return Optional.of(nextBlock);
 		}

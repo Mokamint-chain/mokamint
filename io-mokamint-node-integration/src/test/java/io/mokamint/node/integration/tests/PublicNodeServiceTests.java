@@ -263,7 +263,12 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256, plotKeyPair.getPrivate());
-		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 }), nodeKeyPair.getPrivate());
+		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
+		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
+		var transaction3 = Transactions.of(new byte[] {});
+		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 }),
+			Stream.of(transaction1, transaction2, transaction3),
+			nodeKeyPair.getPrivate());
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
