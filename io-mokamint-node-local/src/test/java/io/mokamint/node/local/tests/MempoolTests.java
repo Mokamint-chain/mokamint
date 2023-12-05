@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.tests;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,7 +43,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.BlockDescriptions;
@@ -101,7 +99,6 @@ public class MempoolTests extends AbstractLoggedTests {
 	 */
 	private static Plot plot1;
 	private static Plot plot2;
-	private static Plot plot3;
 
 	@BeforeAll
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException {
@@ -117,7 +114,6 @@ public class MempoolTests extends AbstractLoggedTests {
 		PROLOG = Prologs.of("octopus", signature, nodeKeys.getPublic(), signature, plotKeyPair.getPublic(), new byte[0]);
 		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
 		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
-		plot3 = Plots.create(plotDir.resolve("plot3.plot"), PROLOG, 15000L, 256L, hashing, __ -> {});
 
 		application = mock(Application.class);
 		when(application.checkPrologExtra(any())).thenReturn(true);
@@ -129,7 +125,6 @@ public class MempoolTests extends AbstractLoggedTests {
 	public static void afterAll() throws IOException, InterruptedException {
 		plot1.close();
 		plot2.close();
-		plot3.close();
 	}
 
 	private static class TestNode extends LocalNodeImpl {
@@ -172,8 +167,9 @@ public class MempoolTests extends AbstractLoggedTests {
 
 			assertTrue(blockchain.add(genesis));
 			var entries = node.getMempoolPortion(0, 10).getEntries().toArray(MempoolEntry[]::new);
-			assertEquals(entries.length, 1);
+			assertEquals(1, entries.length);
 			assertEquals(entries[0], entry3);
+			assertEquals(1, node.getMempoolInfo().getSize());
 		}
 	}
 
@@ -203,8 +199,9 @@ public class MempoolTests extends AbstractLoggedTests {
 			assertFalse(blockchain.add(block));
 
 			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
-			assertEquals(actualEntries.size(), 3);
+			assertEquals(3, actualEntries.size());
 			assertEquals(expectedEntries, actualEntries);
+			assertEquals(3, node.getMempoolInfo().getSize());
 		}
 	}
 
@@ -229,8 +226,9 @@ public class MempoolTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(block));
 
 			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
-			assertEquals(actualEntries.size(), 2);
+			assertEquals(2, actualEntries.size());
 			assertEquals(expectedEntries, actualEntries);
+			assertEquals(2, node.getMempoolInfo().getSize());
 		}
 	}
 
@@ -267,8 +265,9 @@ public class MempoolTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(added));
 
 			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
-			assertEquals(actualEntries.size(), 3);
+			assertEquals(3, actualEntries.size());
 			assertEquals(expectedEntries, actualEntries);
+			assertEquals(3, node.getMempoolInfo().getSize());
 		}
 	}
 
@@ -280,14 +279,16 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
+			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
 			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var entry0 = node.add(transaction0);
 			var entry1 = node.add(transaction1);
 			var entry2 = node.add(transaction2);
 			var entry3 = node.add(transaction3);
 
-			var genesis = Blocks.genesis(description, Stream.empty(), nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, Stream.of(transaction0), nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, Stream.of(transaction2), config, plot1);
 			var block0 = computeNextBlock(genesis, Stream.of(transaction1), config, plot2);
 			if (block1.getDescription().getPower().compareTo(block0.getDescription().getPower()) < 0) {
@@ -300,116 +301,121 @@ public class MempoolTests extends AbstractLoggedTests {
 			var block2 = computeNextBlock(block1, config);
 			var block3 = computeNextBlock(block2, Stream.of(transaction3), config);
 
-			// at this stage, the mempool contains all three transactions
-			var expectedEntries = Set.of(entry1, entry2, entry3);
+			// at this stage, the mempool contains all four transactions
+			var expectedEntries = Set.of(entry0, entry1, entry2, entry3);
 			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
-			assertEquals(actualEntries.size(), 3);
+			assertEquals(4, actualEntries.size());
 			assertEquals(expectedEntries, actualEntries);
+			assertEquals(4, node.getMempoolInfo().getSize());
 			
 			assertTrue(blockchain.add(genesis));
+
+			// now, the mempool contains only three transactions, since transaction0 is in the genesis
+			expectedEntries = Set.of(entry1, entry2, entry3);
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(3, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(3, node.getMempoolInfo().getSize());
+
 			assertTrue(blockchain.add(block0));
 
 			// at this stage, the mempool does not contain transaction1 anymore
 			expectedEntries = Set.of(entry2, entry3);
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
-			System.out.println(actualEntries);
-			// TODO
-			//assertEquals(2, actualEntries.size());
-			//assertEquals(expectedEntries, actualEntries);
-			
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block0, blockchain.getHead().get());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(2, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
+			assertEquals(2, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(2, node.getMempoolInfo().getSize());
 
-			// we add an orphan (no previous in database)
+			// we add an orphan block3 (no previous in database)
 			assertFalse(blockchain.add(block3));
 
-			// nothing changes
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block0, blockchain.getHead().get());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
+			// block3 contains transaction3 but it is not removed from the mempool
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(2, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(2, node.getMempoolInfo().getSize());
 
-			// we add an orphan (no previous in database)
+			// we add another orphan block2 (no previous in database) without transactions
 			assertFalse(blockchain.add(block2));
 
-			// nothing changes
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block0, blockchain.getHead().get());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
+			// the mempool did not change
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(2, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(2, node.getMempoolInfo().getSize());
 
 			// we add a block after the genesis, that creates a better chain of length 4
 			assertTrue(blockchain.add(block1));
 
-			// the more powerful chain is the current chain now
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block3, blockchain.getHead().get());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(4, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
-			assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
-			assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
+			// the more powerful chain is the current chain now:
+			// transaction1 ends back into the mempool, while transaction2 and transaction3 gets removed from the mempool
+			expectedEntries = Set.of(entry1);
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(1, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(1, node.getMempoolInfo().getSize());
 		}
 	}
 
 	@Test
-	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException {
+	@DisplayName("if the more powerful chain is added with genesis at the root, then all its transactions are removed from the mempool")
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenAllTransactionsRemovedFromMempool(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), nodeKeys.getPrivate());
-			var block1 = computeNextBlock(genesis, config);
-			var block2 = computeNextBlock(block1, config);
-			var block3 = computeNextBlock(block2, config);
+
+			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var entry0 = node.add(transaction0);
+			var entry1 = node.add(transaction1);
+			var entry2 = node.add(transaction2);
+			var entry3 = node.add(transaction3);
+
+			var genesis = Blocks.genesis(description, Stream.of(transaction0), nodeKeys.getPrivate());
+			var block1 = computeNextBlock(genesis, Stream.of(transaction1), config);
+			var block2 = computeNextBlock(block1, Stream.of(transaction2), config);
+			var block3 = computeNextBlock(block2, Stream.of(transaction3), config);
+
+			// at this stage, the mempool contains all four transactions
+			var expectedEntries = Set.of(entry0, entry1, entry2, entry3);
+			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(4, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(4, node.getMempoolInfo().getSize());
 
 			assertFalse(blockchain.add(block3));
 
-			// no genesis and no head are set up to now
-			assertTrue(blockchain.getGenesis().isEmpty());
-			assertTrue(blockchain.getHead().isEmpty());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(0, chain.length);
+			// the mempool did not change
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(4, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(4, node.getMempoolInfo().getSize());
 
 			assertFalse(blockchain.add(block2));
 
-			// no genesis and no head are set up to now
-			assertTrue(blockchain.getGenesis().isEmpty());
-			assertTrue(blockchain.getHead().isEmpty());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(0, chain.length);
+			// the mempool did not change
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(4, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(4, node.getMempoolInfo().getSize());
 
 			assertFalse(blockchain.add(block1));
 
-			// no genesis and no head are set up to now
-			assertTrue(blockchain.getGenesis().isEmpty());
-			assertTrue(blockchain.getHead().isEmpty());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(0, chain.length);
+			// the mempool did not change
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(4, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(4, node.getMempoolInfo().getSize());
 
 			assertTrue(blockchain.add(genesis));
 
-			// genesis and head are set now
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block3, blockchain.getHead().get());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(4, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
-			assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
-			assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
+			// the mempool is empty now
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertTrue(actualEntries.isEmpty());
+			assertEquals(0, node.getMempoolInfo().getSize());
 		}
 	}
 

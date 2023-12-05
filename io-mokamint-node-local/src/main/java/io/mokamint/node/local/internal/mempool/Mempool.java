@@ -136,12 +136,14 @@ public class Mempool extends AbstractMempool {
 	public void rebaseAt(byte[] newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		synchronized (mempool) {
 			if (base.isEmpty()) {
+				base = Optional.of(newBase);
+
 				while (!mempool.isEmpty()) {
 					var newBlock = getBlock(newBase);
 					var toRemove = newBlock.getTransactions().collect(Collectors.toCollection(HashSet::new));
 					new HashSet<>(mempool).stream()
-					.filter(entry -> toRemove.contains(entry.transaction))
-					.forEach(mempool::remove);
+						.filter(entry -> toRemove.contains(entry.transaction))
+						.forEach(this::remove);
 
 					if (newBlock instanceof NonGenesisBlock ngb)
 						newBase = ngb.getHashOfPreviousBlock();
@@ -151,6 +153,7 @@ public class Mempool extends AbstractMempool {
 			}
 			else {
 				var oldBase = base.get();
+				base = Optional.of(newBase);
 				var oldBlock = getBlock(oldBase);
 				var newBlock = getBlock(newBase);
 				Set<Transaction> toRemove = new HashSet<>();
@@ -219,14 +222,20 @@ public class Mempool extends AbstractMempool {
 						throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(oldBase) + " at height " + oldBlock.getDescription().getHeight());				
 				}
 
-				mempool.addAll(toAdd);
+				if (!toAdd.isEmpty() && mempool.addAll(toAdd))
+					mempoolAsList = null; // invalidation
 
 				if (!mempool.isEmpty())
 					new HashSet<>(mempool).stream()
-					.filter(entry -> toRemove.contains(entry.transaction))
-					.forEach(mempool::remove);
+						.filter(entry -> toRemove.contains(entry.transaction))
+						.forEach(this::remove);
 			}
 		}
+	}
+
+	private void remove(TransactionEntry entry) {
+		if (mempool.remove(entry))
+			mempoolAsList = null; // invalidation
 	}
 
 	private Block getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
