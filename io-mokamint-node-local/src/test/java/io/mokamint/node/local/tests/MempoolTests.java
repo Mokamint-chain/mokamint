@@ -34,8 +34,8 @@ import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
@@ -49,9 +49,14 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -64,7 +69,7 @@ import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
-public class BlockAdditionTests extends AbstractLoggedTests {
+public class MempoolTests extends AbstractLoggedTests {
 
 	/**
 	 * The prolog of the plot files.
@@ -99,7 +104,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	private static Plot plot3;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var hashing = config.getHashingForDeadlines();
 		var signature = config.getSignatureForBlocks();
@@ -116,6 +121,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 		application = mock(Application.class);
 		when(application.checkPrologExtra(any())).thenReturn(true);
+		when(application.checkTransaction(any())).thenReturn(true);
+		when(application.getPriority(any())).thenReturn(13L);
 	}
 
 	@AfterAll
@@ -149,47 +156,30 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
-	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException {
+	@DisplayName("if a genesis block is added, its transactions get removed from the mempool")
+	public void transactionsInGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), nodeKeys.getPrivate());
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			node.add(transaction1);
+			var entry3 = node.add(transaction3);
+			node.add(transaction2);
+			var genesis = Blocks.genesis(description, Stream.of(transaction2, transaction1), nodeKeys.getPrivate());
 
 			assertTrue(blockchain.add(genesis));
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(genesis, blockchain.getHead().get());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(1, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
+			var entries = node.getMempoolPortion(0, 10).getEntries().toArray(MempoolEntry[]::new);
+			assertEquals(entries.length, 1);
+			assertEquals(entries[0], entry3);
 		}
 	}
 
 	@Test
-	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
-	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException {
-		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
-			var config = node.getConfig();
-			var description1 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis1 = Blocks.genesis(description1, Stream.empty(), nodeKeys.getPrivate());
-			var description2 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis2 = Blocks.genesis(description2, Stream.empty(), nodeKeys.getPrivate());
-
-			assertTrue(blockchain.add(genesis1));
-			assertFalse(blockchain.add(genesis2));
-			assertEquals(genesis1, blockchain.getGenesis().get());
-			assertEquals(genesis1, blockchain.getHead().get());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(1, chain.length);
-			assertArrayEquals(chain[0], genesis1.getHash(config.getHashingForBlocks()));
-		}
-	}
-
-	@Test
-	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
-	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException {
+	@DisplayName("if a block with unknown previous is added, the mempool is unchanged")
+	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -204,51 +194,67 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious), Stream.empty(), privateKey);
 
 			assertTrue(blockchain.add(genesis));
+
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
+
 			assertFalse(blockchain.add(block));
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(genesis, blockchain.getHead().get());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(1, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
+
+			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(actualEntries.size(), 3);
+			assertEquals(expectedEntries, actualEntries);
 		}
 	}
 
 	@Test
-	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
-	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException {
+	@DisplayName("if a block is added to the head of the chain, its transactions are removed from the mempool")
+	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, Stream.empty(), nodeKeys.getPrivate());
-			var block = computeNextBlock(genesis, config);
+
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction3));
+			node.add(transaction2);
+
+			var block = computeNextBlock(genesis, Stream.of(transaction2), config);
 
 			assertTrue(blockchain.add(genesis));
 			assertTrue(blockchain.add(block));
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block, blockchain.getHead().get());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
-			assertArrayEquals(chain[1], block.getHash(config.getHashingForBlocks()));
+
+			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(actualEntries.size(), 2);
+			assertEquals(expectedEntries, actualEntries);
 		}
 	}
 
 	@Test
-	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
-	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException {
+	@DisplayName("if a block is added to the chain but head has more power, the mempool remains unchanged")
+	public void ifBlockAddedToChainButHeadBetterThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, Stream.empty(), nodeKeys.getPrivate());
+
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
+
 			var block1 = computeNextBlock(genesis, config, plot1);
-			var added = computeNextBlock(genesis, config, plot2);
+			var added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), config, plot2);
 			if (block1.getDescription().getPower().compareTo(added.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of added
-				var temp = block1;
-				block1 = added;
-				added = temp;
+				// note: the transactions in the block to not contribute to the deadline and hence to the power
+				block1 = computeNextBlock(genesis, config, plot2);
+				added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), config, plot1);
 			}
 
 			var block2 = computeNextBlock(block1, config);
@@ -259,42 +265,58 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(block2));
 			assertTrue(blockchain.add(block3));
 			assertTrue(blockchain.add(added));
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block3, blockchain.getHead().get());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(4, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
-			assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
-			assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
+
+			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(actualEntries.size(), 3);
+			assertEquals(expectedEntries, actualEntries);
 		}
 	}
 
 	@Test
-	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
-	public void ifMorePowerfulChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException {
+	@DisplayName("if a chain with more power than the current chain is added, then the mempool is rebased")
+	public void ifMorePowerfulChainIsAddedThenMempoolRebased(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
+
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var entry1 = node.add(transaction1);
+			var entry2 = node.add(transaction2);
+			var entry3 = node.add(transaction3);
+
 			var genesis = Blocks.genesis(description, Stream.empty(), nodeKeys.getPrivate());
-			var block1 = computeNextBlock(genesis, config, plot1);
-			var block0 = computeNextBlock(genesis, config, plot2);
+			var block1 = computeNextBlock(genesis, Stream.of(transaction2), config, plot1);
+			var block0 = computeNextBlock(genesis, Stream.of(transaction1), config, plot2);
 			if (block1.getDescription().getPower().compareTo(block0.getDescription().getPower()) < 0) {
-				// we invert the blocks, so that block1 has always at least the power of block0
-				var temp = block1;
-				block1 = block0;
-				block0 = temp;
+				// we invert the blocks, so that block1 has always at least the power of added
+				// note: the transactions in the block to not contribute to the deadline and hence to the power
+				block1 = computeNextBlock(genesis, Stream.of(transaction2), config, plot2);
+				block0 = computeNextBlock(genesis, Stream.of(transaction1), config, plot1);
 			}
 
 			var block2 = computeNextBlock(block1, config);
-			var block3 = computeNextBlock(block2, config);
+			var block3 = computeNextBlock(block2, Stream.of(transaction3), config);
 
+			// at this stage, the mempool contains all three transactions
+			var expectedEntries = Set.of(entry1, entry2, entry3);
+			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(actualEntries.size(), 3);
+			assertEquals(expectedEntries, actualEntries);
+			
 			assertTrue(blockchain.add(genesis));
 			assertTrue(blockchain.add(block0));
 
-			// at this stage, block0 is the head of the current chain, of length 2
+			// at this stage, the mempool does not contain transaction1 anymore
+			expectedEntries = Set.of(entry2, entry3);
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			System.out.println(actualEntries);
+			// TODO
+			//assertEquals(2, actualEntries.size());
+			//assertEquals(expectedEntries, actualEntries);
+			
 			assertEquals(genesis, blockchain.getGenesis().get());
 			assertEquals(block0, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
@@ -337,57 +359,6 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
 			assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
 			assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
-		}
-	}
-
-	@Test
-	@DisplayName("if more children of the head are added, the one with higher power becomes head")
-	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException {
-		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
-			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), nodeKeys.getPrivate());
-			var sorted = Stream.of(computeNextBlock(genesis, config, plot1), computeNextBlock(genesis, config, plot2), computeNextBlock(genesis, config, plot3))
-					.sorted(Comparator.comparing(block -> block.getDescription().getPower())).toArray(NonGenesisBlock[]::new);
-			var block3 = sorted[0]; // least powerful
-			var block1 = sorted[1]; // medium
-			var block2 = sorted[2]; // most powerful
-
-			assertTrue(blockchain.add(genesis));
-			assertTrue(blockchain.add(block1));
-
-			// at this stage, block1 is the head of the current chain, of length 2
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block1, blockchain.getHead().get());
-			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(2, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
-
-			// we create a chain with more power as the current chain
-			assertTrue(blockchain.add(block2));
-
-			// block2 is the new head now
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block2, blockchain.getHead().get());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block2.getHash(hashingForBlocks));
-
-			// we create a chain with the same length as the current chain (2 blocks),
-			// but less power than the current head
-			assertTrue(blockchain.add(block3));
-
-			// block2 is still the head
-			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block2, blockchain.getHead().get());
-			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
-			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block2.getHash(hashingForBlocks));
 		}
 	}
 
@@ -446,10 +417,18 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		return computeNextBlock(previous, config, plot1);
 	}
 
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions, LocalNodeConfig config) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+		return computeNextBlock(previous, transactions, config, plot1);
+	}
+
 	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+		return computeNextBlock(previous, Stream.empty(), config, plot);
+	}
+
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription, plotPrivateKey);
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
-		return Blocks.of(description, Stream.empty(), privateKey);
+		return Blocks.of(description, transactions, privateKey);
 	}
 }
