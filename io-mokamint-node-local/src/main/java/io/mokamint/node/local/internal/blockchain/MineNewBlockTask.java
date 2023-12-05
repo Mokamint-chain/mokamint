@@ -28,24 +28,25 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.RejectedTransactionException;
-import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.mempool.Mempool;
+import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
 import io.mokamint.node.local.internal.miners.Miners;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -122,9 +123,9 @@ public class MineNewBlockTask implements Task {
 		private final Block previous;
 
 		/**
-		 * The mempool containing the transactions that can be added to the new block.
+		 * The transactions that can be added to the new block.
 		 */
-		private final Mempool mempool;
+		private final BlockingQueue<TransactionEntry> mempool;
 
 		/**
 		 * The height of the new block that is being mined.
@@ -177,7 +178,7 @@ public class MineNewBlockTask implements Task {
 
 		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
 			this.previous = previous;
-			this.mempool = blockchain.getMempoolAt(hashOfPrevious);
+			this.mempool = blockchain.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
 			this.heightOfNewBlock = previous.getDescription().getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
 			this.heightMessage = "mining: height " + heightOfNewBlock + ": ";
@@ -210,12 +211,10 @@ public class MineNewBlockTask implements Task {
 		}
 
 		@Override
-		public void add(Transaction transaction) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
-			try {
-				mempool.add(transaction);
-			}
-			catch (RejectedTransactionException e) {
-				LOGGER.warning("transaction " + node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray).hash(transaction) + " has been rejected: " + e.getMessage());
+		public void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+			synchronized (mempool) {
+				if (mempool.size() < config.getMempoolSize())
+					mempool.offer(entry);
 			}
 		}
 

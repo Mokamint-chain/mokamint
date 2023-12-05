@@ -52,6 +52,7 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
@@ -62,7 +63,6 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeers;
@@ -77,6 +77,7 @@ import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
 import io.mokamint.node.local.internal.blockchain.SynchronizationTask;
 import io.mokamint.node.local.internal.blockchain.VerificationException;
 import io.mokamint.node.local.internal.mempool.Mempool;
+import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
 import io.mokamint.node.local.internal.miners.Miners;
 import io.mokamint.node.local.internal.peers.Peers;
 import io.mokamint.node.messages.WhisperBlockMessages;
@@ -465,11 +466,12 @@ public class LocalNodeImpl implements LocalNode {
 
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			result = mempool.add(transaction);
+			var entry = new TransactionEntry(transaction, result.getPriority(), result.getHash());
 
 			// TODO: maybe in its own thread?
 			// we send the transaction also to all currently running mining tasks
 			for (var handler: onAddedTransactionHandlers)
-				handler.add(transaction);
+				handler.add(entry);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
@@ -554,7 +556,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	public interface OnAddedTransactionHandler {
-		void add(Transaction transaction) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException;
+		void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException;
 	}
 
 	/**
@@ -616,10 +618,10 @@ public class LocalNodeImpl implements LocalNode {
 		mempool.rebaseAt(newHeadHash);
 	}
 
-	protected Mempool getMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		var result = new Mempool(mempool);
 		result.rebaseAt(newHeadHash);
-		return result;
+		return result.getTransactions();
 	}
 
 	/**

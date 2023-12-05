@@ -53,7 +53,7 @@ import io.mokamint.node.local.internal.AbstractBlockchain;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
-import io.mokamint.node.local.internal.mempool.Mempool;
+import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
@@ -425,8 +425,8 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	}
 
 	@Override
-	protected Mempool getMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		return super.getMempoolAt(newHeadHash);
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return super.getMempoolTransactionsAt(newHeadHash);
 	}
 
 	@Override

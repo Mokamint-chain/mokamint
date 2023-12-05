@@ -20,13 +20,14 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
-import io.mokamint.node.local.internal.mempool.Mempool;
+import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
@@ -110,10 +111,10 @@ public abstract class AbstractBlockchain {
 	}
 
 	/**
-	 * @see {@link LocalNodeImpl#getMempoolAt(byte[])}.
+	 * @see {@link LocalNodeImpl#getMempoolTransactionsAt(byte[])}.
 	 */
-	protected Mempool getMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		return node.getMempoolAt(newHeadHash);
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return node.getMempoolTransactionsAt(newHeadHash);
 	}
 
 	/**

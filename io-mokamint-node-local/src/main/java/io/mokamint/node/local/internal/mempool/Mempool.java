@@ -293,6 +293,10 @@ public class Mempool extends AbstractMempool {
 		return entry.getEntry();
 	}
 
+	public Stream<TransactionEntry> getTransactions() {
+		return mempool.stream();
+	}
+
 	/**
 	 * Yields information about this mempool.
 	 * 
@@ -342,12 +346,12 @@ public class Mempool extends AbstractMempool {
 	 * An entry in the container of the transactions in this mempool.
 	 * It contains the transaction itself and extra information about the transaction.
 	 */
-	private static class TransactionEntry implements Comparable<TransactionEntry> {
+	public static class TransactionEntry implements Comparable<TransactionEntry> {
 		private final Transaction transaction;
 		private final long priority;
 		private final byte[] hash;
 
-		private TransactionEntry(Transaction transaction, long priority, byte[] hash) {
+		public TransactionEntry(Transaction transaction, long priority, byte[] hash) {
 			this.transaction = transaction;
 			this.priority = priority;
 			this.hash = hash;
