@@ -357,6 +357,15 @@ public class Mempool extends AbstractMempool {
 			this.hash = hash;
 		}
 
+		/**
+		 * Yields the transaction inside this entry.
+		 * 
+		 * @return the transaction
+		 */
+		public Transaction getTransaction() {
+			return transaction;
+		}
+
 		private MempoolEntry getEntry() {
 			return MempoolEntries.of(hash, priority);
 		}
