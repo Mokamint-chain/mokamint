@@ -99,6 +99,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final long targetBlockCreationTime;
 
 	/**
+	 * The maximal size of a block's transactions table, in bytes.
+	 */
+	public final long maxBlockSize;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 * 
 	 * @param builder the builder where information is extracted from
@@ -113,23 +118,21 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.signatureForDeadlines = builder.signatureForDeadlines;
 		this.initialAcceleration = builder.initialAcceleration;
 		this.targetBlockCreationTime = builder.targetBlockCreationTime;
+		this.maxBlockSize = builder.maxBlockSize;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		if (other != null && getClass() == other.getClass()) {
-			var otherConfig = (ConsensusConfigImpl<?,?>) other;
-			return chainId.equals(otherConfig.chainId) &&
-				targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
-				initialAcceleration == otherConfig.initialAcceleration &&
-				hashingForDeadlines.equals(otherConfig.hashingForDeadlines) &&
-				hashingForGenerations.equals(otherConfig.hashingForGenerations) &&
-				hashingForBlocks.equals(otherConfig.hashingForBlocks) &&
-				signatureForBlocks.equals(otherConfig.getSignatureForBlocks()) &&
-				signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines());
-		}
-		else
-			return false;
+		return other instanceof ConsensusConfigImpl<?,?> otherConfig && getClass() == other.getClass() &&
+			chainId.equals(otherConfig.chainId) &&
+			maxBlockSize == otherConfig.maxBlockSize &&
+			targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
+			initialAcceleration == otherConfig.initialAcceleration &&
+			hashingForDeadlines.equals(otherConfig.hashingForDeadlines) &&
+			hashingForGenerations.equals(otherConfig.hashingForGenerations) &&
+			hashingForBlocks.equals(otherConfig.hashingForBlocks) &&
+			signatureForBlocks.equals(otherConfig.getSignatureForBlocks()) &&
+			signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines());
 	}
 
 	@Override
@@ -174,6 +177,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("\n");
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
+		sb.append("\n");
+		sb.append("# the maximal size, in bytes, of a block's transactions table\n");
+		sb.append("max_block_size = " + maxBlockSize + "\n");
 
 		return sb.toString();
 	}
@@ -213,6 +219,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		return signatureForDeadlines;
 	}
 
+	@Override
 	public long getTargetBlockCreationTime() {
 		return targetBlockCreationTime;
 	}
@@ -220,6 +227,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	@Override
 	public long getInitialAcceleration() {
 		return initialAcceleration;
+	}
+
+	@Override
+	public long getMaxBlockSize() {
+		return maxBlockSize;
 	}
 
 	/**
@@ -237,6 +249,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private SignatureAlgorithm signatureForDeadlines;
 		private long initialAcceleration = 100000000000L;
 		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
+		private long maxBlockSize = 1_000_000L; // 1 megabyte
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
 			setHashingForDeadlines(HashingAlgorithms.shabal256());
@@ -292,6 +305,10 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			var targetBlockCreationTime = toml.getLong("target_block_creation_time");
 			if (targetBlockCreationTime != null)
 				setTargetBlockCreationTime(targetBlockCreationTime);
+
+			var maxBlockSize = toml.getLong("max_block_size");
+			if (maxBlockSize != null)
+				setMaxBlockSize(maxBlockSize);
 		}
 
 		/**
@@ -309,6 +326,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.signatureForDeadlines = config.getSignatureForDeadlines();
 			this.initialAcceleration = config.getInitialAcceleration();
 			this.targetBlockCreationTime = config.getTargetBlockCreationTime();
+			this.maxBlockSize = config.getMaxBlockSize();
 		}
 
 		@Override
@@ -393,6 +411,15 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				throw new IllegalArgumentException("targetBlockCreationTime must be positive");
 
 			this.targetBlockCreationTime = targetBlockCreationTime;
+			return getThis();
+		}
+
+		@Override
+		public B setMaxBlockSize(long maxBlockSize) {
+			if (maxBlockSize < 0L)
+				throw new IllegalArgumentException("maxBlockSize cannot be negative");
+
+			this.maxBlockSize = maxBlockSize;
 			return getThis();
 		}
 

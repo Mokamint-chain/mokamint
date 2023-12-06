@@ -105,6 +105,13 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	long getTargetBlockCreationTime();
 
 	/**
+	 * Yields the maximal size of a block's transactions table.
+	 * 
+	 * @return the maximal size (in bytes)
+	 */
+	long getMaxBlockSize();
+
+	/**
 	 * Yields a toml representation of this configuration.
 	 * 
 	 * @return the toml representation, as a string

@@ -32,6 +32,9 @@ initial_acceleration = 100000000000
 # time, in milliseconds, aimed between the creation of a block and the creation of a next block
 target_block_creation_time = 240000
 
+# the maximal size, in bytes, of a block's transactions table
+max_block_size = 1000000
+
 ## Local parameters
 
 # the path where the node's data will be persisted

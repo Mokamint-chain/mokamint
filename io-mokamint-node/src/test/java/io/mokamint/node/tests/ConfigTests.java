@@ -45,6 +45,7 @@ public class ConfigTests extends AbstractLoggedTests {
 			.setSignatureForBlocks(SignatureAlgorithms.ed25519())
 			.setSignatureForDeadlines(SignatureAlgorithms.sha256dsa())
 			.setHashingForTransactions(HashingAlgorithms.shabal256())
+			.setMaxBlockSize(12345)
 			.build();
 		String encoded = new ConsensusConfigBuilders.Encoder().encode(config1);
 		var config2 = new ConsensusConfigBuilders.Decoder().decode(encoded);
@@ -60,6 +61,7 @@ public class ConfigTests extends AbstractLoggedTests {
 				.setSignatureForBlocks(SignatureAlgorithms.ed25519())
 				.setSignatureForDeadlines(SignatureAlgorithms.sha256dsa())
 				.setHashingForGenerations(HashingAlgorithms.identity32())
+				.setMaxBlockSize(12345)
 				.build();
 		Files.writeString(path, config1.toToml(), StandardCharsets.UTF_8);
 		var config2 = ConsensusConfigBuilders.load(path).build();

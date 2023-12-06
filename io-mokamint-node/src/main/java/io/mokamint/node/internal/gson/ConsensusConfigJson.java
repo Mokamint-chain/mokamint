@@ -37,6 +37,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	private final String signatureForDeadlines;
 	private final long targetBlockCreationTime;
 	private final long initialAcceleration;
+	private final long maxBlockSize;
 
 	protected ConsensusConfigJson(ConsensusConfig<?,?> config) {
 		this.chainId = config.getChainId();
@@ -48,6 +49,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 		this.signatureForDeadlines = config.getSignatureForDeadlines().getName();
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 		this.initialAcceleration = config.getInitialAcceleration();
+		this.maxBlockSize = config.getMaxBlockSize();
 	}
 
 	@Override
@@ -62,6 +64,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 			.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
 			.setTargetBlockCreationTime(targetBlockCreationTime)
 			.setInitialAcceleration(initialAcceleration)
+			.setMaxBlockSize(maxBlockSize)
 			.build();
 	}
 }

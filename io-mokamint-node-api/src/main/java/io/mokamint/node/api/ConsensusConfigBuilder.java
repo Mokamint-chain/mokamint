@@ -109,6 +109,14 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	B setTargetBlockCreationTime(long targetBlockCreationTime);
 
 	/**
+	 * Sets the maximal size of a block's transactions table.
+	 * 
+	 * @param maxBlockSize the maximal size, in bytes
+	 * @return this builder
+	 */
+	B setMaxBlockSize(long maxBlockSize);
+
+	/**
 	 * Builds the configuration.
 	 * 
 	 * @return the configuration
