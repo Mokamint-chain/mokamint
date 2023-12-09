@@ -63,6 +63,11 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private final Transaction[] transactions;
 
 	/**
+	 * The hash of the application at the end of this block.
+	 */
+	private final byte[] stateHash;
+
+	/**
 	 * The signature of this .
 	 */
 	private final byte[] signature;
@@ -95,11 +100,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * 
 	 * @param description the description of the block
 	 * @param transactions the transactions inside the block
+	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param signature the signature of the block
 	 */
-	protected AbstractBlock(D description, Stream<Transaction> transactions, byte[] signature) {
+	protected AbstractBlock(D description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
 		this.description = description;
 		this.transactions = transactions.toArray(Transaction[]::new);
+		this.stateHash = stateHash.clone();
 		this.signature = signature.clone();
 		verify();
 	}
@@ -109,13 +116,15 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * 
 	 * @param description the description of the block
 	 * @param transactions the transactions inside the block
+	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if signing failed
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
-	protected AbstractBlock(D description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	protected AbstractBlock(D description, Stream<Transaction> transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		this.description = description;
 		this.transactions = transactions.toArray(Transaction[]::new);
+		this.stateHash = stateHash.clone();
 		this.signature = computeSignature(privateKey);
 		verify();
 	}
@@ -134,6 +143,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 		try {
 			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
+			this.stateHash = context.readLengthAndBytes("State hash length mismatch");
 			this.signature = context.readLengthAndBytes("Signature length mismatch");
 			verify();
 		}
@@ -142,11 +152,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		}
 	}
 
-	/**
-	 * Yields the description of this block.
-	 * 
-	 * @return the description
-	 */
+	@Override
 	public final D getDescription() {
 		return description;
 	}
@@ -178,16 +184,21 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public int getTransactionsCount() {
+	public final int getTransactionsCount() {
 		return transactions.length;
 	}
 
 	@Override
-	public Transaction getTransaction(int progressive) {
+	public final Transaction getTransaction(int progressive) {
 		if (progressive < 0 || progressive >= transactions.length)
 			throw new IndexOutOfBoundsException(progressive);
 
 		return transactions[progressive];
+	}
+
+	@Override
+	public final byte[] getStateHash() {
+		return stateHash.clone();
 	}
 
 	@Override
@@ -238,12 +249,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	public boolean equals(Object other) {
 		return other instanceof Block block && description.equals(block.getDescription())
 			&& Arrays.equals(signature, block.getSignature())
-			&& Arrays.equals(transactions, block.getTransactions().toArray(Transaction[]::new));
+			&& Arrays.equals(transactions, block.getTransactions().toArray(Transaction[]::new))
+			&& Arrays.equals(stateHash, block.getStateHash());
 	}
 
 	@Override
 	public int hashCode() {
-		return description.hashCode();
+		return description.hashCode() ^ Arrays.hashCode(stateHash);
 	}
 
 	@Override
@@ -261,9 +273,10 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	public final String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
 		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
-		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
 		builder.append(description.toString(config, startDateTimeUTC));
 		builder.append("\n");
+		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
+		builder.append("* final state hash: " + Hex.toHexString(stateHash) + "\n");
 
 		if (transactions.length == 0)
 			builder.append("* 0 transactions");
@@ -323,6 +336,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private void intoWithoutSignature(MarshallingContext context) throws IOException {
 		description.into(context);
 		context.writeLengthAndArray(transactions);
+		context.writeLengthAndBytes(stateHash);
 	}
 
 	/**

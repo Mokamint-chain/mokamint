@@ -91,6 +91,7 @@ public class EventsTests extends AbstractLoggedTests {
 	public static void beforeAll(@TempDir Path dir) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
+		when(app.getInitialStateHash()).thenReturn(new byte[] { 1, 2, 3 });
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();

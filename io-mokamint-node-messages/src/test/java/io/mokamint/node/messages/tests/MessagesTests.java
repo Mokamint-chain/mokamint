@@ -143,7 +143,7 @@ public class MessagesTests extends AbstractLoggedTests {
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}),
-			Stream.of(transaction1, transaction2, transaction3), nodeKeyPair.getPrivate());
+			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
 		var getBlockResultMessage1 = GetBlockResultMessages.of(Optional.of(block), "id");
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
 		var getBlockResultMessage2 = new GetBlockResultMessages.Decoder().decode(encoded);
@@ -518,7 +518,7 @@ public class MessagesTests extends AbstractLoggedTests {
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}),
-			Stream.of(transaction1, transaction2, transaction3), nodeKeyPair.getPrivate());
+			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
 		var whisperBlockMessage1 = WhisperBlockMessages.of(block, "id");
 		String encoded = new WhisperBlockMessages.Encoder().encode(whisperBlockMessage1);
 		var whisperBlockMessage2 = new WhisperBlockMessages.Decoder().decode(encoded);

@@ -268,7 +268,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var transaction3 = Transactions.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 }),
 			Stream.of(transaction1, transaction2, transaction3),
-			nodeKeyPair.getPrivate());
+			new byte[0], nodeKeyPair.getPrivate());
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

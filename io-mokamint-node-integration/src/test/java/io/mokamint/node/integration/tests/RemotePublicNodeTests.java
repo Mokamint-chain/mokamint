@@ -678,7 +678,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var transaction3 = Transactions.of(new byte[] {});
 		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}),
 			Stream.of(transaction1, transaction2, transaction3),
-			nodeKeyPair.getPrivate());
+			new byte[0], nodeKeyPair.getPrivate());
 		var hash = new byte[] { 67, 56, 43 };
 
 		class MyServer extends PublicTestServer {
@@ -1228,7 +1228,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}),
-			Stream.of(transaction1, transaction2, transaction3), nodeKeyPair.getPrivate());
+			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
 		var semaphore = new Semaphore(0);
 
 		var whisperer = mock(Whisperer.class);

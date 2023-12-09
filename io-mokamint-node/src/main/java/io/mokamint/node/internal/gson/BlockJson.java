@@ -41,13 +41,15 @@ import io.mokamint.node.internal.NonGenesisBlockImpl;
  * The JSON representation of a {@link Block}.
  */
 public abstract class BlockJson implements JsonRepresentation<Block> {
-	private BlockDescriptions.Json description;
-	private Transactions.Json[] transactions;
-	private String signature;
+	private final BlockDescriptions.Json description;
+	private final Transactions.Json[] transactions;
+	private final String stateHash;
+	private final String signature;
 
 	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Json(block.getDescription());
 		this.transactions = block.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new);
+		this.stateHash = Hex.toHexString(block.getStateHash());
 		this.signature = Hex.toHexString(block.getSignature());
 	}
 
@@ -59,9 +61,12 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 			Stream.of(this.transactions).map(UncheckFunction.uncheck(Transactions.Json::unmap)).toArray(Transaction[]::new)
 		));
 
+		byte[] stateHash = Hex.fromHexString(this.stateHash);
+		byte[] signature = Hex.fromHexString(this.signature);
+
 		if (description instanceof GenesisBlockDescription gbd)
-			return new GenesisBlockImpl(gbd, transactions, Hex.fromHexString(signature));
+			return new GenesisBlockImpl(gbd, transactions, stateHash, signature);
 		else
-			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, transactions, Hex.fromHexString(signature));
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, transactions, stateHash, signature);
 	}
 }

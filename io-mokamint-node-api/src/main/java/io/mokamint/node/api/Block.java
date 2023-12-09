@@ -74,6 +74,14 @@ public interface Block extends Marshallable {
 	Transaction getTransaction(int progressive);
 
 	/**
+	 * Yields the hash of the state of the application at the end of the execution of the
+	 * transactions from the beginning of the blockchain to the end of this block.
+	 * 
+	 * @return the hash of the state of the application
+	 */
+	byte[] getStateHash();
+
+	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
 	 * This hash does not use the signature of the node (if any) which is, instead,
 	 * computed from this hash and the private key of the signer.

@@ -51,6 +51,14 @@ public interface Application {
 	 */
 	boolean checkTransaction(Transaction transaction);
 
+	byte[] getInitialStateHash();
+
+	void beginBlock(int id);
+
+	byte[] deliverTransaction(Transaction transaction, int id, byte[] stateHash) throws RejectedTransactionException;
+
+	void endBlock(int id);
+
 	/**
 	 * Computes the priority of the given transaction.
 	 * 

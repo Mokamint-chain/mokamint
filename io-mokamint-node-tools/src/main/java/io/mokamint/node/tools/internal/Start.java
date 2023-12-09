@@ -373,5 +373,23 @@ public class Start extends AbstractCommand {
 		public long getPriority(Transaction transaction) {
 			return 0L;
 		}
+
+		@Override
+		public byte[] getInitialStateHash() {
+			return "hello".getBytes();
+		}
+
+		@Override
+		public void beginBlock(int id) {
+		}
+
+		@Override
+		public byte[] deliverTransaction(Transaction transaction, int id, byte[] stateHash) {
+			return new byte[] { (byte) id, 13, 1, 19, 73 };
+		}
+
+		@Override
+		public void endBlock(int id) {
+		}
 	}
 }

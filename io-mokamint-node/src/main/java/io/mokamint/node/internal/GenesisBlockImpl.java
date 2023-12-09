@@ -42,12 +42,13 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * 
 	 * @param description the description
 	 * @param transactions the transactions inside the block
+	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param privateKey the key used for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, transactions, privateKey);
+	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, transactions, stateHash, privateKey);
 	}
 
 	/**
@@ -55,10 +56,11 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 *
 	 * @param description the description
 	 * @param transactions the transactions inside the block
+	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param signature the signature
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, byte[] signature) {
-		super(description, transactions, signature);
+	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
+		super(description, transactions, stateHash, signature);
 	}
 
 	/**

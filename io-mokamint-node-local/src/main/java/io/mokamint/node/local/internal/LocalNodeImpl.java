@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -261,7 +262,7 @@ public class LocalNodeImpl implements LocalNode {
 			return;
 
 		if (whispered instanceof WhisperedPeers whisperedPeers)
-			submit(() -> peers.reconnectOrTryToAdd(whisperedPeers.getPeers()), "reconnection or addition of whispered " + description);
+			execute(() -> peers.reconnectOrTryToAdd(whisperedPeers.getPeers()), "reconnection or addition of whispered " + description);
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			try {
 				blockchain.add(whisperedBlock.getBlock());
@@ -633,7 +634,7 @@ public class LocalNodeImpl implements LocalNode {
 	protected void scheduleSynchronization(long initialHeight) {
 		// we avoid to synchronize if synchronization is already in process
 		if (isSynchronizing.getAndSet(true) == false)
-			submit(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
+			execute(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
 	}
 
 	/**
@@ -642,7 +643,7 @@ public class LocalNodeImpl implements LocalNode {
 	protected void scheduleMining() {
 		// we avoid to mine during synchronization
 		if (!isSynchronizing.get())
-			submit(new MineNewBlockTask(this), "mining of next block");
+			execute(new MineNewBlockTask(this), "mining of next block");
 	}
 
 	/**
@@ -651,14 +652,14 @@ public class LocalNodeImpl implements LocalNode {
 	protected void scheduleDelayedMining() {
 		// we avoid to mine during synchronization
 		if (!isSynchronizing.get())
-			submit(new DelayedMineNewBlockTask(this), "mining in " + config.getDeadlineWaitTimeout() + " ms");
+			execute(new DelayedMineNewBlockTask(this), "mining in " + config.getDeadlineWaitTimeout() + " ms");
 	}
 
 	/**
 	 * Schedules the advertisement to its peers of the services published by this node.
 	 */
 	protected void scheduleWhisperingOfAllServices() {
-		submit(this::whisperAllServices, "whispering of all node's services");
+		execute(this::whisperAllServices, "whispering of all node's services");
 	}
 
 	/**
@@ -673,7 +674,7 @@ public class LocalNodeImpl implements LocalNode {
 		if (length > 0) {
 			var whisperedPeer = WhisperPeersMessages.of(Stream.of(peersAsArray), UUID.randomUUID().toString());
 			String description = length == 1 ? ("peer " + SanitizedStrings.of(peersAsArray[0])) : ("peers " + SanitizedStrings.of(whisperedPeer.getPeers()));
-			submit(() -> whisperWithoutAddition(whisperedPeer, description), "whispering of " + description);
+			execute(() -> whisperWithoutAddition(whisperedPeer, description), "whispering of " + description);
 		}
 	}
 
@@ -685,7 +686,7 @@ public class LocalNodeImpl implements LocalNode {
 	protected void scheduleWhisperingWithoutAddition(Block block) {
 		var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
 		String description = "block " + block.getHexHash(config.getHashingForBlocks());
-		submit(() -> whisperWithoutAddition(whisperedBlock, description), "whispering of " + description);
+		execute(() -> whisperWithoutAddition(whisperedBlock, description), "whispering of " + description);
 	}
 
 	/**
@@ -696,7 +697,7 @@ public class LocalNodeImpl implements LocalNode {
 	protected void scheduleWhisperingWithoutAddition(Transaction transaction) {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 		String description = "transaction " + hasherForTransactions.hash(transaction);
-		submit(() -> whisperWithoutAddition(whisperedTransaction, description), "whispering of " + description);
+		execute(() -> whisperWithoutAddition(whisperedTransaction, description), "whispering of " + description);
 	}
 
 	/**
@@ -883,7 +884,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param task the task to run
 	 */
-	private void submit(Task task, String description) {
+	private void execute(Task task, String description) {
 		var runnable = new RunnableTask(task, description);
 		try {
 			executors.execute(runnable);
@@ -891,6 +892,19 @@ public class LocalNodeImpl implements LocalNode {
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning("node " + uuid + ": " + runnable + " rejected, probably because the node is shutting down");
+		}
+	}
+
+	public Future<?> submit(Task task, String description) throws RejectedExecutionException {
+		var runnable = new RunnableTask(task, description);
+		try {
+			var future = executors.submit(runnable);
+			LOGGER.info("node " + uuid + ": " + runnable + " scheduled");
+			return future;
+		}
+		catch (RejectedExecutionException e) {
+			LOGGER.warning("node " + uuid + ": " + runnable + " rejected, probably because the node is shutting down");
+			throw e;
 		}
 	}
 
@@ -902,7 +916,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param delay the time interval between successive, iterated executions
 	 * @param unit the time interval unit
 	 */
-	private void submitWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) {
+	private void scheduleWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) {
 		var runnable = new RunnableTask(task, description);
 	
 		try {
@@ -920,7 +934,7 @@ public class LocalNodeImpl implements LocalNode {
 	private void schedulePeriodicWhisperingOfAllServices() {
 		long serviceBroadcastInterval = config.getServiceBrodcastInterval();
 		if (serviceBroadcastInterval >= 0)
-			submitWithFixedDelay(this::whisperAllServices, "whispering of all node's services", 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
+			scheduleWithFixedDelay(this::whisperAllServices, "whispering of all node's services", 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -929,7 +943,7 @@ public class LocalNodeImpl implements LocalNode {
 	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
 		var interval = config.getPeerPingInterval();
 		if (interval >= 0)
-			submitWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
+			scheduleWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
 				"pinging all peers to create missing remotes and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 

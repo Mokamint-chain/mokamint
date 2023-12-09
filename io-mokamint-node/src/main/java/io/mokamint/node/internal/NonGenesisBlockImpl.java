@@ -44,12 +44,13 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @param description the description
 	 * @param transactions the transactions in the block
+	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, transactions, privateKey);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, transactions, stateHash, privateKey);
 	}
 
 	/**
@@ -57,10 +58,11 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @param description the description
 	 * @param transactions the transactions in the block
+	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param signature the signature that will be put in the block
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] signature) {
-		super(description, transactions, signature);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
+		super(description, transactions, stateHash, signature);
 	}
 
 	/**

@@ -30,13 +30,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import io.hotmoka.crypto.Hex;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -168,7 +170,13 @@ public class MineNewBlockTask implements Task {
 		/**
 		 * The set of miners that did not answer so far with a legal deadline.
 		 */
-		private Set<Miner> minersThatDidNotAnswer = ConcurrentHashMap.newKeySet();
+		private final Set<Miner> minersThatDidNotAnswer = ConcurrentHashMap.newKeySet();
+
+		private final byte[] initialStateHash;
+
+		private final TransactionsExecutionTask transactionExecutor;
+
+		private final Future<?> transactionExecutionFuture;
 
 		/**
 		 * Set to true when the task has completed, also in the case when
@@ -177,6 +185,8 @@ public class MineNewBlockTask implements Task {
 		private final boolean done;
 
 		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
+			blockchain.onMiningStarted(previous, this);
+
 			this.previous = previous;
 			this.mempool = blockchain.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
 			this.heightOfNewBlock = previous.getDescription().getHeight() + 1;
@@ -184,9 +194,11 @@ public class MineNewBlockTask implements Task {
 			this.heightMessage = "mining: height " + heightOfNewBlock + ": ";
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
+			this.initialStateHash = previous.getStateHash();
+			this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, initialStateHash);
+			this.transactionExecutionFuture = startTransactionExecutor();
 
 			try {
-				blockchain.onMiningStarted(previous, this);
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
@@ -203,11 +215,26 @@ public class MineNewBlockTask implements Task {
 				blockchain.onNoDeadlineFound(previous);
 			}
 			finally {
+				stopTransactionExecutor();
 				turnWakerOff();
 				punishMinersThatDidNotAnswer();
 				this.done = true;
 				blockchain.onMiningCompleted(previous, this);
 			}
+		}
+
+		private Future<?> startTransactionExecutor() throws RejectedExecutionException {
+			try {
+				return node.submit(transactionExecutor, "transactions execution from state " + Hex.toHexString(initialStateHash));
+			}
+			catch (RejectedExecutionException e) {
+				LOGGER.severe(heightMessage + "could not spawn the transactions execution task from state " + Hex.toHexString(initialStateHash) + ": " + e.getMessage());
+				throw e;
+			}
+		}
+
+		private void stopTransactionExecutor() {
+			transactionExecutionFuture.cancel(true);
 		}
 
 		@Override
@@ -314,8 +341,8 @@ public class MineNewBlockTask implements Task {
 				return Optional.empty();
 			}
 
-			// TODO: transactions should be added here
-			var nextBlock = Blocks.of(description, Stream.empty(), node.getKeys().getPrivate());
+			var processedTransactions = transactionExecutor.getProcessedTransactions();
+			var nextBlock = Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate());
 
 			if (Thread.currentThread().isInterrupted()) {
 				LOGGER.info(heightMessage + "not creating block on top of " + previousHex + " since the task has been interrupted");
