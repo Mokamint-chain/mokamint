@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -286,13 +287,24 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 			builder.append("* " + transactions.length + " transactions:");
 
 		int n = 0;
+		Optional<HashingAlgorithm> hashing = config.map(ConsensusConfig::getHashingForTransactions);
+		Optional<Hasher<Transaction>> hasher = hashing.map(h -> h.getHasher(Transaction::getBytes));
+
 		for (var transaction: transactions) {
 			builder.append("\n * #" + n++ + ": ");
-			builder.append(transaction);
-			builder.append(" (base64)");
+			builder.append(hasher.map(h -> h.hash(transaction)).map(Hex::toHexString).map(hex -> hex + " (" + hashing.get() + ")")
+				.orElse(limit(transaction) + " (base64)"));
 		}
 
 		return builder.toString();
+	}
+
+	private static String limit(Transaction transaction) {
+		String s = transaction.toString();
+		if (s.length() < 50)
+			return s;
+		else
+			return s.substring(0, 50) + "...";
 	}
 
 	/**

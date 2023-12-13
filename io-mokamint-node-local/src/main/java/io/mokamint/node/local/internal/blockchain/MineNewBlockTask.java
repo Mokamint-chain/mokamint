@@ -185,10 +185,13 @@ public class MineNewBlockTask implements Task {
 		private final boolean done;
 
 		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
-			blockchain.onMiningStarted(previous, this);
-
 			this.previous = previous;
 			this.mempool = blockchain.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
+
+			// the mempool must be initialized before calling this, because the next line
+			// allows calls to add()
+			blockchain.onMiningStarted(previous, this);
+
 			this.heightOfNewBlock = previous.getDescription().getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
 			this.heightMessage = "mining: height " + heightOfNewBlock + ": ";
