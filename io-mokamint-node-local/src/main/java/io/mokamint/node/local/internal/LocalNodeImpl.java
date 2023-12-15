@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
@@ -696,7 +697,7 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	protected void scheduleWhisperingWithoutAddition(Transaction transaction) {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
-		String description = "transaction " + hasherForTransactions.hash(transaction);
+		String description = "transaction " + Hex.toHexString(hasherForTransactions.hash(transaction));
 		execute(() -> whisperWithoutAddition(whisperedTransaction, description), "whispering of " + description);
 	}
 

@@ -22,6 +22,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -29,10 +31,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,16 +49,21 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
+import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
+import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.PlotsAndKeyPairs;
@@ -69,41 +79,13 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	 */
 	private static Application app;
 
-	/**
-	 * The plot used by the mining node.
-	 */
-	private static Plot plot;
-
-	/**
-	 * The keys if the node.
-	 */
-	private static KeyPair nodeKeys;
-
-	/**
-	 * The keys of the plot file.
-	 */
-	private static KeyPair plotKeys;
-
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException {
+	public static void beforeAll(@TempDir Path plotDir) throws RejectedTransactionException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		when(app.getInitialStateHash()).thenReturn(new byte[] { 1, 2, 3 });
 		when(app.checkTransaction(any())).thenReturn(true);
 		when(app.deliverTransaction(any(), anyInt(), any())).thenReturn(new byte[] { 13, 17, 42 });
-		var ed25519 = SignatureAlgorithms.ed25519();
-		nodeKeys = ed25519.getKeyPair();
-		plotKeys = ed25519.getKeyPair();
-		var prolog = Prologs.of("octopus", ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
-		long start = 65536L;
-		long length = 50L;
-
-		plot = Plots.create(plotDir.resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
-	}
-
-	@AfterAll
-	public static void afterAll() throws IOException, InterruptedException {
-		plot.close();
 	}
 
 	private LocalNodeConfig mkConfig(Path chainDir) throws NoSuchAlgorithmException {
@@ -115,6 +97,37 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			.build();
 	}
 
+	private static class NodeWithLocalMiner extends LocalNodeImpl {
+		private final Plot plot;
+		private final KeyPair plotKeys;
+
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException {
+			super(config, SignatureAlgorithms.ed25519().getKeyPair(), app, init);
+
+			var ed25519 = SignatureAlgorithms.ed25519();
+			this.plotKeys = ed25519.getKeyPair();
+			var prolog = Prologs.of("octopus", ed25519, getKeys().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
+			long start = 65536L;
+			long length = 50L;
+			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
+		}
+
+		protected void addMiner() {
+			try {
+				add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
+			}
+			catch (ClosedNodeException e) {
+				// impossible, the node is not closed at this stage!
+			}
+		}
+
+		@Override
+		public void close() throws InterruptedException, DatabaseException, IOException {
+			super.close();
+			plot.close();
+		}
+	}
+
 	@Test
 	@Timeout(5000)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
@@ -123,7 +136,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		var random = new Random();
 		while (allTransactions.size() < 100) {
 			int length = random.nextInt(10, 1000);
-			byte[] bytes = new byte[length];
+			var bytes = new byte[length];
 			random.nextBytes(bytes);
 			var tx = Transactions.of(bytes);
 			allTransactions.add(tx);
@@ -131,17 +144,11 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		var allIncluded = new Semaphore(0);
 		var config = mkConfig(chain);
 
-		class MiningNode extends LocalNodeImpl {
+		class TestNode extends NodeWithLocalMiner {
 
-			private MiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
-				super(config, nodeKeys, app, true);
-
-				try {
-					add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
-				}
-				catch (ClosedNodeException e) {
-					// impossible, the node is not closed at this stage!
-				}
+			private TestNode(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException {
+				super(config, init);
+				addMiner();
 			}
 
 			@Override
@@ -154,7 +161,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		}
 
 		var copy = new ArrayList<>(allTransactions);
-		try (var miningNode = new MiningNode(config)) {
+		try (var miningNode = new TestNode(config, true)) {
 			for (var tx: copy) {
 				miningNode.add(tx); // allTransactions has no repetitions => no rejection
 				Thread.sleep(10);
@@ -162,5 +169,128 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 			allIncluded.acquire();
 		}
+	}
+
+	@Test
+	@DisplayName("transactions added to a network get eventually added to the blockchain")
+	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, PeerRejectedException, TimeoutException, URISyntaxException {
+		var allTransactions = mkTransactions();
+		final int NUM_NODES = 10;
+
+		class Run {
+			class TestNode extends NodeWithLocalMiner {
+				private Semaphore seenAll;
+				private Set<Transaction> added;
+
+				protected synchronized Semaphore getSeenAll() {
+					if (seenAll == null)
+						seenAll = new Semaphore(0);
+
+					return seenAll;
+				}
+
+				private synchronized Set<Transaction> getAdded() {
+					if (added == null)
+						added = new HashSet<>();
+
+					return added;
+				}
+
+				private TestNode(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException {
+					super(config, init); // TODO: init should be called after creation
+					addMiner();
+				}
+
+				@Override
+				protected void onBlockAdded(Block block) {
+					super.onBlockAdded(block);
+
+					synchronized (this) {
+						block.getTransactions().forEach(getAdded()::add);
+
+						synchronized (allTransactions) {
+							if (getAdded().equals(allTransactions))
+								getSeenAll().release();
+						}
+					}
+				}
+			}
+
+			private final TestNode[] nodes;
+			private final Random random = new Random();
+			
+			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, ClosedNodeException, IOException {
+				this.nodes = openNodes(dir);
+				addPeers();
+				addTransactions();
+				waitUntilAllNodesHaveSeenAllTransactions();
+				closeNodes();
+			}
+
+			private void waitUntilAllNodesHaveSeenAllTransactions() throws InterruptedException {
+				for (TestNode node: nodes)
+					node.getSeenAll().acquire();
+			}
+
+			private TestNode[] openNodes(Path dir) {
+				return IntStream.range(0, NUM_NODES).parallel().mapToObj(num -> mkNode(dir, num)).toArray(TestNode[]::new);
+			}
+
+			private void closeNodes() throws IOException, DatabaseException, InterruptedException {
+				for (LocalNode node: nodes)
+					node.close();
+			}
+
+			private void addTransactions() throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
+				for (Transaction tx: allTransactions)
+					nodes[random.nextInt(NUM_NODES)].add(tx);
+			}
+
+			private void addPeers() {
+				IntStream.range(0, NUM_NODES).parallel().forEach(num -> {
+					try {
+						nodes[num].add(getPeer((num + 1) % NUM_NODES));
+					}
+					catch (Exception e) {
+						throw new RuntimeException(e); // TODO: use UncheckIntFunction in the future
+					}
+				});
+			}
+
+			private LocalNode mkNode(Path dir, int num) {
+				try {
+					LocalNode result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
+
+					var uri = getPeer(num).getURI();
+					// this service will be closed automatically when this node will get closed
+					PublicNodeServices.open(result, uri.getPort(), 1800000L, 1000, Optional.of(uri));
+
+					return result;
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e); // TODO: use UncheckIntFunction in the future
+				}
+			}
+
+			private Peer getPeer(int num) throws URISyntaxException {
+				return Peers.of(new URI("ws://localhost:" + (8032 + num)));
+			}
+		}
+
+		new Run();
+	}
+
+	private Set<Transaction> mkTransactions() {
+		var allTransactions = new HashSet<Transaction>();
+		var random = new Random();
+		while (allTransactions.size() < 200) {
+			int length = random.nextInt(10, 1000);
+			var bytes = new byte[length];
+			random.nextBytes(bytes);
+			var tx = Transactions.of(bytes);
+			allTransactions.add(tx);
+		}
+
+		return allTransactions;
 	}
 }

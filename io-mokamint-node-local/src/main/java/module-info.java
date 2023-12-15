@@ -37,4 +37,5 @@ module io.mokamint.node.local {
 	requires static io.hotmoka.crypto;
 	requires static io.mokamint.node.messages;
 	requires static io.mokamint.node.service.api;
+	requires static io.mokamint.node.api;
 }

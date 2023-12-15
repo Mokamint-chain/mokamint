@@ -600,7 +600,7 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 			return remote;
 		}
 		catch (DeploymentException e) {
-			throw new IOException(e);  // we consider it as a special case of IOException
+			throw new IOException("Cannot deploy a remote connected to " + SanitizedStrings.of(peer), e);  // we consider it as a special case of IOException
 		}
 	}
 

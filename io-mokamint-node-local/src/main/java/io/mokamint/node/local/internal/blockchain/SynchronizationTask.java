@@ -297,13 +297,14 @@ public class SynchronizationTask implements Task {
 		private Optional<byte[][]> findMostFrequent(Set<byte[][]> alternatives, int h) {
 			byte[][] result = null;
 			long bestFrequency = 0L;
-			for (byte[][] alternative: alternatives) {
-				long frequency = computeFrequency(alternative, alternatives, h);
-				if (frequency > bestFrequency) {
-					bestFrequency = frequency;
-					result = alternative;
+			for (byte[][] alternative: alternatives)
+				if (alternative.length > h) {
+					long frequency = computeFrequency(alternative, alternatives, h);
+					if (frequency > bestFrequency) {
+						bestFrequency = frequency;
+						result = alternative;
+					}
 				}
-			}
 
 			return Optional.ofNullable(result);
 		}
