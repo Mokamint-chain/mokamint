@@ -100,6 +100,14 @@ public class TransactionsExecutionTask implements Task {
 
 		private void processNextTransaction() {
 			var tx = next.getTransaction();
+			
+			synchronized (transactions) {
+				if (transactions.contains(tx))
+					// this might actually occur if a transaction arrives during the execution of this task,
+					// which was already processed with this task
+					return;
+			}
+
 			int txSize = tx.size();
 			if (sizeUpToNow + txSize <= node.getConfig().getMaxBlockSize()) {
 				try {

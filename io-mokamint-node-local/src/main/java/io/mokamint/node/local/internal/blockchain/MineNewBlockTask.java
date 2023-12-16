@@ -125,6 +125,11 @@ public class MineNewBlockTask implements Task {
 		private final Block previous;
 
 		/**
+		 * The hash of {@code previous}.
+		 */
+		private final byte[] hashOfPrevious;
+
+		/**
 		 * The transactions that can be added to the new block.
 		 */
 		private final BlockingQueue<TransactionEntry> mempool;
@@ -186,6 +191,7 @@ public class MineNewBlockTask implements Task {
 
 		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
 			this.previous = previous;
+			this.hashOfPrevious = hashOfPrevious;
 			this.mempool = blockchain.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
 
 			// the mempool must be initialized before calling this, because the next line
@@ -242,10 +248,11 @@ public class MineNewBlockTask implements Task {
 
 		@Override
 		public void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
-			synchronized (mempool) {
-				if (mempool.size() < config.getMempoolSize())
-					mempool.offer(entry);
-			}
+			if (blockchain.getTransactionAddress(hashOfPrevious, entry.getHash()).isEmpty())
+				synchronized (mempool) {
+					if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
+						mempool.offer(entry);
+				}
 		}
 
 		private void requestDeadlineToEveryMiner() {

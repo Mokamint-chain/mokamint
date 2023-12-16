@@ -25,7 +25,9 @@ public class ClosedDatabaseException extends Exception {
 	/**
 	 * Creates a new exception.
 	 */
-	public ClosedDatabaseException() {}
+	public ClosedDatabaseException() {
+		super("The database is closed");
+	}
 
 	/**
 	 * Creates a new exception with the given message.
@@ -42,7 +44,7 @@ public class ClosedDatabaseException extends Exception {
 	 * @param cause the cause
 	 */
 	public ClosedDatabaseException(Throwable cause) {
-		super(cause);
+		super("The database is closed", cause);
 	}
 
 	/**

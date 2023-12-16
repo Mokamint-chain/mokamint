@@ -108,11 +108,9 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			this.plotKeys = ed25519.getKeyPair();
 			var prolog = Prologs.of("octopus", ed25519, getKeys().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 			long start = 65536L;
-			long length = 50L;
+			long length = new Random().nextInt(50, 200);
 			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
-		}
 
-		protected void addMiner() {
 			try {
 				add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
 			}
@@ -148,7 +146,6 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 			private TestNode(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException {
 				super(config, init);
-				addMiner();
 			}
 
 			@Override
@@ -172,6 +169,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@Timeout(100000)
 	@DisplayName("transactions added to a network get eventually added to the blockchain")
 	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, PeerRejectedException, TimeoutException, URISyntaxException {
 		var allTransactions = mkTransactions();
@@ -197,8 +195,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				}
 
 				private TestNode(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException {
-					super(config, init); // TODO: init should be called after creation
-					addMiner();
+					super(config, init); // TODO: init should be called after creation?
 				}
 
 				@Override
@@ -242,8 +239,10 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			}
 
 			private void addTransactions() throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
-				for (Transaction tx: allTransactions)
+				for (Transaction tx: allTransactions) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
+					Thread.sleep(1);
+				}
 			}
 
 			private void addPeers() {

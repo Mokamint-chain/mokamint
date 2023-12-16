@@ -276,12 +276,11 @@ public class LocalNodeImpl implements LocalNode {
 			var tx = whisperedTransaction.getTransaction();
 			try {
 				mempool.add(tx);
+				onTransactionAdded(tx);
 			}
 			catch (RejectedTransactionException | NoSuchAlgorithmException | ClosedDatabaseException | DatabaseException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the mempool: " + e.getMessage());
 			}
-
-			onTransactionAdded(tx);
 		}
 		else
 			LOGGER.log(Level.SEVERE, "node: unexpected whispered object of class " + whispered.getClass().getName());

@@ -366,6 +366,10 @@ public class Mempool extends AbstractMempool {
 			return transaction;
 		}
 
+		public byte[] getHash() {
+			return hash.clone();
+		}
+
 		private MempoolEntry getEntry() {
 			return MempoolEntries.of(hash, priority);
 		}
