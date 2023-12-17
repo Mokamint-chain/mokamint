@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -415,6 +416,84 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("The table of transactions is too big"));
+			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+		}
+	}
+
+	@Test
+	@DisplayName("if a block contains a transaction that does not pass the application check, verification rejects it")
+	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException {
+		var app = mockApplication();
+		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		when(app.checkTransaction(eq(tx2))).thenReturn(false);
+		var tx3 = Transactions.of(new byte[] { 4, 50 });
+
+		try (var node = new TestNode(dir, app)) {
+			var blockchain = node.getBlockchain();
+			var config = node.getConfig();
+			var hashingForDeadlines = config.getHashingForDeadlines();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var genesis = Blocks.genesis(description, Stream.of(tx1, tx3), stateHash, nodePrivateKey);
+			var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
+			var block = Blocks.of(expected, Stream.of(tx2), stateHash, nodePrivateKey);
+
+			assertTrue(blockchain.add(genesis));
+			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+			assertTrue(e.getMessage().startsWith("Failed check of transaction"));
+			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+		}
+	}
+
+	@Test
+	@DisplayName("if a block contains a transaction that does not pass the delivery check, verification rejects it")
+	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException {
+		var app = mockApplication();
+		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		when(app.deliverTransaction(eq(tx2), anyInt(), any())).thenThrow(RejectedTransactionException.class);
+		var tx3 = Transactions.of(new byte[] { 4, 50 });
+
+		try (var node = new TestNode(dir, app)) {
+			var blockchain = node.getBlockchain();
+			var config = node.getConfig();
+			var hashingForDeadlines = config.getHashingForDeadlines();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var genesis = Blocks.genesis(description, Stream.of(tx1, tx3), stateHash, nodePrivateKey);
+			var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
+			var block = Blocks.of(expected, Stream.of(tx2), stateHash, nodePrivateKey);
+
+			assertTrue(blockchain.add(genesis));
+			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+			assertTrue(e.getMessage().startsWith("Failed delivery of transaction"));
+			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+		}
+	}
+
+	@Test
+	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of its transactions, verification rejects it")
+	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException {
+		var app = mockApplication();
+		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		when(app.deliverTransaction(eq(tx2), anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
+		var tx3 = Transactions.of(new byte[] { 4, 50 });
+
+		try (var node = new TestNode(dir, app)) {
+			var blockchain = node.getBlockchain();
+			var config = node.getConfig();
+			var hashingForDeadlines = config.getHashingForDeadlines();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var genesis = Blocks.genesis(description, Stream.of(tx1, tx3), stateHash, nodePrivateKey);
+			var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
+			var block = Blocks.of(expected, Stream.of(tx2), stateHash, nodePrivateKey);
+
+			assertTrue(blockchain.add(genesis));
+			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+			assertTrue(e.getMessage().startsWith("Final state mismatch"));
 			assertBlockchainIsJustGenesis(blockchain, genesis, config);
 		}
 	}

@@ -140,7 +140,7 @@ public class BlockVerification {
 	 * 
 	 * @throws VerificationException if that condition in violated
 	 */
-	private void deadlineIsValid() throws VerificationException { // TODO: this could be true by construction of blocks
+	private void deadlineIsValid() throws VerificationException {
 		if (!deadline.isValid())
 			throw new VerificationException("Invalid deadline");
 	}
@@ -267,6 +267,13 @@ public class BlockVerification {
 		}
 	}
 
+	/**
+	 * Checks that the execution of the transactions inside {@link #block} is successful
+	 * (both check and delivery of transactions succeeds) and leads to the final state
+	 * whose hash is in the {@link #block}.
+	 * 
+	 * @throws VerificationException if that condition does not hold
+	 */
 	private void transactionsExecutionLeadsToFinalState() throws VerificationException {
 		var app = node.getApplication();
 		byte[] currentStateHash = previous != null ? previous.getStateHash() : app.getInitialStateHash();
