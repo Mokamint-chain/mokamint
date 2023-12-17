@@ -18,17 +18,22 @@ package io.mokamint.node.local.internal.blockchain;
 
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Optional;
 
+import io.hotmoka.crypto.Hex;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -76,8 +81,9 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
@@ -101,6 +107,8 @@ public class BlockVerification {
 	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
+		transactionsSizeIsNotTooBig();
+		transactionsExecutionLeadsToFinalState();
 	}
 
 	/**
@@ -114,13 +122,17 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
 		deadlineIsValid();
 		blockMatchesItsExpectedDescription(block);
+		transactionsSizeIsNotTooBig();
+		transactionsAreNotAlreadyInBlockchain();
+		transactionsExecutionLeadsToFinalState();
 	}
 
 	/**
@@ -128,7 +140,7 @@ public class BlockVerification {
 	 * 
 	 * @throws VerificationException if that condition in violated
 	 */
-	private void deadlineIsValid() throws VerificationException {
+	private void deadlineIsValid() throws VerificationException { // TODO: this could be true by construction of blocks
 		if (!deadline.isValid())
 			throw new VerificationException("Invalid deadline");
 	}
@@ -230,5 +242,51 @@ public class BlockVerification {
 		long max = node.getConfig().getBlockMaxTimeInTheFuture();
 		if (howMuchInTheFuture > max)
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
+	}
+
+	private void transactionsSizeIsNotTooBig() throws VerificationException {
+		if (block.getTransactions().mapToInt(Transaction::size).sum() > config.getMaxBlockSize())
+			throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + ")");
+	}
+
+	/**
+	 * Checks that the transactions in {@link #block} are not already contained in blockchain.
+	 * 
+	 * @throws VerificationException if some transaction is already contained in blockchain
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 */
+	private void transactionsAreNotAlreadyInBlockchain() throws VerificationException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+		var previousHash = previous.getHash(config.getHashingForBlocks());
+
+		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+			var txHash = node.getHasherForTransactions().hash(tx);
+			if (node.getBlockchain().getTransactionAddress(previousHash, txHash).isPresent())
+				throw new VerificationException("Repeated transaction " + Hex.toHexString(txHash));
+		}
+	}
+
+	private void transactionsExecutionLeadsToFinalState() throws VerificationException {
+		var app = node.getApplication();
+		byte[] currentStateHash = previous != null ? previous.getStateHash() : app.getInitialStateHash();
+
+		int id = app.beginBlock();
+		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+			if (!app.checkTransaction(tx))
+				throw new VerificationException("Failed check of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)));
+
+			try {
+				currentStateHash = app.deliverTransaction(tx, id, currentStateHash);
+			}
+			catch (RejectedTransactionException e) {
+				throw new VerificationException("Failed delivery of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)));
+			}
+		}
+
+		app.endBlock(id);
+
+		if (!Arrays.equals(block.getStateHash(), currentStateHash))
+			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(currentStateHash) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
 	}
 }

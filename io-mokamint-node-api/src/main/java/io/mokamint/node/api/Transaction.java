@@ -20,10 +20,11 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * A transaction of the Mokamint blockchain.
+ * A transaction of the Mokamint blockchain. Transactions are ordered
+ * by increasing bytes, lexicographically.
  */
 @Immutable
-public interface Transaction extends Marshallable {
+public interface Transaction extends Marshallable, Comparable<Transaction> {
 
 	/**
 	 * Yields the bytes of the transaction. The meaning of these bytes if application-dependent.

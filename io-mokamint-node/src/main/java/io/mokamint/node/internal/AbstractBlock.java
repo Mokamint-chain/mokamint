@@ -318,10 +318,12 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	/**
-	 * Checks all constraints expected from this block.
+	 * Checks all constraints expected from this block. This also checks the validity of
+	 * the signature and that transactions are not repeated inside the block.
 	 * 
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid)
+	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid or
+	 *                                  if some transaction is repeated inside the block)
 	 */
 	private void verify() {
 		Objects.requireNonNull(description, "description cannot be null");
@@ -337,6 +339,11 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		catch (InvalidKeyException e) {
 			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
 		}
+
+		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
+		for (int pos = 0; pos < transactions.length - 1; pos++)
+			if (transactions[pos].equals(transactions[pos + 1]))
+				throw new IllegalArgumentException("Repeated transaction");
 	}
 
 	/**

@@ -562,6 +562,15 @@ public class LocalNodeImpl implements LocalNode {
 		return keyPair;
 	}
 
+	/**
+	 * Yields the hasher that can be used for hashing the transactions.
+	 * 
+	 * @return the hasher
+	 */
+	public Hasher<Transaction> getHasherForTransactions() {
+		return hasherForTransactions;
+	}
+
 	public interface OnAddedTransactionHandler {
 		void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException;
 	}

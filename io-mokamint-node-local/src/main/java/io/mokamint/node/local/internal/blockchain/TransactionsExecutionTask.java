@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal.blockchain;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -74,11 +73,10 @@ public class TransactionsExecutionTask implements Task {
 	private class Body {
 		private TransactionEntry next;
 		private long sizeUpToNow = 0L;
-		private final int id = counter.getAndIncrement();
-		private final static AtomicInteger counter = new AtomicInteger();
+		private final int id;
 
 		private Body() {
-			app.beginBlock(id);
+			this.id = app.beginBlock();
 
 			try {
 				while (!Thread.currentThread().isInterrupted()) {

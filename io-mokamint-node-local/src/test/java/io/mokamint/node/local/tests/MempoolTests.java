@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -80,6 +81,11 @@ public class MempoolTests extends AbstractLoggedTests {
 	private static KeyPair nodeKeys;
 
 	/**
+	 * The hash of the state of the test application.
+	 */
+	private final static byte[] stateHash = new byte[] { 1, 1, 1, 1, 1, 1 };
+
+	/**
 	 * The application running in the node.
 	 */
 	private static Application application;
@@ -119,6 +125,8 @@ public class MempoolTests extends AbstractLoggedTests {
 		when(application.checkPrologExtra(any())).thenReturn(true);
 		when(application.checkTransaction(any())).thenReturn(true);
 		when(application.getPriority(any())).thenReturn(13L);
+		when(application.getInitialStateHash()).thenReturn(stateHash);
+		when(application.deliverTransaction(any(), anyInt(), any())).thenReturn(stateHash);
 	}
 
 	@AfterAll
@@ -163,7 +171,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			node.add(transaction1);
 			var entry3 = node.add(transaction3);
 			node.add(transaction2);
-			var genesis = Blocks.genesis(description, Stream.of(transaction2, transaction1), new byte[0], nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, Stream.of(transaction2, transaction1), stateHash, nodeKeys.getPrivate());
 
 			assertTrue(blockchain.add(genesis));
 			var entries = node.getMempoolPortion(0, 10).getEntries().toArray(MempoolEntry[]::new);
@@ -181,13 +189,13 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), new byte[0], nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, Stream.empty(), stateHash, nodeKeys.getPrivate());
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
 			var deadline = Deadlines.of(PROLOG, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines, plotPrivateKey);
 			var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
-			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious), Stream.empty(), new byte[0], privateKey);
+			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious), Stream.empty(), stateHash, privateKey);
 
 			assertTrue(blockchain.add(genesis));
 
@@ -212,7 +220,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), new byte[0], nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, Stream.empty(), stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
@@ -239,7 +247,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), new byte[0], nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, Stream.empty(), stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
@@ -288,7 +296,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var entry2 = node.add(transaction2);
 			var entry3 = node.add(transaction3);
 
-			var genesis = Blocks.genesis(description, Stream.of(transaction0), new byte[0], nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, Stream.of(transaction0), stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, Stream.of(transaction2), config, plot1);
 			var block0 = computeNextBlock(genesis, Stream.of(transaction1), config, plot2);
 			if (block1.getDescription().getPower().compareTo(block0.getDescription().getPower()) < 0) {
@@ -374,7 +382,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var entry2 = node.add(transaction2);
 			var entry3 = node.add(transaction3);
 
-			var genesis = Blocks.genesis(description, Stream.of(transaction0), new byte[0], nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, Stream.of(transaction0), stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, Stream.of(transaction1), config);
 			var block2 = computeNextBlock(block1, Stream.of(transaction2), config);
 			var block3 = computeNextBlock(block2, Stream.of(transaction3), config);
@@ -435,6 +443,6 @@ public class MempoolTests extends AbstractLoggedTests {
 		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription, plotPrivateKey);
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
-		return Blocks.of(description, transactions, new byte[0], privateKey);
+		return Blocks.of(description, transactions, stateHash, privateKey);
 	}
 }

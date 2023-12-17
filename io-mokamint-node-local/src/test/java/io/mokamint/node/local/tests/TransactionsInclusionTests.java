@@ -130,7 +130,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@Timeout(5000)
+	@Timeout(20)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
 	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		var allTransactions = new HashSet<Transaction>();
@@ -172,7 +172,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@Timeout(100000)
+	@Timeout(200)
 	@DisplayName("transactions added to a network get eventually added to the blockchain")
 	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, PeerRejectedException, TimeoutException, URISyntaxException {
 		var allTransactions = mkTransactions();

@@ -791,7 +791,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown hashing algorithm
+	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown cryptographic algorithm
 	 */
 	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] blockHash, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
 		try {

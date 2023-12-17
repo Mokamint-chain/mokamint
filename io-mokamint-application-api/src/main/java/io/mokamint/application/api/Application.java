@@ -53,7 +53,7 @@ public interface Application {
 
 	byte[] getInitialStateHash();
 
-	void beginBlock(int id);
+	int beginBlock();
 
 	byte[] deliverTransaction(Transaction transaction, int id, byte[] stateHash) throws RejectedTransactionException;
 

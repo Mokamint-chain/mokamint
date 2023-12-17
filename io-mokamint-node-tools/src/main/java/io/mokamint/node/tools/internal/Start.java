@@ -380,7 +380,8 @@ public class Start extends AbstractCommand {
 		}
 
 		@Override
-		public void beginBlock(int id) {
+		public int beginBlock() {
+			return 42;
 		}
 
 		@Override

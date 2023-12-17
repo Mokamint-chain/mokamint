@@ -53,7 +53,10 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof Transaction t && Arrays.equals(bytes, t.getBytes());
+		if (other instanceof TransactionImpl ti)
+			return Arrays.equals(bytes, ti.bytes); // optimization, to avoid cloning
+		else
+			return other instanceof Transaction t && Arrays.equals(bytes, t.getBytes());
 	}
 
 	@Override
@@ -80,5 +83,13 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 */
 	public static TransactionImpl from(UnmarshallingContext context) throws IOException {
 		return new TransactionImpl(context.readLengthAndBytes("Transaction length mismatch"));
+	}
+
+	@Override
+	public int compareTo(Transaction other) {
+		if (other instanceof TransactionImpl ti)
+			return Arrays.compare(bytes, ti.bytes); // optimization, to avoid cloning
+		else
+			return Arrays.compare(bytes, other.getBytes());
 	}
 }
