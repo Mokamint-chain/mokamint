@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +47,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
@@ -234,8 +237,9 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			}
 
 			private void closeNodes() throws IOException, DatabaseException, InterruptedException {
-				for (LocalNode node: nodes)
-					node.close();
+				CheckRunnable.check(IOException.class, DatabaseException.class, InterruptedException.class,
+					() ->  Stream.of(nodes).parallel().forEach(UncheckConsumer.uncheck(LocalNode::close))
+				);
 			}
 
 			private void addTransactions() throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException {

@@ -268,8 +268,11 @@ public class LocalNodeImpl implements LocalNode {
 			try {
 				blockchain.add(whisperedBlock.getBlock());
 			}
-			catch (NoSuchAlgorithmException | DatabaseException | VerificationException | ClosedDatabaseException e) {
+			catch (NoSuchAlgorithmException | DatabaseException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the blockchain: " + e.getMessage());
+			}
+			catch (VerificationException | ClosedDatabaseException e) {
+				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be added to the blockchain: " + e.getMessage());
 			}
 		}
 		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
@@ -278,8 +281,11 @@ public class LocalNodeImpl implements LocalNode {
 				mempool.add(tx);
 				onTransactionAdded(tx);
 			}
-			catch (RejectedTransactionException | NoSuchAlgorithmException | ClosedDatabaseException | DatabaseException e) {
+			catch (NoSuchAlgorithmException | DatabaseException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the mempool: " + e.getMessage());
+			}
+			catch (RejectedTransactionException | ClosedDatabaseException e) {
+				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be added to the mempool: " + e.getMessage());
 			}
 		}
 		else
@@ -400,19 +406,19 @@ public class LocalNodeImpl implements LocalNode {
 			}
 
 			try {
-				executors.awaitTermination(3, TimeUnit.SECONDS);
-				periodicExecutors.awaitTermination(3, TimeUnit.SECONDS);
+				executors.awaitTermination(5, TimeUnit.SECONDS);
+				periodicExecutors.awaitTermination(5, TimeUnit.SECONDS);
 			}
 			finally {
 				try {
-					blockchain.close();
+					miners.close();
 				}
 				finally {
 					try {
 						peers.close();
 					}
 					finally {
-						miners.close();
+						blockchain.close();
 					}
 				}
 			}

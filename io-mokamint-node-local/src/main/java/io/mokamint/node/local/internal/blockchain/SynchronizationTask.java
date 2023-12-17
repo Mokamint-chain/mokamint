@@ -141,15 +141,15 @@ public class SynchronizationTask implements Task {
 			do {
 				if (!downloadNextGroups()) {
 					LOGGER.info("sync: stop here since the peers do not provide more block hashes to download");
-					break;
+					return;
 				}
 
 				chooseMostReliableGroup();
 				downloadBlocks();
 
 				if (!addBlocksToBlockchain()) {
-					LOGGER.info("sync: stop here since nomore verifiable blocks can be downloaded");
-					break;
+					LOGGER.info("sync: stop here since no more verifiable blocks can be downloaded");
+					return;
 				}
 
 				keepOnlyPeersAgreeingOnChosenGroup();
@@ -159,6 +159,16 @@ public class SynchronizationTask implements Task {
 				height += GROUP_SIZE - 1;
 			}
 			while (chosenGroup.length == GROUP_SIZE);
+		}
+
+		/**
+		 * Checks if the current thread has been interrupted and, in that case, throws an exception.
+		 * 
+		 * @throws InterruptedException if and only if the current thread has been interrupted
+		 */
+		private static void stopIfInterrupted() throws InterruptedException {
+			if (Thread.currentThread().isInterrupted())
+				throw new InterruptedException("Interrupted");
 		}
 
 		/**
@@ -172,6 +182,7 @@ public class SynchronizationTask implements Task {
 		 * @throws ClosedDatabaseException if the database of the node is closed
 		 */
 		private boolean downloadNextGroups() throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
+			stopIfInterrupted();
 			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
 
 			groups.clear();
@@ -265,8 +276,11 @@ public class SynchronizationTask implements Task {
 		/**
 		 * Selects the group in {@link #groups} that looks as the most reliable, since the most
 		 * peers agree on its hashes.
+		 * 
+		 * @throws InterruptedException if the current thread gets interrupted
 		 */
-		private void chooseMostReliableGroup() {
+		private void chooseMostReliableGroup() throws InterruptedException {
+			stopIfInterrupted();
 			var alternatives = new HashSet<byte[][]>(groups.values());
 
 			for (int h = 1; h < GROUP_SIZE && alternatives.size() > 1; h++) {
@@ -332,11 +346,12 @@ public class SynchronizationTask implements Task {
 		 * might no be downloaded if all peers time out or no peer contains that block.
 		 * 
 		 * @throws DatabaseException if the database of {@link SynchronizationTask#node} is corrupted
-		 * @throws InterruptedException if the computation has been interrupted
+		 * @throws InterruptedException if the current thread gets interrupted
 		 * @throws IOException if an I/O error occurs
 		 * @throws ClosedDatabaseException if the database of the node is closed
 		 */
 		private void downloadBlocks() throws InterruptedException, DatabaseException, ClosedDatabaseException, IOException {
+			stopIfInterrupted();
 			blocks = new AtomicReferenceArray<>(chosenGroup.length);
 			semaphores = new Semaphore[chosenGroup.length];
 			Arrays.setAll(semaphores, _index -> new Semaphore(1));
@@ -441,13 +456,18 @@ public class SynchronizationTask implements Task {
 		 * @throws DatabaseException if the database of the node is corrupted
 		 * @throws NoSuchAlgorithmException if some block in the database of the node uses an unknown hashing algorithm
 		 * @throws ClosedDatabaseException if the database is already closed
+		 * @throws InterruptedException if the current thread gets interrupted during this method
 		 */
-		private boolean addBlocksToBlockchain() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
-			for (int h = 0; h < chosenGroup.length; h++)
+		private boolean addBlocksToBlockchain() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InterruptedException {
+			for (int h = 0; h < chosenGroup.length; h++) {
+				stopIfInterrupted();
+
 				if (!blockchain.containsBlock(chosenGroup[h])) {
 					Block block = blocks.get(h);
 					if (block == null)
 						return false;
+
+					stopIfInterrupted();
 
 					try {
 						blockchain.add(block);
@@ -457,6 +477,7 @@ public class SynchronizationTask implements Task {
 						return false;
 					}
 				}
+			}
 
 			return true;
 		}
@@ -465,8 +486,11 @@ public class SynchronizationTask implements Task {
 		 * Puts in the {@link #unusable} set all peers that downloaded a group
 		 * different from {@link #chosenGroup}: in any case, their subsequent groups are more
 		 * a less reliable history and won't be downloaded.
+		 * 
+		 * @throws InterruptedException if the current thread gets interrupted
 		 */
-		private void keepOnlyPeersAgreeingOnChosenGroup() {
+		private void keepOnlyPeersAgreeingOnChosenGroup() throws InterruptedException {
+			stopIfInterrupted();
 			for (var entry: groups.entrySet())
 				if (!Arrays.deepEquals(chosenGroup, entry.getValue()))
 					unusable.add(entry.getKey());

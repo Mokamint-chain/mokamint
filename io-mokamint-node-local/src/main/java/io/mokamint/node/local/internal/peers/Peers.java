@@ -461,7 +461,7 @@ public class Peers extends AbstractPeers implements AutoCloseable {
 			}
 		}
 		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "peers: interrupted while adding " + SanitizedStrings.of(peer) + ": " + e.getMessage());
+			LOGGER.log(Level.WARNING, "peers: interrupted while adding " + SanitizedStrings.of(peer));
 			Thread.currentThread().interrupt();
 			throw new UncheckedException(e);
 		}

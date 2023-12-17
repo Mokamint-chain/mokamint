@@ -39,6 +39,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -190,6 +192,7 @@ public class MineNewBlockTask implements Task {
 		private final boolean done;
 
 		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
+			stopIfInterrupted();
 			this.previous = previous;
 			this.hashOfPrevious = hashOfPrevious;
 			this.mempool = blockchain.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
@@ -255,16 +258,12 @@ public class MineNewBlockTask implements Task {
 				}
 		}
 
-		private void requestDeadlineToEveryMiner() {
-			miners.get().forEach(this::requestDeadlineTo);
+		private void requestDeadlineToEveryMiner() throws InterruptedException {
+			CheckRunnable.check(InterruptedException.class, () -> miners.get().forEach(UncheckConsumer.uncheck(this::requestDeadlineTo)));
 		}
 
-		private void requestDeadlineTo(Miner miner) {
-			if (Thread.currentThread().isInterrupted()) {
-				LOGGER.info(heightMessage + "not creating block on top of " + previousHex + " since the task has been interrupted");
-				return;
-			}
-
+		private void requestDeadlineTo(Miner miner) throws InterruptedException {
+			stopIfInterrupted();
 			LOGGER.info(heightMessage + "asking miner " + miner.getUUID() + " for a deadline: " + description);
 			minersThatDidNotAnswer.add(miner);
 			miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
@@ -274,7 +273,18 @@ public class MineNewBlockTask implements Task {
 			currentDeadline.await(config.getDeadlineWaitTimeout(), MILLISECONDS);
 		}
 
-		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException {
+		/**
+		 * Checks if the current thread has been interrupted and, in that case, throws an exception.
+		 * 
+		 * @throws InterruptedException if and only if the current thread has been interrupted
+		 */
+		private static void stopIfInterrupted() throws InterruptedException {
+			if (Thread.currentThread().isInterrupted())
+				throw new InterruptedException("Interrupted");
+		}
+
+		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InterruptedException {
+			stopIfInterrupted();
 			if (blockchain.add(block))
 				blockchain.scheduleWhisperingWithoutAddition(block);
 		}
@@ -341,8 +351,10 @@ public class MineNewBlockTask implements Task {
 		 * @throws ClosedDatabaseException if the database is already closed
 		 * @throws SignatureException if the block could not be signed
 		 * @throws InvalidKeyException if the private key of the node is invalid
+		 * @throws InterruptedException if the current thread gets interrupted
 		 */
-		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException {
+		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException {
+			stopIfInterrupted();
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 			var powerOfHead = blockchain.getPowerOfHead();
@@ -353,11 +365,6 @@ public class MineNewBlockTask implements Task {
 
 			var processedTransactions = transactionExecutor.getProcessedTransactions();
 			var nextBlock = Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate());
-
-			if (Thread.currentThread().isInterrupted()) {
-				LOGGER.info(heightMessage + "not creating block on top of " + previousHex + " since the task has been interrupted");
-				return Optional.empty();
-			}
 
 			return Optional.of(nextBlock);
 		}
