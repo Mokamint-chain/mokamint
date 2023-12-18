@@ -214,6 +214,7 @@ public class MineNewBlockTask implements Task {
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
+				stopTransactionExecutor();
 				var maybeBlock = createNewBlock();
 				if (maybeBlock.isPresent()) {
 					var block = maybeBlock.get();

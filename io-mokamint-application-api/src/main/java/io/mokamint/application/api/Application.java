@@ -39,25 +39,66 @@ public interface Application {
 	/**
 	 * Checks if the given transaction is valid according to this application.
 	 * Invalid transactions are just rejected when added to a node and they
-	 * will never be added to the blockchain. This check is invoked as soon as
-	 * a transaction reaches a node and can only be mainly syntactical and
-	 * context-independent. It will typically check the syntactical structure of
-	 * the transaction only. An application can safely always return {@code true} here,
-	 * since this method is only meant for a quick optimization: discarding transactions
-	 * that are clearly invalid, without even trying to deliver them.
+	 * will never be added to the mempool and consequently never to the blockchain.
+	 * This check is invoked as soon as
+	 * a transaction reaches a node. It is typically a merely syntactical,
+	 * context-independent check. An application can safely implement this method as
+	 * a no-operation, since it is only meant for a quick optimization: to discard
+	 * transactions that are clearly invalid, avoiding pollution of the mempool and
+	 * without even trying to deliver them.
 	 * 
 	 * @param transaction the transaction to check
-	 * @return true if and only if the transaction is valid
+	 * @throws RejectedTransactionException if the check failed
 	 */
-	boolean checkTransaction(Transaction transaction);
+	void checkTransaction(Transaction transaction) throws RejectedTransactionException;
 
+	/**
+	 * Yields the state of this application when it starts, before any transaction has been executed.
+	 * 
+	 * @return the state of this application when it starts
+	 */
 	byte[] getInitialStateHash();
 
-	int beginBlock();
+	/**
+	 * The node calls this method when a new block is being created. It marks the beginning
+	 * of the delivering of its transactions. The application must be able to support
+	 * the construction of many blocks at the same time. Consequently, each construction
+	 * is identified by a unique number.
+	 * 
+	 * @param stateHash the hash of the state at the beginning of the execution of
+	 *                  the transactions in the block
+	 * @return the identifier of the block creation that is being started; this is guaranteed
+	 *         to be different from the identifier of other block creations that are currently
+	 *         being performed
+	 */
+	int beginBlock(byte[] stateHash);
 
-	byte[] deliverTransaction(Transaction transaction, int id, byte[] stateHash) throws RejectedTransactionException;
+	/**
+	 * Delivers another transaction inside the block whose creation is identified by {@code id}.
+	 * This means that the transaction will be fully checked and then executed.
+	 * If the full check fails, an exception is thrown instead. Fully checked means that
+	 * the transaction can be completed verified in the context of the block.
+	 * This is then a thorough, context-dependent check, must stronger, in general, than the
+	 * check performed by {@link #checkTransaction(Transaction)}.
+	 * 
+	 * @param transaction the transaction to deliver
+	 * @param id the identifier of the block creation
+	 * @throws RejectedTransactionException if the check of the transaction failed
+	 */
+	void deliverTransaction(Transaction transaction, int id) throws RejectedTransactionException;
 
-	void endBlock(int id);
+	/**
+	 * The node calls this method when a new block creation ends and no more transactions
+	 * will be delivered for the block. This gives the application the opportunity of adding
+	 * the effect of coinbase transactions that it should execute at the end of the execution
+	 * of the transactions inside the block.
+	 * 
+	 * @param id the identifier of the block creation the is being ended
+	 * @return the hash of the state at the end of the execution of the transactions delivered
+	 *         during the creation of the block, including eventual coinbase transactions added
+	 *         at its end
+	 */
+	byte[] endBlock(int id);
 
 	/**
 	 * Computes the priority of the given transaction.

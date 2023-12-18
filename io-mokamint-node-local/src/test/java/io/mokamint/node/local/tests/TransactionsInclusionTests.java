@@ -18,6 +18,7 @@ package io.mokamint.node.local.tests;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -87,8 +88,9 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		when(app.getInitialStateHash()).thenReturn(new byte[] { 1, 2, 3 });
-		when(app.checkTransaction(any())).thenReturn(true);
-		when(app.deliverTransaction(any(), anyInt(), any())).thenReturn(new byte[] { 13, 17, 42 });
+		doNothing().when(app).checkTransaction(any());
+		doNothing().when(app).deliverTransaction(any(), anyInt());
+		when(app.endBlock(anyInt())).thenReturn(new byte[] { 13, 17, 42 });
 	}
 
 	private LocalNodeConfig mkConfig(Path chainDir) throws NoSuchAlgorithmException {
@@ -265,7 +267,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					LocalNode result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 
 					var uri = getPeer(num).getURI();
-					// this service will be closed automatically when this node will get closed
+					// this service will be closed automatically when the node will get closed
+					// TODO: if the test fails, it actually remains open...
 					PublicNodeServices.open(result, uri.getPort(), 1800000L, 1000, Optional.of(uri));
 
 					return result;

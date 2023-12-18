@@ -19,6 +19,7 @@ package io.mokamint.node.local.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -103,7 +104,9 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
-		when(app.getInitialStateHash()).thenReturn(new byte[] { 1, 2, 3 });
+		var stateHash = new byte[] { 1, 2, 3 };
+		when(app.getInitialStateHash()).thenReturn(stateHash);
+		when(app.endBlock(anyInt())).thenReturn(stateHash);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();

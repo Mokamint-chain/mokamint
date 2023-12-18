@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -123,10 +124,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 		application = mock(Application.class);
 		when(application.checkPrologExtra(any())).thenReturn(true);
-		when(application.checkTransaction(any())).thenReturn(true);
+		doNothing().when(application).checkTransaction(any());
 		when(application.getPriority(any())).thenReturn(13L);
 		when(application.getInitialStateHash()).thenReturn(stateHash);
-		when(application.deliverTransaction(any(), anyInt(), any())).thenReturn(stateHash);
+		doNothing().when(application).deliverTransaction(any(), anyInt());
+		when(application.endBlock(anyInt())).thenReturn(stateHash);
 	}
 
 	@AfterAll

@@ -365,8 +365,7 @@ public class Start extends AbstractCommand {
 		}
 
 		@Override
-		public boolean checkTransaction(Transaction transaction) {
-			return true;
+		public void checkTransaction(Transaction transaction) {
 		}
 
 		@Override
@@ -380,17 +379,17 @@ public class Start extends AbstractCommand {
 		}
 
 		@Override
-		public int beginBlock() {
+		public int beginBlock(byte[] stateHash) {
 			return 42;
 		}
 
 		@Override
-		public byte[] deliverTransaction(Transaction transaction, int id, byte[] stateHash) {
-			return new byte[] { (byte) id, 13, 1, 19, 73 };
+		public void deliverTransaction(Transaction transaction, int id) {
 		}
 
 		@Override
-		public void endBlock(int id) {
+		public byte[] endBlock(int id) {
+			return new byte[] { (byte) id, 13, 1, 19, 73 };
 		}
 	}
 }

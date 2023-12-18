@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -126,9 +128,10 @@ public class VerificationTests extends AbstractLoggedTests {
 	private static Application mockApplication() throws RejectedTransactionException {
 		var application = mock(Application.class);
 		when(application.checkPrologExtra(any())).thenReturn(true);
-		when(application.checkTransaction(any())).thenReturn(true);
+		doNothing().when(application).checkTransaction(any());
 		when(application.getInitialStateHash()).thenReturn(stateHash);
-		when(application.deliverTransaction(any(), anyInt(), any())).thenReturn(stateHash);
+		doNothing().when(application).deliverTransaction(any(), anyInt());
+		when(application.endBlock(anyInt())).thenReturn(stateHash);
 
 		return application;
 	}
@@ -426,7 +429,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var app = mockApplication();
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		when(app.checkTransaction(eq(tx2))).thenReturn(false);
+		doThrow(new RejectedTransactionException("tx2 rejected")).when(app).checkTransaction(eq(tx2));
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
@@ -452,7 +455,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var app = mockApplication();
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		when(app.deliverTransaction(eq(tx2), anyInt(), any())).thenThrow(RejectedTransactionException.class);
+		doThrow(new RejectedTransactionException("tx2 rejected")).when(app).deliverTransaction(eq(tx2), anyInt());
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
@@ -476,25 +479,18 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of its transactions, verification rejects it")
 	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException {
 		var app = mockApplication();
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		when(app.deliverTransaction(eq(tx2), anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
+		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		when(app.endBlock(anyInt())).thenReturn(new byte[] { 42, 17, 13 });
 
 		try (var node = new TestNode(dir, app)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.of(tx1, tx3), stateHash, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextDeadlineDescription(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
-			var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
-			var block = Blocks.of(expected, Stream.of(tx2), stateHash, nodePrivateKey);
+			var genesis = Blocks.genesis(description, Stream.of(tx), stateHash, nodePrivateKey);
 
-			assertTrue(blockchain.add(genesis));
-			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(genesis));
 			assertTrue(e.getMessage().startsWith("Final state mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsEmpty(blockchain);
 		}
 	}
 

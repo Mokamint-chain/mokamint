@@ -278,20 +278,24 @@ public class BlockVerification {
 		var app = node.getApplication();
 		byte[] currentStateHash = previous != null ? previous.getStateHash() : app.getInitialStateHash();
 
-		int id = app.beginBlock();
+		int id = app.beginBlock(currentStateHash);
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
-			if (!app.checkTransaction(tx))
-				throw new VerificationException("Failed check of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)));
-
 			try {
-				currentStateHash = app.deliverTransaction(tx, id, currentStateHash);
+				app.checkTransaction(tx);
 			}
 			catch (RejectedTransactionException e) {
-				throw new VerificationException("Failed delivery of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)));
+				throw new VerificationException("Failed check of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
+			}
+
+			try {
+				app.deliverTransaction(tx, id);
+			}
+			catch (RejectedTransactionException e) {
+				throw new VerificationException("Failed delivery of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
 			}
 		}
 
-		app.endBlock(id);
+		currentStateHash = app.endBlock(id);
 
 		if (!Arrays.equals(block.getStateHash(), currentStateHash))
 			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(currentStateHash) + " but found " + Hex.toHexString(block.getStateHash()) + ")");

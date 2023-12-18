@@ -18,6 +18,7 @@ package io.mokamint.node.local.tests;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -78,6 +79,8 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
+		var stateHash = new byte[] { 1, 2, 4 };
+		when(app.endBlock(anyInt())).thenReturn(stateHash);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 	}
 

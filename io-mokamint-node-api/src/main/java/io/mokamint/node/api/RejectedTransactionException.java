@@ -23,26 +23,12 @@ package io.mokamint.node.api;
 public class RejectedTransactionException extends Exception {
 
 	/**
-	 * Creates a new exception.
-	 */
-	public RejectedTransactionException() {}
-
-	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
 	public RejectedTransactionException(String message) {
 		super(message);
-	}
-
-	/**
-	 * Creates a new exception with the given cause.
-	 * 
-	 * @param cause the cause
-	 */
-	public RejectedTransactionException(Throwable cause) {
-		super(cause);
 	}
 
 	/**

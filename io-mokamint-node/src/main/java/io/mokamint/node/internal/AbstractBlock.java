@@ -69,7 +69,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private final byte[] stateHash;
 
 	/**
-	 * The signature of this .
+	 * The signature of this block.
 	 */
 	private final byte[] signature;
 

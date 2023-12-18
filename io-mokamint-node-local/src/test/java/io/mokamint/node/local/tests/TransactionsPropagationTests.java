@@ -18,6 +18,7 @@ package io.mokamint.node.local.tests;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -76,7 +77,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
-		when(app.checkTransaction(any())).thenReturn(true);
+		doNothing().when(app).checkTransaction(any());
 		when(app.getPriority(any())).thenReturn(42L);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 	}

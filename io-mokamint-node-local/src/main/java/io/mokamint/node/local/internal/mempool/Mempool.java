@@ -262,8 +262,12 @@ public class Mempool extends AbstractMempool {
 			//the transaction was already in the blockchain
 			throw new RejectedTransactionException("Repeated transaction " + hexHash);
 
-		if (!app.checkTransaction(transaction))
-			throw new RejectedTransactionException("Invalid transaction " + hexHash);
+		try {
+			app.checkTransaction(transaction);
+		}
+		catch (RejectedTransactionException e) {
+			throw new RejectedTransactionException("Check failed for transaction " + hexHash + ": " + e.getMessage());
+		}
 
 		long priority;
 
@@ -271,7 +275,7 @@ public class Mempool extends AbstractMempool {
 			priority = app.getPriority(transaction);
 		}
 		catch (RejectedTransactionException e) {
-			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash, e);
+			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash + ": " + e.getMessage());
 		}
 
 		var entry = new TransactionEntry(transaction, priority, hash);
