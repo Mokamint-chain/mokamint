@@ -32,6 +32,7 @@ import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlockDescription;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.internal.GenesisBlockImpl;
@@ -48,7 +49,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 
 	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Json(block.getDescription());
-		this.transactions = block.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new);
+		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new) : new Transactions.Json[0];
 		this.stateHash = Hex.toHexString(block.getStateHash());
 		this.signature = Hex.toHexString(block.getSignature());
 	}
@@ -65,7 +66,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 		byte[] signature = Hex.fromHexString(this.signature);
 
 		if (description instanceof GenesisBlockDescription gbd)
-			return new GenesisBlockImpl(gbd, transactions, stateHash, signature);
+			return new GenesisBlockImpl(gbd, stateHash, signature);
 		else
 			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, transactions, stateHash, signature);
 	}

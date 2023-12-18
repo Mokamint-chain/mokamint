@@ -412,10 +412,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 			var config = node.getConfig();
 			var keys = node.getKeys();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
-			var app = node.getApplication();
-			int id = app.beginBlock(app.getInitialStateHash());
-			byte[] finalStateHash = app.endBlock(id);
-			var genesis = Blocks.genesis(description, Stream.empty(), finalStateHash, keys.getPrivate());
+			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateHash(), keys.getPrivate());
 
 			add(genesis);
 		}

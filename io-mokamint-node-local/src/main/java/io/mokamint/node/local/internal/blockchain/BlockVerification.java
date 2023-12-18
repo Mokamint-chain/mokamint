@@ -107,8 +107,7 @@ public class BlockVerification {
 	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
-		transactionsSizeIsNotTooBig();
-		transactionsExecutionLeadsToFinalState();
+		finalStateIsTheInitialStateOfTheApplication();
 	}
 
 	/**
@@ -132,7 +131,7 @@ public class BlockVerification {
 		blockMatchesItsExpectedDescription(block);
 		transactionsSizeIsNotTooBig();
 		transactionsAreNotAlreadyInBlockchain();
-		transactionsExecutionLeadsToFinalState();
+		transactionsExecutionLeadsToFinalState(block);
 	}
 
 	/**
@@ -272,13 +271,13 @@ public class BlockVerification {
 	 * (both check and delivery of transactions succeeds) and leads to the final state
 	 * whose hash is in the {@link #block}.
 	 * 
+	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if that condition does not hold
 	 */
-	private void transactionsExecutionLeadsToFinalState() throws VerificationException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException {
 		var app = node.getApplication();
-		byte[] currentStateHash = previous != null ? previous.getStateHash() : app.getInitialStateHash();
 
-		int id = app.beginBlock(currentStateHash);
+		int id = app.beginBlock(previous.getStateHash());
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 			try {
 				app.checkTransaction(tx);
@@ -295,9 +294,15 @@ public class BlockVerification {
 			}
 		}
 
-		currentStateHash = app.endBlock(id);
+		var expected = app.endBlock(id);
 
-		if (!Arrays.equals(block.getStateHash(), currentStateHash))
-			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(currentStateHash) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
+		if (!Arrays.equals(block.getStateHash(), expected))
+			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
+	}
+
+	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException {
+		var expected = node.getApplication().getInitialStateHash();
+		if (!Arrays.equals(block.getStateHash(), expected))
+			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
 	}
 }

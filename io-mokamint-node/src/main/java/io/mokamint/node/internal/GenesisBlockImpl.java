@@ -29,7 +29,6 @@ import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
-import io.mokamint.node.api.Transaction;
 
 /**
  * The implementation of a genesis block of a Mokamint blockchain.
@@ -41,26 +40,24 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * Creates a genesis block with the given description and signs it with the given keys and signature algorithm.
 	 * 
 	 * @param description the description
-	 * @param transactions the transactions inside the block
 	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param privateKey the key used for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, transactions, stateHash, privateKey);
+	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, Stream.empty(), stateHash, privateKey);
 	}
 
 	/**
 	 * Creates a new genesis block with the given description and signature.
 	 *
 	 * @param description the description
-	 * @param transactions the transactions inside the block
 	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param signature the signature
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
-		super(description, transactions, stateHash, signature);
+	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, byte[] signature) {
+		super(description, Stream.empty(), stateHash, signature);
 	}
 
 	/**

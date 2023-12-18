@@ -53,7 +53,6 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -161,29 +160,6 @@ public class MempoolTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a genesis block is added, its transactions get removed from the mempool")
-	public void transactionsInGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
-		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
-			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
-			node.add(transaction1);
-			var entry3 = node.add(transaction3);
-			node.add(transaction2);
-			var genesis = Blocks.genesis(description, Stream.of(transaction2, transaction1), stateHash, nodeKeys.getPrivate());
-
-			assertTrue(blockchain.add(genesis));
-			var entries = node.getMempoolPortion(0, 10).getEntries().toArray(MempoolEntry[]::new);
-			assertEquals(1, entries.length);
-			assertEquals(entries[0], entry3);
-			assertEquals(1, node.getMempoolInfo().getSize());
-		}
-	}
-
-	@Test
 	@DisplayName("if a block with unknown previous is added, the mempool is unchanged")
 	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException {
 		try (var node = new TestNode(dir)) {
@@ -191,7 +167,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), stateHash, nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
@@ -222,7 +198,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), stateHash, nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
@@ -249,7 +225,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, Stream.empty(), stateHash, nodeKeys.getPrivate());
+			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
@@ -298,14 +274,15 @@ public class MempoolTests extends AbstractLoggedTests {
 			var entry2 = node.add(transaction2);
 			var entry3 = node.add(transaction3);
 
-			var genesis = Blocks.genesis(description, Stream.of(transaction0), stateHash, nodeKeys.getPrivate());
-			var block1 = computeNextBlock(genesis, Stream.of(transaction2), config, plot1);
-			var block0 = computeNextBlock(genesis, Stream.of(transaction1), config, plot2);
+			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
+			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), config, plot1);
+			var block1 = computeNextBlock(blockBase, Stream.of(transaction2), config, plot1);
+			var block0 = computeNextBlock(blockBase, Stream.of(transaction1), config, plot2);
 			if (block1.getDescription().getPower().compareTo(block0.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of added
 				// note: the transactions in the block to not contribute to the deadline and hence to the power
-				block1 = computeNextBlock(genesis, Stream.of(transaction2), config, plot2);
-				block0 = computeNextBlock(genesis, Stream.of(transaction1), config, plot1);
+				block1 = computeNextBlock(blockBase, Stream.of(transaction2), config, plot2);
+				block0 = computeNextBlock(blockBase, Stream.of(transaction1), config, plot1);
 			}
 
 			var block2 = computeNextBlock(block1, config);
@@ -320,7 +297,15 @@ public class MempoolTests extends AbstractLoggedTests {
 			
 			assertTrue(blockchain.add(genesis));
 
-			// now, the mempool contains only three transactions, since transaction0 is in the genesis
+			// at this stage, the mempool contains all four transactions
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(4, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(4, node.getMempoolInfo().getSize());
+
+			assertTrue(blockchain.add(blockBase));
+
+			// now, the mempool contains only three transactions, since transaction0 is in blockBase
 			expectedEntries = Set.of(entry1, entry2, entry3);
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(3, actualEntries.size());
@@ -354,7 +339,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			assertEquals(expectedEntries, actualEntries);
 			assertEquals(2, node.getMempoolInfo().getSize());
 
-			// we add a block after the genesis, that creates a better chain of length 4
+			// we add a block after blockBase, that creates a better chain of length 4
 			assertTrue(blockchain.add(block1));
 
 			// the more powerful chain is the current chain now:
@@ -384,8 +369,9 @@ public class MempoolTests extends AbstractLoggedTests {
 			var entry2 = node.add(transaction2);
 			var entry3 = node.add(transaction3);
 
-			var genesis = Blocks.genesis(description, Stream.of(transaction0), stateHash, nodeKeys.getPrivate());
-			var block1 = computeNextBlock(genesis, Stream.of(transaction1), config);
+			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
+			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), config, plot1);
+			var block1 = computeNextBlock(blockBase, Stream.of(transaction1), config);
 			var block2 = computeNextBlock(block1, Stream.of(transaction2), config);
 			var block3 = computeNextBlock(block2, Stream.of(transaction3), config);
 
@@ -413,6 +399,14 @@ public class MempoolTests extends AbstractLoggedTests {
 			assertEquals(4, node.getMempoolInfo().getSize());
 
 			assertFalse(blockchain.add(block1));
+
+			// the mempool did not change
+			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
+			assertEquals(4, actualEntries.size());
+			assertEquals(expectedEntries, actualEntries);
+			assertEquals(4, node.getMempoolInfo().getSize());
+
+			assertFalse(blockchain.add(blockBase));
 
 			// the mempool did not change
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
