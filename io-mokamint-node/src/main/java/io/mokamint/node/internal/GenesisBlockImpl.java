@@ -16,15 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.marshalling.AbstractMarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlock;
@@ -46,7 +47,26 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, Stream.empty(), stateHash, privateKey);
+		super(description, stateHash, privateKey, toByteArrayWithoutSignature(description, stateHash));
+		verify();
+	}
+
+	/**
+	 * Yields a marshalling of this object into a byte array, without considering its signature.
+	 * 
+	 * @return the marshalled bytes
+	 */
+	private static byte[] toByteArrayWithoutSignature(GenesisBlockDescription description, byte[] stateHash) {
+		try (var baos = new ByteArrayOutputStream(); var context = new AbstractMarshallingContext(baos) {}) {
+			description.into(context);
+			context.writeLengthAndBytes(stateHash);
+			context.flush();
+			return baos.toByteArray();
+		}
+		catch (IOException e) {
+			// impossible with a ByteArrayOutputStream
+			throw new RuntimeException("Unexpected exception", e);
+		}
 	}
 
 	/**
@@ -57,7 +77,8 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @param signature the signature
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, byte[] signature) {
-		super(description, Stream.empty(), stateHash, signature);
+		super(description, stateHash, signature);
+		verify();
 	}
 
 	/**
@@ -70,6 +91,13 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 */
 	GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
+
+		try {
+			verify();
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override

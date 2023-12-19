@@ -28,22 +28,18 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.DeadlineDescriptions;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
@@ -57,11 +53,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * The description of this block.
 	 */
 	private final D description;
-
-	/**
-	 * The transactions inside this block.
-	 */
-	protected final Transaction[] transactions;
 
 	/**
 	 * The hash of the application at the end of this block.
@@ -100,34 +91,28 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * Creates an abstract block with the given description.
 	 * 
 	 * @param description the description of the block
-	 * @param transactions the transactions inside the block
 	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param signature the signature of the block
 	 */
-	protected AbstractBlock(D description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
+	protected AbstractBlock(D description, byte[] stateHash, byte[] signature) {
 		this.description = description;
-		this.transactions = transactions.toArray(Transaction[]::new);
 		this.stateHash = stateHash.clone();
 		this.signature = signature.clone();
-		verify();
 	}
 
 	/**
 	 * Creates an abstract block with the given description and signs it.
 	 * 
 	 * @param description the description of the block
-	 * @param transactions the transactions inside the block
 	 * @param stateHash the hash of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if signing failed
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
-	protected AbstractBlock(D description, Stream<Transaction> transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	protected AbstractBlock(D description, byte[] stateHash, PrivateKey privateKey, byte[] bytesToSign) throws InvalidKeyException, SignatureException {
 		this.description = description;
-		this.transactions = transactions.toArray(Transaction[]::new);
 		this.stateHash = stateHash.clone();
-		this.signature = computeSignature(privateKey);
-		verify();
+		this.signature = computeSignature(privateKey, bytesToSign);
 	}
 
 	/**
@@ -143,10 +128,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		this.description = description;
 
 		try {
-			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
 			this.stateHash = context.readLengthAndBytes("State hash length mismatch");
 			this.signature = context.readLengthAndBytes("Signature length mismatch");
-			verify();
 		}
 		catch (RuntimeException e) {
 			throw new IOException(e);
@@ -241,18 +224,12 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final void into(MarshallingContext context) throws IOException {
-		intoWithoutSignature(context);
-		context.writeLengthAndBytes(signature);
-	}
-
-	@Override
 	public final String toString() {
 		return toString(Optional.empty(), Optional.empty());
 	}
 
 	@Override
-	public final String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	public String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
 		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
 		builder.append(description.toString(config, startDateTimeUTC));
@@ -260,42 +237,36 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
 		builder.append("* final state hash: " + Hex.toHexString(stateHash) + "\n");
 
-		if (transactions.length == 0)
-			builder.append("* 0 transactions");
-		else if (transactions.length == 1)
-			builder.append("* 1 transaction:");
-		else
-			builder.append("* " + transactions.length + " transactions:");
-
-		int n = 0;
-		Optional<HashingAlgorithm> hashing = config.map(ConsensusConfig::getHashingForTransactions);
-		Optional<Hasher<Transaction>> hasher = hashing.map(h -> h.getHasher(Transaction::getBytes));
-
-		for (var transaction: transactions) {
-			builder.append("\n * #" + n++ + ": ");
-			builder.append(hasher.map(h -> h.hash(transaction)).map(Hex::toHexString).map(hex -> hex + " (" + hashing.get() + ")")
-				.orElse(limit(transaction) + " (base64)"));
-		}
-
 		return builder.toString();
 	}
 
-	private static String limit(Transaction transaction) {
-		String s = transaction.toString();
-		if (s.length() < 50)
-			return s;
-		else
-			return s.substring(0, 50) + "...";
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		description.into(context);
+		context.writeLengthAndBytes(stateHash);
+		context.writeLengthAndBytes(signature);
 	}
 
 	/**
-	 * Computes the signature of this block. It is compute from its marshalling, without the signature itself.
+	 * Marshals this block into the given context, without its signature.
 	 * 
+	 * @param context the context
+	 * @throws IOException if marshalling fails
+	 */
+	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
+		description.into(context);
+		context.writeLengthAndBytes(stateHash);
+	}
+
+	/**
+	 * Computes the signature for this block.
+	 * 
+	 * @param bytesToSign the unmarshalled bytes of this block
 	 * @throws SignatureException if the computation of the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	private byte[] computeSignature(PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return description.getSignatureForBlock().getSigner(privateKey, AbstractBlock<D>::toByteArrayWithoutSignature).sign(this);
+	private byte[] computeSignature(PrivateKey privateKey, byte[] bytesToSign) throws InvalidKeyException, SignatureException {
+		return description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(bytesToSign);
 	}
 
 	/**
@@ -306,7 +277,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid or
 	 *                                  if some transaction is repeated inside the block)
 	 */
-	private void verify() {
+	protected void verify() {
 		Objects.requireNonNull(description, "description cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
@@ -320,23 +291,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		catch (InvalidKeyException e) {
 			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
 		}
-
-		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
-		for (int pos = 0; pos < transactions.length - 1; pos++)
-			if (transactions[pos].equals(transactions[pos + 1]))
-				throw new IllegalArgumentException("Repeated transaction");
-	}
-
-	/**
-	 * Marshals this block into the given context, without its signature.
-	 * 
-	 * @param context the context
-	 * @throws IOException if marshalling fails
-	 */
-	private void intoWithoutSignature(MarshallingContext context) throws IOException {
-		description.into(context);
-		context.writeLengthAndArray(transactions);
-		context.writeLengthAndBytes(stateHash);
 	}
 
 	/**
