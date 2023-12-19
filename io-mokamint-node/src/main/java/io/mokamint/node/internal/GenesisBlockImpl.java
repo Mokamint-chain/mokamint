@@ -48,7 +48,38 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		super(description, stateHash, privateKey, toByteArrayWithoutSignature(description, stateHash));
-		verify();
+		verify(toByteArrayWithoutSignature(description, stateHash));
+	}
+
+	/**
+	 * Creates a new genesis block with the given description and signature.
+	 *
+	 * @param description the description
+	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param signature the signature
+	 */
+	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, byte[] signature) {
+		super(description, stateHash, signature);
+		verify(toByteArrayWithoutSignature(description, stateHash));
+	}
+
+	/**
+	 * Unmarshals a genesis block from the given context. The description of the block has been already read.
+	 * 
+	 * @param description the description of the block
+	 * @param context the context
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
+	 */
+	GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
+		super(description, context);
+
+		try {
+			verify(toByteArrayWithoutSignature(description, getStateHash()));
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
 	}
 
 	/**
@@ -66,37 +97,6 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 		catch (IOException e) {
 			// impossible with a ByteArrayOutputStream
 			throw new RuntimeException("Unexpected exception", e);
-		}
-	}
-
-	/**
-	 * Creates a new genesis block with the given description and signature.
-	 *
-	 * @param description the description
-	 * @param stateHash the hash of the state of the application at the end of this block
-	 * @param signature the signature
-	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, byte[] signature) {
-		super(description, stateHash, signature);
-		verify();
-	}
-
-	/**
-	 * Unmarshals a genesis block from the given context. The description of the block has been already read.
-	 * 
-	 * @param description the description of the block
-	 * @param context the context
-	 * @return the block
-	 * @throws IOException if the block cannot be unmarshalled
-	 */
-	GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
-		super(description, context);
-
-		try {
-			verify();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
 		}
 	}
 
@@ -120,10 +120,5 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 		}
 		else
 			throw exceptionSupplier.apply("Block type mismatch (expected non-genesis but found genesis)");
-	}
-
-	@Override
-	public boolean equals(Object other) {
-		return other instanceof GenesisBlock && super.equals(other);
 	}
 }

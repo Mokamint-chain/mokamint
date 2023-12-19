@@ -69,6 +69,41 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	/**
+	 * Creates a new non-genesis block with the given description and signature.
+	 * 
+	 * @param description the description
+	 * @param transactions the transactions in the block
+	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param signature the signature that will be put in the block
+	 */
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
+		super(description, stateHash, signature);
+
+		this.transactions = transactions.toArray(Transaction[]::new);
+		verify(toByteArrayWithoutSignature(description, stateHash, this.transactions));	
+	}
+
+	/**
+	 * Unmarshals a non-genesis block from the given context. The description of the block has been already read.
+	 * 
+	 * @param description the description of the block
+	 * @param context the context
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
+	 */
+	NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
+		super(description, context);
+
+		try {
+			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
+			verify(toByteArrayWithoutSignature(description, getStateHash(), transactions));
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
+	}
+
+	/**
 	 * Creates a new non-genesis block with the given description. It adds a signature to the resulting block,
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
@@ -81,9 +116,9 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 */
 	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Transaction[] transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		super(description, stateHash, privateKey, toByteArrayWithoutSignature(description, stateHash, transactions));
-
+	
 		this.transactions = transactions;
-		verify();
+		verify(toByteArrayWithoutSignature(description, stateHash, transactions));
 	}
 
 	/**
@@ -102,41 +137,6 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		catch (IOException e) {
 			// impossible with a ByteArrayOutputStream
 			throw new RuntimeException("Unexpected exception", e);
-		}
-	}
-
-	/**
-	 * Creates a new non-genesis block with the given description and signature.
-	 * 
-	 * @param description the description
-	 * @param transactions the transactions in the block
-	 * @param stateHash the hash of the state of the application at the end of this block
-	 * @param signature the signature that will be put in the block
-	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
-		super(description, stateHash, signature);
-
-		this.transactions = transactions.toArray(Transaction[]::new);
-		verify();	
-	}
-
-	/**
-	 * Unmarshals a non-genesis block from the given context. The description of the block has been already read.
-	 * 
-	 * @param description the description of the block
-	 * @param context the context
-	 * @return the block
-	 * @throws IOException if the block cannot be unmarshalled
-	 */
-	NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
-		super(description, context);
-
-		try {
-			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
-			verify();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
 		}
 	}
 
@@ -217,14 +217,8 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
-		super.intoWithoutSignature(context);
-		context.writeLengthAndArray(transactions);
-	}
-
-	@Override
-	protected void verify() {
-		super.verify();
+	protected void verify(byte[] bytesToSign) {
+		super.verify(bytesToSign);
 
 		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
 		for (int pos = 0; pos < transactions.length - 1; pos++)

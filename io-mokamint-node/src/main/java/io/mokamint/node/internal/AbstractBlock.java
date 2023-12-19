@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
@@ -112,7 +111,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	protected AbstractBlock(D description, byte[] stateHash, PrivateKey privateKey, byte[] bytesToSign) throws InvalidKeyException, SignatureException {
 		this.description = description;
 		this.stateHash = stateHash.clone();
-		this.signature = computeSignature(privateKey, bytesToSign);
+		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(bytesToSign);
 	}
 
 	/**
@@ -213,9 +212,16 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof Block block && description.equals(block.getDescription())
-			&& Arrays.equals(signature, block.getSignature())
-			&& Arrays.equals(stateHash, block.getStateHash());
+		if (other instanceof Block block
+			// this guarantees that genesis is only equal to genesis
+			// and non-genesis is only equals to non-genesis
+			&& description.equals(block.getDescription()))
+			if (other instanceof AbstractBlock<?> oab)
+				return Arrays.equals(signature, oab.signature) && Arrays.equals(stateHash, oab.stateHash); // optimization
+			else
+				return Arrays.equals(signature, block.getSignature()) && Arrays.equals(stateHash, block.getStateHash());
+		else
+			return false;
 	}
 
 	@Override
@@ -248,28 +254,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	/**
-	 * Marshals this block into the given context, without its signature.
-	 * 
-	 * @param context the context
-	 * @throws IOException if marshalling fails
-	 */
-	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
-		description.into(context);
-		context.writeLengthAndBytes(stateHash);
-	}
-
-	/**
-	 * Computes the signature for this block.
-	 * 
-	 * @param bytesToSign the unmarshalled bytes of this block
-	 * @throws SignatureException if the computation of the signature of the block failed
-	 * @throws InvalidKeyException if the private key is invalid
-	 */
-	private byte[] computeSignature(PrivateKey privateKey, byte[] bytesToSign) throws InvalidKeyException, SignatureException {
-		return description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(bytesToSign);
-	}
-
-	/**
 	 * Checks all constraints expected from this block. This also checks the validity of
 	 * the signature and that transactions are not repeated inside the block.
 	 * 
@@ -277,12 +261,12 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid or
 	 *                                  if some transaction is repeated inside the block)
 	 */
-	protected void verify() {
+	protected void verify(byte[] bytesToSign) {
 		Objects.requireNonNull(description, "description cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
 		try {
-			if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), AbstractBlock<D>::toByteArrayWithoutSignature).verify(this, signature))
+			if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(bytesToSign, signature))
 				throw new IllegalArgumentException("The block's signature is invalid");
 		}
 		catch (SignatureException e) {
@@ -290,23 +274,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		}
 		catch (InvalidKeyException e) {
 			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
-		}
-	}
-
-	/**
-	 * Yields a marshalling of this object into a byte array, without considering its signature.
-	 * 
-	 * @return the marshalled bytes
-	 */
-	private byte[] toByteArrayWithoutSignature() {
-		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
-			intoWithoutSignature(context);
-			context.flush();
-			return baos.toByteArray();
-		}
-		catch (IOException e) {
-			// impossible with a ByteArrayOutputStream
-			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 
