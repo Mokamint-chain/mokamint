@@ -129,8 +129,8 @@ public class BlockVerification {
 		deadlineHasValidProlog();
 		deadlineIsValid();
 		blockMatchesItsExpectedDescription(block);
-		transactionsSizeIsNotTooBig();
-		transactionsAreNotAlreadyInBlockchain();
+		transactionsSizeIsNotTooBig(block);
+		transactionsAreNotAlreadyInBlockchain(block);
 		transactionsExecutionLeadsToFinalState(block);
 	}
 
@@ -243,7 +243,7 @@ public class BlockVerification {
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
 	}
 
-	private void transactionsSizeIsNotTooBig() throws VerificationException {
+	private void transactionsSizeIsNotTooBig(NonGenesisBlock block) throws VerificationException {
 		if (block.getTransactions().mapToInt(Transaction::size).sum() > config.getMaxBlockSize())
 			throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + ")");
 	}
@@ -251,12 +251,13 @@ public class BlockVerification {
 	/**
 	 * Checks that the transactions in {@link #block} are not already contained in blockchain.
 	 * 
+	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if some transaction is already contained in blockchain
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 */
-	private void transactionsAreNotAlreadyInBlockchain() throws VerificationException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
 		var previousHash = previous.getHash(config.getHashingForBlocks());
 
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {

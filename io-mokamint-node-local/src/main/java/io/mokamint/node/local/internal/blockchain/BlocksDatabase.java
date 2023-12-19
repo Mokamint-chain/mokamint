@@ -748,7 +748,10 @@ public class BlocksDatabase implements AutoCloseable {
 			if (block.isEmpty())
 				throw new DatabaseException("The current best chain misses the block at height " + ref.height  + " with hash " + Hex.toHexString(blockHash.getBytes()));
 
-			return Optional.of(block.get().getTransaction(ref.progressive));
+			if (block.get() instanceof NonGenesisBlock ngb)
+				return Optional.of(ngb.getTransaction(ref.progressive));
+			else
+				throw new DatabaseException("Transaction " + Hex.toHexString(hash) + " should be contained in a genesis block, which is impossible");
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
@@ -821,19 +824,18 @@ public class BlocksDatabase implements AutoCloseable {
 
 					return Optional.of(TransactionAddresses.of(blockHash2.getBytes(), ref.progressive));
 				}
-				else {
+				else if (block instanceof NonGenesisBlock ngb) {
 					// we check if the transaction is inside the table of transactions of the block
-					int length = block.getTransactionsCount();
+					int length = ngb.getTransactionsCount();
 					for (int pos = 0; pos < length; pos++)
-						if (Arrays.equals(hash, hasherForTransactions.hash(block.getTransaction(pos))))
+						if (Arrays.equals(hash, hasherForTransactions.hash(ngb.getTransaction(pos))))
 							return Optional.of(TransactionAddresses.of(cursor, pos));
 
 					// otherwise we continue with the previous block
-					if (block instanceof NonGenesisBlock ngb)
-						cursor = ngb.getHashOfPreviousBlock();
-					else
-						throw new DatabaseException("The block with hash " + Hex.toHexString(blockHash) + " is not connected to the best chain");
+					cursor = ngb.getHashOfPreviousBlock();
 				}
+				else
+					throw new DatabaseException("The block with hash " + Hex.toHexString(blockHash) + " is not connected to the best chain");
 			}
 		}
 		catch (ExodusException | IOException e) {
@@ -1134,25 +1136,25 @@ public class BlocksDatabase implements AutoCloseable {
 			var actual = storeOfChain.get(txn, fromBytes(longToBytes(height)));
 			System.out.println(height + ": " + Hex.toHexString(actual.getBytes()));
 
-			for (int pos = 0; pos < cursor.getTransactionsCount(); pos++) {
-				var tx = cursor.getTransaction(pos);
-				var actualTx = storeOfTransactions.get(txn, ByteIterable.fromBytes(hasherForTransactions.hash(tx)));
-				if (actualTx == null)
-					System.out.println("  " + pos + ": null");
-				else {
-					TransactionRef ref;
+			if (cursor instanceof NonGenesisBlock ngb) {
+				for (int pos = 0; pos < ngb.getTransactionsCount(); pos++) {
+					var tx = ngb.getTransaction(pos);
+					var actualTx = storeOfTransactions.get(txn, ByteIterable.fromBytes(hasherForTransactions.hash(tx)));
+					if (actualTx == null)
+						System.out.println("  " + pos + ": null");
+					else {
+						TransactionRef ref;
 
-					try {
-						ref = TransactionRef.from(actualTx);
-						System.out.println(ref);
-					}
-					catch (IOException e) {
-						System.out.println("  " + pos + ": corrupted");
+						try {
+							ref = TransactionRef.from(actualTx);
+							System.out.println(ref);
+						}
+						catch (IOException e) {
+							System.out.println("  " + pos + ": corrupted");
+						}
 					}
 				}
-			}
 
-			if (cursor instanceof NonGenesisBlock ngb) {
 				Optional<Block> maybePrevious = getBlock(txn, ngb.getHashOfPreviousBlock());
 				if (maybePrevious.isEmpty()) {
 					System.out.println("missing previous");
@@ -1199,18 +1201,22 @@ public class BlocksDatabase implements AutoCloseable {
 	}
 
 	private void addReferencesToTransactionsInside(Transaction txn, Block block) {
-		long height = block.getDescription().getHeight();
-		int count = block.getTransactionsCount();
-		for (int pos = 0; pos < count; pos++) {
-			var ref = new TransactionRef(height, pos);
-			storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(block.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
-		};
+		if (block instanceof NonGenesisBlock ngb) {
+			long height = ngb.getDescription().getHeight();
+			int count = ngb.getTransactionsCount();
+			for (int pos = 0; pos < count; pos++) {
+				var ref = new TransactionRef(height, pos);
+				storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
+			};
+		}
 	}
 
 	private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
-		int count = block.getTransactionsCount();
-		for (int pos = 0; pos < count; pos++)
-			storeOfTransactions.remove(txn, ByteIterable.fromBytes(hasherForTransactions.hash(block.getTransaction(pos))));
+		if (block instanceof NonGenesisBlock ngb) {
+			int count = ngb.getTransactionsCount();
+			for (int pos = 0; pos < count; pos++)
+				storeOfTransactions.remove(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
+		}
 	}
 
 	private static byte[] longToBytes(long l) {

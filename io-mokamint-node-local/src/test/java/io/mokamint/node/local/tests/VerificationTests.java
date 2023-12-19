@@ -730,11 +730,6 @@ public class VerificationTests extends AbstractLoggedTests {
 				.build();
 	}
 
-	private static void assertBlockchainIsEmpty(Blockchain blockchain) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
-		assertTrue(blockchain.getGenesis().isEmpty());
-		assertTrue(blockchain.getHead().isEmpty());
-	}
-
 	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis, LocalNodeConfig config) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(genesis, blockchain.getHead().get());

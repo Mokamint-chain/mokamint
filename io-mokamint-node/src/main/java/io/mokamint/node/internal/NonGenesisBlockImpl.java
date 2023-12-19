@@ -88,6 +88,24 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
+	public Stream<Transaction> getTransactions() {
+		return Stream.of(transactions);
+	}
+
+	@Override
+	public int getTransactionsCount() {
+		return transactions.length;
+	}
+
+	@Override
+	public Transaction getTransaction(int progressive) {
+		if (progressive < 0 || progressive >= transactions.length)
+			throw new IndexOutOfBoundsException(progressive);
+
+		return transactions[progressive];
+	}
+
+	@Override
 	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
 		if (description instanceof NonGenesisBlockDescription ngbg) {
 			var height = getDescription().getHeight();
@@ -120,6 +138,12 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof NonGenesisBlock && super.equals(other);
+		if (other instanceof NonGenesisBlock ongb && super.equals(other))
+			if (other instanceof NonGenesisBlockImpl ongbi)
+				return Arrays.equals(transactions, ongbi.transactions); // optimization
+			else
+				return Arrays.equals(transactions, ongb.getTransactions().toArray(Transaction[]::new));
+		else
+			return false;
 	}
 }

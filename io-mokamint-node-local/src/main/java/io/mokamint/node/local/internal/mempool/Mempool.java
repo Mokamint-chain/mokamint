@@ -140,13 +140,14 @@ public class Mempool extends AbstractMempool {
 
 				while (!mempool.isEmpty()) {
 					var newBlock = getBlock(newBase);
-					var toRemove = newBlock.getTransactions().collect(Collectors.toCollection(HashSet::new));
-					new HashSet<>(mempool).stream()
-						.filter(entry -> toRemove.contains(entry.transaction))
-						.forEach(this::remove);
 
-					if (newBlock instanceof NonGenesisBlock ngb)
+					if (newBlock instanceof NonGenesisBlock ngb) {
+						var toRemove = ngb.getTransactions().collect(Collectors.toCollection(HashSet::new));
+						new HashSet<>(mempool).stream()
+							.filter(entry -> toRemove.contains(entry.transaction))
+							.forEach(this::remove);
 						newBase = ngb.getHashOfPreviousBlock();
+					}
 					else
 						break;
 				}
@@ -161,7 +162,7 @@ public class Mempool extends AbstractMempool {
 
 				while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight()) {
 					if (newBlock instanceof NonGenesisBlock ngb) {
-						newBlock.getTransactions().forEach(toRemove::add);
+						ngb.getTransactions().forEach(toRemove::add);
 						newBase = ngb.getHashOfPreviousBlock();
 						newBlock = getBlock(newBase);
 					}
@@ -171,8 +172,8 @@ public class Mempool extends AbstractMempool {
 
 				while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight()) {
 					if (oldBlock instanceof NonGenesisBlock ngb) {
-						for (int pos = 0; pos < oldBlock.getTransactionsCount(); pos++) {
-							var transaction = oldBlock.getTransaction(pos);
+						for (int pos = 0; pos < ngb.getTransactionsCount(); pos++) {
+							var transaction = ngb.getTransaction(pos);
 
 							try {
 								toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));
@@ -195,7 +196,7 @@ public class Mempool extends AbstractMempool {
 						throw new DatabaseException("Cannot identify a shared ancestor block between " + Hex.toHexString(oldBase) + " and " + Hex.toHexString(newBase));
 
 					if (newBlock instanceof NonGenesisBlock ngb1) {
-						newBlock.getTransactions().forEach(toRemove::add);
+						ngb1.getTransactions().forEach(toRemove::add);
 						newBase = ngb1.getHashOfPreviousBlock();
 						newBlock = getBlock(newBase);
 					}
@@ -203,8 +204,8 @@ public class Mempool extends AbstractMempool {
 						throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(newBase) + " at height " + newBlock.getDescription().getHeight());
 
 					if (oldBlock instanceof NonGenesisBlock ngb2) {
-						for (int pos = 0; pos < oldBlock.getTransactionsCount(); pos++) {
-							var transaction = oldBlock.getTransaction(pos);
+						for (int pos = 0; pos < ngb2.getTransactionsCount(); pos++) {
+							var transaction = ngb2.getTransaction(pos);
 
 							try {
 								toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));

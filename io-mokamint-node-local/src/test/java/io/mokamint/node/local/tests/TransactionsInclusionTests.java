@@ -58,6 +58,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
@@ -156,9 +157,12 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			@Override
 			protected void onBlockAdded(Block block) {
 				super.onBlockAdded(block);
-				block.getTransactions().forEach(allTransactions::remove);
-				if (allTransactions.isEmpty())
-					allIncluded.release();
+
+				if (block instanceof NonGenesisBlock ngb) {
+					ngb.getTransactions().forEach(allTransactions::remove);
+					if (allTransactions.isEmpty())
+						allIncluded.release();
+				}
 			}
 		}
 
@@ -207,12 +211,14 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				protected void onBlockAdded(Block block) {
 					super.onBlockAdded(block);
 
-					synchronized (this) {
-						block.getTransactions().forEach(getAdded()::add);
+					if (block instanceof NonGenesisBlock ngb) {
+						synchronized (this) {
+							ngb.getTransactions().forEach(getAdded()::add);
 
-						synchronized (allTransactions) {
-							if (getAdded().equals(allTransactions))
-								getSeenAll().release();
+							synchronized (allTransactions) {
+								if (getAdded().equals(allTransactions))
+									getSeenAll().release();
+							}
 						}
 					}
 				}

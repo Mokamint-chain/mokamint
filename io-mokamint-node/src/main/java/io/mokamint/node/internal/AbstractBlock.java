@@ -61,7 +61,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	/**
 	 * The transactions inside this block.
 	 */
-	private final Transaction[] transactions;
+	protected final Transaction[] transactions;
 
 	/**
 	 * The hash of the application at the end of this block.
@@ -180,24 +180,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final Stream<Transaction> getTransactions() {
-		return Stream.of(transactions);
-	}
-
-	@Override
-	public final int getTransactionsCount() {
-		return transactions.length;
-	}
-
-	@Override
-	public final Transaction getTransaction(int progressive) {
-		if (progressive < 0 || progressive >= transactions.length)
-			throw new IndexOutOfBoundsException(progressive);
-
-		return transactions[progressive];
-	}
-
-	@Override
 	public final byte[] getStateHash() {
 		return stateHash.clone();
 	}
@@ -250,7 +232,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	public boolean equals(Object other) {
 		return other instanceof Block block && description.equals(block.getDescription())
 			&& Arrays.equals(signature, block.getSignature())
-			&& Arrays.equals(transactions, block.getTransactions().toArray(Transaction[]::new))
 			&& Arrays.equals(stateHash, block.getStateHash());
 	}
 

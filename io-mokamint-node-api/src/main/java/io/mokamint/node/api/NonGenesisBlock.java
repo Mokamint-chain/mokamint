@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.stream.Stream;
+
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.nonce.api.Deadline;
 
@@ -40,12 +42,25 @@ public interface NonGenesisBlock extends Block {
 	byte[] getHashOfPreviousBlock();
 
 	/**
-	 * Yields the signature of this node, computed from its hash by the node
-	 * that mined this block. This signature must have been computed with the
-	 * private key corresponding to the node's public key inside the prolog
-	 * of the deadline of this block (as returned by {@link #getDeadline()}.
+	 * Yields the transactions inside this block.
 	 * 
-	 * @return the signature
+	 * @return the transactions
 	 */
-	byte[] getSignature();
+	Stream<Transaction> getTransactions();
+
+	/**
+	 * Yields the number of transactions inside this block.
+	 * 
+	 * @return the number of transactions
+	 */
+	int getTransactionsCount();
+
+	/**
+	 * Yields the {@code progressive}th transaction inside this block.
+	 * 
+	 * @param progressive the index of the transaction
+	 * @return the transaction
+	 * @throws IndexOutOfBoundsException if there is no transaction with that progressive index
+	 */
+	Transaction getTransaction(int progressive);
 }

@@ -19,7 +19,6 @@ package io.mokamint.node.api;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -41,13 +40,6 @@ public interface Block extends Marshallable {
 	BlockDescription getDescription();
 
 	/**
-	 * Yields the transactions inside this block.
-	 * 
-	 * @return the transactions
-	 */
-	Stream<Transaction> getTransactions();
-
-	/**
 	 * Yields the signature of this block, computed from its hash by the node
 	 * that mined this block. This signature must have been computed with the
 	 * private key corresponding to the node's public key, which is inside the prolog
@@ -56,22 +48,6 @@ public interface Block extends Marshallable {
 	 * @return the signature
 	 */
 	byte[] getSignature();
-
-	/**
-	 * Yields the number of transactions inside this block.
-	 * 
-	 * @return the number of transactions
-	 */
-	int getTransactionsCount();
-
-	/**
-	 * Yields the {@code progressive}th transaction inside this block.
-	 * 
-	 * @param progressive the index of the transaction
-	 * @return the transaction
-	 * @throws IndexOutOfBoundsException if there is no transaction with that progressive index
-	 */
-	Transaction getTransaction(int progressive);
 
 	/**
 	 * Yields the hash of the state of the application at the end of the execution of the
