@@ -28,6 +28,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +49,7 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.tools.AbstractCommand;
@@ -379,7 +381,7 @@ public class Start extends AbstractCommand {
 		}
 
 		@Override
-		public int beginBlock(byte[] stateHash) {
+		public int beginBlock(long height, byte[] stateHash, LocalDateTime creationStartDateTime) {
 			return 42;
 		}
 
@@ -388,8 +390,12 @@ public class Start extends AbstractCommand {
 		}
 
 		@Override
-		public byte[] endBlock(int id) {
+		public byte[] endBlock(int id, Deadline deadline) {
 			return new byte[] { (byte) id, 13, 1, 19, 73 };
+		}
+
+		@Override
+		public void commitBlock(int id) {
 		}
 	}
 }

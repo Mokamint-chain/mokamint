@@ -128,7 +128,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		when(application.getPriority(any())).thenReturn(13L);
 		when(application.getInitialStateHash()).thenReturn(stateHash);
 		doNothing().when(application).deliverTransaction(any(), anyInt());
-		when(application.endBlock(anyInt())).thenReturn(stateHash);
+		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
 	}
 
 	@AfterAll

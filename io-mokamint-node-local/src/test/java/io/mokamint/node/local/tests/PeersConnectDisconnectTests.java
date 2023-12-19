@@ -80,7 +80,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 4 };
-		when(app.endBlock(anyInt())).thenReturn(stateHash);
+		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 	}
 

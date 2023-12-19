@@ -217,16 +217,6 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	protected void verify(byte[] bytesToSign) {
-		super.verify(bytesToSign);
-
-		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
-		for (int pos = 0; pos < transactions.length - 1; pos++)
-			if (transactions[pos].equals(transactions[pos + 1]))
-				throw new IllegalArgumentException("Repeated transaction");
-	}
-
-	@Override
 	public final String toString(Optional<ConsensusConfig<?, ?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder(super.toString(config, startDateTimeUTC));
 
@@ -248,6 +238,16 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		}
 
 		return builder.toString();
+	}
+
+	@Override
+	protected void verify(byte[] bytesToSign) {
+		super.verify(bytesToSign);
+	
+		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
+		for (int pos = 0; pos < transactions.length - 1; pos++)
+			if (transactions[pos].equals(transactions[pos + 1]))
+				throw new IllegalArgumentException("Repeated transaction");
 	}
 
 	private static String limit(Transaction transaction) {

@@ -132,7 +132,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		doNothing().when(application).checkTransaction(any());
 		when(application.getInitialStateHash()).thenReturn(stateHash);
 		doNothing().when(application).deliverTransaction(any(), anyInt());
-		when(application.endBlock(anyInt())).thenReturn(stateHash);
+		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
 
 		return application;
 	}
@@ -474,7 +474,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException {
 		var app = mockApplication();
 		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		when(app.endBlock(anyInt())).thenReturn(new byte[] { 42, 17, 13 });
+		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
 
 		try (var node = new TestNode(dir, app)) {
 			var blockchain = node.getBlockchain();

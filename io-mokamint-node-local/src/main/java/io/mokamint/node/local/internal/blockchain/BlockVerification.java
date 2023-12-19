@@ -213,22 +213,6 @@ public class BlockVerification {
 	}
 
 	/**
-	 * Yields the creation time of {@link #block}.
-	 * 
-	 * @return the creation time of {@link #block}
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws DatabaseException if the database is corrupted
-	 */
-	private LocalDateTime creationTimeOfBlock() throws DatabaseException, ClosedDatabaseException {
-		if (block instanceof GenesisBlock gb)
-			return gb.getStartDateTimeUTC();
-		else
-			return node.getBlockchain().getGenesis()
-				.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
-				.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
-	}
-
-	/**
 	 * Checks if the creation time of {@link #block} is not too much in the future.
 	 * 
 	 * @throws VerificationException if the creationTime of {@link #block} is too much in the future
@@ -237,7 +221,7 @@ public class BlockVerification {
 	 */
 	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, DatabaseException, ClosedDatabaseException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTimeOfBlock());
+		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, node.getBlockchain().creationTimeOf(block));
 		long max = node.getConfig().getBlockMaxTimeInTheFuture();
 		if (howMuchInTheFuture > max)
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
@@ -274,11 +258,13 @@ public class BlockVerification {
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if that condition does not hold
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		var app = node.getApplication();
+		int id = app.beginBlock(block.getDescription().getHeight(), previous.getStateHash(), node.getBlockchain().creationTimeOf(block));
 
-		int id = app.beginBlock(previous.getStateHash());
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 			try {
 				app.checkTransaction(tx);
@@ -295,10 +281,12 @@ public class BlockVerification {
 			}
 		}
 
-		var expected = app.endBlock(id);
+		var expected = app.endBlock(id, block.getDeadline());
 
 		if (!Arrays.equals(block.getStateHash(), expected))
 			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
+
+		app.commitBlock(id);
 	}
 
 	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException {

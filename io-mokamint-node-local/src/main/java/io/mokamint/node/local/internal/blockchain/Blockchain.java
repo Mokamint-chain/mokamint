@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -309,6 +310,24 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 */
 	public Stream<byte[]> getChain(long start, int count) throws DatabaseException, ClosedDatabaseException {
 		return db.getChain(start, count);
+	}
+
+	/**
+	 * Yields the creation time of the given block. It assumes that, if {@code block}
+	 * is not a genesis block, then the blockchain is not empty.
+	 * 
+	 * @param block the block whose creation time is computed
+	 * @return the creation time of {@code block}
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public LocalDateTime creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
+		if (block instanceof GenesisBlock gb)
+			return gb.getStartDateTimeUTC();
+		else
+			return getGenesis()
+				.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
+				.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 	}
 
 	/**

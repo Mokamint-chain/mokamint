@@ -207,7 +207,7 @@ public class MineNewBlockTask implements Task {
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 			this.initialStateHash = previous.getStateHash();
-			this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, initialStateHash);
+			this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
 			this.transactionExecutionFuture = startTransactionExecutor();
 
 			try {
@@ -364,10 +364,8 @@ public class MineNewBlockTask implements Task {
 				return Optional.empty();
 			}
 
-			var processedTransactions = transactionExecutor.getProcessedTransactions();
-			var nextBlock = Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate());
-
-			return Optional.of(nextBlock);
+			var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
+			return Optional.of(Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate()));
 		}
 
 		/**

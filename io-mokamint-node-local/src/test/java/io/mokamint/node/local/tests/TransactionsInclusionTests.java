@@ -91,7 +91,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		when(app.getInitialStateHash()).thenReturn(new byte[] { 1, 2, 3 });
 		doNothing().when(app).checkTransaction(any());
 		doNothing().when(app).deliverTransaction(any(), anyInt());
-		when(app.endBlock(anyInt())).thenReturn(new byte[] { 13, 17, 42 });
+		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 13, 17, 42 });
 	}
 
 	private LocalNodeConfig mkConfig(Path chainDir) throws NoSuchAlgorithmException {

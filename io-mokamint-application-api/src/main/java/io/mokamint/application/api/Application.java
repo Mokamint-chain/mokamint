@@ -16,8 +16,11 @@ limitations under the License.
 
 package io.mokamint.application.api;
 
+import java.time.LocalDateTime;
+
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * An application for the Mokamint blockchain.
@@ -53,6 +56,15 @@ public interface Application {
 	void checkTransaction(Transaction transaction) throws RejectedTransactionException;
 
 	/**
+	 * Computes the priority of the given transaction.
+	 * 
+	 * @param transaction the transaction
+	 * @return the priority
+	 * @throws RejectedTransactionException if the priority of the transaction cannot be computed
+	 */
+	long getPriority(Transaction transaction) throws RejectedTransactionException;
+
+	/**
 	 * Yields the state of this application when it starts, before any transaction has been executed.
 	 * 
 	 * @return the state of this application when it starts
@@ -65,13 +77,16 @@ public interface Application {
 	 * the construction of many blocks at the same time. Consequently, each construction
 	 * is identified by a unique number.
 	 * 
-	 * @param stateHash the hash of the state at the beginning of the execution of
-	 *                  the transactions in the block
+	 * @param height the height of the block that is being created
+	 * @param initialStateHash the hash of the state at the beginning of the execution of
+	 *                         the transactions in the block
+	 * @param initialDateTime the time at the beginning of the execution of
+	 *                        the transactions in the block
 	 * @return the identifier of the block creation that is being started; this is guaranteed
 	 *         to be different from the identifier of other block creations that are currently
 	 *         being performed
 	 */
-	int beginBlock(byte[] stateHash);
+	int beginBlock(long height, byte[] initialStateHash, LocalDateTime initialDateTime);
 
 	/**
 	 * Delivers another transaction inside the block whose creation is identified by {@code id}.
@@ -94,18 +109,12 @@ public interface Application {
 	 * of the transactions inside the block.
 	 * 
 	 * @param id the identifier of the block creation the is being ended
+	 * @param deadline the deadline that has been computed for the block being created
 	 * @return the hash of the state at the end of the execution of the transactions delivered
 	 *         during the creation of the block, including eventual coinbase transactions added
 	 *         at its end
 	 */
-	byte[] endBlock(int id);
+	byte[] endBlock(int id, Deadline deadline);
 
-	/**
-	 * Computes the priority of the given transaction.
-	 * 
-	 * @param transaction the transaction
-	 * @return the priority
-	 * @throws RejectedTransactionException if the priority of the transaction cannot be computed
-	 */
-	long getPriority(Transaction transaction) throws RejectedTransactionException;
+	void commitBlock(int id);
 }

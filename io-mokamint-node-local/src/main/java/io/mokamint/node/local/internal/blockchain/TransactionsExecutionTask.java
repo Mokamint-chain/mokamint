@@ -25,11 +25,15 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.api.Block;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * A task that executes the transactions taken from a queue.
@@ -43,89 +47,76 @@ public class TransactionsExecutionTask implements Task {
 		TransactionEntry take() throws InterruptedException;
 	}
 
-	private final LocalNodeImpl node;
 	private final Application app;
 	private final Source source;
-	private final byte[] initialStateHash;
 
 	/**
 	 * The transactions that have been executed up to now.
 	 */
 	private final List<Transaction> transactions = new ArrayList<>();
 
-	private byte[] stateHash;
+	private final long maxSize;
+
+	private final int id;
 
 	private final Semaphore done = new Semaphore(0);
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, byte[] initialStateHash) {
-		this.node = node;
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException {
+		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
-		this.initialStateHash = initialStateHash;
+		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, previous.getStateHash(), node.getBlockchain().creationTimeOf(previous));
 	}
 
 	@Override
 	public void body() {
-		new Body();
+		long sizeUpToNow = 0L;
+
+		try {
+			while (!Thread.currentThread().isInterrupted())
+				sizeUpToNow = processNextTransaction(source.take(), sizeUpToNow);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		finally {
+			done.release();
+		}
 	}
 
-	public ProcessedTransactions getProcessedTransactions() throws InterruptedException {
+	public ProcessedTransactions getProcessedTransactions(Deadline deadline) throws InterruptedException {
 		done.acquire();
-		return new ProcessedTransactions(transactions, stateHash);
+		var finalStateHash = app.endBlock(id, deadline);
+		app.commitBlock(id);
+		return new ProcessedTransactions(transactions, finalStateHash);
 	}
 
-	private class Body {
-		private TransactionEntry next;
-		private long sizeUpToNow = 0L;
-		private final int id;
+	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) {
+		var tx = next.getTransaction();
 
-		private Body() {
-			this.id = app.beginBlock(initialStateHash);
+		if (transactions.contains(tx))
+			// this might actually occur if a transaction arrives during the execution of this task,
+			// which was already processed with this task
+			return sizeUpToNow;
 
+		int txSize = tx.size();
+		if (sizeUpToNow + txSize <= maxSize) {
 			try {
-				while (!Thread.currentThread().isInterrupted()) {
-					moveToNextTransaction();
-					processNextTransaction();
-				}
+				app.deliverTransaction(tx, id);
+				transactions.add(tx);
+				sizeUpToNow += txSize;
 			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
+			catch (RejectedTransactionException e) {
+				LOGGER.log(Level.WARNING, "delivery of transaction " + next + " rejected: " + e.getMessage());
 			}
-			finally {
-				stateHash = app.endBlock(id);
-				done.release();
+			catch (RuntimeException e) {
+				LOGGER.log(Level.SEVERE, "delivery of transaction " + next + " failed", e);
 			}
 		}
 
-		private void moveToNextTransaction() throws InterruptedException {
-			next = source.take();
-		}
-
-		private void processNextTransaction() {
-			var tx = next.getTransaction();
-			
-			if (transactions.contains(tx))
-				// this might actually occur if a transaction arrives during the execution of this task,
-				// which was already processed with this task
-				return;
-
-			int txSize = tx.size();
-			if (sizeUpToNow + txSize <= node.getConfig().getMaxBlockSize()) {
-				try {
-					app.deliverTransaction(tx, id);
-					transactions.add(tx);
-					sizeUpToNow += txSize;
-				}
-				catch (RejectedTransactionException e) {
-					LOGGER.log(Level.WARNING, "delivery of transaction " + next + " rejected: " + e.getMessage());
-				}
-				catch (RuntimeException e) {
-					LOGGER.log(Level.SEVERE, "delivery of transaction " + next + " failed", e);
-				}
-			}
-		}
+		return sizeUpToNow;
 	}
 
 	@Immutable
