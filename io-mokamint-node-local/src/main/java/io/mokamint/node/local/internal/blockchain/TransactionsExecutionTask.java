@@ -18,7 +18,7 @@ package io.mokamint.node.local.internal.blockchain;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -59,7 +59,7 @@ public class TransactionsExecutionTask implements Task {
 
 	private final int id;
 
-	private final Semaphore done = new Semaphore(0);
+	private final CountDownLatch done = new CountDownLatch(1);
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
@@ -82,15 +82,24 @@ public class TransactionsExecutionTask implements Task {
 			Thread.currentThread().interrupt();
 		}
 		finally {
-			done.release();
+			done.countDown();
 		}
 	}
 
 	public ProcessedTransactions getProcessedTransactions(Deadline deadline) throws InterruptedException {
-		done.acquire();
+		done.await();
 		var finalStateHash = app.endBlock(id, deadline);
-		app.commitBlock(id);
 		return new ProcessedTransactions(transactions, finalStateHash);
+	}
+
+	public void commitBlock() throws InterruptedException {
+		done.await();
+		app.commitBlock(id);
+	}
+
+	public void abortBlock() throws InterruptedException {
+		done.await();
+		app.abortBlock(id);
 	}
 
 	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) {

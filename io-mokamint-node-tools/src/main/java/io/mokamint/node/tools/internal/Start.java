@@ -397,5 +397,9 @@ public class Start extends AbstractCommand {
 		@Override
 		public void commitBlock(int id) {
 		}
+
+		@Override
+		public void abortBlock(int id) {
+		}
 	}
 }

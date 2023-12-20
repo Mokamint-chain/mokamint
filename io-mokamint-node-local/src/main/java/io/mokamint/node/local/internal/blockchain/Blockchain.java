@@ -507,7 +507,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
-			new BlockVerification(getNode(), block, previous);
+			new BlockVerification(getNode(), block, previous, true);
 
 			if (db.add(block, updatedHead)) {
 				onBlockAdded(block);

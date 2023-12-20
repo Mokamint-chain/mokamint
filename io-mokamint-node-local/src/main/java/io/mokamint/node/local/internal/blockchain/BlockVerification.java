@@ -65,6 +65,8 @@ public class BlockVerification {
 	 */
 	private final Block previous;
 
+	private final boolean commit;
+
 	/**
 	 * The deadline of {@link #block}. This is {@code null} if and only if
 	 * {@link #block} is a genesis block.
@@ -78,16 +80,18 @@ public class BlockVerification {
 	 * @param node the node whose blocks get verified
 	 * @param block the block
 	 * @param previous the previous of {@code block}; this can be empty only if {@code block} is a genesis block
+	 * @param commit if verification succeeds, commit the state at the end of the execution of the transactions in the block
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
 		this.previous = previous.orElse(null);
+		this.commit = commit;
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
 
 		if (block instanceof NonGenesisBlock ngb)
@@ -264,29 +268,38 @@ public class BlockVerification {
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		var app = node.getApplication();
 		int id = app.beginBlock(block.getDescription().getHeight(), previous.getStateHash(), node.getBlockchain().creationTimeOf(block));
+		boolean success = false;
 
-		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
-			try {
-				app.checkTransaction(tx);
-			}
-			catch (RejectedTransactionException e) {
-				throw new VerificationException("Failed check of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
+		try {
+			for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+				try {
+					app.checkTransaction(tx);
+				}
+				catch (RejectedTransactionException e) {
+					throw new VerificationException("Failed check of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
+				}
+
+				try {
+					app.deliverTransaction(tx, id);
+				}
+				catch (RejectedTransactionException e) {
+					throw new VerificationException("Failed delivery of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
+				}
 			}
 
-			try {
-				app.deliverTransaction(tx, id);
-			}
-			catch (RejectedTransactionException e) {
-				throw new VerificationException("Failed delivery of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
-			}
+			var expected = app.endBlock(id, block.getDeadline());
+
+			if (!Arrays.equals(block.getStateHash(), expected))
+				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
+
+			success = true;
 		}
-
-		var expected = app.endBlock(id, block.getDeadline());
-
-		if (!Arrays.equals(block.getStateHash(), expected))
-			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
-
-		app.commitBlock(id);
+		finally {
+			if (success && commit)
+				app.commitBlock(id);
+			else
+				app.abortBlock(id);
+		}
 	}
 
 	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException {

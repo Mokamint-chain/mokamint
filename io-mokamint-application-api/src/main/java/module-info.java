@@ -20,4 +20,5 @@ limitations under the License.
 module io.mokamint.application.api {
 	exports io.mokamint.application.api;
 	requires transitive io.mokamint.node.api;
+	requires io.hotmoka.annotations;
 }

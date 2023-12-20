@@ -210,6 +210,7 @@ public class MineNewBlockTask implements Task {
 			this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
 			this.transactionExecutionFuture = startTransactionExecutor();
 
+			boolean committed = false;
 			try {
 				requestDeadlineToEveryMiner();
 				waitUntilFirstDeadlineArrives();
@@ -217,6 +218,8 @@ public class MineNewBlockTask implements Task {
 				stopTransactionExecutor();
 				var maybeBlock = createNewBlock();
 				if (maybeBlock.isPresent()) {
+					transactionExecutor.commitBlock();
+					committed = true;
 					var block = maybeBlock.get();
 					blockchain.onBlockMined(block);
 					addNodeToBlockchain(block);
@@ -229,6 +232,9 @@ public class MineNewBlockTask implements Task {
 			}
 			finally {
 				stopTransactionExecutor();
+				if (!committed)
+					transactionExecutor.abortBlock();
+
 				turnWakerOff();
 				punishMinersThatDidNotAnswer();
 				this.done = true;
