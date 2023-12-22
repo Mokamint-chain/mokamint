@@ -27,7 +27,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -45,7 +44,6 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
@@ -100,16 +98,42 @@ public class MineNewBlockTask implements Task {
 		if (blockchain.isEmpty())
 			LOGGER.log(Level.SEVERE, "mining: cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L) {
-			LOGGER.log(Level.WARNING, "mining: cannot mine because this node currently has no miners attached");
+			LOGGER.log(Level.WARNING, "mining: cannot mine because the node currently has no miners attached");
 			node.onNoMinersAvailable();
 		}
 		else {
 			var headHash = blockchain.getHeadHash().get();
-			Optional<Block> previous = blockchain.getBlock(headHash);
-			// if somebody else is mining over the same block, it is useless to do the same
-			if (previous.isPresent() && !node.isMiningOver(previous.get()))
-				new Run(previous.get(), headHash);
+			Optional<Block> maybeHead = blockchain.getBlock(headHash);
+			if (maybeHead.isPresent()) {
+				var head = maybeHead.get();
+				PriorityBlockingQueue<TransactionEntry> mempool = node.getMempoolTransactionsAt(headHash)
+					.collect(Collectors.toCollection(PriorityBlockingQueue::new));
+
+				if (node.lockMiningOver(head, entry -> add(mempool, headHash, entry))) {
+					node.onMiningStarted(head);
+					new Run(head, mempool);
+				}
+			}
 		}
+	}
+
+	/**
+	 * Adds the given transaction entry to the given mempool, if it not yet
+	 * contained in blockchain in the chain from the given head to the genesis block.
+	 * 
+	 * @param mempool the mempool
+	 * @param hashOfHead the hash of the head over which mining is performed
+	 * @param entry the entry to add
+	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographical algorithm
+	 * @throws ClosedDatabaseException if the database is closed
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private void add(PriorityBlockingQueue<TransactionEntry> mempool, byte[] hashOfHead, TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+		if (blockchain.getTransactionAddress(hashOfHead, entry.getHash()).isEmpty())
+			synchronized (mempool) {
+				if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
+					mempool.offer(entry);
+			}
 	}
 
 	/**
@@ -123,30 +147,9 @@ public class MineNewBlockTask implements Task {
 		private final Block previous;
 
 		/**
-		 * The hash of {@code previous}.
-		 */
-		private final byte[] hashOfPrevious;
-
-		/**
-		 * The transactions that can be added to the new block.
-		 */
-		private final BlockingQueue<TransactionEntry> mempool;
-
-		/**
-		 * The height of the new block that is being mined.
-		 */
-		private final long heightOfNewBlock;
-
-		/**
 		 * A message describing the height of the block being mined. Used in logs.
 		 */
 		private final String heightMessage;
-
-		/**
-		 * The hexadecimal representation of the hash of the parent block of the
-		 * block being mined by this task.
-		 */
-		private final String previousHex;
 
 		/**
 		 * The moment when the previous block has been mined. From that moment we
@@ -175,8 +178,6 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final Set<Miner> minersThatDidNotAnswer = ConcurrentHashMap.newKeySet();
 
-		private final byte[] initialStateHash;
-
 		private final TransactionsExecutionTask transactionExecutor;
 
 		private final Future<?> transactionExecutionFuture;
@@ -187,23 +188,12 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
-		private final OnAddedTransactionHandler this_add = this::add;
-
-		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
+		private Run(Block previous, PriorityBlockingQueue<TransactionEntry> mempool) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
 			stopIfInterrupted();
 			this.previous = previous;
-			this.hashOfPrevious = hashOfPrevious;
-			this.mempool = node.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
-
-			// the mempool must be initialized before calling this, because the next line allows calls to add()
-			node.onMiningStarted(previous, this_add);
-
-			this.heightOfNewBlock = previous.getDescription().getHeight() + 1;
-			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
-			this.heightMessage = "mining: height " + heightOfNewBlock + ": ";
+			this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
-			this.initialStateHash = previous.getStateHash();
 			this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
 			this.transactionExecutionFuture = startTransactionExecutor();
 
@@ -235,11 +225,12 @@ public class MineNewBlockTask implements Task {
 				turnWakerOff();
 				punishMinersThatDidNotAnswer();
 				this.done = true;
-				node.onMiningCompleted(previous, this_add);
+				node.onMiningCompleted(previous);
 			}
 		}
 
 		private Future<?> startTransactionExecutor() throws RejectedExecutionException {
+			byte[] initialStateHash = previous.getStateHash();
 			try {
 				return node.submit(transactionExecutor, "transactions execution from state " + Hex.toHexString(initialStateHash));
 			}
@@ -251,14 +242,6 @@ public class MineNewBlockTask implements Task {
 
 		private void stopTransactionExecutor() {
 			transactionExecutionFuture.cancel(true);
-		}
-
-		private void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
-			if (blockchain.getTransactionAddress(hashOfPrevious, entry.getHash()).isEmpty())
-				synchronized (mempool) {
-					if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
-						mempool.offer(entry);
-				}
 		}
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
@@ -356,7 +339,7 @@ public class MineNewBlockTask implements Task {
 			var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 			var powerOfHead = blockchain.getPowerOfHead();
 			if (powerOfHead.isPresent() && powerOfHead.get().compareTo(description.getPower()) >= 0) {
-				LOGGER.info(heightMessage + "not creating block on top of " + previousHex + " since it would not improve the head");
+				LOGGER.info(heightMessage + "not creating any block on top of " + previous.getHexHash(config.getHashingForBlocks()) + " since it would not improve the head");
 				return Optional.empty();
 			}
 

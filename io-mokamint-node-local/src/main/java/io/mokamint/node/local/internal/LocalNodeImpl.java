@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -177,11 +178,11 @@ public class LocalNodeImpl implements LocalNode {
 	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
 
 	/**
-	 * The set of blocks over which mining is currently in progress.
+	 * The set of blocks over which mining is currently in progress, mapped
+	 * to the handler that can be used to hand over new transactions to the
+	 * corresponding mining task.
 	 */
-	private final Set<Block> blocksOverWhichMiningIsInProgress = ConcurrentHashMap.newKeySet();
-
-	private final Set<OnAddedTransactionHandler> onAddedTransactionHandlers = ConcurrentHashMap.newKeySet();
+	private final ConcurrentMap<Block, OnAddedTransactionHandler> blocksOverWhichMiningIsInProgress = new ConcurrentHashMap<>();
 
 	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
 
@@ -490,7 +491,7 @@ public class LocalNodeImpl implements LocalNode {
 
 			// TODO: maybe in its own thread?
 			// we send the transaction also to all currently running mining tasks
-			for (var handler: onAddedTransactionHandlers)
+			for (var handler: blocksOverWhichMiningIsInProgress.values())
 				handler.add(entry);
 		}
 		catch (ClosedDatabaseException e) {
@@ -522,13 +523,13 @@ public class LocalNodeImpl implements LocalNode {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			var count = miners.get().count();
 			Optional<MinerInfo> result = miners.add(miner);
-			if (result.isPresent()) {
+			result.ifPresent(__ -> {
 				onMinerAdded(miner);
 
 				// if there were no miners before this call, we require to mine
 				if (count == 0L)
 					scheduleMining();
-			}
+			});
 	
 			return result;
 		}
@@ -584,7 +585,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @return the hasher
 	 */
-	public Hasher<Transaction> getHasherForTransactions() {
+	protected Hasher<Transaction> getHasherForTransactions() {
 		return hasherForTransactions;
 	}
 
@@ -596,7 +597,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param miner the miner to punish
 	 * @param points how many points get removed
 	 */
-	public void punish(Miner miner, long points) {
+	protected void punish(Miner miner, long points) {
 		LOGGER.log(Level.INFO, "punishing miner " + miner.getUUID() + " by removing " + points + " points");
 	
 		try {
@@ -608,7 +609,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	public interface OnAddedTransactionHandler {
+	protected interface OnAddedTransactionHandler {
 		void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException;
 	}
 
@@ -658,13 +659,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Determines if some mining task is currently mining immediately over the given block.
+	 * Becomes the only task allowed to mine over the given block.
 	 * 
-	 * @param previous the block
-	 * @return true if and only if that condition holds
+	 * @param previous the block over which mining is required
+	 * @param handler the handler to call if new transactions arrive during mining, so that
+	 *                these transactions can be handed over to the mining task
+	 * @return true if and only if nobody else was mining over that node, and therefore the caller
+	 *         is allowed to start mining; otherwise, mining over {@code previous} is not allowed
 	 */
-	protected boolean isMiningOver(Block previous) {
-		return blocksOverWhichMiningIsInProgress.contains(previous);
+	protected boolean lockMiningOver(Block previous, OnAddedTransactionHandler handler) {
+		return blocksOverWhichMiningIsInProgress.putIfAbsent(previous, handler) == null;
 	}
 
 	protected void rebaseMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
@@ -837,24 +841,16 @@ public class LocalNodeImpl implements LocalNode {
 	 * Called when mining immediately over the given block has been started.
 	 * 
 	 * @param previous the block over which mining has been started
-	 * @param handler a handler to call when new transactions arrive, so that
-	 *                they have a chance of being processed by the mining task
 	 */
-	protected void onMiningStarted(Block previous, OnAddedTransactionHandler handler) {
-		blocksOverWhichMiningIsInProgress.add(previous);
-		onAddedTransactionHandlers.add(handler);
-	}
+	protected void onMiningStarted(Block previous) {}
 
 	/**
 	 * Called when mining immediately over the given block stopped.
 	 * 
 	 * @param previous the block over which mining has been completed
-	 * @param handler the handler to call when new transactions arrive, so that
-	 *                they have a chance of being processed by the mining task
 	 */
-	protected void onMiningCompleted(Block previous, OnAddedTransactionHandler handler) {
+	protected void onMiningCompleted(Block previous) {
 		blocksOverWhichMiningIsInProgress.remove(previous);
-		onAddedTransactionHandlers.remove(handler);
 	}
 
 	/**
