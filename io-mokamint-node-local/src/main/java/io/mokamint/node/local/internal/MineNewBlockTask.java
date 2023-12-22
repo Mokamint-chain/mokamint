@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -45,12 +45,9 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
-import io.mokamint.node.local.internal.miners.Miners;
+import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.IllegalDeadlineException;
@@ -104,13 +101,13 @@ public class MineNewBlockTask implements Task {
 			LOGGER.log(Level.SEVERE, "mining: cannot mine on an empty blockchain");
 		else if (miners.get().count() == 0L) {
 			LOGGER.log(Level.WARNING, "mining: cannot mine because this node currently has no miners attached");
-			blockchain.onNoMinersAvailable();
+			node.onNoMinersAvailable();
 		}
 		else {
 			var headHash = blockchain.getHeadHash().get();
 			Optional<Block> previous = blockchain.getBlock(headHash);
 			// if somebody else is mining over the same block, it is useless to do the same
-			if (previous.isPresent() && !blockchain.isMiningOver(previous.get()))
+			if (previous.isPresent() && !node.isMiningOver(previous.get()))
 				new Run(previous.get(), headHash);
 		}
 	}
@@ -118,7 +115,7 @@ public class MineNewBlockTask implements Task {
 	/**
 	 * Run environment.
 	 */
-	private class Run implements OnAddedTransactionHandler {
+	private class Run {
 
 		/**
 		 * The block over which mining is performed.
@@ -190,15 +187,16 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final boolean done;
 
+		private final OnAddedTransactionHandler this_add = this::add;
+
 		private Run(Block previous, byte[] hashOfPrevious) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException, VerificationException {
 			stopIfInterrupted();
 			this.previous = previous;
 			this.hashOfPrevious = hashOfPrevious;
-			this.mempool = blockchain.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
+			this.mempool = node.getMempoolTransactionsAt(hashOfPrevious).collect(Collectors.toCollection(PriorityBlockingQueue::new));
 
-			// the mempool must be initialized before calling this, because the next line
-			// allows calls to add()
-			blockchain.onMiningStarted(previous, this);
+			// the mempool must be initialized before calling this, because the next line allows calls to add()
+			node.onMiningStarted(previous, this_add);
 
 			this.heightOfNewBlock = previous.getDescription().getHeight() + 1;
 			this.previousHex = previous.getHexHash(config.getHashingForBlocks());
@@ -220,14 +218,14 @@ public class MineNewBlockTask implements Task {
 					transactionExecutor.commitBlock();
 					committed = true;
 					var block = maybeBlock.get();
-					blockchain.onBlockMined(block);
+					node.onBlockMined(block);
 					addNodeToBlockchain(block);
 				}
 			}
 			catch (TimeoutException e) {
 				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
-				blockchain.scheduleDelayedMining();
-				blockchain.onNoDeadlineFound(previous);
+				node.scheduleDelayedMining();
+				node.onNoDeadlineFound(previous);
 			}
 			finally {
 				stopTransactionExecutor();
@@ -237,7 +235,7 @@ public class MineNewBlockTask implements Task {
 				turnWakerOff();
 				punishMinersThatDidNotAnswer();
 				this.done = true;
-				blockchain.onMiningCompleted(previous, this);
+				node.onMiningCompleted(previous, this_add);
 			}
 		}
 
@@ -255,8 +253,7 @@ public class MineNewBlockTask implements Task {
 			transactionExecutionFuture.cancel(true);
 		}
 
-		@Override
-		public void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+		private void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
 			if (blockchain.getTransactionAddress(hashOfPrevious, entry.getHash()).isEmpty())
 				synchronized (mempool) {
 					if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
@@ -292,7 +289,7 @@ public class MineNewBlockTask implements Task {
 		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InterruptedException {
 			stopIfInterrupted();
 			if (blockchain.add(block))
-				blockchain.scheduleWhisperingWithoutAddition(block);
+				node.scheduleWhisperingWithoutAddition(block);
 		}
 
 		/**
@@ -309,7 +306,7 @@ public class MineNewBlockTask implements Task {
 			else {
 				try {
 					deadline.matchesOrThrow(description, IllegalDeadlineException::new);
-					blockchain.check(deadline);
+					node.check(deadline);
 
 					// we increase the points of the miner, but only for the first deadline that it provides
 					if (minersThatDidNotAnswer.remove(miner))
@@ -328,7 +325,7 @@ public class MineNewBlockTask implements Task {
 				}
 				catch (IllegalDeadlineException e) {
 					LOGGER.warning(heightMessage + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());
-					blockchain.onIllegalDeadlineComputed(deadline, miner);
+					node.onIllegalDeadlineComputed(deadline, miner);
 
 					long points = config.getMinerPunishmentForIllegalDeadline();
 					LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]");

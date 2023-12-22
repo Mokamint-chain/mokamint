@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -22,8 +22,6 @@ import java.security.SignatureException;
 import java.util.logging.Logger;
 
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 
 public class DelayedMineNewBlockTask extends MineNewBlockTask {
 	private final long delay;

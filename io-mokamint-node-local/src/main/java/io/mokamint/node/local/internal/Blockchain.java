@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
@@ -38,7 +38,6 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.miner.api.Miner;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -50,13 +49,6 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.internal.AbstractBlockchain;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.LocalNodeImpl.OnAddedTransactionHandler;
-import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
-import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -65,7 +57,7 @@ import io.mokamint.nonce.api.IllegalDeadlineException;
  * which is the most powerful block in the chain.
  */
 @ThreadSafe
-public class Blockchain extends AbstractBlockchain implements AutoCloseable {
+public class Blockchain implements AutoCloseable {
 
 	/**
 	 * The node having this blockchain.
@@ -111,8 +103,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	 * @throws DatabaseException if the database of blocks is corrupted
 	 */
 	public Blockchain(LocalNodeImpl node) throws DatabaseException {
-		super(node);
-
 		this.node = node;
 		var config = node.getConfig();
 		this.hashingForBlocks = config.getHashingForBlocks();
@@ -402,18 +392,18 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 
 		byte[] newHeadHash = updatedHead.get();
 		if (newHeadHash != null) {
-			rebaseMempoolAt(newHeadHash);
-			onHeadChanged(newHeadHash);
-			scheduleMining();
+			node.rebaseMempoolAt(newHeadHash);
+			node.onHeadChanged(newHeadHash);
+			node.scheduleMining();
 		}
 		else if (addedToOrphans) {
 			var powerOfHead = getPowerOfHead();
 			if (powerOfHead.isEmpty())
-				scheduleSynchronization(0L);
+				node.scheduleSynchronization(0L);
 			else if (powerOfHead.get().compareTo(block.getDescription().getPower()) < 0)
 				// the block was better than our current head, but misses a previous block:
 				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-				scheduleSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));
+				node.scheduleSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));
 		}
 
 		return added;
@@ -447,66 +437,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 		}
 	}
 
-	@Override
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		return super.getMempoolTransactionsAt(newHeadHash);
-	}
-
-	@Override
-	protected void onBlockMined(Block block) {
-		super.onBlockMined(block);
-	}
-
-	@Override
-	protected boolean isMiningOver(Block previous) {
-		return super.isMiningOver(previous);
-	}
-
-	@Override
-	protected void onMiningStarted(Block previous, OnAddedTransactionHandler handler) {
-		super.onMiningStarted(previous, handler);
-	}
-
-	@Override
-	protected void onMiningCompleted(Block previous, OnAddedTransactionHandler handler) {
-		super.onMiningCompleted(previous, handler);
-	}
-
-	@Override
-	protected void onSynchronizationCompleted() {
-		super.onSynchronizationCompleted();
-	}
-
-	@Override
-	protected void onNoDeadlineFound(Block previous) {
-		super.onNoDeadlineFound(previous);
-	}
-
-	@Override
-	protected void onIllegalDeadlineComputed(Deadline deadline, Miner miner) {
-		super.onIllegalDeadlineComputed(deadline, miner);
-	}
-
-	@Override
-	protected void onNoMinersAvailable() {
-		super.onNoMinersAvailable();
-	}
-
-	@Override
-	protected void scheduleWhisperingWithoutAddition(Block block) {
-		super.scheduleWhisperingWithoutAddition(block);
-	}
-
-	@Override
-	protected void scheduleDelayedMining() {
-		super.scheduleDelayedMining();
-	}
-
-	@Override
-	protected void check(Deadline deadline) throws IllegalDeadlineException {
-		super.check(deadline);
-	}
-
 	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<byte[]> updatedHead)
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
@@ -514,7 +444,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 			new BlockVerification(node, block, previous, true);
 
 			if (db.add(block, updatedHead)) {
-				onBlockAdded(block);
+				node.onBlockAdded(block);
 				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);
 				if (first)
 					return true;

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.miners;
+package io.mokamint.node.local.internal;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -27,8 +27,6 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.PunishableSet;
 
 /**
  * The set of miners of a local node.

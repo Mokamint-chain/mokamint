@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.peers;
+package io.mokamint.node.local.internal;
 
 import static java.util.function.Predicate.not;
 
@@ -28,8 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -57,9 +55,6 @@ import io.mokamint.node.api.Version;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.PunishableSet;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.DeploymentException;
@@ -120,31 +115,6 @@ public class Peers implements AutoCloseable {
 	 */
 	private final ConcurrentMap<Peer, Long> timeDifferences = new ConcurrentHashMap<>();
 
-	/**
-	 * Called whenever a peer gets connected.
-	 */
-	private final Consumer<Peer> onPeerConnected;
-
-	/**
-	 * Called whenever a peer gets disconnected.
-	 */
-	private final Consumer<Peer> onPeerDisconnected;
-
-	/**
-	 * Called when the services of a node must be whispered to its peers.
-	 */
-	private final Runnable scheduleWhisperingOfAllServices;
-
-	/**
-	 * Called when some peers must be whispered without their addition.
-	 */
-	private final Consumer<Stream<Peer>> scheduleWhisperingWithoutAddition;
-
-	/**
-	 * Called when synchronization must be scheduled from a given blockchain height.
-	 */
-	private final LongConsumer scheduleSynchronization;
-
 	private final static Logger LOGGER = Logger.getLogger(Peers.class.getName());
 
 	/**
@@ -154,39 +124,20 @@ public class Peers implements AutoCloseable {
 	 * and attempts a connection to them.
 	 * 
 	 * @param node the node having these peers
-	 * @param onPeerAdded called whenever a peer is added to this container
-	 * @param onPeerRemoved called whenever a peer is removed from this container
-	 * @param onPeerConnected called whenever a connection to a peer is established
-	 * @param onPeerDisconnected called whenever a connection to a peer is dropped
-	 * @param scheduleWhisperingOfAllServices called whenever the services of a node must be whispered to its peers
-	 * @param scheduleWhisperingWithoutAddition called whenever some peers must be whispered without their addition
-	 * @param scheduleSynchronization called whenever synchronization must be scheduled from a given blockchain height
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws IOException if an I/O error occurs
 	 * @throws InterruptedException if the thread is interrupted while contacting the peers
 	 * @throws ClosedNodeException if the node is closed
 	 */
-	public Peers(LocalNodeImpl node,
-			Consumer<Peer> onPeerAdded, Consumer<Peer> onPeerRemoved,
-			Consumer<Peer> onPeerConnected, Consumer<Peer> onPeerDisconnected,
-			Runnable scheduleWhisperingOfAllServices,
-			Consumer<Stream<Peer>> scheduleWhisperingWithoutAddition,
-			LongConsumer scheduleSynchronization)
-			throws DatabaseException, IOException, ClosedNodeException, InterruptedException {
-
+	public Peers(LocalNodeImpl node) throws DatabaseException, IOException, ClosedNodeException, InterruptedException {
 		this.node = node;
-		this.onPeerConnected = onPeerConnected;
-		this.onPeerDisconnected = onPeerDisconnected;
-		this.scheduleWhisperingOfAllServices = scheduleWhisperingOfAllServices;
-		this.scheduleWhisperingWithoutAddition = scheduleWhisperingWithoutAddition;
-		this.scheduleSynchronization = scheduleSynchronization;
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
 
 		try {
 			this.uuid = db.getUUID();
 			this.version = Versions.current();
-			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, onPeerAdded, onPeerRemoved);
+			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, node::onPeerAdded, node::onPeerRemoved);
 			openConnectionToPeers();
 			tryToReconnectOrAddThenScheduleWhispering(config.getSeeds().map(io.mokamint.node.Peers::of), true);
 		}
@@ -235,7 +186,7 @@ public class Peers implements AutoCloseable {
 		if (containsDisconnected(peer)) {
 			if (tryToCreateRemote(peer).isPresent()) {
 				exploitFreshlyAddedPeers(new Peer[] { peer });
-				scheduleWhisperingWithoutAddition.accept(Stream.of(peer));
+				node.scheduleWhisperingWithoutAddition(Stream.of(peer));
 			}
 		}
 		else if (!peers.contains(peer)) {
@@ -251,7 +202,7 @@ public class Peers implements AutoCloseable {
 
 			if (result) {
 				exploitFreshlyAddedPeers(new Peer[] { peer });
-				scheduleWhisperingWithoutAddition.accept(Stream.of(peer));
+				node.scheduleWhisperingWithoutAddition(Stream.of(peer));
 				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 			}
 		}
@@ -459,17 +410,17 @@ public class Peers implements AutoCloseable {
 
 		if (added.length > 0) {
 			exploitFreshlyAddedPeers(added);
-			scheduleWhisperingWithoutAddition.accept(Stream.of(added));
+			node.scheduleWhisperingWithoutAddition(Stream.of(added));
 		}
 	}
 
 	private void exploitFreshlyAddedPeers(Peer[] added) throws DatabaseException, ClosedDatabaseException {
 		// if the blockchain was empty, it might be the right moment to attempt a synchronization
 		if (node.getBlockchain().isEmpty())
-			scheduleSynchronization.accept(0L);
+			node.scheduleSynchronization(0L);
 
 		// we inform the new peers about our services
-		scheduleWhisperingOfAllServices.run();
+		node.scheduleWhisperingOfAllServices();
 	}
 
 	private static RuntimeException unexpectedException(Exception e) {
@@ -730,7 +681,7 @@ public class Peers implements AutoCloseable {
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnClosedHandler(() -> peerDisconnected(remote, peer));
-		onPeerConnected.accept(peer);
+		node.onPeerConnected(peer);
 	}
 
 	/**
@@ -743,7 +694,7 @@ public class Peers implements AutoCloseable {
 	 */
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) throws InterruptedException, IOException {
 		deletePeer(peer, remote);
-		onPeerDisconnected.accept(peer);
+		node.onPeerDisconnected(peer);
 
 		try {
 			punishBecauseUnreachable(peer);

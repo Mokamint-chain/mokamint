@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import static io.hotmoka.exceptions.CheckSupplier.check;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
@@ -60,9 +60,6 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.ClosureLock;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
  * The database where the blocks are persisted. Blocks are rooted at a genesis block

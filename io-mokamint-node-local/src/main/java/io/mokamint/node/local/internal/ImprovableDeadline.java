@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import static io.hotmoka.exceptions.CheckRunnable.check;
 import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
@@ -40,10 +40,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.peers.Peers;
 import io.mokamint.node.remote.api.RemotePublicNode;
 
 /**
@@ -82,7 +79,7 @@ public class SynchronizationTask implements Task {
 			new Run();
 		}
 		finally {
-			node.getBlockchain().onSynchronizationCompleted();
+			node.onSynchronizationCompleted();
 		}
 	}
 

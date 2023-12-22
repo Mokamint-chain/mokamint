@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +29,8 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
+import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
 
 /**

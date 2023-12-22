@@ -73,15 +73,7 @@ import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.blockchain.Blockchain;
-import io.mokamint.node.local.internal.blockchain.DelayedMineNewBlockTask;
-import io.mokamint.node.local.internal.blockchain.MineNewBlockTask;
-import io.mokamint.node.local.internal.blockchain.SynchronizationTask;
-import io.mokamint.node.local.internal.blockchain.VerificationException;
-import io.mokamint.node.local.internal.mempool.Mempool;
-import io.mokamint.node.local.internal.mempool.Mempool.TransactionEntry;
-import io.mokamint.node.local.internal.miners.Miners;
-import io.mokamint.node.local.internal.peers.Peers;
+import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeersMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
@@ -221,11 +213,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.miners = new Miners(this);
 			this.blockchain = new Blockchain(this);
 			this.mempool = new Mempool(this);
-			this.peers = new Peers(this, this::onPeerAdded, this::onPeerRemoved,
-					this::onPeerConnected, this::onPeerDisconnected,
-					this::scheduleWhisperingOfAllServices,
-					this::scheduleWhisperingWithoutAddition,
-					this::scheduleSynchronization);
+			this.peers = new Peers(this);
 			this.uuid = getInfo().getUUID();
 
 			if (init)
@@ -848,7 +836,9 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * Called when mining immediately over the given block has been started.
 	 * 
-	 * @param previous the block
+	 * @param previous the block over which mining has been started
+	 * @param handler a handler to call when new transactions arrive, so that
+	 *                they have a chance of being processed by the mining task
 	 */
 	protected void onMiningStarted(Block previous, OnAddedTransactionHandler handler) {
 		blocksOverWhichMiningIsInProgress.add(previous);
@@ -858,7 +848,9 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * Called when mining immediately over the given block stopped.
 	 * 
-	 * @param previous the block
+	 * @param previous the block over which mining has been completed
+	 * @param handler the handler to call when new transactions arrive, so that
+	 *                they have a chance of being processed by the mining task
 	 */
 	protected void onMiningCompleted(Block previous, OnAddedTransactionHandler handler) {
 		blocksOverWhichMiningIsInProgress.remove(previous);

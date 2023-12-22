@@ -61,7 +61,7 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.blockchain.VerificationException;
+import io.mokamint.node.local.internal.VerificationException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;

@@ -17,7 +17,7 @@ limitations under the License.
 /**
  * 
  */
-package io.mokamint.node.local.internal.mempool;
+package io.mokamint.node.local.internal;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -49,9 +49,6 @@ import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
-import io.mokamint.node.local.internal.blockchain.Blockchain;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available

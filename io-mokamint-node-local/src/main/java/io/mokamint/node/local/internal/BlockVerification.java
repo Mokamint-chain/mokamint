@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.blockchain;
+package io.mokamint.node.local.internal;
 
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
@@ -35,8 +35,6 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.api.Deadline;
 
 /**

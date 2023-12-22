@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal.peers;
+package io.mokamint.node.local.internal;
 
 import static io.hotmoka.exceptions.CheckSupplier.check;
 import static io.hotmoka.exceptions.UncheckFunction.uncheck;
@@ -43,9 +43,6 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.ClosureLock;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 
 /**
  * The database where the peers are persisted.
