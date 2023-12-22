@@ -262,14 +262,27 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !alreadyWhispered.add(whispered))
 			return;
 
-		if (whispered instanceof WhisperedPeers whisperedPeers)
-			execute(() -> peers.reconnectOrTryToAdd(whisperedPeers.getPeers()), "reconnection or addition of whispered " + description);
+		if (whispered instanceof WhisperedPeers whisperedPeers) {
+			try {
+				peers.reconnectOrTryToAdd(whisperedPeers.getPeers());
+			}
+			catch (DatabaseException e) {
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be contacted", e);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
+			catch (ClosedNodeException | ClosedDatabaseException | IOException e) {
+				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be contacted: " + e.getMessage());
+			}
+		}
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			try {
 				blockchain.add(whisperedBlock.getBlock());
 			}
 			catch (NoSuchAlgorithmException | DatabaseException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the blockchain: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the blockchain", e);
 			}
 			catch (VerificationException | ClosedDatabaseException e) {
 				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be added to the blockchain: " + e.getMessage());
@@ -282,7 +295,7 @@ public class LocalNodeImpl implements LocalNode {
 				onTransactionAdded(tx);
 			}
 			catch (NoSuchAlgorithmException | DatabaseException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the mempool: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the mempool", e);
 			}
 			catch (RejectedTransactionException | ClosedDatabaseException e) {
 				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be added to the mempool: " + e.getMessage());
