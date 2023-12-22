@@ -338,8 +338,9 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
-	 * Adds the given block to the database of blocks of this node.
-	 * If the block was already in the database, nothing happens. Note that the addition
+	 * If the block was already in the database, this method performs nothing. Otherwise,
+	 * it verifies the given block and adds it to the database of blocks of this node.
+	 * Note that the addition
 	 * of a block might actually induce the addition of more, orphan blocks,
 	 * if the block is recognized as the previous block of an orphan block.
 	 * The addition of a block might change the head of the best chain, in which case
@@ -362,6 +363,13 @@ public class Blockchain implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
+		return add(block, true);
+	}
+
+	/**
+	 * This method behaves like {@link #add(Block)} but allows one to specify if block verification is required.
+	 */
+	protected boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<byte[]>();
 
@@ -382,10 +390,10 @@ public class Blockchain implements AutoCloseable {
 							addedToOrphans = true;
 					}
 					else
-						added |= add(ngb, hashOfCursor, previous, block == ngb, ws, updatedHead);
+						added |= add(ngb, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
 				}
 				else
-					added |= add(cursor, hashOfCursor, Optional.empty(), block == cursor, ws, updatedHead);
+					added |= add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
 			}
 		}
 		while (!ws.isEmpty());
@@ -437,11 +445,12 @@ public class Blockchain implements AutoCloseable {
 		}
 	}
 
-	private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<byte[]> updatedHead)
+	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<byte[]> updatedHead)
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
-			new BlockVerification(node, block, previous, true);
+			if (verify)
+				new BlockVerification(node, block, previous, true);
 
 			if (db.add(block, updatedHead)) {
 				node.onBlockAdded(block);

@@ -489,8 +489,7 @@ public class LocalNodeImpl implements LocalNode {
 			result = mempool.add(transaction);
 			var entry = new TransactionEntry(transaction, result.getPriority(), result.getHash());
 
-			// TODO: maybe in its own thread?
-			// we send the transaction also to all currently running mining tasks
+			// we send the transaction to all currently running mining tasks as well
 			for (var handler: blocksOverWhichMiningIsInProgress.values())
 				handler.add(entry);
 		}

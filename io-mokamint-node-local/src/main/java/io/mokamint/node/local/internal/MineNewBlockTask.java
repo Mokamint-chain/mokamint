@@ -178,8 +178,15 @@ public class MineNewBlockTask implements Task {
 		 */
 		private final Set<Miner> minersThatDidNotAnswer = ConcurrentHashMap.newKeySet();
 
+		/**
+		 * The task that executes the transactions from the mempool, while waiting for the deadline to expire.
+		 * This is an infinite task, hence it must be cancelled explicitly when the deadline expires.
+		 */
 		private final TransactionsExecutionTask transactionExecutor;
 
+		/**
+		 * The future that can be used to stop the {@link #transactionExecutor}.
+		 */
 		private final Future<?> transactionExecutionFuture;
 
 		/**
@@ -203,19 +210,18 @@ public class MineNewBlockTask implements Task {
 				waitUntilFirstDeadlineArrives();
 				waitUntilDeadlineExpires();
 				stopTransactionExecutor();
-				var maybeBlock = createNewBlock();
-				if (maybeBlock.isPresent()) {
+				var block = createNewBlock();
+				if (isMorePowerfulThanHead(block)) {
 					transactionExecutor.commitBlock();
 					committed = true;
-					var block = maybeBlock.get();
 					node.onBlockMined(block);
 					addNodeToBlockchain(block);
 				}
+				else
+					LOGGER.info(heightMessage + "not adding any block on top of " + previous.getHexHash(config.getHashingForBlocks()) + " since it would not improve the head");
 			}
 			catch (TimeoutException e) {
-				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
-				node.scheduleDelayedMining();
-				node.onNoDeadlineFound(previous);
+				deadlineExpiredTryLater();
 			}
 			finally {
 				stopTransactionExecutor();
@@ -229,6 +235,16 @@ public class MineNewBlockTask implements Task {
 			}
 		}
 
+		private boolean isMorePowerfulThanHead(Block block) throws DatabaseException, ClosedDatabaseException {
+			return blockchain.getPowerOfHead().map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
+		}
+
+		private void deadlineExpiredTryLater() {
+			LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
+			node.scheduleDelayedMining();
+			node.onNoDeadlineFound(previous);
+		}
+
 		private Future<?> startTransactionExecutor() throws RejectedExecutionException {
 			byte[] initialStateHash = previous.getStateHash();
 			try {
@@ -240,6 +256,9 @@ public class MineNewBlockTask implements Task {
 			}
 		}
 
+		/**
+		 * Stops the transaction executor. This can be called many times, it does nothing after the first call.
+		 */
 		private void stopTransactionExecutor() {
 			transactionExecutionFuture.cancel(true);
 		}
@@ -271,7 +290,8 @@ public class MineNewBlockTask implements Task {
 
 		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InterruptedException {
 			stopIfInterrupted();
-			if (blockchain.add(block))
+			// we do not require to verify the block, since we trust that we create verifiable blocks only
+			if (blockchain.add(block, false))
 				node.scheduleWhisperingWithoutAddition(block);
 		}
 
@@ -322,29 +342,22 @@ public class MineNewBlockTask implements Task {
 		}
 
 		/**
-		 * Creates the new block. This might be missing if it realizes that it would be worse
-		 * than the current head of the blockchain: useless to execute and verify the transactions
-		 * if it does not win the race.
+		 * Creates the new block, with the transactions that have been processed
+		 * by the transaction executor.
 		 * 
-		 * @return the block, if any
+		 * @return the block
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws ClosedDatabaseException if the database is already closed
 		 * @throws SignatureException if the block could not be signed
 		 * @throws InvalidKeyException if the private key of the node is invalid
 		 * @throws InterruptedException if the current thread gets interrupted
 		 */
-		private Optional<Block> createNewBlock() throws DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException {
+		private Block createNewBlock() throws DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException {
 			stopIfInterrupted();
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 			var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
-			var powerOfHead = blockchain.getPowerOfHead();
-			if (powerOfHead.isPresent() && powerOfHead.get().compareTo(description.getPower()) >= 0) {
-				LOGGER.info(heightMessage + "not creating any block on top of " + previous.getHexHash(config.getHashingForBlocks()) + " since it would not improve the head");
-				return Optional.empty();
-			}
-
 			var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
-			return Optional.of(Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate()));
+			return Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate());
 		}
 
 		/**
