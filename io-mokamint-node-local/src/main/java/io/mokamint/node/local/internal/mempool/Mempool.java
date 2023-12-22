@@ -49,7 +49,6 @@ import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.local.internal.AbstractMempool;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.blockchain.Blockchain;
@@ -59,7 +58,7 @@ import io.mokamint.node.local.internal.blockchain.Blockchain;
  * to be processed and included in the blocks of the blockchain.
  */
 @ThreadSafe
-public class Mempool extends AbstractMempool {
+public class Mempool {
 
 	/**
 	 * The blockchain of the node.
@@ -109,19 +108,15 @@ public class Mempool extends AbstractMempool {
 	 * @param node the node
 	 */
 	public Mempool(LocalNodeImpl node) {
-		super(node);
-		
 		this.blockchain = node.getBlockchain();
 		this.app = node.getApplication();
 		this.maxSize = node.getConfig().getMempoolSize();
-		this.hasher = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
+		this.hasher = node.getHasherForTransactions();
 		this.base = Optional.empty();
 		this.mempool = new TreeSet<>();
 	}
 
 	public Mempool(Mempool parent) {
-		super(parent.getNode());
-
 		this.blockchain = parent.blockchain;
 		this.app = parent.app;
 		this.maxSize = parent.maxSize;

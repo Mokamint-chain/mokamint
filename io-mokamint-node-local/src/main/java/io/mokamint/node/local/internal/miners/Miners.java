@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal.miners;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -28,7 +27,6 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.AbstractMiners;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.PunishableSet;
 
@@ -36,7 +34,7 @@ import io.mokamint.node.local.internal.PunishableSet;
  * The set of miners of a local node.
  */
 @ThreadSafe
-public class Miners extends AbstractMiners implements AutoCloseable {
+public class Miners implements AutoCloseable {
 
 	/**
 	 * The miners of the node.
@@ -48,18 +46,14 @@ public class Miners extends AbstractMiners implements AutoCloseable {
 	 */
 	private final LocalNodeConfig config;
 
-	private final static Logger LOGGER = Logger.getLogger(Miners.class.getName());
-
 	/**
 	 * Creates a container for the miners of a local node.
 	 * 
 	 * @param node the node
 	 */
 	public Miners(LocalNodeImpl node) {
-		super(node);
-
 		this.config = node.getConfig();
-		this.miners = new PunishableSet<>(Stream.empty(), config.getMinerInitialPoints(), (_miner, _force) -> true, this::removalFilter, this::onAddition, this::onRemoval);
+		this.miners = new PunishableSet<>(Stream.empty(), config.getMinerInitialPoints(), (_miner, _force) -> true, this::removalFilter, _miner-> {}, _miner -> {});
 	}
 
 	/**
@@ -169,15 +163,5 @@ public class Miners extends AbstractMiners implements AutoCloseable {
 		catch (IOException e) {
 			throw new UncheckedException(e);
 		}
-	}
-
-	private void onAddition(Miner miner) {
-		LOGGER.info("miners: added " + miner.getUUID() + " (" + miner + ")");
-		onMinerAdded(miner);
-	}
-
-	private void onRemoval(Miner miner) {
-		LOGGER.info("miners: removed " + miner.getUUID() + " (" + miner + ")");
-		onMinerRemoved(miner);
 	}
 }

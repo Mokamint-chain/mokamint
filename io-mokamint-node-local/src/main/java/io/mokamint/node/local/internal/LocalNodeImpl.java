@@ -393,7 +393,15 @@ public class LocalNodeImpl implements LocalNode {
 	public boolean closeMiner(UUID uuid) throws ClosedNodeException, IOException {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			Optional<Miner> maybeMiner = miners.get().filter(miner -> miner.getUUID().equals(uuid)).findFirst();
-			return maybeMiner.isPresent() && miners.remove(maybeMiner.get());
+			if (maybeMiner.isPresent()) {
+				var miner = maybeMiner.get();
+				if (miners.remove(miner)) {
+					onMinerRemoved(miner);
+					return true;
+				}
+			}
+
+			return false;
 		}
 	}
 
@@ -522,9 +530,13 @@ public class LocalNodeImpl implements LocalNode {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			var count = miners.get().count();
 			Optional<MinerInfo> result = miners.add(miner);
-			// if there were no miners before this call, we require to mine
-			if (count == 0L && result.isPresent())
-				scheduleMining();
+			if (result.isPresent()) {
+				onMinerAdded(miner);
+
+				// if there were no miners before this call, we require to mine
+				if (count == 0L)
+					scheduleMining();
+			}
 	
 			return result;
 		}
@@ -582,6 +594,26 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	public Hasher<Transaction> getHasherForTransactions() {
 		return hasherForTransactions;
+	}
+
+	/**
+	 * Punishes a miner, by reducing its points. If the miner reaches zero points,
+	 * it gets removed from the set of miners of this node. If the miner was not present in this
+	 * node, nothing happens.
+	 * 
+	 * @param miner the miner to punish
+	 * @param points how many points get removed
+	 */
+	public void punish(Miner miner, long points) {
+		LOGGER.log(Level.INFO, "punishing miner " + miner.getUUID() + " by removing " + points + " points");
+	
+		try {
+			if (miners.punish(miner, points))
+				onMinerRemoved(miner);
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot punish miner " + miner.getUUID(), e);
+		}
 	}
 
 	public interface OnAddedTransactionHandler {
@@ -761,14 +793,18 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param miner the added miner
 	 */
-	protected void onMinerAdded(Miner miner) {}
+	protected void onMinerAdded(Miner miner) {
+		LOGGER.info("miners: added " + miner.getUUID() + " (" + miner + ")");
+	}
 
 	/**
 	 * Called when a miner has been removed.
 	 * 
 	 * @param miner the removed miner
 	 */
-	protected void onMinerRemoved(Miner miner) {}
+	protected void onMinerRemoved(Miner miner) {
+		LOGGER.info("miners: removed " + miner.getUUID() + " (" + miner + ")");
+	}
 
 	/**
 	 * Called when a transaction has been added to the mempool.

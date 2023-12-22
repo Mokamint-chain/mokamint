@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal.blockchain;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
@@ -333,13 +332,7 @@ public class MineNewBlockTask implements Task {
 
 					long points = config.getMinerPunishmentForIllegalDeadline();
 					LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]");
-
-					try {
-						miners.punish(miner, points);
-					}
-					catch (IOException e2) {
-						LOGGER.log(Level.SEVERE, heightMessage + "cannot punish miner " + miner.getUUID() + " that computed an illegal deadline", e2);
-					}
+					node.punish(miner, points);
 				}
 			}
 		}
@@ -392,16 +385,8 @@ public class MineNewBlockTask implements Task {
 		}
 
 		private void punishMinersThatDidNotAnswer() {
-			minersThatDidNotAnswer.forEach(this::punishMinerThatDidNotAnswer);
-		}
-
-		private void punishMinerThatDidNotAnswer(Miner miner) {
-			try {
-				miners.punish(miner, config.getMinerPunishmentForTimeout());
-			}
-			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, heightMessage + "cannot punish miner " + miner + " that did not answer: " + e.getMessage());
-			}
+			var points = config.getMinerPunishmentForTimeout();
+			minersThatDidNotAnswer.forEach(miner -> node.punish(miner, points));
 		}
 	}
 }
