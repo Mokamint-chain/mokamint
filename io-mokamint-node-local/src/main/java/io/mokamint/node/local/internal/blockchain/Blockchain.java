@@ -68,6 +68,11 @@ import io.mokamint.nonce.api.IllegalDeadlineException;
 public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 
 	/**
+	 * The node having this blockchain.
+	 */
+	private final LocalNodeImpl node;
+
+	/**
 	 * The hashing algorithm used for the blocks.
 	 */
 	private final HashingAlgorithm hashingForBlocks;
@@ -108,8 +113,8 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 	public Blockchain(LocalNodeImpl node) throws DatabaseException {
 		super(node);
 
+		this.node = node;
 		var config = node.getConfig();
-
 		this.hashingForBlocks = config.getHashingForBlocks();
 		this.orphans = new NonGenesisBlock[config.getOrphansMemorySize()];
 		this.db = new BlocksDatabase(node);
@@ -427,7 +432,6 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 			if (!isEmpty())
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
 	
-			var node = getNode();
 			var config = node.getConfig();
 			var keys = node.getKeys();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
@@ -507,7 +511,7 @@ public class Blockchain extends AbstractBlockchain implements AutoCloseable {
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
-			new BlockVerification(getNode(), block, previous, true);
+			new BlockVerification(node, block, previous, true);
 
 			if (db.add(block, updatedHead)) {
 				onBlockAdded(block);

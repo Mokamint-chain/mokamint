@@ -221,7 +221,11 @@ public class LocalNodeImpl implements LocalNode {
 			this.miners = new Miners(this);
 			this.blockchain = new Blockchain(this);
 			this.mempool = new Mempool(this);
-			this.peers = new Peers(this);
+			this.peers = new Peers(this, this::onPeerAdded, this::onPeerRemoved,
+					this::onPeerConnected, this::onPeerDisconnected,
+					this::scheduleWhisperingOfAllServices,
+					this::scheduleWhisperingWithoutAddition,
+					this::scheduleSynchronization);
 			this.uuid = getInfo().getUUID();
 
 			if (init)
@@ -264,7 +268,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		if (whispered instanceof WhisperedPeers whisperedPeers) {
 			try {
-				peers.reconnectOrTryToAdd(whisperedPeers.getPeers());
+				peers.tryToReconnectOrAdd(whisperedPeers.getPeers());
 			}
 			catch (DatabaseException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be contacted", e);
@@ -761,32 +765,40 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Called when a peer gets connected.
-	 * 
-	 * @param peer the peer
-	 */
-	protected void onPeerConnected(Peer peer) {}
-
-	/**
 	 * Called when a peer has been added.
 	 * 
 	 * @param peer the added peer
 	 */
-	protected void onPeerAdded(Peer peer) {}
+	protected void onPeerAdded(Peer peer) {
+		LOGGER.info("added peer " + SanitizedStrings.of(peer));
+	}
+
+	/**
+	 * Called when a peer gets connected.
+	 * 
+	 * @param peer the peer
+	 */
+	protected void onPeerConnected(Peer peer) {
+		LOGGER.info("connected to peer " + SanitizedStrings.of(peer));
+	}
 
 	/**
 	 * Called when a peer gets disconnected.
 	 * 
 	 * @param peer the peer
 	 */
-	protected void onPeerDisconnected(Peer peer) {}
+	protected void onPeerDisconnected(Peer peer) {
+		LOGGER.info("disconnected from peer " + SanitizedStrings.of(peer));
+	}
 
 	/**
 	 * Called when a peer has been removed.
 	 * 
 	 * @param peer the removed peer
 	 */
-	protected void onPeerRemoved(Peer peer) {}
+	protected void onPeerRemoved(Peer peer) {
+		LOGGER.info("removed peer " + SanitizedStrings.of(peer));
+	}
 
 	/**
 	 * Called when a miner has been added.

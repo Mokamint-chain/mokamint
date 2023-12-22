@@ -53,15 +53,6 @@ public abstract class AbstractBlockchain {
 	}
 
 	/**
-	 * Yields the node having this blockchain.
-	 * 
-	 * @return the node having this blockchain
-	 */
-	protected final LocalNodeImpl getNode() {
-		return node;
-	}
-
-	/**
 	 * @see LocalNodeImpl#check(Deadline).
 	 */
 	protected void check(Deadline deadline) throws IllegalDeadlineException {

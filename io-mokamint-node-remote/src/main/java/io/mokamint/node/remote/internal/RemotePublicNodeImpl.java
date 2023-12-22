@@ -217,10 +217,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			this.hashingForBlocks = config.getHashingForBlocks();
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
-		catch (ClosedNodeException e) {
-			throw unexpectedException(e);
-		}
-		catch (TimeoutException | InterruptedException e) {
+		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
 			throw new IOException(e);
 		}
 
