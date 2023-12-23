@@ -49,7 +49,9 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
+import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
@@ -69,10 +71,12 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
+import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.PlotsAndKeyPairs;
 import io.mokamint.plotter.api.Plot;
+import jakarta.websocket.DeploymentException;
 
 /**
  * Tests about the inclusion of transactions in blockchain.
@@ -225,14 +229,25 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			}
 
 			private final TestNode[] nodes;
+			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, ClosedNodeException, IOException {
-				this.nodes = openNodes(dir);
-				addPeers();
-				addTransactions();
-				waitUntilAllNodesHaveSeenAllTransactions();
-				closeNodes();
+			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, ClosedNodeException {
+				this.services = new PublicNodeService[NUM_NODES];
+
+				try {
+					this.nodes = openNodes(dir);
+					addPeers();
+					addTransactions();
+					waitUntilAllNodesHaveSeenAllTransactions();
+					closeNodes();
+				}
+				finally {
+					// normally, the services get closed with the nodes, but we force their closure
+					// anyway, so that, in case of test failure, no service remains open
+					// (otherwise, subsequent tests might find some port busy and fail as well)
+					closeServices();
+				}
 			}
 
 			private void waitUntilAllNodesHaveSeenAllTransactions() throws InterruptedException {
@@ -240,14 +255,22 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					node.getSeenAll().acquire();
 			}
 
-			private TestNode[] openNodes(Path dir) {
-				return IntStream.range(0, NUM_NODES).parallel().mapToObj(num -> mkNode(dir, num)).toArray(TestNode[]::new);
+			private TestNode[] openNodes(Path dir) throws InterruptedException {
+				return CheckSupplier.check(InterruptedException.class, () -> 
+					IntStream.range(0, NUM_NODES).parallel().mapToObj(Integer::valueOf)
+						.map(UncheckFunction.uncheck(num -> mkNode(dir, num))).toArray(TestNode[]::new));
 			}
 
-			private void closeNodes() throws IOException, DatabaseException, InterruptedException {
-				CheckRunnable.check(IOException.class, DatabaseException.class, InterruptedException.class,
+			private void closeNodes() throws InterruptedException {
+				CheckRunnable.check(InterruptedException.class,
 					() ->  Stream.of(nodes).parallel().forEach(UncheckConsumer.uncheck(LocalNode::close))
 				);
+			}
+
+			private void closeServices() throws InterruptedException {
+				for (var service: services)
+					if (service != null)
+						service.close();
 			}
 
 			private void addTransactions() throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
@@ -257,35 +280,34 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				}
 			}
 
-			private void addPeers() {
-				IntStream.range(0, NUM_NODES).parallel().forEach(num -> {
-					try {
-						nodes[num].add(getPeer((num + 1) % NUM_NODES));
-					}
-					catch (Exception e) {
-						throw new RuntimeException(e); // TODO: use UncheckIntFunction in the future
-					}
-				});
+			private void addPeers() throws InterruptedException {
+				CheckRunnable.check(InterruptedException.class, () ->
+					IntStream.range(0, NUM_NODES).parallel().mapToObj(Integer::valueOf)
+						.forEach(UncheckConsumer.uncheck(num -> nodes[num].add(getPeer((num + 1) % NUM_NODES)))));
 			}
 
-			private LocalNode mkNode(Path dir, int num) {
+			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, DeploymentException {
 				try {
 					LocalNode result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 
 					var uri = getPeer(num).getURI();
 					// this service will be closed automatically when the node will get closed
-					// TODO: if the test fails, it actually remains open...
-					PublicNodeServices.open(result, uri.getPort(), 1800000L, 1000, Optional.of(uri));
+					services[num] = PublicNodeServices.open(result, uri.getPort(), 1800000L, 1000, Optional.of(uri));
 
 					return result;
 				}
-				catch (Exception e) {
-					throw new RuntimeException(e); // TODO: use UncheckIntFunction in the future
+				catch (AlreadyInitializedException e) {
+					throw new RuntimeException("Unexpected exception", e);
 				}
 			}
 
-			private Peer getPeer(int num) throws URISyntaxException {
-				return Peers.of(new URI("ws://localhost:" + (8032 + num)));
+			private Peer getPeer(int num) {
+				try {
+					return Peers.of(new URI("ws://localhost:" + (8032 + num)));
+				}
+				catch (URISyntaxException e) {
+					throw new RuntimeException("Unexpected exception", e);
+				}
 			}
 		}
 
