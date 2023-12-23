@@ -35,27 +35,62 @@ import io.mokamint.nonce.api.Deadline;
 
 /**
  * A task that executes the transactions taken from a queue.
- * It works while a block mining task looks for a deadline.
- * Once the deadline expires, all transactions executed by this task
- * can be added to the new block.
+ * It works while a block mining task waits for a deadline.
+ * Once that deadline expires, all transactions executed by this task
+ * can be added to the freshly mined block.
  */
 public class TransactionsExecutionTask implements Task {
 
+	/**
+	 * A source of transactions to execute.
+	 */
 	public interface Source {
+
+		/**
+		 * Takes a transaction to execute. It blocks to wait for new transactions
+		 * if this source is currently empty.
+		 * 
+		 * @return the transaction entry read from this source
+		 * @throws InterruptedException if the current thread is interrupted while blocked
+		 *                              waiting for a new transaction to arrive
+		 */
 		TransactionEntry take() throws InterruptedException;
 	}
 
+	/**
+	 * The block over which the transactions are being executed.
+	 * That is, the initial state of the execution is the final state after this block.
+	 */
 	private final Block previous;
+
+	/**
+	 * The application running in the node executing the transactions.
+	 */
 	private final Application app;
+
+	/**
+	 * The source of transactions to execute. It is guaranteed that these transactions
+	 * are different from those contained in the blockchain from {@link #previous}
+	 * towards the genesis block. It is guaranteed also that these transactions pass
+	 * the {@link Application#checkTransaction(Transaction)} test.
+	 */
 	private final Source source;
 
 	/**
-	 * The transactions that have been executed up to now.
+	 * The transactions that have been executed up to now, in order of execution.
 	 */
 	private final List<Transaction> transactions = new ArrayList<>();
 
+	/**
+	 * The maximal size allowed for the transactions' table of a block. This task
+	 * ensures that the {@link #transactions} have a cumulative size that is never
+	 * larger than this constant.
+	 */
 	private final long maxSize;
 
+	/**
+	 * The {@link #app} identifier of the transactions' execution performed by this task.
+	 */
 	private final int id;
 
 	private final CountDownLatch done = new CountDownLatch(1);
@@ -84,28 +119,52 @@ public class TransactionsExecutionTask implements Task {
 		long sizeUpToNow = 0L;
 
 		try {
+			// infinite loop: this task is expected to be interrupted by the mining task that has spawned it
 			while (!Thread.currentThread().isInterrupted())
 				sizeUpToNow = processNextTransaction(source.take(), sizeUpToNow);
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+			// we do not throw the exception further but rather stop working:
+			// interruption is the standard way of terminating this task
 		}
 		finally {
+			// this allows to commit or abort the execution in the database of the application
+			// (if any) and to access the set of processed transactions
 			done.countDown();
 		}
 	}
 
+	/**
+	 * Waits for this task to terminate and yields the transactions processed by this task,
+	 * once the mining task has found a deadline.
+	 * 
+	 * @param deadline the deadline found by the mining task during the execution of the transactions
+	 * @return the processed transactions
+	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
+	 */
 	public ProcessedTransactions getProcessedTransactions(Deadline deadline) throws InterruptedException {
 		done.await();
-		var finalStateHash = app.endBlock(id, deadline);
-		return new ProcessedTransactions(transactions, finalStateHash);
+		return new ProcessedTransactions(transactions, app.endBlock(id, deadline));
 	}
 
+	/**
+	 * Waits for this task to terminate and commits the final state of the execution
+	 * of its processed transactions, in the database of the application (if any).
+	 * 
+	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
+	 */
 	public void commitBlock() throws InterruptedException {
 		done.await();
 		app.commitBlock(id);
 	}
 
+	/**
+	 * Waits for this task to terminate and aborts the execution of its processed transactions,
+	 * so that it does not modify the database of the application (if any).
+	 * 
+	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
+	 */
 	public void abortBlock() throws InterruptedException {
 		done.await();
 		app.abortBlock(id);
@@ -115,8 +174,8 @@ public class TransactionsExecutionTask implements Task {
 		var tx = next.getTransaction();
 
 		if (transactions.contains(tx))
-			// this might actually occur if a transaction arrives during the execution of this task,
-			// which was already processed with this task
+			// this might actually occur if a transaction arrives during the execution of this task
+			// and it was already processed with this task
 			return sizeUpToNow;
 
 		int txSize = tx.size();
@@ -127,16 +186,27 @@ public class TransactionsExecutionTask implements Task {
 				sizeUpToNow += txSize;
 			}
 			catch (RejectedTransactionException e) {
+				// if tx is rejected by deliverTransaction, then it is just dropped
 				LOGGER.log(Level.WARNING, "delivery of transaction " + next + " rejected: " + e.getMessage());
-			}
-			catch (RuntimeException e) {
-				LOGGER.log(Level.SEVERE, "delivery of transaction " + next + " failed", e);
 			}
 		}
 
 		return sizeUpToNow;
 	}
 
+	/**
+	 * A sequence of transactions processed with an executor. It is guaranteed that
+	 * they are all different, they are different from those in blockchain from
+	 * {@link TransactionsExecutionTask#previous} towards the genesis block, they
+	 * all pass the {@link Application#checkTransaction(Transaction)} test and they
+	 * all lead to a successful {@link Application#deliverTransaction(Transaction, int)}
+	 * execution. Moreover, it is guaranteed that {@link ProcessedTransactions#stateHash}
+	 * is the hash of the state resulting after the execution of
+	 * {@link ProcessedTransactions#transactions}, in order, from the final state
+	 * of {@link TransactionsExecutionTask#previous}, including potential coinbase
+	 * transactions executed at the end of all transactions (if the application adds them
+	 * inside its {@link Application#endBlock(int, Deadline)} method).
+	 */
 	@Immutable
 	public static class ProcessedTransactions {
 		private final Transaction[] transactions;
@@ -147,10 +217,21 @@ public class TransactionsExecutionTask implements Task {
 			this.stateHash = stateHash.clone();
 		}
 
+		/**
+		 * Yields the transactions processed with an executor, in order.
+		 * 
+		 * @return the transactions
+		 */
 		public Stream<Transaction> getTransactions() {
 			return Stream.of(transactions);
 		}
 
+		/**
+		 * Yields the final state resulting at the end of the execution of the transactions,
+		 * including potential coinbase transactions, if the application uses them.
+		 * 
+		 * @return the final state
+		 */
 		public byte[] getStateHash() {
 			return stateHash.clone();
 		}

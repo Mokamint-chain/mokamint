@@ -756,13 +756,13 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * STarts a transactions executor.
+	 * Schedules the execution of a transactions executor.
 	 * 
 	 * @param task the transactions executor task to start
 	 * @return the future to the result of the task
 	 * @throws RejectedExecutionException if the task could not be started
 	 */
-	protected Future<?> startTransactionExecutor(TransactionsExecutionTask task) throws RejectedExecutionException {
+	protected Future<?> scheduleTransactionExecutor(TransactionsExecutionTask task) throws RejectedExecutionException {
 		return submit(task, "transactions execution from state " + Hex.toHexString(task.getPrevious().getStateHash()));
 	}
 

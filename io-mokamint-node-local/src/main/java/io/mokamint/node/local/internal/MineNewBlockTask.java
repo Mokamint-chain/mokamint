@@ -35,8 +35,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import io.hotmoka.exceptions.CheckRunnable;
-import io.hotmoka.exceptions.UncheckConsumer;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -205,7 +203,7 @@ public class MineNewBlockTask implements Task {
 			this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
 			this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 			this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
-			this.transactionExecutionFuture = node.startTransactionExecutor(transactionExecutor);
+			this.transactionExecutionFuture = node.scheduleTransactionExecutor(transactionExecutor);
 
 			try {
 				requestDeadlineToEveryMiner();
@@ -224,7 +222,8 @@ public class MineNewBlockTask implements Task {
 		}
 
 		private void requestDeadlineToEveryMiner() throws InterruptedException {
-			CheckRunnable.check(InterruptedException.class, () -> miners.get().forEach(UncheckConsumer.uncheck(this::requestDeadlineTo)));
+			for (Miner miner: miners.get().toArray(Miner[]::new))
+				requestDeadlineTo(miner);
 		}
 
 		private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
@@ -243,7 +242,7 @@ public class MineNewBlockTask implements Task {
 		}
 
 		/**
-		 * Creates the new block, with the transactions that have been processed by the transaction executor.
+		 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutor}.
 		 * 
 		 * @return the block
 		 * @throws SignatureException if the block could not be signed
@@ -253,7 +252,7 @@ public class MineNewBlockTask implements Task {
 		private Block createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException {
 			stopIfInterrupted();
 			var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
-			this.done = true; // further deadlines that arrive from the miners are not useful anymore
+			this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 			var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 			var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
 			return Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate());
@@ -306,16 +305,6 @@ public class MineNewBlockTask implements Task {
 			LOGGER.info(heightMessage + "asking miner " + miner.getUUID() + " for a deadline: " + description);
 			minersThatDidNotAnswer.add(miner);
 			miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
-		}
-
-		/**
-		 * Checks if the current thread has been interrupted and, in that case, throws an exception.
-		 * 
-		 * @throws InterruptedException if and only if the current thread has been interrupted
-		 */
-		private static void stopIfInterrupted() throws InterruptedException {
-			if (Thread.currentThread().isInterrupted())
-				throw new InterruptedException("Interrupted");
 		}
 
 		private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
@@ -387,6 +376,16 @@ public class MineNewBlockTask implements Task {
 		private void punishMinersThatDidNotAnswer() {
 			var points = config.getMinerPunishmentForTimeout();
 			minersThatDidNotAnswer.forEach(miner -> node.punish(miner, points));
+		}
+
+		/**
+		 * Checks if the current thread has been interrupted and, in that case, throws an exception.
+		 * 
+		 * @throws InterruptedException if and only if the current thread has been interrupted
+		 */
+		private static void stopIfInterrupted() throws InterruptedException {
+			if (Thread.currentThread().isInterrupted())
+				throw new InterruptedException("Interrupted");
 		}
 	}
 }

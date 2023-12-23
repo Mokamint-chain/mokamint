@@ -442,12 +442,20 @@ public class Blockchain implements AutoCloseable {
 
 		byte[] newHeadHash = updatedHead.get();
 		if (newHeadHash != null) {
-			node.rebaseMempoolAt(newHeadHash); // TODO: check this
+			// if the head has been improved, we update the mempool by removing
+			// the transactions that have been added in blockchain and potentially adding
+			// other transactions (if the history changed). Note that, in general, the mempool of
+			// the node might not always be aligned with the current head of the blockchain,
+			// since another task might execute this same update concurrently. This is not
+			// a problem, since this rebase is only an optimization, to keep the mempool small.
+			// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
+			// the block over which mining occurs, so it will be aligned there
+			node.rebaseMempoolAt(newHeadHash);
 			node.onHeadChanged(newHeadHash);
 			node.scheduleMining();
 		}
 		else if (addedToOrphans && headIsLessPowerfulThan(block))
-			// the block was better than our current head, but misses a previous block:
+			// the block was better than our current head, but its previous block is missing:
 			// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
 			node.scheduleSynchronization(Math.max(0L, getHeightOfHead().orElse(0L) - 1000L));
 

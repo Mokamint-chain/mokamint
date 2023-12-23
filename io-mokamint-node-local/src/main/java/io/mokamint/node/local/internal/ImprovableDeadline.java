@@ -93,9 +93,9 @@ public class ImprovableDeadline {
 	}
 
 	/**
-	 * Yields the deadline wrapped by this object, if any,
+	 * Yields the deadline computed so far.
 	 * 
-	 * @return the deadline wrapped by this object
+	 * @return the deadline computed so far, if any
 	 */
 	public Optional<Deadline> get() {
 		synchronized (lock) {
