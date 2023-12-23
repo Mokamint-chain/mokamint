@@ -756,6 +756,17 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * STarts a transactions executor.
+	 * 
+	 * @param task the transactions executor task to start
+	 * @return the future to the result of the task
+	 * @throws RejectedExecutionException if the task could not be started
+	 */
+	protected Future<?> startTransactionExecutor(TransactionsExecutionTask task) throws RejectedExecutionException {
+		return submit(task, "transactions execution from state " + Hex.toHexString(task.getPrevious().getStateHash()));
+	}
+
+	/**
 	 * Called when a peer has been added.
 	 * 
 	 * @param peer the added peer
@@ -958,7 +969,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	public Future<?> submit(Task task, String description) throws RejectedExecutionException {
+	private Future<?> submit(Task task, String description) throws RejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
 		try {
 			var future = executors.submit(runnable);

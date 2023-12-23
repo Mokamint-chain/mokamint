@@ -116,6 +116,29 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
+	 * Determines if this blockchain is empty.
+	 * 
+	 * @return true if and only if this blockchain is empty
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public boolean isEmpty() throws DatabaseException, ClosedDatabaseException {
+		return db.getGenesisHash().isEmpty();
+	}
+
+	/**
+	 * Determines if the given block is more powerful than the current head.
+	 * 
+	 * @param block the block
+	 * @return true if and only if the current head is missing or {@code block} is more powerful
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public boolean headIsLessPowerfulThan(Block block) throws DatabaseException, ClosedDatabaseException {
+		return db.getPowerOfHead().map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
+	}
+
+	/**
 	 * Yields the hash of the first genesis block that has been added to this database, if any.
 	 * 
 	 * @return the hash of the genesis block, if any
@@ -144,17 +167,6 @@ public class Blockchain implements AutoCloseable {
 			genesisCache = result;
 
 		return result;
-	}
-
-	/**
-	 * Determines if this blockchain is empty.
-	 * 
-	 * @return true if and only if this blockchain is empty
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 */
-	public boolean isEmpty() throws DatabaseException, ClosedDatabaseException {
-		return db.getGenesisHash().isEmpty();
 	}
 
 	/**
@@ -189,17 +201,6 @@ public class Blockchain implements AutoCloseable {
 	 */
 	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
 		return db.getHeightOfHead();
-	}
-
-	/**
-	 * Yields the power of the head block of this blockchain, if any.
-	 * 
-	 * @return the power
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 */
-	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, ClosedDatabaseException {
-		return db.getPowerOfHead();
 	}
 
 	/**
@@ -338,6 +339,34 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
+	 * Initializes this blockchain, which must be empty. It adds a genesis block.
+	 * 
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
+	 * @throws InvalidKeyException if the key of the node is invalid
+	 * @throws SignatureException if the genesis block could not be signed
+	 */
+	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+		try {
+			if (!isEmpty())
+				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
+	
+			var config = node.getConfig();
+			var keys = node.getKeys();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
+			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateHash(), keys.getPrivate());
+	
+			add(genesis);
+		}
+		catch (NoSuchAlgorithmException | ClosedDatabaseException | VerificationException e) {
+			// the database cannot be closed at this moment;
+			// moreover, the genesis should be created correctly, hence should be verifiable
+			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
+		}
+	}
+
+	/**
 	 * If the block was already in the database, this method performs nothing. Otherwise,
 	 * it verifies the given block and adds it to the database of blocks of this node.
 	 * Note that the addition
@@ -367,9 +396,22 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
+	 * This method behaves like {@link #add(Block)} but assumes that the given block is
+	 * verified, so that it does not need further verification before being added to blockchain.
+	 */
+	protected boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+		try {
+			return add(block, false);
+		}
+		catch (VerificationException e) {
+			throw new RuntimeException("Unexpected exception", e);
+		}
+	}
+
+	/**
 	 * This method behaves like {@link #add(Block)} but allows one to specify if block verification is required.
 	 */
-	protected boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
+	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<byte[]>();
 
@@ -400,49 +442,16 @@ public class Blockchain implements AutoCloseable {
 
 		byte[] newHeadHash = updatedHead.get();
 		if (newHeadHash != null) {
-			node.rebaseMempoolAt(newHeadHash);
+			node.rebaseMempoolAt(newHeadHash); // TODO: check this
 			node.onHeadChanged(newHeadHash);
 			node.scheduleMining();
 		}
-		else if (addedToOrphans) {
-			var powerOfHead = getPowerOfHead();
-			if (powerOfHead.isEmpty())
-				node.scheduleSynchronization(0L);
-			else if (powerOfHead.get().compareTo(block.getDescription().getPower()) < 0)
-				// the block was better than our current head, but misses a previous block:
-				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-				node.scheduleSynchronization(Math.max(0L, getHeightOfHead().getAsLong() - 1000L));
-		}
+		else if (addedToOrphans && headIsLessPowerfulThan(block))
+			// the block was better than our current head, but misses a previous block:
+			// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
+			node.scheduleSynchronization(Math.max(0L, getHeightOfHead().orElse(0L) - 1000L));
 
 		return added;
-	}
-
-	/**
-	 * Initializes this blockchain, which must be empty. It adds a genesis block.
-	 * 
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
-	 * @throws InvalidKeyException if the key of the node is invalid
-	 * @throws SignatureException if the genesis block could not be signed
-	 */
-	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
-		try {
-			if (!isEmpty())
-				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
-	
-			var config = node.getConfig();
-			var keys = node.getKeys();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
-			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateHash(), keys.getPrivate());
-
-			add(genesis);
-		}
-		catch (NoSuchAlgorithmException | ClosedDatabaseException | VerificationException e) {
-			// the database cannot be closed at this moment;
-			// moreover, the genesis should be created correctly, hence should be verifiable
-			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
-		}
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<byte[]> updatedHead)

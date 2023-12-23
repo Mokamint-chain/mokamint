@@ -45,6 +45,7 @@ public class TransactionsExecutionTask implements Task {
 		TransactionEntry take() throws InterruptedException;
 	}
 
+	private final Block previous;
 	private final Application app;
 	private final Source source;
 
@@ -62,10 +63,20 @@ public class TransactionsExecutionTask implements Task {
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
 	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException {
+		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
 		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, previous.getStateHash(), node.getBlockchain().creationTimeOf(previous));
+	}
+
+	/**
+	 * Yields the block over which the transactions are executed.
+	 * 
+	 * @return the block
+	 */
+	public Block getPrevious() {
+		return previous;
 	}
 
 	@Override
