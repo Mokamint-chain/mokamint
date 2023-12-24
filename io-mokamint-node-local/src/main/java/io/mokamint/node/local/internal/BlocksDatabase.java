@@ -793,6 +793,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown cryptographic algorithm
 	 */
+	// TODO: if the block with that hash is missing, another exception should be thrown
 	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] blockHash, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
 		try {
 			byte[] cursor = blockHash;
@@ -1318,8 +1319,8 @@ public class BlocksDatabase implements AutoCloseable {
 	
 		@Override
 		public void into(MarshallingContext context) throws IOException {
-			context.writeLong(height);
-			context.writeInt(progressive);
+			context.writeCompactLong(height);
+			context.writeCompactInt(progressive);
 		}
 	
 		/**
@@ -1331,7 +1332,7 @@ public class BlocksDatabase implements AutoCloseable {
 		 */
 		private static TransactionRef from(ByteIterable bi) throws IOException {
 			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return new TransactionRef(context.readLong(), context.readInt());
+				return new TransactionRef(context.readCompactLong(), context.readCompactInt());
 			}
 		}
 
