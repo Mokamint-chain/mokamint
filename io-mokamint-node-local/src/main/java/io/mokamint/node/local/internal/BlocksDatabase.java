@@ -354,19 +354,19 @@ public class BlocksDatabase implements AutoCloseable {
 
 	/**
 	 * Yields the address of the transaction with the given hash, if it is contained in the
-	 * chain from the block with hash {@code blockHash} towards the genesis block.
+	 * chain from the given {@code block} towards the genesis block.
 	 * 
-	 * @param blockHash the hash of the block
+	 * @param block the block
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<TransactionAddress> getTransactionAddress(byte[] blockHash, byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
+	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
 		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, blockHash, hash)))
+				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, block, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -449,7 +449,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
-	 * @param updatedHead the hash of the new head of the best chain resulting from the addition,
+	 * @param updatedHead the new head of the best chain resulting from the addition,
 	 *                    if it changed wrt the previous head
 	 * @return true if the block has been actually added to the database, false otherwise.
 	 *         There are a few situations when the result can be false. For instance,
@@ -460,7 +460,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Block block, AtomicReference<byte[]> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 		boolean hasBeenAdded;
 
 		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
@@ -483,7 +483,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * 
 	 * @param txn the transaction
 	 * @param block the block to add
-	 * @param updatedHead the hash of the new head resulting from the addition, if it changed wrt the previous head
+	 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head
 	 * @return true if and only if the block has been added. False means that
 	 *         the block was already in the tree; or that {@code block} is a genesis
 	 *         block and there is already a genesis block in the tree; or that {@code block}
@@ -491,7 +491,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private boolean add(Transaction txn, Block block, AtomicReference<byte[]> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
+	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
 		byte[] hashOfBlock = block.getHash(hashingForBlocks);
 	
 		if (containsBlock(txn, hashOfBlock)) {
@@ -506,7 +506,7 @@ public class BlocksDatabase implements AutoCloseable {
 				addToForwards(txn, ngb, hashOfBlock);
 				if (isBetterThanHead(txn, ngb, hashOfBlock)) {
 					setHeadHash(txn, block, hashOfBlock);
-					updatedHead.set(hashOfBlock);
+					updatedHead.set(block);
 				}
 
 				sanityCheck(txn, getHead(txn).get());
@@ -524,7 +524,7 @@ public class BlocksDatabase implements AutoCloseable {
 				putInStore(txn, hashOfBlock, bytesOfBlock);
 				setGenesisHash(txn, hashOfBlock);
 				setHeadHash(txn, block, hashOfBlock);
-				updatedHead.set(hashOfBlock);
+				updatedHead.set(block);
 				sanityCheck(txn, block);
 				return true;
 			}
@@ -784,28 +784,22 @@ public class BlocksDatabase implements AutoCloseable {
 
 	/**
 	 * Yields the address of the transaction with the given hash, if it is contained in the
-	 * chain from the block with hash {@code blockHash} towards the genesis block.
+	 * chain from the given {@code block} towards the genesis block.
 	 * 
 	 * @param txn the database transaction
-	 * @param blockHash the hash of the block
+	 * @param block the block
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown cryptographic algorithm
 	 */
-	// TODO: if the block with that hash is missing, another exception should be thrown
-	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] blockHash, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
+	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) throws DatabaseException, NoSuchAlgorithmException {
 		try {
-			byte[] cursor = blockHash;
+			byte[] hashOfBlock = block.getHash(hashingForBlocks);
+			String initialHash = Hex.toHexString(hashOfBlock);
 
 			while (true) {
-				Optional<Block> maybeBlock = getBlock(txn, cursor);
-				if (maybeBlock.isEmpty())
-					throw new DatabaseException("The database has no block with hash " + Hex.toHexString(cursor));
-
-				Block block = maybeBlock.get();
-
-				if (isContainedInTheBestChain(txn, block, cursor)) {
+				if (isContainedInTheBestChain(txn, block, hashOfBlock)) {
 					// since the block is inside the best chain, we can use the storeOfTransactions for it
 					ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
 					if (txBI == null)
@@ -816,24 +810,26 @@ public class BlocksDatabase implements AutoCloseable {
 						// the transaction is present above the block
 						return Optional.empty();
 
-					ByteIterable blockHash2 = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
-					if (blockHash2 == null)
+					ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
+					if (blockHash == null)
 						throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
-					return Optional.of(TransactionAddresses.of(blockHash2.getBytes(), ref.progressive));
+					return Optional.of(TransactionAddresses.of(blockHash.getBytes(), ref.progressive));
 				}
 				else if (block instanceof NonGenesisBlock ngb) {
 					// we check if the transaction is inside the table of transactions of the block
 					int length = ngb.getTransactionsCount();
 					for (int pos = 0; pos < length; pos++)
 						if (Arrays.equals(hash, hasherForTransactions.hash(ngb.getTransaction(pos))))
-							return Optional.of(TransactionAddresses.of(cursor, pos));
+							return Optional.of(TransactionAddresses.of(hashOfBlock, pos));
 
 					// otherwise we continue with the previous block
-					cursor = ngb.getHashOfPreviousBlock();
+					byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
+					block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("The database has no block with hash " + Hex.toHexString(hashOfPrevious)));
+					hashOfBlock = hashOfPrevious;
 				}
 				else
-					throw new DatabaseException("The block with hash " + Hex.toHexString(blockHash) + " is not connected to the best chain");
+					throw new DatabaseException("The block " + initialHash + " is not connected to the best chain");
 			}
 		}
 		catch (ExodusException | IOException e) {

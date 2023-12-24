@@ -244,11 +244,9 @@ public class BlockVerification {
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 */
 	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
-		var previousHash = previous.getHash(config.getHashingForBlocks());
-
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 			var txHash = node.getHasherForTransactions().hash(tx);
-			if (node.getBlockchain().getTransactionAddress(previousHash, txHash).isPresent())
+			if (node.getBlockchain().getTransactionAddress(previous, txHash).isPresent())
 				throw new VerificationException("Repeated transaction " + Hex.toHexString(txHash));
 		}
 	}

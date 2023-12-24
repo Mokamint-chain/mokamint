@@ -670,13 +670,13 @@ public class LocalNodeImpl implements LocalNode {
 		return blocksOverWhichMiningIsInProgress.putIfAbsent(previous, handler) == null;
 	}
 
-	protected void rebaseMempoolAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		mempool.rebaseAt(newHeadHash);
+	protected void rebaseMempoolAt(Block newHead) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		mempool.rebaseAt(newHead);
 	}
 
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block newHead) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		var result = new Mempool(mempool);
-		result.rebaseAt(newHeadHash);
+		result.rebaseAt(newHead);
 		return result.getTransactions();
 	}
 
@@ -882,9 +882,9 @@ public class LocalNodeImpl implements LocalNode {
 	/**
 	 * Called when the head of the blockchain has been updated.
 	 * 
-	 * @param newHeadHash the hash of the new head
+	 * @param newHead the new head
 	 */
-	protected void onHeadChanged(byte[] newHeadHash) {}
+	protected void onHeadChanged(Block newHead) {}
 
 	/**
 	 * Called when the node mines a new block.

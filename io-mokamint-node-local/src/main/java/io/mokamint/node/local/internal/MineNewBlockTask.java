@@ -102,10 +102,10 @@ public class MineNewBlockTask implements Task {
 			Optional<Block> maybeHead = blockchain.getBlock(headHash);
 			if (maybeHead.isPresent()) {
 				var head = maybeHead.get();
-				PriorityBlockingQueue<TransactionEntry> mempool = node.getMempoolTransactionsAt(headHash)
+				PriorityBlockingQueue<TransactionEntry> mempool = node.getMempoolTransactionsAt(head)
 					.collect(Collectors.toCollection(PriorityBlockingQueue::new));
 
-				if (node.lockMiningOver(head, entry -> add(mempool, headHash, entry))) {
+				if (node.lockMiningOver(head, entry -> add(mempool, head, entry))) {
 					node.onMiningStarted(head);
 					new Run(head, mempool);
 				}
@@ -118,14 +118,14 @@ public class MineNewBlockTask implements Task {
 	 * contained in blockchain in the chain from the given head to the genesis block.
 	 * 
 	 * @param mempool the mempool
-	 * @param hashOfHead the hash of the head over which mining is performed
+	 * @param head the head over which mining is performed
 	 * @param entry the entry to add
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographical algorithm
 	 * @throws ClosedDatabaseException if the database is closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void add(PriorityBlockingQueue<TransactionEntry> mempool, byte[] hashOfHead, TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
-		if (blockchain.getTransactionAddress(hashOfHead, entry.getHash()).isEmpty())
+	private void add(PriorityBlockingQueue<TransactionEntry> mempool, Block head, TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+		if (blockchain.getTransactionAddress(head, entry.getHash()).isEmpty())
 			synchronized (mempool) {
 				if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
 					mempool.offer(entry);

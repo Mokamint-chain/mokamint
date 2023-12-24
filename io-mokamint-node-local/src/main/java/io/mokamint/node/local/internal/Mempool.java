@@ -35,6 +35,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
@@ -78,12 +79,12 @@ public class Mempool {
 	private final Hasher<Transaction> hasher;
 
 	/**
-	 * The hash of the base block of the mempool: the transactions inside {@link #mempool}
+	 * The base block of the mempool: the transactions inside {@link #mempool}
 	 * have arrived after the creation of this block. If missing, the transactions
 	 * have arrived after the creation of the blockchain itself.
 	 */
 	@GuardedBy("this.mempool")
-	private Optional<byte[]> base;
+	private Optional<Block> base;
 
 	/**
 	 * The container of the transactions inside this mempool. They are kept ordered
@@ -99,6 +100,11 @@ public class Mempool {
 	@GuardedBy("this.mempool")
 	private List<TransactionEntry> mempoolAsList;
 
+	/**
+	 * The hashing algorithm for the blocks.
+	 */
+	private final HashingAlgorithm hashingForBlocks;
+
 	private final static Logger LOGGER = Logger.getLogger(Mempool.class.getName());
 
 	/**
@@ -108,6 +114,7 @@ public class Mempool {
 	 */
 	public Mempool(LocalNodeImpl node) {
 		this.blockchain = node.getBlockchain();
+		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.app = node.getApplication();
 		this.maxSize = node.getConfig().getMempoolSize();
 		this.hasher = node.getHasherForTransactions();
@@ -122,6 +129,7 @@ public class Mempool {
 	 */
 	protected Mempool(Mempool parent) {
 		this.blockchain = parent.blockchain;
+		this.hashingForBlocks = parent.hashingForBlocks;
 		this.app = parent.app;
 		this.maxSize = parent.maxSize;
 		this.hasher = parent.hasher;
@@ -144,7 +152,7 @@ public class Mempool {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void rebaseAt(byte[] newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	public void rebaseAt(Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		new RebaseAt(newBase);
 	}
 
@@ -325,26 +333,21 @@ public class Mempool {
 	 * The algorithm for rebasing this mempool at a given, new base.
 	 */
 	private class RebaseAt {
-		private byte[] newBase;
 		private Block newBlock;
-		private byte[] oldBase;
 		private Block oldBlock;
 		private final Set<Transaction> toRemove = new HashSet<>();
 		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
-		private RebaseAt(final byte[] newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-			this.newBase = newBase;
+		private RebaseAt(final Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+			this.newBlock = newBase;
 
 			synchronized (mempool) {
-				oldBase = base.orElse(null);
+				oldBlock = base.orElse(null);
 				base = Optional.of(newBase);
 
-				if (oldBase == null)
+				if (oldBlock == null)
 					removeAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
 				else {
-					oldBlock = getBlock(oldBase);
-					newBlock = getBlock(newBase);
-
 					// first we move new and old bases to the same height
 					while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight())
 						markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
@@ -368,10 +371,11 @@ public class Mempool {
 		}
 
 		private boolean reachedSharedAncestor() throws DatabaseException {
-			if (Arrays.equals(newBase, oldBase))
+			if (newBlock.equals(oldBlock))
 				return true;
 			else if (newBlock instanceof GenesisBlock || oldBlock instanceof GenesisBlock)
-				throw new DatabaseException("Cannot identify a shared ancestor block between " + Hex.toHexString(oldBase) + " and " + Hex.toHexString(newBase));
+				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash(hashingForBlocks)
+					+ " and " + newBlock.getHexHash(hashingForBlocks));
 			else
 				return false;
 		}
@@ -379,27 +383,25 @@ public class Mempool {
 		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 			if (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
-				newBase = ngb.getHashOfPreviousBlock();
-				newBlock = getBlock(newBase);
+				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(newBase) + " at height " + newBlock.getDescription().getHeight());
+				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(hashingForBlocks) + " at height " + newBlock.getDescription().getHeight());
 		}
 
 		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
-				oldBase = ngb.getHashOfPreviousBlock();
-				oldBlock = getBlock(oldBase);
+				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(oldBase) + " at height " + oldBlock.getDescription().getHeight());
+				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(hashingForBlocks) + " at height " + oldBlock.getDescription().getHeight());
 		}
 
 		private void removeAllTransactionsFromNewBaseToGenesis() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-			while (!mempool.isEmpty() && getBlock(newBase) instanceof NonGenesisBlock ngb) {
+			while (!mempool.isEmpty() && newBlock instanceof NonGenesisBlock ngb) {
 				removeAll(ngb.getTransactions().collect(Collectors.toCollection(HashSet::new)));
-				newBase = ngb.getHashOfPreviousBlock();
+				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 		}
 

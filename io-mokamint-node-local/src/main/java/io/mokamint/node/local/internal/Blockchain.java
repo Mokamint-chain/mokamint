@@ -269,17 +269,17 @@ public class Blockchain implements AutoCloseable {
 
 	/**
 	 * Yields the address of the transaction with the given hash, if it is contained in the
-	 * chain from the block with hash {@code blockHash} towards the genesis block of this blockchain.
+	 * chain from the given {@code block} towards the genesis block of this blockchain.
 	 * 
-	 * @param blockHash the hash of the block
+	 * @param block the block
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database refers to an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<TransactionAddress> getTransactionAddress(byte[] blockHash, byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
-		return db.getTransactionAddress(blockHash, hash);
+	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
+		return db.getTransactionAddress(block, hash);
 	}
 
 	/**
@@ -413,7 +413,7 @@ public class Blockchain implements AutoCloseable {
 	 */
 	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
 		boolean added = false, addedToOrphans = false;
-		var updatedHead = new AtomicReference<byte[]>();
+		var updatedHead = new AtomicReference<Block>();
 
 		// we use a working set, since the addition of a single block might
 		// trigger the further addition of orphan blocks, recursively
@@ -440,8 +440,8 @@ public class Blockchain implements AutoCloseable {
 		}
 		while (!ws.isEmpty());
 
-		byte[] newHeadHash = updatedHead.get();
-		if (newHeadHash != null) {
+		Block newHead = updatedHead.get();
+		if (newHead != null) {
 			// if the head has been improved, we update the mempool by removing
 			// the transactions that have been added in blockchain and potentially adding
 			// other transactions (if the history changed). Note that, in general, the mempool of
@@ -450,8 +450,8 @@ public class Blockchain implements AutoCloseable {
 			// a problem, since this rebase is only an optimization, to keep the mempool small.
 			// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
 			// the block over which mining occurs, so it will be aligned there
-			node.rebaseMempoolAt(newHeadHash);
-			node.onHeadChanged(newHeadHash);
+			node.rebaseMempoolAt(newHead);
+			node.onHeadChanged(newHead);
 			node.scheduleMining();
 		}
 		else if (addedToOrphans && headIsLessPowerfulThan(block))
@@ -462,7 +462,7 @@ public class Blockchain implements AutoCloseable {
 		return added;
 	}
 
-	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<byte[]> updatedHead)
+	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
 			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
 
 		try {
