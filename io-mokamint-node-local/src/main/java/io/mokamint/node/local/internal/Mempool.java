@@ -14,14 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * 
- */
 package io.mokamint.node.local.internal;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -52,18 +50,19 @@ import io.mokamint.node.api.Transaction;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
- * to be processed and included in the blocks of the blockchain.
+ * to be processed and then included in the new blocks mined for a blockchain.
+ * Transactions are kept and processed in decreasing order of priority.
  */
 @ThreadSafe
 public class Mempool {
 
 	/**
-	 * The blockchain of the node.
+	 * The blockchain of the node having this mempool.
 	 */
 	private final Blockchain blockchain;
 
 	/**
-	 * The application running in the node.
+	 * The application running in the node having this mempool.
 	 */
 	private final Application app;
 
@@ -86,13 +85,15 @@ public class Mempool {
 	private Optional<byte[]> base;
 
 	/**
-	 * The container of the transactions inside this mempool.
+	 * The container of the transactions inside this mempool. They are kept ordered
+	 * by decreasing priority.
 	 */
 	@GuardedBy("itself")
 	private final SortedSet<TransactionEntry> mempool;
 
 	/**
-	 * The container of the transactions inside this mempool, as a list.
+	 * The container of the transactions inside this mempool, as a list. This is used as 
+	 * a snapshot of {@link #mempool}, for optimization of the {@link #getPortion(int, int)} method.
 	 */
 	@GuardedBy("this.mempool")
 	private List<TransactionEntry> mempoolAsList;
@@ -100,7 +101,7 @@ public class Mempool {
 	private final static Logger LOGGER = Logger.getLogger(Mempool.class.getName());
 
 	/**
-	 * Creates a mempool for the given node, initially empty.
+	 * Creates a mempool for the given node, initially empty and without a base.
 	 * 
 	 * @param node the node
 	 */
@@ -110,9 +111,14 @@ public class Mempool {
 		this.maxSize = node.getConfig().getMempoolSize();
 		this.hasher = node.getHasherForTransactions();
 		this.base = Optional.empty();
-		this.mempool = new TreeSet<>();
+		this.mempool = new TreeSet<>(Comparator.reverseOrder()); // decreasing priority
 	}
 
+	/**
+	 * Creates a clone of the given mempool.
+	 * 
+	 * @param parent the mempool to clone
+	 */
 	public Mempool(Mempool parent) {
 		this.blockchain = parent.blockchain;
 		this.app = parent.app;
@@ -125,28 +131,30 @@ public class Mempool {
 		}
 	}
 
+	/**
+	 * Sets a new base for this mempool. Calling P the highest predecessor block of both
+	 * the current base and the {@code newBase}, this method will add all transactions
+	 * in the blocks from the current base to P (excluded) back in this mempool and remove
+	 * all transactions in the blocks from P (excluded) to {@code newBase} in this mempool.
+	 * 
+	 * @param newBase the new base that must be set for this mempool
+	 * @throws NoSuchAlgorithmException if some block in the blockchain uses refers to an unknown
+	 *                                  cryptographic algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
 	public void rebaseAt(byte[] newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
 		synchronized (mempool) {
-			if (base.isEmpty()) {
-				base = Optional.of(newBase);
+			var oldBase = base.orElse(null);
+			base = Optional.of(newBase);
 
-				while (!mempool.isEmpty()) {
-					var newBlock = getBlock(newBase);
-
-					if (newBlock instanceof NonGenesisBlock ngb) {
-						var toRemove = ngb.getTransactions().collect(Collectors.toCollection(HashSet::new));
-						new HashSet<>(mempool).stream()
-							.filter(entry -> toRemove.contains(entry.transaction))
-							.forEach(this::remove);
-						newBase = ngb.getHashOfPreviousBlock();
-					}
-					else
-						break;
+			if (oldBase == null)
+				// if the base is empty, there is nothing to add and only to remove
+				while (!mempool.isEmpty() && getBlock(newBase) instanceof NonGenesisBlock ngb) {
+					removeAll(ngb.getTransactions().collect(Collectors.toCollection(HashSet::new)));
+					newBase = ngb.getHashOfPreviousBlock();
 				}
-			}
 			else {
-				var oldBase = base.get();
-				base = Optional.of(newBase);
 				var oldBlock = getBlock(oldBase);
 				var newBlock = getBlock(newBase);
 				Set<Transaction> toRemove = new HashSet<>();
@@ -154,7 +162,7 @@ public class Mempool {
 
 				while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight()) {
 					if (newBlock instanceof NonGenesisBlock ngb) {
-						ngb.getTransactions().forEach(toRemove::add);
+						addAllTransactions(toRemove, ngb);
 						newBase = ngb.getHashOfPreviousBlock();
 						newBlock = getBlock(newBase);
 					}
@@ -164,18 +172,7 @@ public class Mempool {
 
 				while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight()) {
 					if (oldBlock instanceof NonGenesisBlock ngb) {
-						for (int pos = 0; pos < ngb.getTransactionsCount(); pos++) {
-							var transaction = ngb.getTransaction(pos);
-
-							try {
-								toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));
-							}
-							catch (RejectedTransactionException e) {
-								// the database contains a block with a rejected transaction: it should not be there!
-								throw new DatabaseException(e);
-							}
-						}
-
+						addAllTransactionEntries(toAdd, ngb);
 						oldBase = ngb.getHashOfPreviousBlock();
 						oldBlock = getBlock(oldBase);
 					}
@@ -188,7 +185,7 @@ public class Mempool {
 						throw new DatabaseException("Cannot identify a shared ancestor block between " + Hex.toHexString(oldBase) + " and " + Hex.toHexString(newBase));
 
 					if (newBlock instanceof NonGenesisBlock ngb1) {
-						ngb1.getTransactions().forEach(toRemove::add);
+						addAllTransactions(toRemove, ngb1);
 						newBase = ngb1.getHashOfPreviousBlock();
 						newBlock = getBlock(newBase);
 					}
@@ -196,18 +193,7 @@ public class Mempool {
 						throw new DatabaseException("The database contains a genesis block " + Hex.toHexString(newBase) + " at height " + newBlock.getDescription().getHeight());
 
 					if (oldBlock instanceof NonGenesisBlock ngb2) {
-						for (int pos = 0; pos < ngb2.getTransactionsCount(); pos++) {
-							var transaction = ngb2.getTransaction(pos);
-
-							try {
-								toAdd.add(new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction)));
-							}
-							catch (RejectedTransactionException e) {
-								// the database contains a block with a rejected transaction: it should not be there!
-								throw new DatabaseException(e);
-							}
-						}
-
+						addAllTransactionEntries(toAdd, ngb2);
 						oldBase = ngb2.getHashOfPreviousBlock();
 						oldBlock = getBlock(oldBase);
 					}
@@ -219,11 +205,55 @@ public class Mempool {
 					mempoolAsList = null; // invalidation
 
 				if (!mempool.isEmpty())
-					new HashSet<>(mempool).stream()
-						.filter(entry -> toRemove.contains(entry.transaction))
-						.forEach(this::remove);
+					removeAll(toRemove);
 			}
 		}
+	}
+
+	/**
+	 * Adds the transaction entries from the given block to the given set.
+	 * 
+	 * @param set the set where the transactions must be added
+	 * @param block the block
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private void addAllTransactionEntries(Set<TransactionEntry> set, NonGenesisBlock block) throws DatabaseException {
+		for (int pos = 0; pos < block.getTransactionsCount(); pos++)
+			set.add(intoTransactionEntry(block.getTransaction(pos)));
+	}
+
+	/**
+	 * Adds the transactions from the given block to the given set.
+	 * 
+	 * @param set the set where the transactions must be added
+	 * @param block the block
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private void addAllTransactions(Set<Transaction> set, NonGenesisBlock block) throws DatabaseException {
+		block.getTransactions().forEach(set::add);
+	}
+
+	/**
+	 * Expands the given transaction into a transaction entry, by filling its priority and hash.
+	 * 
+	 * @param transaction the transaction
+	 * @return the resulting transaction entry
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException {
+		try {
+			return new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction));
+		}
+		catch (RejectedTransactionException e) {
+			// the database contains a block with a rejected transaction: it should not be there!
+			throw new DatabaseException(e);
+		}
+	}
+
+	private void removeAll(Set<Transaction> toRemove) {
+		new HashSet<>(mempool).stream()
+			.filter(entry -> toRemove.contains(entry.transaction))
+			.forEach(this::remove);
 	}
 
 	private void remove(TransactionEntry entry) {
@@ -236,24 +266,21 @@ public class Mempool {
 	}
 
 	/**
-	 * Checks the validity of the given transaction and, if valid, adds it to this mempool.
+	 * Adds the given transaction to this mempool, after checking its validity.
 	 * 
 	 * @param transaction the transaction to add
-	 * @return information about the transaction that has been added
+	 * @return the mempool entry where the transaction has been added
 	 * @throws RejectedTransactionException if the transaction has been rejected; this happens,
 	 *                                      for instance, if the application considers the
 	 *                                      transaction as invalid or if its priority cannot be computed
-	 * @throws DatabaseException if the blocks database is corrupted
-	 * @throws ClosedDatabaseException if the blocks database is already closed
-	 * @throws NoSuchAlgorithmException if the database contains a block referring to a non-available cryptographic algorithm
+	 *                                      or if the transaction is already contained in the blockchain or mempool
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws NoSuchAlgorithmException if the database contains a block referring to an unknown cryptographic algorithm
 	 */
 	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
-
-		if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
-			//the transaction was already in the blockchain
-			throw new RejectedTransactionException("Repeated transaction " + hexHash);
 
 		try {
 			app.checkTransaction(transaction);
@@ -274,6 +301,10 @@ public class Mempool {
 		var entry = new TransactionEntry(transaction, priority, hash);
 
 		synchronized (mempool) {
+			if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
+				//the transaction was already in the blockchain
+				throw new RejectedTransactionException("Repeated transaction " + hexHash);
+
 			if (mempool.size() < maxSize) {
 				if (!mempool.add(entry))
 					// the transaction was already in the mempool
@@ -287,9 +318,14 @@ public class Mempool {
 
 		LOGGER.info("mempool: added transaction " + hexHash);
 
-		return entry.getEntry();
+		return entry.getMempoolEntry();
 	}
 
+	/**
+	 * Yields the transactions inside this mempool.
+	 * 
+	 * @return the transactions
+	 */
 	public Stream<TransactionEntry> getTransactions() {
 		return mempool.stream();
 	}
@@ -312,9 +348,9 @@ public class Mempool {
 	/**
 	 * Yields a portion of this mempool.
 	 * 
-	 * @param start
-	 * @param count
-	 * @return
+	 * @param start the initial entry slot to return
+	 * @param count the maximal number of slots to return
+	 * @return the portion from {@code start} (included) to {@code start + length} (excluded)
 	 */
 	public MempoolPortion getPortion(int start, int count) {
 		if (start < 0L || count <= 0)
@@ -334,21 +370,20 @@ public class Mempool {
 
 		Stream<MempoolEntry> entries = IntStream.range(start, Math.min(start + count, list.size()))
 			.mapToObj(list::get)
-			.map(TransactionEntry::getEntry);
+			.map(TransactionEntry::getMempoolEntry);
 
 		return MempoolPortions.of(entries);
 	}
 
 	/**
-	 * An entry in the container of the transactions in this mempool.
-	 * It contains the transaction itself and extra information about the transaction.
+	 * An entry in the mempool. It contains the transaction itself, its priority and its hash.
 	 */
 	public static class TransactionEntry implements Comparable<TransactionEntry> {
 		private final Transaction transaction;
 		private final long priority;
 		private final byte[] hash;
 
-		public TransactionEntry(Transaction transaction, long priority, byte[] hash) {
+		protected TransactionEntry(Transaction transaction, long priority, byte[] hash) {
 			this.transaction = transaction;
 			this.priority = priority;
 			this.hash = hash;
@@ -363,21 +398,28 @@ public class Mempool {
 			return transaction;
 		}
 
+		/**
+		 * Yields the hash of the transaction inside this entry.
+		 * 
+		 * @return the hash
+		 */
 		public byte[] getHash() {
 			return hash.clone();
 		}
 
-		private MempoolEntry getEntry() {
+		/**
+		 * Yields a {@link MempoolEntry} derived from this, by projecting on hash and priority.
+		 * 
+		 * @return the {@link MempoolEntry}
+		 */
+		private MempoolEntry getMempoolEntry() {
 			return MempoolEntries.of(hash, priority);
 		}
 
 		@Override
 		public int compareTo(TransactionEntry other) {
 			int diff = Long.compare(priority, other.priority);
-			if (diff != 0)
-				return diff;
-			else
-				return Arrays.compare(hash, other.hash);
+			return diff != 0 ? diff : Arrays.compare(hash, other.hash);
 		}
 
 		@Override
