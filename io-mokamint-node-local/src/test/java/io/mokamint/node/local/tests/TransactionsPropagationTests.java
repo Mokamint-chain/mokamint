@@ -113,15 +113,15 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				if (expectedPeer.equals(peer))
 					peersSemaphore.release();
 			}
 
 			@Override
-			protected void onTransactionAdded(Transaction transaction) {
-				super.onTransactionAdded(transaction);
+			protected void onAdded(Transaction transaction) {
+				super.onAdded(transaction);
 				if (expectedTransaction.equals(transaction))
 					transactionsSemaphore.release();
 			}

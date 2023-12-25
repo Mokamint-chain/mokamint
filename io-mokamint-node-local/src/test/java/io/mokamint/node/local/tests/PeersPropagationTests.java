@@ -112,8 +112,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				if (peer4.equals(peer))
 					semaphore.release();
 			}
@@ -181,8 +181,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				stillToRemove.remove(peer);
 				if (stillToRemove.isEmpty())
 					semaphore.release();
@@ -237,8 +237,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				if (expected.equals(peer))
 					semaphore.release();
 			}

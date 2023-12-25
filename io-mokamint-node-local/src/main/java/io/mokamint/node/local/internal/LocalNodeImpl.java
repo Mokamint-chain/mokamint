@@ -257,7 +257,8 @@ public class LocalNodeImpl implements LocalNode {
 
 		if (whispered instanceof WhisperedPeers whisperedPeers) {
 			try {
-				peers.tryToReconnectOrAdd(whisperedPeers.getPeers());
+				peers.tryToReconnectOrAdd(whisperedPeers.getPeers())
+					.forEach(this::onAdded);
 			}
 			catch (DatabaseException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be contacted", e);
@@ -285,7 +286,7 @@ public class LocalNodeImpl implements LocalNode {
 			var tx = whisperedTransaction.getTransaction();
 			try {
 				mempool.add(tx);
-				onTransactionAdded(tx);
+				onAdded(tx);
 			}
 			catch (NoSuchAlgorithmException | DatabaseException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the mempool", e);
@@ -389,7 +390,7 @@ public class LocalNodeImpl implements LocalNode {
 			if (maybeMiner.isPresent()) {
 				var miner = maybeMiner.get();
 				if (miners.remove(miner)) {
-					onMinerRemoved(miner);
+					onRemoved(miner);
 					return true;
 				}
 			}
@@ -498,7 +499,7 @@ public class LocalNodeImpl implements LocalNode {
 		}
 
 		scheduleWhisperingWithoutAddition(transaction);
-		onTransactionAdded(transaction);
+		onAdded(transaction);
 
 		return result;
 	}
@@ -523,7 +524,7 @@ public class LocalNodeImpl implements LocalNode {
 			var count = miners.get().count();
 			Optional<MinerInfo> result = miners.add(miner);
 			result.ifPresent(__ -> {
-				onMinerAdded(miner);
+				onAdded(miner);
 
 				// if there were no miners before this call, we require to mine
 				if (count == 0L)
@@ -601,14 +602,27 @@ public class LocalNodeImpl implements LocalNode {
 	
 		try {
 			if (miners.punish(miner, points))
-				onMinerRemoved(miner);
+				onRemoved(miner);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "cannot punish miner " + miner.getUUID(), e);
+			LOGGER.log(Level.WARNING, "cannot punish miner " + miner.getUUID() + ": " + e.getMessage());
 		}
 	}
 
+	/**
+	 * A handler to call if new transactions arrive during mining, so that
+	 * these transactions can be handed over to the mining task.
+	 */
 	protected interface OnAddedTransactionHandler {
+
+		/**
+		 * Inform of the arrival of the given transaction entry, so that it can be processed by a mining task.
+		 * 
+		 * @param entry the transaction entry
+		 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown cryptographic algorithm
+		 * @throws ClosedDatabaseException if the database is already closed
+		 * @throws DatabaseException if the databased is corrupted
+		 */
 		void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException;
 	}
 
@@ -658,26 +672,49 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Becomes the only task allowed to mine over the given block.
+	 * Tries to become the only task allowed to mine over the given block.
 	 * 
 	 * @param previous the block over which mining is required
 	 * @param handler the handler to call if new transactions arrive during mining, so that
 	 *                these transactions can be handed over to the mining task
-	 * @return true if and only if nobody else was mining over that node, and therefore the caller
+	 * @return true if and only if nobody else was mining over that block, and therefore the caller
 	 *         is allowed to start mining; otherwise, mining over {@code previous} is not allowed
 	 */
 	protected boolean lockMiningOver(Block previous, OnAddedTransactionHandler handler) {
 		return blocksOverWhichMiningIsInProgress.putIfAbsent(previous, handler) == null;
 	}
 
-	protected void rebaseMempoolAt(Block newHead) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		mempool.rebaseAt(newHead);
+	/**
+	 * Rebases the mempool of this node so that it is relative to the given {@code block}.
+	 * This means that a common ancestor is found, between the current mempool base and {@code block}.
+	 * All transactions from the current mempool base to the ancestor are added to the mempool
+	 * and all transactions from the ancestor to {@code block} are removed from the mempool.
+	 * This method is typically called when the head of the blockchain is updated, so that the
+	 * mempool can be updated as well.
+	 * 
+	 * @param block the block
+	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	protected void rebaseMempoolAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		mempool.rebaseAt(block);
 	}
 
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block newHead) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		var result = new Mempool(mempool);
-		result.rebaseAt(newHead);
-		return result.getTransactions();
+	/**
+	 * Yields the transactions from the mempool, rebased at the given {@code block} (see
+	 * {@link #rebaseMempoolAt(Block)}. The mempool of this node is not modified.
+	 * 
+	 * @param block the block
+	 * @return the transactions, in decreasing order of priority
+	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		var result = new Mempool(mempool); // clone the mempool
+		result.rebaseAt(block); // rebase the clone
+		return result.getTransactions(); // extract the resulting transactions
 	}
 
 	/**
@@ -727,9 +764,9 @@ public class LocalNodeImpl implements LocalNode {
 
 		int length = peersAsArray.length;
 		if (length > 0) {
-			var whisperedPeer = WhisperPeersMessages.of(Stream.of(peersAsArray), UUID.randomUUID().toString());
-			String description = length == 1 ? ("peer " + SanitizedStrings.of(peersAsArray[0])) : ("peers " + SanitizedStrings.of(whisperedPeer.getPeers()));
-			execute(() -> whisperWithoutAddition(whisperedPeer, description), "whispering of " + description);
+			var whisperedPeers = WhisperPeersMessages.of(Stream.of(peersAsArray), UUID.randomUUID().toString());
+			String description = length == 1 ? ("peer " + SanitizedStrings.of(peersAsArray[0])) : ("peers " + SanitizedStrings.of(whisperedPeers.getPeers()));
+			execute(() -> whisperWithoutAddition(whisperedPeers, description), "whispering of " + description);
 		}
 	}
 
@@ -771,7 +808,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param peer the added peer
 	 */
-	protected void onPeerAdded(Peer peer) {
+	protected void onAdded(Peer peer) {
 		LOGGER.info("added peer " + SanitizedStrings.of(peer));
 	}
 
@@ -780,7 +817,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param peer the peer
 	 */
-	protected void onPeerConnected(Peer peer) {
+	protected void onConnected(Peer peer) {
 		LOGGER.info("connected to peer " + SanitizedStrings.of(peer));
 	}
 
@@ -789,7 +826,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param peer the peer
 	 */
-	protected void onPeerDisconnected(Peer peer) {
+	protected void onDisconnected(Peer peer) {
 		LOGGER.info("disconnected from peer " + SanitizedStrings.of(peer));
 	}
 
@@ -798,7 +835,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param peer the removed peer
 	 */
-	protected void onPeerRemoved(Peer peer) {
+	protected void onRemoved(Peer peer) {
 		LOGGER.info("removed peer " + SanitizedStrings.of(peer));
 	}
 
@@ -807,7 +844,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param miner the added miner
 	 */
-	protected void onMinerAdded(Miner miner) {
+	protected void onAdded(Miner miner) {
 		LOGGER.info("miners: added " + miner.getUUID() + " (" + miner + ")");
 	}
 
@@ -816,7 +853,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param miner the removed miner
 	 */
-	protected void onMinerRemoved(Miner miner) {
+	protected void onRemoved(Miner miner) {
 		LOGGER.info("miners: removed " + miner.getUUID() + " (" + miner + ")");
 	}
 
@@ -825,7 +862,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param transaction the added transaction
 	 */
-	protected void onTransactionAdded(Transaction transaction) {}
+	protected void onAdded(Transaction transaction) {}
 
 	/**
 	 * Called when no deadline has been found.
@@ -877,7 +914,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param block the added block
 	 */
-	protected void onBlockAdded(Block block) {}
+	protected void onAdded(Block block) {}
 
 	/**
 	 * Called when the head of the blockchain has been updated.
@@ -891,7 +928,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param block the mined block
 	 */
-	protected void onBlockMined(Block block) {}
+	protected void onMined(Block block) {}
 
 	/**
 	 * Called when some peers have been whispered to our peers.

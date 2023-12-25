@@ -153,8 +153,8 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		}
 
 		@Override
-		protected void onBlockAdded(Block block) {
-			super.onBlockAdded(block);
+		protected void onAdded(Block block) {
+			super.onAdded(block);
 
 			if (block.getDescription().getHeight() < HOW_MANY) {
 				miningBlocks.add(block);
@@ -170,8 +170,8 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		}
 
 		@Override
-		protected void onBlockAdded(Block block) {
-			super.onBlockAdded(block);
+		protected void onAdded(Block block) {
+			super.onAdded(block);
 
 			if (block.getDescription().getHeight() < HOW_MANY) { // these can only come by whispering from the mining node
 				nonMiningBlocks.add(block);

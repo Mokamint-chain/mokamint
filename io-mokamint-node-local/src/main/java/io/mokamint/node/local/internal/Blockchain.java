@@ -470,7 +470,7 @@ public class Blockchain implements AutoCloseable {
 				new BlockVerification(node, block, previous, true);
 
 			if (db.add(block, updatedHead)) {
-				node.onBlockAdded(block);
+				node.onAdded(block);
 				getOrphansWithParent(block, hashOfBlock).forEach(ws::add);
 				if (first)
 					return true;

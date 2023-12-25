@@ -31,12 +31,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
-import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.exceptions.UncheckPredicate;
 import io.hotmoka.exceptions.UncheckedException;
@@ -137,7 +136,7 @@ public class Peers implements AutoCloseable {
 		try {
 			this.uuid = db.getUUID();
 			this.version = Versions.current();
-			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, node::onPeerAdded, node::onPeerRemoved);
+			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, _peer -> {}, _peer -> {});
 			openConnectionToPeers();
 			tryToReconnectOrAddThenScheduleWhispering(config.getSeeds().map(io.mokamint.node.Peers::of), true);
 		}
@@ -201,6 +200,7 @@ public class Peers implements AutoCloseable {
 					() -> peers.add(peer, true));
 
 			if (result) {
+				node.onAdded(peer);
 				exploitFreshlyAddedPeers(new Peer[] { peer });
 				node.scheduleWhisperingWithoutAddition(Stream.of(peer));
 				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
@@ -222,11 +222,12 @@ public class Peers implements AutoCloseable {
 	 * @throws InterruptedException if the execution has been interrupted
 	 * @throws IOException if an I/O error occurs
 	 */
-	public void tryToReconnectOrAdd(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	public Stream<Peer> tryToReconnectOrAdd(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		// we check if we actually need any of the peers to add
 		var usefulToAdd = peers.distinct().filter(peer -> remotes.get(peer) == null);
-		CheckRunnable.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			usefulToAdd.parallel().forEach(UncheckConsumer.uncheck(peer -> reconnectOrAdd(peer, false)))
+		return CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
+			usefulToAdd.parallel().filter(UncheckPredicate.uncheck(peer -> reconnectOrAdd(peer, false)))
+				.collect(Collectors.toSet()).stream()
 		);
 	}
 
@@ -242,7 +243,12 @@ public class Peers implements AutoCloseable {
 	 */
 	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		// we check the exceptions of onRemove
-		return CheckSupplier.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.remove(peer));
+		boolean result = CheckSupplier.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.remove(peer));
+
+		if (result)
+			node.onRemoved(peer);
+
+		return result;
 	}
 
 	/**
@@ -333,9 +339,8 @@ public class Peers implements AutoCloseable {
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		long lost = config.getPeerPunishmentForUnreachable();
 	
-		CheckRunnable.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class,
-			() -> peers.punish(peer, lost)
-		);
+		if (CheckSupplier.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.punish(peer, lost)))
+			node.onRemoved(peer);
 	
 		LOGGER.warning("peers: " + SanitizedStrings.of(peer) + " lost " + lost + " points because it is unreachable");
 	}
@@ -410,6 +415,7 @@ public class Peers implements AutoCloseable {
 
 		if (added.length > 0) {
 			exploitFreshlyAddedPeers(added);
+			Stream.of(added).forEach(node::onAdded);
 			node.scheduleWhisperingWithoutAddition(Stream.of(added));
 		}
 	}
@@ -582,7 +588,7 @@ public class Peers implements AutoCloseable {
 		else if (!peers.contains(peer)){
 			try {
 				// we do not spawn an event since we will spawn one at the end for all peers
-				return CheckSupplier.check(TimeoutException.class,
+				boolean result = CheckSupplier.check(TimeoutException.class,
 						ClosedNodeException.class,
 						ClosedDatabaseException.class,
 						InterruptedException.class,
@@ -590,6 +596,11 @@ public class Peers implements AutoCloseable {
 						PeerRejectedException.class,
 						DatabaseException.class,
 						() -> peers.add(peer, force));
+
+				if (result)
+					node.onAdded(peer);
+
+				return result;
 			}
 			catch (PeerRejectedException | IOException | TimeoutException e) {
 				return false;
@@ -640,7 +651,7 @@ public class Peers implements AutoCloseable {
 		long timeDifference = ChronoUnit.MILLIS.between(nodeInfo.getLocalDateTimeUTC(), peerInfo.getLocalDateTimeUTC());
 		if (Math.abs(timeDifference) > config.getPeerMaxTimeDifference())
 			throw new PeerRejectedException("The time of the peer is more than " + config.getPeerMaxTimeDifference() + " ms away from the time of this node");
-			
+
 		var peerUUID = peerInfo.getUUID();
 		if (peerUUID.equals(uuid))
 			throw new PeerRejectedException("A peer cannot be added as a peer of itself: same UUID " + peerUUID);
@@ -681,7 +692,7 @@ public class Peers implements AutoCloseable {
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnClosedHandler(() -> peerDisconnected(remote, peer));
-		node.onPeerConnected(peer);
+		node.onConnected(peer);
 	}
 
 	/**
@@ -694,7 +705,7 @@ public class Peers implements AutoCloseable {
 	 */
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) throws InterruptedException, IOException {
 		deletePeer(peer, remote);
-		node.onPeerDisconnected(peer);
+		node.onDisconnected(peer);
 
 		try {
 			punishBecauseUnreachable(peer);

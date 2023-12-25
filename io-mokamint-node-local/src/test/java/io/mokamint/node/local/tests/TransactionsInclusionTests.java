@@ -159,8 +159,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onBlockAdded(Block block) {
-				super.onBlockAdded(block);
+			protected void onAdded(Block block) {
+				super.onAdded(block);
 
 				if (block instanceof NonGenesisBlock ngb) {
 					ngb.getTransactions().forEach(allTransactions::remove);
@@ -212,8 +212,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				}
 
 				@Override
-				protected void onBlockAdded(Block block) {
-					super.onBlockAdded(block);
+				protected void onAdded(Block block) {
+					super.onAdded(block);
 
 					if (block instanceof NonGenesisBlock ngb) {
 						synchronized (this) {

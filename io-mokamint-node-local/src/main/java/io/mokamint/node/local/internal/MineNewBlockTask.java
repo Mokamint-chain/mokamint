@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +34,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -102,13 +102,10 @@ public class MineNewBlockTask implements Task {
 			Optional<Block> maybeHead = blockchain.getBlock(headHash);
 			if (maybeHead.isPresent()) {
 				var head = maybeHead.get();
-				PriorityBlockingQueue<TransactionEntry> mempool = node.getMempoolTransactionsAt(head)
-					.collect(Collectors.toCollection(PriorityBlockingQueue::new));
+				PriorityBlockingQueue<TransactionEntry> mempool = new PriorityBlockingQueue<>(100, Comparator.reverseOrder());
 
-				if (node.lockMiningOver(head, entry -> add(mempool, head, entry))) {
-					node.onMiningStarted(head);
+				if (node.lockMiningOver(head, entry -> add(mempool, head, entry)))
 					new Run(head, mempool);
-				}
 			}
 		}
 	}
@@ -120,7 +117,7 @@ public class MineNewBlockTask implements Task {
 	 * @param mempool the mempool
 	 * @param head the head over which mining is performed
 	 * @param entry the entry to add
-	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographical algorithm
+	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 * @throws ClosedDatabaseException if the database is closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
@@ -198,6 +195,8 @@ public class MineNewBlockTask implements Task {
 
 		private Run(Block previous, PriorityBlockingQueue<TransactionEntry> mempool) throws InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 			stopIfInterrupted();
+			node.onMiningStarted(previous);
+			node.getMempoolTransactionsAt(previous).forEach(mempool::add);
 			this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 			this.previous = previous;
 			this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
@@ -271,7 +270,7 @@ public class MineNewBlockTask implements Task {
 			if (blockchain.headIsLessPowerfulThan(block)) {
 				transactionExecutor.commitBlock();
 				committed = true;
-				node.onBlockMined(block);
+				node.onMined(block);
 				addNodeToBlockchain(block);
 			}
 			else

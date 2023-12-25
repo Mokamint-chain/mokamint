@@ -110,8 +110,8 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerDisconnected(Peer peer) {
-				super.onPeerDisconnected(peer);
+			protected void onDisconnected(Peer peer) {
+				super.onDisconnected(peer);
 				if (peer.equals(peer2))
 					semaphore.release();
 			}
@@ -175,22 +175,22 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				if (phase.get() == 1 && peer.equals(peer2))
 					connections.release();
 			}
 
 			@Override
-			protected void onPeerConnected(Peer peer) {
-				super.onPeerConnected(peer);
+			protected void onConnected(Peer peer) {
+				super.onConnected(peer);
 				if (phase.get() == 3 && peer.equals(peer2))
 					reconnections.release();
 			}
 
 			@Override
-			protected void onPeerDisconnected(Peer peer) {
-				super.onPeerDisconnected(peer);
+			protected void onDisconnected(Peer peer) {
+				super.onDisconnected(peer);
 				if (phase.get() == 2 && peer.equals(peer2))
 					disconnections.release();
 			}
@@ -203,15 +203,15 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				if (phase.get() == 1 && peer.equals(peer1))
 					connections.release();
 			}
 
 			@Override
-			protected void onPeerConnected(Peer peer) {
-				super.onPeerConnected(peer);
+			protected void onConnected(Peer peer) {
+				super.onConnected(peer);
 				if (phase.get() == 3 && peer.equals(peer1))
 					reconnections.release();
 			}

@@ -149,7 +149,7 @@ public class PeersTests extends AbstractLoggedTests {
 		 * @throws NoSuchAlgorithmException if some hashing algorithm is missing
 		 */
 		private PublicTestServer(NodeInfo info, int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, NoSuchAlgorithmException {
-			super(mkNode(info), port, 180000L, 1000, Optional.empty());
+			super(mkNode(info), port, 180000L, 1000, Optional.of(URI.create("ws://localhost:" + port)));
 		}
 	}
 
@@ -187,8 +187,8 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				if (stillToAccept.remove(peer))
 					semaphore.release();
 			}
@@ -260,8 +260,8 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onPeerAdded(Peer peer) {
-				super.onPeerAdded(peer);
+			protected void onAdded(Peer peer) {
+				super.onAdded(peer);
 				if (stillToAccept.remove(peer))
 					semaphore.release();
 			}
