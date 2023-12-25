@@ -18,11 +18,11 @@ package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
-import io.mokamint.node.messages.api.CloseMinerMessage;
+import io.mokamint.node.messages.api.RemoveMinerMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 
 /**
- * A decoder for a {@link CloseMinerMessage}.
+ * A decoder for a {@link RemoveMinerMessage}.
  */
 public class GetBlockDescriptionMessageDecoder extends MappedDecoder<GetBlockDescriptionMessage, GetBlockDescriptionMessages.Json> {
 

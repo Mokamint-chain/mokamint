@@ -16,13 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.exceptions.CheckSupplier;
-import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
@@ -32,7 +29,12 @@ import io.mokamint.node.local.api.LocalNodeConfig;
  * The set of miners of a local node.
  */
 @ThreadSafe
-public class Miners implements AutoCloseable {
+public class Miners {
+
+	/**
+	 * The node having these miners.
+	 */
+	private final LocalNodeImpl node;
 
 	/**
 	 * The miners of the node.
@@ -50,8 +52,9 @@ public class Miners implements AutoCloseable {
 	 * @param node the node
 	 */
 	public Miners(LocalNodeImpl node) {
+		this.node = node;
 		this.config = node.getConfig();
-		this.miners = new PunishableSet<>(Stream.empty(), config.getMinerInitialPoints(), (_miner, _force) -> true, this::removalFilter, _miner-> {}, _miner -> {});
+		this.miners = new PunishableSet<>(Stream.empty(), config.getMinerInitialPoints());
 	}
 
 	/**
@@ -79,22 +82,27 @@ public class Miners implements AutoCloseable {
 	 * @return the information about the added miner; this is empty if the miner has not been added
 	 */
 	public Optional<MinerInfo> add(Miner miner) {
-		if (miners.add(miner))
+		if (miners.add(miner)) {
+			node.onAdded(miner);
 			return Optional.of(MinerInfos.of(miner.getUUID(), config.getMinerInitialPoints(), miner.toString()));
+		}
 		else
 			return Optional.empty();
 	}
 
 	/**
 	 * Removes the given miner from this container, if it was there.
-	 * If removed, the miner will also be closed.
 	 * 
 	 * @param miner the miner to remove
 	 * @return true if and only if the miner has been removed
-	 * @throws IOException if the miner failed to close
 	 */
-	public boolean remove(Miner miner) throws IOException {
-		return CheckSupplier.check(IOException.class, () -> miners.remove(miner));
+	public boolean remove(Miner miner) {
+		if (miners.remove(miner)) {
+			node.onRemoved(miner);
+			return true;
+		}
+		else
+			return false;
 	}
 
 	/**
@@ -106,10 +114,14 @@ public class Miners implements AutoCloseable {
 	 * @param points how many points get removed
 	 * @return true if and only if the miner was present in this container,
 	 *         has reached zero points and has been removed
-	 * @throws IOException if {@code miner} reached zero points but could not be closed
 	 */
-	public boolean punish(Miner miner, long points) throws IOException {
-		return CheckSupplier.check(IOException.class, () -> miners.punish(miner, points));
+	public boolean punish(Miner miner, long points) {
+		if (miners.punish(miner, points)) {
+			node.onRemoved(miner);
+			return true;
+		}
+		else
+			return false;
 	}
 
 	/**
@@ -123,43 +135,5 @@ public class Miners implements AutoCloseable {
 	 */
 	public void pardon(Miner miner, long points) {
 		miners.pardon(miner, points);
-	}
-
-	/**
-	 * Closes this container. All miners contained therein will be closed as well.
-	 * 
-	 * @throws IOException if some miner could not be closed
-	 */
-	@Override
-	public void close() throws IOException {
-		IOException exception = null;
-
-		for (var miner: miners.getElements().toArray(Miner[]::new)) {
-			try {
-				miner.close();
-			}
-			catch (IOException e) {
-				exception = e;
-			}
-		}
-
-		if (exception != null)
-			throw exception;
-	}
-
-	/**
-	 * When a miner is required to be removed, it will get closed.
-	 * 
-	 * @param miner the removed miner
-	 * @return true
-	 */
-	private boolean removalFilter(Miner miner) {
-		try {
-			miner.close();
-			return true;
-		}
-		catch (IOException e) {
-			throw new UncheckedException(e);
-		}
 	}
 }

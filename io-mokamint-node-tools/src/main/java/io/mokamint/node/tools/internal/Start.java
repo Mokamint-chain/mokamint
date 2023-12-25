@@ -242,9 +242,11 @@ public class Start extends AbstractCommand {
 					else
 						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
 
-					try {
-						if (node.add(LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))).isPresent())
+					try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+						if (node.add(miner).isPresent()) {
 							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+							publishPublicAndRestrictedNodeServices(0);
+						}
 						else
 							throw new CommandException("The miner has not been added!");
 					}
@@ -253,8 +255,8 @@ public class Start extends AbstractCommand {
 						throw new CommandException("The node has been unexpectedly closed!", e);
 					}
 				}
-
-				publishPublicAndRestrictedNodeServices(0);
+				else
+					publishPublicAndRestrictedNodeServices(0);
 			}
 			catch (DatabaseException | IOException e) {
 				throw new CommandException("The database seems corrupted!", e);

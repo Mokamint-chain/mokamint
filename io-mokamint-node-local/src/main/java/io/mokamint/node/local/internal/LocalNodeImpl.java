@@ -152,6 +152,12 @@ public class LocalNodeImpl implements LocalNode {
 	private final Set<RunnableTask> currentlyExecutingTasks = ConcurrentHashMap.newKeySet();
 
 	/**
+	 * The miners that must be closed when this node is closed. These are those
+	 * created in {@link #openMiner(int)}.
+	 */
+	private final Set<Miner> minersToCloseAtTheEnd = ConcurrentHashMap.newKeySet();
+
+	/**
 	 * The code to execute when this node gets closed.
 	 */
 	private final CopyOnWriteArrayList<CloseHandler> onCloseHandlers = new CopyOnWriteArrayList<>();
@@ -376,7 +382,13 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws IOException, ClosedNodeException {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			return add(RemoteMiners.of(port, this::check));
+			var miner = RemoteMiners.of(port, this::check);
+			Optional<MinerInfo> result = add(miner);
+			if (result.isEmpty())
+				miner.close();
+
+			minersToCloseAtTheEnd.add(miner);
+			return result;
 		}
 		catch (DeploymentException e) {
 			throw new IOException(e);
@@ -384,18 +396,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public boolean closeMiner(UUID uuid) throws ClosedNodeException, IOException {
+	public boolean removeMiner(UUID uuid) throws ClosedNodeException, IOException {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			Optional<Miner> maybeMiner = miners.get().filter(miner -> miner.getUUID().equals(uuid)).findFirst();
-			if (maybeMiner.isPresent()) {
-				var miner = maybeMiner.get();
-				if (miners.remove(miner)) {
-					onRemoved(miner);
-					return true;
-				}
+			Miner[] toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
+			for (var miner: toRemove) {
+				miners.remove(miner);
+				if (minersToCloseAtTheEnd.contains(miner))
+					miner.close();
 			}
 
-			return false;
+			return toRemove.length > 0;
 		}
 	}
 
@@ -421,20 +431,18 @@ public class LocalNodeImpl implements LocalNode {
 			}
 
 			try {
+				for (var miner: minersToCloseAtTheEnd)
+					miner.close();
+
 				executors.awaitTermination(5, TimeUnit.SECONDS);
 				periodicExecutors.awaitTermination(5, TimeUnit.SECONDS);
 			}
 			finally {
 				try {
-					miners.close();
+					peers.close();
 				}
 				finally {
-					try {
-						peers.close();
-					}
-					finally {
-						blockchain.close();
-					}
+					blockchain.close();
 				}
 			}
 
@@ -524,8 +532,6 @@ public class LocalNodeImpl implements LocalNode {
 			var count = miners.get().count();
 			Optional<MinerInfo> result = miners.add(miner);
 			result.ifPresent(__ -> {
-				onAdded(miner);
-
 				// if there were no miners before this call, we require to mine
 				if (count == 0L)
 					scheduleMining();
@@ -600,12 +606,13 @@ public class LocalNodeImpl implements LocalNode {
 	protected void punish(Miner miner, long points) {
 		LOGGER.log(Level.INFO, "punishing miner " + miner.getUUID() + " by removing " + points + " points");
 	
-		try {
-			if (miners.punish(miner, points))
-				onRemoved(miner);
-		}
-		catch (IOException e) {
-			LOGGER.log(Level.WARNING, "cannot punish miner " + miner.getUUID() + ": " + e.getMessage());
+		if (miners.punish(miner, points) && minersToCloseAtTheEnd.contains(miner)) {
+			try {
+				miner.close();
+			}
+			catch (IOException e) {
+				LOGGER.log(Level.WARNING, "cannot close miner " + miner.getUUID() + ": " + e.getMessage());
+			}
 		}
 	}
 

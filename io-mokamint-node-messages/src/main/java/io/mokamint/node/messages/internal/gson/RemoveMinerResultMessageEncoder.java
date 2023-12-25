@@ -17,15 +17,15 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.CloseMinerMessages;
-import io.mokamint.node.messages.api.CloseMinerMessage;
+import io.mokamint.node.messages.RemoveMinerResultMessages;
+import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 
 /**
- * An encoder of a {@link CloseMinerMessage}.
+ * An encoder of {@code RemoveMinerResultMessage}.
  */
-public class CloseMinerMessageEncoder extends MappedEncoder<CloseMinerMessage, CloseMinerMessages.Json> {
+public class RemoveMinerResultMessageEncoder extends MappedEncoder<RemoveMinerResultMessage, RemoveMinerResultMessages.Json> {
 
-	public CloseMinerMessageEncoder() {
-		super(CloseMinerMessages.Json::new);
+	public RemoveMinerResultMessageEncoder() {
+		super(RemoveMinerResultMessages.Json::new);
 	}
 }

@@ -35,8 +35,6 @@ public interface LocalNode extends FullNode {
 
 	/**
 	 * Adds the given miner to the miners of this node.
-	 * The responsibility of closing the miner passes to the node:
-	 * the miner will be closed when the node will be closed.
 	 * 
 	 * @param miner the miner
 	 * @return the information about the added miner; this is empty if the miner has not been added

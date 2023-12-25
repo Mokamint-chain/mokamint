@@ -40,9 +40,9 @@ public interface RestrictedNodeService extends WebSocketServer {
 	String OPEN_MINER_ENDPOINT = "/open_miner";
 
 	/**
-	 * The network endpoint path where the {@link RestrictedNode#closeMiner(java.util.UUID)} method is published.
+	 * The network endpoint path where the {@link RestrictedNode#removeMiner(java.util.UUID)} method is published.
 	 */
-	String CLOSE_MINER_ENDPOINT = "/close_miner";
+	String REMOVE_MINER_ENDPOINT = "/remove_miner";
 
 	@Override
 	void close();

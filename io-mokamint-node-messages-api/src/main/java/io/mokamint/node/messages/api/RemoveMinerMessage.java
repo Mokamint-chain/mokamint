@@ -22,12 +22,12 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to {@link RestrictedNode#closeMiner(java.util.UUID)}.
+ * The network message corresponding to {@link RestrictedNode#removeMiner(java.util.UUID)}.
  */
-public interface CloseMinerMessage extends RpcMessage {
+public interface RemoveMinerMessage extends RpcMessage {
 
 	/**
-	 * Yields the UUID of the miner to close.
+	 * Yields the UUID of the miner to remove.
 	 * 
 	 * @return the UUID
 	 */

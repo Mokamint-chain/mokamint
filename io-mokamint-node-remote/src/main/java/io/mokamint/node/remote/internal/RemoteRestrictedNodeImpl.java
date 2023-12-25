@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.node.remote.internal;
 
 import static io.mokamint.node.service.api.RestrictedNodeService.ADD_PEER_ENDPOINT;
-import static io.mokamint.node.service.api.RestrictedNodeService.CLOSE_MINER_ENDPOINT;
+import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_MINER_ENDPOINT;
 import static io.mokamint.node.service.api.RestrictedNodeService.OPEN_MINER_ENDPOINT;
 import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_ENDPOINT;
 
@@ -39,15 +39,15 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
-import io.mokamint.node.messages.CloseMinerMessages;
-import io.mokamint.node.messages.CloseMinerResultMessages;
+import io.mokamint.node.messages.RemoveMinerMessages;
+import io.mokamint.node.messages.RemoveMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
-import io.mokamint.node.messages.api.CloseMinerResultMessage;
+import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 import io.mokamint.node.messages.api.RemovePeerResultMessage;
@@ -87,7 +87,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
 		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
 		addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
-		addSession(CLOSE_MINER_ENDPOINT, uri, CloseMinerEndpoint::new);
+		addSession(REMOVE_MINER_ENDPOINT, uri, RemoveMinerEndpoint::new);
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 			onRemovePeerResult();
 		else if (message instanceof OpenMinerResultMessage)
 			onOpenMinerResult();
-		else if (message instanceof CloseMinerResultMessage)
+		else if (message instanceof RemoveMinerResultMessage)
 			onCloseMinerResult();
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
@@ -141,9 +141,9 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
-	protected void sendCloseMiner(UUID uuid, String id) throws ClosedNodeException {
+	protected void sendRemoveMiner(UUID uuid, String id) throws ClosedNodeException {
 		try {
-			sendObjectAsync(getSession(CLOSE_MINER_ENDPOINT), CloseMinerMessages.of(uuid, id));
+			sendObjectAsync(getSession(REMOVE_MINER_ENDPOINT), RemoveMinerMessages.of(uuid, id));
 		}
 		catch (IOException e) {
 			throw new ClosedNodeException(e);
@@ -268,21 +268,21 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		return IOException.class.isAssignableFrom(exception) || processStandardExceptions(message);
 	}
 
-	private class CloseMinerEndpoint extends Endpoint {
+	private class RemoveMinerEndpoint extends Endpoint {
 		
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, CloseMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CloseMinerMessages.Encoder.class);
+			return deployAt(uri, RemoveMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
 		}
 	}
 
 	@Override
-	public boolean closeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException, IOException {
+	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException, IOException {
 		ensureIsOpen();
 		var id = queues.nextId();
-		sendCloseMiner(uuid, id);
+		sendRemoveMiner(uuid, id);
 		try {
-			return queues.waitForResult(id, this::processCloseMinerSuccess, this::processCloseMinerException);
+			return queues.waitForResult(id, this::processRemoveMinerSuccess, this::processRemoveMinerException);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 			throw e;
@@ -292,11 +292,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
-	private Boolean processCloseMinerSuccess(RpcMessage message) {
-		return message instanceof CloseMinerResultMessage cmrm ? cmrm.get() : null;
+	private Boolean processRemoveMinerSuccess(RpcMessage message) {
+		return message instanceof RemoveMinerResultMessage rmrm ? rmrm.get() : null;
 	}
 
-	private boolean processCloseMinerException(ExceptionMessage message) {
+	private boolean processRemoveMinerException(ExceptionMessage message) {
 		var exception = message.getExceptionClass();
 		return IOException.class.isAssignableFrom(exception) || processStandardExceptions(message);
 	}

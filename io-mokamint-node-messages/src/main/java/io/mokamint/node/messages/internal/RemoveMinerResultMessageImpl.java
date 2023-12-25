@@ -16,46 +16,44 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
-import java.util.Objects;
-import java.util.UUID;
-
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.RestrictedNode;
-import io.mokamint.node.messages.api.CloseMinerMessage;
+import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 
 /**
- * Implementation of the network message corresponding to {@link RestrictedNode#closeMiner(java.util.UUID)}.
+ * Implementation of the network message corresponding to the result of the {@link RestrictedNode#removeMiner(java.util.UUID)} method.
  */
-public class CloseMinerMessageImpl extends AbstractRpcMessage implements CloseMinerMessage {
+public class RemoveMinerResultMessageImpl extends AbstractRpcMessage implements RemoveMinerResultMessage {
 
-	private final UUID uuid;
+	/**
+	 * The result of the call.
+	 */
+	private final boolean result;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param uuid the UUID of the miner that must be closed
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public CloseMinerMessageImpl(UUID uuid, String id) {
+	public RemoveMinerResultMessageImpl(boolean result, String id) {
 		super(id);
 
-		Objects.requireNonNull(uuid, "uuid cannot be null");
-
-		this.uuid = uuid;
-	}
-
-	@Override
-	public UUID getUUID() {
-		return uuid;
+		this.result = result;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CloseMinerMessage cmm && super.equals(other) && uuid.equals(cmm.getUUID());
+		return other instanceof RemoveMinerResultMessage cmrm && super.equals(other) && result == cmrm.get().booleanValue();
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CloseMinerMessage.class.getName();
+		return RemoveMinerResultMessage.class.getName();
+	}
+
+	@Override
+	public Boolean get() {
+		return result;
 	}
 }

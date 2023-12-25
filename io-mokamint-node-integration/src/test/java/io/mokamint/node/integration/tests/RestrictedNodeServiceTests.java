@@ -178,7 +178,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		allUUIDs.add(uuid2);
 
 		var node = mock(RestrictedNode.class);
-		when(node.closeMiner(any())).then(invocation -> {
+		when(node.removeMiner(any())).then(invocation -> {
 			if (allUUIDs.remove(invocation.getArguments()[0]))
 				semaphore.release();
 
@@ -192,7 +192,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			private void sendCloseMiner(UUID uuid) throws ClosedNodeException {
-				sendCloseMiner(uuid, "id");
+				sendRemoveMiner(uuid, "id");
 			}
 		}
 

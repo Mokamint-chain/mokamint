@@ -16,36 +16,34 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import java.util.UUID;
-
-import io.mokamint.node.messages.api.CloseMinerMessage;
-import io.mokamint.node.messages.internal.CloseMinerMessageImpl;
-import io.mokamint.node.messages.internal.gson.CloseMinerMessageDecoder;
-import io.mokamint.node.messages.internal.gson.CloseMinerMessageEncoder;
-import io.mokamint.node.messages.internal.gson.CloseMinerMessageJson;
+import io.mokamint.node.messages.api.RemoveMinerResultMessage;
+import io.mokamint.node.messages.internal.RemoveMinerResultMessageImpl;
+import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageDecoder;
+import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageEncoder;
+import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageJson;
 
 /**
- * A provider of {@link CloseMinerMessage}.
+ * A provider of {@link RemoveMinerResultMessage}.
  */
-public final class CloseMinerMessages {
+public final class RemoveMinerResultMessages {
 
-	private CloseMinerMessages() {}
+	private RemoveMinerResultMessages() {}
 
 	/**
-	 * Yields an {@link CloseMinerMessage}.
+	 * Yields an {@link RemoveMinerResultMessage}.
 	 * 
-	 * @param uuid the UUID of the miner that must be closed
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static CloseMinerMessage of(UUID uuid, String id) {
-		return new CloseMinerMessageImpl(uuid, id);
+	public static RemoveMinerResultMessage of(boolean result, String id) {
+		return new RemoveMinerResultMessageImpl(result, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends CloseMinerMessageEncoder {
+	public static class Encoder extends RemoveMinerResultMessageEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +54,7 @@ public final class CloseMinerMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends CloseMinerMessageDecoder {
+	public static class Decoder extends RemoveMinerResultMessageDecoder {
 
 		/**
 		 * Creates a new decoder.
@@ -67,14 +65,14 @@ public final class CloseMinerMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends CloseMinerMessageJson {
+    public static class Json extends RemoveMinerResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(CloseMinerMessage message) {
+    	public Json(RemoveMinerResultMessage message) {
     		super(message);
     	}
     }

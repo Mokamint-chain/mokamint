@@ -60,7 +60,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 
 		private Optional<Exception> closeMiner(UUID uuid) {
 			try {
-				if (remote.closeMiner(uuid))
+				if (remote.removeMiner(uuid))
 					if (json())
 						successes.add(uuid.toString());
 					else

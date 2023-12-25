@@ -16,31 +16,29 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.util.UUID;
-
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.CloseMinerMessages;
-import io.mokamint.node.messages.api.CloseMinerMessage;
+import io.mokamint.node.messages.RemoveMinerResultMessages;
+import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 
 /**
- * The JSON representation of a {@link CloseMinerMessage}.
+ * The JSON representation of a {@link RemoveMinerResultMessage}.
  */
-public abstract class CloseMinerMessageJson extends AbstractRpcMessageJsonRepresentation<CloseMinerMessage> {
-	private final String uuid;
+public abstract class RemoveMinerResultMessageJson extends AbstractRpcMessageJsonRepresentation<RemoveMinerResultMessage> {
+	private final boolean result;
 
-	protected CloseMinerMessageJson(CloseMinerMessage message) {
+	protected RemoveMinerResultMessageJson(RemoveMinerResultMessage message) {
 		super(message);
 
-		this.uuid = message.getUUID().toString();
+		this.result = message.get();
 	}
 
 	@Override
-	public CloseMinerMessage unmap() {
-		return CloseMinerMessages.of(UUID.fromString(uuid), getId());
+	public RemoveMinerResultMessage unmap() {
+		return RemoveMinerResultMessages.of(result, getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CloseMinerMessage.class.getName();
+		return RemoveMinerResultMessage.class.getName();
 	}
 }

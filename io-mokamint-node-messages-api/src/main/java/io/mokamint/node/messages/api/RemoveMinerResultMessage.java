@@ -19,7 +19,7 @@ package io.mokamint.node.messages.api;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
- * The network message corresponding to the result of {@link RestrictedNode#closeMiner(java.util.UUID)} method of a node.
+ * The network message corresponding to the result of {@link RestrictedNode#removeMiner(java.util.UUID)} method of a node.
  */
-public interface CloseMinerResultMessage extends ResultMessage<Boolean> {
+public interface RemoveMinerResultMessage extends ResultMessage<Boolean> {
 }

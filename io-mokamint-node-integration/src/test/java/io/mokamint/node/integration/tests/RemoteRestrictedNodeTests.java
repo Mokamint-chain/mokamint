@@ -43,12 +43,12 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
-import io.mokamint.node.messages.CloseMinerResultMessages;
+import io.mokamint.node.messages.RemoveMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerMessage;
-import io.mokamint.node.messages.api.CloseMinerMessage;
+import io.mokamint.node.messages.api.RemoveMinerMessage;
 import io.mokamint.node.messages.api.OpenMinerMessage;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
@@ -458,10 +458,10 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			private MyServer() throws DeploymentException, IOException {}
 	
 			@Override
-			protected void onCloseMiner(CloseMinerMessage message, Session session) {
+			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
 				uuids2.add(message.getUUID());
 				try {
-					sendObjectAsync(session, CloseMinerResultMessages.of(true, message.getId()));
+					sendObjectAsync(session, RemoveMinerResultMessages.of(true, message.getId()));
 				}
 				catch (IOException e) {}
 			}
@@ -469,7 +469,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			for (UUID uuid: uuids1)
-				remote.closeMiner(uuid);
+				remote.removeMiner(uuid);
 	
 			assertEquals(uuids1, uuids2);
 		}
@@ -485,7 +485,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onCloseMiner(CloseMinerMessage message, Session session) {
+			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
 				try {
 					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
 				}
@@ -494,7 +494,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.closeMiner(UUID.randomUUID()));
+			var exception = assertThrows(InterruptedException.class, () -> remote.removeMiner(UUID.randomUUID()));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -509,7 +509,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onCloseMiner(CloseMinerMessage message, Session session) {
+			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
 				try {
 					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
 				}
@@ -518,7 +518,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.closeMiner(UUID.randomUUID()));
+			var exception = assertThrows(TimeoutException.class, () -> remote.removeMiner(UUID.randomUUID()));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

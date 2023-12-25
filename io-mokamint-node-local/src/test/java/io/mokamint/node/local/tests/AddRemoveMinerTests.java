@@ -190,7 +190,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			try (var service = MinerServices.open(miner, new URI("ws://localhost:" + miningPort))) {
 				// miner works for node1, which whispers block to node2: eventually node2 will receive 5 blocks
 				assertTrue(node2HasAddedBlock.tryAcquire(5, 1, TimeUnit.MINUTES));
-				node1.closeMiner(uuid);
+				node1.removeMiner(uuid);
 			}
 
 			// we wait until node1 stops mining, since it has no more miners

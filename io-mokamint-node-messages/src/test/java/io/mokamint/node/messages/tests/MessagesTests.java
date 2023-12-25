@@ -57,8 +57,8 @@ import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
-import io.mokamint.node.messages.CloseMinerMessages;
-import io.mokamint.node.messages.CloseMinerResultMessages;
+import io.mokamint.node.messages.RemoveMinerMessages;
+import io.mokamint.node.messages.RemoveMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
@@ -475,18 +475,18 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("closeMiner messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForCloseMiner() throws EncodeException, DecodeException {
-		var closeMiner1 = CloseMinerMessages.of(UUID.randomUUID(), "id");
-		String encoded = new CloseMinerMessages.Encoder().encode(closeMiner1);
-		var closeMiner2 = new CloseMinerMessages.Decoder().decode(encoded);
+		var closeMiner1 = RemoveMinerMessages.of(UUID.randomUUID(), "id");
+		String encoded = new RemoveMinerMessages.Encoder().encode(closeMiner1);
+		var closeMiner2 = new RemoveMinerMessages.Decoder().decode(encoded);
 		assertEquals(closeMiner1, closeMiner2);
 	}
 
 	@Test
 	@DisplayName("closeMiner result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForCloseMinerResult() throws EncodeException, DecodeException {
-		var closeMinerResultMessage1 = CloseMinerResultMessages.of(true, "id");
-		String encoded = new CloseMinerResultMessages.Encoder().encode(closeMinerResultMessage1);
-		var closeMinerResultMessage2 = new CloseMinerResultMessages.Decoder().decode(encoded);
+		var closeMinerResultMessage1 = RemoveMinerResultMessages.of(true, "id");
+		String encoded = new RemoveMinerResultMessages.Encoder().encode(closeMinerResultMessage1);
+		var closeMinerResultMessage2 = new RemoveMinerResultMessages.Decoder().decode(encoded);
 		assertEquals(closeMinerResultMessage1, closeMinerResultMessage2);
 	}
 

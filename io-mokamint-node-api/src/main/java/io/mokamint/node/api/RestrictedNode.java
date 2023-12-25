@@ -72,15 +72,15 @@ public interface RestrictedNode extends Node {
 	Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Closes a miner.
+	 * Removes a miner. If that miner has been created through {@link #openMiner(int)}, it gets closed as well.
 	 * 
-	 * @param uuid the unique identifier of the miner to close
-	 * @return true if and only if the miner has been closed; this is false if, for instance, no miner
-	 *         with the given {@code uuid} is currently open
+	 * @param uuid the unique identifier of the miner to remove
+	 * @return true if and only if the miner has been removed; this is false if, for instance, no miner
+	 *         with the given {@code uuid} exists
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if this node is closed
 	 * @throws IOException if the miner failed to close
 	 */
-	boolean closeMiner(UUID uuid) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+	boolean removeMiner(UUID uuid) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
 }
