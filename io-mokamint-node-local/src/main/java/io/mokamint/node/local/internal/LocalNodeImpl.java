@@ -263,8 +263,7 @@ public class LocalNodeImpl implements LocalNode {
 
 		if (whispered instanceof WhisperedPeers whisperedPeers) {
 			try {
-				peers.tryToReconnectOrAdd(whisperedPeers.getPeers())
-					.forEach(this::onAdded);
+				peers.tryToReconnectOrAdd(whisperedPeers.getPeers());
 			}
 			catch (DatabaseException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be contacted", e);

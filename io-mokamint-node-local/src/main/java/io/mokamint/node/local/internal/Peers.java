@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.exceptions.UncheckPredicate;
@@ -222,12 +223,12 @@ public class Peers implements AutoCloseable {
 	 * @throws InterruptedException if the execution has been interrupted
 	 * @throws IOException if an I/O error occurs
 	 */
-	public Stream<Peer> tryToReconnectOrAdd(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	public void tryToReconnectOrAdd(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		// we check if we actually need any of the peers to add
 		var usefulToAdd = peers.distinct().filter(peer -> remotes.get(peer) == null);
-		return CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
+		CheckRunnable.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
 			usefulToAdd.parallel().filter(UncheckPredicate.uncheck(peer -> reconnectOrAdd(peer, false)))
-				.collect(Collectors.toSet()).stream()
+				.collect(Collectors.toSet())
 		);
 	}
 
