@@ -39,7 +39,6 @@ import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.exceptions.UncheckPredicate;
-import io.hotmoka.exceptions.UncheckedException;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.SanitizedStrings;
@@ -133,11 +132,11 @@ public class Peers implements AutoCloseable {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
+		this.version = Versions.current();
 
 		try {
 			this.uuid = db.getUUID();
-			this.version = Versions.current();
-			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints(), this::additionFilter, this::removalFilter, _peer -> {}, _peer -> {});
+			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
 			openConnectionToPeers();
 			tryToReconnectOrAddThenScheduleWhispering(config.getSeeds().map(io.mokamint.node.Peers::of), true);
 		}
@@ -189,23 +188,11 @@ public class Peers implements AutoCloseable {
 				node.scheduleWhisperingWithoutAddition(Stream.of(peer));
 			}
 		}
-		else if (!peers.contains(peer)) {
-			// we uncheck the exceptions of onAdd
-			boolean result = CheckSupplier.check(TimeoutException.class,
-					InterruptedException.class,
-					IOException.class,
-					PeerRejectedException.class,
-					DatabaseException.class,
-					ClosedNodeException.class,
-					ClosedDatabaseException.class,
-					() -> peers.add(peer, true));
-
-			if (result) {
-				node.onAdded(peer);
-				exploitFreshlyAddedPeers(new Peer[] { peer });
-				node.scheduleWhisperingWithoutAddition(Stream.of(peer));
-				return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
-			}
+		else if (!peers.contains(peer) && additionFilter(peer, true) && peers.add(peer, true)) {
+			node.onAdded(peer);
+			exploitFreshlyAddedPeers(new Peer[] { peer });
+			node.scheduleWhisperingWithoutAddition(Stream.of(peer));
+			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		}
 
 		return Optional.empty();
@@ -243,13 +230,12 @@ public class Peers implements AutoCloseable {
 	 * @throws IOException if an I/O exception occurred while contacting the peer
 	 */
 	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		// we check the exceptions of onRemove
-		boolean result = CheckSupplier.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.remove(peer));
-
-		if (result)
+		if (removalFilter(peer) && peers.remove(peer)) {
 			node.onRemoved(peer);
-
-		return result;
+			return true;
+		}
+		else
+			return false;
 	}
 
 	/**
@@ -340,8 +326,10 @@ public class Peers implements AutoCloseable {
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		long lost = config.getPeerPunishmentForUnreachable();
 	
-		if (CheckSupplier.check(DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () -> peers.punish(peer, lost)))
+		if (peers.punish(peer, lost)) {
+			removalFilter(peer);
 			node.onRemoved(peer);
+		}
 	
 		LOGGER.warning("peers: " + SanitizedStrings.of(peer) + " lost " + lost + " points because it is unreachable");
 	}
@@ -458,57 +446,40 @@ public class Peers implements AutoCloseable {
 		tryToReconnectOrAddThenScheduleWhispering(peers.getElements().filter(peer -> remotes.get(peer) == null), false);
 	}
 
-	private boolean additionFilter(Peer peer, boolean force) {
+	private boolean additionFilter(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {
 		// optimization: this avoids opening a remote for a peer that would not be added anyway
 		if (!force && peers.getElements().count() >= config.getMaxPeers())
 			return false;
 
+		RemotePublicNode remote = null;
+
 		try {
-			RemotePublicNode remote = null;
+			remote = openRemote(peer);
+			long timeDifference = ensurePeerIsCompatible(remote);
 
-			try {
-				remote = openRemote(peer);
-				long timeDifference = ensurePeerIsCompatible(remote);
-
-				synchronized (lock) {
-					if (db.add(peer, force)) {
-						storePeer(peer, remote, timeDifference);
-						remote = null; // so that it won't be closed in the finally clause
-						return true;
-					}
-					else
-						return false;
-				}
-			}
-			finally {
-				deletePeer(peer, remote);
-			}
-		}
-		catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "peers: interrupted while adding " + SanitizedStrings.of(peer));
-			Thread.currentThread().interrupt();
-			throw new UncheckedException(e);
-		}
-		catch (IOException | TimeoutException | ClosedNodeException | DatabaseException | ClosedDatabaseException | PeerRejectedException e) {
-			LOGGER.log(Level.WARNING, "peers: cannot add " + SanitizedStrings.of(peer) + ": " + e.getMessage());
-			throw new UncheckedException(e);
-		}
-	}
-
-	private boolean removalFilter(Peer peer) {
-		try {
 			synchronized (lock) {
-				if (db.remove(peer)) {
-					deletePeer(peer, remotes.get(peer));
+				if (db.add(peer, force)) {
+					storePeer(peer, remote, timeDifference);
+					remote = null; // so that it won't be closed in the finally clause
 					return true;
 				}
 				else
 					return false;
 			}
 		}
-		catch (DatabaseException | ClosedDatabaseException | InterruptedException | IOException e) {
-			LOGGER.log(Level.SEVERE, "peers: cannot remove " + SanitizedStrings.of(peer) + ": " + e.getMessage());
-			throw new UncheckedException(e);
+		finally {
+			deletePeer(peer, remote);
+		}
+	}
+
+	private boolean removalFilter(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		synchronized (lock) {
+			if (db.remove(peer)) {
+				deletePeer(peer, remotes.get(peer));
+				return true;
+			}
+			else
+				return false;
 		}
 	}
 
@@ -588,20 +559,12 @@ public class Peers implements AutoCloseable {
 		}
 		else if (!peers.contains(peer)){
 			try {
-				// we do not spawn an event since we will spawn one at the end for all peers
-				boolean result = CheckSupplier.check(TimeoutException.class,
-						ClosedNodeException.class,
-						ClosedDatabaseException.class,
-						InterruptedException.class,
-						IOException.class,
-						PeerRejectedException.class,
-						DatabaseException.class,
-						() -> peers.add(peer, force));
-
-				if (result)
+				if (additionFilter(peer, force) && peers.add(peer, force)) {
 					node.onAdded(peer);
-
-				return result;
+					return true;
+				}
+				else
+					return false;
 			}
 			catch (PeerRejectedException | IOException | TimeoutException e) {
 				return false;
@@ -722,7 +685,6 @@ public class Peers implements AutoCloseable {
 			remotes.remove(peer);
 			timeDifferences.remove(peer);
 			remote.close();
-			LOGGER.info("peers: closed connection to " + SanitizedStrings.of(peer));
 		}
 	}
 }

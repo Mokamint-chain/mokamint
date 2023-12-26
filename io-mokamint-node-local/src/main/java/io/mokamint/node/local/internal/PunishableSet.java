@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -50,45 +49,6 @@ public class PunishableSet<A> {
 	private final long initialPoints;
 
 	/**
-	 * A filter invoked when trying to add a new actor to the set.
-	 * Only iff it yields true the actor is actually added.
-	 */
-	private final AdditionFilter<A> additionFilter;
-
-	/**
-	 * A filter invoked when trying to remove an actor from the set.
-	 * 
-	 */
-	private final Predicate<A> removaleFilter;
-
-	/**
-	 * Code invoked just after an actor has been added.
-	 */
-	private final Consumer<A> onAddition;
-
-	/**
-	 * Code invoked just after an actor has been removed.
-	 */
-	private final Consumer<A> onRemoval;
-
-	/**
-	 * The filter applied when trying to add an actor to a set.
-	 *
-	 * @param <A> the type of the actors
-	 */
-	public interface AdditionFilter<A> {
-
-		/**
-		 * Determines if the given actor must be added.
-		 * 
-		 * @param actor the actor
-		 * @param force true if and only if the addition is strongly required (which is implementation-dependent)
-		 * @return true if and only if the addition is allowed
-		 */
-		boolean apply(A actor, boolean force);
-	}
-
-	/**
 	 * Creates a new punishable set of actors.
 	 * 
 	 * @param actors the actors initially contained in the set
@@ -99,29 +59,10 @@ public class PunishableSet<A> {
 	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
 	 */
 	public PunishableSet(Stream<A> actors, long initialPoints) {
-		this(actors, initialPoints, (_actor, _force) -> true, _actor -> true, _actor -> {}, _actor -> {});
-	}
-
-	/**
-	 * Creates a new punishable set of actors.
-	 * 
-	 * @param actors the actors initially added to the set. Their addition is forced
-	 * @param initialPoints the initial points assigned to each actor when it is added to the set; this
-	 *                      will be used also when adding a new actor to the set later
-	 *                      (see @link {@link PunishableSet#add(Object)})
-	 * @param additionFilter a filter invoked when a new actor is required to be added to the set
-	 * @param removalFilter a filter invoked when an actor is required to be removed from the set
-	 * @throws IllegalArgumentException if {@code initialPoints} is not positive
-	 */
-	public PunishableSet(Stream<A> actors, long initialPoints, AdditionFilter<A> additionFilter, Predicate<A> removalFilter, Consumer<A> onAddition, Consumer<A> onRemoval) {
 		if (initialPoints <= 0L)
 			throw new IllegalArgumentException("initialPoints must be positive");
 
 		this.initialPoints = initialPoints;
-		this.additionFilter = additionFilter;
-		this.removaleFilter = removalFilter;
-		this.onAddition = onAddition;
-		this.onRemoval = onRemoval;
 		
 		actors.forEach(actor -> this.actors.put(actor, initialPoints));
 	}
@@ -195,19 +136,13 @@ public class PunishableSet<A> {
 			var newPoints = oldPoints - points;
 			if (newPoints > 0L)
 				return newPoints;
-			else if (removaleFilter.test(a)) {
+			else {
 				result.set(true);
 				return null; // which means remove it
 			}
-			else
-				return oldPoints;
 		});
 
-		boolean hasBeenRemoved = result.get();
-		if (hasBeenRemoved)
-			onRemoval.accept(actor);
-
-		return hasBeenRemoved;
+		return result.get();
 	}
 
 	/**
@@ -246,22 +181,7 @@ public class PunishableSet<A> {
 	 * @return true if and only if the actor was present and has been consequently removed
 	 */
 	public boolean remove(A actor) {
-		var result = new AtomicBoolean();
-
-		actors.computeIfPresent(actor, (a, oldPoints) -> {
-			if (removaleFilter.test(a)) {
-				result.set(true);
-				return null; // which means remove it
-			}
-			else
-				return oldPoints;
-		});
-
-		boolean hasBeenRemoved = result.get();
-		if (hasBeenRemoved)
-			onRemoval.accept(actor);
-
-		return hasBeenRemoved;
+		return actors.remove(actor) != null;
 	}
 
 	/**
@@ -278,19 +198,11 @@ public class PunishableSet<A> {
 		var result = new AtomicBoolean();
 
 		actors.computeIfAbsent(actor, a -> {
-			if (additionFilter.apply(a, force)) {
-				result.set(true);
-				return initialPoints;
-			}
-			else
-				return null;
+			result.set(true);
+			return initialPoints;
 		});
 
-		boolean hasBeenAdded = result.get();
-		if (hasBeenAdded)
-			onAddition.accept(actor);
-
-		return hasBeenAdded;
+		return result.get();
 	}
 
 	/**
