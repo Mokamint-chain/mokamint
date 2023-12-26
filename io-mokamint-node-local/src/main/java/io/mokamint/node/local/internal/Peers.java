@@ -24,6 +24,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -137,8 +138,8 @@ public class Peers implements AutoCloseable {
 		try {
 			this.uuid = db.getUUID();
 			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
-			openConnectionToPeers();
-			tryToReconnectOrAddThenScheduleWhispering(config.getSeeds().map(io.mokamint.node.Peers::of), true);
+			Set<Peer> seeds = config.getSeeds().map(io.mokamint.node.Peers::of).collect(Collectors.toSet());
+			tryToReconnectOrAdd(Stream.concat(peers.getElements(), seeds.stream()), seeds::contains);
 		}
 		catch (ClosedDatabaseException e) {
 			LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
@@ -192,7 +193,6 @@ public class Peers implements AutoCloseable {
 			return Optional.empty();
 		}
 		else if (add(peer, true)) {
-			node.onAdded(peer);
 			exploitFreshlyAddedPeers();
 			node.scheduleWhisperingWithoutAddition(Stream.of(peer));
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
@@ -217,7 +217,7 @@ public class Peers implements AutoCloseable {
 		// we check if we actually need any of the peers to add
 		var usefulToAdd = peers.distinct().filter(peer -> remotes.get(peer) == null);
 		CheckRunnable.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			usefulToAdd.parallel().filter(UncheckPredicate.uncheck(peer -> reconnectOrAdd(peer, false)))
+			usefulToAdd.parallel().filter(UncheckPredicate.uncheck(peer -> tryToReconnectOrAdd(peer, false)))
 				.collect(Collectors.toSet())
 		);
 	}
@@ -321,13 +321,12 @@ public class Peers implements AutoCloseable {
 	 * Pings all peers, tries to recreate their remote (if missing)
 	 * and collects their peers, in case they might be useful for the node.
 	 */
-
 	public void pingAllRecreateRemotesAndAddTheirPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		var allPeers = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
 			peers.getElements().parallel().flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers)).toArray(Peer[]::new)
 		);
 
-		tryToReconnectOrAddThenScheduleWhispering(Stream.of(allPeers), false);
+		tryToReconnectOrAdd(Stream.of(allPeers), _peer -> false);
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
@@ -397,7 +396,7 @@ public class Peers implements AutoCloseable {
 	 * simply ignored and no exception is thrown.
 	 * 
 	 * @param peers the peers to add
-	 * @param force true if and only if the peers must be added also when the maximal number of peers
+	 * @param force true if and only if a peer must be added also when the maximal number of peers
 	 *              for the node has been reached
 	 * @throws InterruptedException if the execution was interrupted
 	 * @throws ClosedDatabaseException if the database of {@link #node} is closed
@@ -405,19 +404,16 @@ public class Peers implements AutoCloseable {
 	 * @throws ClosedNodeException if {@link #node} is closed
 	 * @throws IOException if an I/O error occurs
 	 */
-	private void tryToReconnectOrAddThenScheduleWhispering(Stream<Peer> peers, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		var usefulToAdd = peers.distinct().filter(peer -> remotes.get(peer) == null);
-		var added = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			usefulToAdd.parallel()
-				.filter(UncheckPredicate.uncheck(peer -> reconnectOrAdd(peer, force)))
-				.toArray(Peer[]::new)
+	private void tryToReconnectOrAdd(Stream<Peer> peers, Predicate<Peer> force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+		var howManyAdded = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
+			peers.distinct()
+				.parallel()
+				.filter(UncheckPredicate.uncheck(peer -> tryToReconnectOrAdd(peer, force.test(peer))))
+				.count()
 			);
 
-		if (added.length > 0) {
+		if (howManyAdded > 0)
 			exploitFreshlyAddedPeers();
-			Stream.of(added).forEach(node::onAdded);
-			node.scheduleWhisperingWithoutAddition(Stream.of(added));
-		}
 	}
 
 	private void exploitFreshlyAddedPeers() throws DatabaseException, ClosedDatabaseException {
@@ -429,34 +425,27 @@ public class Peers implements AutoCloseable {
 		node.scheduleWhisperingOfAllServices();
 	}
 
-	/**
-	 * Opens a remote for each peer, if possible.
-	 * 
-	 * @throws ClosedNodeException if {@link #node} is closed
-	 * @throws DatabaseException if the database of {@link #node} is corrupted
-	 * @throws ClosedDatabaseException if the database of {@link #node} is already closed
-	 * @throws InterruptedException if the execution was interrupted while waiting to establish a connection to the peer
-	 * @throws IOException if an I/O error occurs
-	 */
-	private void openConnectionToPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		tryToReconnectOrAddThenScheduleWhispering(peers.getElements().filter(peer -> remotes.get(peer) == null), false);
-	}
-
 	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {
 		RemotePublicNode remote = null;
 
 		try {
 			remote = openRemote(peer);
 			long timeDifference = ensurePeerIsCompatible(remote);
+			boolean result;
 
 			synchronized (lock) {
 				if (db.add(peer, force) && peers.add(peer, force)) {
 					connect(peer, remote, timeDifference);
 					remote = null; // so that it won't be disconnected in the finally clause
-					return true;
+					result = true;
 				}
 				else
-					return false;
+					result = false;
+
+				if (result)
+					node.onAdded(peer);
+
+				return result;
 			}
 		}
 		finally {
@@ -544,7 +533,7 @@ public class Peers implements AutoCloseable {
 	 * @throws ClosedNodeException if {@link #node} is closed
 	 * @throws IOException if an I/O error occurred
 	 */
-	private boolean reconnectOrAdd(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		if (peers.contains(peer)) {
 			if (remotes.get(peer) == null)
 				tryToCreateRemote(peer);
@@ -554,12 +543,7 @@ public class Peers implements AutoCloseable {
 		else {
 			try {
 				// optimization: to avoid opening a remote for a peer that would not be added anyway
-				if ((force || peers.getElements().count() < config.getMaxPeers()) && add(peer, force)) {
-					node.onAdded(peer);
-					return true;
-				}
-				else
-					return false;
+				return (force || peers.getElements().count() < config.getMaxPeers()) && add(peer, force);
 			}
 			catch (PeerRejectedException | IOException | TimeoutException e) {
 				return false;
