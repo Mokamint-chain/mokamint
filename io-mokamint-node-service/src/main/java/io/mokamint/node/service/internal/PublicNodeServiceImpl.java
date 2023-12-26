@@ -217,15 +217,15 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		// if the node gets closed, then this service will be closed as well
 		node.addOnClosedHandler(this_close);
 
-		// if the node receives a whispering, it will be forwarded to this service as well
-		node.bindWhisperer(this);
-
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
 			AddTransactionEndpoint.config(this), GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this),
 			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
+
+		// if the node receives a whispering, it will be forwarded to this service as well
+		node.bindWhisperer(this);
 
 		if (uri.isEmpty())
 			LOGGER.info(logPrefix + "published");

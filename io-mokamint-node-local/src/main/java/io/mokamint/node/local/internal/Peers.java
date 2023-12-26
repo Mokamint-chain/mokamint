@@ -186,14 +186,16 @@ public class Peers implements AutoCloseable {
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
 		if (peers.contains(peer)) {
 			if (remotes.get(peer) == null && tryToCreateRemote(peer).isPresent())
-				// if the blockchain was empty, it might be the right moment to attempt a synchronization
 				if (node.getBlockchain().isEmpty())
 					node.scheduleSynchronization(0L);
 
 			return Optional.empty();
 		}
 		else if (add(peer, true)) {
-			exploitFreshlyAddedPeers();
+			if (node.getBlockchain().isEmpty())
+				node.scheduleSynchronization(0L);
+
+			node.scheduleWhisperingOfAllServices();
 			node.scheduleWhisperingWithoutAddition(Stream.of(peer));
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		}
@@ -217,7 +219,9 @@ public class Peers implements AutoCloseable {
 		// we check if we actually need any of the peers to add
 		var usefulToAdd = peers.distinct().filter(peer -> remotes.get(peer) == null);
 		CheckRunnable.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			usefulToAdd.parallel().filter(UncheckPredicate.uncheck(peer -> tryToReconnectOrAdd(peer, false)))
+			usefulToAdd
+				.parallel()
+				.filter(UncheckPredicate.uncheck(peer -> tryToReconnectOrAdd(peer, false)))
 				.collect(Collectors.toSet())
 		);
 	}
@@ -323,7 +327,9 @@ public class Peers implements AutoCloseable {
 	 */
 	public void pingAllRecreateRemotesAndAddTheirPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		var allPeers = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			peers.getElements().parallel().flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers)).toArray(Peer[]::new)
+			peers.getElements()
+				.parallel()
+				.flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers)).toArray(Peer[]::new)
 		);
 
 		tryToReconnectOrAdd(Stream.of(allPeers), _peer -> false);
@@ -413,16 +419,7 @@ public class Peers implements AutoCloseable {
 			);
 
 		if (howManyAdded > 0)
-			exploitFreshlyAddedPeers();
-	}
-
-	private void exploitFreshlyAddedPeers() throws DatabaseException, ClosedDatabaseException {
-		// if the blockchain was empty, it might be the right moment to attempt a synchronization
-		if (node.getBlockchain().isEmpty())
-			node.scheduleSynchronization(0L);
-
-		// we inform the new peers about our services
-		node.scheduleWhisperingOfAllServices();
+			node.scheduleWhisperingOfAllServices();
 	}
 
 	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {

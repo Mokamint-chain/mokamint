@@ -21,6 +21,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -249,6 +250,8 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public void bindWhisperer(Whisperer whisperer) {
 		boundWhisperers.add(whisperer);
+		// since a new whisperer arrived, it might be the time to inform everybody about our services
+		whisperAllServices();
 	}
 
 	@Override
@@ -505,8 +508,8 @@ public class LocalNodeImpl implements LocalNode {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
 
-		scheduleWhisperingWithoutAddition(transaction);
 		onAdded(transaction);
+		scheduleWhisperingWithoutAddition(transaction);
 
 		return result;
 	}
@@ -735,13 +738,22 @@ public class LocalNodeImpl implements LocalNode {
 			execute(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
 	}
 
+	private final LinkedList<Future<?>> lastMiningTasks = new LinkedList<>();
+
 	/**
 	 * Schedules the mining of a next block on top of the current head.
 	 */
 	protected void scheduleMining() {
+		final int MAX = 1; // TODO
 		// we avoid to mine during synchronization
-		if (!isSynchronizing.get())
-			execute(new MineNewBlockTask(this), "mining of next block");
+		if (!isSynchronizing.get()) {
+			synchronized (lastMiningTasks) {
+				if (lastMiningTasks.size() >= MAX)
+					lastMiningTasks.remove().cancel(true);
+
+				lastMiningTasks.add(submit(new MineNewBlockTask(this), "mining of next block"));
+			}
+		}
 	}
 
 	/**

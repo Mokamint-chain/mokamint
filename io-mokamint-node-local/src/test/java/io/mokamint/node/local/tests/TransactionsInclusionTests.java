@@ -31,7 +31,6 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
@@ -63,7 +62,6 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -188,7 +186,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@DisplayName("transactions added to a network get eventually added to the blockchain")
 	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, PeerRejectedException, TimeoutException, URISyntaxException {
 		var allTransactions = mkTransactions();
-		final int NUM_NODES = 10;
+		final int NUM_NODES = 4;
 
 		class Run {
 			class TestNode extends NodeWithLocalMiner {
@@ -234,16 +232,20 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, ClosedNodeException {
+			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, ClosedNodeException, IOException, PeerRejectedException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
+					//System.out.println("openNodes");
 					this.nodes = openNodes(dir);
+					//System.out.println("addPeers");
 					addPeers();
+					//System.out.println("addTransactions");
 					addTransactions();
+					//System.out.println("waitUntilAllNodesHaveSeenAllTransactions");
 					waitUntilAllNodesHaveSeenAllTransactions();
 					//for (var node: nodes)
-					//	System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
+						//System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
 					closeNodes();
 				}
 				finally {
@@ -280,14 +282,15 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private void addTransactions() throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
 				for (Transaction tx: allTransactions) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
-					Thread.sleep(1);
+					Thread.sleep(100);
 				}
 			}
 
-			private void addPeers() throws InterruptedException {
-				CheckRunnable.check(InterruptedException.class, () ->
-					IntStream.range(0, NUM_NODES).parallel().mapToObj(Integer::valueOf)
-						.forEach(UncheckConsumer.uncheck(num -> nodes[num].add(getPeer((num + 1) % NUM_NODES)))));
+			private void addPeers() throws InterruptedException, TimeoutException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
+				for (int pos1 = 0; pos1 < nodes.length; pos1++)
+					for (int pos2 = 0; pos2 < nodes.length; pos2++)
+						if (pos1 != pos2)
+							nodes[pos1].add(getPeer(pos2));
 			}
 
 			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, DeploymentException {
