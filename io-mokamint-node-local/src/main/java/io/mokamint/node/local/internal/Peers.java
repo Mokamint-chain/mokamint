@@ -141,7 +141,8 @@ public class Peers implements AutoCloseable {
 			tryToReconnectOrAddThenScheduleWhispering(config.getSeeds().map(io.mokamint.node.Peers::of), true);
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e);
+			LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 
@@ -182,20 +183,20 @@ public class Peers implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database of the node is closed
 	 */
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
-		if (containsDisconnected(peer)) {
-			if (tryToCreateRemote(peer).isPresent()) {
-				exploitFreshlyAddedPeers(new Peer[] { peer });
-				node.scheduleWhisperingWithoutAddition(Stream.of(peer));
-			}
+		if (peers.contains(peer)) {
+			if (remotes.get(peer) == null && tryToCreateRemote(peer).isPresent())
+				exploitFreshlyAddedPeers();
+
+			return Optional.empty();
 		}
-		else if (!peers.contains(peer) && additionFilter(peer, true) && peers.add(peer, true)) {
+		else if (add(peer, true)) {
 			node.onAdded(peer);
-			exploitFreshlyAddedPeers(new Peer[] { peer });
+			exploitFreshlyAddedPeers();
 			node.scheduleWhisperingWithoutAddition(Stream.of(peer));
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		}
-
-		return Optional.empty();
+		else
+			return Optional.empty();
 	}
 
 	/**
@@ -230,7 +231,7 @@ public class Peers implements AutoCloseable {
 	 * @throws IOException if an I/O exception occurred while contacting the peer
 	 */
 	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		if (removalFilter(peer) && peers.remove(peer)) {
+		if (peers.remove(peer) && removePeer(peer)) {
 			node.onRemoved(peer);
 			return true;
 		}
@@ -275,7 +276,7 @@ public class Peers implements AutoCloseable {
 			synchronized (lock) {
 				for (var entry: remotes.entrySet()) {
 					try {
-						deletePeer(entry.getKey(), entry.getValue());
+						closeRemote(entry.getKey(), entry.getValue());
 					}
 					catch (IOException e) {
 						ioException = e;
@@ -326,10 +327,8 @@ public class Peers implements AutoCloseable {
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		long lost = config.getPeerPunishmentForUnreachable();
 	
-		if (peers.punish(peer, lost)) {
-			removalFilter(peer);
+		if (peers.punish(peer, lost) && removePeer(peer))
 			node.onRemoved(peer);
-		}
 	
 		LOGGER.warning("peers: " + SanitizedStrings.of(peer) + " lost " + lost + " points because it is unreachable");
 	}
@@ -403,34 +402,19 @@ public class Peers implements AutoCloseable {
 			);
 
 		if (added.length > 0) {
-			exploitFreshlyAddedPeers(added);
+			exploitFreshlyAddedPeers();
 			Stream.of(added).forEach(node::onAdded);
 			node.scheduleWhisperingWithoutAddition(Stream.of(added));
 		}
 	}
 
-	private void exploitFreshlyAddedPeers(Peer[] added) throws DatabaseException, ClosedDatabaseException {
+	private void exploitFreshlyAddedPeers() throws DatabaseException, ClosedDatabaseException {
 		// if the blockchain was empty, it might be the right moment to attempt a synchronization
 		if (node.getBlockchain().isEmpty())
 			node.scheduleSynchronization(0L);
 
 		// we inform the new peers about our services
 		node.scheduleWhisperingOfAllServices();
-	}
-
-	private static RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
-	}
-
-	/**
-	 * Determines if this container contains a given peer, but disconnected.
-	 * 
-	 * @param peer the peer
-	 * @return true if and only if this container contains {@code peer}, but disconnected
-	 */
-	private boolean containsDisconnected(Peer peer) {
-		return peers.contains(peer) && remotes.get(peer) == null;
 	}
 
 	/**
@@ -446,11 +430,7 @@ public class Peers implements AutoCloseable {
 		tryToReconnectOrAddThenScheduleWhispering(peers.getElements().filter(peer -> remotes.get(peer) == null), false);
 	}
 
-	private boolean additionFilter(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {
-		// optimization: this avoids opening a remote for a peer that would not be added anyway
-		if (!force && peers.getElements().count() >= config.getMaxPeers())
-			return false;
-
+	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, ClosedDatabaseException {
 		RemotePublicNode remote = null;
 
 		try {
@@ -458,7 +438,7 @@ public class Peers implements AutoCloseable {
 			long timeDifference = ensurePeerIsCompatible(remote);
 
 			synchronized (lock) {
-				if (db.add(peer, force)) {
+				if (db.add(peer, force) && peers.add(peer, force)) {
 					storePeer(peer, remote, timeDifference);
 					remote = null; // so that it won't be closed in the finally clause
 					return true;
@@ -468,14 +448,14 @@ public class Peers implements AutoCloseable {
 			}
 		}
 		finally {
-			deletePeer(peer, remote);
+			closeRemote(peer, remote);
 		}
 	}
 
-	private boolean removalFilter(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	private boolean removePeer(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		synchronized (lock) {
 			if (db.remove(peer)) {
-				deletePeer(peer, remotes.get(peer));
+				closeRemote(peer, remotes.get(peer));
 				return true;
 			}
 			else
@@ -510,7 +490,7 @@ public class Peers implements AutoCloseable {
 					// we check if the peer is actually contained in the set of peers,
 					// since it might have been removed in the meanwhile and we not not
 					// want to store remotes for peers not in the set of peers of this object
-					if (containsDisconnected(peer)) {
+					if (peers.contains(peer) && remotes.get(peer) == null) {
 						storePeer(peer, remote, timeDifference);
 						remote = null; // so that it won't be closed in the finally clause
 					}
@@ -519,7 +499,7 @@ public class Peers implements AutoCloseable {
 				return Optional.of(remoteCopy);
 			}
 			finally {
-				deletePeer(peer, remote);
+				closeRemote(peer, remote);
 			}
 		}
 		catch (IOException | TimeoutException e) {
@@ -553,13 +533,16 @@ public class Peers implements AutoCloseable {
 	 * @throws IOException if an I/O error occurred
 	 */
 	private boolean reconnectOrAdd(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		if (containsDisconnected(peer)) {
-			tryToCreateRemote(peer);
+		if (peers.contains(peer)) {
+			if (remotes.get(peer) == null)
+				tryToCreateRemote(peer);
+
 			return false;
 		}
-		else if (!peers.contains(peer)){
+		else {
 			try {
-				if (additionFilter(peer, force) && peers.add(peer, force)) {
+				// optimization: to avoid opening a remote for a peer that would not be added anyway
+				if ((force || peers.getElements().count() < config.getMaxPeers()) && add(peer, force)) {
 					node.onAdded(peer);
 					return true;
 				}
@@ -570,20 +553,6 @@ public class Peers implements AutoCloseable {
 				return false;
 			}
 		}
-		else
-			return false;
-	}
-
-	private RemotePublicNode openRemote(Peer peer) throws IOException {
-		try {
-			// -1L: to disable the periodic broadcast of the remote node's services
-			var remote = RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1L, config.getWhisperingMemorySize());
-			LOGGER.info("peers: opened connection to " + SanitizedStrings.of(peer));
-			return remote;
-		}
-		catch (DeploymentException e) {
-			throw new IOException("Cannot deploy a remote connected to " + SanitizedStrings.of(peer), e);  // we consider it as a special case of IOException
-		}
 	}
 
 	/**
@@ -592,7 +561,7 @@ public class Peers implements AutoCloseable {
 	 * @param remote the remote of the peer
 	 * @return the time difference (in milliseconds) between the local time of {@link #node}
 	 *         and the local time of the peer (this is positive if the clock of the peer is
-	 *         in the future wrt the clock of this node; it is positive in the opposite case)
+	 *         in the future wrt the clock of this node; it is negative in the opposite case)
 	 * @throws PeerRejectedException if the peer was rejected for some reason
 	 * @throws TimeoutException if the peer could not be contacted through the {@code remote}
 	 * @throws InterruptedException if the connection to the peer though {@code remote} was interrupted
@@ -650,7 +619,7 @@ public class Peers implements AutoCloseable {
 		return timeDifference;
 	}
 
-	private void storePeer(Peer peer, RemotePublicNode remote, long timeDifference) throws DatabaseException, ClosedDatabaseException {
+	private void storePeer(Peer peer, RemotePublicNode remote, long timeDifference) {
 		remotes.put(peer, remote);
 		timeDifferences.put(peer, timeDifference);
 		remote.bindWhisperer(node);
@@ -668,8 +637,7 @@ public class Peers implements AutoCloseable {
 	 * @throws IOException if an I/O exceptions occurs while closing the remote of the peer
 	 */
 	private void peerDisconnected(RemotePublicNode remote, Peer peer) throws InterruptedException, IOException {
-		deletePeer(peer, remote);
-		node.onDisconnected(peer);
+		closeRemote(peer, remote);
 
 		try {
 			punishBecauseUnreachable(peer);
@@ -679,12 +647,23 @@ public class Peers implements AutoCloseable {
 		}
 	}
 
-	private void deletePeer(Peer peer, RemotePublicNode remote) throws InterruptedException, IOException {
+	private RemotePublicNode openRemote(Peer peer) throws IOException {
+		try {
+			// -1L: to disable the periodic broadcast of the remote node's services
+			return RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1L, config.getWhisperingMemorySize());
+		}
+		catch (DeploymentException e) {
+			throw new IOException("Cannot deploy a remote connected to " + SanitizedStrings.of(peer), e);  // we consider it as a special case of IOException
+		}
+	}
+
+	private void closeRemote(Peer peer, RemotePublicNode remote) throws InterruptedException, IOException {
 		if (remote != null) {
 			remote.unbindWhisperer(node);
 			remotes.remove(peer);
 			timeDifferences.remove(peer);
 			remote.close();
+			node.onDisconnected(peer);
 		}
 	}
 }
