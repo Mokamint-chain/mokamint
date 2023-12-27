@@ -89,7 +89,7 @@ import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
-import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
@@ -103,7 +103,7 @@ import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
@@ -1188,25 +1188,25 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@Timeout(10)
-	@DisplayName("if a service whispers some peers, a remote will inform its bound whisperers")
+	@DisplayName("if a service whispers a peer, a remote will inform its bound whisperers")
 	public void ifServiceWhispersPeersTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException {
-		var peers = Set.of(Peers.of(new URI("ws://my.machine:8032")), Peers.of(new URI("ws://her.machine:8033")));
+		var peer = Peers.of(new URI("ws://my.machine:8032"));
 		var semaphore = new Semaphore(0);
 		var whisperer = mock(Whisperer.class);
 		
 		doAnswer(invocation -> {
-			WhisperPeersMessage message = invocation.getArgument(0);
+			WhisperPeerMessage message = invocation.getArgument(0);
 
-			if (message.getPeers().collect(Collectors.toSet()).containsAll(peers))
+			if (message.getPeer().equals(peer))
 				semaphore.release();
 
 			return null;
 	    })
-		.when(whisperer).whisper(any(WhisperPeersMessage.class), any(), any());
+		.when(whisperer).whisper(any(WhisperPeerMessage.class), any(), any());
 
 		try (var service = new PublicTestServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			remote.bindWhisperer(whisperer);
-			service.whisper(WhisperPeersMessages.of(peers.stream(), UUID.randomUUID().toString()), _whisperer -> false, "peers " + SanitizedStrings.of(peers.stream()));
+			service.whisper(WhisperPeerMessages.of(peer, UUID.randomUUID().toString()), _whisperer -> false, "peer " + SanitizedStrings.of(peer));
 			semaphore.acquire();
 		}
 	}

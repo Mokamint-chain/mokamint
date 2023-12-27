@@ -16,48 +16,47 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.WhisperPeerMessage;
 
 /**
- * Implementation of the network message sent to whisper some peers between whisperers.
+ * Implementation of the network message sent to whisper a peer between whisperers.
  */
-public class WhisperPeersMessageImpl extends AbstractRpcMessage implements WhisperPeersMessage {
+public class WhisperPeerMessageImpl extends AbstractRpcMessage implements WhisperPeerMessage {
 
 	/**
-	 * The whispered peers.
+	 * The whispered peer.
 	 */
-	private final Peer[] peers;
+	private final Peer peer;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param peers the whispered peers
+	 * @param peer the whispered peer
 	 * @param id the identifier of the message
 	 */
-	public WhisperPeersMessageImpl(Stream<Peer> peers, String id) {
+	public WhisperPeerMessageImpl(Peer peer, String id) {
 		super(id);
 
-		this.peers = peers.map(Objects::requireNonNull).toArray(Peer[]::new);
+		Objects.requireNonNull(peer);
+		this.peer = peer;
 	}
 
 	@Override
-	public Stream<Peer> getPeers() {
-		return Stream.of(peers);
+	public Peer getPeer() {
+		return peer;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof WhisperPeersMessage wpm && super.equals(other) && Arrays.equals(peers, wpm.getPeers().toArray(Peer[]::new));
+		return other instanceof WhisperPeerMessage wpm && super.equals(other) && peer.equals(wpm.getPeer());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return WhisperPeersMessage.class.getName();
+		return WhisperPeerMessage.class.getName();
 	}
 }

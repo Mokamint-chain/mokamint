@@ -14,19 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node.messages.internal.gson;
 
-import java.util.stream.Stream;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.WhisperPeerMessages;
+import io.mokamint.node.messages.api.WhisperPeerMessage;
 
 /**
- * Peers information whispered among peers.
+ * An encoder of an {@link WhisperPeerMessage}.
  */
-public non-sealed interface WhisperedPeers extends Whispered {
+public class WhisperPeerMessageEncoder extends MappedEncoder<WhisperPeerMessage, WhisperPeerMessages.Json> {
 
-	/**
-	 * Yields the whispered peers.
-	 * 
-	 * @return the whispered peers
-	 */
-	Stream<Peer> getPeers();
+	public WhisperPeerMessageEncoder() {
+		super(WhisperPeerMessages.Json::new);
+	}
 }

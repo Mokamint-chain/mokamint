@@ -71,7 +71,7 @@ import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeers;
+import io.mokamint.node.api.WhisperedPeer;
 import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -79,7 +79,7 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.node.messages.WhisperBlockMessages;
-import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.WhisperingMemory;
@@ -746,7 +746,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param peer the peer to whisper
 	 */
 	protected void whisperWithoutAddition(Peer peer) {
-		var whisperedPeers = WhisperPeersMessages.of(Stream.of(peer), UUID.randomUUID().toString());
+		var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
 		String description = "peer " + SanitizedStrings.of(peer);
 		whisperedQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
 	}
@@ -912,11 +912,11 @@ public class LocalNodeImpl implements LocalNode {
 	protected void onMined(Block block) {}
 
 	/**
-	 * Called when some peers have been whispered to our peers.
+	 * Called when some peer has been whispered to our peers.
 	 * 
-	 * @param peers the whispered peers
+	 * @param peer the whispered peer
 	 */
-	protected void onWhispered(Stream<Peer> peers) {}
+	protected void onWhispered(Peer peer) {}
 
 	/**
 	 * Called when a block has been whispered to our peers.
@@ -1047,10 +1047,10 @@ public class LocalNodeImpl implements LocalNode {
 			while (!Thread.currentThread().isInterrupted()) {
 				var whisperedInfo = whisperedQueue.take();
 	
-				if (whisperedInfo.whispered instanceof WhisperedPeers whisperedPeers) {
+				if (whisperedInfo.whispered instanceof WhisperedPeer whisperedPeers) {
 					try {
 						if (whisperedInfo.add)
-							peers.tryToReconnectOrAdd(whisperedPeers.getPeers());
+							peers.tryToReconnectOrAdd(whisperedPeers.getPeer());
 
 						propagateWhispered(whisperedInfo);
 					}
@@ -1105,8 +1105,8 @@ public class LocalNodeImpl implements LocalNode {
 		peers.whisper(whispered, newSeen, whisperedInfo.description);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
 
-		if (whispered instanceof WhisperedPeers whisperedPeers)
-			onWhispered(whisperedPeers.getPeers());
+		if (whispered instanceof WhisperedPeer whisperedPeers)
+			onWhispered(whisperedPeers.getPeer());
 		else if (whispered instanceof WhisperedBlock whisperedBlock)
 			onWhispered(whisperedBlock.getBlock());
 		else if (whispered instanceof WhisperedTransaction whisperedTransaction)
@@ -1129,7 +1129,7 @@ public class LocalNodeImpl implements LocalNode {
 			.flatMap(Optional::stream)
 			.map(io.mokamint.node.Peers::of)
 			.distinct()
-			.forEach(serviceAsPeer -> whisperWithoutAddition(WhisperPeersMessages.of(Stream.of(serviceAsPeer), UUID.randomUUID().toString()), "peer " + SanitizedStrings.of(serviceAsPeer)));
+			.forEach(serviceAsPeer -> whisperWithoutAddition(WhisperPeerMessages.of(serviceAsPeer, UUID.randomUUID().toString()), "peer " + SanitizedStrings.of(serviceAsPeer)));
 	}
 
 	private RuntimeException unexpectedException(Exception e) {

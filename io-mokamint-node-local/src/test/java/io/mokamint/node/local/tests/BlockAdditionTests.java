@@ -53,6 +53,7 @@ import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -359,48 +360,55 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
-			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
-			var sorted = Stream.of(computeNextBlock(genesis, config, plot1), computeNextBlock(genesis, config, plot2), computeNextBlock(genesis, config, plot3))
-					.sorted(Comparator.comparing(block -> block.getDescription().getPower())).toArray(NonGenesisBlock[]::new);
-			var block3 = sorted[0]; // least powerful
-			var block1 = sorted[1]; // medium
-			var block2 = sorted[2]; // most powerful
+			GenesisBlock genesis;
+			NonGenesisBlock mediumPowerful, mostPowerful, leastPowerful;
+
+			do {
+				var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
+				genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
+				var sorted = Stream.of(computeNextBlock(genesis, config, plot1), computeNextBlock(genesis, config, plot2), computeNextBlock(genesis, config, plot3))
+						.sorted(Comparator.comparing(block -> block.getDescription().getPower())).toArray(NonGenesisBlock[]::new);
+				leastPowerful = sorted[0];
+				mediumPowerful = sorted[1];
+				mostPowerful = sorted[2];
+			}
+			// we guarantee that the power of the three blocks is strictly different
+			while (mediumPowerful.getDescription().getPower() == mostPowerful.getDescription().getPower() || mediumPowerful.getDescription().getPower() == leastPowerful.getDescription().getPower());
 
 			assertTrue(blockchain.add(genesis));
-			assertTrue(blockchain.add(block1));
+			assertTrue(blockchain.add(mediumPowerful));
 
 			// at this stage, block1 is the head of the current chain, of length 2
 			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block1, blockchain.getHead().get());
+			assertEquals(mediumPowerful, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
 			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
 			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
+			assertArrayEquals(chain[1], mediumPowerful.getHash(hashingForBlocks));
 
 			// we create a chain with more power as the current chain
-			assertTrue(blockchain.add(block2));
+			assertTrue(blockchain.add(mostPowerful));
 
 			// block2 is the new head now
 			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block2, blockchain.getHead().get());
+			assertEquals(mostPowerful, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
 			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block2.getHash(hashingForBlocks));
+			assertArrayEquals(chain[1], mostPowerful.getHash(hashingForBlocks));
 
 			// we create a chain with the same length as the current chain (2 blocks),
 			// but less power than the current head
-			assertTrue(blockchain.add(block3));
+			assertTrue(blockchain.add(leastPowerful));
 
 			// block2 is still the head
 			assertEquals(genesis, blockchain.getGenesis().get());
-			assertEquals(block2, blockchain.getHead().get());
+			assertEquals(mostPowerful, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
 			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block2.getHash(hashingForBlocks));
+			assertArrayEquals(chain[1], mostPowerful.getHash(hashingForBlocks));
 		}
 	}
 

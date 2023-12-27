@@ -14,18 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.node.messages.api;
 
-import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.node.messages.WhisperPeersMessages;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.WhisperedPeer;
 
 /**
- * A decoder for an {@link WhisperPeersMessage}.
+ * The network message sent to whisper some peers between whisperers.
  */
-public class WhisperPeersMessageDecoder extends MappedDecoder<WhisperPeersMessage, WhisperPeersMessages.Json> {
-
-	public WhisperPeersMessageDecoder() {
-		super(WhisperPeersMessages.Json.class);
-	}
+public interface WhisperPeerMessage extends RpcMessage, WhisperedPeer {
 }

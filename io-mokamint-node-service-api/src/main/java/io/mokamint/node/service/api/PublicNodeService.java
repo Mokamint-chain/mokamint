@@ -89,10 +89,10 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String GET_MEMPOOL_PORTION_ENDPOINT = "/get_mempool_portion";
 
 	/**
-	 * The network endpoint path used to whisper peers between a public node service
+	 * The network endpoint path used to whisper a peer between a public node service
 	 * and its connected remotes.
 	 */
-	String WHISPER_PEERS_ENDPOINT = "/whisper_peers";
+	String WHISPER_PEER_ENDPOINT = "/whisper_peer";
 
 	/**
 	 * The network endpoint path used to whisper a block between a public node service

@@ -19,7 +19,7 @@ package io.mokamint.node.api;
 /**
  * Information whispered among peers.
  */
-public sealed interface Whispered permits WhisperedPeers, WhisperedBlock, WhisperedTransaction {
+public sealed interface Whispered permits WhisperedPeer, WhisperedBlock, WhisperedTransaction {
 
 	@Override
 	boolean equals(Object obj);

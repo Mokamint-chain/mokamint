@@ -87,7 +87,7 @@ import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
-import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.nonce.Deadlines;
@@ -494,11 +494,9 @@ public class MessagesTests extends AbstractLoggedTests {
 	@DisplayName("whisper peers messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForWhisperPeers() throws EncodeException, DecodeException, URISyntaxException {
 		var peer1 = Peers.of(new URI("ws://google.com:8011"));
-		var peer2 = Peers.of(new URI("ws://amazon.it:8024"));
-		var peer3 = Peers.of(new URI("ws://panarea.io:8025"));
-		var whisperPeersMessage1 = WhisperPeersMessages.of(Stream.of(peer1, peer2, peer3), "id");
-		String encoded = new WhisperPeersMessages.Encoder().encode(whisperPeersMessage1);
-		var whisperPeersMessage2 = new WhisperPeersMessages.Decoder().decode(encoded);
+		var whisperPeersMessage1 = WhisperPeerMessages.of(peer1, "id");
+		String encoded = new WhisperPeerMessages.Encoder().encode(whisperPeersMessage1);
+		var whisperPeersMessage2 = new WhisperPeerMessages.Decoder().decode(encoded);
 		assertEquals(whisperPeersMessage1, whisperPeersMessage2);
 	}
 

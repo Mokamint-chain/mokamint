@@ -34,8 +34,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -56,15 +56,14 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
@@ -74,6 +73,7 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
@@ -84,8 +84,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
@@ -668,7 +667,9 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
-		var allPeers = Set.of(peer1, peer2);
+		var allPeers = new HashSet<Peer>();
+		allPeers.add(peer1);
+		allPeers.add(peer2);
 		var node = mkNode();
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -678,16 +679,16 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onWhispered(Stream<Peer> peers) {
-				// we must use containsAll since the suggested peers might include
-				// the public URI of the machine where the test is running
-				if (peers.collect(Collectors.toSet()).containsAll(allPeers))
+			protected void onWhispered(Peer peer) {
+				allPeers.remove(peer);
+				if (allPeers.isEmpty())
 					semaphore.release();
 			}
 		}
 
 		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			service.whisper(WhisperPeersMessages.of(allPeers.stream(), UUID.randomUUID().toString()), _whisperer -> false, "peers " + SanitizedStrings.of(allPeers.stream()));
+			service.whisper(WhisperPeerMessages.of(peer1, UUID.randomUUID().toString()), _whisperer -> false, "peer " + peer1);
+			service.whisper(WhisperPeerMessages.of(peer2, UUID.randomUUID().toString()), _whisperer -> false, "peer " + peer2);
 			assertTrue(semaphore.tryAcquire(1, 5, TimeUnit.SECONDS));
 		}
 	}

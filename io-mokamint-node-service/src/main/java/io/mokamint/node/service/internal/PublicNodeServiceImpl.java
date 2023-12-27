@@ -51,7 +51,7 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeers;
+import io.mokamint.node.api.WhisperedPeer;
 import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
@@ -80,7 +80,7 @@ import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
-import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.AddTransactionMessage;
@@ -96,7 +96,7 @@ import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
@@ -135,9 +135,9 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private final Optional<URI> uri;
 
 	/**
-	 * The sessions connected to the {@link WhisperPeersEndpoint}.
+	 * The sessions connected to the {@link WhisperPeerEndpoint}.
 	 */
-	private final Set<Session> whisperPeersSessions = ConcurrentHashMap.newKeySet();
+	private final Set<Session> whisperPeerSessions = ConcurrentHashMap.newKeySet();
 
 	/**
 	 * The sessions connected to the {@link WhisperBlockEndpoint}.
@@ -222,7 +222,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
 			AddTransactionEndpoint.config(this), GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this),
-			WhisperPeersEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
+			WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
 
 		// if the node receives a whispering, it will be forwarded to this service as well
 		node.bindWhisperer(this);
@@ -260,8 +260,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		LOGGER.info(logPrefix + "got whispered " + description);
 
 		Set<Session> sessions;
-		if (whispered instanceof WhisperedPeers)
-			sessions = whisperPeersSessions;
+		if (whispered instanceof WhisperedPeer)
+			sessions = whisperPeerSessions;
 		else if (whispered instanceof WhisperedBlock)
 			sessions = whisperBlockSessions;
 		else if (whispered instanceof WhisperedTransaction)
@@ -689,23 +689,23 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	public static class WhisperPeersEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class WhisperPeerEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			server.whisperPeersSessions.add(session);
-			addMessageHandler(session, (WhisperPeersMessage message) -> server.whisper(message, _whisperer -> false, session, "peers " + SanitizedStrings.of(message.getPeers())));
+			server.whisperPeerSessions.add(session);
+			addMessageHandler(session, (WhisperPeerMessage message) -> server.whisper(message, _whisperer -> false, session, "peer " + SanitizedStrings.of(message.getPeer())));
 		}
 
 		@SuppressWarnings("resource")
 		@Override
 		public void onClose(Session session, CloseReason closeReason) {
-			getServer().whisperPeersSessions.remove(session);
+			getServer().whisperPeerSessions.remove(session);
 		}
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, WhisperPeersEndpoint.class, WHISPER_PEERS_ENDPOINT, WhisperPeersMessages.Encoder.class, WhisperPeersMessages.Decoder.class);
+			return simpleConfig(server, WhisperPeerEndpoint.class, WHISPER_PEER_ENDPOINT, WhisperPeerMessages.Encoder.class, WhisperPeerMessages.Decoder.class);
 		}
 	}
 

@@ -29,7 +29,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_END
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
-import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEERS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEER_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_TRANSACTION_ENDPOINT;
 
 import java.io.IOException;
@@ -73,7 +73,7 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeers;
+import io.mokamint.node.api.WhisperedPeer;
 import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
@@ -102,7 +102,7 @@ import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
-import io.mokamint.node.messages.WhisperPeersMessages;
+import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
@@ -119,7 +119,7 @@ import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
+import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -206,7 +206,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
 		addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
 		addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
-		addSession(WHISPER_PEERS_ENDPOINT, uri, WhisperPeersEndpoint::new);
+		addSession(WHISPER_PEER_ENDPOINT, uri, WhisperPeerEndpoint::new);
 		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
 		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 
@@ -256,9 +256,9 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		Predicate<Whisperer> newSeen = seen.or(isThis);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
 
-		if (whispered instanceof WhisperedPeers whisperedPeers) {
-			sendWhisperedAsync(whisperedPeers, WHISPER_PEERS_ENDPOINT, description, includeNetwork);
-			onWhispered(whisperedPeers.getPeers());
+		if (whispered instanceof WhisperedPeer whisperedPeer) {
+			sendWhisperedAsync(whisperedPeer, WHISPER_PEER_ENDPOINT, description, includeNetwork);
+			onWhispered(whisperedPeer.getPeer());
 		}
 		else if (whispered instanceof WhisperedBlock whisperedBlock) {
 			sendWhisperedAsync(whisperedBlock, WHISPER_BLOCK_ENDPOINT, description, includeNetwork);
@@ -285,19 +285,17 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private void whisperAllServices() {
 		// we check how the external world sees our services as peers
-		var servicesAsPeers = boundWhisperers.stream()
+		boundWhisperers.stream()
 			.filter(whisperer -> whisperer instanceof PublicNodeService)
 			.map(whisperer -> (PublicNodeService) whisperer)
 			.map(PublicNodeService::getURI)
 			.flatMap(Optional::stream)
 			.map(Peers::of)
-			.toArray(Peer[]::new);
-
-		if (servicesAsPeers.length > 0) {
-			var whisperedPeers = WhisperPeersMessages.of(Stream.of(servicesAsPeers), UUID.randomUUID().toString());
-			String description = "peers " + SanitizedStrings.of(whisperedPeers.getPeers());
-			whisper(whisperedPeers, _whisperer -> false, false, description);
-		}
+			.forEach(peer -> {
+				var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
+				String description = "peers " + SanitizedStrings.of(peer);
+				whisper(whisperedPeers, _whisperer -> false, false, description);
+			});
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
@@ -741,7 +739,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetMempoolInfoResult(MempoolInfo info) {}
 	protected void onGetMempoolPortionResult(MempoolPortion chain) {}
 	protected void onException(ExceptionMessage message) {}
-	protected void onWhispered(Stream<Peer> peers) {}
+	protected void onWhispered(Peer peer) {}
 	protected void onWhispered(Block block) {}
 	protected void onWhispered(Transaction transaction) {}
 
@@ -841,16 +839,16 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	private class WhisperPeersEndpoint extends Endpoint {
+	private class WhisperPeerEndpoint extends Endpoint {
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperPeersMessage message) -> whisper(message, _whisperer -> false, false, "peers " + SanitizedStrings.of(message.getPeers())));
+			addMessageHandler(session, (WhisperPeerMessage message) -> whisper(message, _whisperer -> false, false, "peer " + SanitizedStrings.of(message.getPeer())));
 		}
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, WhisperPeersMessages.Decoder.class, WhisperPeersMessages.Encoder.class);
+			return deployAt(uri, WhisperPeerMessages.Decoder.class, WhisperPeerMessages.Encoder.class);
 		}
 	}
 

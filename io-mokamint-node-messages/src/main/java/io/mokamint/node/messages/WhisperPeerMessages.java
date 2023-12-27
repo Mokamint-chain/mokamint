@@ -16,37 +16,35 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import java.util.stream.Stream;
-
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.messages.api.WhisperPeersMessage;
-import io.mokamint.node.messages.internal.WhisperPeersMessageImpl;
-import io.mokamint.node.messages.internal.gson.WhisperPeersMessageDecoder;
-import io.mokamint.node.messages.internal.gson.WhisperPeersMessageEncoder;
-import io.mokamint.node.messages.internal.gson.WhisperPeersMessageJson;
+import io.mokamint.node.messages.api.WhisperPeerMessage;
+import io.mokamint.node.messages.internal.WhisperPeerMessageImpl;
+import io.mokamint.node.messages.internal.gson.WhisperPeerMessageDecoder;
+import io.mokamint.node.messages.internal.gson.WhisperPeerMessageEncoder;
+import io.mokamint.node.messages.internal.gson.WhisperPeerMessageJson;
 
 /**
- * A provider of {@link WhisperPeersMessage}.
+ * A provider of {@link WhisperPeerMessage}.
  */
-public final class WhisperPeersMessages {
+public final class WhisperPeerMessages {
 
-	private WhisperPeersMessages() {}
+	private WhisperPeerMessages() {}
 
 	/**
-	 * Yields a {@link WhisperPeersMessage}.
+	 * Yields a {@link WhisperPeerMessage}.
 	 * 
-	 * @param peers the whispered peers
+	 * @param peer the whispered peer
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static WhisperPeersMessage of(Stream<Peer> peers, String id) {
-		return new WhisperPeersMessageImpl(peers, id);
+	public static WhisperPeerMessage of(Peer peer, String id) {
+		return new WhisperPeerMessageImpl(peer, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends WhisperPeersMessageEncoder {
+	public static class Encoder extends WhisperPeerMessageEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -57,7 +55,7 @@ public final class WhisperPeersMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends WhisperPeersMessageDecoder {
+	public static class Decoder extends WhisperPeerMessageDecoder {
 
 		/**
 		 * Creates a new decoder.
@@ -68,14 +66,14 @@ public final class WhisperPeersMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends WhisperPeersMessageJson {
+    public static class Json extends WhisperPeerMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(WhisperPeersMessage message) {
+    	public Json(WhisperPeerMessage message) {
     		super(message);
     	}
     }
