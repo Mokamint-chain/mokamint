@@ -32,11 +32,11 @@ public interface RestrictedNode extends Node {
 
 	/**
 	 * Adds the given peer to the set of peers of this node, if it was not already there.
+	 * If the peer was present but was disconnected, it tries to reconnect it.
 	 * 
 	 * @param peer the peer to add
-	 * @return the information about the added peer; this is empty if the peer has not been added,
-	 *         for instance because it was already present or the node has already reached a maximum
-	 *         number of peers
+	 * @return the information about the added peer; this is empty if the peer has not been added nor reconnected,
+	 *         for instance because it was already present or the node has already reached a maximum number of peers
 	 * @throws IOException if a connection to the peer cannot be established
 	 * @throws PeerRejectedException if {@code peer} was rejected for some reason
 	 * @throws DatabaseException if the database of this node is corrupted

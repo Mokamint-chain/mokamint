@@ -332,12 +332,22 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
+		Optional<PeerInfo> result;
+
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			return peers.add(peer);
+			result = peers.add(peer);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
+
+		if (result.isPresent()) {
+			scheduleSynchronization(0L);
+			scheduleWhisperingOfAllServices();
+			whisperWithoutAddition(peer);
+		}
+
+		return result;
 	}
 
 	@Override
@@ -745,7 +755,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param peer the peer to whisper
 	 */
-	protected void whisperWithoutAddition(Peer peer) {
+	private void whisperWithoutAddition(Peer peer) {
 		var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
 		String description = "peer " + SanitizedStrings.of(peer);
 		whisperedQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
@@ -1050,14 +1060,14 @@ public class LocalNodeImpl implements LocalNode {
 				if (whisperedInfo.whispered instanceof WhisperedPeer whisperedPeers) {
 					try {
 						if (whisperedInfo.add)
-							peers.tryToReconnectOrAdd(whisperedPeers.getPeer());
+							peers.add(whisperedPeers.getPeer());
 
 						propagateWhispered(whisperedInfo);
 					}
 					catch (DatabaseException e) {
 						LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be contacted", e);
 					}
-					catch (ClosedNodeException | ClosedDatabaseException | IOException e) {
+					catch (ClosedNodeException | ClosedDatabaseException | IOException | PeerRejectedException | TimeoutException e) {
 						LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be contacted: " + e.getMessage());
 					}
 				}
@@ -1090,8 +1100,6 @@ public class LocalNodeImpl implements LocalNode {
 						LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added to the mempool: " + e.getMessage());
 					}
 				}
-				else
-					LOGGER.log(Level.SEVERE, "node: unexpected whispered object of class " + whisperedInfo.whispered.getClass().getName());
 			}
 		}
 		catch (InterruptedException e) {
@@ -1113,13 +1121,6 @@ public class LocalNodeImpl implements LocalNode {
 			onWhispered(whisperedTransaction.getTransaction());
 	}
 
-	private void whisperWithoutAddition(Whispered whispered, String description) {
-		whisperedQueue.offer(new WhisperedInfo(whispered, isThis, description, false));
-		//alreadyWhispered.add(whispered);
-		//peers.whisper(whispered, isThis, description);
-		//boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, isThis, description));
-	}
-
 	private void whisperAllServices() {
 		// we check how the external world sees our services as peers
 		boundWhisperers.stream()
@@ -1129,7 +1130,7 @@ public class LocalNodeImpl implements LocalNode {
 			.flatMap(Optional::stream)
 			.map(io.mokamint.node.Peers::of)
 			.distinct()
-			.forEach(serviceAsPeer -> whisperWithoutAddition(WhisperPeerMessages.of(serviceAsPeer, UUID.randomUUID().toString()), "peer " + SanitizedStrings.of(serviceAsPeer)));
+			.forEach(this::whisperWithoutAddition);
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
