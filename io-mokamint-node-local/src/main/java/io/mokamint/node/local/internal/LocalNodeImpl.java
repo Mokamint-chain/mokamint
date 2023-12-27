@@ -25,6 +25,8 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -193,6 +195,11 @@ public class LocalNodeImpl implements LocalNode {
 
 	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
 
+	/**
+	 * THe queue of the whispering task to process.
+	 */
+	private final BlockingQueue<Whispered> whisperedQueue = new ArrayBlockingQueue<>(1000);
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -229,6 +236,7 @@ public class LocalNodeImpl implements LocalNode {
 			else
 				scheduleSynchronization(0L);
 
+			execute(this::processWhispered, "whispering process");
 			schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
 			schedulePeriodicWhisperingOfAllServices();
 		}
@@ -264,48 +272,7 @@ public class LocalNodeImpl implements LocalNode {
 		if (seen.test(this) || !alreadyWhispered.add(whispered))
 			return;
 
-		if (whispered instanceof WhisperedPeers whisperedPeers) {
-			try {
-				peers.tryToReconnectOrAdd(whisperedPeers.getPeers());
-			}
-			catch (DatabaseException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be contacted", e);
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				return;
-			}
-			catch (ClosedNodeException | ClosedDatabaseException | IOException e) {
-				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be contacted: " + e.getMessage());
-			}
-		}
-		else if (whispered instanceof WhisperedBlock whisperedBlock) {
-			try {
-				blockchain.add(whisperedBlock.getBlock());
-			}
-			catch (NoSuchAlgorithmException | DatabaseException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the blockchain", e);
-			}
-			catch (VerificationException | ClosedDatabaseException e) {
-				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be added to the blockchain: " + e.getMessage());
-			}
-		}
-		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
-			var tx = whisperedTransaction.getTransaction();
-			try {
-				mempool.add(tx);
-				onAdded(tx);
-			}
-			catch (NoSuchAlgorithmException | DatabaseException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + description + " could not be added to the mempool", e);
-			}
-			catch (RejectedTransactionException | ClosedDatabaseException e) {
-				LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + description + " could not be added to the mempool: " + e.getMessage());
-			}
-		}
-		else
-			LOGGER.log(Level.SEVERE, "node: unexpected whispered object of class " + whispered.getClass().getName());
-
+		whisperedQueue.offer(whispered);
 		Predicate<Whisperer> newSeen = seen.or(isThis);
 		peers.whisper(whispered, newSeen, description);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
@@ -1074,6 +1041,58 @@ public class LocalNodeImpl implements LocalNode {
 		if (interval >= 0)
 			scheduleWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
 				"pinging all peers to create missing remotes and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Processes the whispered objects received by this node, until interrupted.
+	 */
+	private void processWhispered() {
+		try {
+			while (!Thread.currentThread().isInterrupted()) {
+				var whispered = whisperedQueue.take();
+	
+				if (whispered instanceof WhisperedPeers whisperedPeers) {
+					try {
+						peers.tryToReconnectOrAdd(whisperedPeers.getPeers());
+					}
+					catch (DatabaseException e) {
+						LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered peers " + SanitizedStrings.of(whisperedPeers.getPeers()) + " could not be contacted", e);
+					}
+					catch (ClosedNodeException | ClosedDatabaseException | IOException e) {
+						LOGGER.log(Level.WARNING, "node " + uuid + ": whispered peers " + SanitizedStrings.of(whisperedPeers.getPeers()) + " could not be contacted: " + e.getMessage());
+					}
+				}
+				else if (whispered instanceof WhisperedBlock whisperedBlock) {
+					try {
+						blockchain.add(whisperedBlock.getBlock());
+					}
+					catch (NoSuchAlgorithmException | DatabaseException e) {
+						LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered block " + whisperedBlock.getBlock().getHexHash(config.getHashingForBlocks()) + " could not be added to the blockchain", e);
+					}
+					catch (VerificationException | ClosedDatabaseException e) {
+						LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + whisperedBlock.getBlock().getHexHash(config.getHashingForBlocks()) + " could not be added to the blockchain: " + e.getMessage());
+					}
+				}
+				else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
+					var tx = whisperedTransaction.getTransaction();
+					try {
+						mempool.add(tx);
+						onAdded(tx);
+					}
+					catch (NoSuchAlgorithmException | DatabaseException e) {
+						LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + Hex.toHexString(hasherForTransactions.hash(whisperedTransaction.getTransaction())) + " could not be added to the mempool", e);
+					}
+					catch (RejectedTransactionException | ClosedDatabaseException e) {
+						LOGGER.log(Level.WARNING, "node " + uuid + ": whispered " + Hex.toHexString(hasherForTransactions.hash(whisperedTransaction.getTransaction())) + " could not be added to the mempool: " + e.getMessage());
+					}
+				}
+				else
+					LOGGER.log(Level.SEVERE, "node: unexpected whispered object of class " + whispered.getClass().getName());
+			}
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	private void whisperWithoutAddition(Whispered whispered, String description) {

@@ -36,10 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
-import io.hotmoka.exceptions.UncheckPredicate;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.SanitizedStrings;
@@ -217,13 +215,8 @@ public class Peers implements AutoCloseable {
 	 */
 	public void tryToReconnectOrAdd(Stream<Peer> peers) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		// we check if we actually need any of the peers to add
-		var usefulToAdd = peers.distinct().filter(peer -> remotes.get(peer) == null);
-		CheckRunnable.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			usefulToAdd
-				.parallel()
-				.filter(UncheckPredicate.uncheck(peer -> tryToReconnectOrAdd(peer, false)))
-				.collect(Collectors.toSet())
-		);
+		for (var peer: peers.distinct().filter(peer -> remotes.get(peer) == null).toArray(Peer[]::new))
+			tryToReconnectOrAdd(peer, false);
 	}
 
 	/**
@@ -328,8 +321,8 @@ public class Peers implements AutoCloseable {
 	public void pingAllRecreateRemotesAndAddTheirPeers() throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		var allPeers = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
 			peers.getElements()
-				.parallel()
-				.flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers)).toArray(Peer[]::new)
+				.flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers))
+				.toArray(Peer[]::new)
 		);
 
 		tryToReconnectOrAdd(Stream.of(allPeers), _peer -> false);
@@ -411,14 +404,11 @@ public class Peers implements AutoCloseable {
 	 * @throws IOException if an I/O error occurs
 	 */
 	private void tryToReconnectOrAdd(Stream<Peer> peers, Predicate<Peer> force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		var howManyAdded = CheckSupplier.check(ClosedNodeException.class, DatabaseException.class, ClosedDatabaseException.class, InterruptedException.class, IOException.class, () ->
-			peers.distinct()
-				.parallel()
-				.filter(UncheckPredicate.uncheck(peer -> tryToReconnectOrAdd(peer, force.test(peer))))
-				.count()
-			);
+		boolean added = false;
+		for (var peer: peers.distinct().toArray(Peer[]::new))
+			added |= tryToReconnectOrAdd(peer, force.test(peer));
 
-		if (howManyAdded > 0)
+		if (added)
 			node.scheduleWhisperingOfAllServices();
 	}
 
