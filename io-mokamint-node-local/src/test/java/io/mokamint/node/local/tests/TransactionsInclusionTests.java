@@ -31,7 +31,6 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
@@ -60,7 +59,6 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -101,8 +99,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		return LocalNodeConfigBuilders.defaults()
 			.setDir(chainDir)
 			.setChainId("octopus")
-			.setTargetBlockCreationTime(300L)
-			.setInitialAcceleration(1000000000000000000L)
+			.setTargetBlockCreationTime(1000L)
+			.setInitialAcceleration(1000000000000000L)
 			.build();
 	}
 
@@ -243,8 +241,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					addTransactions();
 					System.out.println("waitUntilAllNodesHaveSeenAllTransactions");
 					waitUntilAllNodesHaveSeenAllTransactions();
-					for (var node: nodes)
-						System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
+					//for (var node: nodes)
+						//System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
 					closeNodes();
 				}
 				finally {
@@ -285,10 +283,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			}
 
 			private void addPeers() throws InterruptedException, TimeoutException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
-				for (int pos1 = 0; pos1 < nodes.length; pos1++)
-					for (int pos2 = 0; pos2 < nodes.length; pos2++)
-						if (pos1 != pos2)
-							nodes[pos1].add(getPeer(pos2));
+				for (int pos = 0; pos < nodes.length; pos++)
+					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
 			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, DeploymentException {

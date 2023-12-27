@@ -1055,6 +1055,10 @@ public class LocalNodeImpl implements LocalNode {
 	private void processWhispered() {
 		try {
 			while (!Thread.currentThread().isInterrupted()) {
+				/*if (whisperedQueue.size() > 5) {
+					System.out.println(whisperedQueue.stream().map(info -> info.description).sorted().collect(Collectors.joining("\n")));
+					System.out.println("*******************************************************");
+				}*/
 				var whisperedInfo = whisperedQueue.take();
 
 				try {
