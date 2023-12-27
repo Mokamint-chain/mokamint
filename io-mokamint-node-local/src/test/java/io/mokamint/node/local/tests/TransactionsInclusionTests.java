@@ -31,6 +31,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
@@ -59,6 +60,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -241,8 +243,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					addTransactions();
 					System.out.println("waitUntilAllNodesHaveSeenAllTransactions");
 					waitUntilAllNodesHaveSeenAllTransactions();
-					//for (var node: nodes)
-						//System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
+					for (var node: nodes)
+						System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
 					closeNodes();
 				}
 				finally {
@@ -278,7 +280,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private void addTransactions() throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
 				for (Transaction tx: allTransactions) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
-					Thread.sleep(100);
+					Thread.sleep(50);
 				}
 			}
 
