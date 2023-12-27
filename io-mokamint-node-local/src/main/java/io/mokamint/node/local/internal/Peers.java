@@ -194,7 +194,7 @@ public class Peers implements AutoCloseable {
 				node.scheduleSynchronization(0L);
 
 			node.scheduleWhisperingOfAllServices();
-			node.scheduleWhisperingWithoutAddition(Stream.of(peer));
+			node.whisperWithoutAddition(peer);
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		}
 		else

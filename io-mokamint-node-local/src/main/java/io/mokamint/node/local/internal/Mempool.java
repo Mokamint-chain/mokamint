@@ -59,6 +59,11 @@ import io.mokamint.node.api.Transaction;
 public class Mempool {
 
 	/**
+	 * The node having this mempool.
+	 */
+	private final LocalNodeImpl node;
+
+	/**
 	 * The blockchain of the node having this mempool.
 	 */
 	private final Blockchain blockchain;
@@ -113,6 +118,7 @@ public class Mempool {
 	 * @param node the node
 	 */
 	public Mempool(LocalNodeImpl node) {
+		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.app = node.getApplication();
@@ -128,6 +134,7 @@ public class Mempool {
 	 * @param parent the mempool to clone
 	 */
 	protected Mempool(Mempool parent) {
+		this.node = parent.node;
 		this.blockchain = parent.blockchain;
 		this.hashingForBlocks = parent.hashingForBlocks;
 		this.app = parent.app;
@@ -208,6 +215,7 @@ public class Mempool {
 		}
 	
 		LOGGER.info("mempool: added transaction " + hexHash);
+		node.onAdded(transaction);
 	
 		return entry.getMempoolEntry();
 	}

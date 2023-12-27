@@ -31,6 +31,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
@@ -38,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -48,9 +48,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
-import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
-import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
@@ -62,6 +60,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -236,16 +235,16 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
-					//System.out.println("openNodes");
+					System.out.println("openNodes");
 					this.nodes = openNodes(dir);
-					//System.out.println("addPeers");
+					System.out.println("addPeers");
 					addPeers();
-					//System.out.println("addTransactions");
+					System.out.println("addTransactions");
 					addTransactions();
-					//System.out.println("waitUntilAllNodesHaveSeenAllTransactions");
+					System.out.println("waitUntilAllNodesHaveSeenAllTransactions");
 					waitUntilAllNodesHaveSeenAllTransactions();
-					//for (var node: nodes)
-						//System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
+					for (var node: nodes)
+						System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
 					closeNodes();
 				}
 				finally {
@@ -267,10 +266,9 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						.map(UncheckFunction.uncheck(num -> mkNode(dir, num))).toArray(TestNode[]::new));
 			}
 
-			private void closeNodes() throws InterruptedException {
-				CheckRunnable.check(InterruptedException.class,
-					() ->  Stream.of(nodes).parallel().forEach(UncheckConsumer.uncheck(LocalNode::close))
-				);
+			private void closeNodes() throws InterruptedException, DatabaseException, IOException {
+				for (var node: nodes)
+					node.close();
 			}
 
 			private void closeServices() throws InterruptedException {

@@ -310,7 +310,7 @@ public class MineNewBlockTask implements Task {
 			stopIfInterrupted();
 			// we do not require to verify the block, since we trust that we create verifiable blocks only
 			if (blockchain.addVerified(block))
-				node.scheduleWhisperingWithoutAddition(block);
+				node.whisperWithoutAddition(block);
 		}
 
 		/**
