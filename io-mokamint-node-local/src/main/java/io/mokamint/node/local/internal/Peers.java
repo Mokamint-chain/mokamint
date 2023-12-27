@@ -181,7 +181,7 @@ public class Peers implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database of the node is closed
 	 */
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, DatabaseException, ClosedNodeException, ClosedDatabaseException {
-		if (tryToReconnectOrAddFullExceptions(peer, true))
+		if (tryToReconnectOrAdd(peer, true))
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		else
 			return Optional.empty();
@@ -301,7 +301,6 @@ public class Peers implements AutoCloseable {
 
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		long lost = config.getPeerPunishmentForUnreachable();
-
 		boolean removed;
 		
 		synchronized (lock) {
@@ -378,20 +377,7 @@ public class Peers implements AutoCloseable {
 	 * @throws ClosedNodeException if {@link #node} is closed
 	 * @throws IOException if an I/O error occurred
 	 */
-	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
-		if (peers.contains(peer))
-			return remotes.get(peer) == null && tryToCreateRemote(peer).isPresent();
-		else {
-			try {
-				return add(peer, force);
-			}
-			catch (PeerRejectedException | IOException | TimeoutException e) {
-				return false;
-			}
-		}
-	}
-
-	private boolean tryToReconnectOrAddFullExceptions(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException, PeerRejectedException, TimeoutException {
+	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException, PeerRejectedException, TimeoutException {
 		if (peers.contains(peer))
 			return remotes.get(peer) == null && tryToCreateRemote(peer).isPresent();
 		else
@@ -416,8 +402,14 @@ public class Peers implements AutoCloseable {
 	 */
 	private void tryToReconnectOrAdd(Stream<Peer> peers, Predicate<Peer> force) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		boolean somethingChanged = false;
-		for (var peer: peers.distinct().toArray(Peer[]::new))
-			somethingChanged |= tryToReconnectOrAdd(peer, force.test(peer));
+		for (var peer: peers.distinct().toArray(Peer[]::new)) {
+			try {
+				somethingChanged |= tryToReconnectOrAdd(peer, force.test(peer));
+			}
+			catch (PeerRejectedException | IOException | TimeoutException e) {
+				// the peer does not answer: never mind
+			}
+		}
 
 		if (somethingChanged) {
 			node.scheduleSynchronization(0L);
