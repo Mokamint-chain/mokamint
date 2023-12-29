@@ -68,7 +68,10 @@ public class MempoolEntryImpl extends AbstractMarshallable implements MempoolEnt
 	@Override
 	public boolean equals(Object other) {
 		// the priority is implied by the transaction
-		return other instanceof MempoolEntry ti && Arrays.equals(hash, ti.getHash());
+		if (other instanceof MempoolEntryImpl mei) // optimization
+			return Arrays.equals(hash, mei.hash);
+		else
+			return other instanceof MempoolEntry ti && Arrays.equals(hash, ti.getHash());
 	}
 
 	@Override

@@ -38,4 +38,11 @@ public interface TransactionAddress {
 	 * @return the progressive number
 	 */
 	int getProgressive();
+
+	@Override
+	boolean equals(Object other);
+
+	@Override
+	int hashCode();
+
 }

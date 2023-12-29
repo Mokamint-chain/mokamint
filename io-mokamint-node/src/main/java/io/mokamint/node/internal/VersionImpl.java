@@ -93,7 +93,14 @@ public class VersionImpl implements Version {
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof Version otherAsVersion &&
-			major == otherAsVersion.getMajor() && minor == otherAsVersion.getMinor() && patch == otherAsVersion.getPatch();
+			major == otherAsVersion.getMajor() &&
+			minor == otherAsVersion.getMinor() &&
+			patch == otherAsVersion.getPatch();
+	}
+
+	@Override
+	public int hashCode() {
+		return major + minor + patch;
 	}
 
 	@Override

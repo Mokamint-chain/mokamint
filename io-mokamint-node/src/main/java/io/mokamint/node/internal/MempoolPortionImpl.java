@@ -53,8 +53,16 @@ public class MempoolPortionImpl implements MempoolPortion {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof MempoolPortion mpp &&
-			Arrays.deepEquals(entries, mpp.getEntries().toArray(MempoolEntry[]::new));
+		if (other instanceof MempoolPortionImpl mpi)
+			return Arrays.deepEquals(entries, mpi.entries);
+		else
+			return other instanceof MempoolPortion mpp &&
+				Arrays.deepEquals(entries, mpp.getEntries().toArray(MempoolEntry[]::new));
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(entries);
 	}
 
 	@Override

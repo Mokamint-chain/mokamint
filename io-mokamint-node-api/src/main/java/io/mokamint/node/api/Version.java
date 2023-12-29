@@ -54,4 +54,11 @@ public interface Version {
 	 * @return true only if that condition holds
 	 */
 	boolean canWorkWith(Version other);
+
+	@Override
+	boolean equals(Object other);
+
+	@Override
+	int hashCode();
+
 }

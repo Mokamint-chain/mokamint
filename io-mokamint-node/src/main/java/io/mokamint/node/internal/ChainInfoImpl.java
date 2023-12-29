@@ -81,6 +81,11 @@ public class ChainInfoImpl implements ChainInfo {
 	}
 
 	@Override
+	public int hashCode() {
+		return headHash.or(() -> genesisHash).map(Arrays::hashCode).orElse(0);
+	}
+
+	@Override
 	public String toString() {
 		var builder = new StringBuilder();
 		builder.append("* height: " + length + "\n");

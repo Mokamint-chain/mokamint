@@ -136,6 +136,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
+	public int hashCode() {
+		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(targetBlockCreationTime)
+				^ Long.hashCode(initialAcceleration);
+	}
+
+	@Override
 	public String toString() {
 		return toToml();
 	}

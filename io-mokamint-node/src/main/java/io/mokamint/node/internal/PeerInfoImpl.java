@@ -73,7 +73,7 @@ public class PeerInfoImpl implements PeerInfo {
 
 	@Override
 	public int hashCode() {
-		return peer.hashCode() ^ (int) points;
+		return peer.hashCode() ^ Long.hashCode(points);
 	}
 
 	@Override

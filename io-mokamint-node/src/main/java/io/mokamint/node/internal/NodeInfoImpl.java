@@ -77,7 +77,13 @@ public class NodeInfoImpl implements NodeInfo {
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof NodeInfo ni &&
-			uuid.equals(ni.getUUID()) && version.equals(ni.getVersion()) && localDateTimeUTC.equals(ni.getLocalDateTimeUTC());
+			uuid.equals(ni.getUUID()) && version.equals(ni.getVersion()) &&
+			localDateTimeUTC.equals(ni.getLocalDateTimeUTC());
+	}
+
+	@Override
+	public int hashCode() {
+		return uuid.hashCode() ^ localDateTimeUTC.hashCode();
 	}
 
 	@Override

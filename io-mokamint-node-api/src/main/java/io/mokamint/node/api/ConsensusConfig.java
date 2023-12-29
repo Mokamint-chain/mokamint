@@ -129,5 +129,8 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	boolean equals(Object other);
 
 	@Override
+	int hashCode();
+
+	@Override
 	String toString();
 }

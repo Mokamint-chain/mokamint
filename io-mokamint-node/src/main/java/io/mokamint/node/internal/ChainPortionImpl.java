@@ -53,8 +53,16 @@ public class ChainPortionImpl implements ChainPortion {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof ChainPortion ocp &&
-			Arrays.deepEquals(hashes, ocp.getHashes().toArray(byte[][]::new));
+		if (other instanceof ChainPortionImpl cpi) // optimization
+			return Arrays.deepEquals(hashes, cpi.hashes);
+		else
+			return other instanceof ChainPortion ocp &&
+				Arrays.deepEquals(hashes, ocp.getHashes().toArray(byte[][]::new));
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.deepHashCode(hashes);
 	}
 
 	@Override

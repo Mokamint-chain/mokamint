@@ -63,6 +63,13 @@ public class TransactionAddressImpl implements TransactionAddress {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof TransactionAddress ta && ta.getProgressive() == progressive && Arrays.equals(ta.getBlockHash(), blockHash);
+		return other instanceof TransactionAddress ta &&
+			ta.getProgressive() == progressive &&
+			Arrays.equals(ta.getBlockHash(), blockHash);
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(blockHash) ^ progressive;
 	}
 }
