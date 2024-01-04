@@ -53,56 +53,131 @@ public class List extends AbstractPublicRpcCommand {
 	private final static int MAX_PEER_LENGTH = 50;
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
-		try {
-			PeerInfo[] infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
+		var infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
 
-			if (json()) {
-				var encoder = new PeerInfos.Encoder();
-				System.out.println(check(EncodeException.class, () ->
-					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
-				));
+		if (json())
+			printAsJSON(infos);
+		else
+			new PrintAsText(infos);
+	}
+
+	private class PrintAsText {
+		private final PeerInfo[] infos;
+		private final int maxPeerLength;
+		private final int maxPointsLength;
+		private final int maxConnectionLength;
+		private final String[] uuids;
+		private final String[] versions;
+		private final int maxUUIDLength;
+		private final int maxVersionLength;
+
+		private PrintAsText(PeerInfo[] infos) {
+			this.infos = infos;
+			this.maxPeerLength = computeMaxPeerLength();
+			this.maxPointsLength = computeMaxPointsLength();
+			this.maxConnectionLength = computeMaxConnectionLength();
+			this.uuids = new String[infos.length];
+			this.versions = new String[infos.length];
+			fetchPeersData();
+			this.maxUUIDLength = computeMaxUUIDLength();
+			this.maxVersionLength = computeMaxVersionLength();
+			printTable();
+		}
+
+		private void printTable() {
+			boolean first = true;
+			for (int pos = 0; pos < infos.length; pos++) {
+				if (first)
+					if (verbose)
+						System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", "points", "status", "UUID", "version") + "|@"));
+					else
+						System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", "points", "status") + "|@"));
+
+				System.out.println(formatLine(pos));
+
+				first = false;
 			}
-			else if (infos.length > 0) {
-				int maxLength = Math.min(MAX_PEER_LENGTH, Stream.of(infos).mapToInt(info -> info.getPeer().toString().length()).max().getAsInt());
-				if (verbose)
-					System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", maxLength, "points", "status", "UUID", "version") + "|@"));
+		}
+
+		private void fetchPeersData() {
+			for (int pos = 0; pos < infos.length; pos++) {
+				if (verbose) {
+					try (var remote2 = RemotePublicNodes.of(infos[pos].getPeer().getURI(), 10000L)) {
+						var peerInfo = remote2.getInfo();
+						uuids[pos] = peerInfo.getUUID().toString();
+						versions[pos] = peerInfo.getVersion().toString();
+					}
+					catch (IOException | DeploymentException | TimeoutException | InterruptedException | ClosedNodeException e) {
+						LOGGER.log(Level.WARNING, "cannot contact " + infos[pos].getPeer(), e);
+						versions[pos] = "<unknown>";
+						uuids[pos] = "<unknown>";
+					}
+				}
 				else
-					System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", maxLength, "points", "status") + "|@"));
-
-				Stream.of(infos).parallel().map(info -> formatLine(info, maxLength)).forEachOrdered(System.out::println);
+					uuids[pos] = versions[pos] = "";
 			}
+		}
+
+		private String formatLine(int pos) {
+			var info = infos[pos];
+
+			if (verbose)
+				return formatLine(info.getPeer().toString(), String.valueOf(info.getPoints()), info.isConnected() ? "connected" : "disconnected", uuids[pos], versions[pos]);
+			else
+				return formatLine(info.getPeer().toString(), String.valueOf(info.getPoints()), info.isConnected() ? "connected" : "disconnected");
+		}
+
+		private String formatLine(String peerName, String points, String connected) {
+			return String.format("%s   %s  %s", center(peerName, maxPeerLength), center(points, maxPointsLength), center(connected, maxConnectionLength));
+		}
+
+		private String formatLine(String peerName, String points, String connected, String uuid, String version) {
+			return String.format("%s   %s  %s  %s  %s",
+				center(peerName, maxPeerLength),
+				center(points, maxPointsLength),
+				center(connected, maxConnectionLength),
+				center(uuid, maxUUIDLength),
+				center(version, maxVersionLength));
+		}
+
+		private int computeMaxPeerLength() {
+			int maxPeerLength = Stream.concat(Stream.of("URI"), Stream.of(infos).map(PeerInfo::getPeer))
+					.map(Object::toString)
+					.mapToInt(String::length).max().getAsInt();
+		
+			return Math.min(maxPeerLength, MAX_PEER_LENGTH);
+		}
+
+		private int computeMaxPointsLength() {
+			return Stream.concat(Stream.of("points"), Stream.of(infos).map(PeerInfo::getPoints).map(String::valueOf))
+					.mapToInt(String::length).max().getAsInt();
+		}
+
+		private int computeMaxConnectionLength() {
+			return Stream.concat(Stream.of("status"), Stream.of(infos).map(info -> info.isConnected() ? "connected" : "disconnected"))
+					.mapToInt(String::length).max().getAsInt();
+		}
+
+		private int computeMaxUUIDLength() {
+			return Stream.concat(Stream.of("UUID"), Stream.of(uuids))
+					.mapToInt(String::length).max().getAsInt();
+		}
+
+		private int computeMaxVersionLength() {
+			return Stream.concat(Stream.of("version"), Stream.of(versions))
+					.mapToInt(String::length).max().getAsInt();
+		}
+	}
+
+	private void printAsJSON(PeerInfo[] infos) throws CommandException {
+		var encoder = new PeerInfos.Encoder();
+
+		try {
+			System.out.println(check(EncodeException.class, () -> Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))));
 		}
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode the peers of the node at " + publicUri() + " in JSON format!", e);
 		}
-	}
-
-	private String formatLine(PeerInfo info, int maxLength) {
-		if (verbose) {
-			String version = "<unknown>";
-			String uuid = "<unknown>";
-
-			try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000L)) {
-				var peerInfo = remote.getInfo();
-				version = peerInfo.getVersion().toString();
-				uuid = peerInfo.getUUID().toString();
-			}
-			catch (IOException | DeploymentException | TimeoutException | InterruptedException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, "cannot contact " + info.getPeer(), e);
-			}
-
-			return formatLine(info.getPeer().toString(), maxLength, String.valueOf(info.getPoints()), info.isConnected() ? "connected" : "disconnected", uuid, version);
-		}
-		else
-			return formatLine(info.getPeer().toString(), maxLength, String.valueOf(info.getPoints()), info.isConnected() ? "connected" : "disconnected");
-	}
-
-	private String formatLine(String peer, int peerNameSize, String points, String connected) {
-		return String.format("%-" + peerNameSize + "s   %6s  %-12s", peer, points, connected);
-	}
-
-	private String formatLine(String peer, int peerNameSize, String points, String connected, String uuid, String version) {
-		return String.format("%-" + peerNameSize + "s   %6s  %-12s  %-36s  %s", peer, points, connected, uuid, version);
 	}
 
 	@Override

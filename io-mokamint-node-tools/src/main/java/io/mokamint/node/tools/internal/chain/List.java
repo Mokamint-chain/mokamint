@@ -30,12 +30,14 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
+import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "ls", description = "List the blocks in the chain of a node.")
 public class List extends AbstractPublicRpcCommand {
@@ -130,6 +132,8 @@ public class List extends AbstractPublicRpcCommand {
 	private void list(ChainPortion chain, long height, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		var hashes = chain.getHashes().toArray(byte[][]::new);
 
+		boolean first = true;
+		int lastPublicKeyOfMinerLength = 0;
 		for (int counter = hashes.length - 1; counter >= 0; counter--, height--) {
 			String hash = Hex.toHexString(hashes[counter]);
 
@@ -140,13 +144,49 @@ public class List extends AbstractPublicRpcCommand {
 				System.out.print("\"" + hash + "\"");
 			}
 			else {
+				String creationTime, publicKeyOfSigner, publicKeyOfMiner;
+
 				var maybeBlockDescription = remote.getBlockDescription(hashes[counter]);
-				String creationTime = maybeBlockDescription.map(BlockDescription::getTotalWaitingTime)
-					.map(total -> startDateTimeUTC.get().plus(total, ChronoUnit.MILLIS).format(FORMATTER))
-					.orElse("unknown");
-				System.out.println(String.format("%" + slotsForHeight + "d: %s [%s]", height, hash, creationTime));
+				if (maybeBlockDescription.isEmpty()) {
+					publicKeyOfSigner = "unknown";
+
+					if (height == 0L) {
+						creationTime = startDateTimeUTC.get().format(FORMATTER);
+						publicKeyOfMiner = "---";
+					}
+					else {
+						creationTime = "unknown";
+						publicKeyOfMiner = "unknown";
+					}
+				}
+				else {
+					var description = maybeBlockDescription.get();
+					creationTime = startDateTimeUTC.get().plus(description.getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
+					publicKeyOfSigner = description.getPublicKeyForSigningBlockBase58();
+					publicKeyOfMiner = description instanceof NonGenesisBlockDescription ngbd ?
+						ngbd.getDeadline().getProlog().getPublicKeyForSigningDeadlinesBase58() : center("---", lastPublicKeyOfMinerLength);
+				}
+
+				if (first) {
+					var config = remote.getConfig();
+
+					// we add a header
+					System.out.println(Ansi.AUTO.string("@|green " + format(slotsForHeight, "",
+						center("block hash (" + config.getHashingForBlocks() + ")", hash.length()),
+						center("created (UTC)", creationTime.length()),
+						center("peer public key (" + config.getSignatureForBlocks() + " base58)", publicKeyOfSigner.length()),
+						center("miner public key (" + config.getSignatureForDeadlines() + " base58)", publicKeyOfMiner.length())) + "|@"));
+				}
+
+				System.out.println(format(slotsForHeight, String.valueOf(height) + ":", hash, creationTime, publicKeyOfSigner, publicKeyOfMiner));
+				lastPublicKeyOfMinerLength = publicKeyOfMiner.length();
+				first = false;
 			}
 		}
+	}
+
+	private static String format(int slotsForHeight, String height, String hash, String creationTime, String publicKeyOfSigner, String publicKeyOfMiner) {
+		return String.format("%" + (slotsForHeight + 1) + "s %s  %s  %s  %s", height, hash, creationTime, publicKeyOfSigner, publicKeyOfMiner);
 	}
 
 	@Override

@@ -45,6 +45,24 @@ public abstract class AbstractCommandImpl implements Callable<Void> {
 	}
 
 	/**
+	 * Centers the given string on the given number of columns.
+	 * 
+	 * @param s the string to center
+	 * @param size the number of columns
+	 * @return the centered string {@code s}, with spaces before and after if needed
+	 */
+	protected static String center(String s, int size) {
+		if (size <= s.length())
+			return s;
+
+		int spaceSize = size - s.length();
+		int prefixSize = spaceSize / 2;
+		int suffixSize = (spaceSize + 1) / 2;
+
+		return " ".repeat(prefixSize) + s + " ".repeat(suffixSize);
+	}
+
+	/**
 	 * Executes the command.
 	 * 
 	 * @throws CommandException if something erroneous must be logged and the user must be informed
