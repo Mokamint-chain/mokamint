@@ -51,7 +51,7 @@ import io.mokamint.nonce.api.IllegalDeadlineException;
  * Once expired, it builds the block and signals a new block discovery to the node.
  * This task assumes that the blockchain is not empty.
  */
-public class MineNewBlockTask {
+public class BlockMiner {
 
 	/**
 	 * The node performing the mining.
@@ -75,7 +75,7 @@ public class MineNewBlockTask {
 
 	private final PriorityBlockingQueue<TransactionEntry> mempool = new PriorityBlockingQueue<>(100, Comparator.reverseOrder());
 
-	private final static Logger LOGGER = Logger.getLogger(MineNewBlockTask.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(BlockMiner.class.getName());
 
 	/**
 	 * The block over which mining is performed.
@@ -140,7 +140,7 @@ public class MineNewBlockTask {
 	 * @throws NoSuchAlgorithmException
 	 * @throws {@link RejectedExecutionException} if the node is shutting down 
 	 */
-	public MineNewBlockTask(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, RejectedExecutionException {
+	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, RejectedExecutionException {
 		this.node = node;
 		this.previous = previous;
 		this.blockchain = node.getBlockchain();
