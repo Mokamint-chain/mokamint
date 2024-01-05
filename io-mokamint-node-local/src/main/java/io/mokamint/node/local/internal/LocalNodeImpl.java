@@ -247,7 +247,7 @@ public class LocalNodeImpl implements LocalNode {
 			execute(this::processWhisperedTransactions, "transactions whispering process");
 			schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
 			schedulePeriodicWhisperingOfAllServices();
-			execute(this.miningTask = new MiningTask(this), "new block mining process");
+			execute(this.miningTask = new MiningTask(this), "blocks mining process");
 		}
 		catch (ClosedNodeException e) {
 			throw unexpectedException(e);
@@ -521,15 +521,7 @@ public class LocalNodeImpl implements LocalNode {
 	@Override
 	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			var count = miners.get().count();
-			Optional<MinerInfo> result = miners.add(miner);
-			result.ifPresent(__ -> {
-				// if there were no miners before this call, we require to mine
-				if (count == 0L)
-					scheduleMining();
-			});
-	
-			return result;
+			return miners.add(miner);
 		}
 	}
 
@@ -708,11 +700,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Schedules the mining of a next block on top of the current head.
-	 */
-	protected void scheduleMining() {}
-
-	/**
 	 * Schedules the advertisement to its peers of the services published by this node.
 	 */
 	protected void scheduleWhisperingOfAllServices() {
@@ -809,6 +796,8 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	protected void onAdded(Miner miner) {
 		LOGGER.info("added miner " + miner.getUUID() + " (" + miner + ")");
+		if (miningTask != null)
+			miningTask.onMinerAdded();
 	}
 
 	/**
@@ -866,8 +855,8 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	protected void onSynchronizationCompleted() {
 		isSynchronizing.set(false);
-		// after synchronization, we let the blockchain start to mine its blocks
-		scheduleMining();
+		if (miningTask != null)
+			miningTask.onSynchronizationCompleted();
 	}
 
 	/**
@@ -875,7 +864,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param block the added block
 	 */
-	protected void onAdded(Block block) {}
+	protected void onAdded(Block block) {
+		if (miningTask != null)
+			miningTask.onBlockAdded();
+	}
 
 	/**
 	 * Called when the head of the blockchain has been updated.

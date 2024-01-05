@@ -452,7 +452,6 @@ public class Blockchain implements AutoCloseable {
 			// the block over which mining occurs, so it will be aligned there
 			node.rebaseMempoolAt(newHead);
 			node.onHeadChanged(newHead);
-			node.scheduleMining();
 		}
 		else if (addedToOrphans && headIsLessPowerfulThan(block))
 			// the block was better than our current head, but its previous block is missing:

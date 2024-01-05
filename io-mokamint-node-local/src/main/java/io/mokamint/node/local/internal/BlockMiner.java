@@ -45,11 +45,8 @@ import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
- * A task that mines a new block, above a previous block.
- * It requests a deadline to the miners of the node
- * and waits for the best deadline to expire.
- * Once expired, it builds the block and signals a new block discovery to the node.
- * This task assumes that the blockchain is not empty.
+ * A block miner above a previous block. It requests a deadline to the miners of the node
+ * and waits for the best deadline to expire. Once expired, it builds the block and add it into blockchain.
  */
 public class BlockMiner {
 
@@ -73,9 +70,10 @@ public class BlockMiner {
 	 */
 	private final Miners miners;
 
+	/**
+	 * The mempool used to fill the block with transactions.
+	 */
 	private final PriorityBlockingQueue<TransactionEntry> mempool = new PriorityBlockingQueue<>(100, Comparator.reverseOrder());
-
-	private final static Logger LOGGER = Logger.getLogger(BlockMiner.class.getName());
 
 	/**
 	 * The block over which mining is performed.
@@ -121,8 +119,7 @@ public class BlockMiner {
 	private final TransactionsExecutionTask transactionExecutor;
 
 	/**
-	 * Set to true when the task has completed, also in the case when
-	 * it could not find any deadline.
+	 * Set to true when the task has completed, also in the case when it could not find any deadline.
 	 */
 	private volatile boolean done;
 
@@ -131,16 +128,18 @@ public class BlockMiner {
 	 */
 	private boolean committed;
 
+	private final static Logger LOGGER = Logger.getLogger(BlockMiner.class.getName());
+
 	/**
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node performing the mining
-	 * @throws ClosedDatabaseException 
-	 * @throws {@link DatabaseException}
-	 * @throws NoSuchAlgorithmException
+	 * @param previous the block over which mining must be performed
+	 * @throws {@link DatabaseException} if the database of the node is corrupted
+	 * @throws {@link ClosedDatabaseException} if the database of the node is already closed
 	 * @throws {@link RejectedExecutionException} if the node is shutting down 
 	 */
-	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, RejectedExecutionException {
+	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, RejectedExecutionException  {
 		this.node = node;
 		this.previous = previous;
 		this.blockchain = node.getBlockchain();
@@ -152,7 +151,17 @@ public class BlockMiner {
 		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
 	}
 
-	public void run() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException {
+	/**
+	 * Looks for a subsequent block on top of the previous block provided at construction time.
+	 * 
+	 * @throws {@link InterruptedException} if the thread running this code gets interrupted
+	 * @throws {@link ClosedDatabaseException} if the database of the node is already closed
+	 * @throws {@link DatabaseException} if the database of the node is corrupted
+	 * @throws {@link NoSuchAlgorithmException} if the blockchain contains a block referring to an unknown cryptographic algorithm 
+	 * @throws {@link SignatureException} if the block could not be signed with the key of the node
+	 * @throws {@link InvalidKeyException} if the key of the node for signing the block is invalid
+	 */
+	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 		Future<?> transactionExecutionFuture = node.scheduleTransactionExecutor(transactionExecutor);
 
 		try {
@@ -179,9 +188,9 @@ public class BlockMiner {
 	 * Adds the given transaction entry to the mempool of the mining task.
 	 * 
 	 * @param entry the entry to add
-	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
-	 * @throws ClosedDatabaseException if the database is closed
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws {@link NoSuchAlgorithmException} if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws {@link ClosedDatabaseException} if the database is closed
+	 * @throws {@link DatabaseException} if the database is corrupted
 	 */
 	public void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
 		if (blockchain.getTransactionAddress(previous, entry.getHash()).isEmpty())
@@ -215,9 +224,9 @@ public class BlockMiner {
 	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutor}.
 	 * 
 	 * @return the block
-	 * @throws SignatureException if the block could not be signed
-	 * @throws InvalidKeyException if the private key of the node is invalid
-	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws {@link SignatureException} if the block could not be signed
+	 * @throws {@link InvalidKeyException} if the private key of the node is invalid
+	 * @throws {@link InterruptedException} if the current thread gets interrupted
 	 */
 	private Block createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException {
 		stopIfInterrupted();
