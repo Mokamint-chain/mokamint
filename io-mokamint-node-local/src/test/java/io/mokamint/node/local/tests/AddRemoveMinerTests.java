@@ -53,7 +53,6 @@ import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -168,10 +167,6 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 			// without any miner, eventually node1 will realize that it cannot mine
 			assertTrue(node1CannotMine.tryAcquire(1, 20, TimeUnit.SECONDS));
-
-			// we check that node1 and node2 are not mining at this stage
-			assertTrue(node1.getTaskInfos().map(TaskInfo::getDescription).noneMatch(description -> description.contains("mining")));
-			assertTrue(node2.getTaskInfos().map(TaskInfo::getDescription).noneMatch(description -> description.contains("mining")));
 
 			// we connect node1 and node2 with each other
 			assertTrue(node1.add(peer2).isPresent());
