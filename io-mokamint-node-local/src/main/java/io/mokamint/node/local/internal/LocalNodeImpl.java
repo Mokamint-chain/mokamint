@@ -193,6 +193,8 @@ public class LocalNodeImpl implements LocalNode {
 	 */
 	private final ConcurrentMap<Block, OnAddedTransactionHandler> blocksOverWhichMiningIsInProgress = new ConcurrentHashMap<>();
 
+	private volatile MineNewBlockTask2 mineNewBlockTask;
+
 	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
 
 	/**
@@ -209,6 +211,13 @@ public class LocalNodeImpl implements LocalNode {
 	 * The queue of the whispered transactions to process.
 	 */
 	private final BlockingQueue<WhisperedInfo> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
+
+	/**
+	 * True if and only if this {@link #close()} has been called.
+	 */
+	private volatile boolean isClosing;
+
+	private final Thread miningThread;
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -251,6 +260,8 @@ public class LocalNodeImpl implements LocalNode {
 			execute(this::processWhisperedTransactions, "transactions whispering process");
 			schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
 			schedulePeriodicWhisperingOfAllServices();
+			this.miningThread = new Thread(this::processMining);
+			miningThread.start();
 		}
 		catch (ClosedNodeException e) {
 			throw unexpectedException(e);
@@ -409,7 +420,10 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
+		isClosing = true;
+
 		if (closureLock.stopNewCalls()) {
+			miningThread.interrupt();
 			executors.shutdownNow();
 			periodicExecutors.shutdownNow();
 
@@ -499,6 +513,10 @@ public class LocalNodeImpl implements LocalNode {
 			// we send the transaction to all currently running mining tasks as well
 			for (var handler: blocksOverWhichMiningIsInProgress.values())
 				handler.add(entry);
+
+			var mineNewBlockTask = this.mineNewBlockTask;
+			if (mineNewBlockTask != null)
+				mineNewBlockTask.add(entry);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
@@ -625,7 +643,7 @@ public class LocalNodeImpl implements LocalNode {
 		 * @param entry the transaction entry
 		 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown cryptographic algorithm
 		 * @throws ClosedDatabaseException if the database is already closed
-		 * @throws DatabaseException if the databased is corrupted
+		 * @throws DatabaseException if the database is corrupted
 		 */
 		void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException;
 	}
@@ -739,7 +757,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * Schedules the mining of a next block on top of the current head.
 	 */
 	protected void scheduleMining() {
-		final int MAX = 1; // TODO
+		/*final int MAX = 1; // TODO
 		// we avoid to mine during synchronization
 		if (!isSynchronizing.get()) {
 			synchronized (lastMiningTasks) {
@@ -748,7 +766,7 @@ public class LocalNodeImpl implements LocalNode {
 
 				lastMiningTasks.add(submit(new MineNewBlockTask(this), "mining of next block"));
 			}
-		}
+		}*/
 	}
 
 	/**
@@ -932,7 +950,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param newHead the new head
 	 */
-	protected void onHeadChanged(Block newHead) {}
+	protected void onHeadChanged(Block newHead) {
+		if (miningThread != null)
+			miningThread.interrupt(); // this will interrupt the current mining activity and move to mining on top of the new head
+	}
 
 	/**
 	 * Called when the node mines a new block.
@@ -1182,7 +1203,54 @@ public class LocalNodeImpl implements LocalNode {
 			Thread.currentThread().interrupt();
 		}
 	}
-	
+
+	private void processMining() {
+		LOGGER.info("mining2: starting");
+
+		while (!isClosing) {
+			try {
+				Optional<Block> maybeHead = blockchain.getHead();
+
+				if (maybeHead.isEmpty()) {
+					LOGGER.warning("mining2: cannot mine on an empty blockchain, will retry later");
+					Thread.sleep(2000);
+				}
+				else if (miners.get().count() == 0L) {
+					LOGGER.warning("mining2: cannot mine with no miners attached, will retry later");
+					onNoMinersAvailable();
+					Thread.sleep(2000);
+				}
+				else if (isSynchronizing.get()) {
+					LOGGER.warning("mining2: delaying mining since synchronization is in progress, will retry later");
+					Thread.sleep(2000);
+				}
+				else {
+					var head = maybeHead.get();
+					LOGGER.info("mining2: starting mining from " + head.getHexHash(config.getHashingForBlocks()));
+					this.mineNewBlockTask = new MineNewBlockTask2(this, head);
+					mineNewBlockTask.run();
+				}
+			}
+			catch (InterruptedException e) {
+				LOGGER.info("mining2: restarting mining since the blockchain's head changed");
+			}
+			catch (ClosedDatabaseException e) {
+				LOGGER.warning("mining2: exiting since the database has been closed");
+				break;
+			}
+			catch (RejectedExecutionException e) {
+				LOGGER.warning("mining2: exiting since the node is being shut down");
+				break;
+			}
+			catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException e) {
+				LOGGER.log(Level.SEVERE, "mining2: exiting because of exception", e);
+				break;
+			}
+		}
+
+		LOGGER.info("mining2: exiting");
+	}
+
 	private void whisperAllServices() {
 		// we check how the external world sees our services as peers
 		boundWhisperers.stream()
