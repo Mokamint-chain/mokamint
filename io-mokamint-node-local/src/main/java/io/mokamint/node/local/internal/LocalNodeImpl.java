@@ -21,14 +21,12 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -187,13 +185,9 @@ public class LocalNodeImpl implements LocalNode {
 	private final AtomicBoolean isSynchronizing = new AtomicBoolean(false);
 
 	/**
-	 * The set of blocks over which mining is currently in progress, mapped
-	 * to the handler that can be used to hand over new transactions to the
-	 * corresponding mining task.
+	 * The task that is mining.
 	 */
-	private final ConcurrentMap<Block, OnAddedTransactionHandler> blocksOverWhichMiningIsInProgress = new ConcurrentHashMap<>();
-
-	private volatile MineNewBlockTask2 mineNewBlockTask;
+	private volatile MineNewBlockTask mineNewBlockTask;
 
 	private final Predicate<Whisperer> isThis = Predicate.isEqual(this);
 
@@ -510,10 +504,6 @@ public class LocalNodeImpl implements LocalNode {
 			result = mempool.add(transaction);
 			var entry = new TransactionEntry(transaction, result.getPriority(), result.getHash());
 
-			// we send the transaction to all currently running mining tasks as well
-			for (var handler: blocksOverWhichMiningIsInProgress.values())
-				handler.add(entry);
-
 			var mineNewBlockTask = this.mineNewBlockTask;
 			if (mineNewBlockTask != null)
 				mineNewBlockTask.add(entry);
@@ -694,19 +684,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
-	 * Tries to become the only task allowed to mine over the given block.
-	 * 
-	 * @param previous the block over which mining is required
-	 * @param handler the handler to call if new transactions arrive during mining, so that
-	 *                these transactions can be handed over to the mining task
-	 * @return true if and only if nobody else was mining over that block, and therefore the caller
-	 *         is allowed to start mining; otherwise, mining over {@code previous} is not allowed
-	 */
-	protected boolean lockMiningOver(Block previous, OnAddedTransactionHandler handler) {
-		return blocksOverWhichMiningIsInProgress.putIfAbsent(previous, handler) == null;
-	}
-
-	/**
 	 * Rebases the mempool of this node so that it is relative to the given {@code block}.
 	 * This means that a common ancestor is found, between the current mempool base and {@code block}.
 	 * All transactions from the current mempool base to the ancestor are added to the mempool
@@ -751,32 +728,15 @@ public class LocalNodeImpl implements LocalNode {
 			execute(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
 	}
 
-	private final LinkedList<Future<?>> lastMiningTasks = new LinkedList<>();
-
 	/**
 	 * Schedules the mining of a next block on top of the current head.
 	 */
-	protected void scheduleMining() {
-		/*final int MAX = 1; // TODO
-		// we avoid to mine during synchronization
-		if (!isSynchronizing.get()) {
-			synchronized (lastMiningTasks) {
-				if (lastMiningTasks.size() >= MAX)
-					lastMiningTasks.remove().cancel(true);
-
-				lastMiningTasks.add(submit(new MineNewBlockTask(this), "mining of next block"));
-			}
-		}*/
-	}
+	protected void scheduleMining() {}
 
 	/**
 	 * Schedules the mining of a next block on top of the current head, after a delay.
 	 */
-	protected void scheduleDelayedMining() {
-		// we avoid to mine during synchronization
-		if (!isSynchronizing.get())
-			execute(new DelayedMineNewBlockTask(this), "mining in " + config.getDeadlineWaitTimeout() + " ms");
-	}
+	protected void scheduleDelayedMining() {}
 
 	/**
 	 * Schedules the advertisement to its peers of the services published by this node.
@@ -925,9 +885,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param previous the block over which mining has been completed
 	 */
-	protected void onMiningCompleted(Block previous) {
-		blocksOverWhichMiningIsInProgress.remove(previous);
-	}
+	protected void onMiningCompleted(Block previous) {}
 
 	/**
 	 * Called when a synchronization from the peers has been completed.
@@ -1227,7 +1185,7 @@ public class LocalNodeImpl implements LocalNode {
 				else {
 					var head = maybeHead.get();
 					LOGGER.info("mining2: starting mining from " + head.getHexHash(config.getHashingForBlocks()));
-					this.mineNewBlockTask = new MineNewBlockTask2(this, head);
+					this.mineNewBlockTask = new MineNewBlockTask(this, head);
 					mineNewBlockTask.run();
 				}
 			}
@@ -1244,6 +1202,10 @@ public class LocalNodeImpl implements LocalNode {
 			}
 			catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException e) {
 				LOGGER.log(Level.SEVERE, "mining2: exiting because of exception", e);
+				break;
+			}
+			catch (RuntimeException e) {
+				LOGGER.log(Level.SEVERE, "mining2: exiting because of unexpected exception", e);
 				break;
 			}
 		}
