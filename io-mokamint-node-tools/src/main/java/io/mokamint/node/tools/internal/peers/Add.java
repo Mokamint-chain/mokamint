@@ -49,7 +49,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 		private final RemoteRestrictedNode remote;
 		private final List<String> successes = new ArrayList<>();
 
-		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException {
+		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
 			this.remote = remote;
 
 			Optional<Exception> exception = Stream.of(uris)

@@ -89,6 +89,11 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String GET_MEMPOOL_PORTION_ENDPOINT = "/get_mempool_portion";
 
 	/**
+	 * The network endpoint path where {@link PublicNode#getTransactionRepresentation(byte[])} is published.
+	 */
+	String GET_TRANSACTION_REPRESENTATION_ENDPOINT = "/get_transaction_representation";
+
+	/**
 	 * The network endpoint path used to whisper a peer between a public node service
 	 * and its connected remotes.
 	 */

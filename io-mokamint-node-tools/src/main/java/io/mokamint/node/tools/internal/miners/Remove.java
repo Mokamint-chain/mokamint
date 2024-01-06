@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -55,7 +56,12 @@ public class Remove extends AbstractRestrictedRpcCommand {
 				System.out.println(successes.stream().collect(Collectors.joining(", ", "[", "]")));
 
 			if (exception.isPresent())
-				throwAsRpcCommandException(exception.get());
+				try {
+					throwAsRpcCommandException(exception.get());
+				}
+				catch (DatabaseException e) {
+					throw new RuntimeException("Unexpected exception", e);
+				}
 		}
 
 		private Optional<Exception> closeMiner(UUID uuid) {

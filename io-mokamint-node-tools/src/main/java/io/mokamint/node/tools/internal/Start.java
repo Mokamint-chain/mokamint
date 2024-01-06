@@ -403,5 +403,10 @@ public class Start extends AbstractCommand {
 		@Override
 		public void abortBlock(int id) {
 		}
+
+		@Override
+		public String getRepresentation(Transaction transaction) {
+			return "[]";
+		}
 	}
 }

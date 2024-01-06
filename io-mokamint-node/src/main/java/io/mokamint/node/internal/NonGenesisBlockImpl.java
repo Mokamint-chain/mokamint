@@ -229,7 +229,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 
 		int n = 0;
 		Optional<HashingAlgorithm> hashing = config.map(ConsensusConfig::getHashingForTransactions);
-		Optional<Hasher<Transaction>> hasher = hashing.map(h -> h.getHasher(Transaction::getBytes));
+		Optional<Hasher<Transaction>> hasher = hashing.map(h -> h.getHasher(Transaction::toByteArray));
 
 		for (var transaction: transactions) {
 			builder.append("\n * #" + n++ + ": ");

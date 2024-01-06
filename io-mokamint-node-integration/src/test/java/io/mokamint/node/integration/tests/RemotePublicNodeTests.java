@@ -57,6 +57,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.MinerInfos;
@@ -65,7 +66,6 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
@@ -88,6 +88,7 @@ import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.api.AddTransactionMessage;
@@ -102,6 +103,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -1246,6 +1248,109 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			remote.bindWhisperer(whisperer);
 			service.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false, "block " + block.getHexHash(HashingAlgorithms.sha256()));
 			semaphore.acquire();
+		}
+	}
+
+	@Test
+	@DisplayName("getTransactionRepresentation() works if the transaction exists")
+	public void getTransactionRepresentationWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, ClosedNodeException {
+		var representation1 = "hello";
+		var hash = new byte[] { 67, 56, 43 };
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.of(representation1), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var representation2 = remote.getTransactionRepresentation(hash);
+			assertEquals(representation1, representation2.get());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransactionRepresentation() works if the transaction is missing")
+	public void getTransactionRepresentationWorksIfTransactionMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, RejectedTransactionException {
+		var hash = new byte[] { 67, 56, 43 };
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.empty(), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var representation = remote.getTransactionRepresentation(hash);
+			assertTrue(representation.isEmpty());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransactionRepresentation() works if it throws RejectedTransactionException")
+	public void getTransactionRepresentationWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "rejected";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(RejectedTransactionException.class, () -> remote.getTransactionRepresentation(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransactionRepresentation() works if it throws DatabaseException")
+	public void getTransactionRepresentationWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "corrupted database";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.getTransactionRepresentation(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 }

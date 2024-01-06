@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.tools.internal.mempool.Info;
-import io.mokamint.node.tools.internal.mempool.List;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.PublicNode;
 
-@Command(name = "mempool",
-	description = "Operate on the mempool of a node.",
-	subcommands = {
-		HelpCommand.class,
-		Info.class,
-		List.class
-	})
-public class Mempool {
+/**
+ * The network message corresponding to the {@link PublicNode#getTransactionRepresentation(byte[])} method.
+ */
+public interface GetTransactionRepresentationMessage extends RpcMessage {
+
+	/**
+	 * Yields the {@code hash} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
+	byte[] getHash();
+
+	@Override
+	boolean equals(Object obj);
 }

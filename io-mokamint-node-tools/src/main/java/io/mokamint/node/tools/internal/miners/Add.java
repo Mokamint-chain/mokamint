@@ -26,6 +26,7 @@ import java.util.stream.IntStream;
 
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
@@ -57,7 +58,12 @@ public class Add extends AbstractRestrictedRpcCommand {
 				System.out.println(successes.stream().collect(Collectors.joining(", ", "[", "]")));
 
 			if (exception.isPresent())
-				throwAsRpcCommandException(exception.get());
+				try {
+					throwAsRpcCommandException(exception.get());
+				}
+				catch (DatabaseException e) {
+					throw new RuntimeException("UnexpectedException", e);
+				}
 		}
 
 		private Optional<Exception> addMiner(int port) {

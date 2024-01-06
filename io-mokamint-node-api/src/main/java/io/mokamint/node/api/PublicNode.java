@@ -151,6 +151,23 @@ public interface PublicNode extends Node, Whisperer {
 	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException;
 
 	/**
+	 * Yields a string representation of a transaction already in blockchain, that can be used to print
+	 * or process its structure. This can be everything, possibly but not necessarily JSON.
+	 * 
+	 * @param hash the hash of the transaction
+	 * @return the representation of the transaction, if the latter exists in blockchain
+	 * @throws RejectedTransactionException if {@code transaction} has been rejected, for instance because it is invalid; this
+	 *                                      should never occur if the application guarantees that transactions that passed
+	 *                                      the {@code checkTransaction} test should have a valid representation
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException;
+
+	/**
 	 * Yields information about the transaction with the given hash, if it has been already
 	 * inserted inside a block of the current chain.
 	 * 

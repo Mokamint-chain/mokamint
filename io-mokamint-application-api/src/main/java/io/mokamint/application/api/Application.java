@@ -122,6 +122,19 @@ public interface Application {
 	long getPriority(Transaction transaction) throws RejectedTransactionException;
 
 	/**
+	 * Yields a string representation of the transaction, that can be used to print
+	 * or process its structure. This can be everything, possibly but not necessarily JSON.
+	 * It is expected (but not required) that if a transaction passes the
+	 * {@link #checkTransaction(Transaction)} test without throwing a {@link RejectedTransactionException},
+	 * then {@link #getRepresentation(Transaction)} will not throw that exception either.
+	 * 
+	 * @param transaction the transaction
+	 * @return the representation of {@code transaction}
+	 * @throws RejectedTransactionException if the representation of the transaction cannot be computed
+	 */
+	String getRepresentation(Transaction transaction) throws RejectedTransactionException;
+
+	/**
 	 * Yields the hash of the state of this application when it starts, before any transaction has been executed.
 	 * This will be the state hash at the end of the genesis block of the blockchain.
 	 * 

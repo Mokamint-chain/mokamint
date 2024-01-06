@@ -21,6 +21,8 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.util.Arrays;
 
+import com.google.gson.Gson;
+
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Entropies;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -44,6 +46,9 @@ public class Create extends AbstractCommand {
 			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
 	private SignatureAlgorithm signature;
 
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
 	@Override
 	protected void execute() throws CommandException {
 		String passwordAsString;
@@ -52,16 +57,26 @@ public class Create extends AbstractCommand {
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
 			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
-			System.out.println("A new key pair has been created.");
-			if (publicKeyBase58.length() > 100) {
-				publicKeyBase58 = publicKeyBase58.substring(0, 100);
-				System.out.println("Its public key Base58 is " + publicKeyBase58 + "...");
-			}
-			else
-				System.out.println("Its public key Base58 is " + publicKeyBase58 + ".");
 
-			var fileName = entropy.dump(name);
-			System.out.println("The key pair has been saved as \"" + fileName + "\".");
+			if (json) {
+				var answer = new Answer();
+				answer.publicKeyBase58 = publicKeyBase58;
+
+				var gson = new Gson();
+				System.out.println(gson.toJsonTree(answer));
+			}
+			else {
+				System.out.println("A new key pair has been created.");
+				if (publicKeyBase58.length() > 100) {
+					publicKeyBase58 = publicKeyBase58.substring(0, 100);
+					System.out.println("Its public key Base58 is " + publicKeyBase58 + "...");
+				}
+				else
+					System.out.println("Its public key Base58 is " + publicKeyBase58 + ".");
+
+				var fileName = entropy.dump(name);
+				System.out.println("The key pair has been saved as \"" + fileName + "\".");
+			}
 		}
 		catch (IOException e) {
 			throw new CommandException("The key pair could not be dumped into a file!", e);
@@ -73,5 +88,10 @@ public class Create extends AbstractCommand {
 			passwordAsString = null;
 			Arrays.fill(password, ' ');
 		}
+	}
+
+	private static class Answer {
+		@SuppressWarnings("unused")
+		private String publicKeyBase58;
 	}
 }

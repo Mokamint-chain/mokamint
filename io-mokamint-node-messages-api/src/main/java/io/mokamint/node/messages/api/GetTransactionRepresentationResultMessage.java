@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.tools.internal.mempool.Info;
-import io.mokamint.node.tools.internal.mempool.List;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import java.util.Optional;
 
-@Command(name = "mempool",
-	description = "Operate on the mempool of a node.",
-	subcommands = {
-		HelpCommand.class,
-		Info.class,
-		List.class
-	})
-public class Mempool {
+import io.mokamint.node.api.PublicNode;
+
+/**
+ * The network message corresponding to the result of the {@link PublicNode#getTransactionRepresentation(byte[])} method.
+ */
+public interface GetTransactionRepresentationResultMessage extends ResultMessage<Optional<String>> {
 }

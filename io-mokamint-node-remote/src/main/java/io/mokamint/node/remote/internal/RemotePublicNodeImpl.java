@@ -28,6 +28,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_MEMPOOL_PORTION
 import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_TRANSACTION_REPRESENTATION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_PEER_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_TRANSACTION_ENDPOINT;
@@ -61,6 +62,7 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
@@ -70,7 +72,6 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeer;
@@ -101,6 +102,8 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionRepresentationMessages;
+import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
@@ -118,6 +121,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
+import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
@@ -203,9 +207,10 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
 		addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
-		addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
+		addSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT, uri, GetTransactionRepresentationEndpoint::new);
 		addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
 		addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
+		addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
 		addSession(WHISPER_PEER_ENDPOINT, uri, WhisperPeerEndpoint::new);
 		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
 		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
@@ -329,6 +334,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetMempoolInfoResult(gmirm.get());
 		else if (message instanceof GetMempoolPortionResultMessage gmprm)
 			onGetMempoolPortionResult(gmprm.get());
+		else if (message instanceof GetTransactionRepresentationResultMessage gtrrm)
+			onGetTransactionRepresentationResult(gtrrm.get());
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
@@ -723,6 +730,41 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		return message instanceof GetMempoolPortionResultMessage gcrm ? gcrm.get() : null;
 	}
 
+	@Override
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendGetTransactionRepresentation(hash, id);
+		try {
+			return queues.waitForResult(id, this::processGetTransactionRepresentationSuccess, this::processGetTransactionRepresentationException);
+		}
+		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendGetTransactionRepresentation(byte[] hash, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT), GetTransactionRepresentationMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private Optional<String> processGetTransactionRepresentationSuccess(RpcMessage message) {
+		return message instanceof GetTransactionRepresentationResultMessage gtrrm ? gtrrm.get() : null;
+	}
+
+	private boolean processGetTransactionRepresentationException(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return RejectedTransactionException.class.isAssignableFrom(clazz) || NoSuchAlgorithmException.class.isAssignableFrom(clazz) || DatabaseException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
 	/**
 	 * Hooks that can be overridden in subclasses.
 	 */
@@ -734,10 +776,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetConfigResult(ConsensusConfig<?,?> config) {}
 	protected void onGetChainInfoResult(ChainInfo info) {}
 	protected void onGetChainPortionResult(ChainPortion chain) {}
-	protected void onAddTransactionResult(MempoolEntry info) {}
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onGetMempoolInfoResult(MempoolInfo info) {}
 	protected void onGetMempoolPortionResult(MempoolPortion chain) {}
+	protected void onGetTransactionRepresentationResult(Optional<String> representation) {}
+	protected void onAddTransactionResult(MempoolEntry info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhispered(Peer peer) {}
 	protected void onWhispered(Block block) {}
@@ -815,11 +858,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	private class AddTransactionEndpoint extends Endpoint {
+	private class GetTransactionRepresentationEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, AddTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddTransactionMessages.Encoder.class);
+			return deployAt(uri, GetTransactionRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTransactionRepresentationMessages.Encoder.class);
 		}
 	}
 
@@ -836,6 +879,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
+		}
+	}
+
+	private class AddTransactionEndpoint extends Endpoint {
+	
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, AddTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddTransactionMessages.Encoder.class);
 		}
 	}
 

@@ -748,4 +748,102 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
+
+	@Test
+	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
+	public void serviceGetTransactionRepresentationEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, RejectedTransactionException {
+		var semaphore = new Semaphore(0);
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 240000L, 1000);
+			}
+	
+			@Override
+			protected void onGetTransactionRepresentationResult(Optional<String> received) {
+				if (received.isEmpty())
+					semaphore.release();
+			}
+	
+			private void sendGetTransactionRepresentation(byte[] hash) throws ClosedNodeException {
+				sendGetTransactionRepresentation(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.empty());
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetTransactionRepresentation(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, it sends back the representation of that transaction")
+	public void serviceGetTransactionRepresentationNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, RejectedTransactionException, DatabaseException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var representation = "hello";
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 240000L, 1000);
+			}
+	
+			@Override
+			protected void onGetTransactionRepresentationResult(Optional<String> received) {
+				if (representation.equals(received.get()))
+					semaphore.release();
+			}
+	
+			private void sendGetTransactionRepresentation(byte[] hash) throws ClosedNodeException {
+				sendGetTransactionRepresentation(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.of(representation));
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetTransactionRepresentation(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, but its representation cannot be computed, it sends back an exception")
+	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, RejectedTransactionException {
+		var semaphore = new Semaphore(0);
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 240000L, 1000);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()))
+					semaphore.release();
+			}
+
+			private void sendGetTransactionRepresentation(byte[] hash) throws ClosedNodeException {
+				sendGetTransactionRepresentation(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getTransactionRepresentation(hash)).thenThrow(RejectedTransactionException.class);
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetTransactionRepresentation(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+			Thread.sleep(2000);
+		}
+	}
 }

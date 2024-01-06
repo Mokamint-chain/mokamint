@@ -128,15 +128,18 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 * @throws ClosedNodeException if {@code e} belongs to that class
 	 * @throws TimeoutException if {@code e} belongs to that class
 	 * @throws InterruptedException if {@code e} belongs to that class
+	 * @throws DatabaseException if {@code e} belongs to that class
 	 * @throws CommandException if {@code e} belongs to that class
 	 */
-	protected static void throwAsRpcCommandException(Exception e) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException {
+	protected static void throwAsRpcCommandException(Exception e) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
 		if (e instanceof ClosedNodeException cne)
 			throw cne;
 		else if (e instanceof TimeoutException te)
 			throw te;
 		else if (e instanceof InterruptedException ie)
 			throw ie;
+		else if (e instanceof DatabaseException de)
+			throw de;
 		else if (e instanceof CommandException ce)
 			throw ce;
 		else if (e instanceof RuntimeException re)

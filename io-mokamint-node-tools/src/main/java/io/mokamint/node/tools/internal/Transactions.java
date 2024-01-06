@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal;
 
-import io.mokamint.node.tools.internal.mempool.Info;
-import io.mokamint.node.tools.internal.mempool.List;
+import io.mokamint.node.tools.internal.transactions.Add;
+import io.mokamint.node.tools.internal.transactions.Show;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
-@Command(name = "mempool",
-	description = "Operate on the mempool of a node.",
+@Command(name = "transactions",
+	description = "Operate on the transactions of a node.",
 	subcommands = {
 		HelpCommand.class,
-		Info.class,
-		List.class
+		Add.class,
+		Show.class
 	})
-public class Mempool {
+public class Transactions {
 }
