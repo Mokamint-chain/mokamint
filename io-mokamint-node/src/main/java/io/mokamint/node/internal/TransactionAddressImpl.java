@@ -19,6 +19,7 @@ package io.mokamint.node.internal;
 import java.util.Arrays;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.TransactionAddress;
 
 /**
@@ -47,6 +48,9 @@ public class TransactionAddressImpl implements TransactionAddress {
 	 *                    transactions inside the block
 	 */
 	public TransactionAddressImpl(byte[] blockHash, int progressive) {
+		if (progressive < 0)
+			throw new IllegalArgumentException("progressive cannot be negative");
+
 		this.blockHash = blockHash.clone();
 		this.progressive = progressive;
 	}
@@ -71,5 +75,10 @@ public class TransactionAddressImpl implements TransactionAddress {
 	@Override
 	public int hashCode() {
 		return Arrays.hashCode(blockHash) ^ progressive;
+	}
+
+	@Override
+	public String toString() {
+		return "#" + progressive + "@" + Hex.toHexString(blockHash);
 	}
 }

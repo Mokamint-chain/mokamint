@@ -94,6 +94,11 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String GET_TRANSACTION_REPRESENTATION_ENDPOINT = "/get_transaction_representation";
 
 	/**
+	 * The network endpoint path where {@link PublicNode#getTransactionAddress(byte[])} is published.
+	 */
+	String GET_TRANSACTION_ADDRESS_ENDPOINT = "/get_transaction_address";
+
+	/**
 	 * The network endpoint path where {@link PublicNode#add(io.mokamint.node.api.Transaction)} is published.
 	 */
 	String ADD_TRANSACTION_ENDPOINT = "/add_transaction";

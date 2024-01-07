@@ -14,21 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.internal.gson;
 
-import io.mokamint.node.tools.internal.transactions.Add;
-import io.mokamint.node.tools.internal.transactions.Find;
-import io.mokamint.node.tools.internal.transactions.Show;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.GetTransactionAddressMessages;
+import io.mokamint.node.messages.api.GetTransactionAddressMessage;
 
-@Command(name = "transactions",
-	description = "Operate on the transactions of a node.",
-	subcommands = {
-		HelpCommand.class,
-		Add.class,
-		Find.class,
-		Show.class
-	})
-public class Transactions {
+/**
+ * An encoder of a {@link GetTransactionAddressMessage}.
+ */
+public class GetTransactionAddressMessageEncoder extends MappedEncoder<GetTransactionAddressMessage, GetTransactionAddressMessages.Json> {
+
+	public GetTransactionAddressMessageEncoder() {
+		super(GetTransactionAddressMessages.Json::new);
+	}
 }

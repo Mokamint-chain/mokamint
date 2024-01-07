@@ -28,6 +28,7 @@ import static io.mokamint.node.service.api.PublicNodeService.GET_MEMPOOL_PORTION
 import static io.mokamint.node.service.api.PublicNodeService.GET_MINER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_PEER_INFOS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TASK_INFOS_ENDPOINT;
+import static io.mokamint.node.service.api.PublicNodeService.GET_TRANSACTION_ADDRESS_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TRANSACTION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.GET_TRANSACTION_REPRESENTATION_ENDPOINT;
 import static io.mokamint.node.service.api.PublicNodeService.WHISPER_BLOCK_ENDPOINT;
@@ -73,6 +74,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeer;
@@ -103,6 +105,8 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionAddressMessages;
+import io.mokamint.node.messages.GetTransactionAddressResultMessages;
 import io.mokamint.node.messages.GetTransactionMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
@@ -124,6 +128,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
+import io.mokamint.node.messages.api.GetTransactionAddressResultMessage;
 import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
@@ -144,7 +149,7 @@ import jakarta.websocket.Session;
 public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePublicNode {
 
 	/**
-	 * A queue of messages received from the external world.
+	 * AprocessStandardExceptionsprocessStandardExceptions queue of messages received from the external world.
 	 */
 	private final NodeMessageQueues queues;
 
@@ -212,6 +217,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
 		addSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT, uri, GetTransactionRepresentationEndpoint::new);
+		addSession(GET_TRANSACTION_ADDRESS_ENDPOINT, uri, GetTransactionAddressEndpoint::new);
 		addSession(GET_TRANSACTION_ENDPOINT, uri, GetTransactionEndpoint::new);
 		addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
 		addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
@@ -343,6 +349,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetTransactionResult(gtrm.get());
 		else if (message instanceof GetTransactionRepresentationResultMessage gtrrm)
 			onGetTransactionRepresentationResult(gtrrm.get());
+		else if (message instanceof GetTransactionAddressResultMessage gtarm)
+			onGetTransactionAddressResult(gtarm.get());
 		else if (message instanceof ExceptionMessage em)
 			onException(em);
 		else if (message == null) {
@@ -807,6 +815,40 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			processStandardExceptions(message);
 	}
 
+	@Override
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+		ensureIsOpen();
+		var id = queues.nextId();
+		sendGetTransactionAddress(hash, id);
+		try {
+			return queues.waitForResult(id, this::processGetTransactionAddressSuccess, this::processGetTransactionAddressException);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	protected void sendGetTransactionAddress(byte[] hash, String id) throws ClosedNodeException {
+		try {
+			sendObjectAsync(getSession(GET_TRANSACTION_ADDRESS_ENDPOINT), GetTransactionAddressMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			throw new ClosedNodeException(e);
+		}
+	}
+
+	private Optional<TransactionAddress> processGetTransactionAddressSuccess(RpcMessage message) {
+		return message instanceof GetTransactionAddressResultMessage gtarm ? gtarm.get() : null;
+	}
+
+	private boolean processGetTransactionAddressException(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return DatabaseException.class.isAssignableFrom(clazz) || processStandardExceptions(message);
+	}
+
 	/**
 	 * Hooks that can be overridden in subclasses.
 	 */
@@ -823,6 +865,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetMempoolPortionResult(MempoolPortion chain) {}
 	protected void onGetTransactionResult(Optional<Transaction> transaction) {}
 	protected void onGetTransactionRepresentationResult(Optional<String> representation) {}
+	protected void onGetTransactionAddressResult(Optional<TransactionAddress> address) {}
 	protected void onAddTransactionResult(MempoolEntry info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhispered(Peer peer) {}
@@ -914,6 +957,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, GetTransactionRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTransactionRepresentationMessages.Encoder.class);
+		}
+	}
+
+	private class GetTransactionAddressEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetTransactionAddressResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTransactionAddressMessages.Encoder.class);
 		}
 	}
 

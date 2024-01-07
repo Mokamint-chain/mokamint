@@ -14,21 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.tools.internal.transactions.Add;
-import io.mokamint.node.tools.internal.transactions.Find;
-import io.mokamint.node.tools.internal.transactions.Show;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.api.PublicNode;
 
-@Command(name = "transactions",
-	description = "Operate on the transactions of a node.",
-	subcommands = {
-		HelpCommand.class,
-		Add.class,
-		Find.class,
-		Show.class
-	})
-public class Transactions {
+/**
+ * The network message corresponding to the {@link PublicNode#getTransactionAddress(byte[])} method.
+ */
+public interface GetTransactionAddressMessage extends RpcMessage {
+
+	/**
+	 * Yields the {@code hash} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
+	byte[] getHash();
+
+	@Override
+	boolean equals(Object obj);
 }

@@ -51,6 +51,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -80,6 +81,8 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionAddressMessages;
+import io.mokamint.node.messages.GetTransactionAddressResultMessages;
 import io.mokamint.node.messages.GetTransactionMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
@@ -598,5 +601,33 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = "{\"clazz\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionMessage.class.getName() + "\",\"id\":\"id\"}";
 		DecodeException e = assertThrows(DecodeException.class, () -> new ExceptionMessages.Decoder().decode(encoded));
 		assertTrue(e.getCause() instanceof ClassCastException);
+	}
+
+	@Test
+	@DisplayName("getTransactionAddress messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTransactionAddress() throws EncodeException, DecodeException {
+		var getTransactionAddressMessage1 = GetTransactionAddressMessages.of(new byte[] { 13, 1, 19, 73 }, "id");
+		String encoded = new GetTransactionAddressMessages.Encoder().encode(getTransactionAddressMessage1);
+		var getTransactionAddressMessage2 = new GetTransactionAddressMessages.Decoder().decode(encoded);
+		assertEquals(getTransactionAddressMessage1, getTransactionAddressMessage2);
+	}
+
+	@Test
+	@DisplayName("non-empty getTransactionAddressResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTransactionAddressResultNonEmpty() throws EncodeException, DecodeException {
+		var address = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 17);
+		var getTransactionAddressResultMessage1 = GetTransactionAddressResultMessages.of(Optional.of(address), "id");
+		String encoded = new GetTransactionAddressResultMessages.Encoder().encode(getTransactionAddressResultMessage1);
+		var getTransactionAddressResultMessage2 = new GetTransactionAddressResultMessages.Decoder().decode(encoded);
+		assertEquals(getTransactionAddressResultMessage1, getTransactionAddressResultMessage2);
+	}
+
+	@Test
+	@DisplayName("empty getTransactionAddressResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTransactionAddressResultEmpty() throws EncodeException, DecodeException {
+		var getTransactionAddressResultMessage1 = GetTransactionAddressResultMessages.of(Optional.empty(), "id");
+		String encoded = new GetTransactionAddressResultMessages.Encoder().encode(getTransactionAddressResultMessage1);
+		var getTransactionAddressResultMessage2 = new GetTransactionAddressResultMessages.Decoder().decode(encoded);
+		assertEquals(getTransactionAddressResultMessage1, getTransactionAddressResultMessage2);
 	}
 }

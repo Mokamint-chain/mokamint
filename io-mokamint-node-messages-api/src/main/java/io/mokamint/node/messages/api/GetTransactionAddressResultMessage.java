@@ -14,21 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.tools.internal;
+package io.mokamint.node.messages.api;
 
-import io.mokamint.node.tools.internal.transactions.Add;
-import io.mokamint.node.tools.internal.transactions.Find;
-import io.mokamint.node.tools.internal.transactions.Show;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import java.util.Optional;
 
-@Command(name = "transactions",
-	description = "Operate on the transactions of a node.",
-	subcommands = {
-		HelpCommand.class,
-		Add.class,
-		Find.class,
-		Show.class
-	})
-public class Transactions {
+import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.TransactionAddress;
+
+/**
+ * The network message corresponding to the result of the {@link PublicNode#getTransactionAddress(byte[])} method.
+ */
+public interface GetTransactionAddressResultMessage extends ResultMessage<Optional<TransactionAddress>> {
 }

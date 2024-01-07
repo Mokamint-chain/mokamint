@@ -61,7 +61,7 @@ public class Add extends AbstractPublicRpcCommand {
 				System.out.println(new MempoolEntries.Encoder().encode(info));
 			}
 			catch (EncodeException e) {
-				throw new CommandException("Cannot encode " + info + " in JSON!", e);
+				throw new CommandException("Cannot encode a mempool entry at \"" + publicUri() + "\" in JSON format!", e);
 			}
 		}
 		else

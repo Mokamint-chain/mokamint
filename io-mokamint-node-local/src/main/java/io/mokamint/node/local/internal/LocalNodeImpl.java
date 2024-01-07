@@ -67,6 +67,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeer;
@@ -536,6 +537,16 @@ public class LocalNodeImpl implements LocalNode {
 				return Optional.empty();
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
+		}
+		catch (ClosedDatabaseException e) {
+			throw unexpectedException(e); // the database cannot be closed because this node is open
+		}
+	}
+
+	@Override
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedNodeException, DatabaseException {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+			return blockchain.getTransactionAddress(hash);
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open

@@ -181,6 +181,18 @@ public interface PublicNode extends Node, Whisperer {
 	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException;
 
 	/**
+	 * Yields the address of a transaction already in blockchain.
+	 * 
+	 * @param hash the hash of the transaction
+	 * @return the transaction address, if the latter exists in the blockchain
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException;
+
+	/**
 	 * Yields information about the mempool of this node.
 	 * 
 	 * @return the information

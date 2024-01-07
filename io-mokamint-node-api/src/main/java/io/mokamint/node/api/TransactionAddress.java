@@ -45,4 +45,6 @@ public interface TransactionAddress {
 	@Override
 	int hashCode();
 
+	@Override
+	String toString();
 }

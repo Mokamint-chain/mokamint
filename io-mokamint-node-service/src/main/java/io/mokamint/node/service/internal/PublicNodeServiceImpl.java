@@ -79,6 +79,8 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionAddressMessages;
+import io.mokamint.node.messages.GetTransactionAddressResultMessages;
 import io.mokamint.node.messages.GetTransactionMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
@@ -99,6 +101,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.api.GetTransactionAddressMessage;
 import io.mokamint.node.messages.api.GetTransactionMessage;
 import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
@@ -228,7 +231,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
 			GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this), GetTransactionEndpoint.config(this),
-			GetTransactionRepresentationEndpoint.config(this),
+			GetTransactionRepresentationEndpoint.config(this), GetTransactionAddressEndpoint.config(this),
 			AddTransactionEndpoint.config(this),
 			WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
 
@@ -520,6 +523,35 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetTransactionRepresentationEndpoint.class, GET_TRANSACTION_REPRESENTATION_ENDPOINT,
 				GetTransactionRepresentationMessages.Decoder.class, GetTransactionRepresentationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ADDRESS_ENDPOINT + " request");
+	
+		try {
+			try {
+				sendObjectAsync(session, GetTransactionAddressResultMessages.of(node.getTransactionAddress(message.getHash()), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	}
+
+	public static class GetTransactionAddressEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetTransactionAddressMessage message) -> getServer().onGetTransactionAddress(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetTransactionAddressEndpoint.class, GET_TRANSACTION_ADDRESS_ENDPOINT,
+				GetTransactionAddressMessages.Decoder.class, GetTransactionAddressResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

@@ -101,9 +101,9 @@ public class Show extends AbstractPublicRpcCommand {
 		try {
 			byte[] hash = blockIdentifier.getHashOfBlock(remote);
 			if (full)
-				print(remote, remote.getBlock(hash).orElseThrow(() -> new CommandException("The node does not contain any block at the requested hash!")), hash);
+				print(remote, remote.getBlock(hash).orElseThrow(() -> new CommandException("The node does not contain any block with the requested hash!")), hash);
 			else
-				print(remote, remote.getBlockDescription(hash).orElseThrow(() -> new CommandException("The node does not contain any block at the requested hash!")), hash);
+				print(remote, remote.getBlockDescription(hash).orElseThrow(() -> new CommandException("The node does not contain any block with the requested hash!")), hash);
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown cryptographical algorithm in a block of \"" + publicUri() + "\"", e);

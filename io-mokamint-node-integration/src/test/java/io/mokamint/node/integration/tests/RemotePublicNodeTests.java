@@ -66,6 +66,7 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
@@ -88,6 +89,7 @@ import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionAddressResultMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
 import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
@@ -104,6 +106,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.api.GetTransactionAddressMessage;
 import io.mokamint.node.messages.api.GetTransactionMessage;
 import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
@@ -1455,6 +1458,83 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(DatabaseException.class, () -> remote.getTransactionRepresentation(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransactionAddress() works if the transaction exists")
+	public void getTransactionAddressWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, TimeoutException, ClosedNodeException {
+		var address1 = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
+		var hash = new byte[] { 67, 56, 43 };
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.of(address1), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var address2 = remote.getTransactionAddress(hash);
+			assertEquals(address1, address2.get());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransactionAddress() works if the transaction is missing")
+	public void getTransactionAddressWorksIfTransactionMissing() throws IOException, DatabaseException, InterruptedException, DeploymentException, TimeoutException, ClosedNodeException {
+		var hash = new byte[] { 67, 56, 43 };
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.empty(), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var address = remote.getTransactionAddress(hash);
+			assertTrue(address.isEmpty());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransactionAddress() works if it throws DatabaseException")
+	public void getTransactionAddressWorksInCaseOfDatabaseException() throws InterruptedException, DeploymentException, IOException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "corrupted database";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.getTransactionAddress(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
