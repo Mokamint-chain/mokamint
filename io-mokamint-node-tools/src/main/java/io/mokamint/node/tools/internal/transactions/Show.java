@@ -23,13 +23,16 @@ import com.google.gson.Gson;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
+import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "show", description = "Show a transaction in the blockchain of a node.")
@@ -38,21 +41,42 @@ public class Show extends AbstractPublicRpcCommand {
 	@Parameters(index = "0", description = "the hexadecimal hash of the transaction")
 	private String hash;
 
+	@Option(names = "--bytes", description = "report the transaction as its Base64-encoded bytes", defaultValue = "false")
+    private boolean bytes;
+
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException, DatabaseException {
 		try {
-			var maybeRepresentation = remote.getTransactionRepresentation(toBytes(hash));
-			if (maybeRepresentation.isEmpty())
-				throw new CommandException("The blockchain of the node does not contain any transaction with that hash!");
+			if (bytes) {
+				var maybeTransaction = remote.getTransaction(toBytes(hash));
+				if (maybeTransaction.isEmpty())
+					throw new CommandException("The blockchain of the node does not contain any transaction with that hash!");
 
-			if (json()) {
-				var answer = new Answer();
-				answer.representation = maybeRepresentation.get();
-
-				var gson = new Gson();
-				System.out.println(gson.toJsonTree(answer));
+				if (json()) {
+					try {
+						System.out.println(new Transactions.Encoder().encode(maybeTransaction.get()));
+					}
+					catch (EncodeException e) {
+						throw new CommandException("Cannot encode a transaction at \"" + publicUri() + "\" in JSON format!", e);
+					}
+				}
+				else
+					System.out.println(maybeTransaction.get());
 			}
-			else
-				System.out.println(maybeRepresentation.get());
+			else {
+				var maybeRepresentation = remote.getTransactionRepresentation(toBytes(hash));
+				if (maybeRepresentation.isEmpty())
+					throw new CommandException("The blockchain of the node does not contain any transaction with that hash!");
+
+				if (json()) {
+					var answer = new Answer();
+					answer.representation = maybeRepresentation.get();
+
+					var gson = new Gson();
+					System.out.println(gson.toJsonTree(answer));
+				}
+				else
+					System.out.println(maybeRepresentation.get());
+			}
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown cryptographical algorithm in a block of \"" + publicUri() + "\"", e);

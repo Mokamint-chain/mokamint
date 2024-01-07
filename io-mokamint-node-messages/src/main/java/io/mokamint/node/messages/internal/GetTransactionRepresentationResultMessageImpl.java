@@ -27,8 +27,7 @@ import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransactionRepresentation(byte[])} method.
  */
 public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMessage implements GetTransactionRepresentationResultMessage {
-
-	private final String representation;
+	private final Optional<String> representation;
 
 	/**
 	 * Creates the message.
@@ -41,17 +40,17 @@ public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMe
 
 		Objects.requireNonNull(representation, "representation cannot be null");
 		representation.map(Objects::requireNonNull);
-		this.representation = representation.orElse(null);
+		this.representation = representation;
 	}
 
 	@Override
 	public Optional<String> get() {
-		return Optional.ofNullable(representation);
+		return representation;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetTransactionRepresentationResultMessage gtrrm && super.equals(other) && Objects.equals(get(), gtrrm.get());
+		return other instanceof GetTransactionRepresentationResultMessage gtrrm && super.equals(other) && Objects.equals(representation, gtrrm.get());
 	}
 
 	@Override

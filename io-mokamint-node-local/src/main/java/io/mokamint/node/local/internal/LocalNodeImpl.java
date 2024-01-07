@@ -519,6 +519,16 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+			return blockchain.getTransaction(hash);
+		}
+		catch (ClosedDatabaseException e) {
+			throw unexpectedException(e); // the database cannot be closed because this node is open
+		}
+	}
+
+	@Override
 	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, DatabaseException, ClosedNodeException, NoSuchAlgorithmException {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);

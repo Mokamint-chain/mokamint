@@ -79,8 +79,10 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
+import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
@@ -97,6 +99,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.api.GetTransactionMessage;
 import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
@@ -224,8 +227,10 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
-			GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this), GetTransactionRepresentationEndpoint.config(this),
-			AddTransactionEndpoint.config(this), WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
+			GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this), GetTransactionEndpoint.config(this),
+			GetTransactionRepresentationEndpoint.config(this),
+			AddTransactionEndpoint.config(this),
+			WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
 
 		// if the node receives a whispering, it will be forwarded to this service as well
 		node.bindWhisperer(this);
@@ -457,6 +462,35 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
 			return simpleConfig(server, GetTaskInfosEndpoint.class, GET_TASK_INFOS_ENDPOINT,
 				GetTaskInfosMessages.Decoder.class, GetTaskInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetTransaction(GetTransactionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ENDPOINT + " request");
+	
+		try {
+			try {
+				sendObjectAsync(session, GetTransactionResultMessages.of(node.getTransaction(message.getHash()), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ClosedNodeException | NoSuchAlgorithmException | DatabaseException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	}
+
+	public static class GetTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetTransactionMessage message) -> getServer().onGetTransaction(message, session));
+	    }
+
+		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
+			return simpleConfig(server, GetTransactionEndpoint.class, GET_TRANSACTION_ENDPOINT,
+				GetTransactionMessages.Decoder.class, GetTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

@@ -151,6 +151,19 @@ public interface PublicNode extends Node, Whisperer {
 	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException;
 
 	/**
+	 * Yields a transaction already in blockchain.
+	 * 
+	 * @param hash the hash of the transaction
+	 * @return the transaction, if the latter exists in blockchain
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
+	 * @throws ClosedNodeException if the node is closed
+	 */
+	Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
+
+	/**
 	 * Yields a string representation of a transaction already in blockchain, that can be used to print
 	 * or process its structure. This can be everything, possibly but not necessarily JSON.
 	 * 
@@ -166,31 +179,6 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws ClosedNodeException if the node is closed
 	 */
 	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException;
-
-	/**
-	 * Yields information about the transaction with the given hash, if it has been already
-	 * inserted inside a block of the current chain.
-	 * 
-	 * @param hash the hash of the transaction
-	 * @return the transaction, if any
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the transaction exists but is inside a block that uses an unknown hashing or signature algorithm
-	 * @throws TimeoutException if no answer arrives before a time window
-	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
-	 */
-	//Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
-
-	/**
-	 * Yields information about the transaction with the given hash, if it is currently inside the mempool of the node.
-	 * 
-	 * @param hash the hash of the transaction
-	 * @return the transaction, if any
-	 * @throws TimeoutException if no answer arrives before a time window
-	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
-	 */
-	//Optional<Transaction> getMempoolTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the mempool of this node.

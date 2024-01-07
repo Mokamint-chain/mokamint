@@ -21,12 +21,12 @@ import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
+import io.mokamint.node.messages.api.GetTransactionMessage;
 
 /**
- * Implementation of the network message corresponding to the {@link PublicNode#getTransactionRepresentation(byte[])} method of a node.
+ * Implementation of the network message corresponding to the {@link PublicNode#getTransaction(byte[])} method of a node.
  */
-public class GetTransactionRepresentationMessageImpl extends AbstractRpcMessage implements GetTransactionRepresentationMessage {
+public class GetTransactionMessageImpl extends AbstractRpcMessage implements GetTransactionMessage {
 	private final byte[] hash;
 
 	/**
@@ -35,7 +35,7 @@ public class GetTransactionRepresentationMessageImpl extends AbstractRpcMessage 
 	 * @param hash the {@code hash} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionRepresentationMessageImpl(byte[] hash, String id) {
+	public GetTransactionMessageImpl(byte[] hash, String id) {
 		super(id);
 
 		Objects.requireNonNull(hash);
@@ -49,14 +49,14 @@ public class GetTransactionRepresentationMessageImpl extends AbstractRpcMessage 
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof GetTransactionRepresentationMessageImpl gtrmi) // optimization
-			return super.equals(other) && Arrays.equals(hash, gtrmi.hash);
+		if (other instanceof GetTransactionMessageImpl gtmi) // optimization
+			return super.equals(other) && Arrays.equals(hash, gtmi.hash);
 		else
-			return other instanceof GetTransactionRepresentationMessage gtrm && super.equals(other) && Arrays.equals(hash, gtrm.getHash());
+			return other instanceof GetTransactionMessage gtrm && super.equals(other) && Arrays.equals(hash, gtrm.getHash());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionRepresentationMessage.class.getName();
+		return GetTransactionMessage.class.getName();
 	}
 }

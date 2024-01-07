@@ -84,6 +84,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.TaskInfo;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
@@ -750,6 +751,104 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@DisplayName("if a getTransaction() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
+	public void serviceGetTransactionEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 240000L, 1000);
+			}
+	
+			@Override
+			protected void onGetTransactionResult(Optional<Transaction> received) {
+				if (received.isEmpty())
+					semaphore.release();
+			}
+	
+			private void sendGetTransaction(byte[] hash) throws ClosedNodeException {
+				sendGetTransaction(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getTransaction(hash)).thenReturn(Optional.empty());
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetTransaction(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, it sends back that transaction")
+	public void serviceGetTransactionNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 240000L, 1000);
+			}
+	
+			@Override
+			protected void onGetTransactionResult(Optional<Transaction> received) {
+				if (tx.equals(received.get()))
+					semaphore.release();
+			}
+	
+			private void sendGetTransaction(byte[] hash) throws ClosedNodeException {
+				sendGetTransaction(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getTransaction(hash)).thenReturn(Optional.of(tx));
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetTransaction(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the database is corrupted, it sends back an exception")
+	public void serviceGetTransactionRejectedTransactionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+		var semaphore = new Semaphore(0);
+	
+		class MyTestClient extends RemotePublicNodeImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, 2000L, 240000L, 1000);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (DatabaseException.class.isAssignableFrom(message.getExceptionClass()))
+					semaphore.release();
+			}
+
+			private void sendGetTransaction(byte[] hash) throws ClosedNodeException {
+				sendGetTransaction(hash, "id");
+			}
+		}
+	
+		var hash = new byte[] { 34, 32, 76, 11 };
+		var node = mkNode();
+		when(node.getTransaction(hash)).thenThrow(DatabaseException.class);
+	
+		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+			client.sendGetTransaction(hash);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+			Thread.sleep(2000);
+		}
+	}
+
+	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
 	public void serviceGetTransactionRepresentationEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, RejectedTransactionException {
 		var semaphore = new Semaphore(0);
@@ -830,7 +929,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}
-
+	
 			private void sendGetTransactionRepresentation(byte[] hash) throws ClosedNodeException {
 				sendGetTransactionRepresentation(hash, "id");
 			}

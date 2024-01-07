@@ -80,8 +80,10 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
+import io.mokamint.node.messages.GetTransactionMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
+import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemoveMinerMessages;
@@ -504,7 +506,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("whisper block messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -527,12 +529,40 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("whisper transaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperTransaction() throws EncodeException, DecodeException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForWhisperTransaction() throws EncodeException, DecodeException {
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5, 6});
 		var whisperTransactionMessage1 = WhisperTransactionMessages.of(transaction, "id");
 		String encoded = new WhisperTransactionMessages.Encoder().encode(whisperTransactionMessage1);
 		var whisperTransactionMessage2 = new WhisperTransactionMessages.Decoder().decode(encoded);
 		assertEquals(whisperTransactionMessage1, whisperTransactionMessage2);
+	}
+
+	@Test
+	@DisplayName("getTransaction messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTransaction() throws EncodeException, DecodeException {
+		var getTransactionMessage1 = GetTransactionMessages.of(new byte[] { 1, 2, 3, 4, 5 }, "id");
+		String encoded = new GetTransactionMessages.Encoder().encode(getTransactionMessage1);
+		var getTransactionMessage2 = new GetTransactionMessages.Decoder().decode(encoded);
+		assertEquals(getTransactionMessage1, getTransactionMessage2);
+	}
+
+	@Test
+	@DisplayName("non-empty getTransactionResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTransactionResultNonEmpty() throws EncodeException, DecodeException {
+		var tx = Transactions.of(new byte[] { 1 ,2, 3, 4 });
+		var getTransactionResultMessage1 = GetTransactionResultMessages.of(Optional.of(tx), "id");
+		String encoded = new GetTransactionResultMessages.Encoder().encode(getTransactionResultMessage1);
+		var getTransactionResultMessage2 = new GetTransactionResultMessages.Decoder().decode(encoded);
+		assertEquals(getTransactionResultMessage1, getTransactionResultMessage2);
+	}
+
+	@Test
+	@DisplayName("empty getTransactionResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetTransactionResultEmpty() throws EncodeException, DecodeException {
+		var getTransactionResultMessage1 = GetTransactionResultMessages.of(Optional.empty(), "id");
+		String encoded = new GetTransactionResultMessages.Encoder().encode(getTransactionResultMessage1);
+		var getTransactionResultMessage2 = new GetTransactionResultMessages.Decoder().decode(encoded);
+		assertEquals(getTransactionResultMessage1, getTransactionResultMessage2);
 	}
 
 	@Test
@@ -546,7 +576,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-empty getTransactionRepresentationResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionRepresentationResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForGetTransactionRepresentationResultNonEmpty() throws EncodeException, DecodeException {
 		var getTransactionRepresentationResultMessage1 = GetTransactionRepresentationResultMessages.of(Optional.of("hello"), "id");
 		String encoded = new GetTransactionRepresentationResultMessages.Encoder().encode(getTransactionRepresentationResultMessage1);
 		var getTransactionRepresentationResultMessage2 = new GetTransactionRepresentationResultMessages.Decoder().decode(encoded);

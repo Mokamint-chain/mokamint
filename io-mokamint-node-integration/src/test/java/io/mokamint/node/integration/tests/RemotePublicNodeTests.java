@@ -89,6 +89,7 @@ import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
+import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.api.AddTransactionMessage;
@@ -103,6 +104,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.api.GetTransactionMessage;
 import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
@@ -1248,6 +1250,109 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			remote.bindWhisperer(whisperer);
 			service.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false, "block " + block.getHexHash(HashingAlgorithms.sha256()));
 			semaphore.acquire();
+		}
+	}
+
+	@Test
+	@DisplayName("getTransaction() works if the transaction exists")
+	public void getTransactionWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+		var tx1 = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var hash = new byte[] { 67, 56, 43 };
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransaction(GetTransactionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetTransactionResultMessages.of(Optional.of(tx1), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var tx2 = remote.getTransaction(hash);
+			assertEquals(tx1, tx2.get());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransaction() works if the transaction is missing")
+	public void getTransactionWorksIfTransactionMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+		var hash = new byte[] { 67, 56, 43 };
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransaction(GetTransactionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, GetTransactionResultMessages.of(Optional.empty(), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var tx = remote.getTransaction(hash);
+			assertTrue(tx.isEmpty());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransaction() works if it throws DatabaseException")
+	public void getTransactionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "corrupted database";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransaction(GetTransactionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(DatabaseException.class, () -> remote.getTransaction(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getTransaction() works if it throws InterruptedException")
+	public void getTransactionRepresentationWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+		var hash = new byte[] { 67, 56, 43 };
+		var exceptionMessage = "interrupted";
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws DeploymentException, IOException {}
+	
+			@Override
+			protected void onGetTransaction(GetTransactionMessage message, Session session) {
+				if (Arrays.equals(message.getHash(), hash))
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(InterruptedException.class, () -> remote.getTransaction(hash));
+			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 

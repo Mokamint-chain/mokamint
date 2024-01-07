@@ -37,7 +37,7 @@ import picocli.CommandLine.Parameters;
 @Command(name = "add", description = "Add a transaction to the mempool of a node.")
 public class Add extends AbstractPublicRpcCommand {
 
-	@Parameters(description = "the transaction to add, in Base64 format")
+	@Parameters(description = "the transaction to add, as its Base64-encoded bytes")
 	private String tx;
 
 	private void body(RemotePublicNode remote) throws ClosedNodeException, DatabaseException, TimeoutException, InterruptedException, CommandException {
