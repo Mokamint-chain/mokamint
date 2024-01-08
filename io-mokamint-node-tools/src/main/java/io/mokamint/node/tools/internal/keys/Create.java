@@ -61,9 +61,7 @@ public class Create extends AbstractCommand {
 			if (json) {
 				var answer = new Answer();
 				answer.publicKeyBase58 = publicKeyBase58;
-
-				var gson = new Gson();
-				System.out.println(gson.toJsonTree(answer));
+				System.out.println(new Gson().toJsonTree(answer));
 			}
 			else {
 				System.out.println("A new key pair has been created.");

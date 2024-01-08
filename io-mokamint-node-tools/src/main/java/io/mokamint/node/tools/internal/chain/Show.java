@@ -50,10 +50,11 @@ public class Show extends AbstractPublicRpcCommand {
 	 * The alternative ways of specifying the block to show.
 	 */
 	private static class BlockIdentifier {
+		@Option(names = "depth", required = true, description = "the block of the current chain at the given depth (0 is the head, 1 is the block below it, etc)") long depth;
+		@Option(names = "genesis", required = true, description = "the genesis of the current chain") boolean genesis;
         @Option(names = "hash", required = true, description = "the block with the given hexadecimal hash (not necessarily in the current chain)") String hash;
         @Option(names = "head", required = true, description = "the head of the current chain") boolean head;
-        @Option(names = "genesis", required = true, description = "the genesis of the current chain") boolean genesis;
-        @Option(names = "depth", required = true, description = "the block of the current chain at the given depth (0 is the head, 1 is the block below it, etc)") long depth;
+        @Option(names = "height", required = true, description = "the block of the current chain at the given height (0 is the genesis block, 1 is the block above it, etc)") Long height;
 
         /**
          * Yields hash of the requested block, if any.
@@ -82,17 +83,24 @@ public class Show extends AbstractPublicRpcCommand {
 				return remote.getChainInfo().getHeadHash().orElseThrow(() -> new CommandException("There is no chain head in the node!"));
 			else if (genesis)
 				return remote.getChainInfo().getGenesisHash().orElseThrow(() -> new CommandException("There is no genesis block in the node!"));
+			else if (height != null && height < 0)
+				throw new CommandException("The height of the block cannot be negative!");
+			else if (height != null) {
+				var length = remote.getChainInfo().getLength();
+				if (length <= height)
+					throw new CommandException("There is no block at height " + height + " since the chain has length " + length + "!");
+				else
+					return remote.getChainPortion(height, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at height " + height + "!"));
+			}
+			// it must be --depth, since the {@code blockIdentifier} parameter is mandatory
+			else if (depth < 0)
+				throw new CommandException("The depth of the block cannot be negative!");
 			else {
-				// it must be --depth, since the {@code blockIdentifier} parameter is mandatory
-				if (depth < 0)
-					throw new CommandException("The depth of the block cannot be negative!");
-				else {
-					var length = remote.getChainInfo().getLength();
-					if (length <= depth)
-						throw new CommandException("There is no block at depth " + depth + " since the chain has length " + length + "!");
-					else
-						return remote.getChainPortion(length - depth - 1, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at depth " + depth + "!"));
-				}
+				var length = remote.getChainInfo().getLength();
+				if (length <= depth)
+					throw new CommandException("There is no block at depth " + depth + " since the chain has length " + length + "!");
+				else
+					return remote.getChainPortion(length - depth - 1, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at depth " + depth + "!"));
 			}
         }
 	}

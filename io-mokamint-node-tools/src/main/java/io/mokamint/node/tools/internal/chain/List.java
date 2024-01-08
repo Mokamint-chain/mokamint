@@ -20,14 +20,17 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import com.google.gson.Gson;
 
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
@@ -55,7 +58,7 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
+	private void body(RemotePublicNode remote) throws CommandException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
@@ -64,129 +67,132 @@ public class List extends AbstractPublicRpcCommand {
 
 		try {
 			var info = remote.getChainInfo();
-			long height = info.getLength() - 1;
-			if (height < 0) {
-				if (json())
-					System.out.println("[]");
-
-				return;
-			}
-
 			if (from == -1L)
-				from = Math.max(0L, height - count + 1);
+				from = Math.max(0L, info.getLength() - 1 - count + 1);
 
 			LOGGER.info("requesting hashes in the height interval [" + from + ", " + (from + count) + ")");
+			ChainPortion chain = remote.getChainPortion(from, count);
 
-			var maybeGenesisHash = info.getGenesisHash();
-			if (maybeGenesisHash.isEmpty())
-				return;
-
-			Optional<LocalDateTime> startDateTimeUTC;
-			int slotsForHeight;
-
-			if (json()) {
-				startDateTimeUTC = Optional.empty();
-				slotsForHeight = 0;
-			}
-			else {
-				var maybeGenesis = remote.getBlockDescription(maybeGenesisHash.get());
-				if (maybeGenesis.isEmpty())
-					throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
-
-				BlockDescription genesis = maybeGenesis.get();
-				if (genesis instanceof GenesisBlockDescription gbd) {
-					slotsForHeight = String.valueOf(height).length();
-					startDateTimeUTC = Optional.of(gbd.getStartDateTimeUTC());
+			if (json())
+				System.out.println(new Gson().toJsonTree(chain.getHashes().map(Hex::toHexString).toArray(String[]::new)));
+			else if (chain.getHashes().count() != 0) {
+				var maybeGenesisHash = info.getGenesisHash();
+				if (maybeGenesisHash.isPresent()) {
+					var maybeGenesis = remote.getBlockDescription(maybeGenesisHash.get());
+					if (maybeGenesis.isEmpty())
+						throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
+					else if (maybeGenesis.get() instanceof GenesisBlockDescription gbd)
+						new ListChain(chain, gbd.getStartDateTimeUTC(), remote);
+					else
+						throw new DatabaseException("The type of the genesis block is inconsistent!");
 				}
 				else
-					throw new DatabaseException("The type of the genesis block is inconsistent!");
+					throw new DatabaseException("The node has no genesis hash it contains some blocks!");
 			}
-
-			if (json())
-				System.out.print("[");
-			
-			ChainPortion chain = remote.getChainPortion(from, count);
-			list(chain, from + chain.getHashes().count() - 1, slotsForHeight, startDateTimeUTC, remote);
-			if (json())
-				System.out.println("]");
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\"!", e);
 		}
 	}
 
-	/**
-     * Lists the hashes in {@code chain}, reporting the time of creation of each block.
-     * 
-     * @param chain the segment of the current chain to list
-     * @param height the height of the current chain
-     * @param slotsForHeight the number of characters reserved for printing the height of each hash; this is used only if json() is false
-     * @param startDateTimeUTC the starting moment of the chain; this is used only if json() is false
-     * @param the remote node
-	 * @throws DatabaseException if the database of the node is corrupted
-     * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
-     * @throws TimeoutException if some connection timed-out
-     * @throws InterruptedException if some connection was interrupted while waiting
-     * @throws ClosedNodeException if the remote node is closed
-     */
-	private void list(ChainPortion chain, long height, int slotsForHeight, Optional<LocalDateTime> startDateTimeUTC, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
-		var hashes = chain.getHashes().toArray(byte[][]::new);
+	private class ListChain {
+		private final RemotePublicNode remote;
+		private final ConsensusConfig<?, ?> config;
+		private final LocalDateTime startDateTimeUTC;
+		private final String[] heights;
+		private final int slotsForHeight;
+		private final String[] hashes;
+		private final int slotsForHash;
+		private final String[] creationDateTimesUTC;
+		private final int slotsForCreationDateTimesUTC;
+		private final String[] peerPublicKeys;
+		private final int slotsForPeerPublicKeys;
+		private final String[] minerPublicKeys;
+		private final int slotsForMinerPublicKeys;
 
-		boolean first = true;
-		int lastPublicKeyOfMinerLength = 0;
-		for (int counter = hashes.length - 1; counter >= 0; counter--, height--) {
-			String hash = Hex.toHexString(hashes[counter]);
+		/**
+		 * Lists the hashes in {@code chain}, reporting the time of creation of each block.
+		 * 
+		 * @param chain the chain portion to list
+		 * @param startDateTimeUTC the starting moment of the chain
+		 * @param the remote node
+		 * @throws DatabaseException if the database of the node is corrupted
+		 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
+		 * @throws TimeoutException if some connection timed-out
+		 * @throws InterruptedException if some connection was interrupted while waiting
+		 * @throws ClosedNodeException if the remote node is closed
+		 */
+		private ListChain(ChainPortion chain, LocalDateTime startDateTimeUTC, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException {
+			this.config = remote.getConfig();
+			this.startDateTimeUTC = startDateTimeUTC;
+			this.remote = remote;
+			var hashes = chain.getHashes().toArray(byte[][]::new);
+			this.heights = new String[1 + hashes.length];
+			this.hashes = new String[heights.length];
+			this.creationDateTimesUTC = new String[heights.length];
+			this.peerPublicKeys = new String[heights.length];
+			this.minerPublicKeys = new String[heights.length];
+			fillColumns(hashes);
+			this.slotsForHeight = Stream.of(heights).mapToInt(String::length).max().getAsInt();
+			this.slotsForHash = Stream.of(this.hashes).mapToInt(String::length).max().getAsInt();
+			this.slotsForCreationDateTimesUTC = Stream.of(creationDateTimesUTC).mapToInt(String::length).max().getAsInt();
+			this.slotsForPeerPublicKeys = Stream.of(peerPublicKeys).mapToInt(String::length).max().getAsInt();
+			this.slotsForMinerPublicKeys = Stream.of(minerPublicKeys).mapToInt(String::length).max().getAsInt();
+			printRows();
+		}
 
-			if (json()) {
-				if (counter != hashes.length - 1)
-					System.out.print(", ");
-
-				System.out.print("\"" + hash + "\"");
-			}
-			else {
-				String creationTime, publicKeyOfSigner, publicKeyOfMiner;
-
-				var maybeBlockDescription = remote.getBlockDescription(hashes[counter]);
+		private void fillColumns(byte[][] hashes) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+			heights[0] = "";
+			this.hashes[0] = "block hash (" + config.getHashingForBlocks() + ")";
+			creationDateTimesUTC[0] = "created (UTC)";
+			peerPublicKeys[0] = "peer public key (" + config.getSignatureForBlocks() + " base58)";
+			minerPublicKeys[0] = "miner public key (" + config.getSignatureForDeadlines() + " base58)";
+			
+			for (int pos = 1; pos < this.hashes.length; pos++) {
+				long height = from + hashes.length - pos;
+				heights[pos] = height + ":";
+				this.hashes[pos] = Hex.toHexString(hashes[hashes.length - pos]);
+		
+				var maybeBlockDescription = remote.getBlockDescription(hashes[hashes.length - pos]);
 				if (maybeBlockDescription.isEmpty()) {
-					publicKeyOfSigner = "unknown";
-
 					if (height == 0L) {
-						creationTime = startDateTimeUTC.get().format(FORMATTER);
-						publicKeyOfMiner = "---";
+						creationDateTimesUTC[pos] = startDateTimeUTC.format(FORMATTER);
+						minerPublicKeys[pos] = "---";
 					}
 					else {
-						creationTime = "unknown";
-						publicKeyOfMiner = "unknown";
+						creationDateTimesUTC[pos] = "unknown";
+						minerPublicKeys[pos] = "unknown";
 					}
+		
+					peerPublicKeys[pos] = "unknown";
 				}
 				else {
 					var description = maybeBlockDescription.get();
-					creationTime = startDateTimeUTC.get().plus(description.getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
-					publicKeyOfSigner = description.getPublicKeyForSigningBlockBase58();
-					publicKeyOfMiner = description instanceof NonGenesisBlockDescription ngbd ?
-						ngbd.getDeadline().getProlog().getPublicKeyForSigningDeadlinesBase58() : center("---", lastPublicKeyOfMinerLength);
+					creationDateTimesUTC[pos] = startDateTimeUTC.plus(description.getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
+					peerPublicKeys[pos] = description.getPublicKeyForSigningBlockBase58();
+
+					if (description instanceof NonGenesisBlockDescription ngbd)
+						minerPublicKeys[pos] = ngbd.getDeadline().getProlog().getPublicKeyForSigningDeadlinesBase58();
+					else
+						minerPublicKeys[pos] = "---";
 				}
-
-				if (first) {
-					var config = remote.getConfig();
-
-					// we add a header
-					System.out.println(Ansi.AUTO.string("@|green " + format(slotsForHeight, "",
-						center("block hash (" + config.getHashingForBlocks() + ")", hash.length()),
-						center("created (UTC)", creationTime.length()),
-						center("peer public key (" + config.getSignatureForBlocks() + " base58)", publicKeyOfSigner.length()),
-						center("miner public key (" + config.getSignatureForDeadlines() + " base58)", publicKeyOfMiner.length())) + "|@"));
-				}
-
-				System.out.println(format(slotsForHeight, String.valueOf(height) + ":", hash, creationTime, publicKeyOfSigner, publicKeyOfMiner));
-				lastPublicKeyOfMinerLength = publicKeyOfMiner.length();
-				first = false;
 			}
 		}
-	}
 
-	private static String format(int slotsForHeight, String height, String hash, String creationTime, String publicKeyOfSigner, String publicKeyOfMiner) {
-		return String.format("%" + (slotsForHeight + 1) + "s %s  %s  %s  %s", height, hash, creationTime, publicKeyOfSigner, publicKeyOfMiner);
+		private void printRows() {
+			IntStream.iterate(0, i -> i + 1).limit(hashes.length).mapToObj(this::format).forEach(System.out::println);
+		}
+
+		private String format(int pos) {
+			String result = String.format("%s %s  %s  %s  %s",
+				rightAlign(heights[pos], slotsForHeight),
+				center(hashes[pos], slotsForHash),
+				center(creationDateTimesUTC[pos], slotsForCreationDateTimesUTC),
+				center(peerPublicKeys[pos], slotsForPeerPublicKeys),
+				center(minerPublicKeys[pos], slotsForMinerPublicKeys));
+
+			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+		}
 	}
 
 	@Override

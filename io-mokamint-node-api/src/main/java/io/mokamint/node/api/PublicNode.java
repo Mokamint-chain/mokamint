@@ -111,6 +111,8 @@ public interface PublicNode extends Node, Whisperer {
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
+	 * This means that the description is provided also when the block is not part of
+	 * the current chain but is contained in the database of the blocks of the node.
 	 * 
 	 * @param hash the hash of the block
 	 * @return the block, if any
@@ -124,6 +126,8 @@ public interface PublicNode extends Node, Whisperer {
 
 	/**
 	 * Yields the description of the block with the given hash, if it has been seen by this node.
+	 * This means that the description is provided also when the block is not part of
+	 * the current chain but is contained in the database of the blocks of the node.
 	 * 
 	 * @param hash the hash of the block
 	 * @return the description of the block, if any
