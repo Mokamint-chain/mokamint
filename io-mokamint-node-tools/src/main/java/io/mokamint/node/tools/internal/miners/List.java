@@ -38,7 +38,7 @@ public class List extends AbstractPublicRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
-			MinerInfo[] infos = remote.getMinerInfos().sorted().toArray(MinerInfo[]::new);
+			var infos = remote.getMinerInfos().sorted().toArray(MinerInfo[]::new);
 
 			if (json()) {
 				var encoder = new MinerInfos.Encoder();

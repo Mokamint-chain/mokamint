@@ -44,10 +44,10 @@ public class Remove extends AbstractRestrictedRpcCommand {
 		private final List<String> successes = new ArrayList<>();
 
 		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
-			this.remote = remote;
-
-			if (uuids.length == 0)
+			if (uuids == null || uuids.length == 0)
 				throw new CommandException("No miners have been specified!");
+
+			this.remote = remote;
 
 			Optional<Exception> exception = Stream.of(uuids)
 				.parallel()
@@ -88,9 +88,6 @@ public class Remove extends AbstractRestrictedRpcCommand {
 
 	@Override
 	protected void execute() throws CommandException {
-		if (uuids == null)
-			uuids = new UUID[0];
-
 		execute(Run::new);
 	}
 }

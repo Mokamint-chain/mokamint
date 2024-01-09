@@ -346,66 +346,6 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
-		Optional<PeerInfo> result;
-
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			result = peers.add(peer);
-		}
-		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
-		}
-
-		if (result.isPresent()) {
-			scheduleSynchronization(0L);
-			scheduleWhisperingOfAllServices();
-			whisperWithoutAddition(peer);
-		}
-
-		return result;
-	}
-
-	@Override
-	public boolean remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			return peers.remove(peer);
-		}
-		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
-		}
-	}
-
-	@Override
-	public Optional<MinerInfo> openMiner(int port) throws IOException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			var miner = RemoteMiners.of(port, this::check);
-			Optional<MinerInfo> result = add(miner);
-			if (result.isEmpty())
-				miner.close();
-
-			minersToCloseAtTheEnd.add(miner);
-			return result;
-		}
-		catch (DeploymentException e) {
-			throw new IOException(e);
-		}
-	}
-
-	@Override
-	public boolean removeMiner(UUID uuid) throws ClosedNodeException, IOException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			Miner[] toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
-			for (var miner: toRemove) {
-				miners.remove(miner);
-				if (minersToCloseAtTheEnd.contains(miner))
-					miner.close();
-			}
-
-			return toRemove.length > 0;
-		}
-	}
-
-	@Override
 	public void close() throws InterruptedException, DatabaseException, IOException {
 		if (closureLock.stopNewCalls()) {
 			executors.shutdownNow();
@@ -554,9 +494,76 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
+		Optional<PeerInfo> result;
+	
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+			result = peers.add(peer);
+		}
+		catch (ClosedDatabaseException e) {
+			throw unexpectedException(e); // the database cannot be closed because this node is open
+		}
+	
+		if (result.isPresent()) {
+			scheduleSynchronization(0L);
+			scheduleWhisperingOfAllServices();
+			whisperWithoutAddition(peer);
+		}
+	
+		return result;
+	}
+
+	@Override
+	public boolean remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+			return peers.remove(peer);
+		}
+		catch (ClosedDatabaseException e) {
+			throw unexpectedException(e); // the database cannot be closed because this node is open
+		}
+	}
+
+	@Override
+	public Optional<MinerInfo> openMiner(int port) throws IOException, ClosedNodeException {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+			var miner = RemoteMiners.of(port, this::check);
+			Optional<MinerInfo> maybeInfo = miners.add(miner);
+			if (maybeInfo.isPresent()) {
+				minersToCloseAtTheEnd.add(miner);
+				onAdded(miner);
+			}
+			else
+				miner.close();
+
+			return maybeInfo;
+		}
+		catch (DeploymentException e) {
+			throw new IOException(e);
+		}
+	}
+
+	@Override
 	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
-			return miners.add(miner);
+			Optional<MinerInfo> maybeInfo = miners.add(miner);
+			if (maybeInfo.isPresent())
+				onAdded(miner);
+
+			return maybeInfo;
+		}
+	}
+
+	@Override
+	public boolean removeMiner(UUID uuid) throws ClosedNodeException, IOException {
+		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+			var toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
+			for (var miner: toRemove) {
+				miners.remove(miner);
+				if (minersToCloseAtTheEnd.contains(miner))
+					miner.close();
+			}
+	
+			return toRemove.length > 0;
 		}
 	}
 

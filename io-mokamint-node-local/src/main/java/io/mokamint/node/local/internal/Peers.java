@@ -428,7 +428,7 @@ public class Peers implements AutoCloseable {
 			long timeDifference = ensurePeerIsCompatible(remote);
 
 			synchronized (lock) {
-				if (db.add(peer, force) && peers.add(peer, force)) {
+				if (db.add(peer, force) && peers.add(peer)) {
 					connect(peer, remote, timeDifference);
 					remote = null; // so that it won't be disconnected in the finally clause
 				}

@@ -161,7 +161,7 @@ public class PunishableSet<A> {
 		if (points < 0)
 			throw new IllegalArgumentException("points cannot be negative");
 
-		AtomicLong oldPoints = new AtomicLong(0L);
+		var oldPoints = new AtomicLong(0L);
 		Long newPoints = actors.computeIfPresent(actor, (a, old) -> {
 			oldPoints.set(old);
 			return Math.min(initialPoints, old + points);
@@ -187,14 +187,12 @@ public class PunishableSet<A> {
 	/**
 	 * Adds the given actor to this container, if it is not already there.
 	 * Otherwise, nothing happens. The initial points of a new actor get reset
-	 * with an implementation specific policy. It allows to specify
-	 * an implementation-specific {@code force} parameter.
+	 * with an implementation specific policy.
 	 * 
 	 * @param actor the actor to add
-	 * @param force forces the addition, if this means something to the implementation
 	 * @return true if and only if the actor was not present and has been added
 	 */
-	public boolean add(A actor, boolean force) {
+	public final boolean add(A actor) {
 		var result = new AtomicBoolean();
 
 		actors.computeIfAbsent(actor, a -> {
@@ -203,18 +201,5 @@ public class PunishableSet<A> {
 		});
 
 		return result.get();
-	}
-
-	/**
-	 * Adds the given actor to this container, if it is not already there.
-	 * Otherwise, nothing happens. The initial points of a new actor get reset
-	 * with an implementation specific policy. This is equivalent to
-	 * {@link #add(Object, boolean)} where {@code force} is false.
-	 * 
-	 * @param actor the actor to add
-	 * @return true if and only if the actor was not present and has been added
-	 */
-	public final boolean add(A actor) {
-		return add(actor, false);
 	}
 }

@@ -17,9 +17,8 @@ limitations under the License.
 package io.mokamint.node.tools.internal.miners;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.HashSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -43,66 +42,65 @@ public class Add extends AbstractRestrictedRpcCommand {
 
 	private class Run {
 		private final RemoteRestrictedNode remote;
-		private final List<String> successes = new ArrayList<>();
+		private final java.util.List<MinerInfo> successes = new CopyOnWriteArrayList<>();
+		private final java.util.List<Exception> exceptions = new CopyOnWriteArrayList<>();
 
-		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException {
+		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+			if (ports == null || ports.length == 0)
+				throw new CommandException("No ports have been specified!");
+
 			this.remote = remote;
 
-			Optional<Exception> exception = IntStream.of(ports)
+			IntStream.of(ports)
 				.parallel()
-				.mapToObj(this::addMiner)
-				.flatMap(Optional::stream)
-				.findFirst();
+				.forEachOrdered(this::addMiner);
 
-			if (json())
-				System.out.println(successes.stream().collect(Collectors.joining(", ", "[", "]")));
-
-			if (exception.isPresent())
-				try {
-					throwAsRpcCommandException(exception.get());
-				}
-				catch (DatabaseException e) {
-					throw new RuntimeException("UnexpectedException", e);
-				}
-		}
-
-		private Optional<Exception> addMiner(int port) {
-			try {
-				return remote.openMiner(port).or(() -> {
-					System.out.println("No remote miner has been opened at port " + port);
-					return Optional.empty();
-				})
-				.flatMap(this::process);
-			}
-			catch (RuntimeException | ClosedNodeException | TimeoutException | InterruptedException e) {
-				return Optional.of(e);
-			}
-			catch (IOException e) {
-				return Optional.of(new CommandException("Cannot open a remote miner at port " + port + "!", e));
-			}
-		}
-
-		private Optional<Exception> process(MinerInfo info) {
 			if (json()) {
-				try {
-					successes.add(new MinerInfos.Encoder().encode(info));
-				}
-				catch (EncodeException e) {
-					return Optional.of(new CommandException("Cannot encode " + info + " in JSON", e));
-				}
+				var encoder = new MinerInfos.Encoder();
+				var opened = new HashSet<String>();
+				for (var info: successes)
+					opened.add(encode(info, encoder));
+
+				System.out.println(opened.stream().collect(Collectors.joining(",", "[", "]")));
 			}
 			else
-				System.out.println("Opened " + info);
-		
-			return Optional.empty();
+				successes.stream().map(mi -> "Opened " + mi).forEach(System.out::println);
+
+			if (!exceptions.isEmpty())
+				throwAsRpcCommandException(exceptions.get(0));
+		}
+
+		private String encode(MinerInfo info, MinerInfos.Encoder encoder) throws CommandException {
+			try {
+				return encoder.encode(info);
+			}
+			catch (EncodeException e) {
+				throw new CommandException("Cannot encode " + info + " in JSON", e);
+			}
+		}
+
+		private void addMiner(int port) {
+			try {
+				remote.openMiner(port).ifPresentOrElse(successes::add, () -> {
+					if (!json())
+						System.out.println("No remote miner has been opened at port " + port);
+				});
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				exceptions.add(e);
+			}
+			catch (RuntimeException | ClosedNodeException | TimeoutException e) {
+				exceptions.add(e);
+			}
+			catch (IOException e) {
+				exceptions.add(new CommandException("Cannot open a remote miner at port " + port + "!", e));
+			}
 		}
 	}
 
 	@Override
 	protected void execute() throws CommandException {
-		if (ports == null)
-			ports = new int[0];
-
 		execute(Run::new);
 	}
 }
