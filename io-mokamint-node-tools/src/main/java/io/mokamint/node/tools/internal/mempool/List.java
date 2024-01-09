@@ -18,15 +18,21 @@ package io.mokamint.node.tools.internal.mempool;
 
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+import io.hotmoka.crypto.Hex;
 import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -62,13 +68,65 @@ public class List extends AbstractPublicRpcCommand {
 				throw new CommandException("Cannot encode a mempool portion of the node at \"" + publicUri() + "\" in JSON format!", e);
 			}
 		}
-		else {
-			var infos = mempool.getEntries().toArray(MempoolEntry[]::new);
-			int height = from + infos.length - 1;
-			int slotsForHeight = String.valueOf(height).length();
+		else if (mempool.getEntries().count() != 0)
+			new ListMempool(mempool, remote);
+	}
 
-			for (int counter = infos.length - 1; counter >= 0; counter--, height--)
-				System.out.printf("%" + slotsForHeight + "d %s\n", height, infos[counter]);
+	private class ListMempool {
+		private final ConsensusConfig<?, ?> config;
+		private final MempoolEntry[] entries;
+		private final String[] heights;
+		private final int slotsForHeight;
+		private final String[] hashes;
+		private final int slotsForHash;
+		private final String[] priorities;
+		private final int slotsForPriority;
+
+		/**
+		 * Lists the entries in {@code mempool}.
+		 * 
+		 * @param mempool the mempool portion to list
+		 * @param the remote node
+		 * @throws TimeoutException if some connection timed-out
+		 * @throws InterruptedException if some connection was interrupted while waiting
+		 * @throws ClosedNodeException if the remote node is closed
+		 */
+		private ListMempool(MempoolPortion mempool, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+			this.config = remote.getConfig();
+			this.entries = mempool.getEntries().toArray(MempoolEntry[]::new);
+			this.heights = new String[1 + entries.length];
+			this.hashes = new String[heights.length];
+			this.priorities = new String[heights.length];
+			fillColumns();
+			this.slotsForHeight = Stream.of(heights).mapToInt(String::length).max().getAsInt();
+			this.slotsForHash = Stream.of(hashes).mapToInt(String::length).max().getAsInt();
+			this.slotsForPriority = Stream.of(priorities).mapToInt(String::length).max().getAsInt();
+			printRows();
+		}
+
+		private void fillColumns() {
+			heights[0] = "";
+			hashes[0] = "tx hash (" + config.getHashingForTransactions() + ")";
+			priorities[0] = "priority";
+			
+			for (int pos = 1; pos < hashes.length; pos++) {
+				heights[pos] = (from + entries.length - pos) + ":";
+				hashes[pos] = Hex.toHexString(entries[entries.length - pos].getHash());
+				priorities[pos] = String.valueOf(entries[entries.length - pos].getPriority());
+			}
+		}
+
+		private void printRows() {
+			IntStream.iterate(0, i -> i + 1).limit(heights.length).mapToObj(this::format).forEach(System.out::println);
+		}
+
+		private String format(int pos) {
+			String result = String.format("%s %s  %s",
+				rightAlign(heights[pos], slotsForHeight),
+				center(hashes[pos], slotsForHash),
+				rightAlign(priorities[pos], slotsForPriority));
+
+			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
 		}
 	}
 

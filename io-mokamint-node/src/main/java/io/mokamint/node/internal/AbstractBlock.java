@@ -241,7 +241,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		builder.append(description.toString(config, startDateTimeUTC));
 		builder.append("\n");
 		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
-		builder.append("* final state hash: " + Hex.toHexString(stateHash) + "\n");
+		builder.append("* final state hash: " + Hex.toHexString(stateHash));
 
 		return builder.toString();
 	}

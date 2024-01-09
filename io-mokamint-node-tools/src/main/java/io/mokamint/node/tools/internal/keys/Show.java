@@ -78,8 +78,8 @@ public class Show extends AbstractCommand {
 				System.out.println(gson.toJsonTree(answer));
 			}
 			else {
-				System.out.println("Public key (base58): " + publicKeyBase58);
-				System.out.println("Private key (base58): " + privateKeyBase58);
+				System.out.println(" Public key: " + publicKeyBase58 + " (base58)");
+				System.out.println("Private key: " + privateKeyBase58 + " (base58)");
 			}
 		}
 		catch (IOException e) {

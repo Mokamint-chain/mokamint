@@ -66,7 +66,7 @@ public class MempoolInfoImpl extends AbstractMarshallable implements MempoolInfo
 
 	@Override
 	public String toString() {
-		return "mempool of size " + size;
+		return "size = " + size;
 	}
 
 	/**

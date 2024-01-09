@@ -57,23 +57,20 @@ public class Create extends AbstractCommand {
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
 			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
+			var fileName = entropy.dump(name);
 
 			if (json) {
 				var answer = new Answer();
 				answer.publicKeyBase58 = publicKeyBase58;
+				answer.fileName = fileName.toString();
 				System.out.println(new Gson().toJsonTree(answer));
 			}
 			else {
-				System.out.println("A new key pair has been created.");
-				if (publicKeyBase58.length() > 100) {
-					publicKeyBase58 = publicKeyBase58.substring(0, 100);
-					System.out.println("Its public key Base58 is " + publicKeyBase58 + "...");
-				}
-				else
-					System.out.println("Its public key Base58 is " + publicKeyBase58 + ".");
+				System.out.println("A new key pair has been created and saved as \"" + fileName + "\".");
+				if (publicKeyBase58.length() > 100)
+					publicKeyBase58 = publicKeyBase58.substring(0, 100) + "...";
 
-				var fileName = entropy.dump(name);
-				System.out.println("The key pair has been saved as \"" + fileName + "\".");
+				System.out.println("Its public key is " + publicKeyBase58 + " (base58).");
 			}
 		}
 		catch (IOException e) {
@@ -91,5 +88,7 @@ public class Create extends AbstractCommand {
 	private static class Answer {
 		@SuppressWarnings("unused")
 		private String publicKeyBase58;
+		@SuppressWarnings("unused")
+		private String fileName;
 	}
 }

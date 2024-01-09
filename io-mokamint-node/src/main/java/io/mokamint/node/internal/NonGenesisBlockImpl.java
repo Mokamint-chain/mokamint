@@ -219,6 +219,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	@Override
 	public final String toString(Optional<ConsensusConfig<?, ?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder(super.toString(config, startDateTimeUTC));
+		builder.append("\n");
 
 		if (transactions.length == 0)
 			builder.append("* 0 transactions");

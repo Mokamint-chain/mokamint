@@ -43,8 +43,11 @@ public class Remove extends AbstractRestrictedRpcCommand {
 		private final RemoteRestrictedNode remote;
 		private final List<String> successes = new ArrayList<>();
 
-		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException {
+		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
 			this.remote = remote;
+
+			if (uuids.length == 0)
+				throw new CommandException("No miners have been specified!");
 
 			Optional<Exception> exception = Stream.of(uuids)
 				.parallel()
@@ -54,29 +57,27 @@ public class Remove extends AbstractRestrictedRpcCommand {
 
 			if (json())
 				System.out.println(successes.stream().collect(Collectors.joining(", ", "[", "]")));
+			else
+				successes.stream().forEach(uuid -> System.out.println("Removed " + uuid + " from the set of miners"));
 
 			if (exception.isPresent())
-				try {
-					throwAsRpcCommandException(exception.get());
-				}
-				catch (DatabaseException e) {
-					throw new RuntimeException("Unexpected exception", e);
-				}
+				throwAsRpcCommandException(exception.get());
 		}
 
 		private Optional<Exception> closeMiner(UUID uuid) {
 			try {
-				if (remote.removeMiner(uuid))
-					if (json())
-						successes.add(uuid.toString());
-					else
-						System.out.println("Removed " + uuid + " from the set of miners");
+				if (remote.removeMiner(uuid)) {
+					successes.add(uuid.toString());
+					return Optional.empty();
+				}
 				else
-					System.out.println("Miner " + uuid + " has not been removed from the set of peers: are you sure that it exists?");
-
-				return Optional.empty();
+					return Optional.of(new CommandException("Miner " + uuid + " has not been removed from the set of peers: are you sure that it exists?"));
 			}
-			catch (RuntimeException | ClosedNodeException | TimeoutException | InterruptedException e) {
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return Optional.of(e);
+			}
+			catch (RuntimeException | ClosedNodeException | TimeoutException e) {
 				return Optional.of(e);
 			}
 			catch (IOException e) {

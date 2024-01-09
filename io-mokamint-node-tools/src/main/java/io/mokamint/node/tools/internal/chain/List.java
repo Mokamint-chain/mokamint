@@ -38,9 +38,9 @@ import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "ls", description = "List the blocks in the chain of a node.")
 public class List extends AbstractPublicRpcCommand {
@@ -104,11 +104,11 @@ public class List extends AbstractPublicRpcCommand {
 		private final String[] hashes;
 		private final int slotsForHash;
 		private final String[] creationDateTimesUTC;
-		private final int slotsForCreationDateTimesUTC;
+		private final int slotsForCreationDateTimeUTC;
 		private final String[] peerPublicKeys;
-		private final int slotsForPeerPublicKeys;
+		private final int slotsForPeerPublicKey;
 		private final String[] minerPublicKeys;
-		private final int slotsForMinerPublicKeys;
+		private final int slotsForMinerPublicKey;
 
 		/**
 		 * Lists the hashes in {@code chain}, reporting the time of creation of each block.
@@ -135,9 +135,9 @@ public class List extends AbstractPublicRpcCommand {
 			fillColumns(hashes);
 			this.slotsForHeight = Stream.of(heights).mapToInt(String::length).max().getAsInt();
 			this.slotsForHash = Stream.of(this.hashes).mapToInt(String::length).max().getAsInt();
-			this.slotsForCreationDateTimesUTC = Stream.of(creationDateTimesUTC).mapToInt(String::length).max().getAsInt();
-			this.slotsForPeerPublicKeys = Stream.of(peerPublicKeys).mapToInt(String::length).max().getAsInt();
-			this.slotsForMinerPublicKeys = Stream.of(minerPublicKeys).mapToInt(String::length).max().getAsInt();
+			this.slotsForCreationDateTimeUTC = Stream.of(creationDateTimesUTC).mapToInt(String::length).max().getAsInt();
+			this.slotsForPeerPublicKey = Stream.of(peerPublicKeys).mapToInt(String::length).max().getAsInt();
+			this.slotsForMinerPublicKey = Stream.of(minerPublicKeys).mapToInt(String::length).max().getAsInt();
 			printRows();
 		}
 
@@ -187,9 +187,9 @@ public class List extends AbstractPublicRpcCommand {
 			String result = String.format("%s %s  %s  %s  %s",
 				rightAlign(heights[pos], slotsForHeight),
 				center(hashes[pos], slotsForHash),
-				center(creationDateTimesUTC[pos], slotsForCreationDateTimesUTC),
-				center(peerPublicKeys[pos], slotsForPeerPublicKeys),
-				center(minerPublicKeys[pos], slotsForMinerPublicKeys));
+				center(creationDateTimesUTC[pos], slotsForCreationDateTimeUTC),
+				center(peerPublicKeys[pos], slotsForPeerPublicKey),
+				center(minerPublicKeys[pos], slotsForMinerPublicKey));
 
 			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
 		}
