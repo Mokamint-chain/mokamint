@@ -27,6 +27,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -41,48 +42,55 @@ public class Show extends AbstractPublicRpcCommand {
 	@Parameters(index = "0", description = "the hexadecimal hash of the transaction")
 	private String hash;
 
-	@Option(names = "--bytes", description = "report the transaction as its Base64-encoded bytes", defaultValue = "false")
-    private boolean bytes;
+	@Option(names = "--representation", description = "report the representation of the transaction instead of its Base64-encoded bytes", defaultValue = "false")
+    private boolean representation;
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException, DatabaseException {
+		if (representation) {
+			String representation = getTransactionRepresentation(remote);
+
+			if (json()) {
+				var answer = new Answer();
+				answer.representation = representation;
+				System.out.println(new Gson().toJsonTree(answer));
+			}
+			else
+				System.out.println(representation);
+		}
+		else {
+			var transaction = getTransaction(remote);
+
+			if (json()) {
+				try {
+					System.out.println(new Transactions.Encoder().encode(transaction));
+				}
+				catch (EncodeException e) {
+					throw new CommandException("Cannot encode a transaction at \"" + publicUri() + "\" in JSON format!", e);
+				}
+			}
+			else
+				System.out.println(transaction);
+		}
+	}
+
+	private String getTransactionRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
 		try {
-			if (bytes) {
-				var maybeTransaction = remote.getTransaction(toBytes(hash));
-				if (maybeTransaction.isEmpty())
-					throw new CommandException("The blockchain of the node does not contain any transaction with that hash!");
-
-				if (json()) {
-					try {
-						System.out.println(new Transactions.Encoder().encode(maybeTransaction.get()));
-					}
-					catch (EncodeException e) {
-						throw new CommandException("Cannot encode a transaction at \"" + publicUri() + "\" in JSON format!", e);
-					}
-				}
-				else
-					System.out.println(maybeTransaction.get());
-			}
-			else {
-				var maybeRepresentation = remote.getTransactionRepresentation(toBytes(hash));
-				if (maybeRepresentation.isEmpty())
-					throw new CommandException("The blockchain of the node does not contain any transaction with that hash!");
-
-				if (json()) {
-					var answer = new Answer();
-					answer.representation = maybeRepresentation.get();
-
-					var gson = new Gson();
-					System.out.println(gson.toJsonTree(answer));
-				}
-				else
-					System.out.println(maybeRepresentation.get());
-			}
+			return remote.getTransactionRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown cryptographical algorithm in a block of \"" + publicUri() + "\"", e);
 		}
 		catch (RejectedTransactionException e) {
 			throw new CommandException("The transaction exists in blockchain but cannot be transformed into its textual representation", e);
+		}
+	}
+
+	private Transaction getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
+		try {
+			return remote.getTransaction(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new CommandException("Unknown cryptographical algorithm in a block of \"" + publicUri() + "\"", e);
 		}
 	}
 

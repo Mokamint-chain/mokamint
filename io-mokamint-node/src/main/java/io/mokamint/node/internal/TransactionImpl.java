@@ -71,7 +71,7 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 
 	@Override
 	public String toString() {
-		return Base64.toBase64String(bytes);
+		return Base64.toBase64String(bytes) + " (base64)";
 	}
 
 	/**

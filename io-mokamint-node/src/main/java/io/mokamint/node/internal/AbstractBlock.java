@@ -54,9 +54,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private final D description;
 
 	/**
-	 * The hash of the application at the end of this block.
+	 * The identifier of the state of the application at the end of this block.
 	 */
-	private final byte[] stateHash;
+	private final byte[] stateId;
 
 	/**
 	 * The signature of this block.
@@ -90,12 +90,12 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * Creates an abstract block with the given description.
 	 * 
 	 * @param description the description of the block
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature of the block
 	 */
-	protected AbstractBlock(D description, byte[] stateHash, byte[] signature) {
+	protected AbstractBlock(D description, byte[] stateId, byte[] signature) {
 		this.description = description;
-		this.stateHash = stateHash.clone();
+		this.stateId = stateId.clone();
 		this.signature = signature.clone();
 	}
 
@@ -103,14 +103,14 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * Creates an abstract block with the given description and signs it.
 	 * 
 	 * @param description the description of the block
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if signing failed
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
-	protected AbstractBlock(D description, byte[] stateHash, PrivateKey privateKey, byte[] bytesToSign) throws InvalidKeyException, SignatureException {
+	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, byte[] bytesToSign) throws InvalidKeyException, SignatureException {
 		this.description = description;
-		this.stateHash = stateHash.clone();
+		this.stateId = stateId.clone();
 		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(bytesToSign);
 	}
 
@@ -127,7 +127,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		this.description = description;
 
 		try {
-			this.stateHash = context.readLengthAndBytes("State hash length mismatch");
+			this.stateId = context.readLengthAndBytes("State id length mismatch");
 			this.signature = context.readLengthAndBytes("Signature length mismatch");
 		}
 		catch (RuntimeException e) {
@@ -162,8 +162,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final byte[] getStateHash() {
-		return stateHash.clone();
+	public final byte[] getStateId() {
+		return stateId.clone();
 	}
 
 	@Override
@@ -217,16 +217,16 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 			// and non-genesis is only equals to non-genesis
 			&& description.equals(block.getDescription()))
 			if (other instanceof AbstractBlock<?> oab)
-				return Arrays.equals(signature, oab.signature) && Arrays.equals(stateHash, oab.stateHash); // optimization
+				return Arrays.equals(signature, oab.signature) && Arrays.equals(stateId, oab.stateId); // optimization
 			else
-				return Arrays.equals(signature, block.getSignature()) && Arrays.equals(stateHash, block.getStateHash());
+				return Arrays.equals(signature, block.getSignature()) && Arrays.equals(stateId, block.getStateId());
 		else
 			return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return description.hashCode() ^ Arrays.hashCode(stateHash);
+		return description.hashCode() ^ Arrays.hashCode(stateId);
 	}
 
 	@Override
@@ -240,8 +240,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
 		builder.append(description.toString(config, startDateTimeUTC));
 		builder.append("\n");
-		builder.append("* signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
-		builder.append("* final state hash: " + Hex.toHexString(stateHash));
+		builder.append("* peer's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
+		builder.append("* final state id: " + Hex.toHexString(stateId));
 
 		return builder.toString();
 	}
@@ -249,7 +249,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		description.into(context);
-		context.writeLengthAndBytes(stateHash);
+		context.writeLengthAndBytes(stateId);
 		context.writeLengthAndBytes(signature);
 	}
 

@@ -96,12 +96,16 @@ public class List extends AbstractPublicRpcCommand {
 		}
 
 		private String format(int pos) {
-			String result = String.format("%s %s   %s",
-				center(uuids[pos], slotsForUUID),
-				rightAlign(points[pos], slotsForPoints),
-				center(descriptions[pos], slotsForDescription));
-
-			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+			if (pos == 0)
+				return Ansi.AUTO.string("@|green " + String.format("%s %s   %s",
+						center(uuids[pos], slotsForUUID),
+						center(points[pos], slotsForPoints),
+						center(descriptions[pos], slotsForDescription)) + "|@");
+			else
+				return String.format("%s %s   %s",
+						center(uuids[pos], slotsForUUID),
+						rightAlign(points[pos], slotsForPoints),
+						leftAlign(descriptions[pos], slotsForDescription));
 		}
 	}
 

@@ -77,6 +77,20 @@ public abstract class AbstractCommandImpl implements Callable<Void> {
 	}
 
 	/**
+	 * Aligns the given string on the left of the given number of columns.
+	 * 
+	 * @param s the string to center
+	 * @param size the number of columns
+	 * @return the left-aligned string {@code s}, with spaces after if needed
+	 */
+	protected static String leftAlign(String s, int size) {
+		if (size <= s.length())
+			return s;
+		else
+			return s + " ".repeat(size - s.length());
+	}
+
+	/**
 	 * Executes the command.
 	 * 
 	 * @throws CommandException if something erroneous must be logged and the user must be informed

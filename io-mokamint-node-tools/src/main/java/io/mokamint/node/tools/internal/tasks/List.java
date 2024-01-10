@@ -21,6 +21,7 @@ import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.mokamint.node.TaskInfos;
@@ -31,34 +32,62 @@ import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "ls", description = "List the tasks of a node.")
 public class List extends AbstractPublicRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
-		try {
-			TaskInfo[] infos = remote.getTaskInfos().sorted().toArray(TaskInfo[]::new);
+		var infos = remote.getTaskInfos().sorted().toArray(TaskInfo[]::new);
 
-			if (json()) {
+		if (json()) {
+			try {
 				var encoder = new TaskInfos.Encoder();
 				System.out.println(check(EncodeException.class, () ->
-					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
-				));
+				Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
+						));
 			}
-			else if (infos.length > 0)
-				Stream.of(infos).map(info -> formatLine(info)).forEachOrdered(System.out::println);
+			catch (EncodeException e) {
+				throw new CommandException("Cannot encode the tasks of the node at " + publicUri() + " in JSON format!", e);
+			}
 		}
-		catch (EncodeException e) {
-			throw new CommandException("Cannot encode the tasks of the node at " + publicUri() + " in JSON format!", e);
-		}
+		else if (infos.length > 0)
+			new ListTasks(infos);
 	}
 
-	private String formatLine(TaskInfo info) {
-		return formatLine(info.getDescription());
-	}
+	private class ListTasks {
+		private final String[] descriptions;
+		private final int slotsForDescription;
 
-	private String formatLine(String description) {
-		return String.format("%-80s", description);
+		/**
+		 * Lists the tasks with the given {@code infos}.
+		 * 
+		 * @param infos the tasks information
+		 */
+		private ListTasks(TaskInfo[] infos) {
+			this.descriptions = new String[1 + infos.length];
+			fillColumns(infos);
+			this.slotsForDescription = Stream.of(descriptions).mapToInt(String::length).max().getAsInt();
+			printRows();
+		}
+
+		private void fillColumns(TaskInfo[] infos) {
+			descriptions[0] = "description";
+			
+			for (int pos = 1; pos < descriptions.length; pos++)
+				descriptions[pos] = infos[pos - 1].getDescription();
+		}
+
+		private void printRows() {
+			IntStream.iterate(0, i -> i + 1).limit(descriptions.length).mapToObj(this::format).forEach(System.out::println);
+		}
+
+		private String format(int pos) {
+			if (pos == 0)
+				return Ansi.AUTO.string("@|green " + String.format("%s", center(descriptions[pos], slotsForDescription)) + "|@");
+			else
+				return String.format("%s", leftAlign(descriptions[pos], slotsForDescription));
+		}
 	}
 
 	@Override

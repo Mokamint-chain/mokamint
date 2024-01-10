@@ -75,7 +75,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 		super(description, context);
 
 		try {
-			verify(toByteArrayWithoutSignature(description, getStateHash()));
+			verify(toByteArrayWithoutSignature(description, getStateId()));
 		}
 		catch (RuntimeException e) {
 			throw new IOException(e);

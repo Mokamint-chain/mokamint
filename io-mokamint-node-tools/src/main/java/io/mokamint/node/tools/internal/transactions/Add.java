@@ -37,24 +37,11 @@ import picocli.CommandLine.Parameters;
 @Command(name = "add", description = "Add a transaction to the mempool of a node.")
 public class Add extends AbstractPublicRpcCommand {
 
-	@Parameters(description = "the transaction to add, as its Base64-encoded bytes")
+	@Parameters(description = "the Base64-encoded bytes of the transaction to add")
 	private String tx;
 
 	private void body(RemotePublicNode remote) throws ClosedNodeException, DatabaseException, TimeoutException, InterruptedException, CommandException {
-		MempoolEntry info;
-
-		try {
-			info = remote.add(Transactions.of(Base64.fromBase64String(tx)));
-		}
-		catch (Base64ConversionException e) {
-			throw new CommandException("Illegal Base64 encoding of the transaction!", e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The databse of the node contains a block that refers to an unknown cryptographic algorithm: " + e.getMessage(), e);
-		}
-		catch (RejectedTransactionException e) {
-			throw new CommandException("The transaction has been rejected: " + e.getMessage(), e);
-		}
+		MempoolEntry info = addTransaction(remote);
 
 		if (json()) {
 			try {
@@ -66,6 +53,21 @@ public class Add extends AbstractPublicRpcCommand {
 		}
 		else
 			System.out.println(info);
+	}
+
+	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, CommandException {
+		try {
+			return remote.add(Transactions.of(Base64.fromBase64String(tx)));
+		}
+		catch (Base64ConversionException e) {
+			throw new CommandException("Illegal Base64 encoding of the transaction!", e);
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new CommandException("The database of the node contains a block that refers to an unknown cryptographic algorithm: " + e.getMessage(), e);
+		}
+		catch (RejectedTransactionException e) {
+			throw new CommandException("The transaction has been rejected: " + e.getMessage(), e);
+		}
 	}
 
 	@Override

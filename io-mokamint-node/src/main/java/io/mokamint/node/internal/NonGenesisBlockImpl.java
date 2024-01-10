@@ -96,7 +96,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 
 		try {
 			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
-			verify(toByteArrayWithoutSignature(description, getStateHash(), transactions));
+			verify(toByteArrayWithoutSignature(description, getStateId(), transactions));
 		}
 		catch (RuntimeException e) {
 			throw new IOException(e);

@@ -263,7 +263,7 @@ public class BlockVerification {
 	 */
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		var app = node.getApplication();
-		int id = app.beginBlock(block.getDescription().getHeight(), previous.getStateHash(), node.getBlockchain().creationTimeOf(block));
+		int id = app.beginBlock(block.getDescription().getHeight(), previous.getStateId(), node.getBlockchain().creationTimeOf(block));
 		boolean success = false;
 
 		try {
@@ -285,8 +285,8 @@ public class BlockVerification {
 
 			var expected = app.endBlock(id, block.getDeadline());
 
-			if (!Arrays.equals(block.getStateHash(), expected))
-				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
+			if (!Arrays.equals(block.getStateId(), expected))
+				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
 
 			success = true;
 		}
@@ -300,7 +300,7 @@ public class BlockVerification {
 
 	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException {
 		var expected = node.getApplication().getInitialStateHash();
-		if (!Arrays.equals(block.getStateHash(), expected))
-			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateHash()) + ")");
+		if (!Arrays.equals(block.getStateId(), expected))
+			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
 	}
 }

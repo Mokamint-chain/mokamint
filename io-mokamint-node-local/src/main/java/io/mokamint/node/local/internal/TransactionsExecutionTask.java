@@ -102,7 +102,7 @@ public class TransactionsExecutionTask implements Task {
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
-		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, previous.getStateHash(), node.getBlockchain().creationTimeOf(previous));
+		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, previous.getStateId(), node.getBlockchain().creationTimeOf(previous));
 	}
 
 	/**

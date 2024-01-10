@@ -198,7 +198,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
 		super.populate(builder, config, startDateTimeUTC);
-		builder.append("\n* public key of the node that signed the block: " + publicKeyBase58 + " (" + signatureForBlocks + ")");
+		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlocks + ", base58)");
 	}
 
 	@Override

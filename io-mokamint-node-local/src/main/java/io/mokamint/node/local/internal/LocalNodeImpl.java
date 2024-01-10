@@ -792,7 +792,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws RejectedExecutionException if the task could not be started
 	 */
 	protected Future<?> scheduleTransactionExecutor(TransactionsExecutionTask task) throws RejectedExecutionException {
-		return submit(task, "transactions execution from state " + Hex.toHexString(task.getPrevious().getStateHash()));
+		return submit(task, "transactions execution from state " + Hex.toHexString(task.getPrevious().getStateId()));
 	}
 
 	/**

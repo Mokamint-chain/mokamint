@@ -50,12 +50,12 @@ public interface Block extends Marshallable {
 	byte[] getSignature();
 
 	/**
-	 * Yields the hash of the state of the application at the end of the execution of the
+	 * Yields the identifier of the state of the application at the end of the execution of the
 	 * transactions from the beginning of the blockchain to the end of this block.
 	 * 
-	 * @return the hash of the state of the application
+	 * @return the identifier of the state of the application
 	 */
-	byte[] getStateHash();
+	byte[] getStateId();
 
 	/**
 	 * Yields the hash of this block, by using the given hashing algorithm.
