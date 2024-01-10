@@ -17,13 +17,8 @@ limitations under the License.
 package io.mokamint.node.tools.internal.miners;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -33,61 +28,29 @@ import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "rm", description = "Remove miners from a node.")
+@Command(name = "rm", description = "Remove a miner from a node.")
 public class Remove extends AbstractRestrictedRpcCommand {
 
-	@Parameters(description = "the UUIDs of the miners to remove")
-	private UUID[] uuids;
+	@Parameters(description = "the UUID of the miner to remove")
+	private UUID uuid;
 
-	private class Run {
-		private final RemoteRestrictedNode remote;
-		private final List<String> successes = new ArrayList<>();
-
-		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
-			if (uuids == null || uuids.length == 0)
-				throw new CommandException("No miners have been specified!");
-
-			this.remote = remote;
-
-			Optional<Exception> exception = Stream.of(uuids)
-				.parallel()
-				.map(this::closeMiner)
-				.flatMap(Optional::stream)
-				.findFirst();
-
-			if (json())
-				System.out.println(successes.stream().collect(Collectors.joining(", ", "[", "]")));
-			else
-				successes.stream().forEach(uuid -> System.out.println("Removed " + uuid + " from the set of miners"));
-
-			if (exception.isPresent())
-				throwAsRpcCommandException(exception.get());
-		}
-
-		private Optional<Exception> closeMiner(UUID uuid) {
-			try {
-				if (remote.removeMiner(uuid)) {
-					successes.add(uuid.toString());
-					return Optional.empty();
-				}
+	private void body(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+		try {
+			if (remote.removeMiner(uuid))
+				if (json())
+					System.out.println(uuid);
 				else
-					return Optional.of(new CommandException("Miner " + uuid + " has not been removed from the set of peers: are you sure that it exists?"));
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				return Optional.of(e);
-			}
-			catch (RuntimeException | ClosedNodeException | TimeoutException e) {
-				return Optional.of(e);
-			}
-			catch (IOException e) {
-				return Optional.of(new CommandException("Cannot close miner " + uuid, e));
-			}
+					System.out.println("Closed miner " + uuid);
+			else
+				throw new CommandException("Miner " + uuid + " has not been removed from the set of miners: are you sure that it exists?");
+		}
+		catch (IOException e) {
+			throw new CommandException("Cannot close miner " + uuid, e);
 		}
 	}
 
 	@Override
 	protected void execute() throws CommandException {
-		execute(Run::new);
+		execute(this::body);
 	}
 }

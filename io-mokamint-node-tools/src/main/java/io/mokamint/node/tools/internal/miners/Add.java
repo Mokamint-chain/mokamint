@@ -17,16 +17,11 @@ limitations under the License.
 package io.mokamint.node.tools.internal.miners;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -34,73 +29,36 @@ import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "add", description = "Add remote miners to a node.")
+@Command(name = "add", description = "Add a remote miner to a node.")
 public class Add extends AbstractRestrictedRpcCommand {
 
-	@Parameters(description = "the ports where the miners must be published")
-	private int[] ports;
+	@Parameters(description = "the port where the miner must be published")
+	private int port;
 
-	private class Run {
-		private final RemoteRestrictedNode remote;
-		private final java.util.List<MinerInfo> successes = new CopyOnWriteArrayList<>();
-		private final java.util.List<Exception> exceptions = new CopyOnWriteArrayList<>();
+	private void body(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+		if (port < 0 || port > 65535)
+			throw new CommandException("The port number must be between 0 and 65535 inclusive");
 
-		private Run(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
-			if (ports == null || ports.length == 0)
-				throw new CommandException("No ports have been specified!");
+		try {
+			var info = remote.openMiner(port);
+			if (info.isEmpty())
+				throw new CommandException("No remote miner has been opened");
 
-			this.remote = remote;
-
-			IntStream.of(ports)
-				.parallel()
-				.forEachOrdered(this::addMiner);
-
-			if (json()) {
-				var encoder = new MinerInfos.Encoder();
-				var opened = new HashSet<String>();
-				for (var info: successes)
-					opened.add(encode(info, encoder));
-
-				System.out.println(opened.stream().collect(Collectors.joining(",", "[", "]")));
-			}
+			if (json())
+				System.out.println(new MinerInfos.Encoder().encode(info.get()));
 			else
-				successes.stream().map(mi -> "Opened " + mi).forEach(System.out::println);
-
-			if (!exceptions.isEmpty())
-				throwAsRpcCommandException(exceptions.get(0));
+				System.out.println("Opened " + info.get());
 		}
-
-		private String encode(MinerInfo info, MinerInfos.Encoder encoder) throws CommandException {
-			try {
-				return encoder.encode(info);
-			}
-			catch (EncodeException e) {
-				throw new CommandException("Cannot encode " + info + " in JSON", e);
-			}
+		catch (IOException e) {
+			throw new CommandException("Cannot open a remote miner at port " + port + "! Are you sure that the port is available?", e);
 		}
-
-		private void addMiner(int port) {
-			try {
-				remote.openMiner(port).ifPresentOrElse(successes::add, () -> {
-					if (!json())
-						System.out.println("No remote miner has been opened at port " + port);
-				});
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				exceptions.add(e);
-			}
-			catch (RuntimeException | ClosedNodeException | TimeoutException e) {
-				exceptions.add(e);
-			}
-			catch (IOException e) {
-				exceptions.add(new CommandException("Cannot open a remote miner at port " + port + "!", e));
-			}
+		catch (EncodeException e) {
+			throw new CommandException("Cannot encode a miner info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
 		}
 	}
 
 	@Override
 	protected void execute() throws CommandException {
-		execute(Run::new);
+		execute(this::body);
 	}
 }

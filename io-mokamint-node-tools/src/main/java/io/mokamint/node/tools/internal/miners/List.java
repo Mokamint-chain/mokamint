@@ -21,6 +21,7 @@ import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.mokamint.node.MinerInfos;
@@ -37,31 +38,71 @@ import picocli.CommandLine.Help.Ansi;
 public class List extends AbstractPublicRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
-		try {
 			var infos = remote.getMinerInfos().sorted().toArray(MinerInfo[]::new);
 
 			if (json()) {
 				var encoder = new MinerInfos.Encoder();
-				System.out.println(check(EncodeException.class, () ->
-					Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
-				));
+				try {
+					System.out.println(check(EncodeException.class, () ->
+						Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
+					));
+				}
+				catch (EncodeException e) {
+					throw new CommandException("Cannot encode the miners of the node at " + publicUri() + " in JSON format!", e);
+				}
 			}
-			else if (infos.length > 0) {
-				System.out.println(Ansi.AUTO.string("@|green " + formatLine("UUID", "points", "description") + "|@"));
-				Stream.of(infos).map(info -> formatLine(info)).forEachOrdered(System.out::println);
-			}
-		}
-		catch (EncodeException e) {
-			throw new CommandException("Cannot encode the miners of the node at " + publicUri() + " in JSON format!", e);
-		}
+			else if (infos.length > 0)
+				new ListMiners(infos);
 	}
 
-	private String formatLine(MinerInfo info) {
-		return formatLine(info.getUUID().toString(), String.valueOf(info.getPoints()), info.getDescription());
-	}
+	private class ListMiners {
+		private final String[] uuids;
+		private final int slotsForUUID;
+		private final String[] points;
+		private final int slotsForPoints;
+		private final String[] descriptions;
+		private final int slotsForDescription;
 
-	private String formatLine(String uuid, String points, String description) {
-		return String.format("%-36s   %6s  %-36s", uuid, points, description);
+		/**
+		 * Lists the miners with the given {@code infos}.
+		 * 
+		 * @param infos the miners information
+		 */
+		private ListMiners(MinerInfo[] infos) {
+			this.uuids = new String[1 + infos.length];
+			this.points = new String[uuids.length];
+			this.descriptions = new String[uuids.length];
+			fillColumns(infos);
+			this.slotsForUUID = Stream.of(uuids).mapToInt(String::length).max().getAsInt();
+			this.slotsForPoints = Stream.of(points).mapToInt(String::length).max().getAsInt();
+			this.slotsForDescription = Stream.of(descriptions).mapToInt(String::length).max().getAsInt();
+			printRows();
+		}
+
+		private void fillColumns(MinerInfo[] infos) {
+			uuids[0] = "UUID";
+			points[0] = "points";
+			descriptions[0] = "description";
+			
+			for (int pos = 1; pos < uuids.length; pos++) {
+				uuids[pos] = String.valueOf(infos[pos - 1].getUUID());
+				points[pos] = String.valueOf(infos[pos - 1].getPoints());
+				descriptions[pos] = infos[pos - 1].getDescription();
+			}
+		}
+
+		private void printRows() {
+			IntStream.iterate(0, i -> i + 1).limit(uuids.length).mapToObj(this::format).forEach(System.out::println);
+		}
+
+		private String format(int pos) {
+			String result = String.format("%s %s   %s",
+				center(uuids[pos], slotsForUUID),
+				rightAlign(points[pos], slotsForPoints),
+				center(descriptions[pos], slotsForDescription));
+
+			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+		}
 	}
 
 	@Override
