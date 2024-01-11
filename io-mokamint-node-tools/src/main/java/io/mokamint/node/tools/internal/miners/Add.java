@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -39,21 +40,26 @@ public class Add extends AbstractRestrictedRpcCommand {
 		if (port < 0 || port > 65535)
 			throw new CommandException("The port number must be between 0 and 65535 inclusive");
 
-		try {
-			var info = remote.openMiner(port);
-			if (info.isEmpty())
-				throw new CommandException("No remote miner has been opened");
+		MinerInfo info = openMiner(remote);
 
-			if (json())
-				System.out.println(new MinerInfos.Encoder().encode(info.get()));
-			else
-				System.out.println("Opened " + info.get());
+		if (json()) {
+			try {
+				System.out.println(new MinerInfos.Encoder().encode(info));
+			}
+			catch (EncodeException e) {
+				throw new CommandException("Cannot encode a miner info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
+			}
+		}
+		else
+			System.out.println("Opened " + info);
+	}
+
+	protected MinerInfo openMiner(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+		try {
+			return remote.openMiner(port).orElseThrow(() -> new CommandException("No remote miner has been opened"));
 		}
 		catch (IOException e) {
 			throw new CommandException("Cannot open a remote miner at port " + port + "! Are you sure that the port is available?", e);
-		}
-		catch (EncodeException e) {
-			throw new CommandException("Cannot encode a miner info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
 		}
 	}
 

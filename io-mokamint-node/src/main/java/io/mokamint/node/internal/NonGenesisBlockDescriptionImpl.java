@@ -222,7 +222,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("  * prolog:\n");
 		var prolog = deadline.getProlog();
 		builder.append("    * chain identifier: " + prolog.getChainId() + "\n");
-		builder.append("    * public key of the peer that signed the block: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ", base58)\n");
+		builder.append("    * public key of the node that signed the block: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ", base58)\n");
 		builder.append("    * public key of the miner that signed the deadline: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ", base58)\n");
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
 		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");

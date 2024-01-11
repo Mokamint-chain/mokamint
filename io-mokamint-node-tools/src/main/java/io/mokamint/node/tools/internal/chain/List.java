@@ -105,8 +105,8 @@ public class List extends AbstractPublicRpcCommand {
 		private final int slotsForHash;
 		private final String[] creationDateTimesUTC;
 		private final int slotsForCreationDateTimeUTC;
-		private final String[] peerPublicKeys;
-		private final int slotsForPeerPublicKey;
+		private final String[] nodePublicKeys;
+		private final int slotsForNodePublicKey;
 		private final String[] minerPublicKeys;
 		private final int slotsForMinerPublicKey;
 
@@ -130,13 +130,13 @@ public class List extends AbstractPublicRpcCommand {
 			this.heights = new String[1 + hashes.length];
 			this.hashes = new String[heights.length];
 			this.creationDateTimesUTC = new String[heights.length];
-			this.peerPublicKeys = new String[heights.length];
+			this.nodePublicKeys = new String[heights.length];
 			this.minerPublicKeys = new String[heights.length];
 			fillColumns(hashes);
 			this.slotsForHeight = Stream.of(heights).mapToInt(String::length).max().getAsInt();
 			this.slotsForHash = Stream.of(this.hashes).mapToInt(String::length).max().getAsInt();
 			this.slotsForCreationDateTimeUTC = Stream.of(creationDateTimesUTC).mapToInt(String::length).max().getAsInt();
-			this.slotsForPeerPublicKey = Stream.of(peerPublicKeys).mapToInt(String::length).max().getAsInt();
+			this.slotsForNodePublicKey = Stream.of(nodePublicKeys).mapToInt(String::length).max().getAsInt();
 			this.slotsForMinerPublicKey = Stream.of(minerPublicKeys).mapToInt(String::length).max().getAsInt();
 			printRows();
 		}
@@ -145,7 +145,7 @@ public class List extends AbstractPublicRpcCommand {
 			heights[0] = "";
 			this.hashes[0] = "block hash (" + config.getHashingForBlocks() + ")";
 			creationDateTimesUTC[0] = "created (UTC)";
-			peerPublicKeys[0] = "peer public key (" + config.getSignatureForBlocks() + " base58)";
+			nodePublicKeys[0] = "node public key (" + config.getSignatureForBlocks() + " base58)";
 			minerPublicKeys[0] = "miner public key (" + config.getSignatureForDeadlines() + " base58)";
 			
 			for (int pos = 1; pos < this.hashes.length; pos++) {
@@ -164,12 +164,12 @@ public class List extends AbstractPublicRpcCommand {
 						minerPublicKeys[pos] = "unknown";
 					}
 		
-					peerPublicKeys[pos] = "unknown";
+					nodePublicKeys[pos] = "unknown";
 				}
 				else {
 					var description = maybeBlockDescription.get();
 					creationDateTimesUTC[pos] = startDateTimeUTC.plus(description.getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
-					peerPublicKeys[pos] = description.getPublicKeyForSigningBlockBase58();
+					nodePublicKeys[pos] = description.getPublicKeyForSigningBlockBase58();
 
 					if (description instanceof NonGenesisBlockDescription ngbd)
 						minerPublicKeys[pos] = ngbd.getDeadline().getProlog().getPublicKeyForSigningDeadlinesBase58();
@@ -188,7 +188,7 @@ public class List extends AbstractPublicRpcCommand {
 				rightAlign(heights[pos], slotsForHeight),
 				center(hashes[pos], slotsForHash),
 				center(creationDateTimesUTC[pos], slotsForCreationDateTimeUTC),
-				center(peerPublicKeys[pos], slotsForPeerPublicKey),
+				center(nodePublicKeys[pos], slotsForNodePublicKey),
 				center(minerPublicKeys[pos], slotsForMinerPublicKey));
 
 			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;

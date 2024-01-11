@@ -240,7 +240,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
 		builder.append(description.toString(config, startDateTimeUTC));
 		builder.append("\n");
-		builder.append("* peer's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
+		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
 		builder.append("* final state id: " + Hex.toHexString(stateId));
 
 		return builder.toString();
