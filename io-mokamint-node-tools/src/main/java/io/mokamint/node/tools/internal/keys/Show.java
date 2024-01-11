@@ -73,13 +73,11 @@ public class Show extends AbstractCommand {
 				var answer = new Answer();
 				answer.publicKeyBase58 = publicKeyBase58;
 				answer.privateKeyBase58 = privateKeyBase58;
-
-				var gson = new Gson();
-				System.out.println(gson.toJsonTree(answer));
+				System.out.println(new Gson().toJsonTree(answer));
 			}
 			else {
-				System.out.println(" Public key: " + publicKeyBase58 + " (base58)");
-				System.out.println("Private key: " + privateKeyBase58 + " (base58)");
+				System.out.println(" Public key: " + publicKeyBase58 + " (" + signature + ", base58)");
+				System.out.println("Private key: " + privateKeyBase58 + " (" + signature + ", base58)");
 			}
 		}
 		catch (IOException e) {

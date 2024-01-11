@@ -145,8 +145,8 @@ public class List extends AbstractPublicRpcCommand {
 			heights[0] = "";
 			this.hashes[0] = "block hash (" + config.getHashingForBlocks() + ")";
 			creationDateTimesUTC[0] = "created (UTC)";
-			nodePublicKeys[0] = "node public key (" + config.getSignatureForBlocks() + " base58)";
-			minerPublicKeys[0] = "miner public key (" + config.getSignatureForDeadlines() + " base58)";
+			nodePublicKeys[0] = "node's public key (" + config.getSignatureForBlocks() + ", base58)";
+			minerPublicKeys[0] = "miner's public key (" + config.getSignatureForDeadlines() + ", base58)";
 			
 			for (int pos = 1; pos < this.hashes.length; pos++) {
 				long height = from + hashes.length - pos;

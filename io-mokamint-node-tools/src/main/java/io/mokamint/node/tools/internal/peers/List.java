@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.mokamint.node.PeerInfos;
@@ -57,115 +58,90 @@ public class List extends AbstractPublicRpcCommand {
 
 		if (json())
 			printAsJSON(infos);
-		else
+		else if (infos.length > 0)
 			new PrintAsText(infos);
 	}
 
 	private class PrintAsText {
-		private final PeerInfo[] infos;
-		private final int maxPeerLength;
-		private final int maxPointsLength;
-		private final int maxConnectionLength;
-		private final String[] uuids;
+		private final String[] URIs;
+		private final int slotsForURI;
+		private final String[] points;
+		private final int slotsForPoints;
+		private final String[] statuses;
+		private final int slotsForStatus;
+		private final String[] UUIDs;
+		private final int slotsForUUID;
 		private final String[] versions;
-		private final int maxUUIDLength;
-		private final int maxVersionLength;
+		private final int slotsForVersion;
 
 		private PrintAsText(PeerInfo[] infos) {
-			this.infos = infos;
-			this.maxPeerLength = computeMaxPeerLength();
-			this.maxPointsLength = computeMaxPointsLength();
-			this.maxConnectionLength = computeMaxConnectionLength();
-			this.uuids = new String[infos.length];
-			this.versions = new String[infos.length];
-			fetchPeersData();
-			this.maxUUIDLength = computeMaxUUIDLength();
-			this.maxVersionLength = computeMaxVersionLength();
-			printTable();
+			this.URIs = new String[1 + infos.length];
+			this.points = new String[URIs.length];
+			this.statuses = new String[URIs.length];
+			this.UUIDs = new String[URIs.length];
+			this.versions = new String[URIs.length];
+			fillColumns(infos);
+			this.slotsForURI = Stream.of(URIs).mapToInt(String::length).max().getAsInt();
+			this.slotsForPoints = Stream.of(points).mapToInt(String::length).max().getAsInt();
+			this.slotsForStatus = Stream.of(statuses).mapToInt(String::length).max().getAsInt();
+			this.slotsForUUID = Stream.of(UUIDs).mapToInt(String::length).max().getAsInt();
+			this.slotsForVersion = Stream.of(versions).mapToInt(String::length).max().getAsInt();
+			printRows();
 		}
 
-		private void printTable() {
-			boolean first = true;
-			for (int pos = 0; pos < infos.length; pos++) {
-				if (first)
-					if (verbose)
-						System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", "points", "status", "UUID", "version") + "|@"));
-					else
-						System.out.println(Ansi.AUTO.string("@|green " + formatLine("URI", "points", "status") + "|@"));
+		private void fillColumns(PeerInfo[] infos) {
+			URIs[0] = "URI";
+			points[0] = "points";
+			statuses[0] = "status";
+			UUIDs[0] = "UUID";
+			versions[0] = "version";
+			
+			for (int pos = 1; pos < URIs.length; pos++) {
+				PeerInfo info = infos[pos - 1];
+				URIs[pos] = info.getPeer().toString();
+				if (URIs[pos].length() > MAX_PEER_LENGTH)
+					URIs[pos] = URIs[pos].substring(0, MAX_PEER_LENGTH) + "...";
 
-				System.out.println(formatLine(pos));
+				points[pos] = String.valueOf(info.getPoints());
+				statuses[pos] = info.isConnected() ? "connected" : "disconnected";
 
-				first = false;
-			}
-		}
-
-		private void fetchPeersData() {
-			for (int pos = 0; pos < infos.length; pos++) {
 				if (verbose) {
-					try (var remote2 = RemotePublicNodes.of(infos[pos].getPeer().getURI(), 10000L)) {
-						var peerInfo = remote2.getInfo();
-						uuids[pos] = peerInfo.getUUID().toString();
+					try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000L)) {
+						var peerInfo = remote.getInfo();
+						UUIDs[pos] = peerInfo.getUUID().toString();
 						versions[pos] = peerInfo.getVersion().toString();
 					}
 					catch (IOException | DeploymentException | TimeoutException | InterruptedException | ClosedNodeException e) {
-						LOGGER.log(Level.WARNING, "cannot contact " + infos[pos].getPeer(), e);
+						LOGGER.log(Level.WARNING, "cannot contact " + info.getPeer(), e);
+						UUIDs[pos] = "<unknown>";
 						versions[pos] = "<unknown>";
-						uuids[pos] = "<unknown>";
 					}
 				}
 				else
-					uuids[pos] = versions[pos] = "";
+					UUIDs[pos] = versions[pos] = "";
 			}
 		}
 
-		private String formatLine(int pos) {
-			var info = infos[pos];
+		private void printRows() {
+			IntStream.iterate(0, i -> i + 1).limit(URIs.length).mapToObj(this::format).forEach(System.out::println);
+		}
 
+		private String format(int pos) {
+			String result;
 			if (verbose)
-				return formatLine(info.getPeer().toString(), String.valueOf(info.getPoints()), info.isConnected() ? "connected" : "disconnected", uuids[pos], versions[pos]);
+				result = String.format("%s  %s  %s  %s  %s",
+						center(URIs[pos], slotsForURI),
+						rightAlign(points[pos], slotsForPoints),
+						center(statuses[pos], slotsForStatus),
+						center(UUIDs[pos], slotsForUUID),
+						center(versions[pos], slotsForVersion));
 			else
-				return formatLine(info.getPeer().toString(), String.valueOf(info.getPoints()), info.isConnected() ? "connected" : "disconnected");
-		}
+				result = String.format("%s  %s  %s",
+						center(URIs[pos], slotsForURI),
+						rightAlign(points[pos], slotsForPoints),
+						center(statuses[pos], slotsForStatus));
 
-		private String formatLine(String peerName, String points, String connected) {
-			return String.format("%s   %s  %s", center(peerName, maxPeerLength), center(points, maxPointsLength), center(connected, maxConnectionLength));
-		}
-
-		private String formatLine(String peerName, String points, String connected, String uuid, String version) {
-			return String.format("%s   %s  %s  %s  %s",
-				center(peerName, maxPeerLength),
-				center(points, maxPointsLength),
-				center(connected, maxConnectionLength),
-				center(uuid, maxUUIDLength),
-				center(version, maxVersionLength));
-		}
-
-		private int computeMaxPeerLength() {
-			int maxPeerLength = Stream.concat(Stream.of("URI"), Stream.of(infos).map(PeerInfo::getPeer))
-					.map(Object::toString)
-					.mapToInt(String::length).max().getAsInt();
-		
-			return Math.min(maxPeerLength, MAX_PEER_LENGTH);
-		}
-
-		private int computeMaxPointsLength() {
-			return Stream.concat(Stream.of("points"), Stream.of(infos).map(PeerInfo::getPoints).map(String::valueOf))
-					.mapToInt(String::length).max().getAsInt();
-		}
-
-		private int computeMaxConnectionLength() {
-			return Stream.concat(Stream.of("status"), Stream.of(infos).map(info -> info.isConnected() ? "connected" : "disconnected"))
-					.mapToInt(String::length).max().getAsInt();
-		}
-
-		private int computeMaxUUIDLength() {
-			return Stream.concat(Stream.of("UUID"), Stream.of(uuids))
-					.mapToInt(String::length).max().getAsInt();
-		}
-
-		private int computeMaxVersionLength() {
-			return Stream.concat(Stream.of("version"), Stream.of(versions))
-					.mapToInt(String::length).max().getAsInt();
+			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
 		}
 	}
 

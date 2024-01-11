@@ -70,7 +70,7 @@ public class Create extends AbstractCommand {
 				if (publicKeyBase58.length() > 100)
 					publicKeyBase58 = publicKeyBase58.substring(0, 100) + "...";
 
-				System.out.println("Its public key is " + publicKeyBase58 + " (base58).");
+				System.out.println("Its public key is " + publicKeyBase58 + " (" + signature + ", base58).");
 			}
 		}
 		catch (IOException e) {
