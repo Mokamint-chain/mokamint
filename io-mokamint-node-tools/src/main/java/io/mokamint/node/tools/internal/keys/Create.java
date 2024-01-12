@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools.internal.keys;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -36,8 +37,8 @@ import picocli.CommandLine.Parameters;
 @Command(name = "create", description = "Create a new key pair")
 public class Create extends AbstractCommand {
 
-	@Parameters(index = "0", description = "the name of the file where the key pair will be stored")
-	private String name;
+	@Parameters(index = "0", description = "the file where the key pair will be stored")
+	private Path path;
 
 	@Option(names = "--password", description = "the password that will be needed later to use the key pair", interactive = true, defaultValue = "")
     private char[] password;
@@ -57,16 +58,16 @@ public class Create extends AbstractCommand {
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
 			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
-			var fileName = entropy.dump(name);
+			entropy.dump(path.toString().substring(0, path.toString().length() - ".pem".length())); // TODO: just path after moving to Hotmoka 1.4.0
 
 			if (json) {
 				var answer = new Answer();
 				answer.publicKeyBase58 = publicKeyBase58;
-				answer.fileName = fileName.toString();
+				answer.fileName = path.toString();
 				System.out.println(new Gson().toJsonTree(answer));
 			}
 			else {
-				System.out.println("A new key pair has been created and saved as \"" + fileName + "\".");
+				System.out.println("A new key pair has been created and saved as \"" + path + "\".");
 				if (publicKeyBase58.length() > 100)
 					publicKeyBase58 = publicKeyBase58.substring(0, 100) + "...";
 

@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.node.tools.internal.keys;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -38,7 +38,7 @@ import picocli.CommandLine.Parameters;
 public class Show extends AbstractCommand {
 
 	@Parameters(index = "0", description = "the file containing the key pair (without the trailing .pem)")
-	private String name;
+	private Path path;
 
 	@Option(names = "--password", description = "the password of the key pair", interactive = true, defaultValue = "")
     private char[] password;
@@ -57,7 +57,7 @@ public class Show extends AbstractCommand {
 	protected void execute() throws CommandException {
 		String passwordAsString;
 		try {
-			var entropy = Entropies.load(Paths.get(name + ".pem")); // TODO: use load(name) after moving to Hotmoka 1.4.0
+			var entropy = Entropies.load(path);
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
 
@@ -81,7 +81,7 @@ public class Show extends AbstractCommand {
 			}
 		}
 		catch (IOException e) {
-			throw new CommandException("The key pair could not be loaded from file " + name + "!", e);
+			throw new CommandException("The key pair could not be loaded from file " + path + "!", e);
 		}
 		catch (InvalidKeyException e) {
 			throw new CommandException("The key pair is invalid!", e);
