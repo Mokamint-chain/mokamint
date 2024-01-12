@@ -25,8 +25,8 @@ import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Base58ConversionException;
-import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
@@ -63,8 +63,17 @@ public class Create extends AbstractCommand {
 	@Option(names = "--extra", description = "application-specific base58-encoded extra data for the plot", defaultValue = "")
 	private String extraBase58;
 
-	@Option(names = "--hashing", description = "the name of the hashing algorithm for the nonces", defaultValue = "shabal256")
-	private String hashing;
+	@Option(names = "--hashing", description = "the hashing algorithm for the nonces",
+			converter = HashingOptionConverter.class, defaultValue = "shabal256")
+	private HashingAlgorithm hashing;
+
+	@Option(names = "--signature-of-node", description = "the signature algorithm used for nodePublicKeyBase58",
+			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
+	private SignatureAlgorithm signatureOfNode;
+
+	@Option(names = "--signature-of-plot", description = "the signature algorithm used for plotPublicKeyBase58",
+			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
+	private SignatureAlgorithm signatureOfPlot;
 
 	@Override
 	protected void execute() throws CommandException {
@@ -87,10 +96,7 @@ public class Create extends AbstractCommand {
 			throw new CommandException("Invalid public key!", e);
 		}
 
-		try (var plot = Plots.create(path, prolog, start, length, HashingAlgorithms.of(hashing), this::onNewPercent)) {
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The required hashing algorithm \"" + hashing + "\" does not exist!", e);
+		try (var plot = Plots.create(path, prolog, start, length, hashing, this::onNewPercent)) {
 		}
 		catch (InterruptedException e) {
 			throw new CommandException("Interrupted while waiting!", e);
@@ -110,12 +116,10 @@ public class Create extends AbstractCommand {
 	}
 
 	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, CommandException {
-		var ed25519 = SignatureAlgorithms.ed25519();
-
 		return Prologs.of(
 			chainId,
-			ed25519, ed25519.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),
-			ed25519, ed25519.publicKeyFromEncoding(bytesFromBase58(plotPublicKeyBase58)),
+			signatureOfNode, signatureOfNode.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),
+			signatureOfPlot, signatureOfPlot.publicKeyFromEncoding(bytesFromBase58(plotPublicKeyBase58)),
 			bytesFromBase58(extraBase58)
 		);
 	}

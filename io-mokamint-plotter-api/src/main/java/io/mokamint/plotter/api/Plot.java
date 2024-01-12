@@ -85,4 +85,19 @@ public interface Plot extends AutoCloseable {
 	 * @throws SignatureException if the deadline could not be signed
 	 */
 	Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException;
+
+	/**
+	 * Determines if this plot is semantically equivalent to the {@code other}.
+	 * This is structural equivalence: same prolog, same start, same length and same hashing.
+	 * This entails that the two plots must answer equivalently to the
+	 * same requests for smallest deadlines.
+	 * 
+	 * @param other the other object
+	 * @return if and only if {@code other} is a {@link Plot} with the same structuyre as this
+	 */
+	@Override
+	boolean equals(Object other);
+
+	@Override
+	int hashCode();
 }

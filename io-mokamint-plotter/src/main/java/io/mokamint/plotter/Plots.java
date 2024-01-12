@@ -25,6 +25,9 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.internal.PlotImpl;
+import io.mokamint.plotter.internal.gson.PlotDecoder;
+import io.mokamint.plotter.internal.gson.PlotEncoder;
+import io.mokamint.plotter.internal.gson.PlotJson;
 
 /**
  * Provider of plot files for Mokamint.
@@ -63,4 +66,41 @@ public final class Plots {
 	public static Plot create(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent) throws IOException {
 		return new PlotImpl(path, prolog, start, length, hashing, onNewPercent);
 	}
+
+	/**
+	 * Gson encoder.
+	 */
+	public static class Encoder extends PlotEncoder {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {}
+	}
+
+	/**
+	 * Gson decoder.
+	 */
+	public static class Decoder extends PlotDecoder {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {}
+	}
+
+    /**
+     * Json representation.
+     */
+    public static class Json extends PlotJson {
+
+    	/**
+    	 * Creates the Json representation for the given plot.
+    	 * 
+    	 * @param plot the plot
+    	 */
+    	public Json(Plot plot) {
+    		super(plot);
+    	}
+    }
 }

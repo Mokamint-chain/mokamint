@@ -384,4 +384,15 @@ public class PlotImpl implements Plot {
 			}
 		}
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof Plot otherAsPlot && prolog.equals(otherAsPlot.getProlog()) && start == otherAsPlot.getStart()
+				&& length == otherAsPlot.getLength() && hashing.equals(otherAsPlot.getHashing());
+	}
+
+	@Override
+	public int hashCode() {
+		return prolog.hashCode() ^ Long.hashCode(start) ^ Long.hashCode(length) ^ hashing.hashCode();
+	}
 }

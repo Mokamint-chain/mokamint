@@ -14,20 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements the plots of a Mokamint blockchain.
- */
-module io.mokamint.plotter {
-	exports io.mokamint.plotter;
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.plotter.internal.gson to com.google.gson;
+package io.mokamint.plotter.tools.internal;
 
-	requires transitive io.mokamint.plotter.api;
-	requires transitive io.hotmoka.marshalling.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.annotations;
-	requires io.hotmoka.websockets.beans;
-	requires java.logging;
+import java.security.NoSuchAlgorithmException;
+
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.api.HashingAlgorithm;
+import picocli.CommandLine.ITypeConverter;
+
+/**
+ * A converter of a string option into the hashing algorithm with that name.
+ */
+public class HashingOptionConverter implements ITypeConverter<HashingAlgorithm> {
+
+	@Override
+	public HashingAlgorithm convert(String value) throws NoSuchAlgorithmException {
+		return HashingAlgorithms.of(value);
+	}
 }

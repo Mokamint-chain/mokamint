@@ -42,7 +42,7 @@ public class Create extends AbstractCommand {
 	@Option(names = "--password", description = "the password that will be needed later to use the key pair", interactive = true, defaultValue = "")
     private char[] password;
 
-	@Option(names = "--signature", description = "the signature to use for the key pair (ed25519, sha256dsa, qtesla1, qtesla3)",
+	@Option(names = "--signature", description = "the signature algorithm for the key pair (ed25519, sha256dsa, qtesla1, qtesla3)",
 			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
 	private SignatureAlgorithm signature;
 

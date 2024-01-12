@@ -14,20 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements the plots of a Mokamint blockchain.
- */
-module io.mokamint.plotter {
-	exports io.mokamint.plotter;
-	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.plotter.internal.gson to com.google.gson;
+package io.mokamint.plotter.internal.gson;
 
-	requires transitive io.mokamint.plotter.api;
-	requires transitive io.hotmoka.marshalling.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.annotations;
-	requires io.hotmoka.websockets.beans;
-	requires java.logging;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.Plot;
+
+/**
+ * A decoder for {@link Plot}.
+ */
+public class PlotDecoder extends MappedDecoder<Plot, Plots.Json> {
+
+	public PlotDecoder() {
+		super(Plots.Json.class);
+	}
 }

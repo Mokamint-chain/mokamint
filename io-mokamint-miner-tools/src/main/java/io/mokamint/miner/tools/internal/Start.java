@@ -80,7 +80,7 @@ public class Start extends AbstractCommand {
 	@ArgGroup(exclusive = false, multiplicity = "1..*")
 	private PlotArgs[] plotArgs;
 
-	@Option(names = "--uri", description = "the address of the remote mining endpoint", defaultValue = "ws://localhost:8025")
+	@Option(names = "--uri", description = "the URI of the remote mining endpoint", defaultValue = "ws://localhost:8025")
 	private URI uri;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
