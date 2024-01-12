@@ -113,22 +113,22 @@ public class Start extends AbstractCommand {
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (InterruptedException e) {
-					throw new CommandException("Interrupted while waiting!", e);
+					Thread.currentThread().interrupt();
+					throw new CommandException("Interrupted while closing a plot!", e);
 				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! " + e.getMessage() + "|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArg.getPlot() + "\" and its key pair", e);
+					LOGGER.log(Level.WARNING, "I/O error while acccessing plot file \"" + plotArg.getPlot() + "\" and its key pair", e);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArg + "\" uses an unknown hashing algorithm", e);
+					LOGGER.log(Level.WARNING, "the plot file \"" + plotArg + "\" uses an unknown hashing algorithm", e);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 			}
-			else if (plotsAndKeyPairs.isEmpty()) {
+			else if (plotsAndKeyPairs.isEmpty())
 				throw new CommandException("No plot file could be loaded!");
-			}
 			else {
 				try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
 					startMiningService(miner);
@@ -151,19 +151,19 @@ public class Start extends AbstractCommand {
 				throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
 			}
 			catch (InterruptedException e) {
-				// unexpected: who could interrupt this process?
-				throw new CommandException("Unexpected interruption", e);
+				Thread.currentThread().interrupt();
+				throw new CommandException("Interrupted!", e);
 			}
 		}
 
 		private void closeServiceIfKeyPressed(MinerService service) {
 			try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-				System.out.println(Ansi.AUTO.string("@|green Press any key to stop the miner.|@"));
+				System.out.print(Ansi.AUTO.string("@|green Press ENTER to stop the miner: |@"));
 				reader.readLine();
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
-				LOGGER.log(Level.SEVERE, "cannot access the standard input", e);
+				LOGGER.log(Level.WARNING, "cannot access the standard input", e);
 			}
 		
 			try {
@@ -171,7 +171,7 @@ public class Start extends AbstractCommand {
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red Cannot close the service!|@"));
-				LOGGER.log(Level.SEVERE, "cannot close the service", e);
+				LOGGER.log(Level.WARNING, "cannot close the service", e);
 			}
 		}
 	}
