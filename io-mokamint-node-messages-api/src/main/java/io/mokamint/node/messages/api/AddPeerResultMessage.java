@@ -18,11 +18,13 @@ package io.mokamint.node.messages.api;
 
 import java.util.Optional;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to the result of {@link RestrictedNode#add(io.mokamint.node.api.Peer)} method of a node.
  */
+@Immutable
 public interface AddPeerResultMessage extends ResultMessage<Optional<PeerInfo>> {
 }

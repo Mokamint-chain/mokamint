@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
 
 /**
  * The network message corresponding to the {@link PublicNode#getTransaction(byte[])} method.
  */
+@Immutable
 public interface GetTransactionMessage extends RpcMessage {
 
 	/**
@@ -30,7 +32,4 @@ public interface GetTransactionMessage extends RpcMessage {
 	 * @return the parameter
 	 */
 	byte[] getHash();
-
-	@Override
-	boolean equals(Object obj);
 }

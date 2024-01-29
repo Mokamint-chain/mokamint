@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 
 /**
  * A network message corresponding to an exception thrown by a method call.
  */
+@Immutable
 public interface ExceptionMessage extends RpcMessage {
 
 	/**
@@ -36,7 +38,4 @@ public interface ExceptionMessage extends RpcMessage {
 	 * @return the message
 	 */
 	String getMessage();
-
-	@Override
-	boolean equals(Object obj);
 }

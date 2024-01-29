@@ -18,10 +18,12 @@ package io.mokamint.node.messages.api;
 
 import java.util.Optional;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.PublicNode;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#getTransactionRepresentation(byte[])} method.
  */
+@Immutable
 public interface GetTransactionRepresentationResultMessage extends ResultMessage<Optional<String>> {
 }

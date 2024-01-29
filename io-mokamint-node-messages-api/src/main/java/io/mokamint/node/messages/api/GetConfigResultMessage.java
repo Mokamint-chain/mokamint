@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.PublicNode;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#getConfig()} method.
  */
+@Immutable
 public interface GetConfigResultMessage extends ResultMessage<ConsensusConfig<?,?>> {
 }

@@ -18,11 +18,13 @@ package io.mokamint.node.messages.api;
 
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TaskInfo;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#getTaskInfos()} method of a node.
  */
+@Immutable
 public interface GetTaskInfosResultMessage extends ResultMessage<Stream<TaskInfo>> {
 }

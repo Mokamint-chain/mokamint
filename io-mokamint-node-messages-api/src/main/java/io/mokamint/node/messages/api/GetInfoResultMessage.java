@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PublicNode;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#getInfo()} method of a node.
  */
+@Immutable
 public interface GetInfoResultMessage extends ResultMessage<NodeInfo> {
 }

@@ -18,11 +18,13 @@ package io.mokamint.node.messages.api;
 
 import java.util.Optional;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to the result of {@link RestrictedNode#openMiner(int)} method of a node.
  */
+@Immutable
 public interface OpenMinerResultMessage extends ResultMessage<Optional<MinerInfo>> {
 }

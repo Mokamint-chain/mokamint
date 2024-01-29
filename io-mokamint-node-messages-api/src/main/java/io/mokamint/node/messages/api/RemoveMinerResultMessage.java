@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to the result of {@link RestrictedNode#removeMiner(java.util.UUID)} method of a node.
  */
+@Immutable
 public interface RemoveMinerResultMessage extends ResultMessage<Boolean> {
 }

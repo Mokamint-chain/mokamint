@@ -26,7 +26,4 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
  * @param <T> the type of the result value of the method
  */
 public interface ResultMessage<T> extends Supplier<T>, RpcMessage {
-
-	@Override
-	boolean equals(Object obj);
 }

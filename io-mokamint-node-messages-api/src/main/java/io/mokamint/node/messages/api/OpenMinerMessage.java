@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to {@link RestrictedNode#openMiner(int)}.
  */
+@Immutable
 public interface OpenMinerMessage extends RpcMessage {
 
 	/**
@@ -30,7 +32,4 @@ public interface OpenMinerMessage extends RpcMessage {
 	 * @return the port
 	 */
 	int getPort();
-
-	@Override
-	boolean equals(Object obj);
 }

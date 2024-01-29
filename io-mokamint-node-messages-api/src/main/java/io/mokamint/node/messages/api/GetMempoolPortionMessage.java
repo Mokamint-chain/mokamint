@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
 
 /**
  * The network message corresponding to the {@link PublicNode#getMempoolPortion(int, int)} method.
  */
+@Immutable
 public interface GetMempoolPortionMessage extends RpcMessage {
 
 	/**
@@ -37,7 +39,4 @@ public interface GetMempoolPortionMessage extends RpcMessage {
 	 * @return the parameter
 	 */
 	int getCount();
-
-	@Override
-	boolean equals(Object obj);
 }

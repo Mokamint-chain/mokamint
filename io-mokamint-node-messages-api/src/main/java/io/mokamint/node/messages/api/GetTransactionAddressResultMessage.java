@@ -18,11 +18,13 @@ package io.mokamint.node.messages.api;
 
 import java.util.Optional;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TransactionAddress;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#getTransactionAddress(byte[])} method.
  */
+@Immutable
 public interface GetTransactionAddressResultMessage extends ResultMessage<Optional<TransactionAddress>> {
 }

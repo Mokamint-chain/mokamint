@@ -18,11 +18,13 @@ package io.mokamint.node.messages.api;
 
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#getPeerInfos()} method of a node.
  */
+@Immutable
 public interface GetPeerInfosResultMessage extends ResultMessage<Stream<PeerInfo>> {
 }

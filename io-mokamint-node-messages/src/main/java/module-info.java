@@ -25,13 +25,12 @@ module io.mokamint.node.messages {
 
 	requires transitive io.mokamint.node.messages.api;
 	requires io.mokamint.node;
+	requires io.hotmoka.crypto;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.annotations;
 	requires com.google.gson;
-	requires java.logging;
 
 	// only used for tests
-	requires static io.hotmoka.crypto;
 	requires static io.mokamint.nonce;
 }

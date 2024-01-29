@@ -17,10 +17,12 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.mokamint.node.api.PublicNode;
+import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.MempoolEntry;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method of a node.
  */
+@Immutable
 public interface AddTransactionResultMessage extends ResultMessage<MempoolEntry> {
 }

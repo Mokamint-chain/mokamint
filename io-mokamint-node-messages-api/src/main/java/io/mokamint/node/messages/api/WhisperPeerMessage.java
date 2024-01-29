@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.WhisperedPeer;
 
 /**
  * The network message sent to whisper some peers between whisperers.
  */
+@Immutable
 public interface WhisperPeerMessage extends RpcMessage, WhisperedPeer {
 }

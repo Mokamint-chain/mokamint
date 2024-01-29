@@ -18,12 +18,14 @@ package io.mokamint.node.messages.api;
 
 import java.util.UUID;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
  * The network message corresponding to {@link RestrictedNode#removeMiner(java.util.UUID)}.
  */
+@Immutable
 public interface RemoveMinerMessage extends RpcMessage {
 
 	/**
@@ -32,7 +34,4 @@ public interface RemoveMinerMessage extends RpcMessage {
 	 * @return the UUID
 	 */
 	UUID getUUID();
-
-	@Override
-	boolean equals(Object obj);
 }

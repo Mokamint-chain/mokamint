@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
@@ -23,6 +24,7 @@ import io.mokamint.node.api.RestrictedNode;
 /**
  * The network message corresponding to {@link RestrictedNode#remove(Peer)}.
  */
+@Immutable
 public interface RemovePeerMessage extends RpcMessage {
 
 	/**
@@ -31,7 +33,4 @@ public interface RemovePeerMessage extends RpcMessage {
 	 * @return the peer
 	 */
 	Peer getPeer();
-
-	@Override
-	boolean equals(Object obj);
 }
