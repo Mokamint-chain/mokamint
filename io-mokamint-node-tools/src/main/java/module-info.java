@@ -19,7 +19,7 @@ limitations under the License.
  */
 module io.mokamint.node.tools {
 	exports io.mokamint.node.tools;
-	
+
 	// needed to inject CLI options or JSON serialization
     opens io.mokamint.node.tools.internal to info.picocli;
     opens io.mokamint.node.tools.internal.mempool to info.picocli;
@@ -44,4 +44,7 @@ module io.mokamint.node.tools {
 	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
 	requires java.logging;
+
+	uses io.mokamint.application.api.Application;
+	provides io.mokamint.application.api.Application with io.mokamint.node.tools.internal.EmptyApplication;
 }

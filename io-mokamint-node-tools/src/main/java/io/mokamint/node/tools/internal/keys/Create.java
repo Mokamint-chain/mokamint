@@ -58,7 +58,7 @@ public class Create extends AbstractCommand {
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
 			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
-			entropy.dump(path.toString().substring(0, path.toString().length() - ".pem".length())); // TODO: just path after moving to Hotmoka 1.4.0
+			entropy.dump(path);
 
 			if (json) {
 				var answer = new Answer();

@@ -28,20 +28,22 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.ServiceLoader.Provider;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import io.hotmoka.crypto.Entropies;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.Name;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
@@ -49,7 +51,6 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.tools.AbstractCommand;
@@ -97,6 +98,12 @@ public class Start extends AbstractCommand {
 	@ArgGroup(exclusive = false, multiplicity = "0..*")
 	private PlotArgs[] plotArgs;
 
+	@Option(names = "--application", description = "the name of the application that will run in the node")
+	private String application;
+
+	@Option(names = "--application-uri", description = "the URI where the application that will run in the node has been already published")
+	private URI applicationUri;
+
 	@Option(names = "--keys", description = "the file containing the key pair of the node, used to sign the blocks that it mines", required = true)
 	private Path keyPair;
 
@@ -112,7 +119,7 @@ public class Start extends AbstractCommand {
 	@Option(names = "--init", description = "create a genesis block at start-up and start mining", defaultValue = "false")
 	private boolean init;
 
-	@Option(names = "--uri", description = "the URI of the node, such as ws://my.machine.com:8030; if missing, the node will try to use its public IP")
+	@Option(names = "--uri", description = "the URI of the public API of the node, such as ws://my.machine.com:8030; if missing, the node will try to use its public IP and the public port numbers")
 	private URI uri;
 
 	@Option(names = "--public-port", description = "network ports where the public API of the node will be published")
@@ -127,6 +134,11 @@ public class Start extends AbstractCommand {
 	protected void execute() throws CommandException {
 		if (broadcastInterval < 1000L) {
 			System.out.println(Ansi.AUTO.string("@|red broadcast-interval cannot be smaller than one second!|@"));
+			return;
+		}
+
+		if ((application == null) == (applicationUri == null)) {
+			System.out.println(Ansi.AUTO.string("@|red exactly one of the --application and --application-uri options must be specified!|@"));
 			return;
 		}
 
@@ -232,44 +244,52 @@ public class Start extends AbstractCommand {
 				throw new CommandException("The key of the node could not be encoded!", e);
 			}
 
-			System.out.print("Starting a local node... ");
-			try (var node = this.node = LocalNodes.of(config, keyPair, new TestApplication(), init)) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+			try (var app = mkApplication()) {
+				System.out.print("Starting a local node... ");
+				try (var node = this.node = LocalNodes.of(config, keyPair, app, init)) {
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 
-				if (plotsAndKeyPairs.size() >= 1) {
-					if (plotsAndKeyPairs.size() == 1)
-						System.out.print("Starting a local miner with 1 plot... ");
-					else
-						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
-
-					try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
-						if (node.add(miner).isPresent()) {
-							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-							publishPublicAndRestrictedNodeServices(0);
-						}
+					if (plotsAndKeyPairs.size() >= 1) {
+						if (plotsAndKeyPairs.size() == 1)
+							System.out.print("Starting a local miner with 1 plot... ");
 						else
-							throw new CommandException("The miner has not been added!");
+							System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
+
+						try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+							if (node.add(miner).isPresent()) {
+								System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+								publishPublicAndRestrictedNodeServices(0);
+							}
+							else
+								throw new CommandException("The miner has not been added!");
+						}
+						catch (ClosedNodeException e) {
+							// unexpected: who could have closed the node?
+							throw new CommandException("The node has been unexpectedly closed!", e);
+						}
 					}
-					catch (ClosedNodeException e) {
-						// unexpected: who could have closed the node?
-						throw new CommandException("The node has been unexpectedly closed!", e);
-					}
+					else
+						publishPublicAndRestrictedNodeServices(0);
 				}
-				else
-					publishPublicAndRestrictedNodeServices(0);
+				catch (DatabaseException | IOException e) {
+					throw new CommandException("The database seems corrupted!", e);
+				}
+				catch (InterruptedException e) {
+					// unexpected: who could interrupt this process?
+					throw new CommandException("Unexpected interruption!", e);
+				}
+				catch (AlreadyInitializedException e) {
+					throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);
+				}
+				catch (InvalidKeyException | SignatureException e) {
+					throw new CommandException("The node cannot sign the genesis block", e);
+				}
 			}
-			catch (DatabaseException | IOException e) {
-				throw new CommandException("The database seems corrupted!", e);
+			catch (RuntimeException | CommandException e) {
+				throw e;
 			}
-			catch (InterruptedException e) {
-				// unexpected: who could interrupt this process?
-				throw new CommandException("Unexpected interruption!", e);
-			}
-			catch (AlreadyInitializedException e) {
-				throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);
-			}
-			catch (InvalidKeyException | SignatureException e) {
-				throw new CommandException("The node cannot sign the genesis block", e);
+			catch (Exception e) {
+				throw new CommandException("The application did not close correctly", e);
 			}
 		}
 
@@ -350,63 +370,45 @@ public class Start extends AbstractCommand {
 				Files.createDirectories(dir);
 		}
 
+		private Application mkApplication() throws CommandException {
+			Application app;
+
+			if (application != null) {
+				System.out.print("Creating the " + application + " application... ");
+				ServiceLoader<Application> serviceLoader = ServiceLoader.load(Application.class);
+				List<Provider<Application>> providers = serviceLoader.stream()
+					.filter(this::providesRequiredApplication)
+					.collect(Collectors.toList());
+
+				if (providers.size() == 0)
+					throw new CommandException("There are no providers for application " + application);
+				else if (providers.size() > 1)
+					throw new CommandException("There is more than one provider for application " + application);
+
+				app = providers.get(0).get();
+			}
+			else {
+				System.out.print("Connecting to the application at " + applicationUri + "... ");
+				app = new EmptyApplication(); // TODO
+			}
+		
+			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+			return app;
+		}
+
+		private boolean providesRequiredApplication(ServiceLoader.Provider<Application> provider) {
+			Name ann = provider.type().getAnnotation(Name.class);
+			return ann != null && application.equals(ann.value());
+		}
+
 		private void waitForKeyPress() throws CommandException {
 			try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-				System.out.println(Ansi.AUTO.string("@|green Press any key to stop the node.|@"));
+				System.out.print(Ansi.AUTO.string("@|green Press any key to stop the node.|@"));
 				reader.readLine();
 			}
 			catch (IOException e) {
 				throw new CommandException("Cannot access the standard input!", e);
 			}
-		}
-	}
-
-	private static class TestApplication implements Application {
-
-		@Override
-		public boolean checkPrologExtra(byte[] extra) {
-			return true;
-		}
-
-		@Override
-		public void checkTransaction(Transaction transaction) {
-		}
-
-		@Override
-		public long getPriority(Transaction transaction) {
-			return 0L;
-		}
-
-		@Override
-		public byte[] getInitialStateHash() {
-			return "hello".getBytes();
-		}
-
-		@Override
-		public int beginBlock(long height, byte[] stateHash, LocalDateTime creationStartDateTime) {
-			return 42;
-		}
-
-		@Override
-		public void deliverTransaction(Transaction transaction, int id) {
-		}
-
-		@Override
-		public byte[] endBlock(int id, Deadline deadline) {
-			return new byte[] { (byte) id, 13, 1, 19, 73 };
-		}
-
-		@Override
-		public void commitBlock(int id) {
-		}
-
-		@Override
-		public void abortBlock(int id) {
-		}
-
-		@Override
-		public String getRepresentation(Transaction transaction) {
-			return "[]";
 		}
 	}
 }

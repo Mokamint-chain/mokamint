@@ -79,7 +79,7 @@ import io.mokamint.nonce.api.Deadline;
  * performed). This is why both these methods can throw a {@link RejectedTransactionException}.
  */
 @ThreadSafe
-public interface Application {
+public interface Application extends AutoCloseable {
 
 	/**
 	 * Checks if the given extra data from the prolog of a deadline is considered
