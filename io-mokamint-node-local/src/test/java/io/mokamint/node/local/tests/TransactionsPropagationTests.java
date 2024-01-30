@@ -74,7 +74,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	private static KeyPair nodeKey;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException {
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		doNothing().when(app).checkTransaction(any());
@@ -105,7 +105,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			private final Peer expectedPeer;
 			private final Transaction expectedTransaction;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException {
+			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expectedPeer = expectedPeer;

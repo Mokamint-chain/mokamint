@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -98,7 +99,7 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException {
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException {
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
@@ -116,7 +117,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	@Override
-	public void body() {
+	public void body() throws TimeoutException {
 		long sizeUpToNow = 0L;
 
 		try {
@@ -124,7 +125,7 @@ public class TransactionsExecutionTask implements Task {
 			while (!Thread.currentThread().isInterrupted())
 				sizeUpToNow = processNextTransaction(source.take(), sizeUpToNow);
 		}
-		catch (InterruptedException e) {
+		catch (InterruptedException e) { // TODO: stop this with a flag, not with an interruption
 			Thread.currentThread().interrupt();
 			// we do not throw the exception further but rather stop working:
 			// interruption is the standard way of terminating this task
@@ -143,8 +144,10 @@ public class TransactionsExecutionTask implements Task {
 	 * @param deadline the deadline found by the mining task during the execution of the transactions
 	 * @return the processed transactions
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
+	 *                              or for the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	public ProcessedTransactions getProcessedTransactions(Deadline deadline) throws InterruptedException {
+	public ProcessedTransactions getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException { // TODO: throw exception if execution failed
 		done.await();
 		return new ProcessedTransactions(transactions, app.endBlock(id, deadline));
 	}
@@ -154,8 +157,10 @@ public class TransactionsExecutionTask implements Task {
 	 * of its processed transactions, in the database of the application (if any).
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
+	 *                              or for the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	public void commitBlock() throws InterruptedException {
+	public void commitBlock() throws InterruptedException, TimeoutException {
 		done.await();
 		app.commitBlock(id);
 	}
@@ -165,13 +170,15 @@ public class TransactionsExecutionTask implements Task {
 	 * so that it does not modify the database of the application (if any).
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
+	 *                              or for the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	public void abortBlock() throws InterruptedException {
+	public void abortBlock() throws InterruptedException, TimeoutException {
 		done.await();
 		app.abortBlock(id);
 	}
 
-	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) {
+	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException {
 		var tx = next.getTransaction();
 
 		if (transactions.contains(tx))
@@ -182,7 +189,7 @@ public class TransactionsExecutionTask implements Task {
 		int txSize = tx.size();
 		if (sizeUpToNow + txSize <= maxSize) {
 			try {
-				app.deliverTransaction(tx, id);
+				app.deliverTransaction(tx, id); // TODO: in case of exception, getProcessedTransaction() must throw something
 				transactions.add(tx);
 				sizeUpToNow += txSize;
 			}
@@ -233,7 +240,7 @@ public class TransactionsExecutionTask implements Task {
 		 * 
 		 * @return the final state
 		 */
-		public byte[] getStateHash() {
+		public byte[] getStateId() {
 			return stateHash.clone();
 		}
 	}

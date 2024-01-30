@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.Optional;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -185,6 +186,10 @@ public class MiningTask implements Task {
 				}
 				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
+					break;
+				}
+				catch (TimeoutException e) {
+					LOGGER.warning("mining: exiting since the application did not answer in time");
 					break;
 				}
 				catch (RuntimeException e) {

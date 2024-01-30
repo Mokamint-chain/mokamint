@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.api;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.RejectedTransactionException;
@@ -92,8 +93,10 @@ public interface Application extends AutoCloseable {
 	 * 
 	 * @param extra the extra, application-specific bytes of the prolog
 	 * @return true if and only if {@code extra} is valid according to this application
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	boolean checkPrologExtra(byte[] extra);
+	boolean checkPrologExtra(byte[] extra) throws TimeoutException, InterruptedException;
 
 	/**
 	 * Checks if the given transaction is valid according to this application.
@@ -109,8 +112,10 @@ public interface Application extends AutoCloseable {
 	 * @param transaction the transaction to check
 	 * @throws RejectedTransactionException if the check failed and the transaction
 	 *                                      should not be added to the mempool
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void checkTransaction(Transaction transaction) throws RejectedTransactionException;
+	void checkTransaction(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException;
 
 	/**
 	 * Computes the priority of the given transaction. Nodes may (but are not required to)
@@ -119,8 +124,10 @@ public interface Application extends AutoCloseable {
 	 * @param transaction the transaction
 	 * @return the priority of {@code transaction}
 	 * @throws RejectedTransactionException if the priority of the transaction cannot be computed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	long getPriority(Transaction transaction) throws RejectedTransactionException;
+	long getPriority(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields a string representation of the transaction, that can be used to print
@@ -132,16 +139,20 @@ public interface Application extends AutoCloseable {
 	 * @param transaction the transaction
 	 * @return the representation of {@code transaction}
 	 * @throws RejectedTransactionException if the representation of the transaction cannot be computed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	String getRepresentation(Transaction transaction) throws RejectedTransactionException;
+	String getRepresentation(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the identifier of the state of this application when it starts, before any transaction
 	 * has been executed. This is typically the hash of the empty state of the application.
 	 * 
 	 * @return the identifier of the state of this application when it starts
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	byte[] getInitialStateId();
+	byte[] getInitialStateId() throws TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method at the start of the execution of the transactions
@@ -156,8 +167,10 @@ public interface Application extends AutoCloseable {
 	 * @return the identifier of the group execution that is being started; this must be
 	 *         different from the identifier of other executions that are currently being performed
 	 * @throws UnknownStateException if the application cannot find the state with identifier {@code stateId}
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	int beginBlock(long height, byte[] stateId, LocalDateTime initialDateTime) throws UnknownStateException;
+	int beginBlock(long height, byte[] stateId, LocalDateTime initialDateTime) throws UnknownStateException, TimeoutException, InterruptedException;
 
 	/**
 	 * Delivers another transaction inside the group execution identified by {@code id}.
@@ -170,8 +183,10 @@ public interface Application extends AutoCloseable {
 	 * @param transaction the transaction to deliver
 	 * @param groupId the identifier of the group execution
 	 * @throws RejectedTransactionException if the check or execution of the transaction failed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void deliverTransaction(Transaction transaction, int groupId) throws RejectedTransactionException;
+	void deliverTransaction(Transaction transaction, int groupId) throws RejectedTransactionException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method when a group execution of transactions ends.
@@ -184,8 +199,10 @@ public interface Application extends AutoCloseable {
 	 * @param deadline the deadline that has been computed for the block containing the transactions
 	 * @return the identifier of the state resulting at the end of the group execution
 	 *         of the transactions, including eventual coinbase transactions added at its end
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	byte[] endBlock(int groupId, Deadline deadline);
+	byte[] endBlock(int groupId, Deadline deadline) throws TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method to commit the state resulting at the end of the execution
@@ -195,8 +212,10 @@ public interface Application extends AutoCloseable {
 	 * This typically requires to commit the resulting state into a database.
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being committed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void commitBlock(int groupId);
+	void commitBlock(int groupId) throws TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method to abort the execution of the group of transactions
@@ -206,6 +225,8 @@ public interface Application extends AutoCloseable {
 	 * and clear some resources.
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being aborted
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void abortBlock(int groupId);
+	void abortBlock(int groupId) throws TimeoutException, InterruptedException;
 }

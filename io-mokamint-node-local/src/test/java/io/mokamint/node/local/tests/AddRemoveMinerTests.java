@@ -88,7 +88,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	private static KeyPair plotKeys;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException {
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };
@@ -124,7 +124,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends LocalNodeImpl {
 
-			private MyLocalNode1() throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+			private MyLocalNode1() throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
 				super(config1, node1Keys, app, true);
 			}
 
@@ -141,7 +141,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends LocalNodeImpl {
 
-			private MyLocalNode2() throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+			private MyLocalNode2() throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
 				super(config2, node2Keys, app, false);
 			}
 

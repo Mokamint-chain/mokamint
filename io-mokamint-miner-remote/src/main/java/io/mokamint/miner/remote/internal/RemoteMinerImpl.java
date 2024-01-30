@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -161,6 +162,14 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			LOGGER.warning(logPrefix + "removing session " + session.getId() + " since it sent an illegal deadline: " + e.getMessage());
 			removeSession(session);
 			close(session, new CloseReason(CloseCodes.CANNOT_ACCEPT, e.getMessage()));
+			return;
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return;
+		}
+		catch (TimeoutException e) {
+			LOGGER.warning(logPrefix + "could not check the validity of " + deadline + ": " + e.getMessage());
 			return;
 		}
 

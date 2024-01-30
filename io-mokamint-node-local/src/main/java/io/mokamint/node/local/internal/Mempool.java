@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -158,8 +159,10 @@ public class Mempool {
 	 *                                  cryptographic algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	public void rebaseAt(Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	public void rebaseAt(Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		new RebaseAt(newBase);
 	}
 
@@ -175,8 +178,10 @@ public class Mempool {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws NoSuchAlgorithmException if the database contains a block referring to an unknown cryptographic algorithm
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
 	
@@ -346,12 +351,12 @@ public class Mempool {
 		private final Set<Transaction> toRemove = new HashSet<>();
 		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
-		private RebaseAt(final Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		private RebaseAt(final Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
 			this.newBlock = newBase;
 
 			synchronized (mempool) {
 				oldBlock = base.orElse(null);
-				base = Optional.of(newBase);
+				base = Optional.of(newBase); // TODO: modify at the end of the method?
 
 				if (oldBlock == null)
 					removeAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
@@ -397,7 +402,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(hashingForBlocks) + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -418,8 +423,10 @@ public class Mempool {
 		 * 
 		 * @param block the block
 		 * @throws DatabaseException if the database is corrupted
+		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if the application did not provide an answer in time
 		 */
-		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException {
+		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException, TimeoutException, InterruptedException {
 			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
 				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
 		}
@@ -440,8 +447,10 @@ public class Mempool {
 		 * @param transaction the transaction
 		 * @return the resulting transaction entry
 		 * @throws DatabaseException if the database is corrupted
+		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if the application did not provide an answer in time
 		 */
-		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException {
+		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException, TimeoutException, InterruptedException {
 			try {
 				return new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction));
 			}

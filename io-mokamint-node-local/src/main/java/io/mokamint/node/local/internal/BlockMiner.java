@@ -136,11 +136,13 @@ public class BlockMiner {
 	 * 
 	 * @param node the node performing the mining
 	 * @param previous the block over which mining must be performed
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws {@link UnknownStateException} if the state of {@code previous} is unknown to the application 
 	 * @throws {@link DatabaseException} if the database of the node is corrupted
 	 * @throws {@link ClosedDatabaseException} if the database of the node is already closed
 	 */
-	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException {
+	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException {
 		this.node = node;
 		this.previous = previous;
 		this.blockchain = node.getBlockchain();
@@ -155,6 +157,7 @@ public class BlockMiner {
 	/**
 	 * Looks for a subsequent block on top of the previous block provided at construction time.
 	 * 
+	 * @throws {@link TimeoutException} if the application did not answer in time
 	 * @throws {@link InterruptedException} if the thread running this code gets interrupted
 	 * @throws {@link ClosedDatabaseException} if the database of the node is already closed
 	 * @throws {@link DatabaseException} if the database of the node is corrupted
@@ -163,7 +166,7 @@ public class BlockMiner {
 	 * @throws {@link InvalidKeyException} if the key of the node for signing the block is invalid
 	 * @throws {@link RejectedExecutionException} if the node is shutting down 
 	 */
-	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException {
+	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException {
 		Future<?> transactionExecutionFuture = node.scheduleTransactionExecutor(transactionExecutor);
 
 		try {
@@ -171,15 +174,20 @@ public class BlockMiner {
 			node.getMempoolTransactionsAt(previous).forEach(mempool::add);
 			node.onMiningStarted(previous);
 			requestDeadlineToEveryMiner();
-			waitUntilFirstDeadlineArrives();
+
+			try {
+				waitUntilFirstDeadlineArrives();
+			}
+			catch (TimeoutException e) {
+				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline): " + e.getMessage());
+				node.onNoDeadlineFound(previous);
+				return;
+			}
+
 			waitUntilDeadlineExpires();
 			stopTransactionExecutor(transactionExecutionFuture);
 			var block = createNewBlock();
 			commitIfBetterThanHead(block);
-		}
-		catch (TimeoutException e) {
-			LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
-			node.onNoDeadlineFound(previous);
 		}
 		finally {
 			cleanUp(transactionExecutionFuture);
@@ -226,17 +234,18 @@ public class BlockMiner {
 	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutor}.
 	 * 
 	 * @return the block
-	 * @throws {@link SignatureException} if the block could not be signed
-	 * @throws {@link InvalidKeyException} if the private key of the node is invalid
-	 * @throws {@link InterruptedException} if the current thread gets interrupted
+	 * @throws TimeoutException if the application did not answer in time
+	 * @throws SignatureException if the block could not be signed
+	 * @throws InvalidKeyException if the private key of the node is invalid
+	 * @throws InterruptedException if the current thread gets interrupted
 	 */
-	private Block createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException {
+	private Block createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException {
 		stopIfInterrupted();
 		var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 		var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
-		return Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateHash(), node.getKeys().getPrivate());
+		return Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateId(), node.getKeys().getPrivate());
 	}
 
 	/**
@@ -247,8 +256,9 @@ public class BlockMiner {
 	 * @throws ClosedDatabaseException if the database is closed
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NoSuchAlgorithmException if some block refers to an unknown cryptographic algorithm
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException {
+	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
 			committed = true;
@@ -263,16 +273,21 @@ public class BlockMiner {
 	 * Cleans up everything at the end of mining.
 	 * 
 	 * @throws InterruptedException if the operation gets interrupted
+	 * @throws TimeoutException if the application di not provide an answer in time
 	 */
-	private void cleanUp(Future<?> transactionExecutorFuture) throws InterruptedException {
+	private void cleanUp(Future<?> transactionExecutorFuture) throws InterruptedException, TimeoutException {
 		this.done = true;
 		stopTransactionExecutor(transactionExecutorFuture);
-		if (!committed)
-			transactionExecutor.abortBlock();
 
-		turnWakerOff();
-		punishMinersThatDidNotAnswer();
-		node.onMiningCompleted(previous);
+		try {
+			if (!committed)
+				transactionExecutor.abortBlock();
+		}
+		finally {
+			turnWakerOff();
+			punishMinersThatDidNotAnswer();
+			node.onMiningCompleted(previous);
+		}
 	}
 
 	private void requestDeadlineTo(Miner miner) throws InterruptedException {
@@ -282,7 +297,7 @@ public class BlockMiner {
 		miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 	}
 
-	private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException {
+	private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, TimeoutException {
 		stopIfInterrupted();
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (blockchain.addVerified(block))
@@ -327,6 +342,12 @@ public class BlockMiner {
 				long points = config.getMinerPunishmentForIllegalDeadline();
 				LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]");
 				node.punish(miner, points);
+			}
+			catch (TimeoutException e) {
+				LOGGER.warning(heightMessage + "discarding deadline " + deadline + " since its validity could not be checked: " + e.getMessage());
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
 	}

@@ -449,7 +449,7 @@ public class SynchronizationTask implements Task {
 		 * or at the first block that cannot be verified.
 		 * 
 		 * @return true if and only if no block was missing and all blocks could be
-		 *         successfully verified; if false, synchronization must stop here
+		 *         successfully verified and added to blockchain; if false, synchronization must stop here
 		 * @throws DatabaseException if the database of the node is corrupted
 		 * @throws NoSuchAlgorithmException if some block in the database of the node uses an unknown hashing algorithm
 		 * @throws ClosedDatabaseException if the database is already closed
@@ -469,7 +469,7 @@ public class SynchronizationTask implements Task {
 					try {
 						blockchain.add(block);
 					}
-					catch (VerificationException e) {
+					catch (VerificationException | TimeoutException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
 						return false;
 					}

@@ -224,8 +224,9 @@ public class LocalNodeImpl implements LocalNode {
 	 *                                     contains a genesis block already
 	 * @throws SignatureException if the genesis block cannot be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
+	 * @throws TimeoutException if the application did not answer in time
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
 		try {
 			this.config = config;
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
@@ -427,7 +428,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
 		MempoolEntry result;
 
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
@@ -470,7 +471,7 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, DatabaseException, ClosedNodeException, NoSuchAlgorithmException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, DatabaseException, ClosedNodeException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		try (var scope = closureLock.scope(ClosedNodeException::new)) {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
@@ -669,8 +670,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if {@code deadline} is illegal
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application does not answer in time
 	 */
-	protected void check(Deadline deadline) throws IllegalDeadlineException {
+	protected void check(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException {
 		var prolog = deadline.getProlog();
 	
 		if (!deadline.isValid())
@@ -699,8 +702,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application does not answer in time
 	 */
-	protected void rebaseMempoolAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	protected void rebaseMempoolAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		mempool.rebaseAt(block);
 	}
 
@@ -713,8 +718,10 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
 	 */
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		return result.getTransactions(); // extract the resulting transactions
@@ -1110,8 +1117,14 @@ public class LocalNodeImpl implements LocalNode {
 					var whispered = whisperedInfo.whispered;
 
 					if (whisperedInfo.add)
-						if (whispered instanceof WhisperedBlock whisperedBlock)
-							blockchain.add(whisperedBlock.getBlock());
+						if (whispered instanceof WhisperedBlock whisperedBlock) {
+							try {
+								blockchain.add(whisperedBlock.getBlock());
+							}
+							catch (TimeoutException e) {
+								LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
+							}
+						}
 
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 					peers.whisper(whispered, newSeen, whisperedInfo.description);
@@ -1147,8 +1160,14 @@ public class LocalNodeImpl implements LocalNode {
 
 				try {
 					if (whisperedInfo.add)
-						if (whisperedInfo.whispered instanceof WhisperedTransaction whisperedTransaction)
-							mempool.add(whisperedTransaction.getTransaction());
+						if (whisperedInfo.whispered instanceof WhisperedTransaction whisperedTransaction) {
+							try {
+								mempool.add(whisperedTransaction.getTransaction());
+							}
+							catch (TimeoutException e) {
+								LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
+							}
+						}
 
 					var whispered = whisperedInfo.whispered;
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);

@@ -24,6 +24,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.UnknownStateException;
@@ -84,8 +85,10 @@ public class BlockVerification {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
@@ -106,8 +109,10 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
+	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
 		finalStateIsTheInitialStateOfTheApplication();
@@ -125,8 +130,10 @@ public class BlockVerification {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
@@ -151,8 +158,10 @@ public class BlockVerification {
 	 * Checks if the deadline of {@link #block} has a prolog valid for the {@link #node}.
 	 * 
 	 * @throws VerificationException if that condition in violated
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	private void deadlineHasValidProlog() throws VerificationException {
+	private void deadlineHasValidProlog() throws VerificationException, TimeoutException, InterruptedException {
 		var prolog = deadline.getProlog();
 
 		if (!prolog.getChainId().equals(config.getChainId()))
@@ -261,8 +270,10 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition does not hold
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
+	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		var app = node.getApplication();
 		int id;
 
@@ -307,7 +318,7 @@ public class BlockVerification {
 		}
 	}
 
-	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException {
+	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, TimeoutException, InterruptedException {
 		var expected = node.getApplication().getInitialStateId();
 		if (!Arrays.equals(block.getStateId(), expected))
 			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");

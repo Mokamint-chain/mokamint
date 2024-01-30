@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -345,8 +346,10 @@ public class Blockchain implements AutoCloseable {
 	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
 	 * @throws InvalidKeyException if the key of the node is invalid
 	 * @throws SignatureException if the genesis block could not be signed
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
 	 */
-	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, InterruptedException {
 		try {
 			if (!isEmpty())
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
@@ -390,16 +393,21 @@ public class Blockchain implements AutoCloseable {
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown cryptographic algorithm
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		return add(block, true);
 	}
 
 	/**
 	 * This method behaves like {@link #add(Block)} but assumes that the given block is
 	 * verified, so that it does not need further verification before being added to blockchain.
+	 * 
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
 	 */
-	protected boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+	protected boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		try {
 			return add(block, false);
 		}
@@ -410,8 +418,11 @@ public class Blockchain implements AutoCloseable {
 
 	/**
 	 * This method behaves like {@link #add(Block)} but allows one to specify if block verification is required.
+	 * 
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
 	 */
-	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException {
+	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
@@ -462,7 +473,7 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException {
+			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException {
 
 		try {
 			if (verify)

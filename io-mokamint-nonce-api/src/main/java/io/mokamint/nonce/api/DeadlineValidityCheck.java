@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * A check of validity for a deadline.
  */
@@ -26,6 +28,8 @@ public interface DeadlineValidityCheck {
 	 * 
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if the deadline is invalid
+	 * @throws InterruptedException if the current thread has been interrupted
+	 * @throws TimeoutException if the check did not answer in time
 	 */
-	void check(Deadline deadline) throws IllegalDeadlineException;
+	void check(Deadline deadline) throws IllegalDeadlineException, InterruptedException, TimeoutException;
 }

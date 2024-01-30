@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.SignatureException;
+import java.util.concurrent.TimeoutException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.DatabaseException;
@@ -50,9 +51,10 @@ public abstract class LocalNodes {
 	 *                                     contains a genesis block already
 	 * @throws SignatureException if the genesis block cannot be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
+	 * @throws TimeoutException if the application did not answer in time
 	 */
 	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
-			throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+			throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
 
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}
