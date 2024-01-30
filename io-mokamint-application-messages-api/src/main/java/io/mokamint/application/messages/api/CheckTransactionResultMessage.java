@@ -19,10 +19,11 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.api.Transaction;
 
 /**
  * The network message corresponding to the result of the
- * {@link Application#checkTransaction(io.mokamint.node.api.Transaction)} method of an application.
+ * {@link Application#checkTransaction(Transaction)} method.
  */
 @Immutable
 public interface CheckTransactionResultMessage extends RpcMessage {

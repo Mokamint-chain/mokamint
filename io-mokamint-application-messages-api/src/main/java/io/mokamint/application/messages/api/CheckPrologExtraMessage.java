@@ -21,8 +21,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
 
 /**
- * The network message corresponding to the {@link Application#checkPrologExtra(byte[])}
- * method of an application.
+ * The network message corresponding to the {@link Application#checkPrologExtra(byte[])} method.
  */
 @Immutable
 public interface CheckPrologExtraMessage extends RpcMessage {

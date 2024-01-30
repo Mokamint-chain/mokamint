@@ -14,17 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.messages.api;
+package io.mokamint.application.messages.internal.gson;
 
-import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 
 /**
- * The network message corresponding to the result of the
- * {@link Application#deliverTransaction(Transaction, int)} method.
+ * A decoder for {@link GetRepresentationResultMessage}.
  */
-@Immutable
-public interface DeliverTransactionResultMessage extends RpcMessage {
+public class GetRepresentationResultMessageDecoder extends MappedDecoder<GetRepresentationResultMessage, GetRepresentationResultMessages.Json> {
+
+	public GetRepresentationResultMessageDecoder() {
+		super(GetRepresentationResultMessages.Json.class);
+	}
 }

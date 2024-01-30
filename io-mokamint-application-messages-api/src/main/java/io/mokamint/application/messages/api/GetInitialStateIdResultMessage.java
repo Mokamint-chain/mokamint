@@ -17,14 +17,12 @@ limitations under the License.
 package io.mokamint.application.messages.api;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
 
 /**
  * The network message corresponding to the result of the
- * {@link Application#deliverTransaction(Transaction, int)} method.
+ * {@link Application#getInitialStateId()} method.
  */
 @Immutable
-public interface DeliverTransactionResultMessage extends RpcMessage {
+public interface GetInitialStateIdResultMessage extends ResultMessage<byte[]> {
 }

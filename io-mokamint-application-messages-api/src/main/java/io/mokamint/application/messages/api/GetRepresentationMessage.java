@@ -22,9 +22,15 @@ import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Transaction;
 
 /**
- * The network message corresponding to the result of the
- * {@link Application#deliverTransaction(Transaction, int)} method.
+ * The network message corresponding to the {@link Application#getRepresentation(Transaction)} method.
  */
 @Immutable
-public interface DeliverTransactionResultMessage extends RpcMessage {
+public interface GetRepresentationMessage extends RpcMessage {
+
+	/**
+	 * Yields the transaction in the message.
+	 * 
+	 * @return the transaction
+	 */
+	Transaction getTransaction();
 }

@@ -17,28 +17,25 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.GetInitialStateIdMessages;
+import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 
 /**
- * The JSON representation of a {@link CheckPrologExtraResultMessage}.
+ * The JSON representation of an {@link GetInitialStateIdMessage}.
  */
-public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckPrologExtraResultMessage> {
-	private final boolean result;
+public abstract class GetInitialStateIdMessageJson extends AbstractRpcMessageJsonRepresentation<GetInitialStateIdMessage> {
 
-	protected CheckPrologExtraResultMessageJson(CheckPrologExtraResultMessage message) {
+	protected GetInitialStateIdMessageJson(GetInitialStateIdMessage message) {
 		super(message);
-
-		this.result = message.get();
 	}
 
 	@Override
-	public CheckPrologExtraResultMessage unmap() {
-		return CheckPrologExtraResultMessages.of(result, getId());
+	public GetInitialStateIdMessage unmap() {
+		return GetInitialStateIdMessages.of(getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
+		return GetInitialStateIdMessage.class.getName();
 	}
 }

@@ -14,17 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.messages.api;
+package io.mokamint.application.messages.internal.gson;
 
-import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.application.messages.GetInitialStateIdMessages;
+import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 
 /**
- * The network message corresponding to the result of the
- * {@link Application#deliverTransaction(Transaction, int)} method.
+ * An encoder of a {@code GetInitialStateIdMessage}.
  */
-@Immutable
-public interface DeliverTransactionResultMessage extends RpcMessage {
+public class GetInitialStateIdMessageEncoder extends MappedEncoder<GetInitialStateIdMessage, GetInitialStateIdMessages.Json> {
+
+	public GetInitialStateIdMessageEncoder() {
+		super(GetInitialStateIdMessages.Json::new);
+	}
 }

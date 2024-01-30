@@ -17,28 +17,28 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 
 /**
- * The JSON representation of a {@link CheckPrologExtraResultMessage}.
+ * The JSON representation of a {@link GetRepresentationResultMessage}.
  */
-public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckPrologExtraResultMessage> {
-	private final boolean result;
+public abstract class GetRepresentationResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRepresentationResultMessage> {
+	private final String result;
 
-	protected CheckPrologExtraResultMessageJson(CheckPrologExtraResultMessage message) {
+	protected GetRepresentationResultMessageJson(GetRepresentationResultMessage message) {
 		super(message);
 
 		this.result = message.get();
 	}
 
 	@Override
-	public CheckPrologExtraResultMessage unmap() {
-		return CheckPrologExtraResultMessages.of(result, getId());
+	public GetRepresentationResultMessage unmap() {
+		return GetRepresentationResultMessages.of(result, getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
+		return GetRepresentationResultMessage.class.getName();
 	}
 }

@@ -16,29 +16,31 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.gson;
 
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.GetPriorityMessages;
+import io.mokamint.application.messages.api.GetPriorityMessage;
+import io.mokamint.node.Transactions;
 
 /**
- * The JSON representation of a {@link CheckPrologExtraResultMessage}.
+ * The JSON representation of an {@link GetPriorityMessage}.
  */
-public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckPrologExtraResultMessage> {
-	private final boolean result;
+public abstract class GetPriorityMessageJson extends AbstractRpcMessageJsonRepresentation<GetPriorityMessage> {
+	private final Transactions.Json transaction;
 
-	protected CheckPrologExtraResultMessageJson(CheckPrologExtraResultMessage message) {
+	protected GetPriorityMessageJson(GetPriorityMessage message) {
 		super(message);
 
-		this.result = message.get();
+		this.transaction = new Transactions.Json(message.getTransaction());
 	}
 
 	@Override
-	public CheckPrologExtraResultMessage unmap() {
-		return CheckPrologExtraResultMessages.of(result, getId());
+	public GetPriorityMessage unmap() throws Base64ConversionException {
+		return GetPriorityMessages.of(transaction.unmap(), getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
+		return GetPriorityMessage.class.getName();
 	}
 }

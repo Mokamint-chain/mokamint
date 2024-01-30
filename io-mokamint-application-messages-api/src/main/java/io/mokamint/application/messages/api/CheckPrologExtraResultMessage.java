@@ -21,7 +21,7 @@ import io.mokamint.application.api.Application;
 
 /**
  * The network message corresponding to the result of the
- * {@link Application#checkPrologExtra(byte[])} method of an application.
+ * {@link Application#checkPrologExtra(byte[])} method.
  */
 @Immutable
 public interface CheckPrologExtraResultMessage extends ResultMessage<Boolean> {
