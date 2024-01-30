@@ -18,7 +18,10 @@ package io.mokamint.node.local.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,6 +63,11 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	/**
+	 * The node for which transactions are being executed.
+	 */
+	private final LocalNodeImpl node;
+
+	/**
 	 * The block over which the transactions are being executed.
 	 * That is, the initial state of the execution is the final state after this block.
 	 */
@@ -97,14 +105,34 @@ public class TransactionsExecutionTask implements Task {
 
 	private final CountDownLatch done = new CountDownLatch(1);
 
+	private final Object stopLock = new Object();
+
+	private volatile Future<?> future;
+
+	/**
+	 * True if and only if at least a transaction delivery failed.
+	 */
+	private volatile boolean deliveryFailed;
+
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
 	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException {
+		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
 		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, previous.getStateId(), node.getBlockchain().creationTimeOf(previous));
+	}
+
+	public void start() throws RejectedExecutionException {
+		this.future = node.scheduleTransactionExecutor(this);
+	}
+
+	public void stop() {
+		synchronized (stopLock) {
+			future.cancel(true);
+		}
 	}
 
 	/**
@@ -125,7 +153,7 @@ public class TransactionsExecutionTask implements Task {
 			while (!Thread.currentThread().isInterrupted())
 				sizeUpToNow = processNextTransaction(source.take(), sizeUpToNow);
 		}
-		catch (InterruptedException e) { // TODO: stop this with a flag, not with an interruption
+		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			// we do not throw the exception further but rather stop working:
 			// interruption is the standard way of terminating this task
@@ -142,14 +170,18 @@ public class TransactionsExecutionTask implements Task {
 	 * once the mining task has found a deadline.
 	 * 
 	 * @param deadline the deadline found by the mining task during the execution of the transactions
-	 * @return the processed transactions
+	 * @return the processed transactions, if any; this might be missing if some transaction delivery failed
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
 	 *                              or for the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	public ProcessedTransactions getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException { // TODO: throw exception if execution failed
+	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException {
 		done.await();
-		return new ProcessedTransactions(transactions, app.endBlock(id, deadline));
+
+		if (deliveryFailed)
+			return Optional.empty();
+		else
+			return Optional.of(new ProcessedTransactions(transactions, app.endBlock(id, deadline)));
 	}
 
 	/**
@@ -189,8 +221,22 @@ public class TransactionsExecutionTask implements Task {
 		int txSize = tx.size();
 		if (sizeUpToNow + txSize <= maxSize) {
 			try {
-				app.deliverTransaction(tx, id); // TODO: in case of exception, getProcessedTransaction() must throw something
-				transactions.add(tx);
+				// synchronization guarantees that requests to stop the execution
+				// leave the transactions list aligned with the state of the application 
+				synchronized (stopLock) {
+					if (Thread.currentThread().isInterrupted())
+						throw new InterruptedException("Interrupted");
+
+					try {
+						app.deliverTransaction(tx, id);
+					}
+					catch (TimeoutException | InterruptedException | RuntimeException e) {
+						deliveryFailed = true;
+						throw e;
+					}
+
+					transactions.add(tx);
+				}
 				sizeUpToNow += txSize;
 			}
 			catch (RejectedTransactionException e) {

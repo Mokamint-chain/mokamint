@@ -26,9 +26,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -138,9 +138,9 @@ public class BlockMiner {
 	 * @param previous the block over which mining must be performed
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws {@link UnknownStateException} if the state of {@code previous} is unknown to the application 
-	 * @throws {@link DatabaseException} if the database of the node is corrupted
-	 * @throws {@link ClosedDatabaseException} if the database of the node is already closed
+	 * @throws UnknownStateException if the state of {@code previous} is unknown to the application 
+	 * @throws DatabaseException if the database of the node is corrupted
+	 * @throws ClosedDatabaseException if the database of the node is already closed
 	 */
 	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException {
 		this.node = node;
@@ -157,17 +157,17 @@ public class BlockMiner {
 	/**
 	 * Looks for a subsequent block on top of the previous block provided at construction time.
 	 * 
-	 * @throws {@link TimeoutException} if the application did not answer in time
-	 * @throws {@link InterruptedException} if the thread running this code gets interrupted
-	 * @throws {@link ClosedDatabaseException} if the database of the node is already closed
-	 * @throws {@link DatabaseException} if the database of the node is corrupted
-	 * @throws {@link NoSuchAlgorithmException} if the blockchain contains a block referring to an unknown cryptographic algorithm 
-	 * @throws {@link SignatureException} if the block could not be signed with the key of the node
-	 * @throws {@link InvalidKeyException} if the key of the node for signing the block is invalid
-	 * @throws {@link RejectedExecutionException} if the node is shutting down 
+	 * @throws TimeoutException if the application did not answer in time
+	 * @throws InterruptedException if the thread running this code gets interrupted
+	 * @throws ClosedDatabaseException if the database of the node is already closed
+	 * @throws DatabaseException if the database of the node is corrupted
+	 * @throws NoSuchAlgorithmException if the blockchain contains a block referring to an unknown cryptographic algorithm 
+	 * @throws SignatureException if the block could not be signed with the key of the node
+	 * @throws InvalidKeyException if the key of the node for signing the block is invalid
+	 * @throws RejectedExecutionException if the node is shutting down 
 	 */
 	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException {
-		Future<?> transactionExecutionFuture = node.scheduleTransactionExecutor(transactionExecutor);
+		transactionExecutor.start();
 
 		try {
 			stopIfInterrupted();
@@ -185,12 +185,13 @@ public class BlockMiner {
 			}
 
 			waitUntilDeadlineExpires();
-			stopTransactionExecutor(transactionExecutionFuture);
+			transactionExecutor.stop();
 			var block = createNewBlock();
-			commitIfBetterThanHead(block);
+			if (block.isPresent())
+				commitIfBetterThanHead(block.get());
 		}
 		finally {
-			cleanUp(transactionExecutionFuture);
+			cleanUp();
 		}
 	}
 
@@ -224,28 +225,24 @@ public class BlockMiner {
 	}
 
 	/**
-	 * Stops the transaction executor. This can be called many times, since it does nothing after the first call.
-	 */
-	private void stopTransactionExecutor(Future<?> transactionExecutionFuture) {
-		transactionExecutionFuture.cancel(true);
-	}
-
-	/**
 	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutor}.
 	 * 
-	 * @return the block
+	 * @return the block; this might be missing if some transaction could not be delivered successfully
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws SignatureException if the block could not be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws InterruptedException if the current thread gets interrupted
 	 */
-	private Block createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException {
+	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException {
 		stopIfInterrupted();
 		var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 		var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
-		return Blocks.of(description, processedTransactions.getTransactions(), processedTransactions.getStateId(), node.getKeys().getPrivate());
+		if (processedTransactions.isPresent())
+			return Optional.of(Blocks.of(description, processedTransactions.get().getTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
+		else
+			return Optional.empty();
 	}
 
 	/**
@@ -275,9 +272,9 @@ public class BlockMiner {
 	 * @throws InterruptedException if the operation gets interrupted
 	 * @throws TimeoutException if the application di not provide an answer in time
 	 */
-	private void cleanUp(Future<?> transactionExecutorFuture) throws InterruptedException, TimeoutException {
+	private void cleanUp() throws InterruptedException, TimeoutException {
 		this.done = true;
-		stopTransactionExecutor(transactionExecutorFuture);
+		transactionExecutor.stop();
 
 		try {
 			if (!committed)

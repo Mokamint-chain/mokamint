@@ -356,7 +356,6 @@ public class Mempool {
 
 			synchronized (mempool) {
 				oldBlock = base.orElse(null);
-				base = Optional.of(newBase); // TODO: modify at the end of the method?
 
 				if (oldBlock == null)
 					removeAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
@@ -380,6 +379,8 @@ public class Mempool {
 					if (!mempool.isEmpty())
 						removeAll(toRemove);
 				}
+
+				base = Optional.of(newBase);
 			}
 		}
 
