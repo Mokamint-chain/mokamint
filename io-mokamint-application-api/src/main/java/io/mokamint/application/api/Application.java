@@ -75,7 +75,7 @@ import io.mokamint.nonce.api.Deadline;
  * The method {@link #checkTransaction(Transaction)} does not receive the identifier of the
  * group execution, since it performs a context-independent (and typically, consequently, superficial)
  * check, that is applied also as a filter before adding transactions to the mempool of a node.
- * Method {@link #deliverTransaction(Transaction, int)} will perform a more thorough consistency
+ * Method {@link #deliverTransaction(Transaction, int)} subsequently performs a more thorough consistency
  * check later, that considers the context of its execution (for instance, the state where the check is
  * performed). This is why both these methods can throw a {@link RejectedTransactionException}.
  */

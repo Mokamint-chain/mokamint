@@ -24,5 +24,11 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Description {
+
+	/**
+	 * Yields the description of an application.
+	 * 
+	 * @return the description
+	 */
 	public String value();
 }

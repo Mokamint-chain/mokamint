@@ -24,5 +24,11 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Name {
+
+	/**
+	 * Yields the name of an application, as it is seen by the users of Mokamint.
+	 * 
+	 * @return the name
+	 */
 	public String value();
 }
