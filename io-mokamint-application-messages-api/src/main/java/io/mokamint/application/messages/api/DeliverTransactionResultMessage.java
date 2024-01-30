@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module defines the API of the messages exchanged between an application and a Mokamint node.
- */
-module io.mokamint.application.messages.api {
-	exports io.mokamint.application.messages.api;
+package io.mokamint.application.messages.api;
 
-	requires io.mokamint.application.api;
-	requires transitive io.mokamint.node.api;
-	requires transitive io.hotmoka.websockets.beans.api;
-	requires io.hotmoka.annotations;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.application.api.Application;
+import io.mokamint.node.api.Transaction;
+
+/**
+ * The network message corresponding to the result of the
+ * {@link Application#deliverTransaction(Transaction, int)} method of an application.
+ */
+@Immutable
+public interface DeliverTransactionResultMessage extends RpcMessage {
 }

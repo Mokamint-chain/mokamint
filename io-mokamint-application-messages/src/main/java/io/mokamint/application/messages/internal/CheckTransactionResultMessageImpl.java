@@ -18,42 +18,31 @@ package io.mokamint.application.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.node.api.Transaction;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link Application#checkPrologExtra(byte[])} method.
+ * Implementation of the network message corresponding to the result of the
+ * {@link Application#checkTransaction(Transaction)} method.
  */
-public class CheckPrologExtraResultMessageImpl extends AbstractRpcMessage implements CheckPrologExtraResultMessage {
-
-	/**
-	 * The result of the call.
-	 */
-	private final boolean result;
+public class CheckTransactionResultMessageImpl extends AbstractRpcMessage implements CheckTransactionResultMessage {
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public CheckPrologExtraResultMessageImpl(boolean result, String id) {
+	public CheckTransactionResultMessageImpl(String id) {
 		super(id);
-
-		this.result = result;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CheckPrologExtraResultMessage cperm && super.equals(other) && result == cperm.get().booleanValue();
+		return other instanceof CheckTransactionResultMessage && super.equals(other);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
-	}
-
-	@Override
-	public Boolean get() {
-		return result;
+		return CheckTransactionResultMessage.class.getName();
 	}
 }

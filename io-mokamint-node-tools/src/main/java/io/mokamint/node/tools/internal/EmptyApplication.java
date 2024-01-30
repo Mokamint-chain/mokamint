@@ -35,9 +35,9 @@ public class EmptyApplication implements Application {
 	private final AtomicInteger nextId = new AtomicInteger();
 
 	/**
-	 * There is only one state (empty) and consequently only one hash.
+	 * There is only one state (empty) and consequently only one identifier.
 	 */
-	private final static byte[] STATE_HASH = new byte[] { 13, 1, 19, 73 };
+	private final static byte[] STATE_ID = new byte[] { 13, 1, 19, 73 };
 
 	@Override
 	public boolean checkPrologExtra(byte[] extra) {
@@ -55,7 +55,7 @@ public class EmptyApplication implements Application {
 
 	@Override
 	public byte[] getInitialStateId() {
-		return STATE_HASH;
+		return STATE_ID;
 	}
 
 	@Override
@@ -64,20 +64,20 @@ public class EmptyApplication implements Application {
 	}
 
 	@Override
-	public void deliverTransaction(Transaction transaction, int id) {
+	public void deliverTransaction(Transaction transaction, int groupId) {
 	}
 
 	@Override
-	public byte[] endBlock(int id, Deadline deadline) {
-		return STATE_HASH;
+	public byte[] endBlock(int groupId, Deadline deadline) {
+		return STATE_ID;
 	}
 
 	@Override
-	public void commitBlock(int id) {
+	public void commitBlock(int groupId) {
 	}
 
 	@Override
-	public void abortBlock(int id) {
+	public void abortBlock(int groupId) {
 	}
 
 	@Override

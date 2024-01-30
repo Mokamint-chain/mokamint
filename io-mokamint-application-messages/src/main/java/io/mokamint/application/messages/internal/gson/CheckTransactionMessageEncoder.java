@@ -14,14 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module defines the API of the messages exchanged between an application and a Mokamint node.
- */
-module io.mokamint.application.messages.api {
-	exports io.mokamint.application.messages.api;
+package io.mokamint.application.messages.internal.gson;
 
-	requires io.mokamint.application.api;
-	requires transitive io.mokamint.node.api;
-	requires transitive io.hotmoka.websockets.beans.api;
-	requires io.hotmoka.annotations;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.application.messages.CheckTransactionMessages;
+import io.mokamint.application.messages.api.CheckTransactionMessage;
+
+/**
+ * An encoder of a {@code CheckTransactionMessage}.
+ */
+public class CheckTransactionMessageEncoder extends MappedEncoder<CheckTransactionMessage, CheckTransactionMessages.Json> {
+
+	public CheckTransactionMessageEncoder() {
+		super(CheckTransactionMessages.Json::new);
+	}
 }

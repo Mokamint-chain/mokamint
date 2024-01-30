@@ -16,43 +16,43 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.node.api.Transaction;
 
 /**
- * Implementation of the network message corresponding to {@link Application#checkPrologExtra(byte[])}.
+ * Implementation of the network message corresponding to {@link Application#checkTransaction(Transaction)}.
  */
-public class CheckPrologExtraMessageImpl extends AbstractRpcMessage implements CheckPrologExtraMessage {
-	private final byte[] extra;
+public class CheckTransactionMessageImpl extends AbstractRpcMessage implements CheckTransactionMessage {
+	private final Transaction transaction;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param extra the extra, application-specific bytes of the prolog
+	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
-	public CheckPrologExtraMessageImpl(byte[] extra, String id) {
+	public CheckTransactionMessageImpl(Transaction transaction, String id) {
 		super(id);
 
-		this.extra = Objects.requireNonNull(extra);
+		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
 	}
 
 	@Override
-	public byte[] getExtra() {
-		return extra.clone();
+	public Transaction getTransaction() {
+		return transaction;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CheckPrologExtraMessage cpem && super.equals(other) && Arrays.equals(extra, cpem.getExtra());
+		return other instanceof CheckTransactionMessage ctm && super.equals(other) && transaction.equals(ctm.getTransaction());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraMessage.class.getName();
+		return CheckTransactionMessage.class.getName();
 	}
 }

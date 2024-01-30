@@ -25,6 +25,7 @@ module io.mokamint.node.messages {
 
 	requires transitive io.mokamint.application.messages.api;
 	requires io.mokamint.application.api;
+	requires io.mokamint.node;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.crypto;
 	requires com.google.gson;

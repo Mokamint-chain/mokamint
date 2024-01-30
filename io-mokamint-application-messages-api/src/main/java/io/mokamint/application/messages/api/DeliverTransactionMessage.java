@@ -17,12 +17,28 @@ limitations under the License.
 package io.mokamint.application.messages.api;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.api.Transaction;
 
 /**
- * The network message corresponding to the result of the
- * {@link Application#checkPrologExtra(byte[])} method of an application.
+ * The network message corresponding to the {@link Application#deliverTransaction(Transaction, int)}
+ * method of an application.
  */
 @Immutable
-public interface CheckPrologExtraResultMessage extends ResultMessage<Boolean> {
+public interface DeliverTransactionMessage extends RpcMessage {
+
+	/**
+	 * Yields the transaction in the message.
+	 * 
+	 * @return the transaction
+	 */
+	Transaction getTransaction();
+
+	/**
+	 * Yields the transaction group identifier in the message.
+	 * 
+	 * @return the transaction group identifier
+	 */
+	int getGroupId();
 }

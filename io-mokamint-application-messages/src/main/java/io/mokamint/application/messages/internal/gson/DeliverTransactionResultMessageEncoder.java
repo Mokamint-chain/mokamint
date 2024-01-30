@@ -17,15 +17,15 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.CheckPrologExtraMessages;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 
 /**
- * An encoder of a {@code CheckPrologExtraMessage}.
+ * An encoder of {@code DeliverTransactionResultMessage}.
  */
-public class CheckPrologExtraMessageEncoder extends MappedEncoder<CheckPrologExtraMessage, CheckPrologExtraMessages.Json> {
+public class DeliverTransactionResultMessageEncoder extends MappedEncoder<DeliverTransactionResultMessage, DeliverTransactionResultMessages.Json> {
 
-	public CheckPrologExtraMessageEncoder() {
-		super(CheckPrologExtraMessages.Json::new);
+	public DeliverTransactionResultMessageEncoder() {
+		super(DeliverTransactionResultMessages.Json::new);
 	}
 }

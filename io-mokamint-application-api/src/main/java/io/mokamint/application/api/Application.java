@@ -30,44 +30,44 @@ import io.mokamint.nonce.api.Deadline;
  * of transactions, those inside a block of the blockchain. In particular,
  * a node executes the transactions inside a block at a given <code>height</code>,
  * having a given <code>deadline</code>,
- * starting from the state whose identifier is <code>initialId</code> (which is typically
- * that at the end of the previous block), at a moment <code>when</code>,
+ * starting from the state whose identifier is <code>initialStateId</code> (which is
+ * typically that at the end of the previous block), at a moment <code>when</code>,
  * by calling the API of its application as follows:
  * 
  * <ul>
- * <li> <code>id = beginBlock(height, initialId, when);</code>
+ * <li> <code>groupId = beginBlock(height, initialStateId, when);</code>
  * <li> for each transaction <code>tx</code> in the block, do:
  * <ul>
  * <li> <code>checkTransaction(tx);</code>
- * <li> <code>deliverTransaction(tx, id);</code>
+ * <li> <code>deliverTransaction(tx, groupId);</code>
  * </ul>
- * <li> <code>finalId = endBlock(id, deadline);</code>
- * <li> <code>commitBlock(id);</code>
+ * <li> <code>finalStateId = endBlock(groupId, deadline);</code>
+ * <li> <code>commitBlock(groupId);</code>
  * </ul>
  * 
  * This commits the final state at the end of the execution of all transactions,
- * whose identifier is <code>finalId</code>. That is, that state will be recoverable
- * in the future, from <code>finalId</code>, if required by the node.
+ * whose identifier is <code>finalStateId</code>. That is, that state will be recoverable
+ * in the future, from <code>finalStateId</code>, if required by the node.
  * 
  * If, instead, the final state needn't be committed, because if won't be needed in the
- * future (for instance, because <code>finalId</code> does not match its expected
+ * future (for instance, because <code>finalStateId</code> does not match its expected
  * value and hence block verification fails), then {@link #abortBlock(int)} is called
  * at the end, instead of {@link #commitBlock(int)}.
  * 
  * <br>
  * 
- * The execution of a group of transactions is identified by a numerical <code>id</code>,
+ * The execution of a group of transactions is identified by a numerical <code>groupId</code>,
  * that should be unique among all currently ongoing executions. This is because the application
  * might be required to run more groups of transactions, concurrently, and each of those
- * executions must be identified by a different <code>id</code>. After the execution of
- * <code>commitBlock(id)</code> or <code>abortBlock(id)</code>, that <code>id</code> might
- * be recycled for a subsequent execution.
+ * executions must be identified by a different <code>groupId</code>. After the execution of
+ * <code>commitBlock(groupId)</code> or <code>abortBlock(groupId)</code>, that
+ * <code>groupId</code> may be recycled for a subsequent execution.
  * 
  * <br>
  * 
  * The implementation of all these methods must be deterministic. The execution of a group
  * of transactions can depend only on <code>height</code>, <code>deadline</code>,
- * <code>initialId</code> and <code>when</code>.
+ * <code>initialStateId</code> and <code>when</code>.
  * 
  * <br>
  * 
@@ -168,10 +168,10 @@ public interface Application extends AutoCloseable {
 	 * check performed by {@link #checkTransaction(Transaction)}.
 	 * 
 	 * @param transaction the transaction to deliver
-	 * @param id the identifier of the group execution
+	 * @param groupId the identifier of the group execution
 	 * @throws RejectedTransactionException if the check or execution of the transaction failed
 	 */
-	void deliverTransaction(Transaction transaction, int id) throws RejectedTransactionException;
+	void deliverTransaction(Transaction transaction, int groupId) throws RejectedTransactionException;
 
 	/**
 	 * The node calls this method when a group execution of transactions ends.
@@ -180,12 +180,12 @@ public interface Application extends AutoCloseable {
 	 * Such coinbase transactions are typically related to a deadline, that inside the block
 	 * whose transactions have been executed, which is why the latter is provided to this method.
 	 * 
-	 * @param id the identifier of the group execution of transactions that is being ended
+	 * @param groupId the identifier of the group execution of transactions that is being ended
 	 * @param deadline the deadline that has been computed for the block containing the transactions
 	 * @return the identifier of the state resulting at the end of the group execution
 	 *         of the transactions, including eventual coinbase transactions added at its end
 	 */
-	byte[] endBlock(int id, Deadline deadline);
+	byte[] endBlock(int groupId, Deadline deadline);
 
 	/**
 	 * The node calls this method to commit the state resulting at the end of the execution
@@ -194,9 +194,9 @@ public interface Application extends AutoCloseable {
 	 * end of that execution, from the identifier of that state.
 	 * This typically requires to commit the resulting state into a database.
 	 * 
-	 * @param id the identifier of the execution of a group of transactions that is being committed
+	 * @param groupId the identifier of the execution of a group of transactions that is being committed
 	 */
-	void commitBlock(int id);
+	void commitBlock(int groupId);
 
 	/**
 	 * The node calls this method to abort the execution of the group of transactions
@@ -205,7 +205,7 @@ public interface Application extends AutoCloseable {
 	 * identifier of that state. This typically requires to abort a database transaction
 	 * and clear some resources.
 	 * 
-	 * @param id the identifier of the execution of a group of transactions that is being aborted
+	 * @param groupId the identifier of the execution of a group of transactions that is being aborted
 	 */
-	void abortBlock(int id);
+	void abortBlock(int groupId);
 }
