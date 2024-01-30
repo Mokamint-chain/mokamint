@@ -30,27 +30,27 @@ import io.mokamint.nonce.api.Deadline;
  * of transactions, those inside a block of the blockchain. In particular,
  * a node executes the transactions inside a block at a given <code>height</code>,
  * having a given <code>deadline</code>,
- * starting from the state whose hash is <code>initialHash</code> (which is typically
+ * starting from the state whose identifier is <code>initialId</code> (which is typically
  * that at the end of the previous block), at a moment <code>when</code>,
  * by calling the API of its application as follows:
  * 
  * <ul>
- * <li> <code>id = beginBlock(height, initialHash, when);</code>
+ * <li> <code>id = beginBlock(height, initialId, when);</code>
  * <li> for each transaction <code>tx</code> in the block, do:
  * <ul>
  * <li> <code>checkTransaction(tx);</code>
  * <li> <code>deliverTransaction(tx, id);</code>
  * </ul>
- * <li> <code>finalHash = endBlock(id, deadline);</code>
+ * <li> <code>finalId = endBlock(id, deadline);</code>
  * <li> <code>commitBlock(id);</code>
  * </ul>
  * 
  * This commits the final state at the end of the execution of all transactions,
- * whose hash is <code>finalHash</code>. That is, that state will be recoverable
- * in the future, from <code>finalHash</code>, if required by the node.
+ * whose identifier is <code>finalId</code>. That is, that state will be recoverable
+ * in the future, from <code>finalId</code>, if required by the node.
  * 
  * If, instead, the final state needn't be committed, because if won't be needed in the
- * future (for instance, because <code>finalHash</code> does not match its expected
+ * future (for instance, because <code>finalId</code> does not match its expected
  * value and hence block verification fails), then {@link #abortBlock(int)} is called
  * at the end, instead of {@link #commitBlock(int)}.
  * 
@@ -67,7 +67,7 @@ import io.mokamint.nonce.api.Deadline;
  * 
  * The implementation of all these methods must be deterministic. The execution of a group
  * of transactions can depend only on <code>height</code>, <code>deadline</code>,
- * <code>initialHash</code> and <code>when</code>.
+ * <code>initialId</code> and <code>when</code>.
  * 
  * <br>
  * 
@@ -88,7 +88,7 @@ public interface Application extends AutoCloseable {
 	 * The application can decide to accept or reject the deadline, on the
 	 * basis of its prolog's extra bytes. This allows applications to require a specific
 	 * structure for the prologs of the valid deadlines. If this is not relevant for an
-	 * application, it can just require this array to be empty.
+	 * application, it can just require this array to be any array or force it to be empty.
 	 * 
 	 * @param extra the extra, application-specific bytes of the prolog
 	 * @return true if and only if {@code extra} is valid according to this application
@@ -107,13 +107,14 @@ public interface Application extends AutoCloseable {
 	 * without even trying to deliver them.
 	 * 
 	 * @param transaction the transaction to check
-	 * @throws RejectedTransactionException if the check failed
+	 * @throws RejectedTransactionException if the check failed and the transaction
+	 *                                      should not be added to the mempool
 	 */
 	void checkTransaction(Transaction transaction) throws RejectedTransactionException;
 
 	/**
 	 * Computes the priority of the given transaction. Nodes may (but are not required to)
-	 * include transactions in blocks, starting from those with higher priority.
+	 * implement a policy of transaction inclusion in blocks that favors transactions with higher priority.
 	 * 
 	 * @param transaction the transaction
 	 * @return the priority of {@code transaction}
@@ -123,7 +124,7 @@ public interface Application extends AutoCloseable {
 
 	/**
 	 * Yields a string representation of the transaction, that can be used to print
-	 * or process its structure. This can be everything, possibly but not necessarily JSON.
+	 * or process its structure. This can be everything, possibly, but not necessarily, JSON.
 	 * It is expected (but not required) that if a transaction passes the
 	 * {@link #checkTransaction(Transaction)} test without throwing a {@link RejectedTransactionException},
 	 * then {@link #getRepresentation(Transaction)} will not throw that exception either.
@@ -135,77 +136,76 @@ public interface Application extends AutoCloseable {
 	String getRepresentation(Transaction transaction) throws RejectedTransactionException;
 
 	/**
-	 * Yields the hash of the state of this application when it starts, before any transaction has been executed.
-	 * This will be the state hash at the end of the genesis block of the blockchain.
+	 * Yields the identifier of the state of this application when it starts, before any transaction
+	 * has been executed. This is typically the hash of the empty state of the application.
 	 * 
-	 * @return the hash of the state of this application when it starts
+	 * @return the identifier of the state of this application when it starts
 	 */
-	byte[] getInitialStateHash();
+	byte[] getInitialStateId();
 
 	/**
-	 * The node calls this method at the start of the execution of a the transactions
+	 * The node calls this method at the start of the execution of the transactions
 	 * inside a block. The application must be able to support the concurrent
 	 * execution of more groups of transactions. Consequently, each execution is identified
 	 * by a unique number.
 	 * 
 	 * @param height the height of the block whose transactions are being executed
-	 * @param initialHash the hash of the state of the application at the beginning of the execution of
-	 *                    the transactions in the block
-	 * @param initialDateTime the time at the beginning of the execution of
-	 *                        the transactions in the block
+	 * @param stateId the identifier of the state of the application at the beginning of the execution of
+	 *                the transactions in the block
+	 * @param initialDateTime the time at the beginning of the execution of the transactions in the block
 	 * @return the identifier of the group execution that is being started; this must be
 	 *         different from the identifier of other executions that are currently being performed
+	 * @throws UnknownStateException if the application cannot find the state with identifier {@code stateId}
 	 */
-	int beginBlock(long height, byte[] initialHash, LocalDateTime initialDateTime);
+	int beginBlock(long height, byte[] stateId, LocalDateTime initialDateTime) throws UnknownStateException;
 
 	/**
-	 * Delivers another transaction inside the block whose creation is identified by {@code id}.
+	 * Delivers another transaction inside the group execution identified by {@code id}.
 	 * This means that the transaction will be fully checked and then executed.
 	 * If the full check fails, an exception is thrown instead. Fully checked means that
-	 * the transaction can be completed verified in the context of the block.
+	 * the transaction could be completed verified in the context of the block.
 	 * This is then a thorough, context-dependent check, must stronger, in general, than the
 	 * check performed by {@link #checkTransaction(Transaction)}.
 	 * 
 	 * @param transaction the transaction to deliver
-	 * @param id the identifier of the block creation
-	 * @throws RejectedTransactionException if the check of the transaction failed
+	 * @param id the identifier of the group execution
+	 * @throws RejectedTransactionException if the check or execution of the transaction failed
 	 */
 	void deliverTransaction(Transaction transaction, int id) throws RejectedTransactionException;
 
 	/**
-	 * The node calls this method when a new block creation ends and no more transactions
-	 * will be delivered for the block. This gives the application the opportunity of adding
-	 * the effect of coinbase transactions that it should execute at the end of the execution
-	 * of the transactions inside the block.
+	 * The node calls this method when a group execution of transactions ends.
+	 * This gives the application the opportunity of adding the effects of coinbase transactions
+	 * that it should execute at the end of the execution of the transactions in the group.
+	 * Such coinbase transactions are typically related to a deadline, that inside the block
+	 * whose transactions have been executed, which is why the latter is provided to this method.
 	 * 
-	 * @param id the identifier of the block creation that is being ended
-	 * @param deadline the deadline that has been computed for the block being created
-	 * @return the hash of the state at the end of the execution of the transactions delivered
-	 *         during the creation of the block, including eventual coinbase transactions added
-	 *         at its end
+	 * @param id the identifier of the group execution of transactions that is being ended
+	 * @param deadline the deadline that has been computed for the block containing the transactions
+	 * @return the identifier of the state resulting at the end of the group execution
+	 *         of the transactions, including eventual coinbase transactions added at its end
 	 */
 	byte[] endBlock(int id, Deadline deadline);
 
 	/**
-	 * The node calls this method to commit the state resulting at the end
-	 * of the block creation identified by {@code id}. This means that the
+	 * The node calls this method to commit the state resulting at the end of the execution
+	 * of the group of transactions identified by {@code id}. This means that the
 	 * application, in the future, must be able to recover the state at the
-	 * end of the block, from the hash of that state contained in the block.
+	 * end of that execution, from the identifier of that state.
 	 * This typically requires to commit the resulting state into a database.
 	 * 
-	 * @param id the identifier of the block creation that is being committed
+	 * @param id the identifier of the execution of a group of transactions that is being committed
 	 */
 	void commitBlock(int id);
 
 	/**
-	 * The node calls this method to abort the construction of the state
-	 * resulting at the end of the block creation identified by {@code id}.
-	 * This means that the application, in the future, will not be required
-	 * to recover the state at the end of the block, from the hash of that state
-	 * contained in the block. This typically requires to abort a database transaction
+	 * The node calls this method to abort the execution of the group of transactions
+	 * identified by {@code id}. This means that the application, in the future,
+	 * will not be required to recover the state at the end of that execution, from the
+	 * identifier of that state. This typically requires to abort a database transaction
 	 * and clear some resources.
 	 * 
-	 * @param id the identifier of the block creation that is being committed
+	 * @param id the identifier of the execution of a group of transactions that is being aborted
 	 */
 	void abortBlock(int id);
 }

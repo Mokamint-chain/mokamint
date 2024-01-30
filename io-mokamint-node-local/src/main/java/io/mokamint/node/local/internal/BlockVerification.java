@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import io.hotmoka.crypto.Hex;
+import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -263,7 +264,15 @@ public class BlockVerification {
 	 */
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException {
 		var app = node.getApplication();
-		int id = app.beginBlock(block.getDescription().getHeight(), previous.getStateId(), node.getBlockchain().creationTimeOf(block));
+		int id;
+
+		try {
+			id = app.beginBlock(block.getDescription().getHeight(), previous.getStateId(), node.getBlockchain().creationTimeOf(block));
+		}
+		catch (UnknownStateException e) {
+			throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());
+		}
+
 		boolean success = false;
 
 		try {
@@ -299,7 +308,7 @@ public class BlockVerification {
 	}
 
 	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException {
-		var expected = node.getApplication().getInitialStateHash();
+		var expected = node.getApplication().getInitialStateId();
 		if (!Arrays.equals(block.getStateId(), expected))
 			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
 	}

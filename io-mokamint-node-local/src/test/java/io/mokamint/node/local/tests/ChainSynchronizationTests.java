@@ -105,7 +105,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };
-		when(app.getInitialStateHash()).thenReturn(stateHash);
+		when(app.getInitialStateId()).thenReturn(stateHash);
 		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();

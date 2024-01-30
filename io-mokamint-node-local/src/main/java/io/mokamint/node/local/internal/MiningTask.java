@@ -24,6 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -71,7 +72,7 @@ public class MiningTask implements Task {
 			miningThread.join();
 		}
 		catch (InterruptedException e) {
-			taskHasBeenInterrupted = true; // so that the mining thread exits at the following line
+			taskHasBeenInterrupted = true; // so that the mining thread exits when we interrupt it at the following line
 			miningThread.interrupt();
 			Thread.currentThread().interrupt();
 		}
@@ -81,7 +82,8 @@ public class MiningTask implements Task {
 	 * Called when mining should be interrupted and restarted from the current head of the blockchain.
 	 */
 	public void restartFromCurrentHead() {
-		miningThread.interrupt(); // this will interrupt the current mining activity and restart it on top of the new head
+		// since taskHasBeenInterrupted remains false, this will interrupt the current mining activity and restart it on top of the new head
+		miningThread.interrupt();
 	}
 
 	/**
@@ -175,6 +177,10 @@ public class MiningTask implements Task {
 				}
 				catch (RejectedExecutionException e) {
 					LOGGER.warning("mining: exiting since the node is being shut down");
+					break;
+				}
+				catch (UnknownStateException e) {
+					LOGGER.log(Level.SEVERE, "mining: exiting since the state of the head of the blockchain is unknown to the application", e);
 					break;
 				}
 				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException e) {

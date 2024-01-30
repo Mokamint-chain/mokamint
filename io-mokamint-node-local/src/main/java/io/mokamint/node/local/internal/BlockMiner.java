@@ -34,6 +34,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
+import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -135,11 +136,11 @@ public class BlockMiner {
 	 * 
 	 * @param node the node performing the mining
 	 * @param previous the block over which mining must be performed
+	 * @throws {@link UnknownStateException} if the state of {@code previous} is unknown to the application 
 	 * @throws {@link DatabaseException} if the database of the node is corrupted
 	 * @throws {@link ClosedDatabaseException} if the database of the node is already closed
-	 * @throws {@link RejectedExecutionException} if the node is shutting down 
 	 */
-	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, RejectedExecutionException  {
+	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException {
 		this.node = node;
 		this.previous = previous;
 		this.blockchain = node.getBlockchain();
@@ -160,8 +161,9 @@ public class BlockMiner {
 	 * @throws {@link NoSuchAlgorithmException} if the blockchain contains a block referring to an unknown cryptographic algorithm 
 	 * @throws {@link SignatureException} if the block could not be signed with the key of the node
 	 * @throws {@link InvalidKeyException} if the key of the node for signing the block is invalid
+	 * @throws {@link RejectedExecutionException} if the node is shutting down 
 	 */
-	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException {
+	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException {
 		Future<?> transactionExecutionFuture = node.scheduleTransactionExecutor(transactionExecutor);
 
 		try {

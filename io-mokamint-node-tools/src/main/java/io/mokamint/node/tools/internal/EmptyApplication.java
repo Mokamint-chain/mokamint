@@ -54,7 +54,7 @@ public class EmptyApplication implements Application {
 	}
 
 	@Override
-	public byte[] getInitialStateHash() {
+	public byte[] getInitialStateId() {
 		return STATE_HASH;
 	}
 

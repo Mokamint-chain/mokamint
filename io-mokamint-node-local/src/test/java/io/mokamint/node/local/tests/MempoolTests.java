@@ -125,7 +125,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		when(application.checkPrologExtra(any())).thenReturn(true);
 		doNothing().when(application).checkTransaction(any());
 		when(application.getPriority(any())).thenReturn(13L);
-		when(application.getInitialStateHash()).thenReturn(stateHash);
+		when(application.getInitialStateId()).thenReturn(stateHash);
 		doNothing().when(application).deliverTransaction(any(), anyInt());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
 	}

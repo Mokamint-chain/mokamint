@@ -92,7 +92,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };
-		when(app.getInitialStateHash()).thenReturn(stateHash);
+		when(app.getInitialStateId()).thenReturn(stateHash);
 		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
 		var id25519 = SignatureAlgorithms.ed25519();
 		node1Keys = id25519.getKeyPair();

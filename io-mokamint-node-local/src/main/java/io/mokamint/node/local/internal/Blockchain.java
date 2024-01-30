@@ -354,7 +354,7 @@ public class Blockchain implements AutoCloseable {
 			var config = node.getConfig();
 			var keys = node.getKeys();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
-			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateHash(), keys.getPrivate());
+			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate());
 	
 			add(genesis);
 		}

@@ -91,7 +91,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	public static void beforeAll(@TempDir Path plotDir) throws RejectedTransactionException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
-		when(app.getInitialStateHash()).thenReturn(new byte[] { 1, 2, 3 });
+		when(app.getInitialStateId()).thenReturn(new byte[] { 1, 2, 3 });
 		doNothing().when(app).checkTransaction(any());
 		doNothing().when(app).deliverTransaction(any(), anyInt());
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 13, 17, 42 });

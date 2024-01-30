@@ -130,7 +130,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var application = mock(Application.class);
 		when(application.checkPrologExtra(any())).thenReturn(true);
 		doNothing().when(application).checkTransaction(any());
-		when(application.getInitialStateHash()).thenReturn(stateHash);
+		when(application.getInitialStateId()).thenReturn(stateHash);
 		doNothing().when(application).deliverTransaction(any(), anyInt());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
 

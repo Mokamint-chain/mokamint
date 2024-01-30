@@ -1107,11 +1107,12 @@ public class LocalNodeImpl implements LocalNode {
 				var whisperedInfo = whisperedBlocksQueue.take();
 
 				try {
+					var whispered = whisperedInfo.whispered;
+
 					if (whisperedInfo.add)
-						if (whisperedInfo.whispered instanceof WhisperedBlock whisperedBlock)
+						if (whispered instanceof WhisperedBlock whisperedBlock)
 							blockchain.add(whisperedBlock.getBlock());
 
-					var whispered = whisperedInfo.whispered;
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 					peers.whisper(whispered, newSeen, whisperedInfo.description);
 					boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
