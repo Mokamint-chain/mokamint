@@ -18,16 +18,32 @@ package io.mokamint.application.messages.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.messages.AbortBlockMessages;
+import io.mokamint.application.messages.AbortBlockResultMessages;
+import io.mokamint.application.messages.BeginBlockMessages;
+import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CommitBlockMessages;
+import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.EndBlockMessages;
+import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -35,6 +51,8 @@ import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.node.Transactions;
+import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
@@ -146,5 +164,85 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new GetInitialStateIdResultMessages.Encoder().encode(getInitialStateIdResultMessage1);
 		var getInitialStateIdResultMessage2 = new GetInitialStateIdResultMessages.Decoder().decode(encoded);
 		assertEquals(getInitialStateIdResultMessage1, getInitialStateIdResultMessage2);
+	}
+
+	@Test
+	@DisplayName("beginBlock messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForBeginBlock() throws EncodeException, DecodeException {
+		var beginBlockMessage1 = BeginBlockMessages.of(1973, new byte[] { 13, 1, 19, 73 }, LocalDateTime.now(ZoneId.of("UTC")), "id");
+		String encoded = new BeginBlockMessages.Encoder().encode(beginBlockMessage1);
+		var beginBlockMessage2 = new BeginBlockMessages.Decoder().decode(encoded);
+		assertEquals(beginBlockMessage1, beginBlockMessage2);
+	}
+
+	@Test
+	@DisplayName("beginBlock result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForBeginBlockResult() throws EncodeException, DecodeException {
+		var beginBlockResultMessage1 = BeginBlockResultMessages.of(1973, "id");
+		String encoded = new BeginBlockResultMessages.Encoder().encode(beginBlockResultMessage1);
+		var beginBlockResultMessage2 = new BeginBlockResultMessages.Decoder().decode(encoded);
+		assertEquals(beginBlockResultMessage1, beginBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("endBlock messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForEndBlock() throws EncodeException, DecodeException, InvalidKeyException, NoSuchAlgorithmException, SignatureException {
+		var hashing = HashingAlgorithms.shabal256();
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		var endBlockMessage1 = EndBlockMessages.of(13, deadline, "id");
+		String encoded = new EndBlockMessages.Encoder().encode(endBlockMessage1);
+		var endBlockMessage2 = new EndBlockMessages.Decoder().decode(encoded);
+		assertEquals(endBlockMessage1, endBlockMessage2);
+	}
+
+	@Test
+	@DisplayName("endBlock result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForEndBlockResult() throws EncodeException, DecodeException {
+		var endBlockResultMessage1 = EndBlockResultMessages.of(new byte[] { 1, 10, 100, 90, 87 }, "id");
+		String encoded = new EndBlockResultMessages.Encoder().encode(endBlockResultMessage1);
+		var endBlockResultMessage2 = new EndBlockResultMessages.Decoder().decode(encoded);
+		assertEquals(endBlockResultMessage1, endBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("commitBlock messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForCommitBlock() throws EncodeException, DecodeException {
+		var commitBlockMessage1 = CommitBlockMessages.of(13, "id");
+		String encoded = new CommitBlockMessages.Encoder().encode(commitBlockMessage1);
+		var commitBlockMessage2 = new CommitBlockMessages.Decoder().decode(encoded);
+		assertEquals(commitBlockMessage1, commitBlockMessage2);
+	}
+
+	@Test
+	@DisplayName("commitBlock result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForCommitBlockResult() throws EncodeException, DecodeException {
+		var commitBlockResultMessage1 = CommitBlockResultMessages.of("id");
+		String encoded = new CommitBlockResultMessages.Encoder().encode(commitBlockResultMessage1);
+		var commitBlockResultMessage2 = new CommitBlockResultMessages.Decoder().decode(encoded);
+		assertEquals(commitBlockResultMessage1, commitBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("abortBlock messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForAbortBlock() throws EncodeException, DecodeException {
+		var abortBlockMessage1 = AbortBlockMessages.of(13, "id");
+		String encoded = new AbortBlockMessages.Encoder().encode(abortBlockMessage1);
+		var abortBlockMessage2 = new AbortBlockMessages.Decoder().decode(encoded);
+		assertEquals(abortBlockMessage1, abortBlockMessage2);
+	}
+
+	@Test
+	@DisplayName("abortBlock result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForAbortBlockResult() throws EncodeException, DecodeException {
+		var abortBlockResultMessage1 = AbortBlockResultMessages.of("id");
+		String encoded = new AbortBlockResultMessages.Encoder().encode(abortBlockResultMessage1);
+		var abortBlockResultMessage2 = new AbortBlockResultMessages.Decoder().decode(encoded);
+		assertEquals(abortBlockResultMessage1, abortBlockResultMessage2);
 	}
 }

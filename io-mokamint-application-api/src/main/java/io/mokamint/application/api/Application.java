@@ -163,14 +163,14 @@ public interface Application extends AutoCloseable {
 	 * @param height the height of the block whose transactions are being executed
 	 * @param stateId the identifier of the state of the application at the beginning of the execution of
 	 *                the transactions in the block
-	 * @param initialDateTime the time at the beginning of the execution of the transactions in the block
+	 * @param when the time at the beginning of the execution of the transactions in the block
 	 * @return the identifier of the group execution that is being started; this must be
 	 *         different from the identifier of other executions that are currently being performed
 	 * @throws UnknownStateException if the application cannot find the state with identifier {@code stateId}
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	int beginBlock(long height, byte[] stateId, LocalDateTime initialDateTime) throws UnknownStateException, TimeoutException, InterruptedException;
+	int beginBlock(long height, byte[] stateId, LocalDateTime when) throws UnknownStateException, TimeoutException, InterruptedException;
 
 	/**
 	 * Delivers another transaction inside the group execution identified by {@code id}.

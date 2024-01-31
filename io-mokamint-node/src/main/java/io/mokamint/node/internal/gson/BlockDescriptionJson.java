@@ -16,12 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Base58ConversionException;
@@ -52,7 +53,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 
 	protected BlockDescriptionJson(BlockDescription description) {
 		if (description instanceof GenesisBlockDescription gbd) {
-			this.startDateTimeUTC = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
+			this.startDateTimeUTC = ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
 			this.acceleration = gbd.getAcceleration();
 			var signature = gbd.getSignatureForBlock();
 			this.signatureForBlocks = signature.getName();
@@ -77,7 +78,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 		else {
 			var signature = SignatureAlgorithms.of(signatureForBlocks);
 
-			return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+			return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
 				acceleration, signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
 		}
 	}
