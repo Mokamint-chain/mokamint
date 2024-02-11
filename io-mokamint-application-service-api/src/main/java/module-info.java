@@ -15,12 +15,12 @@ limitations under the License.
 */
 
 /**
- * This module defines the API of a node service, that is, a network server that provides
- * the API of a Mokamint node.
+ * This module defines the API of an application service, that is, a network server that provides
+ * the API of a Mokamint application.
  */
-module io.mokamint.node.service.api {
-	exports io.mokamint.node.service.api;
+module io.mokamint.application.service.api {
+	exports io.mokamint.application.service.api;
 
-	requires io.mokamint.node.api;
 	requires io.hotmoka.websockets.server.api;
+	requires io.mokamint.application.api;
 }

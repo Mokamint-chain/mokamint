@@ -234,6 +234,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
 		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			LOGGER.warning(logPrefix + "failed to turn up the remote: " + e.getMessage());
 			throw new IOException(e);
 		}
 

@@ -86,10 +86,11 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-nonce-api</module>
       <module>io-mokamint-nonce</module>
       <module>io-mokamint-application-messages-api</module>
+      <module>io-mokamint-application-messages</module>
+      <module>io-mokamint-application-service-api</module>
       <module>io-mokamint-application-api</module>
       <module>io-mokamint-plotter-tools</module>
       <module>io-mokamint-tools</module>
-      <module>io-mokamint-application-messages</module>
     </modules>
 
     <distributionManagement>
@@ -354,7 +355,9 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
                 io-mokamint-nonce,
                 io-mokamint-nonce-api,
                 io-mokamint-application-messages-api,
+                io-mokamint-application-messages,
                 io-mokamint-application-api,
+                io-mokamint-application-service-api,
                 io-mokamint-tools,
                 <!-- we exclude all modules that go into the explicit folder -->
                 jakarta.activation-api,
