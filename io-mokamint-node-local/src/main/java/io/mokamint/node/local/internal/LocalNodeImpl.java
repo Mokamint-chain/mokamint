@@ -238,6 +238,7 @@ public class LocalNodeImpl implements LocalNode {
 			this.mempool = new Mempool(this);
 			this.peers = new Peers(this);
 			this.uuid = getInfo().getUUID();
+			peers.reconnectToSeedsAndPreviousPeers();
 
 			if (init)
 				blockchain.initialize();
@@ -251,7 +252,7 @@ public class LocalNodeImpl implements LocalNode {
 			schedulePeriodicWhisperingOfAllServices();
 			execute(this.miningTask = new MiningTask(this), "blocks mining process");
 		}
-		catch (ClosedNodeException e) {
+		catch (ClosedNodeException | ClosedDatabaseException e) {
 			throw unexpectedException(e);
 		}
 	}

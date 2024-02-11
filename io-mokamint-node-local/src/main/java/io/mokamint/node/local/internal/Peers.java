@@ -124,10 +124,8 @@ public class Peers implements AutoCloseable {
 	 * @param node the node having these peers
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws IOException if an I/O error occurs
-	 * @throws InterruptedException if the thread is interrupted while contacting the peers
-	 * @throws ClosedNodeException if the node is closed
 	 */
-	public Peers(LocalNodeImpl node) throws DatabaseException, IOException, ClosedNodeException, InterruptedException {
+	public Peers(LocalNodeImpl node) throws DatabaseException, IOException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
@@ -136,13 +134,27 @@ public class Peers implements AutoCloseable {
 		try {
 			this.uuid = db.getUUID();
 			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
-			Set<Peer> seeds = config.getSeeds().map(io.mokamint.node.Peers::of).collect(Collectors.toSet());
-			tryToReconnectOrAdd(Stream.concat(peers.getElements(), seeds.stream()), seeds::contains);
 		}
 		catch (ClosedDatabaseException e) {
 			LOGGER.log(Level.SEVERE, "node: unexpected exception", e);
 			throw new RuntimeException("Unexpected exception", e);
 		}
+	}
+
+	/**
+	 * Recovers the peers saved in the database and attempt
+	 * to create a connection to them. In any case, it adds the seeds of the node
+	 * and attempts a connection to them.
+	 * 
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws IOException if an I/O error occurs
+	 * @throws InterruptedException if the thread is interrupted while contacting the peers
+	 * @throws ClosedNodeException if the node is closed
+	 * @throws ClosedDatabaseException if the database of peers is already closed
+	 */
+	public void reconnectToSeedsAndPreviousPeers() throws DatabaseException, IOException, ClosedNodeException, InterruptedException, ClosedDatabaseException {
+		Set<Peer> seeds = config.getSeeds().map(io.mokamint.node.Peers::of).collect(Collectors.toSet());
+		tryToReconnectOrAdd(Stream.concat(peers.getElements(), seeds.stream()), seeds::contains);
 	}
 
 	/**
