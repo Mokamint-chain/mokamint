@@ -31,6 +31,7 @@ module io.mokamint.node.tools {
     opens io.mokamint.node.tools.internal.keys to info.picocli, com.google.gson;
     opens io.mokamint.node.tools.internal.transactions to info.picocli, com.google.gson;
 
+    requires io.mokamint.node;
     requires io.mokamint.node.local;
 	requires io.mokamint.application.api;
 	requires io.mokamint.miner.local;

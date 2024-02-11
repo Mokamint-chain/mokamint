@@ -15,24 +15,21 @@ limitations under the License.
 */
 
 /**
- * This module defines the implementation of a node service, that is,
- * a network server that provides the API of a Mokamint node.
+ * This module defines the implementation of an application service, that is,
+ * a network server that provides the API of a Mokamint application.
  */
-module io.mokamint.node.service {
-	exports io.mokamint.node.service;
+module io.mokamint.application.service {
+	exports io.mokamint.application.service;
 
-	// needed to allow the endpoint to be created by reflection although it is not exported
-	opens io.mokamint.node.service.internal to org.glassfish.tyrus.core;
+	// needed to allow the endpoints to be created by reflection although they are not exported
+	opens io.mokamint.application.service.internal to org.glassfish.tyrus.core;
 
-	requires transitive io.mokamint.node.service.api;
-	requires transitive io.mokamint.node.api;
-	requires io.mokamint.node.messages;
-	requires io.mokamint.node; // TODO: try to remove this dependency
+	requires transitive io.mokamint.application.service.api;
+	requires transitive io.mokamint.application.api;
+	requires io.mokamint.application.messages;
 	requires io.hotmoka.websockets.server;
 	requires io.hotmoka.websockets.beans.api;
 	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.crypto;
 	requires java.logging;
 }
