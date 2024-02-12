@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import java.net.URI;
+
+import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.internal.WhisperPeerMessageImpl;
@@ -39,6 +42,17 @@ public final class WhisperPeerMessages {
 	 */
 	public static WhisperPeerMessage of(Peer peer, String id) {
 		return new WhisperPeerMessageImpl(peer, id);
+	}
+
+	/**
+	 * Yields a {@link WhisperPeerMessage}.
+	 * 
+	 * @param uri the URI of the whispered peer
+	 * @param id the identifier of the message
+	 * @return the message
+	 */
+	public static WhisperPeerMessage of(URI uri, String id) {
+		return new WhisperPeerMessageImpl(Peers.of(uri), id);
 	}
 
 	/**

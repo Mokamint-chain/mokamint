@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.io.IOException;
+import java.net.URI;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -768,6 +769,18 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	/**
+	 * Whispers a peer, but does not add it to this node.
+	 * 
+	 * @param uri the URI of the peer to whisper
+	 */
+	private void whisperWithoutAddition(URI uri) {
+		var whisperedPeers = WhisperPeerMessages.of(uri, UUID.randomUUID().toString());
+		alreadyWhispered.add(whisperedPeers);
+		String description = "peer " + whisperedPeers.getPeer().toStringSanitized();
+		whisperedPeersQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
+	}
+
+	/**
 	 * Whispers a block, but does not add it to this node.
 	 * 
 	 * @param block the block to whisper
@@ -787,7 +800,7 @@ public class LocalNodeImpl implements LocalNode {
 	private void whisperWithoutAddition(Transaction transaction) {
 		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 		alreadyWhispered.add(whisperedTransaction);
-		String description = "transaction " + Hex.toHexString(hasherForTransactions.hash(transaction));
+		String description = "transaction " + transaction.getHexHash(hasherForTransactions);
 		whisperedTransactionsQueue.offer(new WhisperedInfo(whisperedTransaction, isThis, description, false));
 	}
 
@@ -1197,7 +1210,6 @@ public class LocalNodeImpl implements LocalNode {
 			.map(whisperer -> (PublicNodeService) whisperer)
 			.map(PublicNodeService::getURI)
 			.flatMap(Optional::stream)
-			.map(io.mokamint.node.Peers::of)
 			.distinct()
 			.forEach(this::whisperWithoutAddition);
 	}

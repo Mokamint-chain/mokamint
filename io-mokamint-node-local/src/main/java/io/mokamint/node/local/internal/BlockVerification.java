@@ -292,14 +292,14 @@ public class BlockVerification {
 					app.checkTransaction(tx);
 				}
 				catch (RejectedTransactionException e) {
-					throw new VerificationException("Failed check of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
+					throw new VerificationException("Failed check of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
 				}
 
 				try {
 					app.deliverTransaction(tx, id);
 				}
 				catch (RejectedTransactionException e) {
-					throw new VerificationException("Failed delivery of transaction " + Hex.toHexString(node.getHasherForTransactions().hash(tx)) + ": " + e.getMessage());
+					throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
 				}
 			}
 

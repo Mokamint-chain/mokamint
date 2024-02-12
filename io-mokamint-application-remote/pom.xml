@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-node-remote</artifactId>
-  <name>io-mokamint-node-remote</name>
+  <artifactId>io-mokamint-application-remote</artifactId>
+  <name>io-mokamint-application-remote</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements Mokamint nodes that forward all calls to a network node service.</description>
+  <description>This module implements Mokamint applications that forward all calls to a network application service.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -16,17 +16,22 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-node-remote-api</artifactId>
+      <artifactId>io-mokamint-application-remote-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-node-service-api</artifactId>
+      <artifactId>io-mokamint-application-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-node-messages</artifactId>
+      <artifactId>io-mokamint-application-service-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-messages</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>

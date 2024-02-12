@@ -91,6 +91,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-service</module>
       <module>io-mokamint-application-api</module>
       <module>io-mokamint-application-remote-api</module>
+      <module>io-mokamint-application-remote</module>
       <module>io-mokamint-plotter-tools</module>
       <module>io-mokamint-tools</module>
     </modules>
@@ -362,6 +363,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
                 io-mokamint-application-service-api,
                 io-mokamint-application-service,
                 io-mokamint-application-remote-api,
+                io-mokamint-application-remote,
                 io-mokamint-tools,
                 <!-- we exclude all modules that go into the explicit folder -->
                 jakarta.activation-api,

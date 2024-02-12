@@ -37,7 +37,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
@@ -832,7 +831,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperTransactionSessions.add(session);
-			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + Hex.toHexString(server.hasherForTransactions.hash(message.getTransaction()))));
+			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getTransaction().getHexHash(server.hasherForTransactions)));
 	    }
 
 		@SuppressWarnings("resource")

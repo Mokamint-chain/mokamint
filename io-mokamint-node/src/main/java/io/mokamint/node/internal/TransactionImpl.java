@@ -21,6 +21,8 @@ import java.util.Arrays;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -49,6 +51,11 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	@Override
 	public byte[] getBytes() {
 		return bytes.clone();
+	}
+
+	@Override
+	public String getHexHash(Hasher<Transaction> hasher) {
+		return Hex.toHexString(hasher.hash(this));
 	}
 
 	@Override

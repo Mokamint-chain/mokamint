@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
@@ -41,4 +42,12 @@ public interface Transaction extends Marshallable, Comparable<Transaction> {
 
 	@Override
 	String toString();
+
+	/**
+	 * Yields the hexadecimal hash of this transaction, by using the given hasher.
+	 * 
+	 * @param hasher the hasher
+	 * @return the hash, as a string
+	 */
+	String getHexHash(Hasher<Transaction> hasher);
 }

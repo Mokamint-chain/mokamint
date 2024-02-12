@@ -51,11 +51,9 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
@@ -306,10 +304,10 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			.map(whisperer -> (PublicNodeService) whisperer)
 			.map(PublicNodeService::getURI)
 			.flatMap(Optional::stream)
-			.map(Peers::of)
-			.forEach(peer -> {
-				var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
-				String description = "peers " + peer.toStringSanitized();
+			.distinct()
+			.forEach(uri -> {
+				var whisperedPeers = WhisperPeerMessages.of(uri, UUID.randomUUID().toString());
+				String description = "peer " + whisperedPeers.getPeer().toStringSanitized();
 				whisper(whisperedPeers, _whisperer -> false, false, description);
 			});
 	}
@@ -1022,7 +1020,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperTransactionMessage message) -> whisper(message, _whisperer -> false, false, "transaction " + Hex.toHexString(hasherForTransactions.hash(message.getTransaction()))));
+			addMessageHandler(session, (WhisperTransactionMessage message) -> whisper(message, _whisperer -> false, false, "transaction " + message.getTransaction().getHexHash(hasherForTransactions)));
 		}
 
 		@Override

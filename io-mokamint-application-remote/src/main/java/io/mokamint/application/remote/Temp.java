@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements Mokamint nodes that forward all calls to a network node service.
- */
-module io.mokamint.node.remote {
-	exports io.mokamint.node.remote;
+package io.mokamint.application.remote;
 
-	requires transitive io.mokamint.node.remote.api;
-	requires io.mokamint.node.service.api;
-	requires io.mokamint.node.messages;
-	requires io.hotmoka.websockets.client;
-	requires io.hotmoka.annotations;
-	requires java.logging;
+public class Temp {
+
+	public Temp() {
+		// TODO Auto-generated constructor stub
+	}
+
 }
