@@ -14,20 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.api.ExceptionMessage;
+import io.mokamint.application.messages.ExceptionMessages;
+import io.mokamint.application.messages.api.ExceptionMessage;
 
 /**
  * The JSON representation of an {@link ExceptionMessage}.
  */
-public abstract class ExceptionResultMessageJson extends AbstractRpcMessageJsonRepresentation<ExceptionMessage> {
+public abstract class ExceptionMessageJson extends AbstractRpcMessageJsonRepresentation<ExceptionMessage> {
 	private final String clazz;
 	private final String message;
 
-	protected ExceptionResultMessageJson(ExceptionMessage message) {
+	protected ExceptionMessageJson(ExceptionMessage message) {
 		super(message);
 
 		this.clazz = message.getExceptionClass().getName();

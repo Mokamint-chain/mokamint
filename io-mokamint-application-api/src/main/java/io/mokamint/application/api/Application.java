@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.application.api;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -229,4 +231,32 @@ public interface Application extends AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
 	void abortBlock(int groupId) throws TimeoutException, InterruptedException;
+
+	/**
+	 * Code executed when the application gets closed.
+	 */
+	interface CloseHandler {
+
+		/**
+		 * Closes the application.
+		 * 
+		 * @throws IOException if the closure failed for an I/O exception
+		 * @throws InterruptedException if the closure has been interrupted
+		 */
+		void close() throws IOException, InterruptedException;
+	}
+
+	/**
+	 * Takes note that the given code must be executed when this application gets closed.
+	 * 
+	 * @param handler the code
+	 */
+	//void addOnClosedHandler(CloseHandler handler);
+
+	/**
+	 * Removes the given code from that executed when this application gets closed.
+	 * 
+	 * @param handler the code
+	 */
+	//void removeOnCloseHandler(CloseHandler handler);
 }

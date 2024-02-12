@@ -14,17 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal;
+package io.mokamint.application.messages.internal;
 
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
-import io.mokamint.node.messages.api.ExceptionMessage;
+import io.mokamint.application.messages.api.ExceptionMessage;
 
 /**
  * Implementation of the network message corresponding to an exception thrown by a method call.
  */
-public class ExceptionResultMessageImpl extends AbstractRpcMessage implements ExceptionMessage {
+public class ExceptionMessageImpl extends AbstractRpcMessage implements ExceptionMessage {
 
 	/**
 	 * The class of the exception.
@@ -43,7 +43,7 @@ public class ExceptionResultMessageImpl extends AbstractRpcMessage implements Ex
 	 * @param message the message of the exception; this might be {@code null}
 	 * @param id the identifier of the message
 	 */
-	public ExceptionResultMessageImpl(Class<? extends Exception> clazz, String message, String id) {
+	public ExceptionMessageImpl(Class<? extends Exception> clazz, String message, String id) {
 		super(id);
 
 		Objects.requireNonNull(clazz, "clazz");
@@ -53,8 +53,8 @@ public class ExceptionResultMessageImpl extends AbstractRpcMessage implements Ex
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof ExceptionMessage oerm &&
-			super.equals(other) && clazz == oerm.getExceptionClass() && Objects.equals(message, oerm.getMessage());
+		return other instanceof ExceptionMessage em &&
+			super.equals(other) && clazz == em.getExceptionClass() && Objects.equals(message, em.getMessage());
 	}
 
 	@Override

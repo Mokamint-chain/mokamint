@@ -23,9 +23,9 @@ import io.mokamint.node.messages.api.ExceptionMessage;
 /**
  * A decoder for {@link ExceptionMessage}.
  */
-public class ExceptionResultMessageDecoder extends MappedDecoder<ExceptionMessage, ExceptionMessages.Json> {
+public class ExceptionMessageDecoder extends MappedDecoder<ExceptionMessage, ExceptionMessages.Json> {
 
-	public ExceptionResultMessageDecoder() {
+	public ExceptionMessageDecoder() {
 		super(ExceptionMessages.Json.class);
 	}
 }

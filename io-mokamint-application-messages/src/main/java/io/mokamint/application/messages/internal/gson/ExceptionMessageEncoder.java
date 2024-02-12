@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.service;
+package io.mokamint.application.messages.internal.gson;
 
-public class Temp {
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.application.messages.ExceptionMessages;
+import io.mokamint.application.messages.api.ExceptionMessage;
 
-	public Temp() {
-		// TODO Auto-generated constructor stub
+/**
+ * An encoder of {@code ExceptionResultMessage}.
+ */
+public class ExceptionMessageEncoder extends MappedEncoder<ExceptionMessage, ExceptionMessages.Json> {
+
+	public ExceptionMessageEncoder() {
+		super(ExceptionMessages.Json::new);
 	}
-
 }

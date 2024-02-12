@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.application.messages;
 
-import io.mokamint.node.messages.api.ExceptionMessage;
-import io.mokamint.node.messages.internal.ExceptionMessageImpl;
-import io.mokamint.node.messages.internal.gson.ExceptionMessageDecoder;
-import io.mokamint.node.messages.internal.gson.ExceptionMessageEncoder;
-import io.mokamint.node.messages.internal.gson.ExceptionMessageJson;
+import io.mokamint.application.messages.api.ExceptionMessage;
+import io.mokamint.application.messages.internal.ExceptionMessageImpl;
+import io.mokamint.application.messages.internal.gson.ExceptionMessageDecoder;
+import io.mokamint.application.messages.internal.gson.ExceptionMessageEncoder;
+import io.mokamint.application.messages.internal.gson.ExceptionMessageJson;
 
 /**
  * A provider of {@link ExceptionMessage}.

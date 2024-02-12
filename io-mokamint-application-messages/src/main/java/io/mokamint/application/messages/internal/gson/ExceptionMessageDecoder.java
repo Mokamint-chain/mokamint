@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal.gson;
+package io.mokamint.application.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.ExceptionMessages;
-import io.mokamint.node.messages.api.ExceptionMessage;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.application.messages.ExceptionMessages;
+import io.mokamint.application.messages.api.ExceptionMessage;
 
 /**
- * An encoder of {@code ExceptionResultMessage}.
+ * A decoder for {@link ExceptionMessage}.
  */
-public class ExceptionResultMessageEncoder extends MappedEncoder<ExceptionMessage, ExceptionMessages.Json> {
+public class ExceptionMessageDecoder extends MappedDecoder<ExceptionMessage, ExceptionMessages.Json> {
 
-	public ExceptionResultMessageEncoder() {
-		super(ExceptionMessages.Json::new);
+	public ExceptionMessageDecoder() {
+		super(ExceptionMessages.Json.class);
 	}
 }
