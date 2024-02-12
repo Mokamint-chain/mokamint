@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.remote.api;
+package io.mokamint.application.remote.api;
 
 import java.io.IOException;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.api.Node;
+import io.mokamint.application.api.Application;
 
 /**
  * A remote node of a Mokamint blockchain, just seen as a closeable object.
  */
 @ThreadSafe
-public interface RemoteNode extends Node {
+public interface RemoteApplication extends Application {
 
 	/**
-	 * Closes the node.
+	 * Closes the application.
 	 * 
 	 * @throws IOException if an I/O error occurred
 	 * @throws InterruptedException if the close operation has been interrupted

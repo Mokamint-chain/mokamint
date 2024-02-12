@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-node-remote-api</artifactId>
-  <name>io-mokamint-node-remote-api</name>
+  <artifactId>io-mokamint-application-remote-api</artifactId>
+  <name>io-mokamint-application-remote-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module defines the API of Mokamint nodes that forward all calls to a network node service.</description>
+  <description>This module defines the API of Mokamint applications that forward all calls to a network application service.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -16,7 +16,7 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-node-api</artifactId>
+      <artifactId>io-mokamint-application-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>

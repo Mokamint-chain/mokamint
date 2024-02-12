@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * This module defines the API of Mokamint nodes that forwards
+ * This module defines the API of Mokamint nodes that forward
  * all calls to a network node service.
  */
 module io.mokamint.node.remote.api {

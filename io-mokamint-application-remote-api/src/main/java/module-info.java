@@ -14,25 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.remote.api;
-
-import java.io.IOException;
-
-import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.api.Node;
-
 /**
- * A remote node of a Mokamint blockchain, just seen as a closeable object.
+ * This module defines the API of Mokamint applications that forward
+ * all calls to a network node service.
  */
-@ThreadSafe
-public interface RemoteNode extends Node {
+module io.mokamint.application.remote.api {
+	exports io.mokamint.application.remote.api;
 
-	/**
-	 * Closes the node.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws InterruptedException if the close operation has been interrupted
-	 */
-	@Override
-	void close() throws IOException, InterruptedException;
+	requires io.mokamint.application.api;
+	requires io.hotmoka.annotations;
 }
