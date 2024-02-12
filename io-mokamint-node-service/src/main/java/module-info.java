@@ -21,18 +21,16 @@ limitations under the License.
 module io.mokamint.node.service {
 	exports io.mokamint.node.service;
 
-	// needed to allow the endpoint to be created by reflection although it is not exported
+	// needed to allow the endpoints to be created by reflection although they are not exported
 	opens io.mokamint.node.service.internal to org.glassfish.tyrus.core;
 
 	requires transitive io.mokamint.node.service.api;
 	requires transitive io.mokamint.node.api;
 	requires io.mokamint.node.messages;
-	requires io.mokamint.node; // TODO: try to remove this dependency
 	requires io.hotmoka.websockets.server;
-	requires io.hotmoka.websockets.beans.api;
-	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.crypto;
+	requires org.glassfish.tyrus.core;
 	requires java.logging;
 }

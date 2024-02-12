@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,8 +28,7 @@ module io.mokamint.application.service {
 	requires transitive io.mokamint.application.api;
 	requires io.mokamint.application.messages;
 	requires io.hotmoka.websockets.server;
-	requires io.hotmoka.websockets.beans.api;
-	requires org.glassfish.tyrus.core;
 	requires io.hotmoka.annotations;
+	requires org.glassfish.tyrus.core;
 	requires java.logging;
 }

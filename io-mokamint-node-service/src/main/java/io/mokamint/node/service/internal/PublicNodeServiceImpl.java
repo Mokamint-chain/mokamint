@@ -41,7 +41,6 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
@@ -793,7 +792,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperPeerSessions.add(session);
-			addMessageHandler(session, (WhisperPeerMessage message) -> server.whisper(message, _whisperer -> false, session, "peer " + SanitizedStrings.of(message.getPeer())));
+			addMessageHandler(session, (WhisperPeerMessage message) -> server.whisper(message, _whisperer -> false, session, "peer " + message.getPeer().toStringSanitized()));
 		}
 
 		@SuppressWarnings("resource")

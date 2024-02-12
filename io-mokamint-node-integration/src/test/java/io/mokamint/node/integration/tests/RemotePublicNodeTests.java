@@ -64,7 +64,6 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.Transactions;
@@ -1213,7 +1212,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		try (var service = new PublicTestServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			remote.bindWhisperer(whisperer);
-			service.whisper(WhisperPeerMessages.of(peer, UUID.randomUUID().toString()), _whisperer -> false, "peer " + SanitizedStrings.of(peer));
+			service.whisper(WhisperPeerMessages.of(peer, UUID.randomUUID().toString()), _whisperer -> false, "peer " + peer);
 			semaphore.acquire();
 		}
 	}

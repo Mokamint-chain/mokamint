@@ -56,7 +56,6 @@ import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.Peers;
-import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
@@ -310,7 +309,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			.map(Peers::of)
 			.forEach(peer -> {
 				var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
-				String description = "peers " + SanitizedStrings.of(peer);
+				String description = "peers " + peer.toStringSanitized();
 				whisper(whisperedPeers, _whisperer -> false, false, description);
 			});
 	}
@@ -997,7 +996,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperPeerMessage message) -> whisper(message, _whisperer -> false, false, "peer " + SanitizedStrings.of(message.getPeer())));
+			addMessageHandler(session, (WhisperPeerMessage message) -> whisper(message, _whisperer -> false, false, "peer " + message.getPeer().toStringSanitized()));
 		}
 
 		@Override

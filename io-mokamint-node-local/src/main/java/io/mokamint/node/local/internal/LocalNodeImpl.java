@@ -48,7 +48,6 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -764,7 +763,7 @@ public class LocalNodeImpl implements LocalNode {
 	private void whisperWithoutAddition(Peer peer) {
 		var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
 		alreadyWhispered.add(whisperedPeers);
-		String description = "peer " + SanitizedStrings.of(peer);
+		String description = "peer " + peer.toStringSanitized();
 		whisperedPeersQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
 	}
 
@@ -809,7 +808,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param peer the added peer
 	 */
 	protected void onAdded(Peer peer) {
-		LOGGER.info("added peer " + SanitizedStrings.of(peer));
+		LOGGER.info("added peer " + peer.toStringSanitized());
 	}
 
 	/**
@@ -818,7 +817,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param peer the peer
 	 */
 	protected void onConnected(Peer peer) {
-		LOGGER.info("connected to peer " + SanitizedStrings.of(peer));
+		LOGGER.info("connected to peer " + peer.toStringSanitized());
 	}
 
 	/**
@@ -827,7 +826,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param peer the peer
 	 */
 	protected void onDisconnected(Peer peer) {
-		LOGGER.info("disconnected from peer " + SanitizedStrings.of(peer));
+		LOGGER.info("disconnected from peer " + peer.toStringSanitized());
 	}
 
 	/**
@@ -836,7 +835,7 @@ public class LocalNodeImpl implements LocalNode {
 	 * @param peer the removed peer
 	 */
 	protected void onRemoved(Peer peer) {
-		LOGGER.info("removed peer " + SanitizedStrings.of(peer));
+		LOGGER.info("removed peer " + peer.toStringSanitized());
 	}
 
 	/**

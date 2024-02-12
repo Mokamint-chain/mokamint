@@ -45,4 +45,13 @@ public interface Peer extends Marshallable, Comparable<Peer> {
 
 	@Override
 	String toString();
+
+	/**
+	 * Yields a string representation of this peer, sanitized to a maximal
+	 * length, so that it cannot be used, for instance, for filling the logs
+	 * with very long strings.
+	 * 
+	 * @return the sanitized representation
+	 */
+	String toStringSanitized();
 }

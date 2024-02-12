@@ -40,7 +40,6 @@ import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
-import io.mokamint.node.SanitizedStrings;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
@@ -325,13 +324,13 @@ public class Peers implements AutoCloseable {
 		if (removed)
 			node.onRemoved(peer);
 	
-		LOGGER.warning("peers: " + SanitizedStrings.of(peer) + " lost " + lost + " points because it is unreachable");
+		LOGGER.warning("peers: " + peer.toStringSanitized() + " lost " + lost + " points because it is unreachable");
 	}
 
 	private void pardonBecauseReachable(Peer peer) {
 		long gained = peers.pardon(peer, config.getPeerPunishmentForUnreachable());
 		if (gained > 0L)
-			LOGGER.info("peers: " + SanitizedStrings.of(peer) + " gained " + gained + " points because it is reachable");
+			LOGGER.info("peers: " + peer.toStringSanitized() + " gained " + gained + " points because it is reachable");
 	}
 
 	/**
@@ -363,7 +362,7 @@ public class Peers implements AutoCloseable {
 						.filter(not(peers::contains));
 			}
 			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.log(Level.WARNING, "peers: cannot contact " + SanitizedStrings.of(peer) + ": " + e.getMessage());
+				LOGGER.log(Level.WARNING, "peers: cannot contact " + peer.toStringSanitized() + ": " + e.getMessage());
 				punishBecauseUnreachable(peer);
 			}
 		}
@@ -472,7 +471,7 @@ public class Peers implements AutoCloseable {
 	 */
 	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) throws ClosedNodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 		try {
-			LOGGER.info("peers: trying to create a connection to " + SanitizedStrings.of(peer));
+			LOGGER.info("peers: trying to create a connection to " + peer.toStringSanitized());
 			RemotePublicNode remote = null;
 
 			try {
@@ -497,7 +496,7 @@ public class Peers implements AutoCloseable {
 			}
 		}
 		catch (IOException | TimeoutException e) {
-			LOGGER.log(Level.WARNING, "peers: cannot contact " + SanitizedStrings.of(peer) + ": " + e.getMessage());
+			LOGGER.log(Level.WARNING, "peers: cannot contact " + peer.toStringSanitized() + ": " + e.getMessage());
 			punishBecauseUnreachable(peer);
 		}
 		catch (PeerRejectedException e) {
@@ -578,7 +577,7 @@ public class Peers implements AutoCloseable {
 			return RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1L, config.getWhisperingMemorySize());
 		}
 		catch (DeploymentException e) {
-			throw new IOException("Cannot deploy a remote connected to " + SanitizedStrings.of(peer), e);  // we consider it as a special case of IOException
+			throw new IOException("Cannot deploy a remote connected to " + peer.toStringSanitized(), e);  // we consider it as a special case of IOException
 		}
 	}
 
