@@ -50,6 +50,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.AlreadyInitializedException;
+import io.mokamint.nonce.api.DeadlineValidityCheckException;
 
 /**
  * The blockchain of a local node. It contains blocks rooted at a genesis block.
@@ -361,9 +362,10 @@ public class Blockchain implements AutoCloseable {
 	
 			add(genesis);
 		}
-		catch (NoSuchAlgorithmException | ClosedDatabaseException | VerificationException e) {
+		catch (NoSuchAlgorithmException | ClosedDatabaseException | VerificationException | DeadlineValidityCheckException e) {
 			// the database cannot be closed at this moment;
-			// moreover, the genesis should be created correctly, hence should be verifiable
+			// the genesis should be created correctly, hence should be verifiable;
+			// moreover, the genesis has no deadline
 			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
 			throw new RuntimeException("Unexpected exception", e);
 		}
@@ -395,8 +397,9 @@ public class Blockchain implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
+	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
 		return add(block, true);
 	}
 
@@ -411,7 +414,8 @@ public class Blockchain implements AutoCloseable {
 		try {
 			return add(block, false);
 		}
-		catch (VerificationException e) {
+		catch (VerificationException | DeadlineValidityCheckException e) {
+			// impossible: we did not require block verification
 			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
@@ -421,8 +425,9 @@ public class Blockchain implements AutoCloseable {
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
+	 * @throws DeadlineValidityCheckException if the validity of some deadline could not be determined
 	 */
-	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException {
+	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
@@ -473,7 +478,7 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException {
+			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
 
 		try {
 			if (verify)

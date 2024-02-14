@@ -48,6 +48,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.Transactions;
@@ -66,6 +67,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.VerificationException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
+import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -109,7 +111,7 @@ public class MempoolTests extends AbstractLoggedTests {
 	private static Plot plot2;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var hashing = config.getHashingForDeadlines();
 		var signature = config.getSignatureForBlocks();
@@ -163,7 +165,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the mempool is unchanged")
-	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException {
+	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException, DeadlineValidityCheckException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -195,7 +197,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, its transactions are removed from the mempool")
-	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException {
+	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException, DeadlineValidityCheckException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -222,7 +224,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the mempool remains unchanged")
-	public void ifBlockAddedToChainButHeadBetterThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException {
+	public void ifBlockAddedToChainButHeadBetterThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException, DeadlineValidityCheckException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -261,7 +263,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then the mempool is rebased")
-	public void ifMorePowerfulChainIsAddedThenMempoolRebased(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException {
+	public void ifMorePowerfulChainIsAddedThenMempoolRebased(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException, DeadlineValidityCheckException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -356,7 +358,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then all its transactions are removed from the mempool")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenAllTransactionsRemovedFromMempool(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException {
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenAllTransactionsRemovedFromMempool(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException, DeadlineValidityCheckException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();

@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.application.api;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeoutException;
 
@@ -94,10 +93,11 @@ public interface Application extends AutoCloseable {
 	 * 
 	 * @param extra the extra, application-specific bytes of the prolog
 	 * @return true if and only if {@code extra} is valid according to this application
+	 * @throws ApplicationException if the application is not able to perform the operation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	boolean checkPrologExtra(byte[] extra) throws TimeoutException, InterruptedException;
+	boolean checkPrologExtra(byte[] extra) throws ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Checks if the given transaction is valid according to this application.
@@ -232,17 +232,28 @@ public interface Application extends AutoCloseable {
 	void abortBlock(int groupId) throws TimeoutException, InterruptedException;
 
 	/**
+	 * Closes this application. After this closure, the methods of this application might throw
+	 * an {@link ApplicationException} if the closure makes their work impossible.
+	 * An application cannot be reopened after being closed.
+	 * 
+	 * @throws ApplicationException if the closure failed for some reason
+	 * @throws InterruptedException if the closure was interrupted before completion
+	 */
+	@Override
+	void close() throws ApplicationException, InterruptedException;
+
+	/**
 	 * Code executed when the application gets closed.
 	 */
 	interface CloseHandler {
 
 		/**
-		 * Closes the application.
+		 * The code to execute when the application gets closed.
 		 * 
-		 * @throws IOException if the closure failed for an I/O exception
+		 * @throws Exception if the closure failed for some reason
 		 * @throws InterruptedException if the closure has been interrupted
 		 */
-		void close() throws IOException, InterruptedException;
+		void close() throws Exception, InterruptedException;
 	}
 
 	/**

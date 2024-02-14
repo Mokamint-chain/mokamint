@@ -44,6 +44,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.node.Peers;
@@ -89,7 +90,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	private static KeyPair plotKeys;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException {
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException, ApplicationException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };

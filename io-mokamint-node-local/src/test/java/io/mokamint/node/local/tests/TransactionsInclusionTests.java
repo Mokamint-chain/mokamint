@@ -52,6 +52,7 @@ import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
@@ -89,7 +90,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	private static Application app;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws RejectedTransactionException, TimeoutException, InterruptedException {
+	public static void beforeAll(@TempDir Path plotDir) throws RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		when(app.getInitialStateId()).thenReturn(new byte[] { 1, 2, 3 });

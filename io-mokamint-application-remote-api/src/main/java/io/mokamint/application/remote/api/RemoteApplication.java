@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.application.remote.api;
 
-import java.io.IOException;
-
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
 
@@ -26,13 +24,4 @@ import io.mokamint.application.api.Application;
  */
 @ThreadSafe
 public interface RemoteApplication extends Application {
-
-	/**
-	 * Closes the application.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws InterruptedException if the close operation has been interrupted
-	 */
-	@Override
-	void close() throws IOException, InterruptedException;
 }

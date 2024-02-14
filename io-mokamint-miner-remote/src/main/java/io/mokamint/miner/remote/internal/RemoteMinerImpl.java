@@ -34,6 +34,7 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
 import io.mokamint.nonce.api.DeadlineValidityCheck;
+import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.CloseReason.CloseCodes;
@@ -168,7 +169,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			Thread.currentThread().interrupt();
 			return;
 		}
-		catch (TimeoutException e) {
+		catch (TimeoutException | DeadlineValidityCheckException e) {
 			LOGGER.warning(logPrefix + "could not check the validity of " + deadline + ": " + e.getMessage());
 			return;
 		}

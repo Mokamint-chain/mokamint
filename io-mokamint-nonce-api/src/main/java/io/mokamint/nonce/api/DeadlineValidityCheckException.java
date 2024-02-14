@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,17 +17,27 @@ limitations under the License.
 package io.mokamint.nonce.api;
 
 /**
- * An exception thrown when a deadline validity check fails.
+ * An exception thrown when a deadline validity check is not able to complete
+ * and understand if the deadline was valid or not.
  */
 @SuppressWarnings("serial")
-public class IllegalDeadlineException extends Exception {
+public class DeadlineValidityCheckException extends Exception {
 
 	/**
 	 * Creates the exception.
 	 * 
 	 * @param message the message in the exception
 	 */
-	public IllegalDeadlineException(String message) {
+	public DeadlineValidityCheckException(String message) {
 		super(message);
+	}
+
+	/**
+	 * Creates the exception.
+	 * 
+	 * @param cause the cause of the exception
+	 */
+	public DeadlineValidityCheckException(Exception cause) {
+		super(cause);
 	}
 }

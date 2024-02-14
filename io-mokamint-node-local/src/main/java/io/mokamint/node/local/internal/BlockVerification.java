@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
@@ -38,6 +39,7 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineValidityCheckException;
 
 /**
  * A verifier of the consensus rules of the blocks that gets added to a blockchain.
@@ -87,8 +89,9 @@ public class BlockVerification {
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
@@ -132,8 +135,9 @@ public class BlockVerification {
 	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
@@ -158,10 +162,11 @@ public class BlockVerification {
 	 * Checks if the deadline of {@link #block} has a prolog valid for the {@link #node}.
 	 * 
 	 * @throws VerificationException if that condition in violated
+	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	private void deadlineHasValidProlog() throws VerificationException, TimeoutException, InterruptedException {
+	private void deadlineHasValidProlog() throws VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
 		var prolog = deadline.getProlog();
 
 		if (!prolog.getChainId().equals(config.getChainId()))
@@ -173,8 +178,13 @@ public class BlockVerification {
 		if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
 			throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
 
-		if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
-			throw new VerificationException("Invalid deadline prolog's extra");
+		try {
+			if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
+				throw new VerificationException("Invalid deadline prolog's extra");
+		}
+		catch (ApplicationException e) {
+			throw new DeadlineValidityCheckException(e);
+		}
 	}
 
 	/**

@@ -28,8 +28,9 @@ public interface DeadlineValidityCheck {
 	 * 
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if the deadline is invalid
+	 * @throws DeadlineValidityCheckException if and only if the validity of the deadline could not be determined
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the check did not answer in time
 	 */
-	void check(Deadline deadline) throws IllegalDeadlineException, InterruptedException, TimeoutException;
+	void check(Deadline deadline) throws IllegalDeadlineException, DeadlineValidityCheckException, InterruptedException, TimeoutException;
 }

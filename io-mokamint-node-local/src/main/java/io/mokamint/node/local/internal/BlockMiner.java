@@ -43,6 +43,7 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
@@ -340,7 +341,7 @@ public class BlockMiner {
 				LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]");
 				node.punish(miner, points);
 			}
-			catch (TimeoutException e) {
+			catch (TimeoutException | DeadlineValidityCheckException e) {
 				LOGGER.warning(heightMessage + "discarding deadline " + deadline + " since its validity could not be checked: " + e.getMessage());
 			}
 			catch (InterruptedException e) {

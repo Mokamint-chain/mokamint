@@ -46,6 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -77,7 +78,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	private static KeyPair nodeKey;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException {
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException, ApplicationException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 4 };

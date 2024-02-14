@@ -46,6 +46,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
@@ -85,6 +86,7 @@ import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 import jakarta.websocket.DeploymentException;
 
@@ -629,10 +631,11 @@ public class LocalNodeImpl implements LocalNode {
 	 * 
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if {@code deadline} is illegal
+	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application does not answer in time
 	 */
-	protected void check(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException {
+	protected void check(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
 		var prolog = deadline.getProlog();
 	
 		if (!deadline.isValid())
@@ -645,8 +648,15 @@ public class LocalNodeImpl implements LocalNode {
 			throw new IllegalDeadlineException("Wrong blocks' signature algorithm in deadline");
 		else if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
 			throw new IllegalDeadlineException("Wrong deadlines' signature algorithm in deadline");
-		else if (!app.checkPrologExtra(prolog.getExtra()))
-			throw new IllegalDeadlineException("Invalid extra data in deadline");
+		else {
+			try {
+				if (!app.checkPrologExtra(prolog.getExtra()))
+					throw new IllegalDeadlineException("Invalid extra data in deadline");
+			}
+			catch (ApplicationException e) {
+				throw new DeadlineValidityCheckException(e);
+			}
+		}
 	}
 
 	/**
@@ -1107,7 +1117,7 @@ public class LocalNodeImpl implements LocalNode {
 				catch (NoSuchAlgorithmException | DatabaseException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
-				catch (VerificationException | ClosedDatabaseException e) {
+				catch (VerificationException | ClosedDatabaseException | DeadlineValidityCheckException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 				}
 			}

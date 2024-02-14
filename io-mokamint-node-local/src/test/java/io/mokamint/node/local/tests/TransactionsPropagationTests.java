@@ -43,6 +43,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.ClosedNodeException;
@@ -75,7 +76,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	private static KeyPair nodeKey;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException {
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		doNothing().when(app).checkTransaction(any());

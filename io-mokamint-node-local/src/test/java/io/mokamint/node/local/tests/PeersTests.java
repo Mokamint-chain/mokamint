@@ -57,6 +57,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
@@ -104,7 +105,7 @@ public class PeersTests extends AbstractLoggedTests {
 	private static KeyPair nodeKey;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException {
+	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException, ApplicationException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();

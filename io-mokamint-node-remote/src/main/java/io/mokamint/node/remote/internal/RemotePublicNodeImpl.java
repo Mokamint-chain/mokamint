@@ -78,7 +78,6 @@ import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeer;
 import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
