@@ -65,6 +65,7 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -77,6 +78,7 @@ import io.mokamint.node.api.WhisperedBlock;
 import io.mokamint.node.api.WhisperedPeer;
 import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
@@ -240,10 +242,18 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void close() throws IOException, InterruptedException {
-		super.close();
-		periodicTasks.shutdownNow();
-		periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
+	public void close() throws NodeException, InterruptedException {
+		try {
+			periodicTasks.shutdownNow();
+		}
+		finally {
+			try {
+				super.close();
+			}
+			finally {
+				periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
+			}
+		}
 	}
 
 	@Override

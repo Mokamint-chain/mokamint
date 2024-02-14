@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteNode;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
@@ -70,6 +71,9 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	protected <N extends RemoteNode> void execute(RemoteSupplier<N> supplier, RpcCommandBody<N> what, URI uri) throws CommandException {
 		try (var remote = supplier.get(uri, timeout)) {
 			what.run(remote);
+		}
+		catch (NodeException e) {
+			throw new CommandException("The node published at " + uri + " could not complete the operation", e);
 		}
 		catch (IOException e) {
 			throw new CommandException("I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?", e);

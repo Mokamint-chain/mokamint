@@ -24,7 +24,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -32,6 +31,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.api.RemoteNode;
 import jakarta.websocket.CloseReason;
@@ -113,38 +113,9 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	}
 
 	@Override
-	public void close() throws IOException, InterruptedException {
-		if (!isClosed.getAndSet(true)) {
-			IOException ioException = null;
-			InterruptedException interruptedException = null;
-			
-			for (var handler: onCloseHandlers) {
-				try {
-					handler.close();
-				}
-				catch (InterruptedException e) {
-					interruptedException = e;
-				}
-				catch (IOException e) {
-					ioException = e;
-				}
-			}
-
-			for (var session: sessions.values()) {
-				try {
-					session.close();
-				}
-				catch (IOException e) {
-					LOGGER.log(Level.WARNING, "remote: cannot close the sessions", ioException);
-					ioException = e;
-				}
-			}
-
-			if (interruptedException != null)
-				throw interruptedException;
-			else if (ioException != null)
-				throw ioException;
-		}
+	public void close() throws NodeException, InterruptedException {
+		if (!isClosed.getAndSet(true))
+			closeHandlersAndSessions(onCloseHandlers.toArray(CloseHandler[]::new), 0);
 	}
 
 	/**
@@ -174,11 +145,47 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 				// we close the remote since it is bound to a service that seems to be getting closed
 				close();
 			}
-			catch (IOException | InterruptedException e) {
-				LOGGER.log(Level.SEVERE, "remote: cannot close " + getClass().getName(), e);
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LOGGER.warning("remote: interrupted while closing " + getClass().getName() + ": " + e.getMessage());
+			}
+			catch (NodeException e) {
+				LOGGER.warning("remote: cannot close " + getClass().getName() + ": " + e.getMessage());
 			}
 		}
 
 		protected abstract Session deployAt(URI uri) throws DeploymentException, IOException;
+	}
+
+	private void closeHandlersAndSessions(CloseHandler[] handlers, int pos) throws NodeException, InterruptedException {
+		if (pos < handlers.length) {
+			try {
+				handlers[pos].close();
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw e;
+			}
+			catch (Exception e) {
+				throw new NodeException(e);
+			}
+			finally {
+				closeHandlersAndSessions(handlers, pos + 1);
+			}
+		}
+		else
+			closeSessions(sessions.values().toArray(Session[]::new), 0);
+	}
+
+	private void closeSessions(Session[] sessions, int pos) throws NodeException {
+		if (pos < sessions.length) {
+			try {
+				sessions[pos].close();
+			}
+			catch (IOException e) {
+				LOGGER.warning("remote: cannot close session: " + e.getMessage());
+				throw new NodeException(e);
+			}
+		}
 	}
 }

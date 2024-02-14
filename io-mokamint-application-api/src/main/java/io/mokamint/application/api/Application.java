@@ -23,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.nonce.api.Deadline;
 
 /**

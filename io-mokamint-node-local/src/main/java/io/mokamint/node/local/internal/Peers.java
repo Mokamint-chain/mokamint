@@ -44,6 +44,7 @@ import io.mokamint.node.Versions;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -263,11 +264,12 @@ public class Peers implements AutoCloseable {
 					try {
 						disconnect(entry.getKey(), entry.getValue());
 					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						interruptedException = e;
+					}
 					catch (IOException e) {
 						ioException = e;
-					}
-					catch (InterruptedException e) {
-						interruptedException = e;
 					}
 				}
 			}
@@ -596,7 +598,8 @@ public class Peers implements AutoCloseable {
 			punishBecauseUnreachable(peer);
 		}
 		catch (ClosedDatabaseException | DatabaseException e) {
-			throw new IOException(e);
+			LOGGER.warning("cannot punish peer " + peer.toStringSanitized() + ": " + e.getMessage());
+			throw new IOException("Cannot punish peer " + peer.toStringSanitized(), e);
 		}
 	}
 
@@ -614,8 +617,15 @@ public class Peers implements AutoCloseable {
 			remote.unbindWhisperer(node);
 			remotes.remove(peer);
 			timeDifferences.remove(peer);
-			remote.close();
-			node.onDisconnected(peer);
+
+			try {
+				remote.close();
+				node.onDisconnected(peer);
+			}
+			catch (NodeException e) {
+				LOGGER.warning("cannot close the remote to peer " + peer.toStringSanitized() + ": " + e.getMessage());
+				throw new IOException("Cannot close the remote to peer " + peer.toStringSanitized(), e);
+			}
 		}
 	}
 }

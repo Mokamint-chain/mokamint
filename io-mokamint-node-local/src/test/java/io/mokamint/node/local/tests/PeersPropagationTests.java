@@ -50,6 +50,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
@@ -88,7 +89,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@Timeout(20)
 	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -154,7 +155,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@Timeout(20)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -215,7 +216,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@DisplayName("if a peer adds another peer, eventually to end up being a peer of each other")
 	public void ifPeerAddsPeerThenTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DatabaseException,
-				   IOException, DeploymentException, TimeoutException, ClosedNodeException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+				   IOException, DeploymentException, TimeoutException, ClosedNodeException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;

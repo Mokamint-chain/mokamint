@@ -71,6 +71,7 @@ import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -167,7 +168,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfos() works")
-	public void getPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
 				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
@@ -192,7 +193,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfos() works if it throws TimeoutException")
-	public void getPeerInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
+	public void getPeerInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "time-out";
 
 		class MyServer extends PublicTestServer {
@@ -216,7 +217,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfos() works if it throws ClosedNodeException")
-	public void getPeerInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException {
+	public void getPeerInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "node is closed";
 
 		class MyServer extends PublicTestServer {
@@ -240,7 +241,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfos() works if it throws InterruptedException")
-	public void getPeerInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException {
+	public void getPeerInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "interrupted";
 
 		class MyServer extends PublicTestServer {
@@ -264,7 +265,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if getPeerInfos() is slow, it leads to a time-out")
-	public void getPeerInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, InterruptedException {
+	public void getPeerInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NodeException {
 		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
 				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
 
@@ -293,7 +294,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfos() ignores unexpected exceptions")
-	public void getPeerInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException {
+	public void getPeerInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -314,7 +315,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfos() ignores unexpected messages")
-	public void getPeerInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException {
+	public void getPeerInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException, NodeException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -335,7 +336,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfos() works")
-	public void getMinerInfosWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getMinerInfosWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var minerInfos1 = Set.of(MinerInfos.of(UUID.randomUUID(), 345L, "a miner"),
 			MinerInfos.of(UUID.randomUUID(), 11L, "a special miner"));
 	
@@ -360,7 +361,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfos() works if it throws TimeoutException")
-	public void getMinerInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
+	public void getMinerInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "time-out";
 	
 		class MyServer extends PublicTestServer {
@@ -384,7 +385,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfos() works if it throws ClosedNodeException")
-	public void getMinerInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException {
+	public void getMinerInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "node is closed";
 	
 		class MyServer extends PublicTestServer {
@@ -408,7 +409,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfos() works if it throws InterruptedException")
-	public void getMinerInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException {
+	public void getMinerInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "interrupted";
 	
 		class MyServer extends PublicTestServer {
@@ -432,7 +433,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if getMinerInfos() is slow, it leads to a time-out")
-	public void getMinerInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, InterruptedException {
+	public void getMinerInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var minerInfos1 = Set.of(MinerInfos.of(UUID.randomUUID(), 345L, "a miner"),
 				MinerInfos.of(UUID.randomUUID(), 11L, "a special miner"));
 	
@@ -461,7 +462,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfos() ignores unexpected exceptions")
-	public void getMinerInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException {
+	public void getMinerInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		class MyServer extends PublicTestServer {
 	
 			private MyServer() throws DeploymentException, IOException {}
@@ -482,7 +483,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfos() ignores unexpected messages")
-	public void getMinerInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException {
+	public void getMinerInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException, NodeException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -503,7 +504,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfos() works")
-	public void getTaskInfosWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getTaskInfosWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var taskInfos1 = Set.of(TaskInfos.of("a wonderful task"), TaskInfos.of("a special task"));
 	
 		class MyServer extends PublicTestServer {
@@ -527,7 +528,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfos() works if it throws TimeoutException")
-	public void getTaskInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException {
+	public void getTaskInfosWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "time-out";
 	
 		class MyServer extends PublicTestServer {
@@ -551,7 +552,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfos() works if it throws ClosedNodeException")
-	public void getTaskInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException {
+	public void getTaskInfosWorksInCaseOfClosedNodeException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "node is closed";
 	
 		class MyServer extends PublicTestServer {
@@ -575,7 +576,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfos() works if it throws InterruptedException")
-	public void getTaskInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException {
+	public void getTaskInfosWorksInCaseOfInterruptedException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var exceptionMessage = "interrupted";
 	
 		class MyServer extends PublicTestServer {
@@ -599,7 +600,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if getTaskInfos() is slow, it leads to a time-out")
-	public void getTaskInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, InterruptedException {
+	public void getTaskInfosWorksInCaseOfTimeout() throws DeploymentException, IOException, InterruptedException, NodeException {
 		var taskInfos1 = Set.of(TaskInfos.of("a task"), TaskInfos.of("a special task"));
 	
 		class MyServer extends PublicTestServer {
@@ -627,7 +628,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfos() ignores unexpected exceptions")
-	public void getTaskInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException {
+	public void getTaskInfosWorksInCaseOfUnexpectedException() throws DeploymentException, IOException, InterruptedException, NodeException {
 		class MyServer extends PublicTestServer {
 	
 			private MyServer() throws DeploymentException, IOException {}
@@ -648,7 +649,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfos() ignores unexpected messages")
-	public void getTaskInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException {
+	public void getTaskInfosWorksInCaseOfUnexpectedMessage() throws DeploymentException, IOException, InterruptedException, NodeException {
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
@@ -669,7 +670,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block exists")
-	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, InvalidKeyException, SignatureException {
+	public void getBlockWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, InvalidKeyException, SignatureException, NodeException {
 		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -709,7 +710,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlock() works if the block is missing")
-	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getBlockWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 
 		class MyServer extends PublicTestServer {
@@ -734,7 +735,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlock() works if it throws NoSuchAlgorithmException")
-	public void getBlockWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getBlockWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "sha345";
 
@@ -760,7 +761,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlock() works if it throws DatabaseException")
-	public void getBlockWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getBlockWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "corrupted database";
 
@@ -786,7 +787,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlockDescription() works if the block exists")
-	public void getBlockDescriptionWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, InvalidKeyException, SignatureException {
+	public void getBlockDescriptionWorksIfBlockExists() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, InvalidKeyException, SignatureException, NodeException {
 		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -821,7 +822,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlockDescription() works if the block is missing")
-	public void getBlockDescriptionWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getBlockDescriptionWorksIfBlockMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 
 		class MyServer extends PublicTestServer {
@@ -846,7 +847,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlockDescription() works if it throws NoSuchAlgorithmException")
-	public void getBlockDescriptionWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getBlockDescriptionWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "sha345";
 
@@ -872,7 +873,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlockDescription() works if it throws DatabaseException")
-	public void getBlockDescriptionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getBlockDescriptionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "corrupted database";
 
@@ -898,7 +899,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getConfig() works")
-	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getConfigWorks() throws DeploymentException, IOException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var config1 = ConsensusConfigBuilders.defaults().build();
 
 		class MyServer extends PublicTestServer {
@@ -922,7 +923,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainInfo() works")
-	public void getChainInfoWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getChainInfoWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }));
 
 		class MyServer extends PublicTestServer {
@@ -946,7 +947,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainInfo() works in case of DatabaseException")
-	public void getChainInfoWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void getChainInfoWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
 		var exceptionMessage = "exception message";
 	
 		class MyServer extends PublicTestServer {
@@ -970,7 +971,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainPortion() works")
-	public void getChainPortionWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getChainPortionWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var chain1 = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 17, 13, 19 }));
 
 		class MyServer extends PublicTestServer {
@@ -994,7 +995,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainPortion() works in case of DatabaseException")
-	public void getChainPortionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void getChainPortionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
 		var exceptionMessage = "exception message";
 
 		class MyServer extends PublicTestServer {
@@ -1018,7 +1019,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getInfo() works")
-	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 	
 		class MyServer extends PublicTestServer {
@@ -1042,7 +1043,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMempoolInfo() works")
-	public void getMempoolInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getMempoolInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var info1 = MempoolInfos.of(17L);
 	
 		class MyServer extends PublicTestServer {
@@ -1066,7 +1067,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works")
-	public void addTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, RejectedTransactionException, NoSuchAlgorithmException {
+	public void addTransactionWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, RejectedTransactionException, NoSuchAlgorithmException, NodeException {
 		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var transaction2 = new AtomicReference<Transaction>();
 
@@ -1092,7 +1093,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works in case of RejectedTransactionException")
-	public void addTransactionWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void addTransactionWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
 		var exceptionMessage = "exception message";
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 
@@ -1117,7 +1118,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works in case of NoSuchAlgorithmException")
-	public void addTransactionWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void addTransactionWorksInCaseOfNoSuchAlgorithmException() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
 		var exceptionMessage = "exception message";
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 
@@ -1142,7 +1143,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works in case of DatabaseException")
-	public void addTransactionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException {
+	public void addTransactionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
 		var exceptionMessage = "exception message";
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 
@@ -1167,7 +1168,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMempoolPortion() works")
-	public void getMempoolPortionWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getMempoolPortionWorks() throws DeploymentException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var mempool1 = MempoolPortions.of(Stream.of(
 			MempoolEntries.of(new byte[] { 1, 2, 3, 4 }, 11L),
 			MempoolEntries.of(new byte[] { 17, 13, 19 }, 17L)
@@ -1195,7 +1196,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(10)
 	@DisplayName("if a service whispers a peer, a remote will inform its bound whisperers")
-	public void ifServiceWhispersPeersTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException {
+	public void ifServiceWhispersPeersTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException, NodeException {
 		var peer = Peers.of(new URI("ws://my.machine:8032"));
 		var semaphore = new Semaphore(0);
 		var whisperer = mock(Whisperer.class);
@@ -1220,7 +1221,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(10)
 	@DisplayName("if a service whispers a block, a remote will inform its bound whisperers")
-	public void ifServiceWhispersBlockTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void ifServiceWhispersBlockTheRemoteInformsBoundWhisperers() throws DeploymentException, IOException, TimeoutException, InterruptedException, URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, NodeException {
 		var hashing = HashingAlgorithms.shabal256();
 		var value = new byte[hashing.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -1257,7 +1258,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransaction() works if the transaction exists")
-	public void getTransactionWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException {
+	public void getTransactionWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
 		var tx1 = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var hash = new byte[] { 67, 56, 43 };
 	
@@ -1283,7 +1284,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransaction() works if the transaction is missing")
-	public void getTransactionWorksIfTransactionMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public void getTransactionWorksIfTransactionMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -1308,7 +1309,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransaction() works if it throws DatabaseException")
-	public void getTransactionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getTransactionWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "corrupted database";
 	
@@ -1334,7 +1335,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransaction() works if it throws InterruptedException")
-	public void getTransactionRepresentationWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getTransactionRepresentationWorksInCaseOfInterruptedException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "interrupted";
 	
@@ -1360,7 +1361,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionRepresentation() works if the transaction exists")
-	public void getTransactionRepresentationWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, ClosedNodeException {
+	public void getTransactionRepresentationWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, ClosedNodeException, NodeException {
 		var representation1 = "hello";
 		var hash = new byte[] { 67, 56, 43 };
 	
@@ -1386,7 +1387,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionRepresentation() works if the transaction is missing")
-	public void getTransactionRepresentationWorksIfTransactionMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, RejectedTransactionException {
+	public void getTransactionRepresentationWorksIfTransactionMissing() throws DeploymentException, IOException, DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, RejectedTransactionException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -1411,7 +1412,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionRepresentation() works if it throws RejectedTransactionException")
-	public void getTransactionRepresentationWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getTransactionRepresentationWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "rejected";
 	
@@ -1437,7 +1438,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionRepresentation() works if it throws DatabaseException")
-	public void getTransactionRepresentationWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException {
+	public void getTransactionRepresentationWorksInCaseOfDatabaseException() throws DeploymentException, IOException, NoSuchAlgorithmException, InterruptedException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "corrupted database";
 	
@@ -1463,7 +1464,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionAddress() works if the transaction exists")
-	public void getTransactionAddressWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, TimeoutException, ClosedNodeException {
+	public void getTransactionAddressWorksIfTransactionExists() throws IOException, DatabaseException, InterruptedException, DeploymentException, TimeoutException, ClosedNodeException, NodeException {
 		var address1 = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
 		var hash = new byte[] { 67, 56, 43 };
 	
@@ -1489,7 +1490,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionAddress() works if the transaction is missing")
-	public void getTransactionAddressWorksIfTransactionMissing() throws IOException, DatabaseException, InterruptedException, DeploymentException, TimeoutException, ClosedNodeException {
+	public void getTransactionAddressWorksIfTransactionMissing() throws IOException, DatabaseException, InterruptedException, DeploymentException, TimeoutException, ClosedNodeException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -1514,7 +1515,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionAddress() works if it throws DatabaseException")
-	public void getTransactionAddressWorksInCaseOfDatabaseException() throws InterruptedException, DeploymentException, IOException {
+	public void getTransactionAddressWorksInCaseOfDatabaseException() throws InterruptedException, DeploymentException, IOException, NodeException {
 		var hash = new byte[] { 67, 56, 43 };
 		var exceptionMessage = "corrupted database";
 	

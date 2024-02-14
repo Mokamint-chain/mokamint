@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -111,7 +112,10 @@ public class List extends AbstractPublicRpcCommand {
 						UUIDs[pos] = peerInfo.getUUID().toString();
 						versions[pos] = peerInfo.getVersion().toString();
 					}
-					catch (IOException | DeploymentException | TimeoutException | InterruptedException | ClosedNodeException e) {
+					catch (NodeException | IOException | DeploymentException | TimeoutException | InterruptedException | ClosedNodeException e) {
+						if (e instanceof InterruptedException)
+							Thread.currentThread().interrupt();
+
 						LOGGER.log(Level.WARNING, "cannot contact " + info.getPeer(), e);
 						UUIDs[pos] = "<unknown>";
 						versions[pos] = "<unknown>";

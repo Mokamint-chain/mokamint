@@ -60,6 +60,7 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -348,47 +349,9 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void close() throws InterruptedException, DatabaseException, IOException {
-		if (closureLock.stopNewCalls()) {
-			executors.shutdownNow();
-			periodicExecutors.shutdownNow();
-
-			InterruptedException interruptedException = null;
-			IOException ioException = null;
-			
-			for (var handler: onCloseHandlers) {
-				try {
-					handler.close();
-				}
-				catch (InterruptedException e) {
-					interruptedException = e;
-				}
-				catch (IOException e) {
-					ioException = e;
-				}
-			}
-
-			try {
-				for (var miner: minersToCloseAtTheEnd)
-					miner.close();
-
-				executors.awaitTermination(5, TimeUnit.SECONDS);
-				periodicExecutors.awaitTermination(5, TimeUnit.SECONDS);
-			}
-			finally {
-				try {
-					peers.close();
-				}
-				finally {
-					blockchain.close();
-				}
-			}
-
-			if (interruptedException != null)
-				throw interruptedException;
-			else if (ioException != null)
-				throw ioException;
-		}
+	public void close() throws NodeException, InterruptedException {
+		if (closureLock.stopNewCalls())
+			closeExecutorsHandlersMinersPeersAndBlockchain();
 	}
 
 	@Override
@@ -398,11 +361,6 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	/**
-	 * Yields the configuration of this node.
-	 * 
-	 * @return the configuration of this node
-	 */
 	@Override
 	public LocalNodeConfig getConfig() {
 		return config;
@@ -1217,5 +1175,95 @@ public class LocalNodeImpl implements LocalNode {
 	private RuntimeException unexpectedException(Exception e) {
 		LOGGER.log(Level.SEVERE, "node " + uuid + ": unexpected exception", e);
 		return new RuntimeException("Unexpected exception", e);
+	}
+
+	private void closeExecutorsHandlersMinersPeersAndBlockchain() throws NodeException, InterruptedException {
+		try {
+			executors.shutdownNow();
+		}
+		finally {
+			try {
+				periodicExecutors.shutdownNow();
+			}
+			finally {
+				try {
+					closeHandlersMinersPeersAndBlockchain(onCloseHandlers.toArray(CloseHandler[]::new), 0);
+				}
+				finally {
+					// we give five seconds in total
+					long start = System.currentTimeMillis();
+					executors.awaitTermination(5, TimeUnit.SECONDS);
+					long end = System.currentTimeMillis();
+					periodicExecutors.awaitTermination(5000 - (end - start), TimeUnit.MILLISECONDS);
+				}
+			}
+		}
+	}
+
+	private void closeHandlersMinersPeersAndBlockchain(CloseHandler[] handlers, int pos) throws InterruptedException, NodeException {
+		if (pos < handlers.length) {
+			try {
+				handlers[pos].close();
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw e;
+			}
+			catch (Exception e) {
+				throw new NodeException(e);
+			}
+			finally {
+				closeHandlersMinersPeersAndBlockchain(handlers, pos + 1);
+			}
+		}
+		else
+			closeMinersPeersAndBlockchain(minersToCloseAtTheEnd.toArray(Miner[]::new), 0);
+	}
+
+	private void closeMinersPeersAndBlockchain(Miner[] miners, int pos) throws NodeException, InterruptedException {
+		if (pos < miners.length) {
+			try {
+				miners[pos].close();
+			}
+			catch (IOException e) {
+				throw new NodeException(e);
+			}
+			finally {
+				closeMinersPeersAndBlockchain(miners, pos + 1);
+			}
+		}
+		else
+			closePeersAndBlockchain();
+	}
+
+	private void closePeersAndBlockchain() throws InterruptedException, NodeException {
+		try {
+			peers.close();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw e;
+		}
+		catch (IOException | DatabaseException e) {
+			LOGGER.log(Level.SEVERE, "cannot close the peers", e);
+			throw new NodeException(e);
+		}
+		finally {
+			closeBlockchain();
+		}
+	}
+
+	private void closeBlockchain() throws InterruptedException, NodeException {
+		try {
+			blockchain.close();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw e;
+		}
+		catch (DatabaseException e) {
+			LOGGER.log(Level.SEVERE, "cannot close the blockchain", e);
+			throw new NodeException(e);
+		}
 	}
 }

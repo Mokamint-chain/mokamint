@@ -58,6 +58,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -129,16 +130,22 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		}
 
 		@Override
-		public void close() throws InterruptedException, DatabaseException, IOException {
+		public void close() throws NodeException, InterruptedException {
 			super.close();
-			plot.close();
+
+			try {
+				plot.close();
+			}
+			catch (IOException e) {
+				throw new NodeException("Could not close the plot", e);
+			}
 		}
 	}
 
 	@Test
 	@Timeout(20)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
-	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException {
+	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, TimeoutException, NodeException {
 		var allTransactions = new HashSet<Transaction>();
 		var random = new Random();
 		while (allTransactions.size() < 100) {
@@ -183,7 +190,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(200)
 	@DisplayName("transactions added to a network get eventually added to the blockchain")
-	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, PeerRejectedException, TimeoutException, URISyntaxException {
+	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, ClosedNodeException, PeerRejectedException, TimeoutException, URISyntaxException, NodeException {
 		var allTransactions = mkTransactions();
 		final int NUM_NODES = 4;
 
@@ -231,7 +238,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, ClosedNodeException, IOException, PeerRejectedException {
+			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, ClosedNodeException, IOException, PeerRejectedException, NodeException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -266,7 +273,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						.map(UncheckFunction.uncheck(num -> mkNode(dir, num))).toArray(TestNode[]::new));
 			}
 
-			private void closeNodes() throws InterruptedException, DatabaseException, IOException {
+			private void closeNodes() throws InterruptedException, NodeException {
 				for (var node: nodes)
 					node.close();
 			}

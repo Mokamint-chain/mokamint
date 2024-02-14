@@ -51,6 +51,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -104,7 +105,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	@DisplayName("the addition of a miner to a network of nodes lets them start mining, its removal stops mining")
 	public void addMinerStartsMiningThenRemovalStopsMining(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 
 		var port1 = 8030;
 		var port2 = 8032;

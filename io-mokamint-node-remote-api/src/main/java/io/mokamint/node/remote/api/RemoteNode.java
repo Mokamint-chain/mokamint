@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.remote.api;
 
-import java.io.IOException;
-
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.api.Node;
 
@@ -26,13 +24,4 @@ import io.mokamint.node.api.Node;
  */
 @ThreadSafe
 public interface RemoteNode extends Node {
-
-	/**
-	 * Closes the node.
-	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws InterruptedException if the close operation has been interrupted
-	 */
-	@Override
-	void close() throws IOException, InterruptedException;
 }

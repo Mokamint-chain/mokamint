@@ -30,6 +30,11 @@ import io.mokamint.node.api.MinerInfo;
 @ThreadSafe
 public interface LocalNode extends FullNode {
 
+	/**
+	 * Yields the configuration of this node.
+	 * 
+	 * @return the configuration of this node
+	 */
 	@Override
 	LocalNodeConfig getConfig();
 

@@ -19,7 +19,6 @@ package io.mokamint.node.local.internal;
 import java.util.function.Supplier;
 
 import io.hotmoka.annotations.GuardedBy;
-import io.mokamint.node.api.ClosedNodeException;
 
 /**
  * An object used in objects whose methods must disabled by throwing
@@ -46,7 +45,7 @@ public class ClosureLock {
 	/**
 	 * Yields a scope during which the object cannot be closed.
 	 * 
-	 * @param <E> the type of the {@code exception}
+	 * @param <E> the type of the supplied exception
 	 * @param exception the supplier of the exception thrown if the object is already closed
 	 * @return the scope
 	 * @throws E if the object is already closed
@@ -59,7 +58,9 @@ public class ClosureLock {
 	/**
 	 * Guarantees that the node is open if a call starts.
 	 * 
-	 * @throws ClosedNodeException if the node was closed
+	 * @param <E> the type of the supplied exception
+	 * @param exception the supplier of the exception thrown if the object is already closed
+	 * @throws E if the object is already closed
 	 */
 	private <E extends Exception> void beforeCall(Supplier<E> exception) throws E {
 		synchronized (lock) {

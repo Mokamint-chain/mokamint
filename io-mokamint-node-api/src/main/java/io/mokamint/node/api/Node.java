@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.io.IOException;
-
 import io.hotmoka.annotations.ThreadSafe;
 
 /**
@@ -32,12 +30,12 @@ public interface Node extends AutoCloseable {
 	interface CloseHandler {
 
 		/**
-		 * Closes the node.
+		 * The code to execute when the node gets closed.
 		 * 
-		 * @throws IOException if the closure failed for an I/O exception
+		 * @throws Exception if the closure failed for some reason
 		 * @throws InterruptedException if the closure has been interrupted
 		 */
-		void close() throws IOException, InterruptedException;
+		void close() throws Exception, InterruptedException;
 	}
 
 	/**
@@ -55,12 +53,13 @@ public interface Node extends AutoCloseable {
 	void removeOnCloseHandler(CloseHandler handler);
 
 	/**
-	 * Closes the node.
+	 * Closes this node. After this closure, the methods of this node might throw
+	 * a {@link NodeException} if the closure makes their work impossible.
+	 * A node cannot be reopened after being closed.
 	 * 
-	 * @throws IOException if an I/O error occurred
-	 * @throws DatabaseException if a database could not be closed correctly
-	 * @throws InterruptedException if some closing activity has been interrupted
+	 * @throws NodeException if the closure failed for some reason
+	 * @throws InterruptedException if the closure was interrupted before completion
 	 */
 	@Override
-	void close() throws IOException, DatabaseException, InterruptedException;
+	void close() throws NodeException, InterruptedException;
 }

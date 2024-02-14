@@ -40,6 +40,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
@@ -62,7 +63,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Peer) request reaches the service, it adds the peers to the node and it sends back a result")
-	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, PeerRejectedException, DatabaseException {
+	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, PeerRejectedException, DatabaseException, NodeException {
 		var semaphore = new Semaphore(0);
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(Peers.of(new URI("ws://my.machine:8032")));
@@ -97,7 +98,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a remove(Peer) request reaches the service, it removes the peers from the node and it sends back a result")
-	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, DatabaseException {
+	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, DatabaseException, NodeException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -133,7 +134,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an openMiner() request reaches the service, it opens the miner and it sends back a result")
-	public void serviceOpenMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException {
+	public void serviceOpenMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NodeException {
 		var semaphore = new Semaphore(0);
 		var port1 = 8025;
 		var port2 = 8028;
@@ -169,7 +170,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a closeMiner() request reaches the service, it closes the miner and it sends back a result")
-	public void serviceCloseMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException {
+	public void serviceCloseMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NodeException {
 		var semaphore = new Semaphore(0);
 		Set<UUID> allUUIDs = new HashSet<>();
 		var uuid1 = UUID.randomUUID();
@@ -205,7 +206,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a restricted service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
-	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException {
+	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException, NodeException {
 		var node = mock(RestrictedNode.class);
 		var semaphore = new Semaphore(0);
 		
@@ -215,7 +216,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void close() throws IOException, InterruptedException {
+			public void close() throws NodeException, InterruptedException {
 				super.close();
 				semaphore.release();
 			}
