@@ -483,7 +483,7 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
+			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
 
 		try {
 			if (verify)

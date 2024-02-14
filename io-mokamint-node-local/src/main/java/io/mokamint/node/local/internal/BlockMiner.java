@@ -143,8 +143,9 @@ public class BlockMiner {
 	 * @throws UnknownStateException if the state of {@code previous} is unknown to the application 
 	 * @throws DatabaseException if the database of the node is corrupted
 	 * @throws ClosedDatabaseException if the database of the node is already closed
+	 * @throws ApplicationException if the application is misbehaving
 	 */
-	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException {
+	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException {
 		this.node = node;
 		this.previous = previous;
 		this.blockchain = node.getBlockchain();
@@ -235,8 +236,9 @@ public class BlockMiner {
 	 * @throws SignatureException if the block could not be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws ApplicationException if the application is misbehaving
 	 */
-	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException {
+	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException {
 		stopIfInterrupted();
 		var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
@@ -275,8 +277,9 @@ public class BlockMiner {
 	 * 
 	 * @throws InterruptedException if the operation gets interrupted
 	 * @throws TimeoutException if the application di not provide an answer in time
+	 * @throws ApplicationException if the application is misbehaving
 	 */
-	private void cleanUp() throws InterruptedException, TimeoutException {
+	private void cleanUp() throws InterruptedException, TimeoutException, ApplicationException {
 		this.done = true;
 		transactionExecutor.stop();
 

@@ -141,20 +141,22 @@ public interface Application extends AutoCloseable {
 	 * @param transaction the transaction
 	 * @return the representation of {@code transaction}
 	 * @throws RejectedTransactionException if the representation of the transaction cannot be computed
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	String getRepresentation(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException;
+	String getRepresentation(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the identifier of the state of this application when it starts, before any transaction
 	 * has been executed. This is typically the hash of the empty state of the application.
 	 * 
 	 * @return the identifier of the state of this application when it starts
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	byte[] getInitialStateId() throws TimeoutException, InterruptedException;
+	byte[] getInitialStateId() throws ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method at the start of the execution of the transactions
@@ -169,10 +171,11 @@ public interface Application extends AutoCloseable {
 	 * @return the identifier of the group execution that is being started; this must be
 	 *         different from the identifier of other executions that are currently being performed
 	 * @throws UnknownStateException if the application cannot find the state with identifier {@code stateId}
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	int beginBlock(long height, byte[] stateId, LocalDateTime when) throws UnknownStateException, TimeoutException, InterruptedException;
+	int beginBlock(long height, byte[] stateId, LocalDateTime when) throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Delivers another transaction inside the group execution identified by {@code id}.
@@ -185,10 +188,11 @@ public interface Application extends AutoCloseable {
 	 * @param transaction the transaction to deliver
 	 * @param groupId the identifier of the group execution
 	 * @throws RejectedTransactionException if the check or execution of the transaction failed
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void deliverTransaction(Transaction transaction, int groupId) throws RejectedTransactionException, TimeoutException, InterruptedException;
+	void deliverTransaction(Transaction transaction, int groupId) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method when a group execution of transactions ends.
@@ -201,10 +205,11 @@ public interface Application extends AutoCloseable {
 	 * @param deadline the deadline that has been computed for the block containing the transactions
 	 * @return the identifier of the state resulting at the end of the group execution
 	 *         of the transactions, including eventual coinbase transactions added at its end
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	byte[] endBlock(int groupId, Deadline deadline) throws TimeoutException, InterruptedException;
+	byte[] endBlock(int groupId, Deadline deadline) throws ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method to commit the state resulting at the end of the execution
@@ -214,10 +219,11 @@ public interface Application extends AutoCloseable {
 	 * This typically requires to commit the resulting state into a database.
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being committed
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void commitBlock(int groupId) throws TimeoutException, InterruptedException;
+	void commitBlock(int groupId) throws ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method to abort the execution of the group of transactions
@@ -227,17 +233,18 @@ public interface Application extends AutoCloseable {
 	 * and clear some resources.
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being aborted
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void abortBlock(int groupId) throws TimeoutException, InterruptedException;
+	void abortBlock(int groupId) throws ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Closes this application. After this closure, the methods of this application might throw
 	 * an {@link ApplicationException} if the closure makes their work impossible.
 	 * An application cannot be reopened after being closed.
 	 * 
-	 * @throws ApplicationException if the closure failed for some reason
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws InterruptedException if the closure was interrupted before completion
 	 */
 	@Override

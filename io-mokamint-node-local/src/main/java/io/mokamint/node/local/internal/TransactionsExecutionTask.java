@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
@@ -116,7 +117,7 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException {
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
@@ -145,7 +146,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	@Override
-	public void body() throws TimeoutException {
+	public void body() throws ApplicationException, TimeoutException {
 		long sizeUpToNow = 0L;
 
 		try {
@@ -174,8 +175,9 @@ public class TransactionsExecutionTask implements Task {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
 	 *                              or for the application
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationException if the application is misbehaving
 	 */
-	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException {
+	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException, ApplicationException {
 		done.await();
 
 		if (deliveryFailed)
@@ -191,8 +193,9 @@ public class TransactionsExecutionTask implements Task {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
 	 *                              or for the application
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationException if the application is misbehaving
 	 */
-	public void commitBlock() throws InterruptedException, TimeoutException {
+	public void commitBlock() throws InterruptedException, TimeoutException, ApplicationException {
 		done.await();
 		app.commitBlock(id);
 	}
@@ -204,13 +207,14 @@ public class TransactionsExecutionTask implements Task {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
 	 *                              or for the application
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationException if the application is misbehaving
 	 */
-	public void abortBlock() throws InterruptedException, TimeoutException {
+	public void abortBlock() throws InterruptedException, TimeoutException, ApplicationException {
 		done.await();
 		app.abortBlock(id);
 	}
 
-	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException {
+	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException, ApplicationException {
 		var tx = next.getTransaction();
 
 		if (transactions.contains(tx))
@@ -230,7 +234,7 @@ public class TransactionsExecutionTask implements Task {
 					try {
 						app.deliverTransaction(tx, id);
 					}
-					catch (TimeoutException | InterruptedException | RuntimeException e) {
+					catch (TimeoutException | InterruptedException | ApplicationException | RuntimeException e) {
 						deliveryFailed = true;
 						throw e;
 					}

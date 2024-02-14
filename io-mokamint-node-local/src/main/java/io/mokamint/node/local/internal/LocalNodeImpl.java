@@ -444,6 +444,9 @@ public class LocalNodeImpl implements LocalNode {
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
 		}
+		catch (ApplicationException e) { // TODO: this should become a NodeException
+			throw new DatabaseException(e);
+		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
 		}
