@@ -111,12 +111,12 @@ public interface Application extends AutoCloseable {
 	 * without even trying to deliver them.
 	 * 
 	 * @param transaction the transaction to check
-	 * @throws RejectedTransactionException if the check failed and the transaction
-	 *                                      should not be added to the mempool
+	 * @throws RejectedTransactionException if the check failed and the transaction should not be added to the mempool
+	 * @throws ApplicationException if the application is not able to perform the operation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void checkTransaction(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException;
+	void checkTransaction(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Computes the priority of the given transaction. Nodes may (but are not required to)
@@ -125,10 +125,11 @@ public interface Application extends AutoCloseable {
 	 * @param transaction the transaction
 	 * @return the priority of {@code transaction}
 	 * @throws RejectedTransactionException if the priority of the transaction cannot be computed
+	 * @throws ApplicationException if the application is not able to perform the operation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	long getPriority(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException;
+	long getPriority(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields a string representation of the transaction, that can be used to print

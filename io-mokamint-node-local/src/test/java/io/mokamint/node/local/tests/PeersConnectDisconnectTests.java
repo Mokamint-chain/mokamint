@@ -91,7 +91,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@Timeout(10)
 	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8032;
 		var port3 = 8034;
@@ -107,7 +107,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -147,7 +147,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@DisplayName("if a peer disconnects and reconnects, its network is reconstructed")
 	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port1 = 8030;
 		var port2 = 8032;
@@ -172,7 +172,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends LocalNodeImpl {
 
-			private MyLocalNode1(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
+			private MyLocalNode1(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -200,7 +200,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends LocalNodeImpl {
 
-			private MyLocalNode2(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
+			private MyLocalNode2(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
 				super(config, nodeKey, app, false);
 			}
 

@@ -301,7 +301,7 @@ public class BlockVerification {
 				try {
 					app.checkTransaction(tx);
 				}
-				catch (RejectedTransactionException e) {
+				catch (RejectedTransactionException | ApplicationException e) {
 					throw new VerificationException("Failed check of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
 				}
 

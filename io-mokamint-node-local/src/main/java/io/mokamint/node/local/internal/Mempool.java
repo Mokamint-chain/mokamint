@@ -38,6 +38,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
@@ -161,8 +162,9 @@ public class Mempool {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationException if the application is not working properly
 	 */
-	public void rebaseAt(Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
+	public void rebaseAt(Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		new RebaseAt(newBase);
 	}
 
@@ -180,27 +182,14 @@ public class Mempool {
 	 * @throws NoSuchAlgorithmException if the database contains a block referring to an unknown cryptographic algorithm
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationException if the application is not working properly
 	 */
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
 	
-		try {
-			app.checkTransaction(transaction);
-		}
-		catch (RejectedTransactionException e) {
-			throw new RejectedTransactionException("Check failed for transaction " + hexHash + ": " + e.getMessage());
-		}
-	
-		long priority;
-	
-		try {
-			priority = app.getPriority(transaction);
-		}
-		catch (RejectedTransactionException e) {
-			throw new RejectedTransactionException("Cannot compute the priority of transaction " + hexHash + ": " + e.getMessage());
-		}
-	
+		app.checkTransaction(transaction);
+		long priority = app.getPriority(transaction);
 		var entry = new TransactionEntry(transaction, priority, hash);
 	
 		synchronized (mempool) {
@@ -351,7 +340,7 @@ public class Mempool {
 		private final Set<Transaction> toRemove = new HashSet<>();
 		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
-		private RebaseAt(final Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
+		private RebaseAt(final Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 			this.newBlock = newBase;
 
 			synchronized (mempool) {
@@ -403,7 +392,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(hashingForBlocks) + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException {
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -426,8 +415,9 @@ public class Mempool {
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 * @throws TimeoutException if the application did not provide an answer in time
+		 * @throws ApplicationException if the application is not working properly
 		 */
-		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException, TimeoutException, InterruptedException {
+		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException, TimeoutException, InterruptedException, ApplicationException {
 			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
 				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
 		}
@@ -450,8 +440,9 @@ public class Mempool {
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 * @throws TimeoutException if the application did not provide an answer in time
+		 * @throws ApplicationException if the application is not working properly
 		 */
-		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException, TimeoutException, InterruptedException {
+		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException, TimeoutException, InterruptedException, ApplicationException {
 			try {
 				return new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction));
 			}

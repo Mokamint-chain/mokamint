@@ -39,6 +39,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -349,8 +350,9 @@ public class Blockchain implements AutoCloseable {
 	 * @throws SignatureException if the genesis block could not be signed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, InterruptedException {
+	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, InterruptedException, ApplicationException {
 		try {
 			if (!isEmpty())
 				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
@@ -398,8 +400,9 @@ public class Blockchain implements AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
 		return add(block, true);
 	}
 
@@ -409,8 +412,9 @@ public class Blockchain implements AutoCloseable {
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	protected boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException {
+	protected boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		try {
 			return add(block, false);
 		}
@@ -426,8 +430,9 @@ public class Blockchain implements AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws DeadlineValidityCheckException if the validity of some deadline could not be determined
+	 * @throws ApplicationException if the applicatoin is not behaving correctly
 	 */
-	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
+	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 

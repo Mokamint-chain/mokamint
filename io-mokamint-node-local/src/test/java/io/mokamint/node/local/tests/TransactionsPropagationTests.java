@@ -88,7 +88,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	@DisplayName("if a peer adds another peer, then transactions flow from one to the other")
 	public void ifPeerAddsPeerThenTransactionsFlowBetweenThem(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, InterruptedException, DatabaseException,
-				   IOException, AlreadyInitializedException, DeploymentException, TimeoutException, ClosedNodeException, PeerRejectedException, RejectedTransactionException, NodeException {
+				   IOException, AlreadyInitializedException, DeploymentException, TimeoutException, ClosedNodeException, PeerRejectedException, RejectedTransactionException, NodeException, ApplicationException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -107,7 +107,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			private final Peer expectedPeer;
 			private final Transaction expectedTransaction;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException {
 				super(config, nodeKey, app, false);
 				
 				this.expectedPeer = expectedPeer;

@@ -34,6 +34,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -166,8 +167,9 @@ public class BlockMiner {
 	 * @throws SignatureException if the block could not be signed with the key of the node
 	 * @throws InvalidKeyException if the key of the node for signing the block is invalid
 	 * @throws RejectedExecutionException if the node is shutting down 
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException {
+	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException, ApplicationException {
 		transactionExecutor.start();
 
 		try {
@@ -255,8 +257,9 @@ public class BlockMiner {
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NoSuchAlgorithmException if some block refers to an unknown cryptographic algorithm
 	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException {
+	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ApplicationException {
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
 			committed = true;
@@ -295,7 +298,7 @@ public class BlockMiner {
 		miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 	}
 
-	private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, TimeoutException {
+	private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, TimeoutException, ApplicationException {
 		stopIfInterrupted();
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (blockchain.addVerified(block))

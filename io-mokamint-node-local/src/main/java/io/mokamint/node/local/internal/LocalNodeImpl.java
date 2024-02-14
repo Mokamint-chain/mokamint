@@ -228,8 +228,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws SignatureException if the genesis block cannot be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws TimeoutException if the application did not answer in time
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
 		try {
 			this.config = config;
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
@@ -397,6 +398,9 @@ public class LocalNodeImpl implements LocalNode {
 
 			if (miningTask != null)
 				miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
+		}
+		catch (ApplicationException e) {
+			throw new DatabaseException(e); // TODO: this should be a NodeException
 		}
 		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e); // the database cannot be closed because this node is open
@@ -673,8 +677,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application does not answer in time
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	protected void rebaseMempoolAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
+	protected void rebaseMempoolAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		mempool.rebaseAt(block);
 	}
 
@@ -689,8 +694,9 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
+	 * @throws ApplicationException if the application is not beahving correctly
 	 */
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		return result.getTransactions(); // extract the resulting transactions
@@ -1088,10 +1094,6 @@ public class LocalNodeImpl implements LocalNode {
 	private void processWhisperedBlocks() {
 		try {
 			while (!Thread.currentThread().isInterrupted()) {
-				/*if (whisperedPeersQueue.size() > 5) {
-					System.out.println(whisperedPeersQueue.stream().map(info -> info.description).sorted().collect(Collectors.joining("\n")));
-					System.out.println("*******************************************************");
-				}*/
 				var whisperedInfo = whisperedBlocksQueue.take();
 
 				try {
@@ -1114,7 +1116,7 @@ public class LocalNodeImpl implements LocalNode {
 					if (whispered instanceof WhisperedBlock whisperedBlock)
 						onWhispered(whisperedBlock.getBlock());
 				}
-				catch (NoSuchAlgorithmException | DatabaseException e) {
+				catch (NoSuchAlgorithmException | DatabaseException | ApplicationException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				catch (VerificationException | ClosedDatabaseException | DeadlineValidityCheckException e) {
@@ -1158,7 +1160,7 @@ public class LocalNodeImpl implements LocalNode {
 					if (whispered instanceof WhisperedTransaction whisperedTransaction)
 						onWhispered(whisperedTransaction.getTransaction());
 				}
-				catch (NoSuchAlgorithmException | DatabaseException e) {
+				catch (NoSuchAlgorithmException | DatabaseException | ApplicationException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				catch (RejectedTransactionException | ClosedDatabaseException e) {

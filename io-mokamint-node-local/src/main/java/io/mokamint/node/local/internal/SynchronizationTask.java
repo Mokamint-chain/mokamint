@@ -34,6 +34,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
@@ -470,7 +471,7 @@ public class SynchronizationTask implements Task {
 					try {
 						blockchain.add(block);
 					}
-					catch (VerificationException | TimeoutException | DeadlineValidityCheckException e) {
+					catch (VerificationException | TimeoutException | DeadlineValidityCheckException | ApplicationException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
 						return false;
 					}
