@@ -21,6 +21,7 @@ module io.mokamint.node.api {
 	exports io.mokamint.node.api;
 	requires transitive io.mokamint.nonce.api;
 	requires transitive io.hotmoka.crypto.api;
+	requires io.hotmoka.closeables.api;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.marshalling.api;
 }

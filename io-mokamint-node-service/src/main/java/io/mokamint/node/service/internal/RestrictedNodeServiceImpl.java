@@ -24,27 +24,27 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.closeables.api.CloseHandler;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
-import io.mokamint.node.messages.RemoveMinerMessages;
-import io.mokamint.node.messages.RemoveMinerResultMessages;
 import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
+import io.mokamint.node.messages.RemoveMinerMessages;
+import io.mokamint.node.messages.RemoveMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerMessage;
-import io.mokamint.node.messages.api.RemoveMinerMessage;
 import io.mokamint.node.messages.api.OpenMinerMessage;
+import io.mokamint.node.messages.api.RemoveMinerMessage;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import jakarta.websocket.DeploymentException;
@@ -95,7 +95,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		this.logPrefix = "restricted service(ws://localhost:" + port + "): ";
 
 		// if the node gets closed, then this service will be closed as well
-		node.addOnClosedHandler(this_close);
+		node.addCloseHandler(this_close);
 
 		startContainer("", port,
 			AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this),
@@ -107,7 +107,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	@Override
 	public void close() {
 		if (!isClosed.getAndSet(true)) {
-			node.removeOnCloseHandler(this_close);
+			node.removeCloseHandler(this_close);
 			stopContainer();
 			LOGGER.info(logPrefix + "closed");
 		}

@@ -20,13 +20,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.closeables.CloseHandlersManagers;
+import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.closeables.api.CloseHandlersManager;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
@@ -52,9 +54,9 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	private final ConcurrentMap<String, Session> sessions = new ConcurrentHashMap<>();
 
 	/**
-	 * The code to execute when this node gets closed.
+	 * The manager of the close handlers.
 	 */
-	private final CopyOnWriteArrayList<CloseHandler> onCloseHandlers = new CopyOnWriteArrayList<>();
+	private final CloseHandlersManager manager = CloseHandlersManagers.create();
 
 	/**
 	 * True if and only if this node has been closed already.
@@ -69,13 +71,13 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	protected AbstractRemoteNode() {}
 
 	@Override
-	public final void addOnClosedHandler(CloseHandler what) {
-		onCloseHandlers.add(what);
+	public final void addCloseHandler(CloseHandler what) {
+		manager.addCloseHandler(what);
 	}
 
 	@Override
-	public final void removeOnCloseHandler(CloseHandler what) {
-		onCloseHandlers.add(what);
+	public final void removeCloseHandler(CloseHandler what) {
+		manager.removeCloseHandler(what);
 	}
 
 	/**
@@ -103,7 +105,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	 * and {@link ClosedNodeException}.
 	 * 
 	 * @param message the message
-	 * @return true if and only if that condiotion holds
+	 * @return true if and only if that condition holds
 	 */
 	protected final boolean processStandardExceptions(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
@@ -115,7 +117,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	@Override
 	public void close() throws NodeException, InterruptedException {
 		if (!isClosed.getAndSet(true))
-			closeHandlersAndSessions(onCloseHandlers.toArray(CloseHandler[]::new), 0);
+			closeHandlersAndSessions();
 	}
 
 	/**
@@ -157,24 +159,20 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 		protected abstract Session deployAt(URI uri) throws DeploymentException, IOException;
 	}
 
-	private void closeHandlersAndSessions(CloseHandler[] handlers, int pos) throws NodeException, InterruptedException {
-		if (pos < handlers.length) {
-			try {
-				handlers[pos].close();
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw e;
-			}
-			catch (Exception e) {
-				throw new NodeException(e);
-			}
-			finally {
-				closeHandlersAndSessions(handlers, pos + 1);
-			}
+	private void closeHandlersAndSessions() throws NodeException, InterruptedException {
+		try {
+			manager.close();
 		}
-		else
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw e;
+		}
+		catch (Exception e) {
+			throw new NodeException(e);
+		}
+		finally {
 			closeSessions(sessions.values().toArray(Session[]::new), 0);
+		}
 	}
 
 	private void closeSessions(Session[] sessions, int pos) throws NodeException {

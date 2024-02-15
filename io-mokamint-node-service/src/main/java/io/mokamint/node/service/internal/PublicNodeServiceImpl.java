@@ -37,13 +37,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.closeables.api.CloseHandler;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
-import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -222,7 +222,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(u -> addPort(u, port)))));
 
 		// if the node gets closed, then this service will be closed as well
-		node.addOnClosedHandler(this_close);
+		node.addCloseHandler(this_close);
 
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
@@ -245,7 +245,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	@Override
 	public void close() throws InterruptedException {
 		if (!isClosed.getAndSet(true)) {
-			node.removeOnCloseHandler(this_close);
+			node.removeCloseHandler(this_close);
 			node.unbindWhisperer(this);
 			stopContainer();
 			LOGGER.info(logPrefix + "closed");

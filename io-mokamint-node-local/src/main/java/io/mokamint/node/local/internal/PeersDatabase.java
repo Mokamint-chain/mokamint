@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -47,7 +48,7 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 /**
  * The database where the peers are persisted.
  */
-public class PeersDatabase implements AutoCloseable {
+public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseException> {
 
 	/**
 	 * The maximal number of non-forced peers kept in the database.
@@ -63,11 +64,6 @@ public class PeersDatabase implements AutoCloseable {
 	 * The Xodus store that contains the set of peers of the node.
 	 */
 	private final Store storeOfPeers;
-
-	/**
-	 * The lock used to block new calls when the database has been requested to close.
-	 */
-	private final ClosureLock closureLock = new ClosureLock();
 
 	/**
 	 * The key mapped in the {@link #storeOfPeers} to the sequence of peers.
@@ -89,6 +85,8 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
 	 */
 	public PeersDatabase(LocalNodeImpl node) throws DatabaseException {
+		super(ClosedDatabaseException::new);
+
 		LocalNodeConfig config = node.getConfig();
 		this.maxPeers = config.getMaxPeers();
 		this.environment = createBlockchainEnvironment(config);
@@ -98,7 +96,7 @@ public class PeersDatabase implements AutoCloseable {
 
 	@Override
 	public void close() throws DatabaseException, InterruptedException {
-		if (closureLock.stopNewCalls()) {
+		if (stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
 				LOGGER.info("db: closed the peers database");
@@ -118,7 +116,7 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public UUID getUUID() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, UUID));
 			if (bi == null)
 				throw new DatabaseException("The UUID of the node is not in the peers database");
@@ -138,7 +136,7 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<Peer> getPeers() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, PEERS));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 		}
@@ -161,7 +159,7 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean add(Peer peer, boolean force) throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 				() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
@@ -180,7 +178,7 @@ public class PeersDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
 		}

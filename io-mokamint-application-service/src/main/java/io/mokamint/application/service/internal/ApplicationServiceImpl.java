@@ -21,11 +21,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.closeables.api.CloseHandler;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.ExceptionMessages;
 import io.mokamint.application.service.api.ApplicationService;
-import io.mokamint.node.api.Node.CloseHandler;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 

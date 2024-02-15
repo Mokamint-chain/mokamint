@@ -251,20 +251,6 @@ public interface Application extends AutoCloseable {
 	void close() throws ApplicationException, InterruptedException;
 
 	/**
-	 * Code executed when the application gets closed.
-	 */
-	interface CloseHandler {
-
-		/**
-		 * The code to execute when the application gets closed.
-		 * 
-		 * @throws Exception if the closure failed for some reason
-		 * @throws InterruptedException if the closure has been interrupted
-		 */
-		void close() throws Exception, InterruptedException;
-	}
-
-	/**
 	 * Takes note that the given code must be executed when this application gets closed.
 	 * 
 	 * @param handler the code

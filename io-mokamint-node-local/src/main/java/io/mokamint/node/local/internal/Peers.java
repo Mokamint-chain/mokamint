@@ -608,7 +608,7 @@ public class Peers implements AutoCloseable {
 		timeDifferences.put(peer, timeDifference);
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
-		remote.addOnClosedHandler(() -> remoteHasBeenClosed(remote, peer));
+		remote.addCloseHandler(() -> remoteHasBeenClosed(remote, peer));
 		node.onConnected(peer);
 	}
 

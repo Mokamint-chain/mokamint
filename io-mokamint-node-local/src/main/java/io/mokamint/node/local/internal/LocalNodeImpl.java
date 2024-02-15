@@ -43,6 +43,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndCloseHandlers;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
@@ -94,7 +95,7 @@ import jakarta.websocket.DeploymentException;
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public class LocalNodeImpl implements LocalNode {
+public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndCloseHandlers<ClosedNodeException> implements LocalNode {
 
 	/**
 	 * The configuration of the node.
@@ -163,11 +164,6 @@ public class LocalNodeImpl implements LocalNode {
 	private final Set<Miner> minersToCloseAtTheEnd = ConcurrentHashMap.newKeySet();
 
 	/**
-	 * The code to execute when this node gets closed.
-	 */
-	private final CopyOnWriteArrayList<CloseHandler> onCloseHandlers = new CopyOnWriteArrayList<>();
-
-	/**
 	 * The whisperers bound to this node.
 	 */
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
@@ -177,11 +173,6 @@ public class LocalNodeImpl implements LocalNode {
 	 * This is used to avoid whispering already whispered messages again.
 	 */
 	private final WhisperingMemory alreadyWhispered;
-
-	/**
-	 * The lock used to block new calls when the node has been requested to close.
-	 */
-	private final ClosureLock closureLock = new ClosureLock();
 
 	/**
 	 * True if and only if a synchronization task is in process.
@@ -231,6 +222,8 @@ public class LocalNodeImpl implements LocalNode {
 	 * @throws ApplicationException if the application is not behaving correctly
 	 */
 	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+		super(ClosedNodeException::new);
+
 		try {
 			this.config = config;
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
@@ -262,13 +255,9 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void addOnClosedHandler(CloseHandler handler) {
-		onCloseHandlers.add(handler);
-	}
-
-	@Override
-	public void removeOnCloseHandler(CloseHandler handler) {
-		onCloseHandlers.add(handler);
+	public void close() throws NodeException, InterruptedException {
+		if (stopNewCalls())
+			closeExecutorsHandlersMinersPeersAndBlockchain();
 	}
 
 	@Override
@@ -310,7 +299,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
 		catch (ClosedDatabaseException e) {
@@ -320,7 +309,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
 		}
 		catch (ClosedDatabaseException e) {
@@ -330,21 +319,21 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Stream<PeerInfo> getPeerInfos() throws ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return peers.get();
 		}
 	}
 
 	@Override
 	public Stream<MinerInfo> getMinerInfos() throws ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return miners.getInfos();
 		}
 	}
 
 	@Override
 	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return currentlyExecutingTasks.stream()
 				.map(Object::toString)
 				.map(TaskInfos::of);
@@ -352,14 +341,8 @@ public class LocalNodeImpl implements LocalNode {
 	}
 
 	@Override
-	public void close() throws NodeException, InterruptedException {
-		if (closureLock.stopNewCalls())
-			closeExecutorsHandlersMinersPeersAndBlockchain();
-	}
-
-	@Override
 	public NodeInfo getInfo() throws ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return peers.getNodeInfo();
 		}
 	}
@@ -371,7 +354,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return blockchain.getChainInfo();
 		}
 		catch (ClosedDatabaseException e) {
@@ -381,7 +364,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return ChainPortions.of(blockchain.getChain(start, count));
 		}
 		catch (ClosedDatabaseException e) {
@@ -393,7 +376,7 @@ public class LocalNodeImpl implements LocalNode {
 	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
 		MempoolEntry result;
 
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
 
 			if (miningTask != null)
@@ -413,21 +396,21 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public MempoolInfo getMempoolInfo() throws ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return mempool.getInfo();
 		}
 	}
 
 	@Override
 	public MempoolPortion getMempoolPortion(int start, int count) throws ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return mempool.getPortion(start, count);
 		}
 	}
 
 	@Override
 	public Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return blockchain.getTransaction(hash);
 		}
 		catch (ClosedDatabaseException e) {
@@ -437,7 +420,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, DatabaseException, ClosedNodeException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
 				return Optional.empty();
@@ -454,7 +437,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedNodeException, DatabaseException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return blockchain.getTransactionAddress(hash);
 		}
 		catch (ClosedDatabaseException e) {
@@ -466,7 +449,7 @@ public class LocalNodeImpl implements LocalNode {
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
 		Optional<PeerInfo> result;
 	
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			result = peers.add(peer);
 		}
 		catch (ClosedDatabaseException e) {
@@ -484,7 +467,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public boolean remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			return peers.remove(peer);
 		}
 		catch (ClosedDatabaseException e) {
@@ -494,7 +477,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws IOException, ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			var miner = RemoteMiners.of(port, this::check);
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent()) {
@@ -513,7 +496,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())
 				onAdded(miner);
@@ -524,7 +507,7 @@ public class LocalNodeImpl implements LocalNode {
 
 	@Override
 	public boolean removeMiner(UUID uuid) throws ClosedNodeException, IOException {
-		try (var scope = closureLock.scope(ClosedNodeException::new)) {
+		try (var scope = mkScope()) {
 			var toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
 			for (var miner: toRemove) {
 				miners.remove(miner);
@@ -1202,7 +1185,7 @@ public class LocalNodeImpl implements LocalNode {
 			}
 			finally {
 				try {
-					closeHandlersMinersPeersAndBlockchain(onCloseHandlers.toArray(CloseHandler[]::new), 0);
+					closeHandlersMinersPeersAndBlockchain();
 				}
 				finally {
 					// we give five seconds in total
@@ -1215,24 +1198,20 @@ public class LocalNodeImpl implements LocalNode {
 		}
 	}
 
-	private void closeHandlersMinersPeersAndBlockchain(CloseHandler[] handlers, int pos) throws InterruptedException, NodeException {
-		if (pos < handlers.length) {
-			try {
-				handlers[pos].close();
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw e;
-			}
-			catch (Exception e) {
-				throw new NodeException(e);
-			}
-			finally {
-				closeHandlersMinersPeersAndBlockchain(handlers, pos + 1);
-			}
+	private void closeHandlersMinersPeersAndBlockchain() throws InterruptedException, NodeException {
+		try {
+			callCloseHandlers();
 		}
-		else
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw e;
+		}
+		catch (Exception e) {
+			throw new NodeException(e);
+		}
+		finally {
 			closeMinersPeersAndBlockchain(minersToCloseAtTheEnd.toArray(Miner[]::new), 0);
+		}
 	}
 
 	private void closeMinersPeersAndBlockchain(Miner[] miners, int pos) throws NodeException, InterruptedException {
@@ -1255,10 +1234,6 @@ public class LocalNodeImpl implements LocalNode {
 		try {
 			peers.close();
 		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw e;
-		}
 		catch (IOException | DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot close the peers", e);
 			throw new NodeException(e);
@@ -1271,10 +1246,6 @@ public class LocalNodeImpl implements LocalNode {
 	private void closeBlockchain() throws InterruptedException, NodeException {
 		try {
 			blockchain.close();
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw e;
 		}
 		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot close the blockchain", e);

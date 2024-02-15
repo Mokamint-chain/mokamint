@@ -48,6 +48,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 
+import io.hotmoka.closeables.api.CloseHandler;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
@@ -78,7 +79,6 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.Node.CloseHandler;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
@@ -733,7 +733,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			listenerForClose.set(listener.getArgument(0));
 			return null;
 		}).
-		when(node).addOnClosedHandler(any());
+		when(node).addCloseHandler(any());
 
 		class MyPublicNodeService extends PublicNodeServiceImpl {
 			private MyPublicNodeService() throws DeploymentException, IOException {

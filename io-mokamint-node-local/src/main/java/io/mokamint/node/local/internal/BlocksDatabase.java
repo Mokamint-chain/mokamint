@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -65,17 +66,12 @@ import io.mokamint.node.api.TransactionAddress;
  * The database where the blocks are persisted. Blocks are rooted at a genesis block
  * and do not necessarily form a list but are in general a tree.
  */
-public class BlocksDatabase implements AutoCloseable {
+public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseException> {
 
 	/**
 	 * The node using this database of blocks.
 	 */
 	private final LocalNodeImpl node;
-
-	/**
-	 * The lock used to block new calls when the database has been requested to close.
-	 */
-	private final ClosureLock closureLock = new ClosureLock();
 
 	/**
 	 * The Xodus environment that holds the database of blocks.
@@ -144,6 +140,8 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public BlocksDatabase(LocalNodeImpl node) throws DatabaseException {
+		super(ClosedDatabaseException::new);
+
 		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
@@ -156,7 +154,7 @@ public class BlocksDatabase implements AutoCloseable {
 
 	@Override
 	public void close() throws InterruptedException {
-		if (closureLock.stopNewCalls()) {
+		if (stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
 				LOGGER.info("db: closed the blocks database");
@@ -179,7 +177,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getGenesisHash() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
 		}
 		catch (ExodusException e) {
@@ -195,7 +193,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getGenesis))
 			);
@@ -214,7 +212,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<Block> getHead() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getHead))
 			);
@@ -232,7 +230,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getHeadHash() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
 		}
 		catch (ExodusException e) {
@@ -248,7 +246,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public OptionalLong getHeightOfHead() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
 		}
 		catch (ExodusException e) {
@@ -264,7 +262,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
 		}
 		catch (ExodusException e) {
@@ -282,7 +280,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<Block> getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
 			);
@@ -302,7 +300,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlockDescription(txn, hash)))
 			);
@@ -322,7 +320,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getTransaction(txn, hash)))
 			);
@@ -342,7 +340,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedDatabaseException, DatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, hash)))
 			);
@@ -364,7 +362,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws ClosedDatabaseException, DatabaseException, NoSuchAlgorithmException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, NoSuchAlgorithmException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, block, hash)))
 			);
@@ -383,7 +381,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
 		}
 		catch (ExodusException e) {
@@ -399,7 +397,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public ChainInfo getChainInfo() throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getChainInfo)));
 		}
 		catch (ExodusException e) {
@@ -419,7 +417,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Stream<byte[]> getChain(long start, int count) throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
 		}
 		catch (ExodusException e) {
@@ -436,7 +434,7 @@ public class BlocksDatabase implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public boolean containsBlock(byte[] hash) throws DatabaseException, ClosedDatabaseException {
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> containsBlock(txn, hash))));
 		}
 		catch (ExodusException e) {
@@ -463,7 +461,7 @@ public class BlocksDatabase implements AutoCloseable {
 	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 		boolean hasBeenAdded;
 
-		try (var scope = closureLock.scope(ClosedDatabaseException::new)) {
+		try (var scope = mkScope()) {
 			hasBeenAdded = check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
 		}
 		catch (ExodusException e) {
