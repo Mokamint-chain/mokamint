@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.closeables.api.CloseHandler;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
@@ -259,12 +260,12 @@ public interface Application extends AutoCloseable {
 	 * 
 	 * @param handler the code
 	 */
-	//void addOnClosedHandler(CloseHandler handler);
+	void addOnClosedHandler(CloseHandler handler);
 
 	/**
 	 * Removes the given code from that executed when this application gets closed.
 	 * 
 	 * @param handler the code
 	 */
-	//void removeOnCloseHandler(CloseHandler handler);
+	void removeOnCloseHandler(CloseHandler handler);
 }

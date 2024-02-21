@@ -90,6 +90,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-service-api</module>
       <module>io-mokamint-application-service</module>
       <module>io-mokamint-application-api</module>
+      <module>io-mokamint-application</module>
       <module>io-mokamint-application-remote-api</module>
       <module>io-mokamint-application-remote</module>
       <module>io-mokamint-application-integration</module>
@@ -360,6 +361,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
                 io-mokamint-nonce-api,
                 io-mokamint-application-messages-api,
                 io-mokamint-application-messages,
+                io-mokamint-application,
                 io-mokamint-application-api,
                 io-mokamint-application-service-api,
                 io-mokamint-application-service,

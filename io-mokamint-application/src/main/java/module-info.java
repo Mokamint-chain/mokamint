@@ -15,11 +15,11 @@ limitations under the License.
 */
 
 /**
- * This module defines the API of an application run on a Mokamint blockchain.
+ * This module partially implements an application run on a Mokamint blockchain.
  */
-module io.mokamint.application.api {
-	exports io.mokamint.application.api;
-	requires transitive io.mokamint.node.api;
+module io.mokamint.application {
+	exports io.mokamint.application;
+	requires transitive io.mokamint.application.api;
+	requires io.hotmoka.closeables;
 	requires io.hotmoka.annotations;
-	requires transitive io.hotmoka.closeables.api;
 }

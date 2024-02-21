@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package io.mokamint.application;
+
+import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.application.internal.ApplicationImpl;
+
 /**
- * This module defines the API of an application run on a Mokamint blockchain.
+ * Partial implementation of a Mokamint application, meant for subclassing.
  */
-module io.mokamint.application.api {
-	exports io.mokamint.application.api;
-	requires transitive io.mokamint.node.api;
-	requires io.hotmoka.annotations;
-	requires transitive io.hotmoka.closeables.api;
+@ThreadSafe
+public abstract class AbstractApplication extends ApplicationImpl {
+
+	/**
+	 * Creates the application.
+	 */
+	protected AbstractApplication() {}
 }

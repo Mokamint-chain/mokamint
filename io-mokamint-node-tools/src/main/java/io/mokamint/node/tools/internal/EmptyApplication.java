@@ -19,6 +19,7 @@ package io.mokamint.node.tools.internal;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.hotmoka.closeables.api.CloseHandler;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
@@ -31,7 +32,7 @@ import io.mokamint.nonce.api.Deadline;
  */
 @Name("empty")
 @Description("an application with no state, accepting all transactions, useful for experiments")
-public class EmptyApplication implements Application {
+public class EmptyApplication implements Application { // TODO: remove at the end
 	private final AtomicInteger nextId = new AtomicInteger();
 
 	/**
@@ -87,5 +88,13 @@ public class EmptyApplication implements Application {
 
 	@Override
 	public void close() {
+	}
+
+	@Override
+	public void addOnClosedHandler(CloseHandler handler) {
+	}
+
+	@Override
+	public void removeOnCloseHandler(CloseHandler handler) {
 	}
 }
