@@ -39,9 +39,8 @@ public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage i
 	public GetTransactionAddressResultMessageImpl(Optional<TransactionAddress> address, String id) {
 		super(id);
 
-		Objects.requireNonNull(address, "address cannot be null");
+		this.address = Objects.requireNonNull(address, "address cannot be null");
 		address.map(Objects::requireNonNull);
-		this.address = address;
 	}
 
 	@Override

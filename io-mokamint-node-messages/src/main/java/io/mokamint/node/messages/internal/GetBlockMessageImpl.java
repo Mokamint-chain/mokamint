@@ -38,8 +38,7 @@ public class GetBlockMessageImpl extends AbstractRpcMessage implements GetBlockM
 	public GetBlockMessageImpl(byte[] hash, String id) {
 		super(id);
 
-		Objects.requireNonNull(hash);
-		this.hash = hash;
+		this.hash = Objects.requireNonNull(hash, "hash cannot be null");
 	}
 
 	@Override

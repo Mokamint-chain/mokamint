@@ -46,8 +46,7 @@ public class ExceptionMessageImpl extends AbstractRpcMessage implements Exceptio
 	public ExceptionMessageImpl(Class<? extends Exception> clazz, String message, String id) {
 		super(id);
 
-		Objects.requireNonNull(clazz, "clazz");
-		this.clazz = clazz;
+		this.clazz = Objects.requireNonNull(clazz, "clazz");
 		this.message = message;
 	}
 

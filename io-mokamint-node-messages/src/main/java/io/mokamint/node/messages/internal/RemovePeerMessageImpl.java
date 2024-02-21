@@ -39,8 +39,7 @@ public class RemovePeerMessageImpl extends AbstractRpcMessage implements RemoveP
 	public RemovePeerMessageImpl(Peer peer, String id) {
 		super(id);
 
-		Objects.requireNonNull(peer);
-		this.peer = peer;
+		this.peer = Objects.requireNonNull(peer, "peer cannot be null");
 	}
 
 	@Override

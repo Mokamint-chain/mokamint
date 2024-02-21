@@ -39,8 +39,7 @@ public class GetMempoolInfoResultMessageImpl extends AbstractRpcMessage implemen
 	public GetMempoolInfoResultMessageImpl(MempoolInfo info, String id) {
 		super(id);
 
-		Objects.requireNonNull(info, "info cannot be null");
-		this.info = info;
+		this.info = Objects.requireNonNull(info, "info cannot be null");
 	}
 
 	@Override

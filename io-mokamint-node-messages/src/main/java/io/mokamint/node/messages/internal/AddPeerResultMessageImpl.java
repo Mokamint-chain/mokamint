@@ -43,8 +43,7 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 	public AddPeerResultMessageImpl(Optional<PeerInfo> info, String id) {
 		super(id);
 
-		Objects.requireNonNull(info, "info cannot be null");
-		this.info = info.orElse(null);
+		this.info = Objects.requireNonNull(info, "info cannot be null").orElse(null);
 	}
 
 	@Override

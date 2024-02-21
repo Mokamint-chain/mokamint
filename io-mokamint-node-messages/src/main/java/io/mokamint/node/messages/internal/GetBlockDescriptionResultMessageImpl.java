@@ -29,7 +29,7 @@ import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
  */
 public class GetBlockDescriptionResultMessageImpl extends AbstractRpcMessage implements GetBlockDescriptionResultMessage {
 
-	private final BlockDescription description;
+	private final Optional<BlockDescription> description;
 
 	/**
 	 * Creates the message.
@@ -40,14 +40,13 @@ public class GetBlockDescriptionResultMessageImpl extends AbstractRpcMessage imp
 	public GetBlockDescriptionResultMessageImpl(Optional<BlockDescription> description, String id) {
 		super(id);
 
-		Objects.requireNonNull(description, "description cannot be null");
+		this.description = Objects.requireNonNull(description, "description cannot be null");
 		description.map(Objects::requireNonNull);
-		this.description = description.orElse(null);
 	}
 
 	@Override
 	public Optional<BlockDescription> get() {
-		return Optional.ofNullable(description);
+		return description;
 	}
 
 	@Override

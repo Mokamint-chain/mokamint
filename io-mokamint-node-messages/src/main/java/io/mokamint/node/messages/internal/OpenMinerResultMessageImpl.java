@@ -25,25 +25,26 @@ import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link RestrictedNode#openMiner(int)} method.
+ * Implementation of the network message corresponding to the info of the {@link RestrictedNode#openMiner(int)} method.
  */
 public class OpenMinerResultMessageImpl extends AbstractRpcMessage implements OpenMinerResultMessage {
 
 	/**
-	 * The result of the call.
+	 * The info of the call.
 	 */
-	private final Optional<MinerInfo> result;
+	private final Optional<MinerInfo> info;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param result the result of the call
+	 * @param info the info of the call
 	 * @param id the identifier of the message
 	 */
-	public OpenMinerResultMessageImpl(Optional<MinerInfo> result, String id) {
+	public OpenMinerResultMessageImpl(Optional<MinerInfo> info, String id) {
 		super(id);
 
-		this.result = result;
+		this.info = Objects.requireNonNull(info, "info cannot be null");
+		info.map(Objects::requireNonNull);
 	}
 
 	@Override
@@ -58,6 +59,6 @@ public class OpenMinerResultMessageImpl extends AbstractRpcMessage implements Op
 
 	@Override
 	public Optional<MinerInfo> get() {
-		return result;
+		return info;
 	}
 }

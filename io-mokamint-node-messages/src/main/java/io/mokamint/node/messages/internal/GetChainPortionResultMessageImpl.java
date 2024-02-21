@@ -39,8 +39,7 @@ public class GetChainPortionResultMessageImpl extends AbstractRpcMessage impleme
 	public GetChainPortionResultMessageImpl(ChainPortion chain, String id) {
 		super(id);
 
-		Objects.requireNonNull(chain, "chain cannot be null");
-		this.chain = chain;
+		this.chain = Objects.requireNonNull(chain, "chain cannot be null");
 	}
 
 	@Override

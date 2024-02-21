@@ -39,8 +39,7 @@ public class GetInfoResultMessageImpl extends AbstractRpcMessage implements GetI
 	public GetInfoResultMessageImpl(NodeInfo info, String id) {
 		super(id);
 
-		Objects.requireNonNull(info, "info cannot be null");
-		this.info = info;
+		this.info = Objects.requireNonNull(info, "info cannot be null");
 	}
 
 	@Override

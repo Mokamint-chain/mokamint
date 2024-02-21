@@ -39,8 +39,7 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 	public AddTransactionMessageImpl(Transaction transaction, String id) {
 		super(id);
 
-		Objects.requireNonNull(transaction);
-		this.transaction = transaction;
+		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
 	}
 
 	@Override

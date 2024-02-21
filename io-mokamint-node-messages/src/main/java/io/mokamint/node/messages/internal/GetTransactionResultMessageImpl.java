@@ -39,9 +39,8 @@ public class GetTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	public GetTransactionResultMessageImpl(Optional<Transaction> transaction, String id) {
 		super(id);
 
-		Objects.requireNonNull(transaction, "transaction cannot be null");
+		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
 		transaction.map(Objects::requireNonNull);
-		this.transaction = transaction;
 	}
 
 	@Override

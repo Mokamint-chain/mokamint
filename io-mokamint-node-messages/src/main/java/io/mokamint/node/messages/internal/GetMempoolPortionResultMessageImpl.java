@@ -39,8 +39,7 @@ public class GetMempoolPortionResultMessageImpl extends AbstractRpcMessage imple
 	public GetMempoolPortionResultMessageImpl(MempoolPortion mempool, String id) {
 		super(id);
 
-		Objects.requireNonNull(mempool, "mempool cannot be null");
-		this.mempool = mempool;
+		this.mempool = Objects.requireNonNull(mempool, "mempool cannot be null");
 	}
 
 	@Override

@@ -39,9 +39,7 @@ public class RemoveMinerMessageImpl extends AbstractRpcMessage implements Remove
 	public RemoveMinerMessageImpl(UUID uuid, String id) {
 		super(id);
 
-		Objects.requireNonNull(uuid, "uuid cannot be null");
-
-		this.uuid = uuid;
+		this.uuid = Objects.requireNonNull(uuid, "uuid cannot be null");
 	}
 
 	@Override

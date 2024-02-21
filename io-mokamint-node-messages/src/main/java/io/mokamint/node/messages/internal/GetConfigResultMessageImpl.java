@@ -39,8 +39,7 @@ public class GetConfigResultMessageImpl extends AbstractRpcMessage implements Ge
 	public GetConfigResultMessageImpl(ConsensusConfig<?,?> config, String id) {
 		super(id);
 
-		Objects.requireNonNull(config, "config cannot be null");
-		this.config = config;
+		this.config = Objects.requireNonNull(config, "config cannot be null");
 	}
 
 	@Override

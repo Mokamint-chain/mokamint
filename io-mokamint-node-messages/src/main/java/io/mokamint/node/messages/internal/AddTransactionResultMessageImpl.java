@@ -42,8 +42,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	public AddTransactionResultMessageImpl(MempoolEntry result, String id) {
 		super(id);
 
-		Objects.requireNonNull(result, "result cannot be null");
-		this.result = result;
+		this.result = Objects.requireNonNull(result, "result cannot be null");
 	}
 
 	@Override

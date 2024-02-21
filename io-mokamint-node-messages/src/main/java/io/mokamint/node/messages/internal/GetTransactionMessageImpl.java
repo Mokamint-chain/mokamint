@@ -38,8 +38,7 @@ public class GetTransactionMessageImpl extends AbstractRpcMessage implements Get
 	public GetTransactionMessageImpl(byte[] hash, String id) {
 		super(id);
 
-		Objects.requireNonNull(hash);
-		this.hash = hash;
+		this.hash = Objects.requireNonNull(hash, "hash cannot be null");
 	}
 
 	@Override

@@ -41,8 +41,7 @@ public class WhisperBlockMessageImpl extends AbstractRpcMessage implements Whisp
 	public WhisperBlockMessageImpl(Block block, String id) {
 		super(id);
 
-		Objects.requireNonNull(block);
-		this.block = block;
+		this.block = Objects.requireNonNull(block, "block cannot be null");
 	}
 
 	@Override
