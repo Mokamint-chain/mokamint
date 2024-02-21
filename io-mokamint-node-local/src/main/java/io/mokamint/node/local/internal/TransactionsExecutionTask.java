@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.DatabaseException;
@@ -123,7 +124,7 @@ public class TransactionsExecutionTask implements Task {
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
-		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, previous.getStateId(), node.getBlockchain().creationTimeOf(previous));
+		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, node.getBlockchain().creationTimeOf(previous), previous.getStateId());
 	}
 
 	public void start() throws RejectedExecutionException {
@@ -146,7 +147,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	@Override
-	public void body() throws ApplicationException, TimeoutException {
+	public void body() throws ApplicationException, TimeoutException, UnknownGroupIdException {
 		long sizeUpToNow = 0L;
 
 		try {
@@ -176,8 +177,9 @@ public class TransactionsExecutionTask implements Task {
 	 *                              or for the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id of the transactions became invalid
 	 */
-	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException, ApplicationException {
+	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		done.await();
 
 		if (deliveryFailed)
@@ -194,8 +196,9 @@ public class TransactionsExecutionTask implements Task {
 	 *                              or for the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id for the transactions became invalid
 	 */
-	public void commitBlock() throws InterruptedException, TimeoutException, ApplicationException {
+	public void commitBlock() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		done.await();
 		app.commitBlock(id);
 	}
@@ -208,13 +211,14 @@ public class TransactionsExecutionTask implements Task {
 	 *                              or for the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
-	public void abortBlock() throws InterruptedException, TimeoutException, ApplicationException {
+	public void abortBlock() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		done.await();
 		app.abortBlock(id);
 	}
 
-	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException, ApplicationException {
+	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var tx = next.getTransaction();
 
 		if (transactions.contains(tx))
@@ -232,7 +236,7 @@ public class TransactionsExecutionTask implements Task {
 						throw new InterruptedException("Interrupted");
 
 					try {
-						app.deliverTransaction(tx, id);
+						app.deliverTransaction(id, tx);
 					}
 					catch (TimeoutException | InterruptedException | ApplicationException | RuntimeException e) {
 						deliveryFailed = true;

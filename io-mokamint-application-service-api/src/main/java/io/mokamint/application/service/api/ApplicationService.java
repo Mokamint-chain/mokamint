@@ -51,12 +51,12 @@ public interface ApplicationService extends WebSocketServer {
 	String GET_INITIAL_STATE_ID_ENDPOINT = "/get_initial_state_id";
 
 	/**
-	 * The network endpoint path where {@link Application#beginBlock(long, byte[], java.time.LocalDateTime)} is published.
+	 * The network endpoint path where {@link Application#beginBlock(long, java.time.LocalDateTime, byte[])} is published.
 	 */
 	String BEGIN_BLOCK_ENDPOINT = "/begin_block";
 
 	/**
-	 * The network endpoint path where {@link Application#deliverTransaction(Transaction, int)} is published.
+	 * The network endpoint path where {@link Application#deliverTransaction(int, Transaction)} is published.
 	 */
 	String DELIVER_TRANSACTION_ENDPOINT = "/deliver_transaction";
 

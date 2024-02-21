@@ -46,6 +46,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
@@ -92,7 +93,7 @@ public class EventsTests extends AbstractLoggedTests {
 	private static Plot plot;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path dir) throws NoSuchAlgorithmException, InvalidKeyException, IOException, TimeoutException, InterruptedException, ApplicationException {
+	public static void beforeAll(@TempDir Path dir) throws NoSuchAlgorithmException, InvalidKeyException, IOException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };

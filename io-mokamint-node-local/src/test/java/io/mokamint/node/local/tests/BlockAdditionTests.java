@@ -51,6 +51,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -112,7 +113,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	private static Plot plot3;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var hashing = config.getHashingForDeadlines();
 		var signature = config.getSignatureForBlocks();
@@ -132,7 +133,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		doNothing().when(application).checkTransaction(any());
 		when(application.getPriority(any())).thenReturn(13L);
 		when(application.getInitialStateId()).thenReturn(stateHash);
-		doNothing().when(application).deliverTransaction(any(), anyInt());
+		doNothing().when(application).deliverTransaction(anyInt(), any());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
 	}
 

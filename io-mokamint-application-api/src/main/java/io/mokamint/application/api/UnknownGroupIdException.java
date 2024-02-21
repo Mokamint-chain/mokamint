@@ -14,17 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.messages.api;
-
-import java.time.LocalDateTime;
-
-import io.hotmoka.annotations.Immutable;
-import io.mokamint.application.api.Application;
+package io.mokamint.application.api;
 
 /**
- * The network message corresponding to the result of the
- * {@link Application#beginBlock(long, LocalDateTime, byte[])} method.
+ * An exception stating that a transaction group identifier is unknown to the application.
  */
-@Immutable
-public interface BeginBlockResultMessage extends ResultMessage<Integer> {
+@SuppressWarnings("serial")
+public class UnknownGroupIdException extends Exception {
+
+	/**
+	 * Creates a new exception with the given message.
+	 * 
+	 * @param message the message
+	 */
+	public UnknownGroupIdException(String message) {
+		super(message);
+	}
 }

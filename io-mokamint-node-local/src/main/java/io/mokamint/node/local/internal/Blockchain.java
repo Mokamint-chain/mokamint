@@ -40,6 +40,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -501,6 +502,12 @@ public class Blockchain implements AutoCloseable {
 				throw e;
 			else
 				LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
+		}
+		catch (UnknownGroupIdException e) {
+			// either the application is misbehaving or somebody has closed
+			// the group id of the application used for verifying the transactions;
+			// in any case, the node was not able to perform the operation
+			throw new ApplicationException(e); // TODO: this should become a NodeException
 		}
 
 		return false;

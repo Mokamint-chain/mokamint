@@ -59,12 +59,12 @@ public class EmptyApplication implements Application {
 	}
 
 	@Override
-	public int beginBlock(long height, byte[] stateHash, LocalDateTime creationStartDateTime) {
+	public int beginBlock(long height, LocalDateTime creationStartDateTime, byte[] stateId) {
 		return nextId.getAndIncrement();
 	}
 
 	@Override
-	public void deliverTransaction(Transaction transaction, int groupId) {
+	public void deliverTransaction(int groupId, Transaction transaction) {
 	}
 
 	@Override

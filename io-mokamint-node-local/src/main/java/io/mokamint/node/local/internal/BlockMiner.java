@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
@@ -169,8 +170,9 @@ public class BlockMiner {
 	 * @throws InvalidKeyException if the key of the node for signing the block is invalid
 	 * @throws RejectedExecutionException if the node is shutting down 
 	 * @throws ApplicationException if the application is not behaving correctly
+	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
-	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException, ApplicationException {
+	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		transactionExecutor.start();
 
 		try {
@@ -237,8 +239,9 @@ public class BlockMiner {
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
-	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException {
+	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		stopIfInterrupted();
 		var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
@@ -260,8 +263,9 @@ public class BlockMiner {
 	 * @throws NoSuchAlgorithmException if some block refers to an unknown cryptographic algorithm
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
+	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
-	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ApplicationException {
+	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
 			committed = true;
@@ -278,19 +282,21 @@ public class BlockMiner {
 	 * @throws InterruptedException if the operation gets interrupted
 	 * @throws TimeoutException if the application di not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id of the transactions became invalid
 	 */
-	private void cleanUp() throws InterruptedException, TimeoutException, ApplicationException {
+	private void cleanUp() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		this.done = true;
 		transactionExecutor.stop();
 
 		try {
 			if (!committed)
 				transactionExecutor.abortBlock();
+
+			node.onMiningCompleted(previous);
 		}
 		finally {
 			turnWakerOff();
 			punishMinersThatDidNotAnswer();
-			node.onMiningCompleted(previous);
 		}
 	}
 

@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
 
 /**
- * The network message corresponding to the {@link Application#beginBlock(long, byte[], LocalDateTime)} method.
+ * The network message corresponding to the {@link Application#beginBlock(long, LocalDateTime, byte[])} method.
  */
 @Immutable
 public interface BeginBlockMessage extends RpcMessage {

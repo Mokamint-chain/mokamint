@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
@@ -67,7 +68,11 @@ public class BlockVerification {
 	 */
 	private final Block previous;
 
-	private final boolean commit;
+	/**
+	 * If true and verification succeeds, the state at the end of the execution of the transactions
+	 * in the block will be committed.
+	 */
+	private final boolean commit; // TODO: is this always true?
 
 	/**
 	 * The deadline of {@link #block}. This is {@code null} if and only if
@@ -91,8 +96,9 @@ public class BlockVerification {
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id used to verify the transactions became invalid
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
@@ -139,8 +145,9 @@ public class BlockVerification {
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id used to verify the transactions became invalid
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
@@ -286,13 +293,15 @@ public class BlockVerification {
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws UnknownGroupIdException if the group id used to verify the transactions is not recognized
+	 * 								   anymore has open by the application
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var app = node.getApplication();
 		int id;
 
 		try {
-			id = app.beginBlock(block.getDescription().getHeight(), previous.getStateId(), node.getBlockchain().creationTimeOf(block));
+			id = app.beginBlock(block.getDescription().getHeight(), node.getBlockchain().creationTimeOf(block), previous.getStateId());
 		}
 		catch (UnknownStateException e) {
 			throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());
@@ -310,7 +319,7 @@ public class BlockVerification {
 				}
 
 				try {
-					app.deliverTransaction(tx, id);
+					app.deliverTransaction(id, tx);
 				}
 				catch (RejectedTransactionException e) {
 					throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());

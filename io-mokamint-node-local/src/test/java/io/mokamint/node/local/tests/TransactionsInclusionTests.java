@@ -53,6 +53,7 @@ import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
@@ -90,12 +91,12 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	private static Application app;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException {
+	public static void beforeAll(@TempDir Path plotDir) throws RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		when(app.getInitialStateId()).thenReturn(new byte[] { 1, 2, 3 });
 		doNothing().when(app).checkTransaction(any());
-		doNothing().when(app).deliverTransaction(any(), anyInt());
+		doNothing().when(app).deliverTransaction(anyInt(), any());
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 13, 17, 42 });
 	}
 
