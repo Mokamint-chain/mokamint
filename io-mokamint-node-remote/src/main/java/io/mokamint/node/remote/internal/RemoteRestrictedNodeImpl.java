@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.remote.internal;
 
 import static io.mokamint.node.service.api.RestrictedNodeService.ADD_PEER_ENDPOINT;
-import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_MINER_ENDPOINT;
 import static io.mokamint.node.service.api.RestrictedNodeService.OPEN_MINER_ENDPOINT;
+import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_MINER_ENDPOINT;
 import static io.mokamint.node.service.api.RestrictedNodeService.REMOVE_PEER_ENDPOINT;
 
 import java.io.IOException;
@@ -30,6 +30,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
@@ -39,17 +41,15 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
-import io.mokamint.node.messages.RemoveMinerMessages;
-import io.mokamint.node.messages.RemoveMinerResultMessages;
-import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
+import io.mokamint.node.messages.RemoveMinerMessages;
+import io.mokamint.node.messages.RemoveMinerResultMessages;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.RemovePeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
-import io.mokamint.node.messages.api.RemoveMinerResultMessage;
-import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
+import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 import io.mokamint.node.messages.api.RemovePeerResultMessage;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import jakarta.websocket.DeploymentException;
@@ -61,8 +61,6 @@ import jakarta.websocket.Session;
  */
 @ThreadSafe
 public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements RemoteRestrictedNode {
-
-	private final NodeMessageQueues queues;
 
 	/**
 	 * The prefix used in the log messages;
@@ -81,9 +79,9 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @throws IOException if the remote node could not be created
 	 */
 	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
+		super(timeout);
+
 		this.logPrefix = "restricted remote(" + uri + "): ";
-		this.queues = new NodeMessageQueues(timeout);
-		
 		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
 		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
 		addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
@@ -111,7 +109,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 			return;
 		}
 
-		queues.notifyResult(message);
+		super.notifyResult(message);
 	}
 
 	protected void sendAddPeer(Peer peer, String id) throws ClosedNodeException {
@@ -167,10 +165,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	@Override
 	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
-		var id = queues.nextId();
+		var id = nextId();
 		sendAddPeer(peer, id);
 		try {
-			return queues.waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
+			return waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerRejectedException e) {
 			throw e;
@@ -203,10 +201,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	@Override
 	public boolean remove(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, IOException {
 		ensureIsOpen();
-		var id = queues.nextId();
+		var id = nextId();
 		sendRemovePeer(peer, id);
 		try {
-			return queues.waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
+			return waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
 		}
 		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 			throw e;
@@ -246,10 +244,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException {
 		ensureIsOpen();
-		var id = queues.nextId();
+		var id = nextId();
 		sendOpenMiner(port, id);
 		try {
-			return queues.waitForResult(id, this::processOpenMinerSuccess, this::processOpenMinerException);
+			return waitForResult(id, this::processOpenMinerSuccess, this::processOpenMinerException);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 			throw e;
@@ -279,10 +277,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	@Override
 	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException, IOException {
 		ensureIsOpen();
-		var id = queues.nextId();
+		var id = nextId();
 		sendRemoveMiner(uuid, id);
 		try {
-			return queues.waitForResult(id, this::processRemoveMinerSuccess, this::processRemoveMinerException);
+			return waitForResult(id, this::processRemoveMinerSuccess, this::processRemoveMinerException);
 		}
 		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
 			throw e;

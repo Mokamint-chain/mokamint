@@ -17,17 +17,26 @@ limitations under the License.
 package io.mokamint.application.service.internal;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.ExceptionMessages;
+import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.messages.CheckPrologExtraMessages;
+import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.service.api.ApplicationService;
 import jakarta.websocket.DeploymentException;
+import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 /**
  * The implementation of an application service. It publishes endpoints at a URL,
@@ -72,11 +81,11 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		this.logPrefix = "application service(ws://localhost:" + port + "): ";
 
 		// if the application gets closed, then this service will be closed as well
-		//application.addOnClosedHandler(this_close); //// TODO
+		application.addOnClosedHandler(this_close);
 
-		startContainer("", port);
-			//AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this),
-			//OpenMinerEndpoint.config(this), RemoveMinerEndpoint.config(this));
+		startContainer("", port,
+			CheckPrologExtraEndpoint.config(this)
+		);
 
 		LOGGER.info(logPrefix + "published");
 	}
@@ -84,7 +93,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	@Override
 	public void close() {
 		if (!isClosed.getAndSet(true)) {
-			//application.removeOnCloseHandler(this_close); // TODO
+			application.removeOnCloseHandler(this_close);
 			stopContainer();
 			LOGGER.info(logPrefix + "closed");
 		}
@@ -100,5 +109,34 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
 		sendObjectAsync(session, ExceptionMessages.of(e, id));
+	}
+
+	protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + CHECK_PROLOG_EXTRA_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, CheckPrologExtraResultMessages.of(application.checkPrologExtra(message.getExtra()), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class CheckPrologExtraEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (CheckPrologExtraMessage message) -> getServer().onCheckPrologExtra(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, CheckPrologExtraEndpoint.class, CHECK_PROLOG_EXTRA_ENDPOINT,
+				CheckPrologExtraMessages.Decoder.class, CheckPrologExtraResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
 	}
 }

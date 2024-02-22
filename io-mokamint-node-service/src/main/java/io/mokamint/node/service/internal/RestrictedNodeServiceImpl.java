@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ClosedNodeException;
@@ -35,7 +36,6 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
-import io.mokamint.node.messages.ExceptionMessages;
 import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.RemoveMinerMessages;

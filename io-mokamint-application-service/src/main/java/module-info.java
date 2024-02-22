@@ -28,6 +28,7 @@ module io.mokamint.application.service {
 	requires transitive io.mokamint.application.api;
 	requires io.mokamint.application.messages;
 	requires io.hotmoka.websockets.server;
+	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.closeables.api;
 	requires org.glassfish.tyrus.core;

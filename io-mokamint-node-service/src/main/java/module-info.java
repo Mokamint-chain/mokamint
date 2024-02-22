@@ -28,6 +28,7 @@ module io.mokamint.node.service {
 	requires transitive io.mokamint.node.api;
 	requires io.mokamint.node.messages;
 	requires io.hotmoka.websockets.server;
+	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.closeables.api;

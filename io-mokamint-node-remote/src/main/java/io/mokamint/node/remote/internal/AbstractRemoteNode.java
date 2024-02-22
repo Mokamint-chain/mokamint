@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
@@ -29,12 +31,14 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.CloseHandlersManagers;
 import io.hotmoka.closeables.api.CloseHandler;
 import io.hotmoka.closeables.api.CloseHandlersManager;
+import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
+import io.hotmoka.websockets.client.RPCMessageQueuesContainer;
+import io.hotmoka.websockets.client.RPCMessageQueuesContainers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NodeException;
-import io.mokamint.node.messages.api.ExceptionMessage;
 import io.mokamint.node.remote.api.RemoteNode;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -59,6 +63,11 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	private final CloseHandlersManager manager = CloseHandlersManagers.create();
 
 	/**
+	 * Queues of messages received from the external world.
+	 */
+	private final RPCMessageQueuesContainer queues;
+
+	/**
 	 * True if and only if this node has been closed already.
 	 */
 	private final AtomicBoolean isClosed = new AtomicBoolean();
@@ -67,8 +76,19 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 
 	/**
 	 * Creates and opens a new remote node for the public or restricted API of a node.
+	 * 
+	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
+	 *                beyond that threshold, a timeout exception is thrown
 	 */
-	protected AbstractRemoteNode() {}
+	protected AbstractRemoteNode(long timeout) {
+		this.queues = RPCMessageQueuesContainers.of(timeout);
+	}
+
+	@Override
+	public void close() throws NodeException, InterruptedException {
+		if (!isClosed.getAndSet(true))
+			closeHandlersAndSessions();
+	}
 
 	@Override
 	public final void addCloseHandler(CloseHandler what) {
@@ -114,12 +134,6 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 			ClosedNodeException.class.isAssignableFrom(clazz);
 	}
 
-	@Override
-	public void close() throws NodeException, InterruptedException {
-		if (!isClosed.getAndSet(true))
-			closeHandlersAndSessions();
-	}
-
 	/**
 	 * Ensures that this node is currently open.
 	 * 
@@ -130,7 +144,37 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 			throw new ClosedNodeException("The node has been closed");
 	}
 
-	protected abstract void notifyResult(RpcMessage message);
+	/**
+	 * Notifies the given message to the waiting queue for its identifier.
+	 * 
+	 * @param message the message to notify
+	 */
+	protected void notifyResult(RpcMessage message) {
+		queues.notifyResult(message);
+	}
+
+	/**
+	 * Yields the identifier for the next message.
+	 * 
+	 * @return the identifier
+	 */
+	protected final String nextId() {
+		return queues.nextId();
+	}
+
+	/**
+	 * Waits until a reply arrives for the message with the given identifier.
+	 * 
+	 * @param <T> the type of the replied value
+	 * @param id the identifier
+	 * @param processSuccess a function that defines how to generate the replied value from the RPC message
+	 * @param processException a predicate that determines if an exception message is accepted for the RPC message
+	 * @return the replied value
+	 * @throws Exception if the execution of the message led into this exception
+	 */
+	protected final <T> T waitForResult(String id, Function<RpcMessage, T> processSuccess, Predicate<ExceptionMessage> processException) throws Exception {
+		return queues.waitForResult(id, processSuccess, processException);
+	}
 
 	protected abstract class Endpoint extends AbstractClientEndpoint<AbstractRemoteNode> {
 
