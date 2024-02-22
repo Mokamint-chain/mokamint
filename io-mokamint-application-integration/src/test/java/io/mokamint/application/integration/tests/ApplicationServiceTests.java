@@ -44,7 +44,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
-		class MyTestClient extends RemotePublicNodeImpl {
+		class MyTestClient extends RemoteApplicationImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
 				super(URI, 2000L, 240000L, 1000);

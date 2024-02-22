@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.closeables.api.OnCloseHandlersContainer;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
@@ -81,7 +81,7 @@ import io.mokamint.nonce.api.Deadline;
  * performed). This is why both these methods can throw a {@link RejectedTransactionException}.
  */
 @ThreadSafe
-public interface Application extends AutoCloseable {
+public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 
 	/**
 	 * Checks if the given extra data from the prolog of a deadline is considered
@@ -254,18 +254,4 @@ public interface Application extends AutoCloseable {
 	 */
 	@Override
 	void close() throws ApplicationException, InterruptedException;
-
-	/**
-	 * Takes note that the given code must be executed when this application gets closed.
-	 * 
-	 * @param handler the code
-	 */
-	void addOnClosedHandler(CloseHandler handler);
-
-	/**
-	 * Removes the given code from that executed when this application gets closed.
-	 * 
-	 * @param handler the code
-	 */
-	void removeOnCloseHandler(CloseHandler handler);
 }

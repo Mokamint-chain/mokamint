@@ -21,7 +21,7 @@
     </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-application-api</artifactId>
+      <artifactId>io-mokamint-application</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
@@ -42,6 +42,11 @@
     <dependency>
       <groupId>io.hotmoka</groupId>
       <artifactId>io-hotmoka-annotations</artifactId>
+      <version>${hotmoka.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-closeables</artifactId>
       <version>${hotmoka.version}</version>
     </dependency>
   </dependencies>

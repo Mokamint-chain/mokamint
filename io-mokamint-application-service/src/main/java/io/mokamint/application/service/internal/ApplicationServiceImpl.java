@@ -23,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
@@ -59,7 +59,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final CloseHandler this_close = this::close;
+	private final OnCloseHandler this_close = this::close;
 
 	/**
 	 * The prefix used in the log messages;
@@ -81,7 +81,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		this.logPrefix = "application service(ws://localhost:" + port + "): ";
 
 		// if the application gets closed, then this service will be closed as well
-		application.addOnClosedHandler(this_close);
+		application.addOnCloseHandler(this_close);
 
 		startContainer("", port,
 			CheckPrologExtraEndpoint.config(this)

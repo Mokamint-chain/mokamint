@@ -19,7 +19,7 @@ package io.mokamint.node.tools.internal;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.closeables.api.OnCloseHandler;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
@@ -91,10 +91,10 @@ public class EmptyApplication implements Application { // TODO: remove at the en
 	}
 
 	@Override
-	public void addOnClosedHandler(CloseHandler handler) {
+	public void addOnCloseHandler(OnCloseHandler handler) {
 	}
 
 	@Override
-	public void removeOnCloseHandler(CloseHandler handler) {
+	public void removeOnCloseHandler(OnCloseHandler handler) {
 	}
 }

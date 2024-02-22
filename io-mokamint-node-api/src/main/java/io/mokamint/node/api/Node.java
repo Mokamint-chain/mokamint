@@ -17,13 +17,13 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.closeables.api.CloseHandlersContainer;
+import io.hotmoka.closeables.api.OnCloseHandlersContainer;
 
 /**
  * A node of a Mokamint blockchain.
  */
 @ThreadSafe
-public interface Node extends CloseHandlersContainer, AutoCloseable {
+public interface Node extends OnCloseHandlersContainer, AutoCloseable {
 
 	/**
 	 * Closes this node. After this closure, the methods of this node might throw

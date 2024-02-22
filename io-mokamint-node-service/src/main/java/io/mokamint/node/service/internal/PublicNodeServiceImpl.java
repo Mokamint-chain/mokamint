@@ -37,7 +37,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
@@ -160,7 +160,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
-	private final CloseHandler this_close = this::close;
+	private final OnCloseHandler this_close = this::close;
 
 	/**
 	 * A memory of the last whispered messages,
@@ -222,7 +222,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(u -> addPort(u, port)))));
 
 		// if the node gets closed, then this service will be closed as well
-		node.addCloseHandler(this_close);
+		node.addOnCloseHandler(this_close);
 
 		startContainer("", port,
 			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
@@ -245,7 +245,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	@Override
 	public void close() throws InterruptedException {
 		if (!isClosed.getAndSet(true)) {
-			node.removeCloseHandler(this_close);
+			node.removeOnCloseHandler(this_close);
 			node.unbindWhisperer(this);
 			stopContainer();
 			LOGGER.info(logPrefix + "closed");

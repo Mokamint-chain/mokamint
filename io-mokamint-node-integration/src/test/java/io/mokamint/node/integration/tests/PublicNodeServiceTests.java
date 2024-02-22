@@ -48,7 +48,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 
-import io.hotmoka.closeables.api.CloseHandler;
+import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
@@ -727,13 +727,13 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	public void serviceGetsClosedIfNodeGetsClosed() throws Exception {
 		var semaphore = new Semaphore(0);
 
-		var listenerForClose = new AtomicReference<CloseHandler>();
+		var listenerForClose = new AtomicReference<OnCloseHandler>();
 		var node = mkNode();
 		doAnswer(listener -> {
 			listenerForClose.set(listener.getArgument(0));
 			return null;
 		}).
-		when(node).addCloseHandler(any());
+		when(node).addOnCloseHandler(any());
 
 		class MyPublicNodeService extends PublicNodeServiceImpl {
 			private MyPublicNodeService() throws DeploymentException, IOException {
