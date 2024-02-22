@@ -18,10 +18,11 @@ package io.mokamint.application.remote.api;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 
 /**
  * A remote node of a Mokamint blockchain, just seen as a closeable object.
  */
 @ThreadSafe
-public interface RemoteApplication extends Application {
+public interface RemoteApplication extends Application, Remote<ApplicationException> {
 }

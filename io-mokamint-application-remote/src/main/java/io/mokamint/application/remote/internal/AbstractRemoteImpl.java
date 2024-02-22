@@ -30,7 +30,6 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.CloseHandlersManagers;
 import io.hotmoka.closeables.api.OnCloseHandler;
-import io.hotmoka.closeables.api.OnCloseHandlersContainer;
 import io.hotmoka.closeables.api.OnCloseHandlersManager;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
@@ -39,6 +38,7 @@ import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.hotmoka.websockets.client.RPCMessageQueuesContainer;
 import io.hotmoka.websockets.client.RPCMessageQueuesContainers;
 import io.mokamint.application.ClosedApplicationException;
+import io.mokamint.application.remote.api.Remote;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
@@ -47,9 +47,11 @@ import jakarta.websocket.Session;
 /**
  * A partial implementation of a remote object that presents a programmatic interface
  * to a service for the API of another object of the same class.
+ * 
+ * @param <E> the type of the exceptions thrown if the remote behaves incorrectly
  */
 @ThreadSafe
-public abstract class AbstractRemoteImpl<E extends Exception> extends AbstractWebSocketClient implements OnCloseHandlersContainer {
+public abstract class AbstractRemoteImpl<E extends Exception> extends AbstractWebSocketClient implements Remote<E> {
 
 	/**
 	 * A map from path into the session listening to that path.
