@@ -15,14 +15,14 @@
 
   <dependencies>
     <dependency>
-       <groupId>io.mokamint</groupId>
-       <artifactId>io-mokamint-nonce-api</artifactId>
-       <version>${mokamint.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-nonce-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-       <groupId>io.hotmoka</groupId>
-       <artifactId>io-hotmoka-annotations</artifactId>
-       <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka.annotations</groupId>
+      <artifactId>io-hotmoka-annotations</artifactId>
+      <version>${io.hotmoka.annotations.version}</version>
     </dependency>
   </dependencies>
 
