@@ -17,11 +17,13 @@ limitations under the License.
 package io.mokamint.node.remote.api;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.client.api.Remote;
 import io.mokamint.node.api.Node;
+import io.mokamint.node.api.NodeException;
 
 /**
  * A remote node of a Mokamint blockchain, just seen as a closeable object.
  */
 @ThreadSafe
-public interface RemoteNode extends Node {
+public interface RemoteNode extends Node, Remote<NodeException> {
 }
