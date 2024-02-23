@@ -46,7 +46,7 @@ import jakarta.websocket.Session;
 
 /**
  * A partial implementation of a remote object that presents a programmatic interface
- * to a service for the API of another object of the same class.
+ * to a service for the API of another object with the same interface,
  * 
  * @param <E> the type of the exceptions thrown if the remote behaves incorrectly
  */

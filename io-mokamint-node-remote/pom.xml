@@ -30,9 +30,9 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.hotmoka</groupId>
+      <groupId>io.hotmoka.closeables</groupId>
       <artifactId>io-hotmoka-closeables</artifactId>
-      <version>${hotmoka.version}</version>
+      <version>${io.hotmoka.closeables.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka.annotations</groupId>

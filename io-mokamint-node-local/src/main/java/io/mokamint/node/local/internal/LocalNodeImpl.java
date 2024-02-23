@@ -43,7 +43,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndCloseHandlers;
+import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
@@ -95,7 +95,7 @@ import jakarta.websocket.DeploymentException;
  * A local node of a Mokamint blockchain.
  */
 @ThreadSafe
-public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndCloseHandlers<ClosedNodeException> implements LocalNode {
+public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandlers<ClosedNodeException> implements LocalNode {
 
 	/**
 	 * The configuration of the node.

@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.application.internal;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndCloseHandlers;
+import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.mokamint.application.ClosedApplicationException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
@@ -26,7 +26,7 @@ import io.mokamint.application.api.ApplicationException;
  * Partial implementation of a Mokamint application.
  */
 @ThreadSafe
-public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndCloseHandlers<ClosedApplicationException> implements Application {
+public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndOnCloseHandlers<ClosedApplicationException> implements Application {
 
 	/**
 	 * 

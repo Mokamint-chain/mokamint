@@ -25,9 +25,9 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.hotmoka</groupId>
+      <groupId>io.hotmoka.closeables</groupId>
       <artifactId>io-hotmoka-closeables-api</artifactId>
-      <version>${hotmoka.version}</version>
+      <version>${io.hotmoka.closeables.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka.websockets</groupId>

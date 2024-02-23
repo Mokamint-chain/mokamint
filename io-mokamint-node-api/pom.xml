@@ -35,9 +35,9 @@
       <version>${io.hotmoka.annotations.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.hotmoka</groupId>
-      <artifactId>io-hotmoka-closeables-api</artifactId>
-      <version>${hotmoka.version}</version>
+      <groupId>io.hotmoka.closeables</groupId>
+      <artifactId>io-hotmoka-closeables</artifactId>
+      <version>${io.hotmoka.closeables.version}</version>
     </dependency>
   </dependencies>
 
