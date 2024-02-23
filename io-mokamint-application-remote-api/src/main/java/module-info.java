@@ -22,5 +22,6 @@ module io.mokamint.application.remote.api {
 	exports io.mokamint.application.remote.api;
 
 	requires transitive io.mokamint.application.api;
+	requires io.hotmoka.websockets.client.api;
 	requires io.hotmoka.annotations;
 }

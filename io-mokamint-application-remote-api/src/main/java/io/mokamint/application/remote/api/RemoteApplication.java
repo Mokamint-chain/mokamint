@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.remote.api;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.client.api.Remote;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 
