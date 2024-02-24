@@ -37,8 +37,8 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -228,7 +228,7 @@ public class SynchronizationTask implements Task {
 				// it is the database of the peer that is corrupted, not that of {@code node}
 				markAsMisbehaving(peer);
 			}
-			catch (TimeoutException | ClosedNodeException e) {
+			catch (TimeoutException | NodeException e) {
 				markAsUnreachable(peer);
 			}
 		}
@@ -430,7 +430,7 @@ public class SynchronizationTask implements Task {
 					markAsMisbehaving(peer);
 					return;
 				}
-				catch (TimeoutException | ClosedNodeException e) {
+				catch (TimeoutException | NodeException e) {
 					markAsUnreachable(peer);
 					return;
 				}

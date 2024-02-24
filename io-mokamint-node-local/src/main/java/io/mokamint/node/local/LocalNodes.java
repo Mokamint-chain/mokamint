@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -54,9 +55,10 @@ public abstract class LocalNodes {
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws NodeException if the node is misbehaving
 	 */
 	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
-			throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+			throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}

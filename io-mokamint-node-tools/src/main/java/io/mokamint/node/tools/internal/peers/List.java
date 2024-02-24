@@ -28,7 +28,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.mokamint.node.PeerInfos;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -54,7 +53,7 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static int MAX_PEER_LENGTH = 50;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		var infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
 
 		if (json())
@@ -112,7 +111,7 @@ public class List extends AbstractPublicRpcCommand {
 						UUIDs[pos] = peerInfo.getUUID().toString();
 						versions[pos] = peerInfo.getVersion().toString();
 					}
-					catch (NodeException | IOException | DeploymentException | TimeoutException | InterruptedException | ClosedNodeException e) {
+					catch (NodeException | IOException | DeploymentException | TimeoutException | InterruptedException e) {
 						if (e instanceof InterruptedException)
 							Thread.currentThread().interrupt();
 

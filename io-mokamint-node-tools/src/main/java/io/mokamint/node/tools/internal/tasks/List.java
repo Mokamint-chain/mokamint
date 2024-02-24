@@ -25,7 +25,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
@@ -37,7 +37,7 @@ import picocli.CommandLine.Help.Ansi;
 @Command(name = "ls", description = "List the tasks of a node.")
 public class List extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		var infos = remote.getTaskInfos().sorted().toArray(TaskInfo[]::new);
 
 		if (json()) {

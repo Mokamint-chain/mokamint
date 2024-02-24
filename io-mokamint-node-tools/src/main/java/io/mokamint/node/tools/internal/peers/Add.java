@@ -22,8 +22,8 @@ import java.util.concurrent.TimeoutException;
 
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
@@ -39,7 +39,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the URI of the peer to add")
 	private URI uri;
 
-	private void body(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
 		PeerInfo info = addPeer(remote);
 
 		if (json()) {
@@ -54,7 +54,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 			System.out.println("Added " + info);
 	}
 
-	protected PeerInfo addPeer(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException, DatabaseException {
+	protected PeerInfo addPeer(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException, DatabaseException {
 		try {
 			return remote.add(Peers.of(uri)).orElseThrow(() -> new CommandException("Peer " + uri + " has not been added to the set of peers: was it already present?"));
 		}

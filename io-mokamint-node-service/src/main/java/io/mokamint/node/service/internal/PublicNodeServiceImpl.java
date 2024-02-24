@@ -42,9 +42,9 @@ import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -213,7 +213,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		try {
 			this.config = node.getConfig();
 		}
-		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw new IOException(e);
 		}
 
@@ -357,7 +357,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -386,7 +386,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetPeerInfosResultMessages.of(node.getPeerInfos(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -415,7 +415,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetMinerInfosResultMessages.of(node.getMinerInfos(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -444,7 +444,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetTaskInfosResultMessages.of(node.getTaskInfos(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -473,7 +473,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetTransactionResultMessages.of(node.getTransaction(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | NoSuchAlgorithmException | DatabaseException e) {
+			catch (TimeoutException | InterruptedException | NodeException | NoSuchAlgorithmException | DatabaseException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -502,7 +502,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(node.getTransactionRepresentation(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | NoSuchAlgorithmException | RejectedTransactionException | DatabaseException e) {
+			catch (TimeoutException | InterruptedException | NodeException | NoSuchAlgorithmException | RejectedTransactionException | DatabaseException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -531,7 +531,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetTransactionAddressResultMessages.of(node.getTransactionAddress(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException e) {
+			catch (TimeoutException | InterruptedException | NodeException | DatabaseException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -560,7 +560,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 			}
-			catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -589,7 +589,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetBlockDescriptionResultMessages.of(node.getBlockDescription(message.getHash()), message.getId()));
 			}
-			catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -618,7 +618,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -647,7 +647,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | DatabaseException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -676,7 +676,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetChainPortionResultMessages.of(node.getChainPortion(message.getStart(), message.getCount()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | DatabaseException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -705,7 +705,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | RejectedTransactionException | DatabaseException | NoSuchAlgorithmException e) {
+			catch (TimeoutException | InterruptedException | NodeException | RejectedTransactionException | DatabaseException | NoSuchAlgorithmException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -734,7 +734,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetMempoolInfoResultMessages.of(node.getMempoolInfo(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -763,7 +763,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetMempoolPortionResultMessages.of(node.getMempoolPortion(message.getStart(), message.getCount()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}

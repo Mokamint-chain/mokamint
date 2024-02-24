@@ -36,9 +36,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	NodeInfo getInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
+	NodeInfo getInfo() throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the consensus configuration parameters of this node.
@@ -46,9 +46,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the consensus parameters
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, ClosedNodeException;
+	ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields information about the peers this node is connected to. There is a dynamic
@@ -58,9 +58,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the peers information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
+	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields information about the miners this node uses. A node uses a dynamic,
@@ -69,9 +69,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the miners information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
+	Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields information about the tasks currently running inside this node.
@@ -79,9 +79,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the tasks information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
+	Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields information about the current chain of this node.
@@ -90,9 +90,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields a portion of the current best chain, containing the hashes of the blocks starting at height {@code start}
@@ -105,9 +105,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	ChainPortion getChainPortion(long start, int count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	ChainPortion getChainPortion(long start, int count) throws DatabaseException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
@@ -120,9 +120,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing or signature algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the description of the block with the given hash, if it has been seen by this node.
@@ -135,9 +135,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws NoSuchAlgorithmException if the block exists but refers to an unknown hashing or signature algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Checks the validity of the given transaction and adds it to the mempool of this node.
@@ -150,9 +150,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, ClosedNodeException;
+	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, NodeException;
 
 	/**
 	 * Yields a transaction already in blockchain.
@@ -163,9 +163,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields a string representation of a transaction already in blockchain, that can be used to print
@@ -180,9 +180,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException;
+	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, NodeException;
 
 	/**
 	 * Yields the address of a transaction already in blockchain.
@@ -192,9 +192,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException;
+	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException, DatabaseException;
 
 	/**
 	 * Yields information about the mempool of this node.
@@ -202,9 +202,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the portion of the node's mempool containing the entries starting at number {@code start}
@@ -216,9 +216,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the portion with the entries, in order of increasing priority
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if the node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node

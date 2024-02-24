@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteNode;
@@ -78,9 +77,6 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 		catch (IOException e) {
 			throw new CommandException("I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?", e);
 		}
-		catch (ClosedNodeException e) {
-			throw new CommandException("The connection to " + uri + " has been closed!", e);
-		}
 		catch (DeploymentException e) {
 			throw new CommandException("Cannot contact the remote service! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?", e);
 		}
@@ -117,11 +113,11 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 		 * @param remote the remote node
 		 * @throws TimeoutException if the command does into a timeout
 		 * @throws InterruptedException if the command was interrupted while waiting
-		 * @throws ClosedNodeException if the remote node has been closed
+		 * @throws NodeException if the remote node could not complete the operation
 		 * @throws DatabaseException if the database of the node is corrupted
 		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
-		void run(N remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException;
+		void run(N remote) throws TimeoutException, InterruptedException, NodeException, DatabaseException, CommandException;
 	}
 
 	/**
@@ -129,14 +125,14 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 	 * {@link RpcCommandBody#run(RemoteNode)}.
 	 * 
 	 * @param e the exception
-	 * @throws ClosedNodeException if {@code e} belongs to that class
+	 * @throws NodeException if {@code e} belongs to that class
 	 * @throws TimeoutException if {@code e} belongs to that class
 	 * @throws InterruptedException if {@code e} belongs to that class
 	 * @throws DatabaseException if {@code e} belongs to that class
 	 * @throws CommandException if {@code e} belongs to that class
 	 */
-	protected static void throwAsRpcCommandException(Exception e) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
-		if (e instanceof ClosedNodeException cne)
+	protected static void throwAsRpcCommandException(Exception e) throws TimeoutException, InterruptedException, NodeException, DatabaseException, CommandException {
+		if (e instanceof NodeException cne)
 			throw cne;
 		else if (e instanceof TimeoutException te)
 			throw te;

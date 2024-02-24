@@ -29,10 +29,10 @@ import com.google.gson.Gson;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
@@ -58,7 +58,7 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-	private void body(RemotePublicNode remote) throws CommandException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	private void body(RemotePublicNode remote) throws CommandException, DatabaseException, TimeoutException, InterruptedException, NodeException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
@@ -120,9 +120,9 @@ public class List extends AbstractPublicRpcCommand {
 		 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 		 * @throws TimeoutException if some connection timed-out
 		 * @throws InterruptedException if some connection was interrupted while waiting
-		 * @throws ClosedNodeException if the remote node is closed
+		 * @throws NodeException if the remote node could not complete the operation
 		 */
-		private ListChain(ChainPortion chain, LocalDateTime startDateTimeUTC, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException {
+		private ListChain(ChainPortion chain, LocalDateTime startDateTimeUTC, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, NoSuchAlgorithmException, DatabaseException {
 			this.config = remote.getConfig();
 			this.startDateTimeUTC = startDateTimeUTC;
 			this.remote = remote;
@@ -141,7 +141,7 @@ public class List extends AbstractPublicRpcCommand {
 			printRows();
 		}
 
-		private void fillColumns(byte[][] hashes) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+		private void fillColumns(byte[][] hashes) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
 			heights[0] = "";
 			this.hashes[0] = "block hash (" + config.getHashingForBlocks() + ")";
 			creationDateTimesUTC[0] = "created (UTC)";

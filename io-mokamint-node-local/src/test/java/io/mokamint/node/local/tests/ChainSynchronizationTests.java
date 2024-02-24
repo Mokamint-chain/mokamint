@@ -53,7 +53,6 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerRejectedException;
@@ -144,15 +143,9 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends LocalNodeImpl {
 
-		private MiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+		private MiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 			super(config, nodeKeys, app, true);
-
-			try {
-				add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
-			}
-			catch (ClosedNodeException e) {
-				// impossible, the node is not closed at this stage!
-			}
+			add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override
@@ -168,7 +161,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends LocalNodeImpl {
 
-		private NonMiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+		private NonMiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 
@@ -187,7 +180,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity synchronizes from its peer")
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
@@ -212,7 +205,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity, once stopped and restarted, synchronizes from its peer")
 	public void nodeWithoutMinerStopRestartFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
@@ -251,7 +244,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity, once disconnected and reconnected, synchronizes from its peer")
 	public void nodeWithoutMinerDisconnectConnectFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, ClosedNodeException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
 		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));

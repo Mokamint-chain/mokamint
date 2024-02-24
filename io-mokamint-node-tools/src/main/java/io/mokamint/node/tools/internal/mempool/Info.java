@@ -19,7 +19,7 @@ package io.mokamint.node.tools.internal.mempool;
 import java.util.concurrent.TimeoutException;
 
 import io.mokamint.node.MempoolInfos;
-import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -29,7 +29,7 @@ import picocli.CommandLine.Command;
 @Command(name = "info", description = "Show information about the mempool of a node.")
 public class Info extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		try {
 			var info = remote.getMempoolInfo();
 

@@ -26,9 +26,9 @@ import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -64,10 +64,10 @@ public class Show extends AbstractPublicRpcCommand {
          * @throws DatabaseException if the database of the remote node is corrupted
          * @throws TimeoutException if some connection timed-out
          * @throws InterruptedException if some connection was interrupted while waiting
-         * @throws ClosedNodeException if the remote node is closed
+         * @throws NodeException if the remote node could not complete the operation
          * @throws CommandException if the block cannot be identified, or if something erroneous must be logged and the user must be informed
          */
-        private byte[] getHashOfBlock(RemotePublicNode remote) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+        private byte[] getHashOfBlock(RemotePublicNode remote) throws DatabaseException, TimeoutException, InterruptedException, NodeException, CommandException {
         	if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
@@ -105,7 +105,7 @@ public class Show extends AbstractPublicRpcCommand {
         }
 	}
 
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, DatabaseException, CommandException {
 		try {
 			byte[] hash = blockIdentifier.getHashOfBlock(remote);
 			if (full)
@@ -121,7 +121,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-    private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+    private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
     	if (json())
     		System.out.println(new BlockDescriptions.Encoder().encode(description));
 		else {
@@ -147,7 +147,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}	
     }
 
-    private void print(RemotePublicNode remote, Block block, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+    private void print(RemotePublicNode remote, Block block, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
     	if (json())
     		System.out.println(new Blocks.Encoder().encode(block));
 		else {

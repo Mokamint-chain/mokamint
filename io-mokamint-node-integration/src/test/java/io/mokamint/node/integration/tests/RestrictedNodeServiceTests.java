@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -63,7 +62,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Peer) request reaches the service, it adds the peers to the node and it sends back a result")
-	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, PeerRejectedException, DatabaseException, NodeException {
+	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, PeerRejectedException, DatabaseException, NodeException {
 		var semaphore = new Semaphore(0);
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(Peers.of(new URI("ws://my.machine:8032")));
@@ -83,7 +82,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000L);
 			}
 
-			private void sendAddPeer(Peer peer) throws ClosedNodeException {
+			private void sendAddPeer(Peer peer) throws NodeException {
 				sendAddPeer(peer, "id");
 			}
 		}
@@ -98,7 +97,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a remove(Peer) request reaches the service, it removes the peers from the node and it sends back a result")
-	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, DatabaseException, NodeException {
+	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, DatabaseException, NodeException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -120,7 +119,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000L);
 			}
 
-			private void sendRemovePeer(Peer peer) throws ClosedNodeException {
+			private void sendRemovePeer(Peer peer) throws NodeException {
 				sendRemovePeer(peer, "id");
 			}
 		}
@@ -134,7 +133,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an openMiner() request reaches the service, it opens the miner and it sends back a result")
-	public void serviceOpenMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceOpenMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 		var port1 = 8025;
 		var port2 = 8028;
@@ -156,7 +155,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000L);
 			}
 
-			private void sendOpenMiner(int port) throws ClosedNodeException {
+			private void sendOpenMiner(int port) throws NodeException {
 				sendOpenMiner(port, "id");
 			}
 		}
@@ -170,7 +169,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a closeMiner() request reaches the service, it closes the miner and it sends back a result")
-	public void serviceCloseMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceCloseMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 		Set<UUID> allUUIDs = new HashSet<>();
 		var uuid1 = UUID.randomUUID();
@@ -192,7 +191,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000L);
 			}
 
-			private void sendCloseMiner(UUID uuid) throws ClosedNodeException {
+			private void sendCloseMiner(UUID uuid) throws NodeException {
 				sendRemoveMiner(uuid, "id");
 			}
 		}
@@ -225,7 +224,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		try (var service = RestrictedNodeServices.open(node, 8031); var remote = new MyRemoteRestrictedNode()) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
-			assertThrows(ClosedNodeException.class, () -> remote.add(Peers.of(new URI("ws://www.mokamint.io:8031"))));
+			assertThrows(NodeException.class, () -> remote.add(Peers.of(new URI("ws://www.mokamint.io:8031"))));
 		}
 	}
 }

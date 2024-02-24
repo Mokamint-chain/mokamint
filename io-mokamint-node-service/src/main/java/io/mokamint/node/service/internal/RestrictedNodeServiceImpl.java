@@ -28,9 +28,9 @@ import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
@@ -134,7 +134,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.add(message.getPeer());
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerRejectedException e) {
+			catch (TimeoutException | InterruptedException | NodeException | DatabaseException | IOException | PeerRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}
@@ -155,7 +155,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.remove(message.getPeer());
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException e) {
+			catch (TimeoutException | InterruptedException | NodeException | DatabaseException | IOException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}
@@ -176,7 +176,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.openMiner(message.getPort());
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
+			catch (TimeoutException | InterruptedException | NodeException | IOException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}
@@ -197,7 +197,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.removeMiner(message.getUUID());
 			}
-			catch (TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
+			catch (TimeoutException | InterruptedException | NodeException | IOException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}

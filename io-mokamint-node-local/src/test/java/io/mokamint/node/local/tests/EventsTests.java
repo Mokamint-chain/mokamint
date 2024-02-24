@@ -49,7 +49,6 @@ import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -152,15 +151,9 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
-
-				try {
-					add(myMiner);
-				}
-				catch (ClosedNodeException e) {
-					// impossible
-				}
+				add(myMiner);
 			}
 
 			@Override
@@ -214,15 +207,9 @@ public class EventsTests extends AbstractLoggedTests {
 	
 		class MyLocalNode extends LocalNodeImpl {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
-
-				try {
-					add(myMiner);
-				}
-				catch (ClosedNodeException e) {
-					// impossible
-				}
+				add(myMiner);
 			}
 	
 			@Override
@@ -245,7 +232,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
@@ -269,19 +256,14 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKeys, app, true);
 
-				try {
-					var miner = mock(Miner.class);
-					var uuid = UUID.randomUUID();
-					when(miner.getUUID()).thenReturn(uuid);
-					when(miner.toString()).thenReturn("a miner");
-					add(miner);
-				}
-				catch (ClosedNodeException e) {
-					// impossible
-				}
+				var miner = mock(Miner.class);
+				var uuid = UUID.randomUUID();
+				when(miner.getUUID()).thenReturn(uuid);
+				when(miner.toString()).thenReturn("a miner");
+				add(miner);
 			}
 
 			@Override
@@ -335,15 +317,9 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKeys, app, true);
-
-				try {
-					add(myMiner);
-				}
-				catch (ClosedNodeException e) {
-					// impossible
-				}				
+				add(myMiner);
 			}
 
 			@Override

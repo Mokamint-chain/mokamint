@@ -19,8 +19,8 @@ package io.mokamint.node.tools.internal.chain;
 import java.util.concurrent.TimeoutException;
 
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -30,7 +30,7 @@ import picocli.CommandLine.Command;
 @Command(name = "info", description = "Show information about the chain of a node.")
 public class Info extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, DatabaseException, CommandException {
 		try {
 			var info = remote.getChainInfo();
 

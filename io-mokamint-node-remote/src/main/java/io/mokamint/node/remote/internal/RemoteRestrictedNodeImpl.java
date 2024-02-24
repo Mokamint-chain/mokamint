@@ -33,9 +33,9 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
@@ -112,39 +112,39 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		super.notifyResult(message);
 	}
 
-	protected void sendAddPeer(Peer peer, String id) throws ClosedNodeException {
+	protected void sendAddPeer(Peer peer, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
-	protected void sendRemovePeer(Peer peer, String id) throws ClosedNodeException {
+	protected void sendRemovePeer(Peer peer, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
-	protected void sendOpenMiner(int port, String id) throws ClosedNodeException {
+	protected void sendOpenMiner(int port, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(OPEN_MINER_ENDPOINT), OpenMinerMessages.of(port, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
-	protected void sendRemoveMiner(UUID uuid, String id) throws ClosedNodeException {
+	protected void sendRemoveMiner(UUID uuid, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(REMOVE_MINER_ENDPOINT), RemoveMinerMessages.of(uuid, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -163,14 +163,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onException(ExceptionMessage message) {}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, ClosedNodeException {
+	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendAddPeer(peer, id);
 		try {
 			return waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | DatabaseException | IOException | PeerRejectedException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | DatabaseException | IOException | PeerRejectedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -199,14 +199,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public boolean remove(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException, IOException {
+	public boolean remove(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, NodeException, IOException {
 		ensureIsOpen();
 		var id = nextId();
 		sendRemovePeer(peer, id);
 		try {
 			return waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
 		}
-		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
+		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException | NodeException | IOException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -242,14 +242,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException {
+	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendOpenMiner(port, id);
 		try {
 			return waitForResult(id, this::processOpenMinerSuccess, this::processOpenMinerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | IOException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -275,14 +275,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException, IOException {
+	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException, IOException {
 		ensureIsOpen();
 		var id = nextId();
 		sendRemoveMiner(uuid, id);
 		try {
 			return waitForResult(id, this::processRemoveMinerSuccess, this::processRemoveMinerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | IOException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | IOException e) {
 			throw e;
 		}
 		catch (Exception e) {

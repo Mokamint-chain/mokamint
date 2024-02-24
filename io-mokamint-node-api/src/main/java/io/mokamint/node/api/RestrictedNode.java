@@ -42,9 +42,9 @@ public interface RestrictedNode extends Node {
 	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if this node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node, if it was there.
@@ -55,9 +55,9 @@ public interface RestrictedNode extends Node {
 	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if this node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	boolean remove(Peer peer) throws TimeoutException, IOException, InterruptedException, ClosedNodeException, DatabaseException;
+	boolean remove(Peer peer) throws TimeoutException, IOException, InterruptedException, NodeException, DatabaseException;
 
 	/**
 	 * Opens a remote miner at the given port.
@@ -67,9 +67,9 @@ public interface RestrictedNode extends Node {
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws IOException if an I/O error occurred (for instance, if the port is already bound to some service)
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if this node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+	Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException;
 
 	/**
 	 * Removes a miner. If that miner has been created through {@link #openMiner(int)}, it gets closed as well.
@@ -79,8 +79,8 @@ public interface RestrictedNode extends Node {
 	 *         with the given {@code uuid} exists
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws ClosedNodeException if this node is closed
+	 * @throws NodeException if the node could not complete the operation
 	 * @throws IOException if the miner failed to close
 	 */
-	boolean removeMiner(UUID uuid) throws TimeoutException, IOException, InterruptedException, ClosedNodeException;
+	boolean removeMiner(UUID uuid) throws TimeoutException, IOException, InterruptedException, NodeException;
 }

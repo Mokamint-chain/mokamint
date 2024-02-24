@@ -24,9 +24,9 @@ import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.EncodeException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
@@ -40,7 +40,7 @@ public class Add extends AbstractPublicRpcCommand {
 	@Parameters(description = "the Base64-encoded bytes of the transaction to add")
 	private String tx;
 
-	private void body(RemotePublicNode remote) throws ClosedNodeException, DatabaseException, TimeoutException, InterruptedException, CommandException {
+	private void body(RemotePublicNode remote) throws NodeException, DatabaseException, TimeoutException, InterruptedException, CommandException {
 		MempoolEntry info = addTransaction(remote);
 
 		if (json()) {
@@ -55,7 +55,7 @@ public class Add extends AbstractPublicRpcCommand {
 			System.out.println(info);
 	}
 
-	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, CommandException {
+	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, DatabaseException, NodeException, CommandException {
 		try {
 			return remote.add(Transactions.of(Base64.fromBase64String(tx)));
 		}

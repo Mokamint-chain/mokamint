@@ -60,7 +60,6 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolEntry;
@@ -226,8 +225,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			this.hashingForBlocks = config.getHashingForBlocks();
 			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
-		catch (TimeoutException | InterruptedException | ClosedNodeException e) {
-			LOGGER.warning(logPrefix + "failed to turn up the remote: " + e.getMessage());
+		catch (TimeoutException | InterruptedException | NodeException e) {
+			LOGGER.warning(logPrefix + "failed to deploy the remote: " + e.getMessage());
 			throw new IOException(e);
 		}
 
@@ -368,14 +367,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public NodeInfo getInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public NodeInfo getInfo() throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetInfo(id);
 		try {
 			return waitForResult(id, this::processGetInfoSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -383,12 +382,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetInfo(String id) throws ClosedNodeException {
+	protected void sendGetInfo(String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -397,14 +396,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMinerInfos(id);
 		try {
 			return waitForResult(id, this::processGetMinerInfosSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -412,12 +411,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetMinerInfos(String id) throws ClosedNodeException {
+	protected void sendGetMinerInfos(String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_MINER_INFOS_ENDPOINT), GetMinerInfosMessages.of(id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -426,14 +425,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTaskInfos(id);
 		try {
 			return waitForResult(id, this::processGetTaskInfosSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -441,12 +440,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetTaskInfos(String id) throws ClosedNodeException {
+	protected void sendGetTaskInfos(String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_TASK_INFOS_ENDPOINT), GetTaskInfosMessages.of(id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -455,14 +454,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetPeerInfos(id);
 		try {
 			return waitForResult(id, this::processGetPeerInfosSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -470,12 +469,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetPeerInfos(String id) throws ClosedNodeException {
+	protected void sendGetPeerInfos(String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -484,14 +483,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetBlock(hash, id);
 		try {
 			return waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
 		}
-		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -499,12 +498,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetBlock(byte[] hash, String id) throws ClosedNodeException {
+	protected void sendGetBlock(byte[] hash, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -520,14 +519,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetBlockDescription(hash, id);
 		try {
 			return waitForResult(id, this::processGetBlockDescriptionSuccess, this::processGetBlockDescriptionException);
 		}
-		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -535,12 +534,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetBlockDescription(byte[] hash, String id) throws ClosedNodeException {
+	protected void sendGetBlockDescription(byte[] hash, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_BLOCK_DESCRIPTION_ENDPOINT), GetBlockDescriptionMessages.of(hash, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -556,14 +555,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetConfig(id);
 		try {
 			return waitForResult(id, this::processGetConfigSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -571,12 +570,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetConfig(String id) throws ClosedNodeException {
+	protected void sendGetConfig(String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -585,14 +584,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetChainInfo(id);
 		try {
 			return waitForResult(id, this::processGetChainInfoSuccess, this::processGetChainInfoException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -600,12 +599,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetChainInfo(String id) throws ClosedNodeException {
+	protected void sendGetChainInfo(String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -620,14 +619,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, TimeoutException, InterruptedException, ClosedNodeException {
+	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetChainPortion(start, count, id);
 		try {
 			return waitForResult(id, this::processGetChainPortionSuccess, this::processGetChainPortionException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -635,12 +634,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetChainPortion(long start, int count, String id) throws ClosedNodeException {
+	protected void sendGetChainPortion(long start, int count, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_CHAIN_PORTION_ENDPOINT), GetChainPortionMessages.of(start, count, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -655,14 +654,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException, NoSuchAlgorithmException, DatabaseException {
 		ensureIsOpen();
 		var id = nextId();
 		sendAddTransaction(transaction, id);
 		try {
 			return waitForResult(id, this::processAddTransactionSuccess, this::processAddTransactionException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException | NoSuchAlgorithmException | DatabaseException | RejectedTransactionException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | NoSuchAlgorithmException | DatabaseException | RejectedTransactionException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -670,12 +669,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendAddTransaction(Transaction transaction, String id) throws ClosedNodeException {
+	protected void sendAddTransaction(Transaction transaction, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(ADD_TRANSACTION_ENDPOINT), AddTransactionMessages.of(transaction, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -690,14 +689,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMempoolInfo(id);
 		try {
 			return waitForResult(id, this::processGetMempoolInfoSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -705,12 +704,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetMempoolInfo(String id) throws ClosedNodeException {
+	protected void sendGetMempoolInfo(String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_MEMPOOL_INFO_ENDPOINT), GetMempoolInfoMessages.of(id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -719,14 +718,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException {
+	public MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMempoolPortion(start, count, id);
 		try {
 			return waitForResult(id, this::processGetMempoolPortionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -734,12 +733,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetMempoolPortion(int start, int count, String id) throws ClosedNodeException {
+	protected void sendGetMempoolPortion(int start, int count, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_MEMPOOL_PORTION_ENDPOINT), GetMempoolPortionMessages.of(start, count, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -748,14 +747,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException {
+	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransaction(hash, id);
 		try {
 			return waitForResult(id, this::processGetTransactionSuccess, this::processGetTransactionException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -763,12 +762,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetTransaction(byte[] hash, String id) throws ClosedNodeException {
+	protected void sendGetTransaction(byte[] hash, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_TRANSACTION_ENDPOINT), GetTransactionMessages.of(hash, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -783,14 +782,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedNodeException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransactionRepresentation(hash, id);
 		try {
 			return waitForResult(id, this::processGetTransactionRepresentationSuccess, this::processGetTransactionRepresentationException);
 		}
-		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | ClosedNodeException e) {
+		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -798,12 +797,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetTransactionRepresentation(byte[] hash, String id) throws ClosedNodeException {
+	protected void sendGetTransactionRepresentation(byte[] hash, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT), GetTransactionRepresentationMessages.of(hash, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -818,14 +817,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException, DatabaseException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransactionAddress(hash, id);
 		try {
 			return waitForResult(id, this::processGetTransactionAddressSuccess, this::processGetTransactionAddressException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | ClosedNodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -833,12 +832,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 	}
 
-	protected void sendGetTransactionAddress(byte[] hash, String id) throws ClosedNodeException {
+	protected void sendGetTransactionAddress(byte[] hash, String id) throws NodeException {
 		try {
 			sendObjectAsync(getSession(GET_TRANSACTION_ADDRESS_ENDPOINT), GetTransactionAddressMessages.of(hash, id));
 		}
 		catch (IOException e) {
-			throw new ClosedNodeException(e);
+			throw new NodeException(e);
 		}
 	}
 

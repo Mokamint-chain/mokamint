@@ -220,8 +220,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
+	 * @throws NodeException if the node is not behaving correctly
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 		super(ClosedNodeException::new);
 
 		try {
@@ -249,7 +250,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			schedulePeriodicWhisperingOfAllServices();
 			execute(this.miningTask = new MiningTask(this), "blocks mining process");
 		}
-		catch (ClosedNodeException | ClosedDatabaseException e) {
+		catch (ClosedDatabaseException e) {
 			throw unexpectedException(e);
 		}
 	}
@@ -298,41 +299,41 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
+	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	}
 
 	@Override
-	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeerInfos() throws ClosedNodeException {
+	public Stream<PeerInfo> getPeerInfos() throws NodeException {
 		try (var scope = mkScope()) {
 			return peers.get();
 		}
 	}
 
 	@Override
-	public Stream<MinerInfo> getMinerInfos() throws ClosedNodeException {
+	public Stream<MinerInfo> getMinerInfos() throws NodeException {
 		try (var scope = mkScope()) {
 			return miners.getInfos();
 		}
 	}
 
 	@Override
-	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
+	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, NodeException {
 		try (var scope = mkScope()) {
 			return currentlyExecutingTasks.stream()
 				.map(Object::toString)
@@ -341,7 +342,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public NodeInfo getInfo() throws ClosedNodeException {
+	public NodeInfo getInfo() throws NodeException {
 		try (var scope = mkScope()) {
 			return peers.getNodeInfo();
 		}
@@ -353,27 +354,27 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws DatabaseException, ClosedNodeException {
+	public ChainInfo getChainInfo() throws DatabaseException, NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getChainInfo();
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, ClosedNodeException {
+	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, NodeException {
 		try (var scope = mkScope()) {
 			return ChainPortions.of(blockchain.getChain(start, count));
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, ClosedNodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
 		MempoolEntry result;
 
 		try (var scope = mkScope()) {
@@ -383,10 +384,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
 		}
 		catch (ApplicationException e) {
-			throw new DatabaseException(e); // TODO: this should be a NodeException
+			throw new NodeException(e);
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 
 		whisperWithoutAddition(transaction);
@@ -395,21 +396,21 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolInfo getMempoolInfo() throws ClosedNodeException {
+	public MempoolInfo getMempoolInfo() throws NodeException {
 		try (var scope = mkScope()) {
 			return mempool.getInfo();
 		}
 	}
 
 	@Override
-	public MempoolPortion getMempoolPortion(int start, int count) throws ClosedNodeException {
+	public MempoolPortion getMempoolPortion(int start, int count) throws NodeException {
 		try (var scope = mkScope()) {
 			return mempool.getPortion(start, count);
 		}
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, ClosedNodeException {
+	public Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getTransaction(hash);
 		}
@@ -419,7 +420,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, DatabaseException, ClosedNodeException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, DatabaseException, NodeException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
@@ -427,33 +428,33 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
 		}
-		catch (ApplicationException e) { // TODO: this should become a NodeException
-			throw new DatabaseException(e);
+		catch (ApplicationException e) {
+			throw new NodeException(e);
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	}
 
 	@Override
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedNodeException, DatabaseException {
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException, DatabaseException {
 		try (var scope = mkScope()) {
 			return blockchain.getTransactionAddress(hash);
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, IOException, PeerRejectedException, DatabaseException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, NodeException, IOException, PeerRejectedException, DatabaseException {
 		Optional<PeerInfo> result;
 	
 		try (var scope = mkScope()) {
 			result = peers.add(peer);
 		}
 		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	
 		if (result.isPresent()) {
@@ -466,7 +467,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public boolean remove(Peer peer) throws DatabaseException, ClosedNodeException, InterruptedException, IOException {
+	public boolean remove(Peer peer) throws DatabaseException, NodeException, InterruptedException, IOException {
 		try (var scope = mkScope()) {
 			return peers.remove(peer);
 		}
@@ -476,7 +477,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws IOException, ClosedNodeException {
+	public Optional<MinerInfo> openMiner(int port) throws IOException, NodeException {
 		try (var scope = mkScope()) {
 			var miner = RemoteMiners.of(port, this::check);
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
@@ -495,7 +496,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
+	public Optional<MinerInfo> add(Miner miner) throws NodeException {
 		try (var scope = mkScope()) {
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())
@@ -506,7 +507,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public boolean removeMiner(UUID uuid) throws ClosedNodeException, IOException {
+	public boolean removeMiner(UUID uuid) throws NodeException, IOException {
 		try (var scope = mkScope()) {
 			var toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
 			for (var miner: toRemove) {
@@ -1064,7 +1065,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				catch (DatabaseException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
-				catch (ClosedNodeException | ClosedDatabaseException | IOException | PeerRejectedException | TimeoutException e) {
+				catch (NodeException | ClosedDatabaseException | IOException | PeerRejectedException | TimeoutException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 				}
 			}

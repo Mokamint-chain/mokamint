@@ -38,7 +38,6 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -91,7 +90,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Peer) works")
-	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, PeerRejectedException, DatabaseException, ClosedNodeException, NodeException {
+	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, PeerRejectedException, DatabaseException, NodeException {
 		var peers1 = Set.of(Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")));
 		var peers2 = new HashSet<Peer>();
 
@@ -296,7 +295,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("remove(Peer) works")
-	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException, NodeException {
+	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, NodeException {
 		var peers1 = Set.of(Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")));
 		var peers2 = new HashSet<Peer>();
 
@@ -374,7 +373,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("openMiner() works")
-	public void openMinerWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
+	public void openMinerWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
 		var ports1 = Set.of(8025,  8026, 8027);
 		var ports2 = new HashSet<Integer>();
 	
@@ -450,7 +449,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("closeMiner() works")
-	public void closeMinerWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, ClosedNodeException, NodeException {
+	public void closeMinerWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
 		var uuids1 = Set.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
 		var uuids2 = new HashSet<UUID>();
 	

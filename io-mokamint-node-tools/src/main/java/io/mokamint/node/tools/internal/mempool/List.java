@@ -23,10 +23,10 @@ import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.MempoolPortions;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolPortion;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -47,7 +47,7 @@ public class List extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
@@ -89,9 +89,9 @@ public class List extends AbstractPublicRpcCommand {
 		 * @param the remote node
 		 * @throws TimeoutException if some connection timed-out
 		 * @throws InterruptedException if some connection was interrupted while waiting
-		 * @throws ClosedNodeException if the remote node is closed
+		 * @throws NodeException if the remote node could not complete the operation
 		 */
-		private ListMempool(MempoolPortion mempool, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+		private ListMempool(MempoolPortion mempool, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
 			this.config = remote.getConfig();
 			this.entries = mempool.getEntries().toArray(MempoolEntry[]::new);
 			this.heights = new String[1 + entries.length];

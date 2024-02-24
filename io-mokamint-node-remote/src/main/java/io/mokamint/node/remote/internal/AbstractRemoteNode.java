@@ -122,7 +122,7 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 	 * Determines if the given exception message deals with an exception that all
 	 * methods of a node are expected to throw. These are
 	 * {@code java.lang.TimeoutException}, {@code java.lang.InterruptedException}
-	 * and {@link ClosedNodeException}.
+	 * and {@link NodeException}.
 	 * 
 	 * @param message the message
 	 * @return true if and only if that condition holds
@@ -131,17 +131,17 @@ abstract class AbstractRemoteNode extends AbstractWebSocketClient implements Rem
 		var clazz = message.getExceptionClass();
 		return TimeoutException.class.isAssignableFrom(clazz) ||
 			InterruptedException.class.isAssignableFrom(clazz) ||
-			ClosedNodeException.class.isAssignableFrom(clazz);
+			NodeException.class.isAssignableFrom(clazz);
 	}
 
 	/**
 	 * Ensures that this node is currently open.
 	 * 
-	 * @throws ClosedNodeException if this node is closed already
+	 * @throws ClosedNodeException if this node is already closed
 	 */
 	protected final void ensureIsOpen() throws ClosedNodeException {
 		if (isClosed.get())
-			throw new ClosedNodeException("The node has been closed");
+			throw new ClosedNodeException("The node is closed");
 	}
 
 	/**

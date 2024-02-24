@@ -24,8 +24,8 @@ import com.google.gson.Gson;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.mokamint.node.Transactions;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -45,7 +45,7 @@ public class Show extends AbstractPublicRpcCommand {
 	@Option(names = "--representation", description = "report the representation of the transaction instead of its Base64-encoded bytes", defaultValue = "false")
     private boolean representation;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException, DatabaseException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException, DatabaseException {
 		if (representation) {
 			String representation = getTransactionRepresentation(remote);
 
@@ -73,7 +73,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-	private String getTransactionRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
+	private String getTransactionRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, DatabaseException, NodeException {
 		try {
 			return remote.getTransactionRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 		}
@@ -85,7 +85,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-	private Transaction getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, DatabaseException, ClosedNodeException {
+	private Transaction getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, DatabaseException, NodeException {
 		try {
 			return remote.getTransaction(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 		}

@@ -21,8 +21,8 @@ import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -35,7 +35,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the URI of the peer to remove")
 	private URI uri;
 
-	private void body(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
 		if (removePeer(remote))
 			if (json())
 				System.out.println(uri);
@@ -45,7 +45,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 			throw new CommandException("Peer " + uri + " has not been removed from the set of peers: are you sure that it exists?");
 	}
 
-	private boolean removePeer(RemoteRestrictedNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException {
+	private boolean removePeer(RemoteRestrictedNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException, DatabaseException {
 		try {
 			return remote.remove(Peers.of(uri));
 		}

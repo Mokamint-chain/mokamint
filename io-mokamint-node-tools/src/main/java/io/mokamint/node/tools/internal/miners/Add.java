@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import io.mokamint.node.MinerInfos;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.tools.CommandException;
@@ -36,7 +36,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the port where the miner must be published")
 	private int port;
 
-	private void body(RemoteRestrictedNode remote) throws ClosedNodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
 		if (port < 0 || port > 65535)
 			throw new CommandException("The port number must be between 0 and 65535 inclusive");
 
@@ -54,7 +54,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 			System.out.println("Opened " + info);
 	}
 
-	protected MinerInfo openMiner(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+	protected MinerInfo openMiner(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		try {
 			return remote.openMiner(port).orElseThrow(() -> new CommandException("No remote miner has been opened"));
 		}

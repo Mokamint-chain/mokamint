@@ -42,8 +42,8 @@ import io.hotmoka.crypto.Entropies;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.Name;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
@@ -263,9 +263,8 @@ public class Start extends AbstractCommand {
 							else
 								throw new CommandException("The miner has not been added!");
 						}
-						catch (ClosedNodeException e) {
-							// unexpected: who could have closed the node?
-							throw new CommandException("The node has been unexpectedly closed!", e);
+						catch (NodeException e) {
+							throw new CommandException("The node did not accept the miner!", e);
 						}
 					}
 					else

@@ -73,7 +73,6 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolEntry;
@@ -110,7 +109,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		}
 	}
 
-	private PublicNode mkNode() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
+	private PublicNode mkNode() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
 		var node = mock(PublicNode.class);
 		// compilation fails if the following is not split in two...
 		OngoingStubbing<ConsensusConfig<?,?>> w = when(node.getConfig());
@@ -122,7 +121,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPeerInfos() request reaches the service, it sends back the peers of the node")
-	public void serviceGetPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
@@ -142,7 +141,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetPeerInfos() throws ClosedNodeException {
+			private void sendGetPeerInfos() throws NodeException {
 				sendGetPeerInfos("id");
 			}
 		}
@@ -155,7 +154,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getMinerInfos() request reaches the service, it sends back the miners of the node")
-	public void serviceGetMinerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetMinerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var minerInfo1 = MinerInfos.of(UUID.randomUUID(), 345L, "a miner");
 		var minerInfo2 = MinerInfos.of(UUID.randomUUID(), 11L, "a special miner");
@@ -175,7 +174,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetMinerInfos() throws ClosedNodeException {
+			private void sendGetMinerInfos() throws NodeException {
 				sendGetMinerInfos("id");
 			}
 		}
@@ -188,7 +187,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTaskInfos() request reaches the service, it sends back the tasks of the node")
-	public void serviceGetTaskInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetTaskInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var taskInfo1 = TaskInfos.of("a great task");
 		var taskInfo2 = TaskInfos.of("a greater task");
@@ -208,7 +207,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetTaskInfos() throws ClosedNodeException {
+			private void sendGetTaskInfos() throws NodeException {
 				sendGetTaskInfos("id");
 			}
 		}
@@ -221,7 +220,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
-	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -236,7 +235,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
+			private void sendGetBlock(byte[] hash) throws NodeException {
 				sendGetBlock(hash, "id");
 			}
 		}
@@ -253,7 +252,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
-	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, InvalidKeyException, SignatureException, NodeException {
+	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -285,7 +284,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
+			private void sendGetBlock(byte[] hash) throws NodeException {
 				sendGetBlock(hash, "id");
 			}
 		}
@@ -302,7 +301,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
-	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -317,7 +316,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetBlock(byte[] hash) throws ClosedNodeException {
+			private void sendGetBlock(byte[] hash) throws NodeException {
 				sendGetBlock(hash, "id");
 			}
 		}
@@ -334,7 +333,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
-	public void serviceGetBlockDescriptionEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetBlockDescriptionEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -349,7 +348,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetBlockDescription(byte[] hash) throws ClosedNodeException {
+			private void sendGetBlockDescription(byte[] hash) throws NodeException {
 				sendGetBlockDescription(hash, "id");
 			}
 		}
@@ -366,7 +365,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and there is a block with the requested hash, it sends back the description of that block")
-	public void serviceGetBlockDescriptionNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, InvalidKeyException, SignatureException, NodeException {
+	public void serviceGetBlockDescriptionNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -393,7 +392,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetBlockDescription(byte[] hash) throws ClosedNodeException {
+			private void sendGetBlockDescription(byte[] hash) throws NodeException {
 				sendGetBlockDescription(hash, "id");
 			}
 		}
@@ -410,7 +409,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
-	public void serviceGetBlockDescriptionUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetBlockDescriptionUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -425,7 +424,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetBlockDescription(byte[] hash) throws ClosedNodeException {
+			private void sendGetBlockDescription(byte[] hash) throws NodeException {
 				sendGetBlockDescription(hash, "id");
 			}
 		}
@@ -442,7 +441,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getConfig() request reaches the service, it sends back its consensus configuration")
-	public void serviceGetConfigWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetConfigWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 		var config = ConsensusConfigBuilders.defaults().build();
 
@@ -458,7 +457,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetConfig() throws ClosedNodeException {
+			private void sendGetConfig() throws NodeException {
 				sendGetConfig("id");
 			}
 		}
@@ -473,7 +472,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getChainInfo() request reaches the service, it sends back its chain information")
-	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
 
@@ -489,7 +488,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetChainInfo() throws ClosedNodeException {
+			private void sendGetChainInfo() throws NodeException {
 				sendGetChainInfo("id");
 			}
 		}
@@ -505,7 +504,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getChainPortion() request reaches the service, it sends back its chain hashes")
-	public void serviceGetChainPortionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetChainPortionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var chain = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 13, 17, 19 }));
 
@@ -521,7 +520,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetChainPortion() throws ClosedNodeException {
+			private void sendGetChainPortion() throws NodeException {
 				sendGetChainPortion(5, 10, "id");
 			}
 		}
@@ -537,7 +536,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
-	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, RejectedTransactionException, DatabaseException, NodeException {
+	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, RejectedTransactionException, DatabaseException, NodeException {
 		var semaphore = new Semaphore(0);
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		
@@ -552,7 +551,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 				semaphore.release();
 			}
 
-			private void addTransaction() throws ClosedNodeException {
+			private void addTransaction() throws NodeException {
 				sendAddTransaction(transaction, "id");
 			}
 		}
@@ -568,7 +567,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getMempoolInfo() request reaches the service, it sends back its mempool information")
-	public void serviceGetMempoolInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetMempoolInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var info = MempoolInfos.of(17L);
 
@@ -584,7 +583,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetMempoolInfo() throws ClosedNodeException {
+			private void sendGetMempoolInfo() throws NodeException {
 				sendGetMempoolInfo("id");
 			}
 		}
@@ -600,7 +599,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getMempoolPortion() request reaches the service, it sends back its mempool")
-	public void serviceGetMempoolPortionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetMempoolPortionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var mempool = MempoolPortions.of(Stream.of(
 			MempoolEntries.of(new byte[] { 1, 2, 3, 4 }, 11L),
@@ -619,7 +618,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetMempoolPortion() throws ClosedNodeException {
+			private void sendGetMempoolPortion() throws NodeException {
 				sendGetMempoolPortion(5, 10, "id");
 			}
 		}
@@ -635,7 +634,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getInfo() request reaches the service, it sends back its node information")
-	public void serviceGetInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 
@@ -651,7 +650,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetInfo() throws ClosedNodeException {
+			private void sendGetInfo() throws NodeException {
 				sendGetInfo("id");
 			}
 		}
@@ -667,7 +666,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a service receives whispered peers from its node, they get whispered to the connected clients")
-	public void serviceSendsWhisperedPeersToClients() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void serviceSendsWhisperedPeersToClients() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -699,7 +698,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a public service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
-	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, InterruptedException, DeploymentException, URISyntaxException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException, NodeException {
+	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, InterruptedException, DeploymentException, URISyntaxException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var node = mkNode();
 		var semaphore = new Semaphore(0);
 		
@@ -718,7 +717,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		try (var service = PublicNodeServices.open(node, 8030); var remote = new MyRemotePublicNode()) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
-			assertThrows(ClosedNodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
+			assertThrows(NodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
 		}
 	}
 
@@ -755,7 +754,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransaction() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetTransactionEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -770,7 +769,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransaction(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransaction(byte[] hash) throws NodeException {
 				sendGetTransaction(hash, "id");
 			}
 		}
@@ -787,7 +786,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, it sends back that transaction")
-	public void serviceGetTransactionNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, DeploymentException, IOException, NodeException {
+	public void serviceGetTransactionNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, DeploymentException, IOException, NodeException {
 		var semaphore = new Semaphore(0);
 		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
 	
@@ -803,7 +802,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransaction(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransaction(byte[] hash) throws NodeException {
 				sendGetTransaction(hash, "id");
 			}
 		}
@@ -820,7 +819,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the database is corrupted, it sends back an exception")
-	public void serviceGetTransactionDatabaseExceptionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetTransactionDatabaseExceptionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -835,7 +834,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetTransaction(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransaction(byte[] hash) throws NodeException {
 				sendGetTransaction(hash, "id");
 			}
 		}
@@ -852,7 +851,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionRepresentationEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, RejectedTransactionException, NodeException {
+	public void serviceGetTransactionRepresentationEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, RejectedTransactionException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -867,7 +866,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransactionRepresentation(byte[] hash) throws NodeException {
 				sendGetTransactionRepresentation(hash, "id");
 			}
 		}
@@ -884,7 +883,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, it sends back the representation of that transaction")
-	public void serviceGetTransactionRepresentationNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, RejectedTransactionException, DatabaseException, DeploymentException, IOException, NodeException {
+	public void serviceGetTransactionRepresentationNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, RejectedTransactionException, DatabaseException, DeploymentException, IOException, NodeException {
 		var semaphore = new Semaphore(0);
 		var representation = "hello";
 	
@@ -900,7 +899,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransactionRepresentation(byte[] hash) throws NodeException {
 				sendGetTransactionRepresentation(hash, "id");
 			}
 		}
@@ -917,7 +916,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, but its representation cannot be computed, it sends back an exception")
-	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, RejectedTransactionException, NodeException {
+	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, RejectedTransactionException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -932,7 +931,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransactionRepresentation(byte[] hash) throws NodeException {
 				sendGetTransactionRepresentation(hash, "id");
 			}
 		}
@@ -949,7 +948,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionAddress() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionAddressEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, IOException, DeploymentException, NodeException  {
+	public void serviceGetTransactionAddressEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, IOException, DeploymentException, NodeException  {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -964,7 +963,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionAddress(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransactionAddress(byte[] hash) throws NodeException {
 				sendGetTransactionAddress(hash, "id");
 			}
 		}
@@ -981,7 +980,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionAddress() request reaches the service and there is a transaction with the requested hash, it sends back that transaction's address")
-	public void serviceGetTransactionAddressNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException, DatabaseException, DeploymentException, IOException, NodeException {
+	public void serviceGetTransactionAddressNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DatabaseException, DeploymentException, IOException, NodeException {
 		var semaphore = new Semaphore(0);
 		var address = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
 	
@@ -997,7 +996,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionAddress(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransactionAddress(byte[] hash) throws NodeException {
 				sendGetTransactionAddress(hash, "id");
 			}
 		}
@@ -1014,7 +1013,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionAddress() request reaches the service and there is a transaction with the requested hash, but the database is corrupted, it sends back an exception")
-	public void serviceGetTransactionAddressDatabaseExceptionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ClosedNodeException, NodeException {
+	public void serviceGetTransactionAddressDatabaseExceptionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -1029,7 +1028,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionAddress(byte[] hash) throws ClosedNodeException {
+			private void sendGetTransactionAddress(byte[] hash) throws NodeException {
 				sendGetTransactionAddress(hash, "id");
 			}
 		}
