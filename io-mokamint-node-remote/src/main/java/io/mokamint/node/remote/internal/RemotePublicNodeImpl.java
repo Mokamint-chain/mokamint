@@ -235,7 +235,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void close() throws NodeException, InterruptedException {
+	public void close() throws NodeException, InterruptedException { // TODO: avoid repeated shutdown when the node is already closed
 		try {
 			periodicTasks.shutdownNow();
 		}

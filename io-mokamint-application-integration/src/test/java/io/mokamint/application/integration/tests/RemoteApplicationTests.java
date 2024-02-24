@@ -16,10 +16,27 @@ limitations under the License.
 
 package io.mokamint.application.integration.tests;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
+
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.remote.RemoteApplications;
+import io.mokamint.application.service.internal.ApplicationServiceImpl;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Session;
 
 public class RemoteApplicationTests extends AbstractLoggedTests {
 	private final static URI URI;
@@ -36,28 +53,47 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	private final static long TIME_OUT = 500L;
 
-	/*@Test
-	@DisplayName("getPeerInfos() works")
-	public void getPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, ClosedNodeException {
-		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(new URI("ws://my.machine:1024")), 345, true),
-				PeerInfos.of(Peers.of(new URI("ws://your.machine:1025")), 11, false));
+	/**
+	 * Test server implementation.
+	 */
+	@ThreadSafe
+	private static class PublicTestServer extends ApplicationServiceImpl {
+
+		/**
+		 * Creates a new test server.
+		 * 
+		 * @throws DeploymentException if the service cannot be deployed
+		 * @throws IOException if an I/O error occurs
+		 */
+		private PublicTestServer() throws DeploymentException, IOException {
+			super(mock(), PORT);
+		}
+	}
+
+	@Test
+	@DisplayName("checkPrologExtra() works")
+	public void checkPrologExtraWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+		boolean result1 = true;
+		var extra = new byte[] { 13, 1, 19, 73 };
 
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
-			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()));
+			protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
+				if (Arrays.equals(extra, message.getExtra())) {
+					try {
+						sendObjectAsync(session, CheckPrologExtraResultMessages.of(result1, message.getId()));
+					}
+					catch (IOException e) {}
 				}
-				catch (IOException e) {}
 			}
 		};
 
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var peerInfos2 = remote.getPeerInfos();
-			assertEquals(peerInfos1, peerInfos2.collect(Collectors.toSet()));
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var result2 = remote.checkPrologExtra(extra);
+			assertSame(result1, result2);
 		}
-	}*/
+	}
 }

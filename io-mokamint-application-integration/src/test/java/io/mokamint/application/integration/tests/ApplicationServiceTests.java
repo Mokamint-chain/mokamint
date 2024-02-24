@@ -16,14 +16,32 @@ limitations under the License.
 
 package io.mokamint.application.integration.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.remote.internal.RemoteApplicationImpl;
+import io.mokamint.application.service.ApplicationServices;
+import jakarta.websocket.DeploymentException;
 
 public class ApplicationServiceTests extends AbstractLoggedTests {
 	private final static URI URI;
 	private final static int PORT = 8030;
+	private final static long TIME_OUT = 2000L;
 
 	static {
 		try {
@@ -34,38 +52,38 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		}
 	}
 
-	/*
+	private Application mkApplication() {
+		return mock();
+	}
+
 	@Test
-	@DisplayName("if a getPeerInfos() request reaches the service, it sends back the peers of the node")
-	public void serviceGetPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, ClosedNodeException, NoSuchAlgorithmException {
+	@DisplayName("if a checkPrologExtra() request reaches the service, it sends back the result of the check")
+	public void serviceCheckPrologExtraWorks() throws ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
-		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
-		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
-		var node = mkNode();
-		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
+		var app = mkApplication();
+		var extra = new byte[] { 13, 1, 19, 73 };
+		when(app.checkPrologExtra(eq(extra))).thenReturn(true);
 
 		class MyTestClient extends RemoteApplicationImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L, 240000L, 1000);
+				super(URI, TIME_OUT);
 			}
 
 			@Override
-			protected void onGetPeerInfosResult(Stream<PeerInfo> received) {
-				var peerInfos = received.collect(Collectors.toList());
-				if (peerInfos.size() == 2 && peerInfos.contains(peerInfo1) && peerInfos.contains(peerInfo2))
+			protected void onCheckPrologExtraResult(boolean result) {
+				if (result)
 					semaphore.release();
 			}
 
-			private void sendGetPeerInfos() throws ClosedNodeException {
-				sendGetPeerInfos("id");
+			private void sendCheckPrologExtra() throws ApplicationException {
+				sendCheckPrologExtra(extra, "id");
 			}
 		}
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
-			client.sendGetPeerInfos();
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendCheckPrologExtra();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
-	*/
 }
