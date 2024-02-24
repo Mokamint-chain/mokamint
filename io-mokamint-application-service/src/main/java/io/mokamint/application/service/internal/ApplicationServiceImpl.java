@@ -31,8 +31,12 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.CheckTransactionMessages;
+import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.service.api.ApplicationService;
+import io.mokamint.node.api.RejectedTransactionException;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -84,7 +88,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		application.addOnCloseHandler(this_close);
 
 		startContainer("", port,
-			CheckPrologExtraEndpoint.config(this)
+			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -137,6 +141,36 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, CheckPrologExtraEndpoint.class, CHECK_PROLOG_EXTRA_ENDPOINT,
 				CheckPrologExtraMessages.Decoder.class, CheckPrologExtraResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + CHECK_TRANSACTION_ENDPOINT + " request");
+
+		try {
+			try {
+				application.checkTransaction(message.getTransaction());
+				sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()));
+			}
+			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class CheckTransactionEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (CheckTransactionMessage message) -> getServer().onCheckTransaction(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, CheckTransactionEndpoint.class, CHECK_TRANSACTION_ENDPOINT,
+				CheckTransactionMessages.Decoder.class, CheckTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

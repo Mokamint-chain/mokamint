@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.remote.internal;
 
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,8 +37,12 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.CheckTransactionMessages;
+import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -75,6 +80,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		this.logPrefix = "application remote(" + uri + "): ";
 
 		addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
+		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
 	}
 
 	@Override
@@ -91,6 +97,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof CheckPrologExtraResultMessage cperm)
 			onCheckPrologExtraResult(cperm.get());
+		else if (message instanceof CheckTransactionResultMessage ctrm)
+			onCheckTransactionResult();
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -145,11 +153,11 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	/**
-	 * Called when a {@link CheckPrologExtraMessage} is being sent to the application service.
+	 * Sends a {@link CheckPrologExtraMessage} to the application service.
 	 * 
 	 * @param extra the extra bytes in the message
 	 * @param id the identifier of the message
-	 * @throws ClosedApplicationException if this application is already closed
+	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendCheckPrologExtra(byte[] extra, String id) throws ApplicationException {
 		try {
@@ -165,7 +173,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	/**
-	 * Hook called when a {@link CheckPrologExtraResultMessage} has been reaceived.
+	 * Hook called when a {@link CheckPrologExtraResultMessage} has been received.
 	 * 
 	 * @param result the content of the message
 	 */
@@ -180,10 +188,58 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public void checkTransaction(Transaction transaction)
-			throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		
+	public void checkTransaction(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendCheckTransaction(transaction, id);
+		try {
+			waitForResult(id, this::processCheckTransactionSuccess, this::processCheckTransactionExceptions);
+		}
+		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends a {@link CheckTransactionMessage} to the application service.
+	 * 
+	 * @param transaction the transaction in the message
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendCheckTransaction(Transaction transaction, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(CHECK_TRANSACTION_ENDPOINT), CheckTransactionMessages.of(transaction, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Boolean processCheckTransactionSuccess(RpcMessage message) {
+		return message instanceof CheckTransactionResultMessage ctrm ? Boolean.TRUE : null;
+	}
+
+	private boolean processCheckTransactionExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when a {@link CheckTransactionResultMessage} has been received.
+	 */
+	protected void onCheckTransactionResult() {}
+
+	private class CheckTransactionEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, CheckTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckTransactionMessages.Encoder.class);
+		}
 	}
 
 	@Override

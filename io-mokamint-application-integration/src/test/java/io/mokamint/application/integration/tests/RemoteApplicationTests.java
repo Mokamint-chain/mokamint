@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.integration.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
@@ -30,11 +33,16 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
+import io.mokamint.node.Transactions;
+import io.mokamint.node.api.RejectedTransactionException;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -51,7 +59,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		}
 	}
 
-	private final static long TIME_OUT = 500L;
+	private final static long TIME_OUT = 2000L;
 
 	/**
 	 * Test server implementation.
@@ -94,6 +102,61 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var result2 = remote.checkPrologExtra(extra);
 			assertSame(result1, result2);
+		}
+	}
+
+	@Test
+	@DisplayName("checkTransaction() works")
+	public void checkTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
+				if (transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			remote.checkTransaction(transaction);
+		}
+		catch (RejectedTransactionException e) {
+			fail();
+		}
+	}
+
+	@Test
+	@DisplayName("checkTransaction() works if it throws RejectedTransactionException")
+	public void getTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var exceptionMessage = "rejected";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
+				if (transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(RejectedTransactionException.class, () -> remote.checkTransaction(transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 }

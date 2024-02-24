@@ -18,6 +18,8 @@ package io.mokamint.application.integration.tests;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,10 +34,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
+import io.mokamint.node.Transactions;
+import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.Transaction;
 import jakarta.websocket.DeploymentException;
 
 public class ApplicationServiceTests extends AbstractLoggedTests {
@@ -83,6 +89,67 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendCheckPrologExtra();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a checkTransaction() request reaches the service, it checks the transaction")
+	public void serviceCheckTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		doNothing().when(app).checkTransaction(eq(transaction));
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onCheckTransactionResult() {
+				semaphore.release();
+			}
+
+			private void sendCheckTransaction() throws ApplicationException {
+				sendCheckTransaction(transaction, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendCheckTransaction();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a checkTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
+	public void serviceCheckTransactionRejectedTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		doThrow(RejectedTransactionException.class).when(app).checkTransaction(eq(transaction));
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()))
+					semaphore.release();
+			}
+	
+			private void sendCheckTransaction(Transaction transaction) throws ApplicationException {
+				sendCheckTransaction(transaction, "id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendCheckTransaction(transaction);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
