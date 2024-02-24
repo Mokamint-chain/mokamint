@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.Objects;
+
 /**
  * An exception stating that the execution of a method of a node failed to complete correctly.
  */
@@ -25,7 +27,9 @@ public class NodeException extends Exception {
 	/**
 	 * Creates a new exception.
 	 */
-	public NodeException() {}
+	public NodeException() {
+		super("The node is misbehaving");
+	}
 
 	/**
 	 * Creates a new exception with the given message.
@@ -33,7 +37,7 @@ public class NodeException extends Exception {
 	 * @param message the message
 	 */
 	public NodeException(String message) {
-		super(message);
+		super(Objects.requireNonNull(message, "message cannot be null"));
 	}
 
 	/**
@@ -42,7 +46,7 @@ public class NodeException extends Exception {
 	 * @param cause the cause
 	 */
 	public NodeException(Throwable cause) {
-		super(cause);
+		super(Objects.requireNonNull(cause, "cause cannot be null"));
 	}
 
 	/**
@@ -52,6 +56,6 @@ public class NodeException extends Exception {
 	 * @param cause the cause
 	 */
 	public NodeException(String message, Throwable cause) {
-		super(message, cause);
+		super(Objects.requireNonNull(message, "message cannot be null"), Objects.requireNonNull(cause, "cause cannot be null"));
 	}
 }

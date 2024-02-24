@@ -352,14 +352,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			onGetTransactionRepresentationResult(gtrrm.get());
 		else if (message instanceof GetTransactionAddressResultMessage gtarm)
 			onGetTransactionAddressResult(gtarm.get());
-		else if (message instanceof ExceptionMessage em)
-			onException(em);
-		else if (message == null) {
-			LOGGER.log(Level.SEVERE, logPrefix + "unexpected null message");
-			return;
-		}
-		else {
-			LOGGER.log(Level.SEVERE, logPrefix + "unexpected message of class " + message.getClass().getName());
+		else if (message != null && !(message instanceof ExceptionMessage)) {
+			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
 		}
 

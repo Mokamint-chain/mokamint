@@ -91,6 +91,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof CheckPrologExtraResultMessage cperm)
 			onCheckPrologExtraResult(cperm.get());
+		else if (message != null && !(message instanceof ExceptionMessage)) {
+			LOGGER.warning("unexpected message of class " + message.getClass().getName());
+			return;
+		}
 
 		super.notifyResult(message);
 	}
@@ -102,7 +106,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	protected ApplicationException mkException(Exception cause) {
-		return new ApplicationException(cause);
+		if (cause instanceof ApplicationException ae)
+			return ae;
+		else
+			return new ApplicationException(cause);
 	}
 
 	/**
@@ -144,12 +151,12 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @param id the identifier of the message
 	 * @throws ClosedApplicationException if this application is already closed
 	 */
-	protected void sendCheckPrologExtra(byte[] extra, String id) throws ClosedApplicationException {
+	protected void sendCheckPrologExtra(byte[] extra, String id) throws ApplicationException {
 		try {
 			sendObjectAsync(getSession(CHECK_PROLOG_EXTRA_ENDPOINT), CheckPrologExtraMessages.of(extra, id));
 		}
 		catch (IOException e) {
-			throw new ClosedApplicationException(e);
+			throw new ApplicationException(e);
 		}
 	}
 

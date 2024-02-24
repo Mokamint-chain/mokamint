@@ -98,14 +98,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 			onOpenMinerResult();
 		else if (message instanceof RemoveMinerResultMessage)
 			onCloseMinerResult();
-		else if (message instanceof ExceptionMessage em)
-			onException(em);
-		else if (message == null) {
-			LOGGER.log(Level.SEVERE, logPrefix + "unexpected null message");
-			return;
-		}
-		else {
-			LOGGER.log(Level.SEVERE, logPrefix + "unexpected message of class " + message.getClass().getName());
+		else if (message != null && !(message instanceof ExceptionMessage)) {
+			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
 		}
 
