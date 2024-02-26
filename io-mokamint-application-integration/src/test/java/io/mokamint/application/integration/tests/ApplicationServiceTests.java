@@ -39,6 +39,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
@@ -132,7 +133,8 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(RejectedTransactionException.class).when(app).checkTransaction(eq(transaction));
+		var exceptionMessage = "rejected";
+		doThrow(new RejectedTransactionException(exceptionMessage)).when(app).checkTransaction(eq(transaction));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -142,7 +144,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()))
+				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
@@ -410,6 +412,103 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendBeginBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a deliverTransaction() request reaches the service, it delivers the transaction in the application")
+	public void serviceDeliverTransactionWorks() throws UnknownGroupIdException, RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var groupId = 13;
+		doNothing().when(app).deliverTransaction(groupId, transaction);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onDeliverTransactionResult() {
+				semaphore.release();
+			}
+
+			private void sendDeliverTransaction() throws ApplicationException {
+				sendDeliverTransaction(groupId, transaction, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendDeliverTransaction();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a deliverTransaction() request reaches the service and the group id is unknown, it sends back an exception")
+	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var groupId = 13;
+		var exceptionMessage = "unknown group id";
+		doThrow(new UnknownGroupIdException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendDeliverTransaction() throws ApplicationException {
+				sendDeliverTransaction(groupId, transaction, "id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendDeliverTransaction();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a deliverTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
+	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws UnknownGroupIdException, RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var groupId = 13;
+		var exceptionMessage = "rejected";
+		doThrow(new RejectedTransactionException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendDeliverTransaction() throws ApplicationException {
+				sendDeliverTransaction(groupId, transaction, "id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendDeliverTransaction();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

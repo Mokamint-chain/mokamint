@@ -37,16 +37,19 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
@@ -367,6 +370,78 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(UnknownStateException.class, () -> remote.beginBlock(13L, LocalDateTime.now(), new byte[] { 13, 1, 19, 73 }));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("deliverTransaction() works")
+	public void deliverTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, RejectedTransactionException {
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
+				try {
+					sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			remote.deliverTransaction(42, Transactions.of(new byte[] { 13, 1, 19, 73 }));
+		}
+		catch (UnknownGroupIdException | RejectedTransactionException e) {
+			fail();
+		}
+	}
+
+	@Test
+	@DisplayName("deliverTransaction() works if it throws UnknownGroupIdException")
+	public void deliverTransactionWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var exceptionMessage = "unknown group id";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.deliverTransaction(42, Transactions.of(new byte[] { 13, 1, 19, 73 })));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("deliverTransaction() works if it throws RejectedTransactionException")
+	public void deliverTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var exceptionMessage = "rejected";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(RejectedTransactionException.class, () -> remote.deliverTransaction(42, Transactions.of(new byte[] { 13, 1, 19, 73 })));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

@@ -29,6 +29,7 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
@@ -36,6 +37,8 @@ import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.DeliverTransactionMessages;
+import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -45,6 +48,7 @@ import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
@@ -103,7 +107,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		startContainer("", port,
 			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
 			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
-			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this)
+			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
+			DeliverTransactionEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -302,6 +307,36 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, BeginBlockEndpoint.class, BEGIN_BLOCK_ENDPOINT,
 				BeginBlockMessages.Decoder.class, BeginBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + DELIVER_TRANSACTION_ENDPOINT + " request");
+
+		try {
+			try {
+				application.deliverTransaction(message.getGroupId(), message.getTransaction());
+				sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
+			}
+			catch (UnknownGroupIdException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class DeliverTransactionEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (DeliverTransactionMessage message) -> getServer().onDeliverTransaction(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, DeliverTransactionEndpoint.class, DELIVER_TRANSACTION_ENDPOINT,
+				DeliverTransactionMessages.Decoder.class, DeliverTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

@@ -19,6 +19,7 @@ package io.mokamint.application.remote.internal;
 import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.DELIVER_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
@@ -45,6 +46,8 @@ import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.DeliverTransactionMessages;
+import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -57,6 +60,8 @@ import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.application.messages.api.DeliverTransactionMessage;
+import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
@@ -105,6 +110,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
 		addSession(GET_INITIAL_STATE_ID_ENDPOINT, uri, GetInitialStateIdEndpoint::new);
 		addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
+		addSession(DELIVER_TRANSACTION_ENDPOINT, uri, DeliverTransactionEndpoint::new);
 	}
 
 	@Override
@@ -131,6 +137,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 			onGetInitialStateIdResult(gisirm.get());
 		else if (message instanceof BeginBlockResultMessage bbrm)
 			onBeginBlockResult(bbrm.get());
+		else if (message instanceof DeliverTransactionResultMessage)
+			onDeliverTransactionResult();
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -499,10 +507,60 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public void deliverTransaction(int groupId, Transaction transaction) throws RejectedTransactionException,
-			UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		
+	public void deliverTransaction(int groupId, Transaction transaction) throws RejectedTransactionException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendDeliverTransaction(groupId, transaction, id);
+		try {
+			waitForResult(id, this::processDeliverTransactionSuccess, this::processDeliverTransactionExceptions);
+		}
+		catch (RuntimeException | RejectedTransactionException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends a {@link DeliverTransactionMessage} to the application service.
+	 * 
+	 * @param groupId the group identifier in the message
+	 * @param transaction the transaction in the message
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendDeliverTransaction(int groupId, Transaction transaction, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(DELIVER_TRANSACTION_ENDPOINT), DeliverTransactionMessages.of(groupId, transaction, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Boolean processDeliverTransactionSuccess(RpcMessage message) {
+		return message instanceof DeliverTransactionResultMessage dtrm ? Boolean.TRUE : null;
+	}
+
+	private boolean processDeliverTransactionExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+			UnknownGroupIdException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when a {@link DeliverTransactionResultMessage} has been received.
+	 */
+	protected void onDeliverTransactionResult() {}
+
+	private class DeliverTransactionEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, DeliverTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, DeliverTransactionMessages.Encoder.class);
+		}
 	}
 
 	@Override

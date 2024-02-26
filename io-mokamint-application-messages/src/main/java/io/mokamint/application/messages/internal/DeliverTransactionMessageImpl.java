@@ -33,11 +33,11 @@ public class DeliverTransactionMessageImpl extends AbstractRpcMessage implements
 	/**
 	 * Creates the message.
 	 * 
-	 * @param transaction the transaction in the message
 	 * @param groupId the identifier of the group of transactions in the message
+	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
-	public DeliverTransactionMessageImpl(Transaction transaction, int groupId, String id) {
+	public DeliverTransactionMessageImpl(int groupId, Transaction transaction, String id) {
 		super(id);
 
 		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");

@@ -33,13 +33,13 @@ public final class DeliverTransactionMessages {
 	/**
 	 * Yields a {@link DeliverTransactionMessage}.
 	 * 
-	 * @param transaction the transaction in the message
 	 * @param groupId the identifier of the group of transactions in the message
+	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static DeliverTransactionMessage of(Transaction transaction, int groupId, String id) {
-		return new DeliverTransactionMessageImpl(transaction, groupId, id);
+	public static DeliverTransactionMessage of(int groupId, Transaction transaction, String id) {
+		return new DeliverTransactionMessageImpl(groupId, transaction, id);
 	}
 
 	/**

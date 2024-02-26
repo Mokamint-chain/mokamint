@@ -97,7 +97,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deliverTransaction messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeliverTransaction() throws EncodeException, DecodeException {
-		var deliverTransactionMessage1 = DeliverTransactionMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }), 42, "id");
+		var deliverTransactionMessage1 = DeliverTransactionMessages.of(42, Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
 		String encoded = new DeliverTransactionMessages.Encoder().encode(deliverTransactionMessage1);
 		var deliverTransactionMessage2 = new DeliverTransactionMessages.Decoder().decode(encoded);
 		assertEquals(deliverTransactionMessage1, deliverTransactionMessage2);

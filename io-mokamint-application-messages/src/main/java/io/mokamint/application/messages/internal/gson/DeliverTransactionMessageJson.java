@@ -38,7 +38,7 @@ public abstract class DeliverTransactionMessageJson extends AbstractRpcMessageJs
 
 	@Override
 	public DeliverTransactionMessage unmap() throws Base64ConversionException {
-		return DeliverTransactionMessages.of(transaction.unmap(), groupId, getId());
+		return DeliverTransactionMessages.of(groupId, transaction.unmap(), getId());
 	}
 
 	@Override
