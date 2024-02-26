@@ -146,7 +146,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetPeerInfos();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -179,7 +179,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetMinerInfos();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -212,7 +212,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTaskInfos();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -244,7 +244,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getBlock(hash)).thenReturn(Optional.empty());
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -293,7 +293,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getBlock(hash)).thenReturn(Optional.of(block));
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -325,7 +325,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlock(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -357,7 +357,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getBlockDescription(hash)).thenReturn(Optional.empty());
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlockDescription(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -401,7 +401,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getBlockDescription(hash)).thenReturn(Optional.of(description));
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlockDescription(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -433,7 +433,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getBlockDescription(hash)).thenThrow(NoSuchAlgorithmException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlockDescription(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -464,7 +464,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		var node = mkNode();
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetConfig();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -496,7 +496,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getChainInfo()).thenReturn(info);
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetChainInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -528,7 +528,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getChainPortion(5, 10)).thenReturn(chain);
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetChainPortion();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -559,7 +559,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.add(eq(transaction))).thenReturn(MempoolEntries.of(new byte[] { 1, 2, 3 }, 1000L));
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.addTransaction();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -591,7 +591,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getMempoolInfo()).thenReturn(info);
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetMempoolInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -626,7 +626,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getMempoolPortion(5, 10)).thenReturn(mempool);
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetMempoolPortion();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -658,7 +658,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getInfo()).thenReturn(info);
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -689,7 +689,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			service.whisper(WhisperPeerMessages.of(peer1, UUID.randomUUID().toString()), _whisperer -> false, "peer " + peer1);
 			service.whisper(WhisperPeerMessages.of(peer2, UUID.randomUUID().toString()), _whisperer -> false, "peer " + peer2);
 			assertTrue(semaphore.tryAcquire(1, 5, TimeUnit.SECONDS));
@@ -714,7 +714,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var service = PublicNodeServices.open(node, 8030); var remote = new MyRemotePublicNode()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var remote = new MyRemotePublicNode()) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
 			assertThrows(NodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
@@ -736,7 +736,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyPublicNodeService extends PublicNodeServiceImpl {
 			private MyPublicNodeService() throws DeploymentException, IOException {
-				super(node, PORT, 180000L, 1000, Optional.empty());
+				super(node, PORT, 180000L, 1000, Optional.of(URI));
 			}
 
 			@Override
@@ -778,7 +778,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransaction(hash)).thenReturn(Optional.empty());
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransaction(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -811,7 +811,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransaction(hash)).thenReturn(Optional.of(tx));
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransaction(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -843,7 +843,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransaction(hash)).thenThrow(DatabaseException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransaction(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -875,7 +875,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.empty());
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionRepresentation(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -908,7 +908,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.of(representation));
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionRepresentation(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -940,7 +940,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransactionRepresentation(hash)).thenThrow(RejectedTransactionException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionRepresentation(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -972,7 +972,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransactionAddress(hash)).thenReturn(Optional.empty());
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionAddress(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -1005,7 +1005,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransactionAddress(hash)).thenReturn(Optional.of(address));
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionAddress(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -1037,7 +1037,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mkNode();
 		when(node.getTransactionAddress(hash)).thenThrow(DatabaseException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionAddress(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}

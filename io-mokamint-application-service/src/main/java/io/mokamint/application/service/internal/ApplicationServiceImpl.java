@@ -33,8 +33,11 @@ import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.GetPriorityMessages;
+import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.service.api.ApplicationService;
 import io.mokamint.node.api.RejectedTransactionException;
 import jakarta.websocket.DeploymentException;
@@ -88,7 +91,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		application.addOnCloseHandler(this_close);
 
 		startContainer("", port,
-			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this)
+			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this), GetPriorityEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -171,6 +174,35 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, CheckTransactionEndpoint.class, CHECK_TRANSACTION_ENDPOINT,
 				CheckTransactionMessages.Decoder.class, CheckTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetPriority(GetPriorityMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_PRIORITY_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, GetPriorityResultMessages.of(application.getPriority(message.getTransaction()), message.getId()));
+			}
+			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class GetPriorityEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetPriorityMessage message) -> getServer().onGetPriority(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, GetPriorityEndpoint.class, GET_PRIORITY_ENDPOINT,
+				GetPriorityMessages.Decoder.class, GetPriorityResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

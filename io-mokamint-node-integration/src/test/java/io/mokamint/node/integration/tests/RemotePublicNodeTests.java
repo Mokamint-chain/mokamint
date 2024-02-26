@@ -145,7 +145,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private PublicTestServer() throws DeploymentException, IOException {
-			super(mockedNode(), PORT, 180000L, 1000, Optional.empty());
+			super(mockedNode(), PORT, 180000L, 1000, Optional.of(URI));
 		}
 
 		private static PublicNode mockedNode() throws IOException {

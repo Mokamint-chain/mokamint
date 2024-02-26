@@ -31,6 +31,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -183,10 +184,11 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
-		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
+		var uri2 = new URI("ws://localhost:" + port2);
+		var miningPeer = Peers.of(uri2);
 
 		try (var nonMiningNode = new NonMiningNode(mkConfig(chain1));
-			 var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2)) {
+			 var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000L, 1000, Optional.of(uri2))) {
 
 			// we give miningNode the time to mine HOW_MANY / 2 blocks
 			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2, 20, TimeUnit.SECONDS));
@@ -208,9 +210,10 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
-		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
+		var uri2 = new URI("ws://localhost:" + port2);
+		var miningPeer = Peers.of(uri2);
 
-		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningNodeService = PublicNodeServices.open(miningNode, port2)) {
+		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningNodeService = PublicNodeServices.open(miningNode, port2, 1800000L, 1000, Optional.of(uri2))) {
 			try (var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
 				// we give miningNode the time to mine HOW_MANY / 8 blocks
 				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
@@ -247,9 +250,10 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
-		var miningPeer = Peers.of(new URI("ws://localhost:" + port2));
+		var uri2 = new URI("ws://localhost:" + port2);
+		var miningPeer = Peers.of(uri2);
 
-		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2);
+		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000L, 1000, Optional.of(uri2));
 			 var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
 				// we give miningNode the time to mine HOW_MANY / 8 blocks
 				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));

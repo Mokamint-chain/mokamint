@@ -153,4 +153,67 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
+
+	@Test
+	@DisplayName("if a getPriority() request reaches the service, it yields the priority of the transaction")
+	public void serviceGetPriorityWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		when(app.getPriority(eq(transaction))).thenReturn(42L);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onGetPriorityResult(long result) {
+				if (result == 42L)
+					semaphore.release();
+			}
+
+			private void sendGetPriority() throws ApplicationException {
+				sendGetPriority(transaction, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetPriority();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getPriority() request reaches the service and the transaction is rejected, it sends back an exception")
+	public void serviceGetPriorityRejectedTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		String exceptionMessage = "rejected";
+		when(app.getPriority(eq(transaction))).thenThrow(new RejectedTransactionException(exceptionMessage));
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendGetPriority(Transaction transaction) throws ApplicationException {
+				sendGetPriority(transaction, "id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetPriority(transaction);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
 }

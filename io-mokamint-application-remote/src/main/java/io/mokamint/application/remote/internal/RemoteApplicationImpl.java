@@ -18,6 +18,7 @@ package io.mokamint.application.remote.internal;
 
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,10 +40,14 @@ import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.GetPriorityMessages;
+import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.application.messages.api.GetPriorityMessage;
+import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -81,6 +86,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 		addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
 		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
+		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
 	}
 
 	@Override
@@ -97,8 +103,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof CheckPrologExtraResultMessage cperm)
 			onCheckPrologExtraResult(cperm.get());
-		else if (message instanceof CheckTransactionResultMessage ctrm)
+		else if (message instanceof CheckTransactionResultMessage)
 			onCheckTransactionResult();
+		else if (message instanceof GetPriorityResultMessage gprm)
+			onGetPriorityResult(gprm.get());
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -243,10 +251,60 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public long getPriority(Transaction transaction)
-			throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return 0;
+	public long getPriority(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendGetPriority(transaction, id);
+		try {
+			return waitForResult(id, this::processGetPrioritySuccess, this::processGetPriorityExceptions);
+		}
+		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends a {@link GetPriorityMessage} to the application service.
+	 * 
+	 * @param transaction the transaction in the message
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendGetPriority(Transaction transaction, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(GET_PRIORITY_ENDPOINT), GetPriorityMessages.of(transaction, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Long processGetPrioritySuccess(RpcMessage message) {
+		return message instanceof GetPriorityResultMessage gprm ? gprm.get() : null;
+	}
+
+	private boolean processGetPriorityExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when a {@link GetPriorityResultMessage} has been received.
+	 * 
+	 * @param priority the content of the message
+	 */
+	protected void onGetPriorityResult(long priority) {}
+
+	private class GetPriorityEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetPriorityResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPriorityMessages.Encoder.class);
+		}
 	}
 
 	@Override
