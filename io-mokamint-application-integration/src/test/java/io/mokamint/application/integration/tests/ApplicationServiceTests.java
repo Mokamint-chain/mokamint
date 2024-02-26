@@ -216,4 +216,68 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
+
+	@Test
+	@DisplayName("if a getRepresentation() request reaches the service, it yields the representation of the transaction")
+	public void serviceGetRepresentationWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var representation = "this is the wonderful representation";
+		when(app.getRepresentation(eq(transaction))).thenReturn(representation);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onGetRepresentationResult(String result) {
+				if (representation.equals(result))
+					semaphore.release();
+			}
+
+			private void sendGetRepresentation() throws ApplicationException {
+				sendGetRepresentation(transaction, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetRepresentation();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getRepresentation() request reaches the service and the transaction is rejected, it sends back an exception")
+	public void serviceGetRepresentationRejectedTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		String exceptionMessage = "rejected";
+		when(app.getRepresentation(eq(transaction))).thenThrow(new RejectedTransactionException(exceptionMessage));
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendGetRepresentation(Transaction transaction) throws ApplicationException {
+				sendGetRepresentation(transaction, "id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetRepresentation(transaction);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
 }

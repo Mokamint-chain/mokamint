@@ -37,8 +37,12 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.GetPriorityResultMessages;
+import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.GetPriorityMessage;
+import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
 import io.mokamint.node.Transactions;
@@ -156,6 +160,112 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(RejectedTransactionException.class, () -> remote.checkTransaction(transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getPriority() works")
+	public void getPriorityWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, RejectedTransactionException {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var priority = 42L;
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetPriority(GetPriorityMessage message, Session session) {
+				if (transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, GetPriorityResultMessages.of(priority, message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertEquals(priority, remote.getPriority(transaction));
+		}
+	}
+
+	@Test
+	@DisplayName("getPriority() works if it throws RejectedTransactionException")
+	public void getPriorityWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var exceptionMessage = "rejected";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetPriority(GetPriorityMessage message, Session session) {
+				if (transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(RejectedTransactionException.class, () -> remote.getPriority(transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getRepresentation() works")
+	public void getRepresentationWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, RejectedTransactionException {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var representation = "this is the wonderful representation";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
+				if (transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, GetRepresentationResultMessages.of(representation, message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertEquals(representation, remote.getRepresentation(transaction));
+		}
+	}
+
+	@Test
+	@DisplayName("getRepresentation() works if it throws RejectedTransactionException")
+	public void getRepresentationWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var exceptionMessage = "rejected";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
+				if (transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(RejectedTransactionException.class, () -> remote.getRepresentation(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

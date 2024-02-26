@@ -19,6 +19,7 @@ package io.mokamint.application.remote.internal;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -42,12 +43,16 @@ import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
+import io.mokamint.application.messages.GetRepresentationMessages;
+import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
+import io.mokamint.application.messages.api.GetRepresentationMessage;
+import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
@@ -87,6 +92,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
 		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
 		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
+		addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
 	}
 
 	@Override
@@ -107,6 +113,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 			onCheckTransactionResult();
 		else if (message instanceof GetPriorityResultMessage gprm)
 			onGetPriorityResult(gprm.get());
+		else if (message instanceof GetRepresentationResultMessage grrm)
+			onGetRepresentationResult(grrm.get());
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -307,11 +315,62 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		}
 	}
 
+
 	@Override
-	public String getRepresentation(Transaction transaction)
-			throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+	public String getRepresentation(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendGetRepresentation(transaction, id);
+		try {
+			return waitForResult(id, this::processGetRepresentationSuccess, this::processGetRepresentationExceptions);
+		}
+		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends a {@link GetRepresentationMessage} to the application service.
+	 * 
+	 * @param transaction the transaction in the message
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendGetRepresentation(Transaction transaction, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(GET_REPRESENTATION_ENDPOINT), GetRepresentationMessages.of(transaction, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private String processGetRepresentationSuccess(RpcMessage message) {
+		return message instanceof GetRepresentationResultMessage grrm ? grrm.get() : null;
+	}
+
+	private boolean processGetRepresentationExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when a {@link GetRepresentationResultMessage} has been received.
+	 * 
+	 * @param priority the content of the message
+	 */
+	protected void onGetRepresentationResult(String representation) {}
+
+	private class GetRepresentationEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, GetRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRepresentationMessages.Encoder.class);
+		}
 	}
 
 	@Override
