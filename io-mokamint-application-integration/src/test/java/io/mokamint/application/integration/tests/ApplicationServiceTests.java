@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +39,7 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.node.Transactions;
@@ -340,6 +342,74 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendGetInitialStateId();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a beginBlock() request reaches the service, it yields the group id of the transactions in the block")
+	public void serviceBeginBlockWorks() throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		long height = 42L;
+		byte[] stateId = { 13, 1, 19, 73 };
+		var when = LocalDateTime.of(1973, 1, 13, 0, 0);
+		var groupId = 13;
+		when(app.beginBlock(height, when, stateId)).thenReturn(groupId);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onBeginBlockResult(int result) {
+				if (groupId == result)
+					semaphore.release();
+			}
+
+			private void sendBeginBlock() throws ApplicationException {
+				sendBeginBlock(height, when, stateId, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendBeginBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a beginBlock() request reaches the service and the state id is unknown, it sends back an exception")
+	public void serviceBeginBlockUnknownStateExceptionWorks() throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		long height = 42L;
+		byte[] stateId = { 13, 1, 19, 73 };
+		var when = LocalDateTime.of(1973, 1, 13, 0, 0);
+		String exceptionMessage = "unknown state";
+		when(app.beginBlock(height, when, stateId)).thenThrow(new UnknownStateException(exceptionMessage));
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (UnknownStateException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendBeginBlock() throws ApplicationException {
+				sendBeginBlock(height, when, stateId, "id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendBeginBlock();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

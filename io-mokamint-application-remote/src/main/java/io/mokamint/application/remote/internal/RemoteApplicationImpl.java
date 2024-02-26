@@ -16,11 +16,12 @@ limitations under the License.
 
 package io.mokamint.application.remote.internal;
 
+import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
-import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,6 +39,8 @@ import io.mokamint.application.ClosedApplicationException;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.application.messages.BeginBlockMessages;
+import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
@@ -48,6 +51,8 @@ import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.BeginBlockMessage;
+import io.mokamint.application.messages.api.BeginBlockResultMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
@@ -99,6 +104,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
 		addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
 		addSession(GET_INITIAL_STATE_ID_ENDPOINT, uri, GetInitialStateIdEndpoint::new);
+		addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
 	}
 
 	@Override
@@ -123,6 +129,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 			onGetRepresentationResult(grrm.get());
 		else if (message instanceof GetInitialStateIdResultMessage gisirm)
 			onGetInitialStateIdResult(gisirm.get());
+		else if (message instanceof BeginBlockResultMessage bbrm)
+			onBeginBlockResult(bbrm.get());
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -431,10 +439,63 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public int beginBlock(long height, LocalDateTime when, byte[] stateId)
-			throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return 0;
+	public int beginBlock(long height, LocalDateTime when, byte[] stateId) throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendBeginBlock(height, when, stateId, id);
+		try {
+			return waitForResult(id, this::processBeginBlockSuccess, this::processBeginBlockExceptions);
+		}
+		catch (RuntimeException | UnknownStateException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends a {@link BeginBlockMessage} to the application service.
+	 * 
+	 * @param height the height of the block whose transactions are being executed
+	 * @param when the time at the beginning of the execution of the transactions in the block
+	 * @param stateId the identifier of the state of the application at the beginning of the execution of
+	 *                the transactions in the block
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendBeginBlock(long height, LocalDateTime when, byte[] stateId, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(BEGIN_BLOCK_ENDPOINT), BeginBlockMessages.of(height, when, stateId, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Integer processBeginBlockSuccess(RpcMessage message) {
+		return message instanceof BeginBlockResultMessage bbrm ? bbrm.get() : null;
+	}
+
+	private boolean processBeginBlockExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return UnknownStateException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when a {@link BeginBlockResultMessage} has been received.
+	 * 
+	 * @param groupId the content of the message
+	 */
+	protected void onBeginBlockResult(int groupId) {}
+
+	private class BeginBlockEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, BeginBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, BeginBlockMessages.Encoder.class);
+		}
 	}
 
 	@Override

@@ -169,7 +169,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("beginBlock messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForBeginBlock() throws EncodeException, DecodeException {
-		var beginBlockMessage1 = BeginBlockMessages.of(1973, new byte[] { 13, 1, 19, 73 }, LocalDateTime.now(ZoneId.of("UTC")), "id");
+		var beginBlockMessage1 = BeginBlockMessages.of(1973, LocalDateTime.now(ZoneId.of("UTC")), new byte[] { 13, 1, 19, 73 }, "id");
 		String encoded = new BeginBlockMessages.Encoder().encode(beginBlockMessage1);
 		var beginBlockMessage2 = new BeginBlockMessages.Decoder().decode(encoded);
 		assertEquals(beginBlockMessage1, beginBlockMessage2);

@@ -36,11 +36,11 @@ public class BeginBlockMessageImpl extends AbstractRpcMessage implements BeginBl
 	 * Creates the message.
 	 * 
 	 * @param height the block height in the message
-	 * @param stateId the state identifier in the message
 	 * @param when the block creation time in the message
+	 * @param stateId the state identifier in the message
 	 * @param id the identifier of the message
 	 */
-	public BeginBlockMessageImpl(long height, byte[] stateId, LocalDateTime when, String id) {
+	public BeginBlockMessageImpl(long height, LocalDateTime when, byte[] stateId, String id) {
 		super(id);
 
 		this.height = height;

@@ -35,13 +35,13 @@ public final class BeginBlockMessages {
 	 * Yields a {@link BeginBlockMessage}.
 	 * 
 	 * @param height the block height in the message
-	 * @param stateId the state identifier in the message
 	 * @param when the block creation time in the message
+	 * @param stateId the state identifier in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static BeginBlockMessage of(long height, byte[] stateId, LocalDateTime when, String id) {
-		return new BeginBlockMessageImpl(height, stateId, when, id);
+	public static BeginBlockMessage of(long height, LocalDateTime when, byte[] stateId, String id) {
+		return new BeginBlockMessageImpl(height, when, stateId, id);
 	}
 
 	/**

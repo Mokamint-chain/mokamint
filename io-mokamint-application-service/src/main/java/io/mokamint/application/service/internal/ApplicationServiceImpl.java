@@ -29,6 +29,9 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.application.messages.BeginBlockMessages;
+import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
@@ -39,6 +42,7 @@ import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
@@ -99,7 +103,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		startContainer("", port,
 			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
 			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
-			GetInitialStateIdEndpoint.config(this)
+			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -269,6 +273,35 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, GetInitialStateIdEndpoint.class, GET_INITIAL_STATE_ID_ENDPOINT,
 				GetInitialStateIdMessages.Decoder.class, GetInitialStateIdResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onBeginBlock(BeginBlockMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + BEGIN_BLOCK_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, BeginBlockResultMessages.of(application.beginBlock(message.getHeight(), message.getWhen(), message.getStateId()), message.getId()));
+			}
+			catch (UnknownStateException | TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class BeginBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (BeginBlockMessage message) -> getServer().onBeginBlock(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, BeginBlockEndpoint.class, BEGIN_BLOCK_ENDPOINT,
+				BeginBlockMessages.Decoder.class, BeginBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

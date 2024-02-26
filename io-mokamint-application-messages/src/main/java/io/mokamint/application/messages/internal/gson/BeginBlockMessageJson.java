@@ -44,7 +44,7 @@ public abstract class BeginBlockMessageJson extends AbstractRpcMessageJsonRepres
 
 	@Override
 	public BeginBlockMessage unmap() throws HexConversionException {
-		return BeginBlockMessages.of(height, Hex.fromHexString(stateId), LocalDateTime.parse(when, ISO_LOCAL_DATE_TIME), getId());
+		return BeginBlockMessages.of(height, LocalDateTime.parse(when, ISO_LOCAL_DATE_TIME), Hex.fromHexString(stateId), getId());
 	}
 
 	@Override

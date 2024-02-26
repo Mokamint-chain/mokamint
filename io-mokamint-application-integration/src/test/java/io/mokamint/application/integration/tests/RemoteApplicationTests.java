@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
@@ -36,11 +37,14 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
@@ -316,6 +320,53 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(ApplicationException.class, () -> remote.getInitialStateId());
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("beginBlock() works")
+	public void beginBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownStateException {
+		int groupId = 42;
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onBeginBlock(BeginBlockMessage message, Session session) {
+				try {
+					sendObjectAsync(session, BeginBlockResultMessages.of(groupId, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertSame(groupId, remote.beginBlock(13L, LocalDateTime.now(), new byte[] { 13, 1, 19, 73 }));
+		}
+	}
+
+	@Test
+	@DisplayName("beginBlock() works if it throws UnknownStateException")
+	public void beginBlockWorksInCaseOfUnknownStateException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var exceptionMessage = "unknown state";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onBeginBlock(BeginBlockMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownStateException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(UnknownStateException.class, () -> remote.beginBlock(13L, LocalDateTime.now(), new byte[] { 13, 1, 19, 73 }));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
