@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -277,6 +278,68 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendGetRepresentation(transaction);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getInitialStateId() request reaches the service, it yields the initial state id of the application")
+	public void serviceGetInitialStateIdWorks() throws ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		byte[] initialStateId = { 13, 1, 19, 73 };
+		when(app.getInitialStateId()).thenReturn(initialStateId);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onGetInitialStateIdResult(byte[] result) {
+				if (Arrays.equals(initialStateId, result))
+					semaphore.release();
+			}
+
+			private void sendGetInitialStateId() throws ApplicationException {
+				sendGetInitialStateId("id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetInitialStateId();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getInitialStateId() request reaches the service and the application fails, it sends back an exception")
+	public void serviceGetInitialStateApplicationExceptionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		String exceptionMessage = "failed";
+		when(app.getInitialStateId()).thenThrow(new ApplicationException(exceptionMessage));
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (ApplicationException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendGetInitialStateId() throws ApplicationException {
+				sendGetInitialStateId("id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetInitialStateId();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

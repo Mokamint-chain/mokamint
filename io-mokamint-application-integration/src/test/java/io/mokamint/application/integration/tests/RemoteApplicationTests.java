@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.integration.tests;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,10 +38,12 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.remote.RemoteApplications;
@@ -266,6 +269,53 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(RejectedTransactionException.class, () -> remote.getRepresentation(transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getInitialStateId() works")
+	public void getInitialStateIdWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, RejectedTransactionException {
+		byte[] initialStateId = { 13, 1, 19, 73 };
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
+				try {
+					sendObjectAsync(session, GetInitialStateIdResultMessages.of(initialStateId, message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertArrayEquals(initialStateId, remote.getInitialStateId());
+		}
+	}
+
+	@Test
+	@DisplayName("getInitialStateId() works if it throws ApplicationException")
+	public void getInitialStateIdWorksInCaseOfApplicationException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var exceptionMessage = "failed";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(ApplicationException.class, () -> remote.getInitialStateId());
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

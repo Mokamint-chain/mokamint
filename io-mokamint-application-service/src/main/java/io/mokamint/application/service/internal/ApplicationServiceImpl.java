@@ -33,12 +33,15 @@ import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.GetInitialStateIdMessages;
+import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.service.api.ApplicationService;
@@ -95,7 +98,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		startContainer("", port,
 			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
-			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this)
+			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
+			GetInitialStateIdEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -236,6 +240,35 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, GetRepresentationEndpoint.class, GET_REPRESENTATION_ENDPOINT,
 				GetRepresentationMessages.Decoder.class, GetRepresentationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_INITIAL_STATE_ID_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, GetInitialStateIdResultMessages.of(application.getInitialStateId(), message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class GetInitialStateIdEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (GetInitialStateIdMessage message) -> getServer().onGetInitialStateId(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, GetInitialStateIdEndpoint.class, GET_INITIAL_STATE_ID_ENDPOINT,
+				GetInitialStateIdMessages.Decoder.class, GetInitialStateIdResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }
