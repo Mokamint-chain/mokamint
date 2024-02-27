@@ -44,6 +44,7 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
@@ -53,6 +54,7 @@ import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
@@ -596,6 +598,57 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.commitBlock(groupId));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("abortBlock() works")
+	public void abortBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+		var groupId = 42;
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAbortBlock(AbortBlockMessage message, Session session) {
+				try {
+					sendObjectAsync(session, AbortBlockResultMessages.of(message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			remote.abortBlock(groupId);
+		}
+		catch (UnknownGroupIdException e) {
+			fail();
+		}
+	}
+
+	@Test
+	@DisplayName("abortBlock() works if it throws UnknownGroupIdException")
+	public void abortBlockWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var groupId = 42;
+		var exceptionMessage = "unknown group id";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onAbortBlock(AbortBlockMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.abortBlock(groupId));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

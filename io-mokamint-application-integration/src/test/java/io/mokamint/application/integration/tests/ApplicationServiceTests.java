@@ -662,4 +662,66 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
+
+	@Test
+	@DisplayName("if an abortBlock() request reaches the service, the block gets aborted")
+	public void serviceAbortBlockWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var groupId = 13;
+		doNothing().when(app).abortBlock(groupId);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onAbortBlockResult() {
+				semaphore.release();
+			}
+
+			private void sendAbortBlock() throws ApplicationException {
+				sendAbortBlock(groupId, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendAbortBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if an abortBlock() request reaches the service and the group id is unknown, it sends back an exception")
+	public void serviceAbortBlockUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var groupId = 13;
+		String exceptionMessage = "unknown group id";
+		doThrow(new UnknownGroupIdException(exceptionMessage)).when(app).abortBlock(groupId);
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendAbortBlock() throws ApplicationException {
+				sendAbortBlock(groupId, ID);
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendAbortBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
 }

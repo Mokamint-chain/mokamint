@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.remote.internal;
 
+import static io.mokamint.application.service.api.ApplicationService.ABORT_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
@@ -42,6 +43,8 @@ import io.mokamint.application.ClosedApplicationException;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.application.messages.AbortBlockMessages;
+import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraMessages;
@@ -60,6 +63,8 @@ import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.AbortBlockMessage;
+import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
@@ -123,6 +128,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		addSession(DELIVER_TRANSACTION_ENDPOINT, uri, DeliverTransactionEndpoint::new);
 		addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
 		addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
+		addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
 	}
 
 	@Override
@@ -153,8 +159,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 			onDeliverTransactionResult();
 		else if (message instanceof EndBlockResultMessage ebrm)
 			onEndBlockResult(ebrm.get());
-		else if (message instanceof CommitBlockResultMessage cbrm)
+		else if (message instanceof CommitBlockResultMessage)
 			onCommitBlockResult();
+		else if (message instanceof AbortBlockResultMessage)
+			onAbortBlockResult();
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -693,9 +701,57 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public void abortBlock(int groupId)
-			throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		
+	public void abortBlock(int groupId) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendAbortBlock(groupId, id);
+		try {
+			waitForResult(id, this::processAbortBlockSuccess, this::processAbortBlockExceptions);
+		}
+		catch (RuntimeException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends an {@link AbortBlockMessage} to the application service.
+	 * 
+	 * @param groupId the group identifier in the message
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendAbortBlock(int groupId, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(ABORT_BLOCK_ENDPOINT), AbortBlockMessages.of(groupId, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Boolean processAbortBlockSuccess(RpcMessage message) {
+		return message instanceof AbortBlockResultMessage ? Boolean.TRUE : null;
+	}
+
+	private boolean processAbortBlockExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return UnknownGroupIdException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when an {@link AbortBlockResultMessage} has been received.
+	 */
+	protected void onAbortBlockResult() {}
+
+	private class AbortBlockEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, AbortBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AbortBlockMessages.Encoder.class);
+		}
 	}
 }

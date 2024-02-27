@@ -31,6 +31,8 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.application.messages.AbortBlockMessages;
+import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraMessages;
@@ -49,6 +51,7 @@ import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
@@ -115,7 +118,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
 			DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
-			CommitBlockEndpoint.config(this)
+			CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -403,6 +406,36 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, CommitBlockEndpoint.class, COMMIT_BLOCK_ENDPOINT,
 				CommitBlockMessages.Decoder.class, CommitBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onAbortBlock(AbortBlockMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + ABORT_BLOCK_ENDPOINT + " request");
+
+		try {
+			try {
+				application.abortBlock(message.getGroupId());
+				sendObjectAsync(session, AbortBlockResultMessages.of(message.getId()));
+			}
+			catch (UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class AbortBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (AbortBlockMessage message) -> getServer().onAbortBlock(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, AbortBlockEndpoint.class, ABORT_BLOCK_ENDPOINT,
+				AbortBlockMessages.Decoder.class, AbortBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }
