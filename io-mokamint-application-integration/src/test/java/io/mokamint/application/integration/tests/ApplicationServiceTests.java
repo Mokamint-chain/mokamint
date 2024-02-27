@@ -46,6 +46,16 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.application.messages.api.AbortBlockResultMessage;
+import io.mokamint.application.messages.api.BeginBlockResultMessage;
+import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.application.messages.api.CommitBlockResultMessage;
+import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
+import io.mokamint.application.messages.api.EndBlockResultMessage;
+import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
+import io.mokamint.application.messages.api.GetPriorityResultMessage;
+import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.node.Transactions;
@@ -89,13 +99,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onCheckPrologExtraResult(boolean result) {
-				if (result)
+			protected void onCheckPrologExtraResult(CheckPrologExtraResultMessage message) {
+				if (ID.equals(message.getId()) && message.get())
 					semaphore.release();
 			}
 
 			private void sendCheckPrologExtra() throws ApplicationException {
-				sendCheckPrologExtra(extra, "id");
+				sendCheckPrologExtra(extra, ID);
 			}
 		}
 
@@ -120,12 +130,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onCheckTransactionResult() {
-				semaphore.release();
+			protected void onCheckTransactionResult(CheckTransactionResultMessage message) {
+				if (ID.equals(message.getId()))
+					semaphore.release();
 			}
 
 			private void sendCheckTransaction() throws ApplicationException {
-				sendCheckTransaction(transaction, "id");
+				sendCheckTransaction(transaction, ID);
 			}
 		}
 
@@ -152,12 +163,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendCheckTransaction(Transaction transaction) throws ApplicationException {
-				sendCheckTransaction(transaction, "id");
+				sendCheckTransaction(transaction, ID);
 			}
 		}
 	
@@ -182,13 +193,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onGetPriorityResult(long result) {
-				if (result == 42L)
+			protected void onGetPriorityResult(GetPriorityResultMessage message) {
+				if (ID.equals(message.getId()) && message.get() == 42L)
 					semaphore.release();
 			}
 
 			private void sendGetPriority() throws ApplicationException {
-				sendGetPriority(transaction, "id");
+				sendGetPriority(transaction, ID);
 			}
 		}
 
@@ -215,12 +226,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendGetPriority(Transaction transaction) throws ApplicationException {
-				sendGetPriority(transaction, "id");
+				sendGetPriority(transaction, ID);
 			}
 		}
 	
@@ -246,13 +257,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onGetRepresentationResult(String result) {
-				if (representation.equals(result))
+			protected void onGetRepresentationResult(GetRepresentationResultMessage message) {
+				if (ID.equals(message.getId()) && representation.equals(message.get()))
 					semaphore.release();
 			}
 
 			private void sendGetRepresentation() throws ApplicationException {
-				sendGetRepresentation(transaction, "id");
+				sendGetRepresentation(transaction, ID);
 			}
 		}
 
@@ -279,12 +290,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendGetRepresentation(Transaction transaction) throws ApplicationException {
-				sendGetRepresentation(transaction, "id");
+				sendGetRepresentation(transaction, ID);
 			}
 		}
 	
@@ -309,13 +320,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onGetInitialStateIdResult(byte[] result) {
-				if (Arrays.equals(initialStateId, result))
+			protected void onGetInitialStateIdResult(GetInitialStateIdResultMessage message) {
+				if (ID.equals(message.getId()) && Arrays.equals(initialStateId, message.get()))
 					semaphore.release();
 			}
 
 			private void sendGetInitialStateId() throws ApplicationException {
-				sendGetInitialStateId("id");
+				sendGetInitialStateId(ID);
 			}
 		}
 
@@ -341,12 +352,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ApplicationException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && ApplicationException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendGetInitialStateId() throws ApplicationException {
-				sendGetInitialStateId("id");
+				sendGetInitialStateId(ID);
 			}
 		}
 	
@@ -374,13 +385,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onBeginBlockResult(int result) {
-				if (groupId == result)
+			protected void onBeginBlockResult(BeginBlockResultMessage message) {
+				if (ID.equals(message.getId()) && groupId == message.get().intValue())
 					semaphore.release();
 			}
 
 			private void sendBeginBlock() throws ApplicationException {
-				sendBeginBlock(height, when, stateId, "id");
+				sendBeginBlock(height, when, stateId, ID);
 			}
 		}
 
@@ -409,12 +420,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (UnknownStateException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownStateException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendBeginBlock() throws ApplicationException {
-				sendBeginBlock(height, when, stateId, "id");
+				sendBeginBlock(height, when, stateId, ID);
 			}
 		}
 	
@@ -440,12 +451,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onDeliverTransactionResult() {
-				semaphore.release();
+			protected void onDeliverTransactionResult(DeliverTransactionResultMessage message) {
+				if (ID.equals(message.getId()))
+					semaphore.release();
 			}
 
 			private void sendDeliverTransaction() throws ApplicationException {
-				sendDeliverTransaction(groupId, transaction, "id");
+				sendDeliverTransaction(groupId, transaction, ID);
 			}
 		}
 
@@ -473,12 +485,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendDeliverTransaction() throws ApplicationException {
-				sendDeliverTransaction(groupId, transaction, "id");
+				sendDeliverTransaction(groupId, transaction, ID);
 			}
 		}
 	
@@ -506,12 +518,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendDeliverTransaction() throws ApplicationException {
-				sendDeliverTransaction(groupId, transaction, "id");
+				sendDeliverTransaction(groupId, transaction, ID);
 			}
 		}
 	
@@ -545,13 +557,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onEndBlockResult(byte[] stateId) {
-				if (Arrays.equals(finalStateId, stateId))
+			protected void onEndBlockResult(EndBlockResultMessage message) {
+				if (ID.equals(message.getId()) && Arrays.equals(finalStateId, message.get()))
 					semaphore.release();
 			}
 
 			private void sendEndBlock() throws ApplicationException {
-				sendEndBlock(groupId, deadline, "id");
+				sendEndBlock(groupId, deadline, ID);
 			}
 		}
 
@@ -586,12 +598,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
 			private void sendEndBlock() throws ApplicationException {
-				sendEndBlock(groupId, deadline, "id");
+				sendEndBlock(groupId, deadline, ID);
 			}
 		}
 	
@@ -616,12 +628,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onCommitBlockResult() {
-				semaphore.release();
+			protected void onCommitBlockResult(CommitBlockResultMessage cbrm) {
+				if (ID.equals(cbrm.getId()))
+					semaphore.release();
 			}
 
 			private void sendCommitBlock() throws ApplicationException {
-				sendCommitBlock(groupId, "id");
+				sendCommitBlock(groupId, ID);
 			}
 		}
 
@@ -678,12 +691,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onAbortBlockResult() {
-				semaphore.release();
+			protected void onAbortBlockResult(AbortBlockResultMessage message) {
+				if (ID.equals(message.getId()))
+					semaphore.release();
 			}
 
 			private void sendAbortBlock() throws ApplicationException {
-				sendAbortBlock(groupId, "id");
+				sendAbortBlock(groupId, ID);
 			}
 		}
 

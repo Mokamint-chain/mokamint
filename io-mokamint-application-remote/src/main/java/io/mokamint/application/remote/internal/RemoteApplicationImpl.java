@@ -142,27 +142,27 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	protected void notifyResult(RpcMessage message) { // TODO: maybe pass the message to these hooks?
+	protected void notifyResult(RpcMessage message) {
 		if (message instanceof CheckPrologExtraResultMessage cperm)
-			onCheckPrologExtraResult(cperm.get());
-		else if (message instanceof CheckTransactionResultMessage)
-			onCheckTransactionResult();
+			onCheckPrologExtraResult(cperm);
+		else if (message instanceof CheckTransactionResultMessage ctrm)
+			onCheckTransactionResult(ctrm);
 		else if (message instanceof GetPriorityResultMessage gprm)
-			onGetPriorityResult(gprm.get());
+			onGetPriorityResult(gprm);
 		else if (message instanceof GetRepresentationResultMessage grrm)
-			onGetRepresentationResult(grrm.get());
+			onGetRepresentationResult(grrm);
 		else if (message instanceof GetInitialStateIdResultMessage gisirm)
-			onGetInitialStateIdResult(gisirm.get());
+			onGetInitialStateIdResult(gisirm);
 		else if (message instanceof BeginBlockResultMessage bbrm)
-			onBeginBlockResult(bbrm.get());
-		else if (message instanceof DeliverTransactionResultMessage)
-			onDeliverTransactionResult();
+			onBeginBlockResult(bbrm);
+		else if (message instanceof DeliverTransactionResultMessage dtrm)
+			onDeliverTransactionResult(dtrm);
 		else if (message instanceof EndBlockResultMessage ebrm)
-			onEndBlockResult(ebrm.get());
-		else if (message instanceof CommitBlockResultMessage)
-			onCommitBlockResult();
-		else if (message instanceof AbortBlockResultMessage)
-			onAbortBlockResult();
+			onEndBlockResult(ebrm);
+		else if (message instanceof CommitBlockResultMessage cbrm)
+			onCommitBlockResult(cbrm);
+		else if (message instanceof AbortBlockResultMessage abrm)
+			onAbortBlockResult(abrm);
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -239,9 +239,9 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	/**
 	 * Hook called when a {@link CheckPrologExtraResultMessage} has been received.
 	 * 
-	 * @param result the content of the message
+	 * @param message the message
 	 */
-	protected void onCheckPrologExtraResult(boolean result) {}
+	protected void onCheckPrologExtraResult(CheckPrologExtraResultMessage message) {}
 
 	private class CheckPrologExtraEndpoint extends Endpoint {
 
@@ -295,8 +295,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	/**
 	 * Hook called when a {@link CheckTransactionResultMessage} has been received.
+	 * 
+	 * @param message the message
 	 */
-	protected void onCheckTransactionResult() {}
+	protected void onCheckTransactionResult(CheckTransactionResultMessage message) {}
 
 	private class CheckTransactionEndpoint extends Endpoint {
 
@@ -351,9 +353,9 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	/**
 	 * Hook called when a {@link GetPriorityResultMessage} has been received.
 	 * 
-	 * @param priority the content of the message
+	 * @param message the message
 	 */
-	protected void onGetPriorityResult(long priority) {}
+	protected void onGetPriorityResult(GetPriorityResultMessage message) {}
 
 	private class GetPriorityEndpoint extends Endpoint {
 
@@ -408,9 +410,9 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	/**
 	 * Hook called when a {@link GetRepresentationResultMessage} has been received.
 	 * 
-	 * @param priority the content of the message
+	 * @param message the message
 	 */
-	protected void onGetRepresentationResult(String representation) {}
+	protected void onGetRepresentationResult(GetRepresentationResultMessage message) {}
 
 	private class GetRepresentationEndpoint extends Endpoint {
 
@@ -458,9 +460,9 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	/**
 	 * Hook called when a {@link GetInitialStateIdResultMessage} has been received.
 	 * 
-	 * @param priority the content of the message
+	 * @param message the message
 	 */
-	protected void onGetInitialStateIdResult(byte[] initialStateId) {}
+	protected void onGetInitialStateIdResult(GetInitialStateIdResultMessage message) {}
 
 	private class GetInitialStateIdEndpoint extends Endpoint {
 
@@ -518,9 +520,9 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	/**
 	 * Hook called when a {@link BeginBlockResultMessage} has been received.
 	 * 
-	 * @param groupId the content of the message
+	 * @param message the message
 	 */
-	protected void onBeginBlockResult(int groupId) {}
+	protected void onBeginBlockResult(BeginBlockResultMessage message) {}
 
 	private class BeginBlockEndpoint extends Endpoint {
 
@@ -576,8 +578,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	/**
 	 * Hook called when a {@link DeliverTransactionResultMessage} has been received.
+	 * 
+	 * @param message the message
 	 */
-	protected void onDeliverTransactionResult() {}
+	protected void onDeliverTransactionResult(DeliverTransactionResultMessage message) {}
 
 	private class DeliverTransactionEndpoint extends Endpoint {
 
@@ -633,9 +637,9 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	/**
 	 * Hook called when an {@link EndBlockResultMessage} has been received.
 	 * 
-	 * @param stateId the content of the message
+	 * @param message the message
 	 */
-	protected void onEndBlockResult(byte[] stateId) {}
+	protected void onEndBlockResult(EndBlockResultMessage message) {}
 
 	private class EndBlockEndpoint extends Endpoint {
 
@@ -689,8 +693,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	/**
 	 * Hook called when a {@link CommitBlockResultMessage} has been received.
+	 * 
+	 * @param message the message
 	 */
-	protected void onCommitBlockResult() {}
+	protected void onCommitBlockResult(CommitBlockResultMessage message) {}
 
 	private class CommitBlockEndpoint extends Endpoint {
 
@@ -744,8 +750,10 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	/**
 	 * Hook called when an {@link AbortBlockResultMessage} has been received.
+	 * 
+	 * @param message the message
 	 */
-	protected void onAbortBlockResult() {}
+	protected void onAbortBlockResult(AbortBlockResultMessage message) {}
 
 	private class AbortBlockEndpoint extends Endpoint {
 
