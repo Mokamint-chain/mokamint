@@ -22,5 +22,6 @@ module io.mokamint.tools {
 	opens io.mokamint.tools.internal to info.picocli; // for injecting CLI options and accessing the POMVersionProvider
 
 	requires transitive info.picocli;
+	requires com.google.gson;
 	requires java.logging;
 }

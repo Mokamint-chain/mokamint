@@ -19,8 +19,8 @@ limitations under the License.
  */
 module io.mokamint.application.tools {
 	exports io.mokamint.application.tools;
-    opens io.mokamint.application.tools.internal to info.picocli; // for injecting CLI options
-    
+    opens io.mokamint.application.tools.internal to info.picocli, com.google.gson; // for injecting CLI options and JSON print-out
+
     // TODO: remove at the end
     provides io.mokamint.application.api.Application with io.mokamint.application.tools.internal.List.App1, io.mokamint.application.tools.internal.List.App42;
     uses io.mokamint.application.api.Application;

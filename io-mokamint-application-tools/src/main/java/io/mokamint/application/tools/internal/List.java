@@ -20,9 +20,6 @@ import java.time.LocalDateTime;
 import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
 import io.mokamint.application.api.Application;
@@ -35,78 +32,79 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.tools.AbstractCommand;
+import io.mokamint.tools.AbstractTable;
 import io.mokamint.tools.CommandException;
+import io.mokamint.tools.Table;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
+import picocli.CommandLine.Option;
 
 @Command(name = "ls",
 	description = "List the available applications.",
 	showDefaultValues = true)
 public class List extends AbstractCommand {
 
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
 	@Override
 	protected void execute() throws CommandException {
-		new ListApplications();
+		new MyTable().print();
 	}
 
-	private class ListApplications {
-		private final java.util.List<Provider<Application>> providers;
-		private final String[] names;
-		private final int slotsForNames;
-		private final String[] classNames;
-		private final int slotsForClassNames;
-		private final String[] descriptions;
-		private final int slotsForDescriptions;
-		/**
-		 * Lists the available applications.
-		 */
-		private ListApplications() {
-			ServiceLoader<Application> serviceLoader = ServiceLoader.load(Application.class);
-			this.providers = serviceLoader.stream().collect(Collectors.toList());
-			this.names = new String[1 + providers.size()];
-			this.classNames = new String[names.length];
-			this.descriptions = new String[names.length];
-			fillColumns();
-			this.slotsForNames = Stream.of(names).mapToInt(String::length).max().getAsInt();
-			this.slotsForClassNames = Stream.of(classNames).mapToInt(String::length).max().getAsInt();
-			this.slotsForDescriptions = Stream.of(descriptions).mapToInt(String::length).max().getAsInt();
-			printRows();
+	private static class Row implements io.mokamint.tools.Row {
+		private final String name;
+		private final String className;
+		private final String description;
+	
+		private Row(String name, String className, String description) {
+			this.name = name;
+			this.className = className;
+			this.description = description;
 		}
-
-		private void fillColumns() {
-			names[0] = "name";
-			classNames[0] = "class";
-			descriptions[0] = "description";
-			
-			for (int pos = 1; pos < names.length; pos++) {
-				var type = providers.get(pos - 1).type();
-				classNames[pos] = type.getName();
-				Name annName = type.getAnnotation(Name.class);
-				names[pos] = annName != null ? annName.value() : "---";
-				Description annDescription = type.getAnnotation(Description.class);
-				descriptions[pos] = annDescription != null ? annDescription.value() : "---";
+	
+		@Override
+		public String getColumn(int index) {
+			switch (index) {
+			case 0: return name;
+			case 1: return className;
+			case 2: return description;
+			default: throw new IndexOutOfBoundsException(index);
 			}
 		}
-
-		private void printRows() {
-			IntStream.iterate(0, i -> i + 1).limit(names.length).mapToObj(this::format).forEach(System.out::println);
-		}
-
-		private String format(int pos) {
+	
+		@Override
+		public String toString(int pos, Table table) {
 			String result;
-
+	
 			if (pos == 0)
 				result = String.format("%s  %s   %s",
-						center(names[pos], slotsForNames),
-						center(classNames[pos], slotsForClassNames),
-						center(descriptions[pos], slotsForDescriptions));
+						center(name, table.getSlotsForColumn(0)),
+						center(className, table.getSlotsForColumn(1)),
+						center(description, table.getSlotsForColumn(2)));
 			else
 				result = String.format("%s  %s   %s",
-						leftAlign(names[pos], slotsForNames),
-						leftAlign(classNames[pos], slotsForClassNames),
-						leftAlign(descriptions[pos], slotsForDescriptions));
-
+						leftAlign(name, table.getSlotsForColumn(0)),
+						leftAlign(className, table.getSlotsForColumn(1)),
+						leftAlign(description, table.getSlotsForColumn(2)));
+	
 			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+		}
+	}
+
+	private class MyTable extends AbstractTable {
+		private MyTable() {
+			super(new Row("name", "class", "description"), 3, json);
+			ServiceLoader.load(Application.class).stream().forEach(this::add);
+		}
+
+		private void add(Provider<Application> provider) {
+			var type = provider.type();
+			Name annName = type.getAnnotation(Name.class);
+			String name = annName != null ? annName.value() : "---";
+			Description annDescription = type.getAnnotation(Description.class);
+			String description = annDescription != null ? annDescription.value() : "---";
+			add(new Row(name, type.getName(), description));
 		}
 	}
 
