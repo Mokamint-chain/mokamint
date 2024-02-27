@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,30 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.miner.tools;
+package io.mokamint.application.tools;
 
-import io.mokamint.miner.tools.internal.Start;
+import io.mokamint.application.tools.internal.List;
 import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
 /**
- * A command-line interface for working with Mokamint miners.
+ * A command-line interface for working with Mokamint applications.
  * 
  * This class is meant to be run from the parent directory, after building the project, with this command-line:
  * 
- * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.miner.tools/io.mokamint.miner.tools.MokamintMiner
+ * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.application.tools/io.mokamint.application.tools.MokamintApplication
  */
 @Command(
-	name = "mokamint-miner",
-	header = "This is the command-line tool for Mokamint miners.",
-	footer = "Copyright (c) 2023 Fausto Spoto",
+	name = "mokamint-application",
+	header = "This is the command-line tool for Mokamint applications.",
+	footer = "Copyright (c) 2024 Fausto Spoto",
 	subcommands = {
-		Start.class
+		List.class
 	}
 )
-public class MokamintMiner extends AbstractTool {
+public class MokamintApplication extends AbstractTool {
 
-	private MokamintMiner() {}
+	private MokamintApplication() {}
 
 	/**
 	 * Entry point from the shell.
@@ -45,6 +45,6 @@ public class MokamintMiner extends AbstractTool {
 	 * @param args the command-line arguments provided to this tool
 	 */
 	public static void main(String[] args) {
-		main(MokamintMiner::new, args);
+		main(MokamintApplication::new, args);
 	}
 }
