@@ -59,6 +59,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	private final static URI URI;
 	private final static int PORT = 8030;
 	private final static long TIME_OUT = 2000L;
+	private final static String ID = "id";
 
 	static {
 		try {
@@ -596,6 +597,68 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendEndBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a commitBlock() request reaches the service, the block gets committed")
+	public void serviceCommitBlockWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var groupId = 13;
+		doNothing().when(app).commitBlock(groupId);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onCommitBlockResult() {
+				semaphore.release();
+			}
+
+			private void sendCommitBlock() throws ApplicationException {
+				sendCommitBlock(groupId, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendCommitBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a commitBlock() request reaches the service and the group id is unknown, it sends back an exception")
+	public void serviceCommitBlockUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var groupId = 13;
+		String exceptionMessage = "unknown group id";
+		doThrow(new UnknownGroupIdException(exceptionMessage)).when(app).commitBlock(groupId);
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendCommitBlock() throws ApplicationException {
+				sendCommitBlock(groupId, ID);
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendCommitBlock();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

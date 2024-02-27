@@ -37,6 +37,8 @@ import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CommitBlockMessages;
+import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
@@ -50,6 +52,7 @@ import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
@@ -111,7 +114,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
 			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
-			DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this)
+			DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
+			CommitBlockEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -369,6 +373,36 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, EndBlockEndpoint.class, END_BLOCK_ENDPOINT,
 				EndBlockMessages.Decoder.class, EndBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onCommitBlock(CommitBlockMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + COMMIT_BLOCK_ENDPOINT + " request");
+
+		try {
+			try {
+				application.commitBlock(message.getGroupId());
+				sendObjectAsync(session, CommitBlockResultMessages.of(message.getId()));
+			}
+			catch (UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class CommitBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (CommitBlockMessage message) -> getServer().onCommitBlock(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, CommitBlockEndpoint.class, COMMIT_BLOCK_ENDPOINT,
+				CommitBlockMessages.Decoder.class, CommitBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

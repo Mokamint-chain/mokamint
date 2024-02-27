@@ -47,6 +47,7 @@ import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
@@ -55,6 +56,7 @@ import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
@@ -543,6 +545,57 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.endBlock(groupId, deadline));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("commitBlock() works")
+	public void commitBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+		var groupId = 42;
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onCommitBlock(CommitBlockMessage message, Session session) {
+				try {
+					sendObjectAsync(session, CommitBlockResultMessages.of(message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			remote.commitBlock(groupId);
+		}
+		catch (UnknownGroupIdException e) {
+			fail();
+		}
+	}
+
+	@Test
+	@DisplayName("commitBlock() works if it throws UnknownGroupIdException")
+	public void commitBlockWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var groupId = 42;
+		var exceptionMessage = "unknown group id";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onCommitBlock(CommitBlockMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.commitBlock(groupId));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

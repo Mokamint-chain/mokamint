@@ -19,6 +19,7 @@ package io.mokamint.application.remote.internal;
 import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.COMMIT_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.DELIVER_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.END_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
@@ -47,6 +48,8 @@ import io.mokamint.application.messages.CheckPrologExtraMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CommitBlockMessages;
+import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
@@ -63,6 +66,8 @@ import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.application.messages.api.CommitBlockMessage;
+import io.mokamint.application.messages.api.CommitBlockResultMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
@@ -117,6 +122,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
 		addSession(DELIVER_TRANSACTION_ENDPOINT, uri, DeliverTransactionEndpoint::new);
 		addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
+		addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
 	}
 
 	@Override
@@ -130,7 +136,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	protected void notifyResult(RpcMessage message) {
+	protected void notifyResult(RpcMessage message) { // TODO: maybe pass the message to these hooks?
 		if (message instanceof CheckPrologExtraResultMessage cperm)
 			onCheckPrologExtraResult(cperm.get());
 		else if (message instanceof CheckTransactionResultMessage)
@@ -147,6 +153,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 			onDeliverTransactionResult();
 		else if (message instanceof EndBlockResultMessage ebrm)
 			onEndBlockResult(ebrm.get());
+		else if (message instanceof CommitBlockResultMessage cbrm)
+			onCommitBlockResult();
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -630,10 +638,58 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public void commitBlock(int groupId)
-			throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		
+	public void commitBlock(int groupId) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendCommitBlock(groupId, id);
+		try {
+			waitForResult(id, this::processCommitBlockSuccess, this::processCommitBlockExceptions);
+		}
+		catch (RuntimeException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends a {@link CommitBlockMessage} to the application service.
+	 * 
+	 * @param groupId the group identifier in the message
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendCommitBlock(int groupId, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(COMMIT_BLOCK_ENDPOINT), CommitBlockMessages.of(groupId, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Boolean processCommitBlockSuccess(RpcMessage message) {
+		return message instanceof CommitBlockResultMessage cbrm ? Boolean.TRUE : null;
+	}
+
+	private boolean processCommitBlockExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return UnknownGroupIdException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when a {@link CommitBlockResultMessage} has been received.
+	 */
+	protected void onCommitBlockResult() {}
+
+	private class CommitBlockEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, CommitBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CommitBlockMessages.Encoder.class);
+		}
 	}
 
 	@Override
