@@ -20,7 +20,9 @@ import java.time.LocalDateTime;
 import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
 import io.mokamint.application.api.Application;
@@ -35,29 +37,77 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.tools.AbstractCommand;
 import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "ls",
 	description = "List the available applications.",
 	showDefaultValues = true)
 public class List extends AbstractCommand {
 
-	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
-
 	@Override
 	protected void execute() throws CommandException {
-		ServiceLoader<Application> serviceLoader = ServiceLoader.load(Application.class);
-		serviceLoader.stream()
-			.forEach(this::describe);
+		new ListApplications();
 	}
 
-	private void describe(Provider<Application> provider) {
-		var type = provider.type();
-		String className = type.getName();
-		Name annName = type.getAnnotation(Name.class);
-		String name = annName != null ? annName.value() : "---";
-		Description annDescription = type.getAnnotation(Description.class);
-		String description = annDescription != null ? annDescription.value() : "---";
-		System.out.println(name + "  " + className + "  " + description);
+	private class ListApplications {
+		private final java.util.List<Provider<Application>> providers;
+		private final String[] names;
+		private final int slotsForNames;
+		private final String[] classNames;
+		private final int slotsForClassNames;
+		private final String[] descriptions;
+		private final int slotsForDescriptions;
+		/**
+		 * Lists the available applications.
+		 */
+		private ListApplications() {
+			ServiceLoader<Application> serviceLoader = ServiceLoader.load(Application.class);
+			this.providers = serviceLoader.stream().collect(Collectors.toList());
+			this.names = new String[1 + providers.size()];
+			this.classNames = new String[names.length];
+			this.descriptions = new String[names.length];
+			fillColumns();
+			this.slotsForNames = Stream.of(names).mapToInt(String::length).max().getAsInt();
+			this.slotsForClassNames = Stream.of(classNames).mapToInt(String::length).max().getAsInt();
+			this.slotsForDescriptions = Stream.of(descriptions).mapToInt(String::length).max().getAsInt();
+			printRows();
+		}
+
+		private void fillColumns() {
+			names[0] = "name";
+			classNames[0] = "class";
+			descriptions[0] = "description";
+			
+			for (int pos = 1; pos < names.length; pos++) {
+				var type = providers.get(pos - 1).type();
+				classNames[pos] = type.getName();
+				Name annName = type.getAnnotation(Name.class);
+				names[pos] = annName != null ? annName.value() : "---";
+				Description annDescription = type.getAnnotation(Description.class);
+				descriptions[pos] = annDescription != null ? annDescription.value() : "---";
+			}
+		}
+
+		private void printRows() {
+			IntStream.iterate(0, i -> i + 1).limit(names.length).mapToObj(this::format).forEach(System.out::println);
+		}
+
+		private String format(int pos) {
+			String result;
+
+			if (pos == 0)
+				result = String.format("%s  %s   %s",
+						center(names[pos], slotsForNames),
+						center(classNames[pos], slotsForClassNames),
+						center(descriptions[pos], slotsForDescriptions));
+			else
+				result = String.format("%s  %s   %s",
+						leftAlign(names[pos], slotsForNames),
+						leftAlign(classNames[pos], slotsForClassNames),
+						leftAlign(descriptions[pos], slotsForDescriptions));
+
+			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+		}
 	}
 
 	@Name("App1")
@@ -241,6 +291,5 @@ public class List extends AbstractCommand {
 			// TODO Auto-generated method stub
 			
 		}
-		
 	}
 }

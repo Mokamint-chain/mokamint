@@ -26,7 +26,7 @@ module io.mokamint.application.tools {
     uses io.mokamint.application.api.Application;
 
     requires io.mokamint.application.api;
-    requires io.mokamint.application.service;
+    //requires io.mokamint.application.service;
     requires io.mokamint.tools;
 	requires java.logging;
 }

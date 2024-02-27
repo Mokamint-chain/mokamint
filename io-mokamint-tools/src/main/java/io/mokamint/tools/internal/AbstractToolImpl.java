@@ -75,13 +75,14 @@ public abstract class AbstractToolImpl {
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
 			URL resource = AbstractToolImpl.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
+			if (resource != null) {
 				try (var is = resource.openStream()) {
 					LogManager.getLogManager().readConfiguration(is);
 				}
 				catch (SecurityException | IOException e) {
 					throw new RuntimeException("Cannot load the logging.properties file", e);
 				}
+			}
 		}
 	}
 }
