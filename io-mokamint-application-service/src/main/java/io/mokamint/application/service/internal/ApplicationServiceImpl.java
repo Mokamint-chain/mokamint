@@ -39,6 +39,8 @@ import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.EndBlockMessages;
+import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -49,6 +51,7 @@ import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
+import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
@@ -108,7 +111,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
 			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
-			DeliverTransactionEndpoint.config(this)
+			DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this)
 		);
 
 		LOGGER.info(logPrefix + "published");
@@ -337,6 +340,35 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, DeliverTransactionEndpoint.class, DELIVER_TRANSACTION_ENDPOINT,
 				DeliverTransactionMessages.Decoder.class, DeliverTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onEndBlock(EndBlockMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + END_BLOCK_ENDPOINT + " request");
+
+		try {
+			try {
+				sendObjectAsync(session, EndBlockResultMessages.of(application.endBlock(message.getGroupId(), message.getDeadline()), message.getId()));
+			}
+			catch (UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class EndBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (EndBlockMessage message) -> getServer().onEndBlock(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, EndBlockEndpoint.class, END_BLOCK_ENDPOINT,
+				EndBlockMessages.Decoder.class, EndBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

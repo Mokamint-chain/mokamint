@@ -20,6 +20,7 @@ import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK
 import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.DELIVER_TRANSACTION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.END_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
@@ -48,6 +49,8 @@ import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.EndBlockMessages;
+import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -62,6 +65,8 @@ import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
+import io.mokamint.application.messages.api.EndBlockMessage;
+import io.mokamint.application.messages.api.EndBlockResultMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
@@ -111,6 +116,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		addSession(GET_INITIAL_STATE_ID_ENDPOINT, uri, GetInitialStateIdEndpoint::new);
 		addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
 		addSession(DELIVER_TRANSACTION_ENDPOINT, uri, DeliverTransactionEndpoint::new);
+		addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
 	}
 
 	@Override
@@ -139,6 +145,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 			onBeginBlockResult(bbrm.get());
 		else if (message instanceof DeliverTransactionResultMessage)
 			onDeliverTransactionResult();
+		else if (message instanceof EndBlockResultMessage ebrm)
+			onEndBlockResult(ebrm.get());
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -564,10 +572,61 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public byte[] endBlock(int groupId, Deadline deadline)
-			throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+	public byte[] endBlock(int groupId, Deadline deadline) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendEndBlock(groupId, deadline, id);
+		try {
+			return waitForResult(id, this::processEndBlockSuccess, this::processEndBlockExceptions);
+		}
+		catch (RuntimeException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends an {@link EndBlockMessage} to the application service.
+	 * 
+	 * @param groupId the identifier of the group of transactions in the message
+	 * @param deadline the deadline in the message
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendEndBlock(int groupId, Deadline deadline, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(END_BLOCK_ENDPOINT), EndBlockMessages.of(groupId, deadline, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private byte[] processEndBlockSuccess(RpcMessage message) {
+		return message instanceof EndBlockResultMessage ebrm ? ebrm.get() : null;
+	}
+
+	private boolean processEndBlockExceptions(ExceptionMessage message) {
+		var clazz = message.getExceptionClass();
+		return UnknownGroupIdException.class.isAssignableFrom(clazz) ||
+			processStandardExceptions(message);
+	}
+
+	/**
+	 * Hook called when an {@link EndBlockResultMessage} has been received.
+	 * 
+	 * @param stateId the content of the message
+	 */
+	protected void onEndBlockResult(byte[] stateId) {}
+
+	private class EndBlockEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, EndBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, EndBlockMessages.Encoder.class);
+		}
 	}
 
 	@Override

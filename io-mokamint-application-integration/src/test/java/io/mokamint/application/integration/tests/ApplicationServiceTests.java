@@ -26,6 +26,9 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
@@ -35,6 +38,8 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.mokamint.application.api.Application;
@@ -46,6 +51,8 @@ import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 
 public class ApplicationServiceTests extends AbstractLoggedTests {
@@ -509,6 +516,86 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendDeliverTransaction();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if an endBlock() request reaches the service, it yeilds the state identifier ayt the end of the block")
+	public void serviceEndBlockWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var groupId = 13;
+		var hashing = HashingAlgorithms.shabal256();
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		byte[] finalStateId = { 25, 12, 20, 24 };
+		when(app.endBlock(groupId, deadline)).thenReturn(finalStateId);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onEndBlockResult(byte[] stateId) {
+				if (Arrays.equals(finalStateId, stateId))
+					semaphore.release();
+			}
+
+			private void sendEndBlock() throws ApplicationException {
+				sendEndBlock(groupId, deadline, "id");
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendEndBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if an endBlock() request reaches the service and the group id is unknown, it sends back an exception")
+	public void serviceEndBlockUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var groupId = 13;
+		var hashing = HashingAlgorithms.shabal256();
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		var exceptionMessage = "unknown group id";
+		when(app.endBlock(groupId, deadline)).thenThrow(new UnknownGroupIdException(exceptionMessage));
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+					semaphore.release();
+			}
+	
+			private void sendEndBlock() throws ApplicationException {
+				sendEndBlock(groupId, deadline, "id");
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendEndBlock();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

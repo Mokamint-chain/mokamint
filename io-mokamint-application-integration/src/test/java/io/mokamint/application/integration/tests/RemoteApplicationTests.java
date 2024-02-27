@@ -26,6 +26,9 @@ import static org.mockito.Mockito.mock;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
@@ -34,6 +37,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.application.api.ApplicationException;
@@ -43,6 +48,7 @@ import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
@@ -50,6 +56,7 @@ import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
+import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
@@ -57,6 +64,8 @@ import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.nonce.Deadlines;
+import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -330,7 +339,10 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("beginBlock() works")
 	public void beginBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownStateException {
-		int groupId = 42;
+		var groupId = 42;
+		var height = 13L;
+		var when = LocalDateTime.now();
+		var stateId = new byte[] { 13, 1, 19, 73 };
 
 		class MyServer extends PublicTestServer {
 
@@ -338,21 +350,26 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
-				try {
-					sendObjectAsync(session, BeginBlockResultMessages.of(groupId, message.getId()));
+				if (message.getHeight() == height && when.equals(message.getWhen()) && Arrays.equals(stateId, message.getStateId())) {
+					try {
+						sendObjectAsync(session, BeginBlockResultMessages.of(groupId, message.getId()));
+					}
+					catch (IOException e) {}
 				}
-				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			assertSame(groupId, remote.beginBlock(13L, LocalDateTime.now(), new byte[] { 13, 1, 19, 73 }));
+			assertSame(groupId, remote.beginBlock(height, when, stateId));
 		}
 	}
 
 	@Test
 	@DisplayName("beginBlock() works if it throws UnknownStateException")
 	public void beginBlockWorksInCaseOfUnknownStateException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var height = 13L;
+		var when = LocalDateTime.now();
+		var stateId = new byte[] { 13, 1, 19, 73 };
 		var exceptionMessage = "unknown state";
 
 		class MyServer extends PublicTestServer {
@@ -361,15 +378,17 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new UnknownStateException(exceptionMessage), message.getId()));
+				if (message.getHeight() == height && when.equals(message.getWhen()) && Arrays.equals(stateId, message.getStateId())) {
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new UnknownStateException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
 				}
-				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(UnknownStateException.class, () -> remote.beginBlock(13L, LocalDateTime.now(), new byte[] { 13, 1, 19, 73 }));
+			var exception = assertThrows(UnknownStateException.class, () -> remote.beginBlock(height, when, stateId));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -377,21 +396,26 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deliverTransaction() works")
 	public void deliverTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, RejectedTransactionException {
+		var groupId = 42;
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws DeploymentException, IOException {}
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
+				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
+					}
+					catch (IOException e) {}
 				}
-				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			remote.deliverTransaction(42, Transactions.of(new byte[] { 13, 1, 19, 73 }));
+			remote.deliverTransaction(groupId, transaction);
 		}
 		catch (UnknownGroupIdException | RejectedTransactionException e) {
 			fail();
@@ -401,6 +425,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deliverTransaction() works if it throws UnknownGroupIdException")
 	public void deliverTransactionWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var groupId = 42;
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "unknown group id";
 
 		class MyServer extends PublicTestServer {
@@ -409,15 +435,17 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
+				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
 				}
-				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.deliverTransaction(42, Transactions.of(new byte[] { 13, 1, 19, 73 })));
+			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.deliverTransaction(groupId, transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -425,6 +453,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deliverTransaction() works if it throws RejectedTransactionException")
 	public void deliverTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var groupId = 42;
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
 
 		class MyServer extends PublicTestServer {
@@ -433,15 +463,86 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction())) {
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
 				}
-				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(RejectedTransactionException.class, () -> remote.deliverTransaction(42, Transactions.of(new byte[] { 13, 1, 19, 73 })));
+			var exception = assertThrows(RejectedTransactionException.class, () -> remote.deliverTransaction(groupId, transaction));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("endBlock works")
+	public void endBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		var hashing = HashingAlgorithms.shabal256();
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		byte[] finalStateId = { 24, 12, 20, 24 };
+		var groupId = 42;
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onEndBlock(EndBlockMessage message, Session session) {
+				if (message.getGroupId() == groupId && message.getDeadline().equals(deadline)) {
+					try {
+						sendObjectAsync(session, EndBlockResultMessages.of(finalStateId, message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertArrayEquals(finalStateId, remote.endBlock(groupId, deadline));
+		}
+	}
+
+	@Test
+	@DisplayName("endBlock() works if it throws UnknownGroupIdException")
+	public void endBlockWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException  {
+		var hashing = HashingAlgorithms.shabal256();
+		var value = new byte[hashing.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashing, plotKeyPair.getPrivate());
+		var groupId = 42;
+		var exceptionMessage = "unknown group id";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onEndBlock(EndBlockMessage message, Session session) {
+				if (message.getGroupId() == groupId && message.getDeadline().equals(deadline)) {
+					try {
+						sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
+					}
+					catch (IOException e) {}
+				}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.endBlock(groupId, deadline));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
