@@ -40,6 +40,7 @@ module io.mokamint.node.tools {
 	requires io.mokamint.plotter;
 	requires io.mokamint.tools;
 	requires io.mokamint.application;
+	requires io.mokamint.application.remote;
 	requires io.mokamint.node.service;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;

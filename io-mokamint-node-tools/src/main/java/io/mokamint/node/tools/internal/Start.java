@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import io.hotmoka.crypto.Entropies;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
@@ -381,7 +382,13 @@ public class Start extends AbstractCommand {
 			}
 			else {
 				System.out.print("Connecting to the application at " + applicationUri + "... ");
-				app = new EmptyApplication(); // TODO
+
+				try {
+					app = RemoteApplications.of(applicationUri, 5000);
+				}
+				catch (DeploymentException | IOException e) {
+					throw new CommandException("Cannot connect to the remote application at " + applicationUri + ": " + e.getMessage());
+				}
 			}
 		
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
