@@ -17,11 +17,11 @@ limitations under the License.
 package io.mokamint.tools.internal;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.function.Supplier;
 import java.util.logging.LogManager;
 
 import io.mokamint.tools.AbstractTool;
+import io.mokamint.tools.AbstractTool.ResourceOpener;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -70,18 +70,15 @@ public abstract class AbstractToolImpl {
 			.execute(args);
 	}
 
-	static {
+	protected static void loadLoggingConfig(ResourceOpener opener) {
 		String current = System.getProperty("java.util.logging.config.file");
 		if (current == null) {
 			// if the property is not set, we provide a default (if it exists)
-			URL resource = AbstractToolImpl.class.getClassLoader().getResource("logging.properties");
-			if (resource != null) {
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load the logging.properties file", e);
-				}
+			try (var is = opener.open()) {
+				LogManager.getLogManager().readConfiguration(is);
+			}
+			catch (SecurityException | IOException e) {
+				throw new RuntimeException("Cannot load the logging properties file", e);
 			}
 		}
 	}

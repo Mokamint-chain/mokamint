@@ -49,4 +49,8 @@ public class MokamintPlotter extends AbstractTool {
 	public static void main(String[] args) {
 		main(MokamintPlotter::new, args);
 	}
+
+	static {
+		loadLoggingConfig(() -> MokamintPlotter.class.getModule().getResourceAsStream("logging.properties"));
+	}
 }

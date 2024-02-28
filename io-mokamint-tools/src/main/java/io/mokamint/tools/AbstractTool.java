@@ -16,6 +16,9 @@ limitations under the License.
 
 package io.mokamint.tools;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import io.mokamint.tools.internal.AbstractToolImpl;
 
 /**
@@ -27,4 +30,18 @@ public abstract class AbstractTool extends AbstractToolImpl {
 	 * Builds the tool.
 	 */
 	protected AbstractTool() {}
+
+	/**
+	 * A function that opens a resource.
+	 */
+	public interface ResourceOpener {
+
+		/**
+		 * Opens the resource.
+		 * 
+		 * @return the stream of the resource
+		 * @throws IOException if the resource cannot be opened
+		 */
+		InputStream open() throws IOException;
+	}
 }

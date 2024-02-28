@@ -49,4 +49,8 @@ public class MokamintApplication extends AbstractTool {
 	public static void main(String[] args) {
 		main(MokamintApplication::new, args);
 	}
+
+	static {
+		loadLoggingConfig(() -> MokamintApplication.class.getModule().getResourceAsStream("logging.properties"));
+	}
 }
