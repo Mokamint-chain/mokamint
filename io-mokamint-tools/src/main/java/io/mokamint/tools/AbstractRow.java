@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module partially implements an application run on a Mokamint blockchain.
- */
-module io.mokamint.application {
-	exports io.mokamint.application;
-	requires transitive io.mokamint.application.api;
-	requires io.hotmoka.closeables;
-	requires io.hotmoka.annotations;
+package io.mokamint.tools;
 
-	uses io.mokamint.application.api.Application;
+import io.mokamint.tools.internal.AbstractRowImpl;
+
+/**
+ * Partial implementation of a row of a {@link Table}.
+ */
+public abstract class AbstractRow extends AbstractRowImpl {
+
+	/**
+	 * Creates the row.
+	 */
+	protected AbstractRow() {}
 }

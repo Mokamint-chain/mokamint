@@ -39,6 +39,7 @@ module io.mokamint.node.tools {
 	requires io.mokamint.node.remote;
 	requires io.mokamint.plotter;
 	requires io.mokamint.tools;
+	requires io.mokamint.application;
 	requires io.mokamint.node.service;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;
@@ -46,6 +47,5 @@ module io.mokamint.node.tools {
 	requires com.google.gson;
 	requires java.logging;
 
-	uses io.mokamint.application.api.Application;
 	provides io.mokamint.application.api.Application with io.mokamint.node.tools.internal.EmptyApplication;
 }

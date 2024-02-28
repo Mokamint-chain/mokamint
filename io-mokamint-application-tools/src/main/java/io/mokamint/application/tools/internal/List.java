@@ -17,11 +17,11 @@ limitations under the License.
 package io.mokamint.application.tools.internal;
 
 import java.time.LocalDateTime;
-import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
+import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.Description;
@@ -32,6 +32,7 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.tools.AbstractCommand;
+import io.mokamint.tools.AbstractRow;
 import io.mokamint.tools.AbstractTable;
 import io.mokamint.tools.CommandException;
 import io.mokamint.tools.Table;
@@ -52,7 +53,7 @@ public class List extends AbstractCommand {
 		new MyTable().print();
 	}
 
-	private static class Row implements io.mokamint.tools.Row {
+	private static class Row extends AbstractRow {
 		private final String name;
 		private final String className;
 		private final String description;
@@ -95,7 +96,7 @@ public class List extends AbstractCommand {
 	private class MyTable extends AbstractTable {
 		private MyTable() {
 			super(new Row("name", "class", "description"), 3, json);
-			ServiceLoader.load(Application.class).stream().forEach(this::add);
+			Applications.available().forEach(this::add);
 		}
 
 		private void add(Provider<Application> provider) {

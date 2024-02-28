@@ -16,7 +16,7 @@
   <dependencies>
   	<dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-application-api</artifactId>
+      <artifactId>io-mokamint-application</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
@@ -28,6 +28,11 @@
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-tools</artifactId>
       <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
+      <version>2.1.0</version>
     </dependency>
   </dependencies>
 

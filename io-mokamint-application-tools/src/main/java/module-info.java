@@ -23,10 +23,10 @@ module io.mokamint.application.tools {
 
     // TODO: remove at the end
     provides io.mokamint.application.api.Application with io.mokamint.application.tools.internal.List.App1, io.mokamint.application.tools.internal.List.App42;
-    uses io.mokamint.application.api.Application;
 
-    requires io.mokamint.application.api;
-    //requires io.mokamint.application.service;
+    requires io.mokamint.application;
+    requires io.mokamint.application.service;
     requires io.mokamint.tools;
+    requires jakarta.websocket.client;
 	requires java.logging;
 }

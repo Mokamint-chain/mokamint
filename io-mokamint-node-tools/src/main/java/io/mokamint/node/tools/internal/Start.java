@@ -32,15 +32,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.ServiceLoader;
-import java.util.ServiceLoader.Provider;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import io.hotmoka.crypto.Entropies;
+import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.Name;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
@@ -374,17 +371,13 @@ public class Start extends AbstractCommand {
 
 			if (application != null) {
 				System.out.print("Creating the " + application + " application... ");
-				ServiceLoader<Application> serviceLoader = ServiceLoader.load(Application.class);
-				List<Provider<Application>> providers = serviceLoader.stream()
-					.filter(this::providesRequiredApplication)
-					.collect(Collectors.toList());
 
-				if (providers.size() == 0)
-					throw new CommandException("There are no providers for application " + application);
-				else if (providers.size() > 1)
-					throw new CommandException("There is more than one provider for application " + application);
-
-				app = providers.get(0).get();
+				try {
+					app = Applications.load(application);
+				}
+				catch (IllegalArgumentException e) {
+					throw new CommandException(e.getMessage());
+				}
 			}
 			else {
 				System.out.print("Connecting to the application at " + applicationUri + "... ");
@@ -393,11 +386,6 @@ public class Start extends AbstractCommand {
 		
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 			return app;
-		}
-
-		private boolean providesRequiredApplication(ServiceLoader.Provider<Application> provider) {
-			Name ann = provider.type().getAnnotation(Name.class);
-			return ann != null && application.equals(ann.value());
 		}
 
 		private void waitForKeyPress() throws CommandException {

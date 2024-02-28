@@ -2,4 +2,4 @@
 set SOURCE=%~dp0
 set DIR=%SOURCE%
 
-java --module-path "%DIR%modules\explicit";"%DIR%modules\automatic" --class-path "%DIR%modules\unnamed\*" --module io.mokamint.application.tools/io.mokamint.application.tools.MokamintApplication %*
+java --module-path "%DIR%modules\explicit";"%DIR%modules\automatic" --class-path "%DIR%modules\unnamed\*" --add-modules org.glassfish.tyrus.container.grizzly.server --module io.mokamint.application.tools/io.mokamint.application.tools.MokamintApplication %*
