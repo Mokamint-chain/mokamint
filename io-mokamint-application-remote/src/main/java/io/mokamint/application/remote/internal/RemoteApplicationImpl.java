@@ -87,6 +87,7 @@ import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -132,9 +133,9 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public void close() throws ApplicationException, InterruptedException {
-		super.close();
-		LOGGER.info(logPrefix + "closed");
+	protected void closeResources(CloseReason reason) throws ApplicationException, InterruptedException {
+		super.closeResources(reason);
+		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}
 
 	private RuntimeException unexpectedException(Exception e) {

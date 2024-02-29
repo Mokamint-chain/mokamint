@@ -94,6 +94,7 @@ import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 
 public class PublicNodeServiceTests extends AbstractLoggedTests {
@@ -708,8 +709,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void close() throws NodeException, InterruptedException {
-				super.close();
+			protected void closeResources(CloseReason reason) throws NodeException, InterruptedException {
+				super.closeResources(reason);
 				semaphore.release();
 			}
 		}

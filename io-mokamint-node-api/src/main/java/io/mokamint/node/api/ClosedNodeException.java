@@ -26,7 +26,7 @@ public class ClosedNodeException extends NodeException {
 	 * Creates a new exception.
 	 */
 	public ClosedNodeException() {
-		super("The node is already closed");
+		super("The node is closed");
 	}
 
 	/**
@@ -44,7 +44,7 @@ public class ClosedNodeException extends NodeException {
 	 * @param cause the cause
 	 */
 	public ClosedNodeException(Throwable cause) {
-		super(cause);
+		super(cause.getMessage(), cause);
 	}
 
 	/**

@@ -52,6 +52,7 @@ import io.mokamint.node.messages.api.OpenMinerResultMessage;
 import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 import io.mokamint.node.messages.api.RemovePeerResultMessage;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
@@ -89,6 +90,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
+	protected void closeResources(CloseReason reason) throws NodeException, InterruptedException {
+		super.closeResources(reason);
+		LOGGER.info(logPrefix + "closed with reason: " + reason);
+	}
+
+	@Override
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof AddPeerResultMessage)
 			onAddPeerResult();
@@ -99,7 +106,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		else if (message instanceof RemoveMinerResultMessage)
 			onCloseMinerResult();
 		else if (message != null && !(message instanceof ExceptionMessage)) {
-			LOGGER.warning("unexpected message of class " + message.getClass().getName());
+			LOGGER.warning(logPrefix + "unexpected message of class " + message.getClass().getName());
 			return;
 		}
 
@@ -154,7 +161,6 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onRemovePeerResult() {}
 	protected void onOpenMinerResult() {}
 	protected void onCloseMinerResult() {}
-	protected void onException(ExceptionMessage message) {}
 
 	@Override
 	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, NodeException {

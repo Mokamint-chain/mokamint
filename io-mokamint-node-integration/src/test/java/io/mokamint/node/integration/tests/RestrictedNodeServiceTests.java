@@ -45,6 +45,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 
 public class RestrictedNodeServiceTests extends AbstractLoggedTests {
@@ -215,8 +216,8 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public void close() throws NodeException, InterruptedException {
-				super.close();
+			protected void closeResources(CloseReason reason) throws NodeException, InterruptedException {
+				super.closeResources(reason);
 				semaphore.release();
 			}
 		}

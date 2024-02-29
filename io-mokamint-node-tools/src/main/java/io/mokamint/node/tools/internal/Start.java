@@ -360,8 +360,8 @@ public class Start extends AbstractCommand {
 			Path dir = config.getDir();
 
 			if (Files.exists(dir)) {
-				System.out.println(Ansi.AUTO.string("@|yellow The path \"" + dir + "\" already exists! Will restart the node from the current content of \"" + dir + "\".|@"));
-				System.out.println(Ansi.AUTO.string("@|yellow If you want to start a blockchain from scratch, stop this process, delete \"" + dir + "\" and start again a node with --init.|@"));
+				System.out.println(Ansi.AUTO.string("@|red The path \"" + dir + "\" already exists! Will restart the node from the current content of \"" + dir + "\".|@"));
+				System.out.println(Ansi.AUTO.string("@|red If you want to start a blockchain from scratch, stop this process, delete \"" + dir + "\" and start again a node with --init.|@"));
 			}
 			else
 				Files.createDirectories(dir);
@@ -385,6 +385,7 @@ public class Start extends AbstractCommand {
 
 				try {
 					app = RemoteApplications.of(applicationUri, 5000);
+					app.addOnCloseHandler(this::onRemoteApplicationClosed);
 				}
 				catch (DeploymentException | IOException e) {
 					throw new CommandException("Cannot connect to the remote application at " + applicationUri + ": " + e.getMessage());
@@ -393,6 +394,12 @@ public class Start extends AbstractCommand {
 		
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 			return app;
+		}
+
+		private void onRemoteApplicationClosed() {
+			System.out.println(Ansi.AUTO.string("\n@|red The remote application at " + applicationUri
+				+ " has been closed!\nThis node is not able to mine and verify new blocks anymore.|@"));
+			System.out.print(Ansi.AUTO.string("@|green Press any key to stop the node.|@"));
 		}
 
 		private void waitForKeyPress() throws CommandException {

@@ -43,21 +43,13 @@ abstract class AbstractRemoteNode extends AbstractRemote<NodeException> implemen
 	}
 
 	@Override
-	public void close() throws NodeException, InterruptedException {
-		super.close();
-	}
-
-	@Override
 	protected ClosedNodeException mkExceptionIfClosed() {
-		return new ClosedNodeException("The node is already closed");
+		return new ClosedNodeException();
 	}
 
 	@Override
 	protected NodeException mkException(Exception cause) {
-		if (cause instanceof NodeException ne)
-			return ne;
-		else
-			return new NodeException(cause);
+		return cause instanceof NodeException ne ? ne : new NodeException(cause);
 	}
 
 	/**

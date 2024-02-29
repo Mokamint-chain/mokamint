@@ -134,6 +134,7 @@ import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.service.api.PublicNodeService;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -235,13 +236,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void close() throws NodeException, InterruptedException { // TODO: avoid repeated shutdown when the node is already closed
+	protected void closeResources(CloseReason reason) throws NodeException, InterruptedException {
 		try {
 			periodicTasks.shutdownNow();
 		}
 		finally {
 			try {
-				super.close();
+				super.closeResources(reason);
+				LOGGER.info(logPrefix + "closed with reason: " + reason);
 			}
 			finally {
 				periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
@@ -353,7 +355,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		else if (message instanceof GetTransactionAddressResultMessage gtarm)
 			onGetTransactionAddressResult(gtarm.get());
 		else if (message != null && !(message instanceof ExceptionMessage)) {
-			LOGGER.warning("unexpected message of class " + message.getClass().getName());
+			LOGGER.warning(logPrefix + "unexpected message of class " + message.getClass().getName());
 			return;
 		}
 

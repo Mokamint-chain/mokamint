@@ -28,7 +28,7 @@ public class ClosedApplicationException extends ApplicationException {
 	 * Creates a new exception.
 	 */
 	public ClosedApplicationException() {
-		super("The application is already closed");
+		super("The application is closed");
 	}
 
 	/**
@@ -46,7 +46,7 @@ public class ClosedApplicationException extends ApplicationException {
 	 * @param cause the cause
 	 */
 	public ClosedApplicationException(Throwable cause) {
-		super(cause);
+		super(cause.getMessage(), cause);
 	}
 
 	/**
