@@ -83,6 +83,18 @@
       <version>${mokamint.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-service</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-remote</artifactId>
+      <version>${mokamint.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>

@@ -182,11 +182,21 @@ public class MiningTask implements Task {
 					LOGGER.warning("mining: exiting since the node is being shut down");
 					break;
 				}
+				catch (ApplicationException e) {
+					LOGGER.warning("mining: the application is misbehaving: I will wait five seconds and then try again: " + e.getMessage());
+
+					try {
+						Thread.sleep(5000L);
+					}
+					catch (InterruptedException e2) {
+						LOGGER.info("mining: restarting mining since the blockchain's head changed 2");
+					}
+				}
 				catch (UnknownStateException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting since the state of the head of the blockchain is unknown to the application", e);
 					break;
 				}
-				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException | ApplicationException | UnknownGroupIdException e) {
+				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException | UnknownGroupIdException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
 					break;
 				}

@@ -134,6 +134,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	@Override
 	public void close() throws ApplicationException, InterruptedException {
 		super.close();
+		LOGGER.info(logPrefix + "closed");
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
