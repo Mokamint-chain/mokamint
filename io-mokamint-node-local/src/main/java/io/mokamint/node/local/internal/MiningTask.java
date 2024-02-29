@@ -182,7 +182,7 @@ public class MiningTask implements Task {
 					LOGGER.warning("mining: exiting since the node is being shut down");
 					break;
 				}
-				catch (ApplicationException e) {
+				catch (ApplicationException | TimeoutException e) {
 					LOGGER.warning("mining: the application is misbehaving: I will wait five seconds and then try again: " + e.getMessage());
 
 					try {
@@ -198,10 +198,6 @@ public class MiningTask implements Task {
 				}
 				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException | UnknownGroupIdException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
-					break;
-				}
-				catch (TimeoutException e) {
-					LOGGER.warning("mining: exiting since the application did not answer in time");
 					break;
 				}
 				catch (RuntimeException e) {
