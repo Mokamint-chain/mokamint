@@ -22,10 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import com.google.gson.Gson;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.ChainPortion;
@@ -36,7 +32,10 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.AbstractRow;
+import io.mokamint.tools.AbstractTable;
 import io.mokamint.tools.CommandException;
+import io.mokamint.tools.Table;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -58,6 +57,93 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+	private static class Row extends AbstractRow {
+		private final String height;
+		private final String hash;
+		private final String created;
+		private final String nodePublicKey;
+		private final String minerPublicKey;
+	
+		private Row(String height, String hash, String created, String nodePublicKey, String minerPublicKey) {
+			this.height = height;
+			this.hash = hash;
+			this.created = created;
+			this.nodePublicKey = nodePublicKey;
+			this.minerPublicKey = minerPublicKey;
+		}
+	
+		@Override
+		public String getColumn(int index) {
+			switch (index) {
+			case 0: return height;
+			case 1: return hash;
+			case 2: return created;
+			case 3: return nodePublicKey;
+			case 4: return minerPublicKey;
+			default: throw new IndexOutOfBoundsException(index);
+			}
+		}
+	
+		@Override
+		public String toString(int pos, Table table) {
+			String result = String.format("%s %s  %s  %s  %s",
+				rightAlign(height, table.getSlotsForColumn(0)),
+				center(hash, table.getSlotsForColumn(1)),
+				center(created, table.getSlotsForColumn(2)),
+				center(nodePublicKey, table.getSlotsForColumn(3)),
+				center(minerPublicKey, table.getSlotsForColumn(4)));
+	
+			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+		}
+	}
+
+	private class MyTable extends AbstractTable {
+		private MyTable(byte[][] hashes, ConsensusConfig<?, ?> config, LocalDateTime startDateTimeUTC, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+			super(new Row("", "block hash (" + config.getHashingForBlocks() + ")",
+					"created (UTC)", "node's public key (" + config.getSignatureForBlocks() + ", base58)",
+					"miner's public key (" + config.getSignatureForDeadlines() + ", base58)"), 5, json());
+	
+			int pos = 1;
+			for (byte[] hash: hashes)
+				add(hashes, hash, startDateTimeUTC, remote, pos++);
+		}
+	
+		private void add(byte[][] hashes, byte[] hash, LocalDateTime startDateTimeUTC, RemotePublicNode remote, int pos) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+			long height = from + hashes.length - pos;
+			String rowHeight = height + ":";
+			String rowHash = Hex.toHexString(hashes[hashes.length - pos]);
+			String rowCreated;
+			String rowNodePublicKey;
+			String rowMinerPublicKey;
+	
+			var maybeBlockDescription = remote.getBlockDescription(hashes[hashes.length - pos]);
+			if (maybeBlockDescription.isEmpty()) {
+				if (height == 0L) {
+					rowCreated = startDateTimeUTC.format(FORMATTER);
+					rowMinerPublicKey = "---";
+				}
+				else {
+					rowCreated = "unknown";
+					rowMinerPublicKey = "unknown";
+				}
+	
+				rowNodePublicKey = "unknown";
+			}
+			else {
+				var description = maybeBlockDescription.get();
+				rowCreated = startDateTimeUTC.plus(description.getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
+				rowNodePublicKey = description.getPublicKeyForSigningBlockBase58();
+	
+				if (description instanceof NonGenesisBlockDescription ngbd)
+					rowMinerPublicKey = ngbd.getDeadline().getProlog().getPublicKeyForSigningDeadlinesBase58();
+				else
+					rowMinerPublicKey = "---";
+			}
+	
+			add(new Row(rowHeight, rowHash, rowCreated, rowNodePublicKey, rowMinerPublicKey));
+		}
+	}
+
 	private void body(RemotePublicNode remote) throws CommandException, DatabaseException, TimeoutException, InterruptedException, NodeException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
@@ -73,16 +159,14 @@ public class List extends AbstractPublicRpcCommand {
 			LOGGER.info("requesting hashes in the height interval [" + from + ", " + (from + count) + ")");
 			ChainPortion chain = remote.getChainPortion(from, count);
 
-			if (json())
-				System.out.println(new Gson().toJsonTree(chain.getHashes().map(Hex::toHexString).toArray(String[]::new)));
-			else if (chain.getHashes().count() != 0) {
+			if (chain.getHashes().count() != 0) {
 				var maybeGenesisHash = info.getGenesisHash();
 				if (maybeGenesisHash.isPresent()) {
 					var maybeGenesis = remote.getBlockDescription(maybeGenesisHash.get());
 					if (maybeGenesis.isEmpty())
 						throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
 					else if (maybeGenesis.get() instanceof GenesisBlockDescription gbd)
-						new ListChain(chain, gbd.getStartDateTimeUTC(), remote);
+						new MyTable(chain.getHashes().toArray(byte[][]::new), remote.getConfig(), gbd.getStartDateTimeUTC(), remote).print();
 					else
 						throw new DatabaseException("The type of the genesis block is inconsistent!");
 				}
@@ -92,106 +176,6 @@ public class List extends AbstractPublicRpcCommand {
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\"!", e);
-		}
-	}
-
-	private class ListChain {
-		private final RemotePublicNode remote;
-		private final ConsensusConfig<?, ?> config;
-		private final LocalDateTime startDateTimeUTC;
-		private final String[] heights;
-		private final int slotsForHeight;
-		private final String[] hashes;
-		private final int slotsForHash;
-		private final String[] creationDateTimesUTC;
-		private final int slotsForCreationDateTimeUTC;
-		private final String[] nodePublicKeys;
-		private final int slotsForNodePublicKey;
-		private final String[] minerPublicKeys;
-		private final int slotsForMinerPublicKey;
-
-		/**
-		 * Lists the hashes in {@code chain}, reporting the time of creation of each block.
-		 * 
-		 * @param chain the chain portion to list
-		 * @param startDateTimeUTC the starting moment of the chain
-		 * @param the remote node
-		 * @throws DatabaseException if the database of the node is corrupted
-		 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
-		 * @throws TimeoutException if some connection timed-out
-		 * @throws InterruptedException if some connection was interrupted while waiting
-		 * @throws NodeException if the remote node could not complete the operation
-		 */
-		private ListChain(ChainPortion chain, LocalDateTime startDateTimeUTC, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, NoSuchAlgorithmException, DatabaseException {
-			this.config = remote.getConfig();
-			this.startDateTimeUTC = startDateTimeUTC;
-			this.remote = remote;
-			var hashes = chain.getHashes().toArray(byte[][]::new);
-			this.heights = new String[1 + hashes.length];
-			this.hashes = new String[heights.length];
-			this.creationDateTimesUTC = new String[heights.length];
-			this.nodePublicKeys = new String[heights.length];
-			this.minerPublicKeys = new String[heights.length];
-			fillColumns(hashes);
-			this.slotsForHeight = Stream.of(heights).mapToInt(String::length).max().getAsInt();
-			this.slotsForHash = Stream.of(this.hashes).mapToInt(String::length).max().getAsInt();
-			this.slotsForCreationDateTimeUTC = Stream.of(creationDateTimesUTC).mapToInt(String::length).max().getAsInt();
-			this.slotsForNodePublicKey = Stream.of(nodePublicKeys).mapToInt(String::length).max().getAsInt();
-			this.slotsForMinerPublicKey = Stream.of(minerPublicKeys).mapToInt(String::length).max().getAsInt();
-			printRows();
-		}
-
-		private void fillColumns(byte[][] hashes) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
-			heights[0] = "";
-			this.hashes[0] = "block hash (" + config.getHashingForBlocks() + ")";
-			creationDateTimesUTC[0] = "created (UTC)";
-			nodePublicKeys[0] = "node's public key (" + config.getSignatureForBlocks() + ", base58)";
-			minerPublicKeys[0] = "miner's public key (" + config.getSignatureForDeadlines() + ", base58)";
-			
-			for (int pos = 1; pos < this.hashes.length; pos++) {
-				long height = from + hashes.length - pos;
-				heights[pos] = height + ":";
-				this.hashes[pos] = Hex.toHexString(hashes[hashes.length - pos]);
-		
-				var maybeBlockDescription = remote.getBlockDescription(hashes[hashes.length - pos]);
-				if (maybeBlockDescription.isEmpty()) {
-					if (height == 0L) {
-						creationDateTimesUTC[pos] = startDateTimeUTC.format(FORMATTER);
-						minerPublicKeys[pos] = "---";
-					}
-					else {
-						creationDateTimesUTC[pos] = "unknown";
-						minerPublicKeys[pos] = "unknown";
-					}
-		
-					nodePublicKeys[pos] = "unknown";
-				}
-				else {
-					var description = maybeBlockDescription.get();
-					creationDateTimesUTC[pos] = startDateTimeUTC.plus(description.getTotalWaitingTime(), ChronoUnit.MILLIS).format(FORMATTER);
-					nodePublicKeys[pos] = description.getPublicKeyForSigningBlockBase58();
-
-					if (description instanceof NonGenesisBlockDescription ngbd)
-						minerPublicKeys[pos] = ngbd.getDeadline().getProlog().getPublicKeyForSigningDeadlinesBase58();
-					else
-						minerPublicKeys[pos] = "---";
-				}
-			}
-		}
-
-		private void printRows() {
-			IntStream.iterate(0, i -> i + 1).limit(hashes.length).mapToObj(this::format).forEach(System.out::println);
-		}
-
-		private String format(int pos) {
-			String result = String.format("%s %s  %s  %s  %s",
-				rightAlign(heights[pos], slotsForHeight),
-				center(hashes[pos], slotsForHash),
-				center(creationDateTimesUTC[pos], slotsForCreationDateTimeUTC),
-				center(nodePublicKeys[pos], slotsForNodePublicKey),
-				center(minerPublicKeys[pos], slotsForMinerPublicKey));
-
-			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
 		}
 	}
 
