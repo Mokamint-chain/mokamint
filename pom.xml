@@ -97,7 +97,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-remote</module>
       <module>io-mokamint-application-integration</module>
       <module>io-mokamint-application-cli</module>
-      <module>io-mokamint-plotter-tools</module>
+      <module>io-mokamint-plotter-cli</module>
       <module>io-mokamint-cli</module>
     </modules>
 

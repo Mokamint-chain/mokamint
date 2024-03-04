@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.tools.internal;
+package io.mokamint.plotter.cli.internal;
 
 import java.io.IOException;
 import java.nio.file.Path;

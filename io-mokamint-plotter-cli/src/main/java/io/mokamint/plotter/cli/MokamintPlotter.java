@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.tools;
+package io.mokamint.plotter.cli;
 
 import io.mokamint.cli.AbstractTool;
-import io.mokamint.plotter.tools.internal.Create;
-import io.mokamint.plotter.tools.internal.Show;
+import io.mokamint.plotter.cli.internal.Create;
+import io.mokamint.plotter.cli.internal.Show;
 import picocli.CommandLine.Command;
 
 /**
@@ -26,7 +26,7 @@ import picocli.CommandLine.Command;
  * 
  * This class is meant to be run from the parent directory, after building the project, with this command-line:
  * 
- * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.plotter.tools/io.mokamint.plotter.tools.MokamintPlotter
+ * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.plotter.cli/io.mokamint.plotter.cli.MokamintPlotter
  */
 @Command(
 	name = "mokamint-plotter",

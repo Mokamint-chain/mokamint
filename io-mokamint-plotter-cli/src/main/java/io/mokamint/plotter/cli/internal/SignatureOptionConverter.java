@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.tools.internal;
+package io.mokamint.plotter.cli.internal;
 
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import picocli.CommandLine.ITypeConverter;
 
 /**
- * A converter of a string option into the hashing algorithm with that name.
+ * A converter of a string option into the signature algorithm with that name.
  */
-public class HashingOptionConverter implements ITypeConverter<HashingAlgorithm> {
+public class SignatureOptionConverter implements ITypeConverter<SignatureAlgorithm> {
 
 	@Override
-	public HashingAlgorithm convert(String value) throws NoSuchAlgorithmException {
-		return HashingAlgorithms.of(value);
+	public SignatureAlgorithm convert(String value) throws NoSuchAlgorithmException {
+		return SignatureAlgorithms.of(value);
 	}
 }
