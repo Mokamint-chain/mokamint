@@ -16,96 +16,75 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.miners;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
-
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.AbstractRow;
+import io.mokamint.tools.AbstractTable;
 import io.mokamint.tools.CommandException;
-import jakarta.websocket.EncodeException;
+import io.mokamint.tools.Table;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 
 @Command(name = "ls", description = "List the miners of a node.")
 public class List extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
-			var infos = remote.getMinerInfos().sorted().toArray(MinerInfo[]::new);
-
-			if (json()) {
-				var encoder = new MinerInfos.Encoder();
-				try {
-					System.out.println(check(EncodeException.class, () ->
-						Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
-					));
-				}
-				catch (EncodeException e) {
-					throw new CommandException("Cannot encode the miners of the node at " + publicUri() + " in JSON format!", e);
-				}
-			}
-			else if (infos.length > 0)
-				new ListMiners(infos);
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		new MyTable(remote).print();
 	}
 
-	private class ListMiners {
-		private final String[] uuids;
-		private final int slotsForUUID;
-		private final String[] points;
-		private final int slotsForPoints;
-		private final String[] descriptions;
-		private final int slotsForDescription;
-
-		/**
-		 * Lists the miners with the given {@code infos}.
-		 * 
-		 * @param infos the miners information
-		 */
-		private ListMiners(MinerInfo[] infos) {
-			this.uuids = new String[1 + infos.length];
-			this.points = new String[uuids.length];
-			this.descriptions = new String[uuids.length];
-			fillColumns(infos);
-			this.slotsForUUID = Stream.of(uuids).mapToInt(String::length).max().getAsInt();
-			this.slotsForPoints = Stream.of(points).mapToInt(String::length).max().getAsInt();
-			this.slotsForDescription = Stream.of(descriptions).mapToInt(String::length).max().getAsInt();
-			printRows();
+	private static class Row extends AbstractRow {
+		private final String UUID;
+		private final String points;
+		private final String description;
+	
+		private Row(String UUID, String points, String description) {
+			this.UUID = UUID;
+			this.points = points;
+			this.description = description;
 		}
-
-		private void fillColumns(MinerInfo[] infos) {
-			uuids[0] = "UUID";
-			points[0] = "points";
-			descriptions[0] = "description";
-			
-			for (int pos = 1; pos < uuids.length; pos++) {
-				uuids[pos] = String.valueOf(infos[pos - 1].getUUID());
-				points[pos] = String.valueOf(infos[pos - 1].getPoints());
-				descriptions[pos] = infos[pos - 1].getDescription();
+	
+		@Override
+		public String getColumn(int index) {
+			switch (index) {
+			case 0: return UUID;
+			case 1: return points;
+			case 2: return description;
+			default: throw new IndexOutOfBoundsException(index);
 			}
 		}
-
-		private void printRows() {
-			IntStream.iterate(0, i -> i + 1).limit(uuids.length).mapToObj(this::format).forEach(System.out::println);
-		}
-
-		private String format(int pos) {
+	
+		@Override
+		public String toString(int pos, Table table) {
 			if (pos == 0)
 				return Ansi.AUTO.string("@|green " + String.format("%s %s   %s",
-						center(uuids[pos], slotsForUUID),
-						center(points[pos], slotsForPoints),
-						center(descriptions[pos], slotsForDescription)) + "|@");
+					center(UUID, table.getSlotsForColumn(0)),
+					center(points, table.getSlotsForColumn(1)),
+					center(description, table.getSlotsForColumn(2))) + "|@");
 			else
 				return String.format("%s %s   %s",
-						center(uuids[pos], slotsForUUID),
-						rightAlign(points[pos], slotsForPoints),
-						leftAlign(descriptions[pos], slotsForDescription));
+					center(UUID, table.getSlotsForColumn(0)),
+					rightAlign(points, table.getSlotsForColumn(1)),
+					leftAlign(description, table.getSlotsForColumn(2)));
+		}
+	}
+
+	private class MyTable extends AbstractTable {
+
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+			super(new Row("UUID", "points", "description"), 3, json());
+			remote.getMinerInfos().sorted().forEach(this::add);
+		}
+
+		private void add(MinerInfo info) {
+			String UUID = String.valueOf(info.getUUID());
+			String points = String.valueOf(info.getPoints());
+			String description = info.getDescription();
+
+			add(new Row(UUID, points, description));
 		}
 	}
 

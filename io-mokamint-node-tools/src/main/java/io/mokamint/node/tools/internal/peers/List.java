@@ -16,26 +16,21 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.peers;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
-
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-import io.mokamint.node.PeerInfos;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.AbstractRow;
+import io.mokamint.tools.AbstractTable;
 import io.mokamint.tools.CommandException;
+import io.mokamint.tools.Table;
 import jakarta.websocket.DeploymentException;
-import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -54,108 +49,110 @@ public class List extends AbstractPublicRpcCommand {
 	private final static int MAX_PEER_LENGTH = 50;
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
-		var infos = remote.getPeerInfos().sorted().toArray(PeerInfo[]::new);
-
-		if (json())
-			printAsJSON(infos);
-		else if (infos.length > 0)
-			new PrintAsText(infos);
+		new MyTable(remote).print();
 	}
 
-	private class PrintAsText {
-		private final String[] URIs;
-		private final int slotsForURI;
-		private final String[] points;
-		private final int slotsForPoints;
-		private final String[] statuses;
-		private final int slotsForStatus;
-		private final String[] UUIDs;
-		private final int slotsForUUID;
-		private final String[] versions;
-		private final int slotsForVersion;
-
-		private PrintAsText(PeerInfo[] infos) {
-			this.URIs = new String[1 + infos.length];
-			this.points = new String[URIs.length];
-			this.statuses = new String[URIs.length];
-			this.UUIDs = new String[URIs.length];
-			this.versions = new String[URIs.length];
-			fillColumns(infos);
-			this.slotsForURI = Stream.of(URIs).mapToInt(String::length).max().getAsInt();
-			this.slotsForPoints = Stream.of(points).mapToInt(String::length).max().getAsInt();
-			this.slotsForStatus = Stream.of(statuses).mapToInt(String::length).max().getAsInt();
-			this.slotsForUUID = Stream.of(UUIDs).mapToInt(String::length).max().getAsInt();
-			this.slotsForVersion = Stream.of(versions).mapToInt(String::length).max().getAsInt();
-			printRows();
+	private class Row extends AbstractRow {
+		protected final String URI;
+		protected final String points;
+		protected final String status;
+	
+		private Row(String URI, String points, String status) {
+			this.URI = URI;
+			this.points = points;
+			this.status = status;
 		}
 
-		private void fillColumns(PeerInfo[] infos) {
-			URIs[0] = "URI";
-			points[0] = "points";
-			statuses[0] = "status";
-			UUIDs[0] = "UUID";
-			versions[0] = "version";
-			
-			for (int pos = 1; pos < URIs.length; pos++) {
-				PeerInfo info = infos[pos - 1];
-				URIs[pos] = info.getPeer().toString();
-				if (URIs[pos].length() > MAX_PEER_LENGTH)
-					URIs[pos] = URIs[pos].substring(0, MAX_PEER_LENGTH) + "...";
-
-				points[pos] = String.valueOf(info.getPoints());
-				statuses[pos] = info.isConnected() ? "connected" : "disconnected";
-
-				if (verbose) {
-					try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000L)) {
-						var peerInfo = remote.getInfo();
-						UUIDs[pos] = peerInfo.getUUID().toString();
-						versions[pos] = peerInfo.getVersion().toString();
-					}
-					catch (NodeException | IOException | DeploymentException | TimeoutException | InterruptedException e) {
-						if (e instanceof InterruptedException)
-							Thread.currentThread().interrupt();
-
-						LOGGER.log(Level.WARNING, "cannot contact " + info.getPeer(), e);
-						UUIDs[pos] = "<unknown>";
-						versions[pos] = "<unknown>";
-					}
-				}
-				else
-					UUIDs[pos] = versions[pos] = "";
+		@Override
+		public String getColumn(int index) {
+			switch (index) {
+			case 0: return URI;
+			case 1: return points;
+			case 2: return status;
+			case 3, 4: return "";
+			default: throw new IndexOutOfBoundsException(index);
 			}
 		}
-
-		private void printRows() {
-			IntStream.iterate(0, i -> i + 1).limit(URIs.length).mapToObj(this::format).forEach(System.out::println);
-		}
-
-		private String format(int pos) {
-			String result;
-			if (verbose)
-				result = String.format("%s  %s  %s  %s  %s",
-						center(URIs[pos], slotsForURI),
-						rightAlign(points[pos], slotsForPoints),
-						center(statuses[pos], slotsForStatus),
-						center(UUIDs[pos], slotsForUUID),
-						center(versions[pos], slotsForVersion));
-			else
-				result = String.format("%s  %s  %s",
-						center(URIs[pos], slotsForURI),
-						rightAlign(points[pos], slotsForPoints),
-						center(statuses[pos], slotsForStatus));
+	
+		@Override
+		public String toString(int pos, Table table) {
+			String result = String.format("%s  %s  %s",
+					center(URI, table.getSlotsForColumn(0)),
+					rightAlign(points, table.getSlotsForColumn(1)),
+					center(status, table.getSlotsForColumn(2)));
 
 			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
 		}
 	}
 
-	private void printAsJSON(PeerInfo[] infos) throws CommandException {
-		var encoder = new PeerInfos.Encoder();
+	private class RowVerbose extends Row {
+		private final String UUID;
+		private final String version;
+	
+		private RowVerbose(String URI, String points, String status, String UUID, String version) {
+			super(URI, points, status);
 
-		try {
-			System.out.println(check(EncodeException.class, () -> Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))));
+			this.UUID = UUID;
+			this.version = version;
 		}
-		catch (EncodeException e) {
-			throw new CommandException("Cannot encode the peers of the node at " + publicUri() + " in JSON format!", e);
+
+		@Override
+		public String getColumn(int index) {
+			switch (index) {
+			case 3: return UUID;
+			case 4: return version;
+			default: return super.getColumn(index);
+			}
+		}
+	
+		@Override
+		public String toString(int pos, Table table) {
+			String result = String.format("%s  %s  %s  %s  %s",
+				center(URI, table.getSlotsForColumn(0)),
+				rightAlign(points, table.getSlotsForColumn(1)),
+				center(status, table.getSlotsForColumn(2)),
+				center(UUID, table.getSlotsForColumn(3)),
+				center(version, table.getSlotsForColumn(4)));
+
+			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+		}
+	}
+
+	private class MyTable extends AbstractTable  {
+
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+			super(verbose ? new RowVerbose("URI", "points", "status", "UUID", "version") : new Row("URI", "points", "status"), 5, json());
+			remote.getPeerInfos().sorted().forEach(this::add);
+		}
+
+		private void add(PeerInfo info) {
+			String URI = info.getPeer().toString();
+			if (URI.length() > MAX_PEER_LENGTH)
+				URI = URI.substring(0, MAX_PEER_LENGTH) + "...";
+
+			String points = String.valueOf(info.getPoints());
+			String status = info.isConnected() ? "connected" : "disconnected";
+
+			if (verbose) {
+				String UUID, version;
+
+				try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000L)) {
+					var peerInfo = remote.getInfo();
+					UUID = peerInfo.getUUID().toString();
+					version = peerInfo.getVersion().toString();
+				}
+				catch (NodeException | IOException | DeploymentException | TimeoutException | InterruptedException e) {
+					if (e instanceof InterruptedException)
+						Thread.currentThread().interrupt();
+
+					LOGGER.log(Level.WARNING, "cannot contact " + info.getPeer() + ": " + e.getMessage());
+					UUID = version = "<unknown>";
+				}
+
+				add(new RowVerbose(URI, points, status, UUID, version));
+			}
+			else
+				add(new Row(URI, points, status));
 		}
 	}
 
