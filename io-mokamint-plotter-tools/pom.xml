@@ -21,7 +21,7 @@
     </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-tools</artifactId>
+      <artifactId>io-mokamint-cli</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>

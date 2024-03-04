@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools;
+package io.mokamint.cli;
 
-import io.mokamint.tools.internal.TableImpl;
+import io.mokamint.cli.internal.TableImpl;
 
 /**
  * Partial implementation of a table of rows.

@@ -16,9 +16,9 @@ limitations under the License.
 
 package io.mokamint.plotter.tools;
 
+import io.mokamint.cli.AbstractTool;
 import io.mokamint.plotter.tools.internal.Create;
 import io.mokamint.plotter.tools.internal.Show;
-import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
 /**

@@ -19,13 +19,13 @@ package io.mokamint.node.tools.internal.miners;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
-import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;

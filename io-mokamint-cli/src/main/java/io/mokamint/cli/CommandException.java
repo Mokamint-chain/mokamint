@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools;
+package io.mokamint.cli;
 
-import io.mokamint.tools.internal.CommandExceptionImpl;
+import io.mokamint.cli.internal.CommandExceptionImpl;
 
 /**
  * An exception thrown during the execution of a CLI command.

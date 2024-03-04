@@ -18,9 +18,9 @@ package io.mokamint.node.tools.internal;
 
 import java.net.URI;
 
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
-import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Option;
 
 /**

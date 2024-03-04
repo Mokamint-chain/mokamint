@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools.internal;
+package io.mokamint.cli.internal;
 
 import java.util.Objects;
 

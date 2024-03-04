@@ -18,7 +18,7 @@ package io.mokamint.application.tools;
 
 import io.mokamint.application.tools.internal.List;
 import io.mokamint.application.tools.internal.Start;
-import io.mokamint.tools.AbstractTool;
+import io.mokamint.cli.AbstractTool;
 import picocli.CommandLine.Command;
 
 /**

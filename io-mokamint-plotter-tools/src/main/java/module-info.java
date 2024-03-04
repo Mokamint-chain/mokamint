@@ -23,7 +23,7 @@ module io.mokamint.plotter.tools {
 
 	requires io.mokamint.plotter;
 	requires io.mokamint.nonce;
-	requires io.mokamint.tools;
+	requires io.mokamint.cli;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.websockets.beans;
 }

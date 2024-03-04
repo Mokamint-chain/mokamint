@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools;
+package io.mokamint.cli;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import io.mokamint.tools.internal.AbstractToolImpl;
+import io.mokamint.cli.internal.AbstractToolImpl;
 
 /**
  * A command-line tool of Mokamint. Subclasses specify arguments, options and execution.
@@ -30,6 +30,17 @@ public abstract class AbstractTool extends AbstractToolImpl {
 	 * Builds the tool.
 	 */
 	protected AbstractTool() {}
+
+	/**
+	 * Loads the Java logging configuration from the provided resource.
+	 * If the property {@code java.util.logging.config.file} is defined,
+	 * nothing will be loaded.
+	 * 
+	 * @param opener a specification of how the resource can be opened
+	 */
+	protected static void loadLoggingConfig(ResourceOpener opener) {
+		AbstractToolImpl.loadLoggingConfig(opener);
+	}
 
 	/**
 	 * A function that opens a resource.

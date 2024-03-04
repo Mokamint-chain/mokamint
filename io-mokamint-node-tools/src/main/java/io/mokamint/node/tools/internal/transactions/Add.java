@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.EncodeException;
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.DatabaseException;
@@ -30,7 +31,6 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
-import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 

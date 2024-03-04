@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.tools;
 
+import io.mokamint.cli.AbstractTool;
 import io.mokamint.node.tools.internal.Chain;
 import io.mokamint.node.tools.internal.Config;
 import io.mokamint.node.tools.internal.Info;
@@ -26,7 +27,6 @@ import io.mokamint.node.tools.internal.Peers;
 import io.mokamint.node.tools.internal.Start;
 import io.mokamint.node.tools.internal.Tasks;
 import io.mokamint.node.tools.internal.Transactions;
-import io.mokamint.tools.AbstractTool;
 import picocli.CommandLine.Command;
 
 /**

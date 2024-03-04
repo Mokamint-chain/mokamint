@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
@@ -30,7 +31,6 @@ import io.mokamint.node.api.RejectedTransactionException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
-import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;

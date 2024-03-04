@@ -20,14 +20,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
+import io.mokamint.cli.AbstractRow;
+import io.mokamint.cli.AbstractTable;
+import io.mokamint.cli.CommandException;
+import io.mokamint.cli.Table;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
-import io.mokamint.tools.AbstractRow;
-import io.mokamint.tools.AbstractTable;
-import io.mokamint.tools.CommandException;
-import io.mokamint.tools.Table;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;

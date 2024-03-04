@@ -38,7 +38,7 @@ module io.mokamint.node.tools {
 	requires io.mokamint.miner.remote;
 	requires io.mokamint.node.remote;
 	requires io.mokamint.plotter;
-	requires io.mokamint.tools;
+	requires io.mokamint.cli;
 	requires io.mokamint.application;
 	requires io.mokamint.application.remote;
 	requires io.mokamint.node.service;

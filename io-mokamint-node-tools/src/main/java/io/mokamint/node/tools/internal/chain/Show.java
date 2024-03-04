@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -31,7 +32,6 @@ import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
-import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;

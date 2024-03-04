@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,17 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools;
-
-import io.mokamint.tools.internal.AbstractRowImpl;
-
 /**
- * Partial implementation of a row of a {@link Table}.
+ * This module implements shared classes among all the command-line tools of Mokamint.
  */
-public abstract class AbstractRow extends AbstractRowImpl {
+module io.mokamint.cli {
+	exports io.mokamint.cli;
+	opens io.mokamint.cli.internal to info.picocli; // for injecting CLI options and accessing the POMVersionProvider
 
-	/**
-	 * Creates the row.
-	 */
-	protected AbstractRow() {}
+	requires transitive info.picocli;
+	requires com.google.gson;
+	requires java.logging;
 }

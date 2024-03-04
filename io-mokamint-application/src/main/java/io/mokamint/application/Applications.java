@@ -32,6 +32,7 @@ public abstract class Applications {
 	/**
 	 * Loads from the module path the application with the given name.
 	 * 
+	 * @param name the name of the required application
 	 * @return the application
 	 * @throws IllegalArgumentException if there is no application with the given name
 	 *                                  or if there is more than one

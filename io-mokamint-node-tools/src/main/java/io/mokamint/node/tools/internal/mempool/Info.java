@@ -18,11 +18,11 @@ package io.mokamint.node.tools.internal.mempool;
 
 import java.util.concurrent.TimeoutException;
 
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
-import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 

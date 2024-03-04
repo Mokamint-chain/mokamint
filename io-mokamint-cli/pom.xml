@@ -7,8 +7,8 @@
     <version>parent</version>
   </parent>
 
-  <artifactId>io-mokamint-tools</artifactId>
-  <name>io-mokamint-tools</name>
+  <artifactId>io-mokamint-cli</artifactId>
+  <name>io-mokamint-cli</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
   <description>This module implements shared classes among all the command-line tools of Mokamint.</description>

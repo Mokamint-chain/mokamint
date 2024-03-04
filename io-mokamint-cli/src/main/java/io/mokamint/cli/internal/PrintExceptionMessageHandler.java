@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools.internal;
+package io.mokamint.cli.internal;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.tools.CommandException;
+import io.mokamint.cli.CommandException;
 import picocli.CommandLine;
 import picocli.CommandLine.IExecutionExceptionHandler;
 import picocli.CommandLine.ParseResult;

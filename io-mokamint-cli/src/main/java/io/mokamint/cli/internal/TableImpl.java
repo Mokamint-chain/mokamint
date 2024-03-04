@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.tools.internal;
+package io.mokamint.cli.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +23,8 @@ import java.util.stream.IntStream;
 
 import com.google.gson.Gson;
 
-import io.mokamint.tools.Row;
-import io.mokamint.tools.Table;
+import io.mokamint.cli.Row;
+import io.mokamint.cli.Table;
 
 /**
  * Implementation of a table of rows.

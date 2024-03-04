@@ -20,12 +20,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.tools.internal.AbstractRestrictedRpcCommand;
-import io.mokamint.tools.CommandException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 

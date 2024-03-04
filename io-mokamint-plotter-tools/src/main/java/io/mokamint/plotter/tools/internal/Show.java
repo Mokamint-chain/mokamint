@@ -21,9 +21,9 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.Hex;
+import io.mokamint.cli.AbstractCommand;
+import io.mokamint.cli.CommandException;
 import io.mokamint.plotter.Plots;
-import io.mokamint.tools.AbstractCommand;
-import io.mokamint.tools.CommandException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;

@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
+import io.mokamint.cli.AbstractCommand;
+import io.mokamint.cli.CommandException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteNode;
-import io.mokamint.tools.AbstractCommand;
-import io.mokamint.tools.CommandException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Option;
 
