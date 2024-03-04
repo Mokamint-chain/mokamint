@@ -18,19 +18,16 @@ package io.mokamint.node.tools.internal.mempool;
 
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.MempoolPortions;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.AbstractRow;
+import io.mokamint.tools.AbstractTable;
 import io.mokamint.tools.CommandException;
-import jakarta.websocket.EncodeException;
+import io.mokamint.tools.Table;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -47,7 +44,7 @@ public class List extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException{
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
@@ -57,76 +54,65 @@ public class List extends AbstractPublicRpcCommand {
 		if (from == -1L)
 			from = (int) Math.max(0, remote.getMempoolInfo().getSize() - count);
 
-		LOGGER.info("requesting mempool entries with index in the interval [" + from + ", " + (from + count) + ")");
-		var mempool = remote.getMempoolPortion(from, count);
-
-		if (json()) {
-			try {
-				System.out.println(new MempoolPortions.Encoder().encode(mempool));
-			}
-			catch (EncodeException e) {
-				throw new CommandException("Cannot encode a mempool portion of the node at \"" + publicUri() + "\" in JSON format!", e);
-			}
-		}
-		else if (mempool.getEntries().count() != 0)
-			new ListMempool(mempool, remote);
+		new MyTable(remote).print();
 	}
 
-	private class ListMempool {
-		private final ConsensusConfig<?, ?> config;
-		private final MempoolEntry[] entries;
-		private final String[] heights;
-		private final int slotsForHeight;
-		private final String[] hashes;
-		private final int slotsForHash;
-		private final String[] priorities;
-		private final int slotsForPriority;
-
-		/**
-		 * Lists the entries in {@code mempool}.
-		 * 
-		 * @param mempool the mempool portion to list
-		 * @param the remote node
-		 * @throws TimeoutException if some connection timed-out
-		 * @throws InterruptedException if some connection was interrupted while waiting
-		 * @throws NodeException if the remote node could not complete the operation
-		 */
-		private ListMempool(MempoolPortion mempool, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
-			this.config = remote.getConfig();
-			this.entries = mempool.getEntries().toArray(MempoolEntry[]::new);
-			this.heights = new String[1 + entries.length];
-			this.hashes = new String[heights.length];
-			this.priorities = new String[heights.length];
-			fillColumns();
-			this.slotsForHeight = Stream.of(heights).mapToInt(String::length).max().getAsInt();
-			this.slotsForHash = Stream.of(hashes).mapToInt(String::length).max().getAsInt();
-			this.slotsForPriority = Stream.of(priorities).mapToInt(String::length).max().getAsInt();
-			printRows();
+	private static class Row extends AbstractRow {
+		private final String height;
+		private final String hash;
+		private final String priority;
+	
+		private Row(String height, String hash, String priority) {
+			this.height = height;
+			this.hash = hash;
+			this.priority = priority;
 		}
-
-		private void fillColumns() {
-			heights[0] = "";
-			hashes[0] = "tx hash (" + config.getHashingForTransactions() + ")";
-			priorities[0] = "priority";
-			
-			for (int pos = 1; pos < hashes.length; pos++) {
-				heights[pos] = (from + entries.length - pos) + ":";
-				hashes[pos] = Hex.toHexString(entries[entries.length - pos].getHash());
-				priorities[pos] = String.valueOf(entries[entries.length - pos].getPriority());
+	
+		@Override
+		public String getColumn(int index) {
+			switch (index) {
+			case 0: return height;
+			case 1: return hash;
+			case 2: return priority;
+			default: throw new IndexOutOfBoundsException(index);
 			}
 		}
-
-		private void printRows() {
-			IntStream.iterate(0, i -> i + 1).limit(heights.length).mapToObj(this::format).forEach(System.out::println);
-		}
-
-		private String format(int pos) {
+	
+		@Override
+		public String toString(int pos, Table table) {
 			String result = String.format("%s %s  %s",
-				rightAlign(heights[pos], slotsForHeight),
-				center(hashes[pos], slotsForHash),
-				rightAlign(priorities[pos], slotsForPriority));
+				rightAlign(height, table.getSlotsForColumn(0)),
+				center(hash, table.getSlotsForColumn(1)),
+				rightAlign(priority, table.getSlotsForColumn(2)));
 
 			return pos == 0 ? Ansi.AUTO.string("@|green " + result + "|@") : result;
+		}
+	}
+
+	private class MyTable extends AbstractTable {
+		private final MempoolEntry[] entries;
+
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+			super(mkHeader(remote), 3, json());
+
+			LOGGER.info("requesting mempool entries with index in the interval [" + from + ", " + (from + count) + ")");
+			this.entries = remote.getMempoolPortion(from, count).getEntries().toArray(MempoolEntry[]::new);
+
+			for (int pos = entries.length - 1; pos >= 0; pos--)
+				add(pos);
+		}
+
+		private static Row mkHeader(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+			var config = remote.getConfig();
+			return new Row("", "tx hash (" + config.getHashingForTransactions() + ")", "priority");
+		}
+
+		private void add(int pos) {
+			String height = (from + pos) + ":";
+			String hash = Hex.toHexString(entries[pos].getHash());
+			String priority = String.valueOf(entries[pos].getPriority());
+
+			add(new Row(height, hash, priority));
 		}
 	}
 

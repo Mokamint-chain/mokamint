@@ -24,8 +24,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NodeException;
@@ -98,25 +96,49 @@ public class List extends AbstractPublicRpcCommand {
 	}
 
 	private class MyTable extends AbstractTable {
-		private MyTable(byte[][] hashes, ConsensusConfig<?, ?> config, LocalDateTime startDateTimeUTC, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
-			super(new Row("", "block hash (" + config.getHashingForBlocks() + ")",
-					"created (UTC)", "node's public key (" + config.getSignatureForBlocks() + ", base58)",
-					"miner's public key (" + config.getSignatureForDeadlines() + ", base58)"), 5, json());
-	
-			int pos = 1;
-			for (byte[] hash: hashes)
-				add(hashes, hash, startDateTimeUTC, remote, pos++);
+		private final RemotePublicNode remote;
+		private final byte[][] hashes;
+		private final LocalDateTime startDateTimeUTC;
+
+		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+			super(mkHeader(remote), 5, json());
+
+			this.remote = remote;
+
+			LOGGER.info("requesting hashes in the height interval [" + from + ", " + (from + count) + ")");
+			this.hashes = remote.getChainPortion(from, count).getHashes().toArray(byte[][]::new);
+			this.startDateTimeUTC = getStartDateTimeUTC(genesisHash);
+
+			for (int pos = hashes.length - 1; pos >= 0; pos--)
+				add(pos);
 		}
-	
-		private void add(byte[][] hashes, byte[] hash, LocalDateTime startDateTimeUTC, RemotePublicNode remote, int pos) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
-			long height = from + hashes.length - pos;
+
+		private static Row mkHeader(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+			var config = remote.getConfig();
+			return new Row("", "block hash (" + config.getHashingForBlocks() + ")",
+					"created (UTC)", "node's public key (" + config.getSignatureForBlocks() + ", base58)",
+					"miner's public key (" + config.getSignatureForDeadlines() + ", base58)");
+		}
+
+		private LocalDateTime getStartDateTimeUTC(byte[] genesisHash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
+			var maybeGenesis = remote.getBlockDescription(genesisHash);
+			if (maybeGenesis.isEmpty())
+				throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
+			else if (maybeGenesis.get() instanceof GenesisBlockDescription gbd)
+				return gbd.getStartDateTimeUTC();
+			else
+				throw new DatabaseException("The type of the genesis block is inconsistent!");
+		}
+
+		private void add(int pos) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+			long height = from + pos;
 			String rowHeight = height + ":";
-			String rowHash = Hex.toHexString(hashes[hashes.length - pos]);
+			String rowHash = Hex.toHexString(hashes[pos]);
 			String rowCreated;
 			String rowNodePublicKey;
 			String rowMinerPublicKey;
 	
-			var maybeBlockDescription = remote.getBlockDescription(hashes[hashes.length - pos]);
+			var maybeBlockDescription = remote.getBlockDescription(hashes[pos]);
 			if (maybeBlockDescription.isEmpty()) {
 				if (height == 0L) {
 					rowCreated = startDateTimeUTC.format(FORMATTER);
@@ -156,23 +178,9 @@ public class List extends AbstractPublicRpcCommand {
 			if (from == -1L)
 				from = Math.max(0L, info.getLength() - 1 - count + 1);
 
-			LOGGER.info("requesting hashes in the height interval [" + from + ", " + (from + count) + ")");
-			ChainPortion chain = remote.getChainPortion(from, count);
-
-			if (chain.getHashes().count() != 0) {
-				var maybeGenesisHash = info.getGenesisHash();
-				if (maybeGenesisHash.isPresent()) {
-					var maybeGenesis = remote.getBlockDescription(maybeGenesisHash.get());
-					if (maybeGenesis.isEmpty())
-						throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
-					else if (maybeGenesis.get() instanceof GenesisBlockDescription gbd)
-						new MyTable(chain.getHashes().toArray(byte[][]::new), remote.getConfig(), gbd.getStartDateTimeUTC(), remote).print();
-					else
-						throw new DatabaseException("The type of the genesis block is inconsistent!");
-				}
-				else
-					throw new DatabaseException("The node has no genesis hash it contains some blocks!");
-			}
+			var maybeGenesisHash = info.getGenesisHash();
+			if (maybeGenesisHash.isPresent())
+				new MyTable(maybeGenesisHash.get(), remote).print();
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\"!", e);

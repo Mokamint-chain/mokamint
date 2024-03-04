@@ -16,21 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.tools.internal.tasks;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
-
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.tools.internal.AbstractPublicRpcCommand;
+import io.mokamint.tools.AbstractRow;
+import io.mokamint.tools.AbstractTable;
 import io.mokamint.tools.CommandException;
-import jakarta.websocket.EncodeException;
+import io.mokamint.tools.Table;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 
@@ -38,55 +33,39 @@ import picocli.CommandLine.Help.Ansi;
 public class List extends AbstractPublicRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
-		var infos = remote.getTaskInfos().sorted().toArray(TaskInfo[]::new);
-
-		if (json()) {
-			try {
-				var encoder = new TaskInfos.Encoder();
-				System.out.println(check(EncodeException.class, () ->
-				Stream.of(infos).map(uncheck(encoder::encode)).collect(Collectors.joining(",", "[", "]"))
-						));
-			}
-			catch (EncodeException e) {
-				throw new CommandException("Cannot encode the tasks of the node at " + publicUri() + " in JSON format!", e);
-			}
-		}
-		else if (infos.length > 0)
-			new ListTasks(infos);
+		new MyTable(remote).print();
 	}
 
-	private class ListTasks {
-		private final String[] descriptions;
-		private final int slotsForDescription;
-
-		/**
-		 * Lists the tasks with the given {@code infos}.
-		 * 
-		 * @param infos the tasks information
-		 */
-		private ListTasks(TaskInfo[] infos) {
-			this.descriptions = new String[1 + infos.length];
-			fillColumns(infos);
-			this.slotsForDescription = Stream.of(descriptions).mapToInt(String::length).max().getAsInt();
-			printRows();
+	private static class Row extends AbstractRow {
+		private final String description;
+	
+		private Row(String description) {
+			this.description = description;
 		}
-
-		private void fillColumns(TaskInfo[] infos) {
-			descriptions[0] = "description";
-			
-			for (int pos = 1; pos < descriptions.length; pos++)
-				descriptions[pos] = infos[pos - 1].getDescription();
-		}
-
-		private void printRows() {
-			IntStream.iterate(0, i -> i + 1).limit(descriptions.length).mapToObj(this::format).forEach(System.out::println);
-		}
-
-		private String format(int pos) {
-			if (pos == 0)
-				return Ansi.AUTO.string("@|green " + String.format("%s", center(descriptions[pos], slotsForDescription)) + "|@");
+	
+		@Override
+		public String getColumn(int index) {
+			if (index == 0)
+				return description;
 			else
-				return String.format("%s", leftAlign(descriptions[pos], slotsForDescription));
+				throw new IndexOutOfBoundsException(index);
+		}
+	
+		@Override
+		public String toString(int pos, Table table) {
+			if (pos == 0)
+				return Ansi.AUTO.string("@|green " + String.format("%s", center(description, table.getSlotsForColumn(0))) + "|@");
+			else
+				return String.format("%s", leftAlign(description, table.getSlotsForColumn(0)));
+		}
+	}
+
+	private class MyTable extends AbstractTable {
+
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+			super(new Row("description"), 1, json());
+
+			remote.getTaskInfos().sorted().map(TaskInfo::getDescription).map(Row::new).forEach(this::add);
 		}
 	}
 
