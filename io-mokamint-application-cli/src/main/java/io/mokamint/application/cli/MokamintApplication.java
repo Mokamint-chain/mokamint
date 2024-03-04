@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.tools;
+package io.mokamint.application.cli;
 
-import io.mokamint.application.tools.internal.List;
-import io.mokamint.application.tools.internal.Start;
+import io.mokamint.application.cli.internal.List;
+import io.mokamint.application.cli.internal.Start;
 import io.mokamint.cli.AbstractTool;
 import picocli.CommandLine.Command;
 
@@ -26,7 +26,7 @@ import picocli.CommandLine.Command;
  * 
  * This class is meant to be run from the parent directory, after building the project, with this command-line:
  * 
- * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.application.tools/io.mokamint.application.tools.MokamintApplication
+ * java --module-path modules/explicit:modules/automatic --class-path "modules/unnamed/*" --module io.mokamint.application.cli/io.mokamint.application.cli.MokamintApplication
  */
 @Command(
 	name = "mokamint-application",

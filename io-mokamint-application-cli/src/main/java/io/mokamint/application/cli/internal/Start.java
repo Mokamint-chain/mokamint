@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.tools.internal;
+package io.mokamint.application.cli.internal;
 
 import java.io.BufferedReader;
 import java.io.IOException;
