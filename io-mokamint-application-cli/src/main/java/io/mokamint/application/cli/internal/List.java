@@ -18,15 +18,15 @@ package io.mokamint.application.cli.internal;
 
 import java.util.ServiceLoader.Provider;
 
+import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.cli.AbstractRow;
+import io.hotmoka.cli.AbstractTable;
+import io.hotmoka.cli.CommandException;
+import io.hotmoka.cli.Table;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
-import io.mokamint.cli.AbstractCommand;
-import io.mokamint.cli.AbstractRow;
-import io.mokamint.cli.AbstractTable;
-import io.mokamint.cli.CommandException;
-import io.mokamint.cli.Table;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;

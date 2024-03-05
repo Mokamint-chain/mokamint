@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.plotter.cli;
 
-import io.mokamint.cli.AbstractTool;
+import java.io.IOException;
+
+import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
+import io.hotmoka.cli.AbstractTool;
+import io.mokamint.plotter.cli.MokamintPlotter.POMVersionProvider;
 import io.mokamint.plotter.cli.internal.Create;
 import io.mokamint.plotter.cli.internal.Show;
 import picocli.CommandLine.Command;
@@ -32,6 +36,7 @@ import picocli.CommandLine.Command;
 	name = "mokamint-plotter",
 	header = "This is the command-line tool for creating Mokamint plots.",
 	footer = "Copyright (c) 2023 Fausto Spoto",
+	versionProvider = POMVersionProvider.class,
 	subcommands = {
 		Create.class,
 		Show.class
@@ -52,5 +57,13 @@ public class MokamintPlotter extends AbstractTool {
 
 	static {
 		loadLoggingConfig(() -> MokamintPlotter.class.getModule().getResourceAsStream("logging.properties"));
+	}
+
+	public static class POMVersionProvider extends AbstractPropertyFileVersionProvider {
+
+		@Override
+		public String[] getVersion() throws IOException {
+			return getVersion(() -> MokamintPlotter.class.getModule().getResourceAsStream("maven.properties"), "mokamint.version");
+		}
 	}
 }

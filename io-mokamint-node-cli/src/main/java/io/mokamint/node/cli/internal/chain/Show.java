@@ -20,9 +20,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
+import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
-import io.mokamint.cli.CommandException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;

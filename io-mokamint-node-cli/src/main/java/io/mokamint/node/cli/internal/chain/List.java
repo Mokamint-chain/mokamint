@@ -23,11 +23,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
+import io.hotmoka.cli.AbstractRow;
+import io.hotmoka.cli.AbstractTable;
+import io.hotmoka.cli.CommandException;
+import io.hotmoka.cli.Table;
 import io.hotmoka.crypto.Hex;
-import io.mokamint.cli.AbstractRow;
-import io.mokamint.cli.AbstractTable;
-import io.mokamint.cli.CommandException;
-import io.mokamint.cli.Table;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NodeException;

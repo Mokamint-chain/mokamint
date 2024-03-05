@@ -18,7 +18,7 @@ package io.mokamint.node.cli.internal.chain;
 
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.cli.CommandException;
+import io.hotmoka.cli.CommandException;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;

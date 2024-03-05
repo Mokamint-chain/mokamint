@@ -23,12 +23,12 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
+import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.mokamint.cli.AbstractCommand;
-import io.mokamint.cli.CommandException;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;

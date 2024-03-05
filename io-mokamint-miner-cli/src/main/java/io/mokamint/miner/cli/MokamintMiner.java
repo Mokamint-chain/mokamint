@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.miner.cli;
 
-import io.mokamint.cli.AbstractTool;
+import java.io.IOException;
+
+import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
+import io.hotmoka.cli.AbstractTool;
+import io.mokamint.miner.cli.MokamintMiner.POMVersionProvider;
 import io.mokamint.miner.cli.internal.Start;
 import picocli.CommandLine.Command;
 
@@ -31,6 +35,7 @@ import picocli.CommandLine.Command;
 	name = "mokamint-miner",
 	header = "This is the command-line tool for Mokamint miners.",
 	footer = "Copyright (c) 2023 Fausto Spoto",
+	versionProvider = POMVersionProvider.class,
 	subcommands = {
 		Start.class
 	}
@@ -50,5 +55,13 @@ public class MokamintMiner extends AbstractTool {
 
 	static {
 		loadLoggingConfig(() -> MokamintMiner.class.getModule().getResourceAsStream("logging.properties"));
+	}
+
+	public static class POMVersionProvider extends AbstractPropertyFileVersionProvider {
+
+		@Override
+		public String[] getVersion() throws IOException {
+			return getVersion(() -> MokamintMiner.class.getModule().getResourceAsStream("maven.properties"), "mokamint.version");
+		}
 	}
 }

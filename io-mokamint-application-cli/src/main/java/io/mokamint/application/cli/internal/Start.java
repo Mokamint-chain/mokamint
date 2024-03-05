@@ -22,11 +22,11 @@ import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.cli.CommandException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.service.ApplicationServices;
-import io.mokamint.cli.AbstractCommand;
-import io.mokamint.cli.CommandException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;

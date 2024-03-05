@@ -30,6 +30,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <io.hotmoka.annotations.version>1.4.1</io.hotmoka.annotations.version>
       <io.hotmoka.closeables.version>1.4.1</io.hotmoka.closeables.version>
       <io.hotmoka.websockets.version>1.3.4</io.hotmoka.websockets.version>
+      <io.hotmoka.cli.version>1.0.0</io.hotmoka.cli.version>
     </properties>
 
     <groupId>io.mokamint</groupId>
@@ -98,7 +99,6 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-integration</module>
       <module>io-mokamint-application-cli</module>
       <module>io-mokamint-plotter-cli</module>
-      <module>io-mokamint-cli</module>
     </modules>
 
     <distributionManagement>
@@ -372,7 +372,6 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
                 io-mokamint-application-remote,
                 io-mokamint-application-integration,
                 io-mokamint-application-cli,
-                io-mokamint-cli,
                 <!-- we exclude all modules that go into the explicit folder -->
                 jakarta.activation-api,
                 jakarta.xml.bind-api,
@@ -389,6 +388,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
                 gson,
                 toml4j,
                 io-hotmoka-annotations,
+                io-hotmoka-cli,
                 io-hotmoka-crypto,
                 io-hotmoka-crypto-api,
                 io-hotmoka-marshalling,
@@ -450,6 +450,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
                 gson,
                 toml4j,
                 io-hotmoka-annotations,
+                io-hotmoka-cli,
                 io-hotmoka-crypto,
                 io-hotmoka-crypto-api,
                 io-hotmoka-marshalling,

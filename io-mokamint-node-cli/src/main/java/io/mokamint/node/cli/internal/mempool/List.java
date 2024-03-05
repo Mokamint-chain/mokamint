@@ -19,11 +19,11 @@ package io.mokamint.node.cli.internal.mempool;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
+import io.hotmoka.cli.AbstractRow;
+import io.hotmoka.cli.AbstractTable;
+import io.hotmoka.cli.CommandException;
+import io.hotmoka.cli.Table;
 import io.hotmoka.crypto.Hex;
-import io.mokamint.cli.AbstractRow;
-import io.mokamint.cli.AbstractTable;
-import io.mokamint.cli.CommandException;
-import io.mokamint.cli.Table;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;

@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.cli.AbstractCommand;
-import io.mokamint.cli.CommandException;
+import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.cli.CommandException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;

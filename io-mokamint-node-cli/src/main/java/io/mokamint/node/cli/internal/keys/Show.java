@@ -24,11 +24,11 @@ import java.util.Arrays;
 
 import com.google.gson.Gson;
 
+import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Entropies;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.mokamint.cli.AbstractCommand;
-import io.mokamint.cli.CommandException;
 import io.mokamint.node.cli.internal.SignatureOptionConverter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;

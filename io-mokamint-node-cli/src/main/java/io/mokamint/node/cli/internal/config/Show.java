@@ -18,7 +18,7 @@ package io.mokamint.node.cli.internal.config;
 
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.cli.CommandException;
+import io.hotmoka.cli.CommandException;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;

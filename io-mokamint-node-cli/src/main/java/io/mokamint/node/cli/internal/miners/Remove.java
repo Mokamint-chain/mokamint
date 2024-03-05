@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.cli.CommandException;
+import io.hotmoka.cli.CommandException;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;

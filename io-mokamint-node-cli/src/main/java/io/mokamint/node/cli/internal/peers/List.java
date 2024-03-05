@@ -21,10 +21,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.cli.AbstractRow;
-import io.mokamint.cli.AbstractTable;
-import io.mokamint.cli.CommandException;
-import io.mokamint.cli.Table;
+import io.hotmoka.cli.AbstractRow;
+import io.hotmoka.cli.AbstractTable;
+import io.hotmoka.cli.CommandException;
+import io.hotmoka.cli.Table;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;

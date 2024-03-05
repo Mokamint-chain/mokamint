@@ -21,9 +21,9 @@ import java.util.concurrent.TimeoutException;
 
 import com.google.gson.Gson;
 
+import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
-import io.mokamint.cli.CommandException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;

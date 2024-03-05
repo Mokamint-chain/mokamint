@@ -35,12 +35,12 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Entropies;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.remote.RemoteApplications;
-import io.mokamint.cli.AbstractCommand;
-import io.mokamint.cli.CommandException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;

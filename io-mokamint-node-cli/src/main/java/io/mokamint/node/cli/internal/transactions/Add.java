@@ -19,10 +19,10 @@ package io.mokamint.node.cli.internal.transactions;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
+import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.EncodeException;
-import io.mokamint.cli.CommandException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.DatabaseException;
