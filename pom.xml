@@ -32,6 +32,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <io.hotmoka.websockets.version>1.3.4</io.hotmoka.websockets.version>
       <io.hotmoka.cli.version>1.0.0</io.hotmoka.cli.version>
       <io.hotmoka.exceptions.version>1.4.1</io.hotmoka.exceptions.version>
+      <io.hotmoka.testing.version>1.4.1</io.hotmoka.testing.version>
     </properties>
 
     <groupId>io.mokamint</groupId>
@@ -142,7 +143,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <dependency>
         <groupId>io.hotmoka</groupId>
         <artifactId>io-hotmoka-testing</artifactId>
-        <version>${hotmoka.version}</version>
+        <version>${io.hotmoka.testing.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
