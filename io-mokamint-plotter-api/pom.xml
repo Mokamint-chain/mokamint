@@ -20,10 +20,10 @@
       <artifactId>io-hotmoka-marshalling-api</artifactId>
       <version>${hotmoka.version}</version>
     </dependency>
-  	<dependency>
-      <groupId>io.hotmoka</groupId>
+    <dependency>
+      <groupId>io.hotmoka.crypto</groupId>
       <artifactId>io-hotmoka-crypto-api</artifactId>
-      <version>${hotmoka.version}</version>
+      <version>${io.hotmoka.crypto.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka.annotations</groupId>

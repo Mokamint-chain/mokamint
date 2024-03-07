@@ -19,11 +19,11 @@
       <artifactId>io-mokamint-nonce-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
-   	<dependency>
-      <groupId>io.hotmoka</groupId>
+    <dependency>
+      <groupId>io.hotmoka.crypto</groupId>
       <artifactId>io-hotmoka-crypto-api</artifactId>
-      <version>${hotmoka.version}</version>
-    </dependency>    
+      <version>${io.hotmoka.crypto.version}</version>
+    </dependency>
    	<dependency>
       <groupId>io.hotmoka</groupId>
       <artifactId>io-hotmoka-marshalling-api</artifactId>
