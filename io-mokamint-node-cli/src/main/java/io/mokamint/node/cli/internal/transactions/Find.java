@@ -21,13 +21,13 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
-import io.hotmoka.websockets.beans.EncodeException;
 import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
+import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 

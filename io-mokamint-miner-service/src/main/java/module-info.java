@@ -24,6 +24,7 @@ module io.mokamint.miner.service {
 	requires transitive io.mokamint.miner.api;
 	requires io.mokamint.nonce;
 	requires transitive io.hotmoka.websockets.client;
+	requires transitive jakarta.websocket.client;
 	requires java.logging;
 
 	// only used for tests
