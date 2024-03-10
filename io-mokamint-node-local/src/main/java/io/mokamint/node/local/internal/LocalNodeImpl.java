@@ -299,22 +299,22 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, NodeException {
+	public Optional<Block> getBlock(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
+		catch (ClosedDatabaseException | NoSuchAlgorithmException | DatabaseException e) {
+			throw new NodeException(e);
 		}
 	}
 
 	@Override
-	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, NodeException {
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
 		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
+		catch (ClosedDatabaseException | NoSuchAlgorithmException | DatabaseException e) {
+			throw new NodeException(e);
 		}
 	}
 
@@ -354,40 +354,43 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws DatabaseException, NodeException {
+	public ChainInfo getChainInfo() throws NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getChainInfo();
 		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
+		catch (DatabaseException | ClosedDatabaseException e) {
+			throw new NodeException(e);
 		}
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, NodeException {
+	public ChainPortion getChainPortion(long start, int count) throws NodeException {
 		try (var scope = mkScope()) {
 			return ChainPortions.of(blockchain.getChain(start, count));
 		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
+		catch (DatabaseException | ClosedDatabaseException e) {
+			throw new NodeException(e);
 		}
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NodeException, TimeoutException, InterruptedException {
 		MempoolEntry result;
 
 		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
+		}
+		catch (ApplicationException | DatabaseException | NoSuchAlgorithmException | ClosedDatabaseException e) {
+			throw new NodeException(e);
+		}
 
+		try {
 			if (miningTask != null)
 				miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
 		}
-		catch (ApplicationException e) {
-			throw new NodeException(e);
-		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
+		catch (DatabaseException | NoSuchAlgorithmException | ClosedDatabaseException e) {
+			LOGGER.warning("cannot inform the block miner of the new transaction "
+				+ transaction.getHexHash(hasherForTransactions) + ": " + e.getMessage());
 		}
 
 		whisperWithoutAddition(transaction);
@@ -410,17 +413,17 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, NodeException {
+	public Optional<Transaction> getTransaction(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getTransaction(hash);
 		}
-		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+		catch (ClosedDatabaseException | NoSuchAlgorithmException | DatabaseException e) {
+			throw new NodeException(e);
 		}
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, DatabaseException, NodeException, NoSuchAlgorithmException, TimeoutException, InterruptedException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, NodeException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
@@ -428,21 +431,18 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
 		}
-		catch (ApplicationException e) {
+		catch (ApplicationException | NoSuchAlgorithmException | DatabaseException | ClosedDatabaseException e) {
 			throw new NodeException(e);
-		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
 		}
 	}
 
 	@Override
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException, DatabaseException {
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getTransactionAddress(hash);
 		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
+		catch (DatabaseException | ClosedDatabaseException e) {
+			throw new NodeException(e);
 		}
 	}
 

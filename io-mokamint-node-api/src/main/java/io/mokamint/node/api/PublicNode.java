@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -87,12 +86,11 @@ public interface PublicNode extends Node, Whisperer {
 	 * Yields information about the current chain of this node.
 	 * 
 	 * @return the information
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, NodeException;
+	ChainInfo getChainInfo() throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields a portion of the current best chain, containing the hashes of the blocks starting at height {@code start}
@@ -102,12 +100,11 @@ public interface PublicNode extends Node, Whisperer {
 	 * @param start the height of the first block whose hash is returned
 	 * @param count how many hashes (at most) must be reported
 	 * @return the portion with the hashes, in order
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	ChainPortion getChainPortion(long start, int count) throws DatabaseException, TimeoutException, InterruptedException, NodeException;
+	ChainPortion getChainPortion(long start, int count) throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
@@ -116,13 +113,11 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param hash the hash of the block
 	 * @return the block, if any
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the block exists but uses an unknown hashing or signature algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException;
+	Optional<Block> getBlock(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the description of the block with the given hash, if it has been seen by this node.
@@ -131,13 +126,11 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param hash the hash of the block
 	 * @return the description of the block, if any
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the block exists but refers to an unknown hashing or signature algorithm
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException;
+	Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Checks the validity of the given transaction and adds it to the mempool of this node.
@@ -148,11 +141,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws RejectedTransactionException if {@code transaction} has been rejected, for instance because it is invalid
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, NodeException;
+	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields a transaction already in blockchain.
@@ -161,11 +152,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the transaction, if the latter exists in blockchain
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<Transaction> getTransaction(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException;
+	Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields a string representation of a transaction already in blockchain, that can be used to print
@@ -178,11 +167,9 @@ public interface PublicNode extends Node, Whisperer {
 	 *                                      the {@code checkTransaction} test should have a valid representation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if the blockchain contains a block that refers to an unknown hashing or signature algorithm
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, NodeException;
+	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the address of a transaction already in blockchain.
@@ -191,10 +178,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the transaction address, if the latter exists in the blockchain
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException, DatabaseException;
+	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields information about the mempool of this node.

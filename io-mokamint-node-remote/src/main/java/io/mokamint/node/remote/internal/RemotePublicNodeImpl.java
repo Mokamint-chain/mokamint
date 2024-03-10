@@ -37,7 +37,6 @@ import static io.mokamint.node.service.api.PublicNodeService.WHISPER_TRANSACTION
 
 import java.io.IOException;
 import java.net.URI;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -61,7 +60,6 @@ import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ConsensusConfig;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
@@ -479,14 +477,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
+	public Optional<Block> getBlock(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetBlock(hash, id);
 		try {
-			return waitForResult(id, this::processGetBlockSuccess, this::processGetBlockException);
+			return waitForResult(id, this::processGetBlockSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | NodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -507,22 +505,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		return message instanceof GetBlockResultMessage gbrm ? gbrm.get() : null;
 	}
 
-	private boolean processGetBlockException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return DatabaseException.class.isAssignableFrom(clazz) ||
-			NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
-	}
-
 	@Override
-	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetBlockDescription(hash, id);
 		try {
-			return waitForResult(id, this::processGetBlockDescriptionSuccess, this::processGetBlockDescriptionException);
+			return waitForResult(id, this::processGetBlockDescriptionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | DatabaseException | NoSuchAlgorithmException | TimeoutException | InterruptedException | NodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -541,13 +532,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private Optional<BlockDescription> processGetBlockDescriptionSuccess(RpcMessage message) {
 		return message instanceof GetBlockDescriptionResultMessage gbrm ? gbrm.get() : null;
-	}
-
-	private boolean processGetBlockDescriptionException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return DatabaseException.class.isAssignableFrom(clazz) ||
-			NoSuchAlgorithmException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
 	}
 
 	@Override
@@ -580,14 +564,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws DatabaseException, TimeoutException, InterruptedException, NodeException {
+	public ChainInfo getChainInfo() throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetChainInfo(id);
 		try {
-			return waitForResult(id, this::processGetChainInfoSuccess, this::processGetChainInfoException);
+			return waitForResult(id, this::processGetChainInfoSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | NodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -608,21 +592,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		return message instanceof GetChainInfoResultMessage gcirm ? gcirm.get() : null;
 	}
 
-	private boolean processGetChainInfoException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return DatabaseException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
-	}
-
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws DatabaseException, TimeoutException, InterruptedException, NodeException {
+	public ChainPortion getChainPortion(long start, int count) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetChainPortion(start, count, id);
 		try {
-			return waitForResult(id, this::processGetChainPortionSuccess, this::processGetChainPortionException);
+			return waitForResult(id, this::processGetChainPortionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | NodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -643,21 +621,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		return message instanceof GetChainPortionResultMessage gcrm ? gcrm.get() : null;
 	}
 
-	private boolean processGetChainPortionException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return DatabaseException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
-	}
-
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException, NoSuchAlgorithmException, DatabaseException {
+	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendAddTransaction(transaction, id);
 		try {
 			return waitForResult(id, this::processAddTransactionSuccess, this::processAddTransactionException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | NoSuchAlgorithmException | DatabaseException | RejectedTransactionException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | RejectedTransactionException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -680,7 +652,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private boolean processAddTransactionException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) || NoSuchAlgorithmException.class.isAssignableFrom(clazz) || DatabaseException.class.isAssignableFrom(clazz) ||
+		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 
@@ -743,14 +715,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, NodeException {
+	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransaction(hash, id);
 		try {
-			return waitForResult(id, this::processGetTransactionSuccess, this::processGetTransactionException);
+			return waitForResult(id, this::processGetTransactionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | NodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -771,21 +743,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		return message instanceof GetTransactionResultMessage gtrm ? gtrm.get() : null;
 	}
 
-	private boolean processGetTransactionException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return NoSuchAlgorithmException.class.isAssignableFrom(clazz) || DatabaseException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
-	}
-
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NoSuchAlgorithmException, DatabaseException, NodeException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransactionRepresentation(hash, id);
 		try {
 			return waitForResult(id, this::processGetTransactionRepresentationSuccess, this::processGetTransactionRepresentationException);
 		}
-		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | NoSuchAlgorithmException | DatabaseException | NodeException e) {
+		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -808,19 +774,19 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private boolean processGetTransactionRepresentationException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) || NoSuchAlgorithmException.class.isAssignableFrom(clazz) || DatabaseException.class.isAssignableFrom(clazz) ||
+		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 
 	@Override
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException, DatabaseException {
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransactionAddress(hash, id);
 		try {
-			return waitForResult(id, this::processGetTransactionAddressSuccess, this::processGetTransactionAddressException);
+			return waitForResult(id, this::processGetTransactionAddressSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | DatabaseException | NodeException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -839,11 +805,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private Optional<TransactionAddress> processGetTransactionAddressSuccess(RpcMessage message) {
 		return message instanceof GetTransactionAddressResultMessage gtarm ? gtarm.get() : null;
-	}
-
-	private boolean processGetTransactionAddressException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return DatabaseException.class.isAssignableFrom(clazz) || processStandardExceptions(message);
 	}
 
 	/**

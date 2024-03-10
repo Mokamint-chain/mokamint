@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.transactions;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
@@ -24,7 +23,6 @@ import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.RejectedTransactionException;
@@ -40,7 +38,7 @@ public class Add extends AbstractPublicRpcCommand {
 	@Parameters(description = "the Base64-encoded bytes of the transaction to add")
 	private String tx;
 
-	private void body(RemotePublicNode remote) throws NodeException, DatabaseException, TimeoutException, InterruptedException, CommandException {
+	private void body(RemotePublicNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
 		MempoolEntry info = addTransaction(remote);
 
 		if (json()) {
@@ -55,15 +53,12 @@ public class Add extends AbstractPublicRpcCommand {
 			System.out.println(info);
 	}
 
-	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, DatabaseException, NodeException, CommandException {
+	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		try {
 			return remote.add(Transactions.of(Base64.fromBase64String(tx)));
 		}
 		catch (Base64ConversionException e) {
 			throw new CommandException("Illegal Base64 encoding of the transaction!", e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The database of the node contains a block that refers to an unknown cryptographic algorithm: " + e.getMessage(), e);
 		}
 		catch (RejectedTransactionException e) {
 			throw new CommandException("The transaction has been rejected: " + e.getMessage(), e);

@@ -301,8 +301,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
-	public void serviceGetBlockUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	@DisplayName("if a getBlock() request reaches the service and it goes in timeout, it sends back an exception")
+	public void serviceGetBlockTimeoutWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -313,7 +313,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
+				if (TimeoutException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}
 	
@@ -324,7 +324,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getBlock(hash)).thenThrow(NoSuchAlgorithmException.class);
+		when(node.getBlock(hash)).thenThrow(TimeoutException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlock(hash);
@@ -366,7 +366,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and there is a block with the requested hash, it sends back the description of that block")
-	public void serviceGetBlockDescriptionNonEmptyWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
+	public void serviceGetBlockDescriptionNonEmptyWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -409,8 +409,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getBlockDescription() request reaches the service and there is a block with the requested hash, but with an unknown hashing algorithm, it sends back an exception")
-	public void serviceGetBlockDescriptionUnknownHashingWorks() throws DeploymentException, IOException, DatabaseException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	@DisplayName("if a getBlockDescription() request reaches the service and it goes in timeout, it sends back an exception")
+	public void serviceGetBlockDescriptionNodeExceptionWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -421,7 +421,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (NoSuchAlgorithmException.class.isAssignableFrom(message.getExceptionClass()))
+				if (TimeoutException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}
 	
@@ -432,7 +432,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getBlockDescription(hash)).thenThrow(NoSuchAlgorithmException.class);
+		when(node.getBlockDescription(hash)).thenThrow(TimeoutException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetBlockDescription(hash);
@@ -537,7 +537,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
-	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, RejectedTransactionException, DatabaseException, NodeException {
+	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, RejectedTransactionException, NodeException {
 		var semaphore = new Semaphore(0);
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		
@@ -819,8 +819,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the database is corrupted, it sends back an exception")
-	public void serviceGetTransactionDatabaseExceptionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the node misbehaves, it sends back an exception")
+	public void serviceGetTransactionNodeExceptionWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -831,7 +831,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (DatabaseException.class.isAssignableFrom(message.getExceptionClass()))
+				if (NodeException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}
 
@@ -842,7 +842,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransaction(hash)).thenThrow(DatabaseException.class);
+		when(node.getTransaction(hash)).thenThrow(NodeException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransaction(hash);
@@ -1013,8 +1013,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getTransactionAddress() request reaches the service and there is a transaction with the requested hash, but the database is corrupted, it sends back an exception")
-	public void serviceGetTransactionAddressDatabaseExceptionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	@DisplayName("if a getTransactionAddress() request reaches the service and the node misbehaves, it throws back an exception")
+	public void serviceGetTransactionAddressNodeExceptionWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -1025,7 +1025,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (DatabaseException.class.isAssignableFrom(message.getExceptionClass()))
+				if (NodeException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}
 	
@@ -1036,7 +1036,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionAddress(hash)).thenThrow(DatabaseException.class);
+		when(node.getTransactionAddress(hash)).thenThrow(NodeException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000L, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionAddress(hash);

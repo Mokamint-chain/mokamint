@@ -382,7 +382,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public ChainInfo getChainInfo() throws DatabaseException {
+			public ChainInfo getChainInfo() {
 				return ChainInfos.of(chainInfo.getLength(), Optional.of(new byte[] { 10, 11, 23, 34, 56, 7 }), chainInfo.getHeadHash());
 			}
 		}

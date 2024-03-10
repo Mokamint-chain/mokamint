@@ -426,11 +426,11 @@ public class SynchronizationTask implements Task {
 				try {
 					maybeBlock = remote.getBlock(chosenGroup[h]);
 				}
-				catch (DatabaseException | NoSuchAlgorithmException e) {
+				catch (NodeException e) {
 					markAsMisbehaving(peer);
 					return;
 				}
-				catch (TimeoutException | NodeException e) {
+				catch (TimeoutException e) {
 					markAsUnreachable(peer);
 					return;
 				}

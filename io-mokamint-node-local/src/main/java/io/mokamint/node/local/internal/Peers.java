@@ -511,9 +511,8 @@ public class Peers implements AutoCloseable {
 	 * @throws TimeoutException if the peer could not be contacted through the {@code remote}
 	 * @throws InterruptedException if the connection to the peer though {@code remote} was interrupted
 	 * @throws NodeException if {@link #node} could not complete the operation
-	 * @throws DatabaseException if the database of {@link #node} is corrupted
 	 */
-	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, NodeException, TimeoutException, InterruptedException, DatabaseException {
+	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, NodeException, TimeoutException, InterruptedException {
 		NodeInfo peerInfo;
 
 		try {
@@ -547,10 +546,6 @@ public class Peers implements AutoCloseable {
 		catch (NodeException e) {
 			// it's the remote peer that misbehaves, not our node
 			throw new PeerRejectedException("The peer is misbehaving", e);
-		}
-		catch (DatabaseException e) {
-			// it's the remote peer that has database problems, not our node
-			throw new PeerRejectedException("The peer's database is corrupted", e);
 		}
 
 		Optional<byte[]> peerGenesisHash = peerChainInfo.getGenesisHash();

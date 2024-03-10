@@ -77,6 +77,11 @@ public class MokamintNode extends AbstractTool {
 
 	public static class POMVersionProvider extends AbstractPropertyFileVersionProvider {
 
+		/**
+		 * Creates the provider.
+		 */
+		public POMVersionProvider() {}
+
 		@Override
 		public String[] getVersion() throws IOException {
 			return getVersion(() -> MokamintNode.class.getModule().getResourceAsStream("maven.properties"), "mokamint.version");
