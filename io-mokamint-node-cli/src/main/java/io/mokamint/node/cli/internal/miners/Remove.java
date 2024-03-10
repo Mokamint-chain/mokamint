@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.miners;
 
-import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -35,18 +34,13 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	private UUID uuid;
 
 	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
-		try {
-			if (remote.removeMiner(uuid))
-				if (json())
-					System.out.println(uuid);
-				else
-					System.out.println("Closed miner " + uuid);
+		if (remote.removeMiner(uuid))
+			if (json())
+				System.out.println(uuid);
 			else
-				throw new CommandException("Miner " + uuid + " has not been removed from the set of miners: are you sure that it exists?");
-		}
-		catch (IOException e) {
-			throw new CommandException("Cannot close miner " + uuid, e);
-		}
+				System.out.println("Closed miner " + uuid);
+		else
+			throw new CommandException("Miner " + uuid + " has not been removed from the set of miners: are you sure that it exists?");
 	}
 
 	@Override

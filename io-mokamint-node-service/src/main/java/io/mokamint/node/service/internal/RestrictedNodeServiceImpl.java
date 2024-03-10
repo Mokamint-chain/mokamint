@@ -28,7 +28,6 @@ import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
@@ -134,7 +133,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.add(message.getPeer());
 			}
-			catch (TimeoutException | InterruptedException | NodeException | DatabaseException | IOException | PeerRejectedException e) {
+			catch (TimeoutException | InterruptedException | NodeException | IOException | PeerRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}
@@ -155,7 +154,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.remove(message.getPeer());
 			}
-			catch (TimeoutException | InterruptedException | NodeException | DatabaseException | IOException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}
@@ -197,7 +196,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.removeMiner(message.getUUID());
 			}
-			catch (TimeoutException | InterruptedException | NodeException | IOException e) {
+			catch (TimeoutException | InterruptedException | NodeException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}

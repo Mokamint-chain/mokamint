@@ -447,14 +447,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, NodeException, IOException, PeerRejectedException, DatabaseException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, NodeException, IOException, PeerRejectedException {
 		Optional<PeerInfo> result;
 	
 		try (var scope = mkScope()) {
 			result = peers.add(peer);
 		}
-		catch (ClosedDatabaseException e) {
-			throw new NodeException("The database is unexpectedly closed", e);
+		catch (DatabaseException | ClosedDatabaseException e) {
+			throw new NodeException(e);
 		}
 	
 		if (result.isPresent()) {
@@ -467,12 +467,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public boolean remove(Peer peer) throws DatabaseException, NodeException, InterruptedException, IOException {
+	public boolean remove(Peer peer) throws NodeException, InterruptedException {
 		try (var scope = mkScope()) {
 			return peers.remove(peer);
 		}
-		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e); // the database cannot be closed because this node is open
+		catch (DatabaseException | ClosedDatabaseException e) {
+			throw new NodeException(e);
 		}
 	}
 
@@ -485,8 +485,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				minersToCloseAtTheEnd.add(miner);
 				onAdded(miner);
 			}
-			else
-				miner.close();
+			else {
+				try {
+					miner.close();
+				}
+				catch (IOException e) {
+					LOGGER.warning("cannot close miner " + miner.getUUID() + ": " + e.getMessage());
+				}
+			}
 
 			return maybeInfo;
 		}
@@ -507,15 +513,23 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public boolean removeMiner(UUID uuid) throws NodeException, IOException {
+	public boolean removeMiner(UUID uuid) throws NodeException {
 		try (var scope = mkScope()) {
 			var toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
 			for (var miner: toRemove) {
 				miners.remove(miner);
-				if (minersToCloseAtTheEnd.contains(miner))
-					miner.close();
+				if (minersToCloseAtTheEnd.contains(miner)) {
+					try {
+						miner.close();
+					}
+					catch (IOException e) {
+						// the requested operation has been performed: hence just report a warning
+						// in the logs, do not throw any exception
+						LOGGER.warning("cannot close miner " + uuid + ": " + e.getMessage());
+					}
+				}
 			}
-	
+
 			return toRemove.length > 0;
 		}
 	}
@@ -1235,7 +1249,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try {
 			peers.close();
 		}
-		catch (IOException | DatabaseException e) {
+		catch (DatabaseException e) {
 			LOGGER.log(Level.SEVERE, "cannot close the peers", e);
 			throw new NodeException(e);
 		}

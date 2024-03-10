@@ -72,7 +72,7 @@ public abstract class AbstractRpcCommand extends AbstractCommand {
 			what.run(remote);
 		}
 		catch (NodeException e) {
-			throw new CommandException("The node published at " + uri + " could not complete the operation", e);
+			throw new CommandException("The node published at " + uri + " could not complete the operation correctly", e);
 		}
 		catch (IOException e) {
 			throw new CommandException("I/O error! Are you sure that a Mokamint node is actually published at " + uri + " and is accessible?", e);

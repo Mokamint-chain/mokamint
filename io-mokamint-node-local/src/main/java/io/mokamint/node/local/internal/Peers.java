@@ -206,9 +206,8 @@ public class Peers implements AutoCloseable {
 	 * @throws DatabaseException if the database of the node is corrupted
 	 * @throws ClosedDatabaseException if the database of the node is already closed
 	 * @throws InterruptedException if the operation was interrupted
-	 * @throws IOException if an I/O exception occurred while contacting the peer
 	 */
-	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
 		boolean removed;
 
 		synchronized (lock) {
@@ -253,8 +252,7 @@ public class Peers implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws IOException, InterruptedException, DatabaseException {
-		IOException ioException = null;
+	public void close() throws InterruptedException, DatabaseException {
 		InterruptedException interruptedException = null;
 
 		try {
@@ -267,9 +265,6 @@ public class Peers implements AutoCloseable {
 						Thread.currentThread().interrupt();
 						interruptedException = e;
 					}
-					catch (IOException e) {
-						ioException = e;
-					}
 				}
 			}
 		}
@@ -280,8 +275,6 @@ public class Peers implements AutoCloseable {
 			finally {
 				if (interruptedException != null)
 					throw interruptedException;
-				else if (ioException != null)
-					throw ioException;
 			}
 		}
 	}
@@ -311,7 +304,7 @@ public class Peers implements AutoCloseable {
 		tryToReconnectOrAdd(Stream.of(allPeers), _peer -> false);
 	}
 
-	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
 		long lost = config.getPeerPunishmentForUnreachable();
 		boolean removed;
 		
@@ -468,9 +461,8 @@ public class Peers implements AutoCloseable {
 	 * @throws DatabaseException if the database of {@link #node} is corrupted
 	 * @throws ClosedDatabaseException if the database of {@link #node} is already closed
 	 * @throws InterruptedException if the execution was interrupted while waiting to establish a connection to the peer
-	 * @throws IOException if an I/O error occurred
 	 */
-	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		try {
 			LOGGER.info("peers: trying to create a connection to " + peer.toStringSanitized());
 			RemotePublicNode remote = null;
@@ -611,7 +603,7 @@ public class Peers implements AutoCloseable {
 		node.onConnected(peer);
 	}
 
-	private void disconnect(Peer peer, RemotePublicNode remote) throws InterruptedException, IOException {
+	private void disconnect(Peer peer, RemotePublicNode remote) throws InterruptedException {
 		if (remote != null) {
 			remote.unbindWhisperer(node);
 			remotes.remove(peer);
@@ -623,7 +615,6 @@ public class Peers implements AutoCloseable {
 			}
 			catch (NodeException e) {
 				LOGGER.warning("cannot close the remote to peer " + peer.toStringSanitized() + ": " + e.getMessage());
-				throw new IOException("Cannot close the remote to peer " + peer.toStringSanitized(), e);
 			}
 		}
 	}

@@ -33,7 +33,6 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -163,14 +162,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onCloseMinerResult() {}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, DatabaseException, IOException, TimeoutException, InterruptedException, NodeException {
+	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendAddPeer(peer, id);
 		try {
 			return waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | DatabaseException | IOException | PeerRejectedException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | IOException | PeerRejectedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -193,20 +192,19 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private boolean processAddPeerException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
 		return PeerRejectedException.class.isAssignableFrom(clazz) ||
-			DatabaseException.class.isAssignableFrom(clazz) ||
 			IOException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 
 	@Override
-	public boolean remove(Peer peer) throws DatabaseException, TimeoutException, InterruptedException, NodeException, IOException {
+	public boolean remove(Peer peer) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendRemovePeer(peer, id);
 		try {
-			return waitForResult(id, this::processRemovePeerSuccess, this::processRemovePeerException);
+			return waitForResult(id, this::processRemovePeerSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | DatabaseException | TimeoutException | InterruptedException | NodeException | IOException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -224,13 +222,6 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	private Boolean processRemovePeerSuccess(RpcMessage message) {
 		return message instanceof RemovePeerResultMessage rprm ? rprm.get() : null;
-	}
-
-	private boolean processRemovePeerException(ExceptionMessage message) {
-		var exception = message.getExceptionClass();
-		return DatabaseException.class.isAssignableFrom(exception) ||
-			IOException.class.isAssignableFrom(exception) ||
-			processStandardExceptions(message);
 	}
 
 	private class OpenMinerEndpoint extends Endpoint {
@@ -275,14 +266,14 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException, IOException {
+	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendRemoveMiner(uuid, id);
 		try {
-			return waitForResult(id, this::processRemoveMinerSuccess, this::processRemoveMinerException);
+			return waitForResult(id, this::processRemoveMinerSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | IOException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -292,10 +283,5 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	private Boolean processRemoveMinerSuccess(RpcMessage message) {
 		return message instanceof RemoveMinerResultMessage rmrm ? rmrm.get() : null;
-	}
-
-	private boolean processRemoveMinerException(ExceptionMessage message) {
-		var exception = message.getExceptionClass();
-		return IOException.class.isAssignableFrom(exception) || processStandardExceptions(message);
 	}
 }

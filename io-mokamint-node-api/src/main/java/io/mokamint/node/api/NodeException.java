@@ -46,7 +46,7 @@ public class NodeException extends Exception {
 	 * @param cause the cause
 	 */
 	public NodeException(Throwable cause) {
-		super(Objects.requireNonNull(cause, "cause cannot be null"));
+		super(String.valueOf(cause.getMessage()), cause);
 	}
 
 	/**

@@ -25,7 +25,7 @@ import io.hotmoka.annotations.ThreadSafe;
 
 /**
  * The restricted interface of a node of a Mokamint blockchain.
- * Typically, this API can be called from authorized machines only.
+ * Typically, this API can be called from authorized actors only.
  */
 @ThreadSafe
 public interface RestrictedNode extends Node {
@@ -37,35 +37,32 @@ public interface RestrictedNode extends Node {
 	 * @param peer the peer to add
 	 * @return the information about the added peer; this is empty if the peer has not been added nor reconnected,
 	 *         for instance because it was already present or the node has already reached a maximum number of peers
-	 * @throws IOException if a connection to the peer cannot be established
+	 * @throws IOException if a connection to {@code peer} cannot be established
 	 * @throws PeerRejectedException if {@code peer} was rejected for some reason
-	 * @throws DatabaseException if the database of this node is corrupted
 	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, DatabaseException, TimeoutException, InterruptedException, NodeException;
+	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node, if it was there.
 	 * 
 	 * @param peer the peer to remove
 	 * @return true if and only if the peer has been actually removed
-	 * @throws IOException if the connection to the peer failed to close
-	 * @throws DatabaseException if the database of this node is corrupted
-	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	boolean remove(Peer peer) throws TimeoutException, IOException, InterruptedException, NodeException, DatabaseException;
+	boolean remove(Peer peer) throws TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Opens a remote miner at the given port.
 	 * 
 	 * @param port the port
 	 * @return the information about the opened miner; this is empty if the miner has not been opened
-	 * @throws TimeoutException if no answer arrives before a time window
-	 * @throws IOException if an I/O error occurred (for instance, if the port is already bound to some service)
+	 * @throws TimeoutException if no answer arrives within a time window
+	 * @throws IOException if a connection cannot be established (for instance, if the port is already bound to some service)
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
@@ -77,10 +74,9 @@ public interface RestrictedNode extends Node {
 	 * @param uuid the unique identifier of the miner to remove
 	 * @return true if and only if the miner has been removed; this is false if, for instance, no miner
 	 *         with the given {@code uuid} exists
-	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
-	 * @throws IOException if the miner failed to close
 	 */
-	boolean removeMiner(UUID uuid) throws TimeoutException, IOException, InterruptedException, NodeException;
+	boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException;
 }

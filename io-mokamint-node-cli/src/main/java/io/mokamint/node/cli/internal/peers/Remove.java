@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.peers;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
@@ -36,22 +35,13 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	private URI uri;
 
 	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
-		if (removePeer(remote))
+		if (remote.remove(Peers.of(uri)))
 			if (json())
 				System.out.println(uri);
 			else
 				System.out.println("Removed peer " + uri);
 		else
 			throw new CommandException("Peer " + uri + " has not been removed from the set of peers: are you sure that it exists?");
-	}
-
-	private boolean removePeer(RemoteRestrictedNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException, DatabaseException {
-		try {
-			return remote.remove(Peers.of(uri));
-		}
-		catch (IOException e) {
-			throw new CommandException("Cannot establish a connection to " + uri, e);
-		}
 	}
 
 	@Override

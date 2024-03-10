@@ -217,10 +217,10 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("add(Peer) works in case of DatabaseException")
-	public void addPeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NodeException {
+	@DisplayName("add(Peer) works in case of NodeException")
+	public void addPeerWorksInCaseOfNodeException() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NodeException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
-		var exceptionMessage = "database exception";
+		var exceptionMessage = "the node is misbehaving";
 
 		class MyServer extends RestrictedTestServer {
 
@@ -229,14 +229,14 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
 				try {
-					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
 				}
 				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(DatabaseException.class, () -> remote.add(peer));
+			var exception = assertThrows(NodeException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -322,10 +322,10 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("remove(Peer) works in case of DatabaseException")
-	public void removePeerWorksInCaseOfDatabaseException() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NodeException {
+	@DisplayName("remove(Peer) works in case of InterruptedException")
+	public void removePeerWorksInCaseOfInterruptedException() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NodeException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
-		var exceptionMessage = "database exception";
+		var exceptionMessage = "interrupted";
 
 		class MyServer extends RestrictedTestServer {
 
@@ -334,23 +334,23 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
 				try {
-					sendObjectAsync(session, ExceptionMessages.of(new DatabaseException(exceptionMessage), message.getId()));
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
 				}
 				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(DatabaseException.class, () -> remote.remove(peer));
+			var exception = assertThrows(InterruptedException.class, () -> remote.remove(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 
 	@Test
-	@DisplayName("remove(Peer) works in case of IOException")
-	public void removePeerWorksInCaseOfIOException() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NodeException {
+	@DisplayName("remove(Peer) works in case of TimeoutException")
+	public void removePeerWorksInCaseOfTimeoutException() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NodeException {
 		var peer = Peers.of(new URI("ws://my.machine:1024"));
-		var exceptionMessage = "I/O exception";
+		var exceptionMessage = "timeout";
 
 		class MyServer extends RestrictedTestServer {
 
@@ -359,14 +359,14 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
 				try {
-					sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
 				}
 				catch (IOException e) {}
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IOException.class, () -> remote.remove(peer));
+			var exception = assertThrows(TimeoutException.class, () -> remote.remove(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
