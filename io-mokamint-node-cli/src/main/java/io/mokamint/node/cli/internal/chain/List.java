@@ -28,7 +28,7 @@ import io.hotmoka.cli.AbstractTable;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlockDescription;

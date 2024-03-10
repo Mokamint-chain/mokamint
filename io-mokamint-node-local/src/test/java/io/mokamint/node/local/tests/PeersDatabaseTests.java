@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.LocalNodeImpl;

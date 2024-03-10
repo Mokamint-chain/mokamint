@@ -35,9 +35,9 @@ import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;

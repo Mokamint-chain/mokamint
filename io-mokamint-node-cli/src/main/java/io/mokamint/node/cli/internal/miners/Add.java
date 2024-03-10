@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.MinerInfos;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;

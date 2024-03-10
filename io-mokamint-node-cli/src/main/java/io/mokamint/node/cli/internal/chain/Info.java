@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;

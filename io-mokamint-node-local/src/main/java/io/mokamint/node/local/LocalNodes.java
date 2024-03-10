@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
-import io.mokamint.node.api.DatabaseException;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;

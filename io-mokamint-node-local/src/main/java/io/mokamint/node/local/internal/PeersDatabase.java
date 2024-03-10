@@ -40,8 +40,8 @@ import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.DatabaseException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.api.LocalNodeConfig;
 

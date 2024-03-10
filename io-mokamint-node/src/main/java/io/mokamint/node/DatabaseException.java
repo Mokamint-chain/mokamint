@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node;
 
 /**
  * An exception stating that the database of a Mokamint node is corrupted.
