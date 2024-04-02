@@ -23,6 +23,7 @@ module io.mokamint.node.cli {
 	// needed to inject CLI options or JSON serialization
 	opens io.mokamint.node.cli.internal to info.picocli;
     opens io.mokamint.node.cli.internal.mempool to info.picocli, com.google.gson;
+    opens io.mokamint.node.cli.internal.applications to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.miners to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.peers to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.config to info.picocli;
@@ -47,6 +48,4 @@ module io.mokamint.node.cli {
 	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
 	requires java.logging;
-
-	provides io.mokamint.application.api.Application with io.mokamint.node.cli.internal.EmptyApplication;
 }

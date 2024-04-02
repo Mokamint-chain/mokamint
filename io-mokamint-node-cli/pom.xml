@@ -79,6 +79,13 @@
       <artifactId>io-hotmoka-crypto</artifactId>
       <version>${io.hotmoka.crypto.version}</version>
     </dependency>
+
+    <!-- the application's providers that we want included by default -->
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-empty</artifactId>
+      <version>${mokamint.version}</version>	
+	</dependency>
   </dependencies>
 
   <build>

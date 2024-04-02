@@ -21,6 +21,7 @@ import java.io.IOException;
 import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.hotmoka.cli.AbstractTool;
 import io.mokamint.node.cli.MokamintNode.POMVersionProvider;
+import io.mokamint.node.cli.internal.Applications;
 import io.mokamint.node.cli.internal.Chain;
 import io.mokamint.node.cli.internal.Config;
 import io.mokamint.node.cli.internal.Info;
@@ -46,6 +47,7 @@ import picocli.CommandLine.Command;
 	footer = "Copyright (c) 2024 Fausto Spoto",
 	versionProvider = POMVersionProvider.class,
 	subcommands = {
+		Applications.class,
 		Chain.class,
 		Config.class,
 		Info.class,

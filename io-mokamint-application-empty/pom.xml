@@ -1,0 +1,38 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>io-mokamint-application-empty</artifactId>
+  <name>io-mokamint-application-empty</name>
+  <packaging>jar</packaging>
+  <version>${mokamint.version}</version>
+  <description>This module implements an empty Mokamint application.</description>
+
+  <parent>
+    <groupId>io.mokamint</groupId>
+    <artifactId>mokamint</artifactId>
+    <version>parent</version>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <outputDirectory>
+            target   <!-- so that it does not land in modules/explicit -->
+          </outputDirectory>
+        </configuration>
+      </plugin>		
+	</plugins>
+  </build>
+
+</project>
