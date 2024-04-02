@@ -19,7 +19,7 @@ package io.mokamint.application.api;
 import java.util.Objects;
 
 /**
- * An exception stating that the execution of a method of am application failed to complete correctly.
+ * An exception stating that the execution of a method of an application failed to complete correctly.
  */
 @SuppressWarnings("serial")
 public class ApplicationException extends Exception {

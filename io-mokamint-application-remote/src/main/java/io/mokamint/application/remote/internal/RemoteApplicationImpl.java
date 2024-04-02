@@ -180,17 +180,14 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	protected ApplicationException mkException(Exception cause) {
-		if (cause instanceof ApplicationException ae)
-			return ae;
-		else
-			return new ApplicationException(cause);
+		return cause instanceof ApplicationException ae ? ae : new ApplicationException(cause);
 	}
 
 	/**
 	 * Determines if the given exception message deals with an exception that all
 	 * methods of a node are expected to throw. These are
 	 * {@code java.lang.TimeoutException}, {@code java.lang.InterruptedException}
-	 * and {@link ClosedApplicationException}.
+	 * and {@link ApplicationException}.
 	 * 
 	 * @param message the message
 	 * @return true if and only if that condition holds

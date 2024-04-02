@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.node;
+
+import io.mokamint.node.api.NodeException;
 
 /**
  * An exception stating that a node is closed and cannot perform the request.
@@ -44,7 +46,7 @@ public class ClosedNodeException extends NodeException {
 	 * @param cause the cause
 	 */
 	public ClosedNodeException(Throwable cause) {
-		super(cause.getMessage(), cause);
+		super(cause);
 	}
 
 	/**

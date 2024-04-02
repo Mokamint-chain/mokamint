@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
-import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteNode;
 

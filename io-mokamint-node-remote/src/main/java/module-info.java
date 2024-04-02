@@ -22,6 +22,7 @@ module io.mokamint.node.remote {
 
 	requires transitive io.mokamint.node.remote.api;
 	requires io.mokamint.node.service.api;
+	requires io.mokamint.node;
 	requires io.mokamint.node.messages;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.websockets.client;
