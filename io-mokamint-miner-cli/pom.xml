@@ -38,6 +38,23 @@
 
   <build>
     <plugins>
+	  <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.2.0</version>
+	    <configuration>
+	      <failOnError>false</failOnError>
+	      <filesets>
+	        <fileset>
+              <directory>modules</directory>
+              <includes>
+                <include>**/*</include>
+              </includes>
+              <followSymlinks>false</followSymlinks>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
@@ -50,6 +67,97 @@
             </goals>
             <configuration>
               <outputFile>${project.build.outputDirectory}/maven.properties</outputFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+          <outputDirectory>
+            ${project.basedir}/modules/explicit
+          </outputDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+		  <includeScope>
+		    runtime <!-- so that test or provided dependencies are not considered -->
+		  </includeScope>
+		</configuration>
+        <executions>
+          <execution>
+            <id>copy-unnamed-module</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/modules/unnamed</outputDirectory>
+              <includeArtifactIds>
+                annotations,
+                commons-compress,
+                kotlin-loggin,
+                kotlin-stdlib,
+                kotlin-stdlib-common,
+                slf4j-api,
+                slf4j-nop,
+                xodus-compress,
+                xodus-environment,
+                xodus-openAPI,
+                xodus-utils
+              </includeArtifactIds>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-automatic-modules</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/modules/automatic</outputDirectory>
+              <includeArtifactIds>
+                io-hotmoka-xodus,
+                grizzly-framework,
+                grizzly-http,
+                grizzly-http-server
+              </includeArtifactIds>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-explicit-modules</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/modules/explicit</outputDirectory>
+              <excludeArtifactIds>
+				<!-- we exclude all automatic modules -->
+				io-hotmoka-xodus,
+                grizzly-framework,
+                grizzly-http,
+                grizzly-http-server,
+                
+                <!-- we exclude all unnamed modules -->
+                annotations,
+                commons-compress,
+                kotlin-loggin,
+                kotlin-stdlib,
+                kotlin-stdlib-common,
+                slf4j-api,
+                slf4j-nop,
+                xodus-compress,
+                xodus-environment,
+                xodus-openAPI,
+                xodus-utils
+              </excludeArtifactIds>
             </configuration>
           </execution>
         </executions>
