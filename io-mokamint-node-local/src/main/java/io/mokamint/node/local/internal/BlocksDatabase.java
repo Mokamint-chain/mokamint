@@ -1177,7 +1177,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			while ((blockHeight = block.getDescription().getHeight()) > height) {
 				if (block instanceof NonGenesisBlock ngb) {
 					removeReferencesToTransactionsInside(txn, block);
-					storeOfChain.remove(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
+					storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
 					byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
 					Optional<Block> previous = getBlock(txn, hashOfPrevious);
 					if (previous.isEmpty())
@@ -1207,7 +1207,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		if (block instanceof NonGenesisBlock ngb) {
 			int count = ngb.getTransactionsCount();
 			for (int pos = 0; pos < count; pos++)
-				storeOfTransactions.remove(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
+				storeOfTransactions.delete(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
 		}
 	}
 

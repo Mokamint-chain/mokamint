@@ -59,7 +59,16 @@ public class MokamintPlotter extends AbstractTool {
 		loadLoggingConfig(() -> MokamintPlotter.class.getModule().getResourceAsStream("logging.properties"));
 	}
 
+	/**
+	 * A provider of the version of this tool, taken from the property
+	 * declaration into the POM file.
+	 */
 	public static class POMVersionProvider extends AbstractPropertyFileVersionProvider {
+
+		/**
+		 * Creates the provider.
+		 */
+		public POMVersionProvider() {}
 
 		@Override
 		public String[] getVersion() throws IOException {

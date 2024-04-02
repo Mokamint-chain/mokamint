@@ -32,13 +32,18 @@ import io.mokamint.nonce.api.Deadline;
  */
 @Name("empty")
 @Description("an application with no state, accepting all transactions, useful for experiments")
-public class EmptyApplication implements Application { // TODO: remove at the end
+public class EmptyApplication implements Application {
 	private final AtomicInteger nextId = new AtomicInteger();
 
 	/**
 	 * There is only one state (empty) and consequently only one identifier.
 	 */
 	private final static byte[] STATE_ID = new byte[] { 13, 1, 19, 73 };
+
+	/**
+	 * Creates an empty application.
+	 */
+	public EmptyApplication() {}
 
 	@Override
 	public boolean checkPrologExtra(byte[] extra) {

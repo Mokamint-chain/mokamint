@@ -77,6 +77,10 @@ public class MokamintNode extends AbstractTool {
 		loadLoggingConfig(() -> MokamintNode.class.getModule().getResourceAsStream("logging.properties"));
 	}
 
+	/**
+	 * A provider of the version of this tool, taken from the property
+	 * declaration into the POM file.
+	 */
 	public static class POMVersionProvider extends AbstractPropertyFileVersionProvider {
 
 		/**
