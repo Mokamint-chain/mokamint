@@ -110,9 +110,6 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		this.application = application;
 		this.logPrefix = "application service(ws://localhost:" + port + "): ";
 
-		// if the application gets closed, then this service will be closed as well
-		application.addOnCloseHandler(this_close);
-
 		startContainer("", port,
 			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
 			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
@@ -120,6 +117,9 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
 			CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this)
 		);
+
+		// if the application gets closed, then this service will be closed as well
+		application.addOnCloseHandler(this_close);
 
 		LOGGER.info(logPrefix + "published");
 	}

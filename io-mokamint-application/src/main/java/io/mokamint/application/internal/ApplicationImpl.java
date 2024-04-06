@@ -29,7 +29,7 @@ import io.mokamint.application.api.ApplicationException;
 public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndOnCloseHandlers<ClosedApplicationException> implements Application {
 
 	/**
-	 * 
+	 * Creates the application.
 	 */
 	protected ApplicationImpl() {
 		super(ClosedApplicationException::new);
