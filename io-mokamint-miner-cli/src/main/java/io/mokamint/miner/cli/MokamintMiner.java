@@ -19,7 +19,7 @@ package io.mokamint.miner.cli;
 import java.io.IOException;
 
 import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
-import io.hotmoka.cli.AbstractTool;
+import io.hotmoka.cli.AbstractCLI;
 import io.mokamint.miner.cli.MokamintMiner.POMVersionProvider;
 import io.mokamint.miner.cli.internal.Start;
 import picocli.CommandLine.Command;
@@ -40,7 +40,7 @@ import picocli.CommandLine.Command;
 		Start.class
 	}
 )
-public class MokamintMiner extends AbstractTool {
+public class MokamintMiner extends AbstractCLI {
 
 	private MokamintMiner() {}
 

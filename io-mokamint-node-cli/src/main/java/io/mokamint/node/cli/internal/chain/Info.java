@@ -20,7 +20,6 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -30,7 +29,7 @@ import picocli.CommandLine.Command;
 @Command(name = "info", description = "Show information about the chain of a node.")
 public class Info extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, DatabaseException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		try {
 			var info = remote.getChainInfo();
 

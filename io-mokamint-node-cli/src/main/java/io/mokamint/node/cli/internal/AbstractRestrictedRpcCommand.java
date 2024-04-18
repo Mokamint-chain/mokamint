@@ -18,7 +18,10 @@ package io.mokamint.node.cli.internal;
 
 import java.net.URI;
 
+import io.hotmoka.cli.AbstractRpcCommand;
 import io.hotmoka.cli.CommandException;
+import io.hotmoka.cli.RpcCommandBody;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import picocli.CommandLine.Option;
@@ -27,7 +30,11 @@ import picocli.CommandLine.Option;
  * Shared code among the command that connect to a remote Mokamint node and perform Rpc calls
  * to the restricted API of the node.
  */
-public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand {
+public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand<RemoteRestrictedNode, NodeException> {
+
+	protected AbstractRestrictedRpcCommand() {
+		super(NodeException.class);
+	}
 
 	@Option(names = "--restricted-uri", description = "the network URI where the restricted API of the node is published", defaultValue = "ws://localhost:8031")
 	private URI restrictedUri;
@@ -48,7 +55,7 @@ public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand {
 	 * @param what the body
 	 * @throws CommandException if something erroneous must be logged and the user must be informed
 	 */
-	protected void execute(RpcCommandBody<RemoteRestrictedNode> what) throws CommandException {
+	protected void execute(RpcCommandBody<RemoteRestrictedNode, NodeException> what) throws CommandException {
 		execute(RemoteRestrictedNodes::of, what, restrictedUri);
 	}
 }

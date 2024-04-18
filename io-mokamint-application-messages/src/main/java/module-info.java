@@ -30,4 +30,8 @@ module io.mokamint.application.messages {
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.crypto;
 	requires com.google.gson;
+
+	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
+	// classes without the no-args constructor
+	requires jdk.unsupported;
 }

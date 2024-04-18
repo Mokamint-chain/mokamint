@@ -32,7 +32,7 @@ import io.mokamint.nonce.api.Deadline;
  */
 @Name("empty")
 @Description("an application with no state, accepting all transactions, useful for experiments")
-public class EmptyApplication implements Application {
+public class EmptyApplication implements Application { // TODO: it should extend AbstractApplication
 	private final AtomicInteger nextId = new AtomicInteger();
 
 	/**

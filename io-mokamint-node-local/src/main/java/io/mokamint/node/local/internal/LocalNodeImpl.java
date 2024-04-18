@@ -1218,7 +1218,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			callCloseHandlers();
 		}
 		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
 			throw e;
 		}
 		catch (Exception e) {

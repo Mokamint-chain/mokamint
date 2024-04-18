@@ -20,7 +20,6 @@ import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
@@ -34,7 +33,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the URI of the peer to remove")
 	private URI uri;
 
-	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
 		if (remote.remove(Peers.of(uri)))
 			if (json())
 				System.out.println(uri);

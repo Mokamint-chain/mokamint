@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.chain;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
@@ -105,7 +104,7 @@ public class Show extends AbstractPublicRpcCommand {
         }
 	}
 
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, DatabaseException, CommandException {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		try {
 			byte[] hash = blockIdentifier.getHashOfBlock(remote);
 			if (full)
@@ -113,15 +112,15 @@ public class Show extends AbstractPublicRpcCommand {
 			else
 				print(remote, remote.getBlockDescription(hash).orElseThrow(() -> new CommandException("The node does not contain any block with the requested hash!")), hash);
 		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("Unknown cryptographical algorithm in a block of \"" + publicUri() + "\"", e);
-		}
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode a block from \"" + publicUri() + "\" in JSON format!", e);
 		}
+		catch (DatabaseException e) {
+			throw new CommandException(e.getMessage(), e);
+		}
 	}
 
-    private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+    private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, DatabaseException, TimeoutException, InterruptedException, NodeException {
     	if (json())
     		System.out.println(new BlockDescriptions.Encoder().encode(description));
 		else {
@@ -147,7 +146,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}	
     }
 
-    private void print(RemotePublicNode remote, Block block, byte[] hash) throws EncodeException, NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+    private void print(RemotePublicNode remote, Block block, byte[] hash) throws EncodeException, DatabaseException, TimeoutException, InterruptedException, NodeException {
     	if (json())
     		System.out.println(new Blocks.Encoder().encode(block));
 		else {

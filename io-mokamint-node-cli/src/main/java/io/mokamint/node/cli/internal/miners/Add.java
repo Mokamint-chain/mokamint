@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
@@ -36,7 +35,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the port where the miner must be published")
 	private int port;
 
-	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
 		if (port < 0 || port > 65535)
 			throw new CommandException("The port number must be between 0 and 65535 inclusive");
 

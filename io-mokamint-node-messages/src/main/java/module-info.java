@@ -29,7 +29,11 @@ module io.mokamint.node.messages {
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.annotations;
-	requires com.google.gson;
+	requires static com.google.gson;
+
+	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
+	// classes without the no-args constructor
+	requires jdk.unsupported;
 
 	// only used for tests
 	requires static io.mokamint.nonce;

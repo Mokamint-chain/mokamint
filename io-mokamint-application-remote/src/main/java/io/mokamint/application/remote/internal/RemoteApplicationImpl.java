@@ -139,7 +139,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, logPrefix + "application remote: unexpected exception", e);
+		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
 		return new RuntimeException("Unexpected exception", e);
 	}
 

@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.TransactionAddress;
@@ -37,7 +36,7 @@ public class Find extends AbstractPublicRpcCommand {
 	@Parameters(index = "0", description = "the hexadecimal hash of the transaction")
 	private String hash;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException, DatabaseException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		var address = getTransactionAddress(remote);
 
 		if (json()) {
@@ -52,7 +51,7 @@ public class Find extends AbstractPublicRpcCommand {
 			System.out.println(address);
 	}
 
-	private TransactionAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, DatabaseException, CommandException {
+	private TransactionAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		return remote.getTransactionAddress(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 	}
 

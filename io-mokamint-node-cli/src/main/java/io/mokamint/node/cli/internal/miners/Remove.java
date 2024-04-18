@@ -20,7 +20,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
@@ -33,7 +32,7 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the UUID of the miner to remove")
 	private UUID uuid;
 
-	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException, DatabaseException {
+	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
 		if (remote.removeMiner(uuid))
 			if (json())
 				System.out.println(uuid);

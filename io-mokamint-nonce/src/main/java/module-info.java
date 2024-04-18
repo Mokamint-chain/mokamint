@@ -29,6 +29,10 @@ module io.mokamint.nonce {
 	requires transitive io.hotmoka.marshalling;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
+	requires static com.google.gson;
 	requires java.logging;
-	requires com.google.gson;
+
+	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
+	// classes without the no-args constructor
+	requires jdk.unsupported;
 }

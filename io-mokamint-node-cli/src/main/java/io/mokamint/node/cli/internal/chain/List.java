@@ -130,7 +130,7 @@ public class List extends AbstractPublicRpcCommand {
 				throw new DatabaseException("The type of the genesis block is inconsistent!");
 		}
 
-		private void add(int pos) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+		private void add(int pos) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
 			long height = from + pos;
 			String rowHeight = height + ":";
 			String rowHash = Hex.toHexString(hashes[pos]);
@@ -166,7 +166,7 @@ public class List extends AbstractPublicRpcCommand {
 		}
 	}
 
-	private void body(RemotePublicNode remote) throws CommandException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
@@ -184,6 +184,9 @@ public class List extends AbstractPublicRpcCommand {
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("Unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\"!", e);
+		}
+		catch (DatabaseException e) {
+			throw new CommandException(e.getMessage(), e);
 		}
 	}
 

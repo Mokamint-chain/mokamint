@@ -19,7 +19,7 @@ package io.mokamint.plotter.cli;
 import java.io.IOException;
 
 import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
-import io.hotmoka.cli.AbstractTool;
+import io.hotmoka.cli.AbstractCLI;
 import io.mokamint.plotter.cli.MokamintPlotter.POMVersionProvider;
 import io.mokamint.plotter.cli.internal.Create;
 import io.mokamint.plotter.cli.internal.Show;
@@ -42,7 +42,7 @@ import picocli.CommandLine.Command;
 		Show.class
 	}
 )
-public class MokamintPlotter extends AbstractTool {
+public class MokamintPlotter extends AbstractCLI {
 
 	private MokamintPlotter() {}
 
