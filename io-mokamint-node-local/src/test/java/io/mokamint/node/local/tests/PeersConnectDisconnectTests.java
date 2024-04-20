@@ -162,7 +162,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 				.setDir(chain2)
 				// this test requires to broadcast the services quickly,
 				// or otherwise it would last too much
-				.setServiceBroadcastInterval(2000L)
+				.setServiceBroadcastInterval(2000)
 				.build();
 
 		var connections = new Semaphore(0);

@@ -309,16 +309,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 			.subtract(oldAcceleration);
 	
 		var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
-		
-		// TODO: remove at then end
-		if (acceleration.signum() < 0) {
-			System.out.println("oldAcceleration: " + oldAcceleration);
-			System.out.println("weightedWaitingTimeForNewBlock: " + weightedWaitingTimeForNewBlock);
-			System.out.println("targetBlockCreationTime: " + targetBlockCreationTime);
-			System.out.println("delta: " + delta);
-			throw new IllegalStateException("negative acceleration: " + acceleration + " old: " + oldAcceleration + " w: " + weightedWaitingTimeForNewBlock + " t: " + targetBlockCreationTime + " delta: " + delta);
-		}
-
 		if (acceleration.signum() == 0)
 			acceleration = BigInteger.ONE; // acceleration must be strictly positive
 	

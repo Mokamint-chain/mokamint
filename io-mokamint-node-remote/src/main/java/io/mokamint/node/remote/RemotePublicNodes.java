@@ -43,8 +43,8 @@ public abstract class RemotePublicNodes {
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemotePublicNode of(URI uri, long timeout) throws DeploymentException, IOException {
-		return new RemotePublicNodeImpl(uri, timeout, -1L, 1000);
+	public static RemotePublicNode of(URI uri, int timeout) throws DeploymentException, IOException {
+		return new RemotePublicNodeImpl(uri, timeout, -1, 1000);
 	}
 
 	/**
@@ -63,7 +63,7 @@ public abstract class RemotePublicNodes {
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemotePublicNode of(URI uri, long timeout, long serviceBroadcastInterval, int whisperedMessagesSize) throws DeploymentException, IOException {
+	public static RemotePublicNode of(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws DeploymentException, IOException {
 		return new RemotePublicNodeImpl(uri, timeout, serviceBroadcastInterval, whisperedMessagesSize);
 	}
 }

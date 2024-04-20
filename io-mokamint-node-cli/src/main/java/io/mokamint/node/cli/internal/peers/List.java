@@ -136,7 +136,7 @@ public class List extends AbstractPublicRpcCommand {
 			if (verbose) {
 				String UUID, version;
 
-				try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000L)) {
+				try (var remote = RemotePublicNodes.of(info.getPeer().getURI(), 10000)) {
 					var peerInfo = remote.getInfo();
 					UUID = peerInfo.getUUID().toString();
 					version = peerInfo.getVersion().toString();

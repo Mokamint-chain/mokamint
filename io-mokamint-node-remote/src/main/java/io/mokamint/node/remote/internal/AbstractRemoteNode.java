@@ -38,7 +38,7 @@ abstract class AbstractRemoteNode extends AbstractRemote<NodeException> implemen
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
 	 */
-	protected AbstractRemoteNode(long timeout) {
+	protected AbstractRemoteNode(int timeout) {
 		super(timeout);
 	}
 

@@ -41,7 +41,7 @@ public abstract class RemoteRestrictedNodes {
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemoteRestrictedNode of(URI uri, long timeout) throws DeploymentException, IOException {
+	public static RemoteRestrictedNode of(URI uri, int timeout) throws DeploymentException, IOException {
 		return new RemoteRestrictedNodeImpl(uri, timeout);
 	}
 }

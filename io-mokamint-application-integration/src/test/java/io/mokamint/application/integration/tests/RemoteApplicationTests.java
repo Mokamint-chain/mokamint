@@ -86,7 +86,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		}
 	}
 
-	private final static long TIME_OUT = 2000L;
+	private final static int TIME_OUT = 2000;
 
 	/**
 	 * Test server implementation.

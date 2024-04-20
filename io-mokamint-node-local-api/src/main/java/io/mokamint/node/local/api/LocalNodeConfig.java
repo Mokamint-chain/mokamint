@@ -47,7 +47,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * 
 	 * @return the maximal delay
 	 */
-	long getDeadlineWaitTimeout();
+	int getDeadlineWaitTimeout();
 
 	/**
 	 * Yields the initial points of a miner, freshly connected to a node.
@@ -105,7 +105,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * @return the maximal difference (in milliseconds) between the local time of a node
 	 *         and of one of its peers
 	 */
-	long getPeerMaxTimeDifference();
+	int getPeerMaxTimeDifference();
 
 	/**
 	 * Yields the points lost for punishment by a peer that does not answer to a ping request.
@@ -121,7 +121,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * 
 	 * @return the time, in milliseconds, allowed to contact a peer
 	 */
-	long getPeerTimeout();
+	int getPeerTimeout();
 
 	/**
 	 * Yields the time interval, in milliseconds, between successive pings to a peer.
@@ -133,7 +133,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * @return the time interval, in milliseconds, between successive pings to a peer;
 	 *         a negative value means that pinging is disabled
 	 */
-	long getPeerPingInterval();
+	int getPeerPingInterval();
 
 	/**
 	 * Yields the time interval, in milliseconds, between successive broadcasts
@@ -142,7 +142,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * @return the time interval, in milliseconds, between successive broadcasts;
 	 *         a negative value means that broadcast is disabled
 	 */
-	long getServiceBrodcastInterval();
+	int getServiceBrodcastInterval();
 
 	/**
 	 * Yields the size of the memory used to avoid whispering the same

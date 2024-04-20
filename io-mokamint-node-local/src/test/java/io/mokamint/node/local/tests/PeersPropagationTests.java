@@ -170,7 +170,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
 		var config4 = LocalNodeConfigBuilders.defaults().setDir(chain4)
-			.setPeerPingInterval(2000L) // we must make peer propagation fast
+			.setPeerPingInterval(2000) // we must make peer propagation fast
 			.build();
 
 		var semaphore = new Semaphore(0);

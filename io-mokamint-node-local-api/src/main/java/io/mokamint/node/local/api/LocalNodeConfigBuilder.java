@@ -44,7 +44,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param deadlineWaitTimeout the wait time, in milliseconds
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setDeadlineWaitTimeout(long deadlineWaitTimeout);
+	LocalNodeConfigBuilder setDeadlineWaitTimeout(int deadlineWaitTimeout);
 
 	/**
 	 * Sets the initial points of a miner freshly connected to the node.
@@ -111,7 +111,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param peerMaxTimeDifference the maximal time difference (in milliseconds)
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setPeerMaxTimeDifference(long peerMaxTimeDifference);
+	LocalNodeConfigBuilder setPeerMaxTimeDifference(int peerMaxTimeDifference);
 
 	/**
 	 * Sets the points lost by a peer, as punishment for not answering a ping.
@@ -128,7 +128,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param peerTimeout the timeout
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setPeerTimeout(long peerTimeout);
+	LocalNodeConfigBuilder setPeerTimeout(int peerTimeout);
 
 	/**
 	 * Sets the time interval, in milliseconds, between successive pings to a peer.
@@ -139,7 +139,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param peerPingInterval the time interval; use a negative value to disable pinging
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval);
+	LocalNodeConfigBuilder setPeerPingInterval(int peerPingInterval);
 
 	/**
 	 * Sets the time interval, in milliseconds, between successive broadcasts of a service open on a node.
@@ -147,7 +147,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param serviceBroadcastInterval the time interval; use a negative value to disable broadcasting
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval);
+	LocalNodeConfigBuilder setServiceBroadcastInterval(int serviceBroadcastInterval);
 
 	/**
 	 * Sets the size of the memory used to avoid whispering the same

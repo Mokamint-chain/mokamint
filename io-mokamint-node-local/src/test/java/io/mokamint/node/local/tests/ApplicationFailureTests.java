@@ -110,7 +110,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 		return LocalNodeConfigBuilders.defaults()
 			.setDir(chainDir)
 			.setChainId("octopus")
-			.setTargetBlockCreationTime(300L)
+			.setTargetBlockCreationTime(300)
 			.setInitialAcceleration(1000000000000000L)
 			.build();
 	}

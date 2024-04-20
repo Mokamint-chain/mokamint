@@ -562,7 +562,7 @@ public class Peers implements AutoCloseable {
 	private RemotePublicNode openRemote(Peer peer) throws IOException {
 		try {
 			// -1L: to disable the periodic broadcast of the remote node's services
-			return RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1L, config.getWhisperingMemorySize());
+			return RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1, config.getWhisperingMemorySize());
 		}
 		catch (DeploymentException e) {
 			throw new IOException("Cannot deploy a remote connected to " + peer.toStringSanitized(), e);  // we consider it as a special case of IOException

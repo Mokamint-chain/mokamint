@@ -129,7 +129,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		}
 	}
 
-	private final static long TIME_OUT = 500L;
+	private final static int TIME_OUT = 500;
 
 	/**
 	 * Test server implementation.

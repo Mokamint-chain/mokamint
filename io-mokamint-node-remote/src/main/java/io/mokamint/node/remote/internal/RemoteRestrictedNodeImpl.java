@@ -78,7 +78,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public RemoteRestrictedNodeImpl(URI uri, long timeout) throws DeploymentException, IOException {
+	public RemoteRestrictedNodeImpl(URI uri, int timeout) throws DeploymentException, IOException {
 		super(timeout);
 
 		this.logPrefix = "restricted remote(" + uri + "): ";
