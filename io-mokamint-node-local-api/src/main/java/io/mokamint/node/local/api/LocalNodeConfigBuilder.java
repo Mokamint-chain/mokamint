@@ -128,7 +128,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param peerTimeout the timeout
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setPeerTimeout(long peerTimeout);
+	LocalNodeConfigBuilder setPeerTimeout(int peerTimeout);
 
 	/**
 	 * Sets the time interval, in milliseconds, between successive pings to a peer.
@@ -139,7 +139,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param peerPingInterval the time interval; use a negative value to disable pinging
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval);
+	LocalNodeConfigBuilder setPeerPingInterval(int peerPingInterval);
 
 	/**
 	 * Sets the time interval, in milliseconds, between successive broadcasts of a service open on a node.
@@ -147,7 +147,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param serviceBroadcastInterval the time interval; use a negative value to disable broadcasting
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval);
+	LocalNodeConfigBuilder setServiceBroadcastInterval(int serviceBroadcastInterval);
 
 	/**
 	 * Sets the size of the memory used to avoid whispering the same

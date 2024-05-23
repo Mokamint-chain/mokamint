@@ -19,7 +19,6 @@ package io.mokamint.node.service.internal;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -64,11 +63,6 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	private final RestrictedNode node;
 
 	/**
-	 * True if and only if this service has been closed already.
-	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean();
-
-	/**
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
@@ -104,12 +98,9 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	}
 
 	@Override
-	public void close() {
-		if (!isClosed.getAndSet(true)) {
-			node.removeOnCloseHandler(this_close);
-			stopContainer();
-			LOGGER.info(logPrefix + "closed");
-		}
+	protected void closeResources() {
+		node.removeOnCloseHandler(this_close);
+		LOGGER.info(logPrefix + "closed");
 	}
 
 	/**

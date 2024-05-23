@@ -40,7 +40,7 @@ public abstract class RemoteApplications {
 	 * @throws DeploymentException if the remote application could not be deployed
 	 * @throws IOException if the remote application could not be created
 	 */
-	public static RemoteApplication of(URI uri, long timeout) throws DeploymentException, IOException {
+	public static RemoteApplication of(URI uri, int timeout) throws DeploymentException, IOException {
 		return new RemoteApplicationImpl(uri, timeout);
 	}
 }

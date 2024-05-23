@@ -129,8 +129,8 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 		}
 
 		try (var node1 = new MyLocalNode(config1, peer2, transaction2); var node2 = new MyLocalNode(config2, peer1, transaction1);
-			 var service1 = PublicNodeServices.open(node1, port1, 100L, 1000, Optional.of(uri1));
-			 var service2 = PublicNodeServices.open(node2, port2, 100L, 1000, Optional.of(uri2))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 100, 1000, Optional.of(uri1));
+			 var service2 = PublicNodeServices.open(node2, port2, 100, 1000, Optional.of(uri2))) {
 
 			node1.add(peer2);
 

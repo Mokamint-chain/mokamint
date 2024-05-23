@@ -80,7 +80,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000);
 			}
 
 			private void sendAddPeer(Peer peer) throws NodeException {
@@ -117,7 +117,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000);
 			}
 
 			private void sendRemovePeer(Peer peer) throws NodeException {
@@ -153,7 +153,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000);
 			}
 
 			private void sendOpenMiner(int port) throws NodeException {
@@ -189,7 +189,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
 			public MyTestClient() throws DeploymentException, IOException {
-				super(URI, 2000L);
+				super(URI, 2000);
 			}
 
 			private void sendCloseMiner(UUID uuid) throws NodeException {

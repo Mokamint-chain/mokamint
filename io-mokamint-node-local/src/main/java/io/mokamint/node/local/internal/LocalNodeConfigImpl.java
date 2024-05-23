@@ -114,7 +114,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * The time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request timeouts.
 	 * It defaults to 10,000 (ie, 10 seconds).
 	 */
-	public final long peerTimeout;
+	public final int peerTimeout;
 
 	/**
 	 * The time interval, in milliseconds, between successive pings to a peer.
@@ -123,13 +123,13 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * if they are useful for the node (for instance, if the node has too few peers).
 	 * It defaults to 120,000 (ie, 2 minutes).
 	 */
-	public final long peerPingInterval;
+	public final int peerPingInterval;
 
 	/**
 	 * The time interval, in milliseconds, between successive broadcasts
 	 * of a service open on a node. It defaults to 240,000 (ie, 4 minutes).
 	 */
-	public final long serviceBroadcastInterval;
+	public final int serviceBroadcastInterval;
 
 	/**
 	 * The size of the memory used to avoid whispering the same
@@ -234,17 +234,17 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
-	public long getPeerTimeout() {
+	public int getPeerTimeout() {
 		return peerTimeout;
 	}
 
 	@Override
-	public long getPeerPingInterval() {
+	public int getPeerPingInterval() {
 		return peerPingInterval;
 	}
 
 	@Override
-	public long getServiceBrodcastInterval() {
+	public int getServiceBrodcastInterval() {
 		return serviceBroadcastInterval;
 	}
 
@@ -378,9 +378,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private long peerInitialPoints = 1000L;
 		private long peerMaxTimeDifference = 15000L;
 		private long peerPunishmentForUnreachable = 1L;
-		private long peerTimeout = 10000L;
-		private long peerPingInterval = 120000L;
-		private long serviceBroadcastInterval = 240000L;
+		private int peerTimeout = 10000;
+		private int peerPingInterval = 120000;
+		private int serviceBroadcastInterval = 240000;
 		private int whisperingMemorySize = 1000;
 		private int orphansMemorySize = 1000;
 		private int mempoolSize = 100000;
@@ -597,8 +597,15 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			return getThis();
 		}
 
+		private LocalNodeConfigBuilder setPeerTimeout(long peerTimeout) {
+			if (peerTimeout > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("peerTimeout cannot be larger than " + Integer.MAX_VALUE);
+
+			return setPeerTimeout((int) peerTimeout);
+		}
+
 		@Override
-		public LocalNodeConfigBuilder setPeerTimeout(long peerTimeout) {
+		public LocalNodeConfigBuilder setPeerTimeout(int peerTimeout) {
 			if (peerTimeout < 0L)
 				throw new IllegalArgumentException("peerTimeout must be non-negative");
 
@@ -606,14 +613,28 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			return getThis();
 		}
 
+		private LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval) {
+			if (peerPingInterval > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("peerPingInterval cannot be larger than " + Integer.MAX_VALUE);
+
+			return setPeerPingInterval((int) peerPingInterval);
+		}
+
 		@Override
-		public LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval) {
+		public LocalNodeConfigBuilder setPeerPingInterval(int peerPingInterval) {
 			this.peerPingInterval = peerPingInterval;
 			return getThis();
 		}
 
+		private LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval) {
+			if (serviceBroadcastInterval > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("serviceBroadcastInterval cannot be larger than " + Integer.MAX_VALUE);
+
+			return setServiceBroadcastInterval((int) serviceBroadcastInterval);
+		}
+
 		@Override
-		public LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval) {
+		public LocalNodeConfigBuilder setServiceBroadcastInterval(int serviceBroadcastInterval) {
 			this.serviceBroadcastInterval = serviceBroadcastInterval;
 			return getThis();
 		}

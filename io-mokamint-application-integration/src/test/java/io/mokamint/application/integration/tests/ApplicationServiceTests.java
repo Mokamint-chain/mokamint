@@ -68,7 +68,7 @@ import jakarta.websocket.DeploymentException;
 public class ApplicationServiceTests extends AbstractLoggedTests {
 	private final static URI URI;
 	private final static int PORT = 8030;
-	private final static long TIME_OUT = 2000L;
+	private final static int TIME_OUT = 2000;
 	private final static String ID = "id";
 
 	static {

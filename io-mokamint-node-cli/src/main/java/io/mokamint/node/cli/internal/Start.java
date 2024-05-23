@@ -112,7 +112,7 @@ public class Start extends AbstractCommand {
 	private Path config;
 
 	@Option(names = "--broadcast-interval", description = "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers", defaultValue = "1800000")
-	private long broadcastInterval;
+	private int broadcastInterval;
 
 	@Option(names = "--init", description = "create a genesis block at start-up and start mining", defaultValue = "false")
 	private boolean init;

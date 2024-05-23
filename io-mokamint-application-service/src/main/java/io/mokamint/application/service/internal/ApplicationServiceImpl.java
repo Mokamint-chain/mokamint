@@ -18,7 +18,6 @@ package io.mokamint.application.service.internal;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -81,11 +80,6 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	private final Application application;
 
 	/**
-	 * True if and only if this service has been closed already.
-	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean();
-
-	/**
 	 * We need this intermediate definition since two instances of a method reference
 	 * are not the same, nor equals.
 	 */
@@ -125,12 +119,10 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	}
 
 	@Override
-	public void close() {
-		if (!isClosed.getAndSet(true)) {
-			application.removeOnCloseHandler(this_close);
-			stopContainer();
-			LOGGER.info(logPrefix + "closed");
-		}
+	protected void closeResources() {
+		super.closeResources();
+		application.removeOnCloseHandler(this_close);
+		LOGGER.info(logPrefix + "closed");
 	}
 
 	/**

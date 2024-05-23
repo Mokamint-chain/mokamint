@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -167,11 +166,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	private final WhisperingMemory alreadyWhispered;
 
 	/**
-	 * True if and only if this service has been closed already.
-	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean();
-
-	/**
 	 * The prefix used in the log messages;
 	 */
 	private final String logPrefix;
@@ -204,7 +198,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @throws DeploymentException if the service cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
-	public PublicNodeServiceImpl(PublicNode node, int port, long peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
+	public PublicNodeServiceImpl(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
 		this.node = node;
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
 
@@ -241,13 +235,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
-	public void close() throws InterruptedException {
-		if (!isClosed.getAndSet(true)) {
-			node.removeOnCloseHandler(this_close);
-			node.unbindWhisperer(this);
-			stopContainer();
-			LOGGER.info(logPrefix + "closed");
-		}
+	protected void closeResources() {
+		super.closeResources();
+		node.removeOnCloseHandler(this_close);
+		node.unbindWhisperer(this);
+		LOGGER.info(logPrefix + "closed");
 	}
 
 	@Override

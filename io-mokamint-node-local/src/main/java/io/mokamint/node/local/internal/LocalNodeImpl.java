@@ -143,7 +143,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final UUID uuid;
 
 	/**
-	 * The executor of tasks and events. There might be more tasks and events in execution at the same time.
+	 * The executor of tasks. There might be more tasks in execution at the same time.
 	 */
 	private final ExecutorService executors = Executors.newCachedThreadPool();
 

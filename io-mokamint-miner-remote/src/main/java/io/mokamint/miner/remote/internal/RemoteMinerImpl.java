@@ -119,16 +119,8 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void close() throws IOException {
+	protected void closeResources() {
 		sessions.forEach(session -> close(session, new CloseReason(CloseCodes.GOING_AWAY, "The remote miner has been turned off.")));
-
-		try {
-			stopContainer();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
-		}
-
 		LOGGER.info(logPrefix + "unpublished from ws://localhost:" + port);
 	}
 

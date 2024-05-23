@@ -122,10 +122,10 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		try (var node1 = new MyLocalNode(config1); var node2 = new MyLocalNode(config2);
 			 var node3 = new MyLocalNode(config3); var node4 = new MyLocalNode(config4);
-			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000, Optional.of(peer1.getURI()));
-			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000, Optional.of(peer2.getURI()));
-			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000, Optional.of(peer3.getURI()));
-			 var service4 = PublicNodeServices.open(node4, port4, 1800000L, 1000, Optional.of(peer4.getURI()))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 1800000, 1000, Optional.of(peer1.getURI()));
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000, 1000, Optional.of(peer2.getURI()));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000, 1000, Optional.of(peer3.getURI()));
+			 var service4 = PublicNodeServices.open(node4, port4, 1800000, 1000, Optional.of(peer4.getURI()))) {
 
 			node1.add(peer2);
 			node2.add(peer3);
@@ -170,7 +170,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
 		var config4 = LocalNodeConfigBuilders.defaults().setDir(chain4)
-			.setPeerPingInterval(2000L) // we must make peer propagation fast
+			.setPeerPingInterval(2000) // we must make peer propagation fast
 			.build();
 
 		var semaphore = new Semaphore(0);
@@ -192,9 +192,9 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		try (var node1 = LocalNodes.of(config1, nodeKey, app, false); var node2 = LocalNodes.of(config2, nodeKey, app, false);
 			 var node3 = LocalNodes.of(config3, nodeKey, app, false); var node4 = new MyLocalNode(config4);
-			 var service1 = PublicNodeServices.open(node1, port1, 1800000L, 1000, Optional.of(peer1.getURI()));
-			 var service2 = PublicNodeServices.open(node2, port2, 1800000L, 1000, Optional.of(peer2.getURI()));
-			 var service3 = PublicNodeServices.open(node3, port3, 1800000L, 1000, Optional.of(peer3.getURI()))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 1800000, 1000, Optional.of(peer1.getURI()));
+			 var service2 = PublicNodeServices.open(node2, port2, 1800000, 1000, Optional.of(peer2.getURI()));
+			 var service3 = PublicNodeServices.open(node3, port3, 1800000, 1000, Optional.of(peer3.getURI()))) {
 
 			// node1 has peer2 and peer3 as peers
 			node1.add(peer2);
@@ -246,8 +246,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		}
 
 		try (var node1 = new MyLocalNode(config1, peer2); var node2 = new MyLocalNode(config2, peer1);
-			 var service1 = PublicNodeServices.open(node1, port1, 100L, 1000, Optional.of(uri1));
-			 var service2 = PublicNodeServices.open(node2, port2, 100L, 1000, Optional.of(uri2))) {
+			 var service1 = PublicNodeServices.open(node1, port1, 100, 1000, Optional.of(uri1));
+			 var service2 = PublicNodeServices.open(node2, port2, 100, 1000, Optional.of(uri2))) {
 
 			node1.add(peer2);
 

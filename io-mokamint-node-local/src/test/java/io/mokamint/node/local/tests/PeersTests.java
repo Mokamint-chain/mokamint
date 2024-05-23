@@ -150,7 +150,7 @@ public class PeersTests extends AbstractLoggedTests {
 		 * @throws NoSuchAlgorithmException if some hashing algorithm is missing
 		 */
 		private PublicTestServer(NodeInfo info, int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException, DatabaseException, NoSuchAlgorithmException {
-			super(mkNode(info), port, 180000L, 1000, Optional.of(URI.create("ws://localhost:" + port)));
+			super(mkNode(info), port, 180000, 1000, Optional.of(URI.create("ws://localhost:" + port)));
 		}
 	}
 

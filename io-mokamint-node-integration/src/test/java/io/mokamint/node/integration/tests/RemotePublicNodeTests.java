@@ -129,7 +129,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		}
 	}
 
-	private final static long TIME_OUT = 500L;
+	private final static int TIME_OUT = 500;
 
 	/**
 	 * Test server implementation.
@@ -144,7 +144,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		 * @throws IOException if an I/O error occurs
 		 */
 		private PublicTestServer() throws DeploymentException, IOException {
-			super(mockedNode(), PORT, 180000L, 1000, Optional.of(URI));
+			super(mockedNode(), PORT, 180000, 1000, Optional.of(URI));
 		}
 
 		private static PublicNode mockedNode() throws IOException {

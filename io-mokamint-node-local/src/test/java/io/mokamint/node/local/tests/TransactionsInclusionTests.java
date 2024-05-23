@@ -297,7 +297,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 					var uri = getPeer(num).getURI();
 					// this service will be closed automatically when the node will get closed
-					services[num] = PublicNodeServices.open(result, uri.getPort(), 1800000L, 1000, Optional.of(uri));
+					services[num] = PublicNodeServices.open(result, uri.getPort(), 1800000, 1000, Optional.of(uri));
 
 					return result;
 				}

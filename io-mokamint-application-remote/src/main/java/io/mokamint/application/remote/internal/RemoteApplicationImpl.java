@@ -115,7 +115,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws DeploymentException if the remote application could not be deployed
 	 * @throws IOException if the remote application could not be created
 	 */
-	public RemoteApplicationImpl(URI uri, long timeout) throws DeploymentException, IOException {
+	public RemoteApplicationImpl(URI uri, int timeout) throws DeploymentException, IOException {
 		super(timeout);
 
 		this.logPrefix = "application remote(" + uri + "): ";
