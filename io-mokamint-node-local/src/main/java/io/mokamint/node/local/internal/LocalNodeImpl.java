@@ -211,7 +211,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
-	 * @throws IOException if the version information cannot be read
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
@@ -222,7 +221,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws NodeException if the node is not behaving correctly
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 		super(ClosedNodeException::new);
 
 		try {
@@ -250,8 +249,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			schedulePeriodicWhisperingOfAllServices();
 			execute(this.miningTask = new MiningTask(this), "blocks mining process");
 		}
-		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e);
+		catch (ClosedDatabaseException | IOException e) {
+			throw new NodeException(e);
 		}
 	}
 
@@ -1183,11 +1182,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			.flatMap(Optional::stream)
 			.distinct()
 			.forEach(this::whisperWithoutAddition);
-	}
-
-	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "node " + uuid + ": unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
 	}
 
 	private void closeExecutorsHandlersMinersPeersAndBlockchain() throws NodeException, InterruptedException {

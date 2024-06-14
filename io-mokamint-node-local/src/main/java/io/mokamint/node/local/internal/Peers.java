@@ -146,12 +146,11 @@ public class Peers implements AutoCloseable {
 	 * and attempts a connection to them.
 	 * 
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws IOException if an I/O error occurs
 	 * @throws InterruptedException if the thread is interrupted while contacting the peers
 	 * @throws NodeException if the node could not complete the operation
 	 * @throws ClosedDatabaseException if the database of peers is already closed
 	 */
-	public void reconnectToSeedsAndPreviousPeers() throws DatabaseException, IOException, NodeException, InterruptedException, ClosedDatabaseException {
+	public void reconnectToSeedsAndPreviousPeers() throws DatabaseException, NodeException, InterruptedException, ClosedDatabaseException {
 		Set<Peer> seeds = config.getSeeds().map(io.mokamint.node.Peers::of).collect(Collectors.toSet());
 		tryToReconnectOrAdd(Stream.concat(peers.getElements(), seeds.stream()), seeds::contains);
 	}
@@ -403,9 +402,8 @@ public class Peers implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database of {@link #node} is closed
 	 * @throws DatabaseException if the database of {@link #node} is corrupted
 	 * @throws NodeException if {@link #node} could not complete the operation
-	 * @throws IOException if an I/O error occurs
 	 */
-	private void tryToReconnectOrAdd(Stream<Peer> peers, Predicate<Peer> force) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
+	private void tryToReconnectOrAdd(Stream<Peer> peers, Predicate<Peer> force) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		boolean somethingChanged = false;
 		for (var peer: peers.distinct().toArray(Peer[]::new)) {
 			try {
