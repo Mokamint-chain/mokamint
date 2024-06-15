@@ -84,7 +84,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
@@ -537,7 +537,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
-	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, RejectedTransactionException, NodeException {
+	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, TransactionRejectedException, NodeException {
 		var semaphore = new Semaphore(0);
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		
@@ -852,7 +852,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionRepresentationEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, RejectedTransactionException, NodeException {
+	public void serviceGetTransactionRepresentationEmptyWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, TransactionRejectedException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -884,7 +884,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, it sends back the representation of that transaction")
-	public void serviceGetTransactionRepresentationNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, RejectedTransactionException, DatabaseException, DeploymentException, IOException, NodeException {
+	public void serviceGetTransactionRepresentationNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, TransactionRejectedException, DatabaseException, DeploymentException, IOException, NodeException {
 		var semaphore = new Semaphore(0);
 		var representation = "hello";
 	
@@ -917,7 +917,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, but its representation cannot be computed, it sends back an exception")
-	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, RejectedTransactionException, NodeException {
+	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, TransactionRejectedException, NodeException {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -928,7 +928,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()))
+				if (TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}
 	
@@ -939,7 +939,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionRepresentation(hash)).thenThrow(RejectedTransactionException.class);
+		when(node.getTransactionRepresentation(hash)).thenThrow(TransactionRejectedException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionRepresentation(hash);

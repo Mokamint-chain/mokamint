@@ -61,7 +61,7 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.PlotsAndKeyPairs;
+import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -127,7 +127,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 			private MyLocalNode(LocalNodeConfig config, Application app) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKeys, app, true);
-				add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
+				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 			}
 
 			@Override

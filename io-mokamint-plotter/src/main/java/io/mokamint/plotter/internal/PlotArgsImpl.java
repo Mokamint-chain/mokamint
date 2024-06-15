@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.Entropies;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.PlotsAndKeyPairs;
+import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.plotter.api.PlotArgs;
 
@@ -46,7 +46,7 @@ public abstract class PlotArgsImpl implements PlotArgs {
 				" does not coincide with the public key in the key pair " + getKeyPair());
 
 		try {
-			return PlotsAndKeyPairs.of(plot, keyPair);
+			return PlotAndKeyPairs.of(plot, keyPair);
 		}
 		catch (IllegalArgumentException e) {
 			throw new IOException(e.getMessage());

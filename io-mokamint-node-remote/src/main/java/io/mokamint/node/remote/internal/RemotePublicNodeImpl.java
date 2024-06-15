@@ -68,7 +68,7 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
@@ -622,14 +622,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendAddTransaction(transaction, id);
 		try {
 			return waitForResult(id, this::processAddTransactionSuccess, this::processAddTransactionException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | RejectedTransactionException e) {
+		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -652,7 +652,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private boolean processAddTransactionException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 
@@ -744,14 +744,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransactionRepresentation(hash, id);
 		try {
 			return waitForResult(id, this::processGetTransactionRepresentationSuccess, this::processGetTransactionRepresentationException);
 		}
-		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | NodeException e) {
+		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -774,7 +774,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	private boolean processGetTransactionRepresentationException(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 

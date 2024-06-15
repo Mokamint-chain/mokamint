@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandlersContainer;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
 
@@ -78,7 +78,7 @@ import io.mokamint.nonce.api.Deadline;
  * check, that is applied also as a filter before adding transactions to the mempool of a node.
  * Method {@link #deliverTransaction(int, Transaction)} subsequently performs a more thorough consistency
  * check later, that considers the context of its execution (for instance, the state where the check is
- * performed). This is why both these methods can throw a {@link RejectedTransactionException}.
+ * performed). This is why both these methods can throw a {@link TransactionRejectedException}.
  */
 @ThreadSafe
 public interface Application extends AutoCloseable, OnCloseHandlersContainer {
@@ -112,12 +112,12 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * without even trying to deliver them.
 	 * 
 	 * @param transaction the transaction to check
-	 * @throws RejectedTransactionException if the check failed and the transaction should not be added to the mempool
+	 * @throws TransactionRejectedException if the check failed and the transaction should not be added to the mempool
 	 * @throws ApplicationException if the application is not able to perform the operation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void checkTransaction(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException;
+	void checkTransaction(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Computes the priority of the given transaction. Nodes may (but are not required to)
@@ -125,28 +125,28 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * 
 	 * @param transaction the transaction
 	 * @return the priority of {@code transaction}
-	 * @throws RejectedTransactionException if the priority of the transaction cannot be computed
+	 * @throws TransactionRejectedException if the priority of the transaction cannot be computed
 	 * @throws ApplicationException if the application is not able to perform the operation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	long getPriority(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException;
+	long getPriority(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields a string representation of the transaction, that can be used to print
 	 * or process its structure. This can be everything, possibly, but not necessarily, JSON.
 	 * It is expected (but not required) that if a transaction passes the
-	 * {@link #checkTransaction(Transaction)} test without throwing a {@link RejectedTransactionException},
+	 * {@link #checkTransaction(Transaction)} test without throwing a {@link TransactionRejectedException},
 	 * then {@link #getRepresentation(Transaction)} will not throw that exception either.
 	 * 
 	 * @param transaction the transaction
 	 * @return the representation of {@code transaction}
-	 * @throws RejectedTransactionException if the representation of the transaction cannot be computed
+	 * @throws TransactionRejectedException if the representation of the transaction cannot be computed
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	String getRepresentation(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException;
+	String getRepresentation(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the identifier of the state of this application when it starts, before any transaction
@@ -188,13 +188,13 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * 
 	 * @param groupId the identifier of the group execution
 	 * @param transaction the transaction to deliver
-	 * @throws RejectedTransactionException if the check or execution of the transaction failed
+	 * @throws TransactionRejectedException if the check or execution of the transaction failed
 	 * @throws UnknownGroupIdException if the {@code groupId} is not valid
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void deliverTransaction(int groupId, Transaction transaction) throws RejectedTransactionException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException;
+	void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method when a group execution of transactions ends.

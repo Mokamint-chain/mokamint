@@ -64,7 +64,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.PlotsAndKeyPairs;
+import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -146,7 +146,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 		private MiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 			super(config, nodeKeys, app, true);
-			add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override

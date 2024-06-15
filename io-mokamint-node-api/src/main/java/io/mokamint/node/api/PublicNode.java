@@ -138,12 +138,12 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param transaction the transaction
 	 * @return the mempool entry holding the transaction
-	 * @throws RejectedTransactionException if {@code transaction} has been rejected, for instance because it is invalid
+	 * @throws TransactionRejectedException if {@code transaction} has been rejected, for instance because it is invalid
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	MempoolEntry add(Transaction transaction) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException;
+	MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields a transaction already in blockchain.
@@ -162,14 +162,14 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param hash the hash of the transaction
 	 * @return the representation of the transaction, if the latter exists in blockchain
-	 * @throws RejectedTransactionException if {@code transaction} has been rejected, for instance because it is invalid; this
+	 * @throws TransactionRejectedException if {@code transaction} has been rejected, for instance because it is invalid; this
 	 *                                      should never occur if the application guarantees that transactions that passed
 	 *                                      the {@code checkTransaction} test should have a valid representation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, TimeoutException, InterruptedException, NodeException;
+	Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Yields the address of a transaction already in blockchain.

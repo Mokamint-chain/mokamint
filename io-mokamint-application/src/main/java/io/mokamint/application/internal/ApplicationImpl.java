@@ -49,18 +49,18 @@ public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndOn
 				throw new ApplicationException(e);
 			}
 			finally {
-				closeApplication();
+				closeResources();
 			}
 		}
 	}
 
 	/**
-	 * Closes this application. After this closure, the methods of this application might throw
-	 * an {@link ApplicationException} if the closure makes their work impossible.
-	 * This method will be called only once, at the first closure request of the application.
+	 * Closes any resources used by this application. This is called only the first time
+	 * that {@link #close()} gets called.
 	 * 
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws InterruptedException if the closure was interrupted before completion
 	 */
-	protected abstract void closeApplication() throws ApplicationException, InterruptedException;
+	protected void closeResources() throws ApplicationException, InterruptedException {
+	}
 }

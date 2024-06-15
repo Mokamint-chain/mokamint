@@ -34,7 +34,7 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -247,7 +247,7 @@ public class TransactionsExecutionTask implements Task {
 				}
 				sizeUpToNow += txSize;
 			}
-			catch (RejectedTransactionException e) {
+			catch (TransactionRejectedException e) {
 				// if tx is rejected by deliverTransaction, then it is just dropped
 				LOGGER.log(Level.WARNING, "delivery of transaction " + next + " rejected: " + e.getMessage());
 			}

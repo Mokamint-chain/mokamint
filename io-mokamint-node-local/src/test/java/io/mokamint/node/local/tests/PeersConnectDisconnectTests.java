@@ -107,7 +107,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends LocalNodeImpl {
 
-			private MyLocalNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKey, app, false);
 			}
 

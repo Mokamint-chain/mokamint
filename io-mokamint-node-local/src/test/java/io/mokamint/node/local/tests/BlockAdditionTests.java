@@ -59,7 +59,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -113,7 +113,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	private static Plot plot3;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, TransactionRejectedException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var hashing = config.getHashingForDeadlines();
 		var signature = config.getSignatureForBlocks();

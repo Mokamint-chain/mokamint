@@ -64,7 +64,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -75,7 +75,7 @@ import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.PlotsAndKeyPairs;
+import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -90,7 +90,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	private static Application app;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path plotDir) throws TransactionRejectedException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		when(app.getInitialStateId()).thenReturn(new byte[] { 1, 2, 3 });
@@ -121,7 +121,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			long start = 65536L;
 			long length = new Random().nextInt(50, 200);
 			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
-			add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override
@@ -140,7 +140,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(20)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
-	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, TimeoutException, NodeException, ApplicationException {
+	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException {
 		var allTransactions = new HashSet<Transaction>();
 		var random = new Random();
 		while (allTransactions.size() < 100) {
@@ -185,7 +185,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(200)
 	@DisplayName("transactions added to a network get eventually added to the blockchain")
-	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, RejectedTransactionException, PeerRejectedException, TimeoutException, URISyntaxException, NodeException {
+	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, DatabaseException, IOException, AlreadyInitializedException, TransactionRejectedException, PeerRejectedException, TimeoutException, URISyntaxException, NodeException {
 		var allTransactions = mkTransactions();
 		final int NUM_NODES = 4;
 
@@ -233,7 +233,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, NoSuchAlgorithmException, RejectedTransactionException, TimeoutException, DatabaseException, IOException, PeerRejectedException, NodeException {
+			private Run() throws InterruptedException, NoSuchAlgorithmException, TransactionRejectedException, TimeoutException, DatabaseException, IOException, PeerRejectedException, NodeException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -279,7 +279,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						service.close();
 			}
 
-			private void addTransactions() throws RejectedTransactionException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, NodeException {
+			private void addTransactions() throws TransactionRejectedException, TimeoutException, InterruptedException, DatabaseException, NoSuchAlgorithmException, NodeException {
 				for (Transaction tx: allTransactions) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
 					Thread.sleep(50);

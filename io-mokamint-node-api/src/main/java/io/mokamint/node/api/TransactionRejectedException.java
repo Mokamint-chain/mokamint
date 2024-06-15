@@ -20,14 +20,14 @@ package io.mokamint.node.api;
  * An exception stating that a transaction added to a Mokamint node has been rejected.
  */
 @SuppressWarnings("serial")
-public class RejectedTransactionException extends Exception {
+public class TransactionRejectedException extends Exception {
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public RejectedTransactionException(String message) {
+	public TransactionRejectedException(String message) {
 		super(message);
 	}
 
@@ -37,7 +37,7 @@ public class RejectedTransactionException extends Exception {
 	 * @param message the message
 	 * @param cause the cause
 	 */
-	public RejectedTransactionException(String message, Throwable cause) {
+	public TransactionRejectedException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }

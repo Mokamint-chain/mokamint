@@ -59,7 +59,7 @@ import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.node.Transactions;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -117,7 +117,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a checkTransaction() request reaches the service, it checks the transaction")
-	public void serviceCheckTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCheckTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -148,12 +148,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a checkTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceCheckTransactionRejectedTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCheckTransactionRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
-		doThrow(new RejectedTransactionException(exceptionMessage)).when(app).checkTransaction(eq(transaction));
+		doThrow(new TransactionRejectedException(exceptionMessage)).when(app).checkTransaction(eq(transaction));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -163,7 +163,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
@@ -180,7 +180,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPriority() request reaches the service, it yields the priority of the transaction")
-	public void serviceGetPriorityWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetPriorityWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -211,12 +211,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPriority() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceGetPriorityRejectedTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetPriorityRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		String exceptionMessage = "rejected";
-		when(app.getPriority(eq(transaction))).thenThrow(new RejectedTransactionException(exceptionMessage));
+		when(app.getPriority(eq(transaction))).thenThrow(new TransactionRejectedException(exceptionMessage));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -226,7 +226,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
@@ -243,7 +243,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getRepresentation() request reaches the service, it yields the representation of the transaction")
-	public void serviceGetRepresentationWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetRepresentationWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -275,12 +275,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getRepresentation() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceGetRepresentationRejectedTransactionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetRepresentationRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		String exceptionMessage = "rejected";
-		when(app.getRepresentation(eq(transaction))).thenThrow(new RejectedTransactionException(exceptionMessage));
+		when(app.getRepresentation(eq(transaction))).thenThrow(new TransactionRejectedException(exceptionMessage));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -290,7 +290,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	
@@ -338,7 +338,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getInitialStateId() request reaches the service and the application fails, it sends back an exception")
-	public void serviceGetInitialStateApplicationExceptionWorks() throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetInitialStateApplicationExceptionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		String exceptionMessage = "failed";
@@ -437,7 +437,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service, it delivers the transaction in the application")
-	public void serviceDeliverTransactionWorks() throws UnknownGroupIdException, RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -469,7 +469,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service and the group id is unknown, it sends back an exception")
-	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -502,13 +502,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws UnknownGroupIdException, RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var groupId = 13;
 		var exceptionMessage = "rejected";
-		doThrow(new RejectedTransactionException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);
+		doThrow(new TransactionRejectedException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -518,7 +518,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && RejectedTransactionException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
 					semaphore.release();
 			}
 	

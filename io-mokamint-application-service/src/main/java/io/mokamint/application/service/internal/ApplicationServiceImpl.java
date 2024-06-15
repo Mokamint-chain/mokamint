@@ -61,7 +61,7 @@ import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.service.api.ApplicationService;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -174,7 +174,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.checkTransaction(message.getTransaction());
 				sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()));
 			}
-			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -203,7 +203,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, GetPriorityResultMessages.of(application.getPriority(message.getTransaction()), message.getId()));
 			}
-			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -232,7 +232,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, GetRepresentationResultMessages.of(application.getRepresentation(message.getTransaction()), message.getId()));
 			}
-			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -320,7 +320,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.deliverTransaction(message.getGroupId(), message.getTransaction());
 				sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
 			}
-			catch (UnknownGroupIdException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (UnknownGroupIdException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}

@@ -49,7 +49,7 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 
 /**
@@ -173,7 +173,7 @@ public class Mempool {
 	 * 
 	 * @param transaction the transaction to add
 	 * @return the mempool entry where the transaction has been added
-	 * @throws RejectedTransactionException if the transaction has been rejected; this happens,
+	 * @throws TransactionRejectedException if the transaction has been rejected; this happens,
 	 *                                      for instance, if the application considers the
 	 *                                      transaction as invalid or if its priority cannot be computed
 	 *                                      or if the transaction is already contained in the blockchain or mempool
@@ -184,7 +184,7 @@ public class Mempool {
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not working properly
 	 */
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
 	
@@ -195,17 +195,17 @@ public class Mempool {
 		synchronized (mempool) {
 			if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
 				//the transaction was already in the blockchain
-				throw new RejectedTransactionException("Repeated transaction " + hexHash);
+				throw new TransactionRejectedException("Repeated transaction " + hexHash);
 	
 			if (mempool.size() < maxSize) {
 				if (!mempool.add(entry))
 					// the transaction was already in the mempool
-					throw new RejectedTransactionException("Repeated transaction " + hexHash);
+					throw new TransactionRejectedException("Repeated transaction " + hexHash);
 	
 				mempoolAsList = null; // invalidation
 			}
 			else
-				throw new RejectedTransactionException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
+				throw new TransactionRejectedException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
 		}
 	
 		LOGGER.info("mempool: added transaction " + hexHash);
@@ -446,7 +446,7 @@ public class Mempool {
 			try {
 				return new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction));
 			}
-			catch (RejectedTransactionException e) {
+			catch (TransactionRejectedException e) {
 				// the database contains a block with a rejected transaction: it should not be there!
 				throw new DatabaseException(e);
 			}

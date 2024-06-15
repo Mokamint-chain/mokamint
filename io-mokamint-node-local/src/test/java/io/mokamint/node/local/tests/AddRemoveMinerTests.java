@@ -61,7 +61,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.PlotsAndKeyPairs;
+import io.mokamint.plotter.PlotAndKeyPairs;
 import jakarta.websocket.DeploymentException;
 
 /**
@@ -165,7 +165,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			 var service1 = PublicNodeServices.open(node1, port1, 10000, node1.getConfig().getWhisperingMemorySize(), Optional.of(peer1.getURI()));
              var service2 = PublicNodeServices.open(node2, port2, 10000, node2.getConfig().getWhisperingMemorySize(), Optional.of(peer2.getURI()));
 			 var plot = Plots.create(chain1.resolve("small.plot"), prolog, 1000, 500, config1.getHashingForDeadlines(), __ -> {});
-			 var miner = LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys))) {
+			 var miner = LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys))) {
 
 			// without any miner, eventually node1 will realize that it cannot mine
 			assertTrue(node1CannotMine.tryAcquire(1, 20, TimeUnit.SECONDS));

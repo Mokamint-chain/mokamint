@@ -36,7 +36,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.api.Deadline;
@@ -314,14 +314,14 @@ public class BlockVerification {
 				try {
 					app.checkTransaction(tx);
 				}
-				catch (RejectedTransactionException e) {
+				catch (TransactionRejectedException e) {
 					throw new VerificationException("Failed check of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
 				}
 
 				try {
 					app.deliverTransaction(id, tx);
 				}
-				catch (RejectedTransactionException e) {
+				catch (TransactionRejectedException e) {
 					throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
 				}
 			}

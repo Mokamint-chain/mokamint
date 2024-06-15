@@ -43,7 +43,7 @@ import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.Whispered;
 import io.mokamint.node.api.WhisperedBlock;
@@ -492,7 +492,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(node.getTransactionRepresentation(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException | RejectedTransactionException e) {
+			catch (TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -695,7 +695,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException | RejectedTransactionException e) {
+			catch (TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
