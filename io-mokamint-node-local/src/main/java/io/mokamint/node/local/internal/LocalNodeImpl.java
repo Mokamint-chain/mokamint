@@ -1055,10 +1055,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void processWhisperedPeers() {
 		try {
 			while (!Thread.currentThread().isInterrupted()) {
-				/*if (whisperedPeersQueue.size() > 5) {
-					System.out.println(whisperedPeersQueue.stream().map(info -> info.description).sorted().collect(Collectors.joining("\n")));
-					System.out.println("*******************************************************");
-				}*/
 				var whisperedInfo = whisperedPeersQueue.take();
 
 				try {
