@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.SignatureException;
@@ -24,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -46,8 +44,6 @@ public abstract class LocalNodes {
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
 	 * @return the local node
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws IOException if the database is corrupted
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
@@ -58,7 +54,7 @@ public abstract class LocalNodes {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
-			throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
+			throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}

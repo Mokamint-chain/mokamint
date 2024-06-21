@@ -67,7 +67,7 @@ import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
 import io.mokamint.node.Transactions;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
@@ -155,7 +155,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			remote.checkTransaction(transaction);
 		}
-		catch (RejectedTransactionException e) {
+		catch (TransactionRejectedException e) {
 			fail();
 		}
 	}
@@ -174,7 +174,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
 				if (transaction.equals(message.getTransaction())) {
 					try {
-						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
 					}
 					catch (IOException e) {}
 				}
@@ -182,14 +182,14 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(RejectedTransactionException.class, () -> remote.checkTransaction(transaction));
+			var exception = assertThrows(TransactionRejectedException.class, () -> remote.checkTransaction(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 
 	@Test
 	@DisplayName("getPriority() works")
-	public void getPriorityWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, RejectedTransactionException {
+	public void getPriorityWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var priority = 42L;
 
@@ -227,7 +227,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			protected void onGetPriority(GetPriorityMessage message, Session session) {
 				if (transaction.equals(message.getTransaction())) {
 					try {
-						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
 					}
 					catch (IOException e) {}
 				}
@@ -235,14 +235,14 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(RejectedTransactionException.class, () -> remote.getPriority(transaction));
+			var exception = assertThrows(TransactionRejectedException.class, () -> remote.getPriority(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 
 	@Test
 	@DisplayName("getRepresentation() works")
-	public void getRepresentationWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, RejectedTransactionException {
+	public void getRepresentationWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var representation = "this is the wonderful representation";
 
@@ -280,7 +280,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
 				if (transaction.equals(message.getTransaction())) {
 					try {
-						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
 					}
 					catch (IOException e) {}
 				}
@@ -288,14 +288,14 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(RejectedTransactionException.class, () -> remote.getRepresentation(transaction));
+			var exception = assertThrows(TransactionRejectedException.class, () -> remote.getRepresentation(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 
 	@Test
 	@DisplayName("getInitialStateId() works")
-	public void getInitialStateIdWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, RejectedTransactionException {
+	public void getInitialStateIdWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
 		byte[] initialStateId = { 13, 1, 19, 73 };
 
 		class MyServer extends PublicTestServer {
@@ -399,7 +399,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction() works")
-	public void deliverTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, RejectedTransactionException {
+	public void deliverTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, TransactionRejectedException {
 		var groupId = 42;
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 
@@ -421,7 +421,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			remote.deliverTransaction(groupId, transaction);
 		}
-		catch (UnknownGroupIdException | RejectedTransactionException e) {
+		catch (UnknownGroupIdException | TransactionRejectedException e) {
 			fail();
 		}
 	}
@@ -469,7 +469,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
 				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction())) {
 					try {
-						sendObjectAsync(session, ExceptionMessages.of(new RejectedTransactionException(exceptionMessage), message.getId()));
+						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
 					}
 					catch (IOException e) {}
 				}
@@ -477,7 +477,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(RejectedTransactionException.class, () -> remote.deliverTransaction(groupId, transaction));
+			var exception = assertThrows(TransactionRejectedException.class, () -> remote.deliverTransaction(groupId, transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

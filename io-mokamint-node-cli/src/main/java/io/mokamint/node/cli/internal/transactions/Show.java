@@ -25,7 +25,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.NodeException;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -75,7 +75,7 @@ public class Show extends AbstractPublicRpcCommand {
 		try {
 			return remote.getTransactionRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 		}
-		catch (RejectedTransactionException e) {
+		catch (TransactionRejectedException e) {
 			throw new CommandException("The transaction exists in blockchain but cannot be transformed into its textual representation", e);
 		}
 	}

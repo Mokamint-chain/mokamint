@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,9 +41,9 @@ import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Entropies;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -112,7 +113,7 @@ public class Start extends AbstractCommand {
 	private Path config;
 
 	@Option(names = "--broadcast-interval", description = "the time interval (in milliseconds) between successive broadcasts of the public IP of the service to all its peers", defaultValue = "1800000")
-	private long broadcastInterval;
+	private int broadcastInterval;
 
 	@Option(names = "--init", description = "create a genesis block at start-up and start mining", defaultValue = "false")
 	private boolean init;
@@ -268,12 +269,8 @@ public class Start extends AbstractCommand {
 					else
 						publishPublicAndRestrictedNodeServices(0);
 				}
-				catch (DatabaseException | IOException e) {
+				catch (IOException e) {
 					throw new CommandException("The database seems corrupted!", e);
-				}
-				catch (InterruptedException e) {
-					// unexpected: who could interrupt this process?
-					throw new CommandException("Unexpected interruption!", e);
 				}
 				catch (AlreadyInitializedException e) {
 					throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);
@@ -281,12 +278,17 @@ public class Start extends AbstractCommand {
 				catch (InvalidKeyException | SignatureException e) {
 					throw new CommandException("The node cannot sign the genesis block", e);
 				}
+				catch (NodeException e) {
+					throw new CommandException("The node is misbehaving", e);
+				}
 			}
-			catch (RuntimeException | CommandException e) {
-				throw e;
+			catch (ApplicationException | TimeoutException e) {
+				throw new CommandException("The application is misbehaving", e);
 			}
-			catch (Exception e) {
-				throw new CommandException("The application did not close correctly", e);
+			catch (InterruptedException e) {
+				// unexpected: who could interrupt this process?
+				Thread.currentThread().interrupt();
+				throw new CommandException("Unexpected interruption!", e);
 			}
 		}
 

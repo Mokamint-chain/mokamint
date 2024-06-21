@@ -61,7 +61,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -115,7 +115,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	private static Prolog prolog;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, TransactionRejectedException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var signature = config.getSignatureForBlocks();
 		nodeKeys = signature.getKeyPair();
@@ -131,7 +131,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		application = mockApplication();
 	}
 
-	private static Application mockApplication() throws RejectedTransactionException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	private static Application mockApplication() throws TransactionRejectedException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var application = mock(Application.class);
 		when(application.checkPrologExtra(any())).thenReturn(true);
 		doNothing().when(application).checkTransaction(any());
@@ -416,11 +416,11 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a transaction that does not pass the application check, verification rejects it")
-	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
+	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
 		var app = mockApplication();
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new RejectedTransactionException("tx2 rejected")).when(app).checkTransaction(eq(tx2));
+		doThrow(new TransactionRejectedException("tx2 rejected")).when(app).checkTransaction(eq(tx2));
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
@@ -446,11 +446,11 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a transaction that does not pass the delivery check, verification rejects it")
-	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
+	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
 		var app = mockApplication();
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new RejectedTransactionException("tx2 rejected")).when(app).deliverTransaction(anyInt(), eq(tx2));
+		doThrow(new TransactionRejectedException("tx2 rejected")).when(app).deliverTransaction(anyInt(), eq(tx2));
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
@@ -476,7 +476,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of its transactions, verification rejects it")
-	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
+	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
 		var app = mockApplication();
 		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
@@ -649,7 +649,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has a wrong deadline's prolog extra, verification rejects it")
-	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, RejectedTransactionException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
+	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, DeadlineValidityCheckException, UnknownGroupIdException {
 		var application = mockApplication();
 		when(application.checkPrologExtra(any())).thenReturn(false);
 

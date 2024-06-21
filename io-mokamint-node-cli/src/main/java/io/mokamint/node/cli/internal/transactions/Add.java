@@ -25,7 +25,7 @@ import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.NodeException;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
@@ -60,7 +60,7 @@ public class Add extends AbstractPublicRpcCommand {
 		catch (Base64ConversionException e) {
 			throw new CommandException("Illegal Base64 encoding of the transaction!", e);
 		}
-		catch (RejectedTransactionException e) {
+		catch (TransactionRejectedException e) {
 			throw new CommandException("The transaction has been rejected: " + e.getMessage(), e);
 		}
 	}

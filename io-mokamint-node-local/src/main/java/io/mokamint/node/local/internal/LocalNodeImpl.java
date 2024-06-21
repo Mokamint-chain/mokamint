@@ -67,7 +67,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
@@ -143,7 +143,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final UUID uuid;
 
 	/**
-	 * The executor of tasks and events. There might be more tasks and events in execution at the same time.
+	 * The executor of tasks. There might be more tasks in execution at the same time.
 	 */
 	private final ExecutorService executors = Executors.newCachedThreadPool();
 
@@ -211,8 +211,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
-	 * @throws IOException if the version information cannot be read
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
@@ -222,7 +220,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws NodeException if the node is not behaving correctly
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 		super(ClosedNodeException::new);
 
 		try {
@@ -250,8 +248,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			schedulePeriodicWhisperingOfAllServices();
 			execute(this.miningTask = new MiningTask(this), "blocks mining process");
 		}
-		catch (ClosedDatabaseException e) {
-			throw unexpectedException(e);
+		catch (ClosedDatabaseException | DatabaseException | IOException e) {
+			throw new NodeException(e);
 		}
 	}
 
@@ -374,7 +372,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws RejectedTransactionException, NodeException, TimeoutException, InterruptedException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, TimeoutException, InterruptedException {
 		MempoolEntry result;
 
 		try (var scope = mkScope()) {
@@ -423,7 +421,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RejectedTransactionException, NodeException, TimeoutException, InterruptedException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, NodeException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
@@ -1057,10 +1055,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void processWhisperedPeers() {
 		try {
 			while (!Thread.currentThread().isInterrupted()) {
-				/*if (whisperedPeersQueue.size() > 5) {
-					System.out.println(whisperedPeersQueue.stream().map(info -> info.description).sorted().collect(Collectors.joining("\n")));
-					System.out.println("*******************************************************");
-				}*/
 				var whisperedInfo = whisperedPeersQueue.take();
 
 				try {
@@ -1164,7 +1158,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				catch (NoSuchAlgorithmException | DatabaseException | ApplicationException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
-				catch (RejectedTransactionException | ClosedDatabaseException e) {
+				catch (TransactionRejectedException | ClosedDatabaseException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 				}
 			}
@@ -1183,11 +1177,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			.flatMap(Optional::stream)
 			.distinct()
 			.forEach(this::whisperWithoutAddition);
-	}
-
-	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, "node " + uuid + ": unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
 	}
 
 	private void closeExecutorsHandlersMinersPeersAndBlockchain() throws NodeException, InterruptedException {

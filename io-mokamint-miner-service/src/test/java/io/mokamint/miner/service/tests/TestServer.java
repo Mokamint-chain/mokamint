@@ -46,11 +46,6 @@ public class TestServer extends AbstractWebSocketServer {
 		startContainer("", port, MyEndpoint.config(this));
 	}
 
-	@Override
-	public void close() {
-		stopContainer();
-	}
-
 	public void requestDeadline(DeadlineDescription description) throws TimeoutException, InterruptedException, IOException {
 		if (!latch.await(1, TimeUnit.SECONDS))
 			throw new TimeoutException();

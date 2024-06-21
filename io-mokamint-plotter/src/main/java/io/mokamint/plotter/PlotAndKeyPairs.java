@@ -29,12 +29,12 @@ import io.mokamint.plotter.internal.PlotAndKeyPairImpl;
 /**
  * Suppliers of pairs of plots and key pairs.
  */
-public abstract class PlotsAndKeyPairs {
+public abstract class PlotAndKeyPairs {
 
-	private PlotsAndKeyPairs() {}
+	private PlotAndKeyPairs() {}
 
 	/**
-	 * Yields a new pair of a plot and of a key pair.
+	 * Yields a new pair of a plot and of the key pair for signing the deadlines generated with that plot.
 	 * 
 	 * @param plot the plot file
 	 * @param keyPair the key pair

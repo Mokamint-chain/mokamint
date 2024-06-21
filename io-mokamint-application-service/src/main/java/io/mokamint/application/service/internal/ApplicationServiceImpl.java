@@ -18,7 +18,6 @@ package io.mokamint.application.service.internal;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,7 +61,7 @@ import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.service.api.ApplicationService;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -79,11 +78,6 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	 * The application whose API is published.
 	 */
 	private final Application application;
-
-	/**
-	 * True if and only if this service has been closed already.
-	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean();
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -125,12 +119,10 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	}
 
 	@Override
-	public void close() {
-		if (!isClosed.getAndSet(true)) {
-			application.removeOnCloseHandler(this_close);
-			stopContainer();
-			LOGGER.info(logPrefix + "closed");
-		}
+	protected void closeResources() {
+		super.closeResources();
+		application.removeOnCloseHandler(this_close);
+		LOGGER.info(logPrefix + "closed");
 	}
 
 	/**
@@ -182,7 +174,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.checkTransaction(message.getTransaction());
 				sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()));
 			}
-			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -211,7 +203,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, GetPriorityResultMessages.of(application.getPriority(message.getTransaction()), message.getId()));
 			}
-			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -240,7 +232,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, GetRepresentationResultMessages.of(application.getRepresentation(message.getTransaction()), message.getId()));
 			}
-			catch (RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}
@@ -328,7 +320,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.deliverTransaction(message.getGroupId(), message.getTransaction());
 				sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
 			}
-			catch (UnknownGroupIdException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+			catch (UnknownGroupIdException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 				sendExceptionAsync(session, e, message.getId());
 			}
 		}

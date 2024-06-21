@@ -84,7 +84,7 @@ import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
-import io.mokamint.node.api.RejectedTransactionException;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
@@ -251,14 +251,14 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public void checkTransaction(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
+	public void checkTransaction(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen();
 		var id = nextId();
 		sendCheckTransaction(transaction, id);
 		try {
 			waitForResult(id, this::processCheckTransactionSuccess, this::processCheckTransactionExceptions);
 		}
-		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -288,7 +288,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	private boolean processCheckTransactionExceptions(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 
@@ -308,14 +308,14 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public long getPriority(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
+	public long getPriority(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetPriority(transaction, id);
 		try {
 			return waitForResult(id, this::processGetPrioritySuccess, this::processGetPriorityExceptions);
 		}
-		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -345,7 +345,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	private boolean processGetPriorityExceptions(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 
@@ -365,14 +365,14 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public String getRepresentation(Transaction transaction) throws RejectedTransactionException, ApplicationException, TimeoutException, InterruptedException {
+	public String getRepresentation(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetRepresentation(transaction, id);
 		try {
 			return waitForResult(id, this::processGetRepresentationSuccess, this::processGetRepresentationExceptions);
 		}
-		catch (RuntimeException | RejectedTransactionException | TimeoutException | InterruptedException | ApplicationException e) {
+		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -402,7 +402,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	private boolean processGetRepresentationExceptions(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}
 
@@ -532,14 +532,14 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	public void deliverTransaction(int groupId, Transaction transaction) throws RejectedTransactionException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException {
+	public void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen();
 		var id = nextId();
 		sendDeliverTransaction(groupId, transaction, id);
 		try {
 			waitForResult(id, this::processDeliverTransactionSuccess, this::processDeliverTransactionExceptions);
 		}
-		catch (RuntimeException | RejectedTransactionException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
+		catch (RuntimeException | TransactionRejectedException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -570,7 +570,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	private boolean processDeliverTransactionExceptions(ExceptionMessage message) {
 		var clazz = message.getExceptionClass();
-		return RejectedTransactionException.class.isAssignableFrom(clazz) ||
+		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
 			UnknownGroupIdException.class.isAssignableFrom(clazz) ||
 			processStandardExceptions(message);
 	}

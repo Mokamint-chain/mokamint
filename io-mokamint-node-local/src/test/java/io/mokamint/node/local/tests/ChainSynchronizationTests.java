@@ -64,7 +64,7 @@ import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
-import io.mokamint.plotter.PlotsAndKeyPairs;
+import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -146,7 +146,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 		private MiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 			super(config, nodeKeys, app, true);
-			add(LocalMiners.of(PlotsAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override
@@ -188,7 +188,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		var miningPeer = Peers.of(uri2);
 
 		try (var nonMiningNode = new NonMiningNode(mkConfig(chain1));
-			 var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000L, 1000, Optional.of(uri2))) {
+			 var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000, 1000, Optional.of(uri2))) {
 
 			// we give miningNode the time to mine HOW_MANY / 2 blocks
 			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2, 20, TimeUnit.SECONDS));
@@ -213,7 +213,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		var uri2 = new URI("ws://localhost:" + port2);
 		var miningPeer = Peers.of(uri2);
 
-		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningNodeService = PublicNodeServices.open(miningNode, port2, 1800000L, 1000, Optional.of(uri2))) {
+		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningNodeService = PublicNodeServices.open(miningNode, port2, 1800000, 1000, Optional.of(uri2))) {
 			try (var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
 				// we give miningNode the time to mine HOW_MANY / 8 blocks
 				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
@@ -253,7 +253,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		var uri2 = new URI("ws://localhost:" + port2);
 		var miningPeer = Peers.of(uri2);
 
-		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000L, 1000, Optional.of(uri2));
+		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000, 1000, Optional.of(uri2));
 			 var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
 				// we give miningNode the time to mine HOW_MANY / 8 blocks
 				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
