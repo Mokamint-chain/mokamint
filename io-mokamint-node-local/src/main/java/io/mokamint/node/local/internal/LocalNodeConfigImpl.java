@@ -564,8 +564,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 
 		@Override
 		public LocalNodeConfigBuilder addSeed(URI uri) {
-			Objects.requireNonNull(uri);
-			seeds.add(uri);
+			seeds.add(Objects.requireNonNull(uri));
 			return getThis();
 		}
 
@@ -600,8 +599,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (peerMaxTimeDifference < 0L || peerMaxTimeDifference > Integer.MAX_VALUE)
 				throw new IllegalArgumentException("peerMaxTimeDifference must be between 0 and " + Integer.MAX_VALUE + " inclusive");
 
-			this.peerMaxTimeDifference = (int) peerMaxTimeDifference;
-			return getThis();
+			return setPeerMaxTimeDifference((int) peerMaxTimeDifference);
 		}
 
 		@Override
