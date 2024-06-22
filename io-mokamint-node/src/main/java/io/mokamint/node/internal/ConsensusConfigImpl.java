@@ -96,12 +96,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	 * to this time. The higher the hashing power of the network, the more precise
 	 * this will be.
 	 */
-	public final long targetBlockCreationTime;
+	public final int targetBlockCreationTime;
 
 	/**
 	 * The maximal size of a block's transactions table, in bytes.
 	 */
-	public final long maxBlockSize;
+	public final int maxBlockSize;
 
 	/**
 	 * Full constructor for the builder pattern.
@@ -226,7 +226,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public long getTargetBlockCreationTime() {
+	public int getTargetBlockCreationTime() {
 		return targetBlockCreationTime;
 	}
 
@@ -236,7 +236,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public long getMaxBlockSize() {
+	public int getMaxBlockSize() {
 		return maxBlockSize;
 	}
 
@@ -254,8 +254,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private SignatureAlgorithm signatureForBlocks;
 		private SignatureAlgorithm signatureForDeadlines;
 		private long initialAcceleration = 100000000000L;
-		private long targetBlockCreationTime = 4 * 60 * 1000L; // 4 minutes
-		private long maxBlockSize = 1_000_000L; // 1 megabyte
+		private int targetBlockCreationTime = 4 * 60 * 1000; // 4 minutes
+		private int maxBlockSize = 1_000_000; // 1 megabyte
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
 			setHashingForDeadlines(HashingAlgorithms.shabal256());
@@ -412,20 +412,36 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		}
 
 		@Override
-		public B setTargetBlockCreationTime(long targetBlockCreationTime) {
-			if (targetBlockCreationTime < 1L)
+		public B setTargetBlockCreationTime(int targetBlockCreationTime) {
+			if (targetBlockCreationTime < 1)
 				throw new IllegalArgumentException("targetBlockCreationTime must be positive");
 
 			this.targetBlockCreationTime = targetBlockCreationTime;
 			return getThis();
 		}
 
+		private B setTargetBlockCreationTime(long targetBlockCreationTime) {
+			if (targetBlockCreationTime < 1 || targetBlockCreationTime > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("targetBlockCreationTime must be between 1 and " + Integer.MAX_VALUE + " inclusive");
+
+			this.targetBlockCreationTime = (int) targetBlockCreationTime;
+			return getThis();
+		}
+
 		@Override
-		public B setMaxBlockSize(long maxBlockSize) {
-			if (maxBlockSize < 0L)
+		public B setMaxBlockSize(int maxBlockSize) {
+			if (maxBlockSize < 0)
 				throw new IllegalArgumentException("maxBlockSize cannot be negative");
 
 			this.maxBlockSize = maxBlockSize;
+			return getThis();
+		}
+
+		private B setMaxBlockSize(long maxBlockSize) {
+			if (maxBlockSize < 0 || maxBlockSize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxBlockSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
+
+			this.maxBlockSize = (int) maxBlockSize;
 			return getThis();
 		}
 

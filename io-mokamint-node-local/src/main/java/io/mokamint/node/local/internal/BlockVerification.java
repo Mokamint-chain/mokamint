@@ -260,7 +260,7 @@ public class BlockVerification {
 	}
 
 	private void transactionsSizeIsNotTooBig(NonGenesisBlock block) throws VerificationException {
-		if (block.getTransactions().mapToInt(Transaction::size).sum() > config.getMaxBlockSize())
+		if (block.getTransactions().mapToLong(Transaction::size).sum() > config.getMaxBlockSize())
 			throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + ")");
 	}
 

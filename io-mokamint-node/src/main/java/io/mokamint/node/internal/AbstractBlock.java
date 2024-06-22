@@ -309,7 +309,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 			.subtract(oldAcceleration);
 	
 		var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
-		
 		if (acceleration.signum() == 0)
 			acceleration = BigInteger.ONE; // acceleration must be strictly positive
 	

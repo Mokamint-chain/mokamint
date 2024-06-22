@@ -106,7 +106,7 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	 * @param targetBlockCreationTime the target time interval, in milliseconds
 	 * @return this builder
 	 */
-	B setTargetBlockCreationTime(long targetBlockCreationTime);
+	B setTargetBlockCreationTime(int targetBlockCreationTime);
 
 	/**
 	 * Sets the maximal size of a block's transactions table.
@@ -114,7 +114,7 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	 * @param maxBlockSize the maximal size, in bytes
 	 * @return this builder
 	 */
-	B setMaxBlockSize(long maxBlockSize);
+	B setMaxBlockSize(int maxBlockSize);
 
 	/**
 	 * Builds the configuration.

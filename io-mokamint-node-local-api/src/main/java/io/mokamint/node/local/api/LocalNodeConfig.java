@@ -47,7 +47,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * 
 	 * @return the maximal delay
 	 */
-	long getDeadlineWaitTimeout();
+	int getDeadlineWaitTimeout();
 
 	/**
 	 * Yields the initial points of a miner, freshly connected to a node.
@@ -105,7 +105,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * @return the maximal difference (in milliseconds) between the local time of a node
 	 *         and of one of its peers
 	 */
-	long getPeerMaxTimeDifference();
+	int getPeerMaxTimeDifference();
 
 	/**
 	 * Yields the points lost for punishment by a peer that does not answer to a ping request.

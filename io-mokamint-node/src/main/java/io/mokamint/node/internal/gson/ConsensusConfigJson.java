@@ -35,9 +35,9 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	private final String hashingForTransactions;
 	private final String signatureForBlocks;
 	private final String signatureForDeadlines;
-	private final long targetBlockCreationTime;
+	private final int targetBlockCreationTime;
 	private final long initialAcceleration;
-	private final long maxBlockSize;
+	private final int maxBlockSize;
 
 	protected ConsensusConfigJson(ConsensusConfig<?,?> config) {
 		this.chainId = config.getChainId();

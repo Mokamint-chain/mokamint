@@ -44,7 +44,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param deadlineWaitTimeout the wait time, in milliseconds
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setDeadlineWaitTimeout(long deadlineWaitTimeout);
+	LocalNodeConfigBuilder setDeadlineWaitTimeout(int deadlineWaitTimeout);
 
 	/**
 	 * Sets the initial points of a miner freshly connected to the node.
@@ -111,7 +111,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param peerMaxTimeDifference the maximal time difference (in milliseconds)
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setPeerMaxTimeDifference(long peerMaxTimeDifference);
+	LocalNodeConfigBuilder setPeerMaxTimeDifference(int peerMaxTimeDifference);
 
 	/**
 	 * Sets the points lost by a peer, as punishment for not answering a ping.

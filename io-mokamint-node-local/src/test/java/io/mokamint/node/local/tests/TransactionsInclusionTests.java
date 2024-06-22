@@ -103,7 +103,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		return LocalNodeConfigBuilders.defaults()
 			.setDir(chainDir)
 			.setChainId("octopus")
-			.setTargetBlockCreationTime(1000L)
+			.setTargetBlockCreationTime(1_000)
 			.setInitialAcceleration(1000000000000000000L)
 			.build();
 	}

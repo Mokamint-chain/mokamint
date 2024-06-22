@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * deadlines might well arrive, but might get ignored by the node.
 	 * It defaults to 20000.
 	 */
-	public final long deadlineWaitTimeout;
+	public final int deadlineWaitTimeout;
 
 	/**
 	 * The initial points of a miner, freshly connected to a node.
@@ -102,7 +102,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * The maximal difference (in milliseconds) between the local time of a node
 	 * and of one of its peers. It defaults to 15,000 (15 seconds).
 	 */
-	public final long peerMaxTimeDifference;
+	public final int peerMaxTimeDifference;
 
 	/**
 	 * The points lost for punishment by a peer that does not answer to a ping request.
@@ -189,7 +189,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
-	public long getDeadlineWaitTimeout() {
+	public int getDeadlineWaitTimeout() {
 		return deadlineWaitTimeout;
 	}
 
@@ -224,7 +224,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
-	public long getPeerMaxTimeDifference() {
+	public int getPeerMaxTimeDifference() {
 		return peerMaxTimeDifference;
 	}
 
@@ -369,21 +369,21 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 */
 	public static class LocalNodeConfigBuilderImpl extends AbstractConsensusConfigBuilder<LocalNodeConfig, LocalNodeConfigBuilder> implements LocalNodeConfigBuilder {
 		private Path dir = Paths.get("mokamint-chain");
-		private long deadlineWaitTimeout = 20000L;
+		private int deadlineWaitTimeout = 20_000;
 		private long minerInitialPoints = 1000L;
 		private long minerPunishmentForTimeout = 1L;
 		private long minerPunishmentForIllegalDeadline = 500L;
 		private final Set<URI> seeds = new HashSet<>();
 		private long maxPeers = 20L;
 		private long peerInitialPoints = 1000L;
-		private long peerMaxTimeDifference = 15000L;
+		private int peerMaxTimeDifference = 15000;
 		private long peerPunishmentForUnreachable = 1L;
 		private int peerTimeout = 10000;
-		private int peerPingInterval = 120000;
-		private int serviceBroadcastInterval = 240000;
+		private int peerPingInterval = 120_000;
+		private int serviceBroadcastInterval = 240_000;
 		private int whisperingMemorySize = 1000;
 		private int orphansMemorySize = 1000;
-		private int mempoolSize = 100000;
+		private int mempoolSize = 100_000;
 		private long blockMaxTimeInTheFuture = 15000L;
 
 		/**
@@ -519,11 +519,19 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		}
 
 		@Override
-		public LocalNodeConfigBuilder setDeadlineWaitTimeout(long deadlineWaitTimeout) {
-			if (deadlineWaitTimeout < 0L)
+		public LocalNodeConfigBuilder setDeadlineWaitTimeout(int deadlineWaitTimeout) {
+			if (deadlineWaitTimeout < 0)
 				throw new IllegalArgumentException("deadlineWaitTimeout must be non-negative");
 
 			this.deadlineWaitTimeout = deadlineWaitTimeout;
+			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setDeadlineWaitTimeout(long deadlineWaitTimeout) {
+			if (deadlineWaitTimeout < 0 || deadlineWaitTimeout > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("deadlineWaitTimeout must be between 0 and " + Integer.MAX_VALUE + " inclusive");
+
+			this.deadlineWaitTimeout = (int) deadlineWaitTimeout;
 			return getThis();
 		}
 
@@ -556,8 +564,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 
 		@Override
 		public LocalNodeConfigBuilder addSeed(URI uri) {
-			Objects.requireNonNull(uri);
-			seeds.add(uri);
+			seeds.add(Objects.requireNonNull(uri));
 			return getThis();
 		}
 
@@ -580,12 +587,19 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		}
 
 		@Override
-		public LocalNodeConfigBuilder setPeerMaxTimeDifference(long peerMaxTimeDifference) {
+		public LocalNodeConfigBuilder setPeerMaxTimeDifference(int peerMaxTimeDifference) {
 			if (peerMaxTimeDifference < 0L)
 				throw new IllegalArgumentException("peerMaxTimeDifference must be non-negative");
 
 			this.peerMaxTimeDifference = peerMaxTimeDifference;
 			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setPeerMaxTimeDifference(long peerMaxTimeDifference) {
+			if (peerMaxTimeDifference < 0L || peerMaxTimeDifference > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("peerMaxTimeDifference must be between 0 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setPeerMaxTimeDifference((int) peerMaxTimeDifference);
 		}
 
 		@Override
@@ -606,18 +620,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 
 		@Override
 		public LocalNodeConfigBuilder setPeerTimeout(int peerTimeout) {
-			if (peerTimeout < 0L)
+			if (peerTimeout < 0)
 				throw new IllegalArgumentException("peerTimeout must be non-negative");
 
 			this.peerTimeout = peerTimeout;
 			return getThis();
-		}
-
-		private LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval) {
-			if (peerPingInterval > Integer.MAX_VALUE)
-				throw new IllegalArgumentException("peerPingInterval cannot be larger than " + Integer.MAX_VALUE);
-
-			return setPeerPingInterval((int) peerPingInterval);
 		}
 
 		@Override
@@ -626,11 +633,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			return getThis();
 		}
 
-		private LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval) {
-			if (serviceBroadcastInterval > Integer.MAX_VALUE)
-				throw new IllegalArgumentException("serviceBroadcastInterval cannot be larger than " + Integer.MAX_VALUE);
+		private LocalNodeConfigBuilder setPeerPingInterval(long peerPingInterval) {
+			if (peerPingInterval < Integer.MIN_VALUE || peerPingInterval > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("peerTimeout must be between " + Integer.MIN_VALUE + " and " + Integer.MAX_VALUE + " inclusive");
 
-			return setServiceBroadcastInterval((int) serviceBroadcastInterval);
+			return setPeerPingInterval((int) peerPingInterval);
 		}
 
 		@Override
@@ -639,11 +646,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			return getThis();
 		}
 
-		private LocalNodeConfigBuilder setWhisperingMemorySize(long whisperingMemorySize) {
-			if (whisperingMemorySize > Integer.MAX_VALUE)
-				throw new IllegalArgumentException("whisperingMemorySize cannot be larger than " + Integer.MAX_VALUE);
+		private LocalNodeConfigBuilder setServiceBroadcastInterval(long serviceBroadcastInterval) {
+			if (serviceBroadcastInterval < Integer.MIN_VALUE || serviceBroadcastInterval > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("serviceBroadcastInterval must be between " + Integer.MIN_VALUE + " and " + Integer.MAX_VALUE + " inclusive");
 
-			return setWhisperingMemorySize((int) whisperingMemorySize);
+			return setServiceBroadcastInterval((int) serviceBroadcastInterval);
 		}
 
 		@Override
@@ -655,11 +662,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			return getThis();
 		}
 
-		private LocalNodeConfigBuilder setOrphansMemorySize(long orphansMemorySize) {
-			if (orphansMemorySize > Integer.MAX_VALUE)
-				throw new IllegalArgumentException("orphansMemorySize cannot be larger than " + Integer.MAX_VALUE);
+		private LocalNodeConfigBuilder setWhisperingMemorySize(long whisperingMemorySize) {
+			if (whisperingMemorySize < 0 || whisperingMemorySize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("whisperingMemorySize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
 
-			return setOrphansMemorySize((int) orphansMemorySize);
+			return setWhisperingMemorySize((int) whisperingMemorySize);
 		}
 
 		@Override
@@ -671,11 +678,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			return getThis();
 		}
 
-		private LocalNodeConfigBuilder setMempoolSize(long mempoolSize) {
-			if (mempoolSize > Integer.MAX_VALUE)
-				throw new IllegalArgumentException("mempoolSize cannot be larger than " + Integer.MAX_VALUE);
+		private LocalNodeConfigBuilder setOrphansMemorySize(long orphansMemorySize) {
+			if (orphansMemorySize < 0 || orphansMemorySize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("orphansMemorySize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
 
-			return setMempoolSize((int) mempoolSize);
+			return setOrphansMemorySize((int) orphansMemorySize);
 		}
 
 		@Override
@@ -685,6 +692,13 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 
 			this.mempoolSize = mempoolSize;
 			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setMempoolSize(long mempoolSize) {
+			if (mempoolSize < 0 || mempoolSize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("mempoolSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setMempoolSize((int) mempoolSize);
 		}
 
 		@Override
