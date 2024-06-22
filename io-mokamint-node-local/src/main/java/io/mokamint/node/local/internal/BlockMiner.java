@@ -270,7 +270,7 @@ public class BlockMiner {
 			transactionExecutor.commitBlock();
 			committed = true;
 			node.onMined(block);
-			addNodeToBlockchain(block);
+			addBlockToBlockchain(block);
 		}
 		else
 			LOGGER.info(heightMessage + "not adding any block on top of " + previous.getHexHash(config.getHashingForBlocks()) + " since it would not improve the head");
@@ -307,7 +307,7 @@ public class BlockMiner {
 		miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 	}
 
-	private void addNodeToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, TimeoutException, ApplicationException {
+	private void addBlockToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, TimeoutException, ApplicationException {
 		stopIfInterrupted();
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (blockchain.addVerified(block))

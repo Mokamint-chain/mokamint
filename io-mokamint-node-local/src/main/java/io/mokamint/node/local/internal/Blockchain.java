@@ -473,6 +473,7 @@ public class Blockchain implements AutoCloseable {
 			// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
 			// the block over which mining occurs, so it will be aligned there
 			node.rebaseMempoolAt(newHead);
+			// TODO: blocks added to the main chain should be signaled to the application here
 			node.onHeadChanged(newHead);
 		}
 		else if (addedToOrphans && headIsLessPowerfulThan(block))
