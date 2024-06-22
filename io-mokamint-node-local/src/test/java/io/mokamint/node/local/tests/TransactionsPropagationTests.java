@@ -50,12 +50,12 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
 
@@ -102,7 +102,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7, 8, 9 });
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expectedPeer;
 			private final Transaction expectedTransaction;
 

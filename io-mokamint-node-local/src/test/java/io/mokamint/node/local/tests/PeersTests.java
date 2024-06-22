@@ -73,11 +73,11 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import jakarta.websocket.DeploymentException;
 
@@ -181,7 +181,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		var semaphore = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKey, app, false);
@@ -211,7 +211,7 @@ public class PeersTests extends AbstractLoggedTests {
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
 		var allPeers = Set.of(peer1, peer2);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKey, app, false);
@@ -254,7 +254,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		var semaphore = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKey, app, false);
@@ -290,7 +290,7 @@ public class PeersTests extends AbstractLoggedTests {
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 		var allPeers = Set.of(peer);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKey, app, false);
@@ -311,7 +311,7 @@ public class PeersTests extends AbstractLoggedTests {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKey, app, false);
@@ -332,7 +332,7 @@ public class PeersTests extends AbstractLoggedTests {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKey, app, false);
@@ -355,7 +355,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		var config = mkConfig(dir);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKey, app, false);
@@ -375,7 +375,7 @@ public class PeersTests extends AbstractLoggedTests {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKey, app, false);

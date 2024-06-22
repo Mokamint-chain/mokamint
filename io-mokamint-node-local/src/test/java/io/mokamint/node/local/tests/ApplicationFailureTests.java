@@ -55,13 +55,13 @@ import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.PlotAndKeyPairs;
+import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -123,7 +123,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 		var uri = new URI("ws://localhost:" + port);
 		var sevenBlocksAdded = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode(LocalNodeConfig config, Application app) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKeys, app, true);

@@ -62,12 +62,12 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Blockchain;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.VerificationException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -147,7 +147,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		plot.close();
 	}
 
-	private static class TestNode extends LocalNodeImpl {
+	private static class TestNode extends AbstractLocalNode {
 		private TestNode(Path dir) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
 			this(dir, application);
 		}

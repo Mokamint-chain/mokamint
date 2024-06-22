@@ -52,10 +52,10 @@ import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
@@ -149,7 +149,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 		};
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
@@ -205,7 +205,7 @@ public class EventsTests extends AbstractLoggedTests {
 			public void close() {}
 		};
 	
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 	
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
@@ -230,7 +230,7 @@ public class EventsTests extends AbstractLoggedTests {
 	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, DatabaseException, URISyntaxException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException, ApplicationException {
 		var semaphore = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws NoSuchAlgorithmException, IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
@@ -254,7 +254,7 @@ public class EventsTests extends AbstractLoggedTests {
 		var config = mkConfig(dir);
 		var semaphore = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKeys, app, true);
@@ -315,7 +315,7 @@ public class EventsTests extends AbstractLoggedTests {
 			public void close() {}
 		};
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode() throws DatabaseException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKeys, app, true);

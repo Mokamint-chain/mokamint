@@ -57,14 +57,14 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.PlotAndKeyPairs;
+import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -142,7 +142,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 			.build();
 	}
 
-	private class MiningNode extends LocalNodeImpl {
+	private class MiningNode extends AbstractLocalNode {
 
 		private MiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 			super(config, nodeKeys, app, true);
@@ -160,7 +160,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		}
 	}
 
-	private class NonMiningNode extends LocalNodeImpl {
+	private class NonMiningNode extends AbstractLocalNode {
 
 		private NonMiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself

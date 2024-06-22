@@ -54,11 +54,11 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import jakarta.websocket.DeploymentException;
 
@@ -106,7 +106,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		var semaphore = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKey, app, false);
@@ -175,7 +175,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		var semaphore = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config, nodeKey, app, false);
@@ -228,7 +228,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var semaphore = new Semaphore(0);
 
-		class MyLocalNode extends LocalNodeImpl {
+		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expected;
 
 			private MyLocalNode(LocalNodeConfig config, Peer expected) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {

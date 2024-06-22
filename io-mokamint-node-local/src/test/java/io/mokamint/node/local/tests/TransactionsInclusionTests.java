@@ -64,18 +64,18 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.PlotAndKeyPairs;
+import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import jakarta.websocket.DeploymentException;
 
@@ -108,7 +108,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			.build();
 	}
 
-	private static class NodeWithLocalMiner extends LocalNodeImpl {
+	private static class NodeWithLocalMiner extends AbstractLocalNode {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 

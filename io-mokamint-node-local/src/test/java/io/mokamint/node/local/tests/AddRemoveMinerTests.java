@@ -55,13 +55,13 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
-import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.PlotAndKeyPairs;
+import io.mokamint.plotter.Plots;
 import jakarta.websocket.DeploymentException;
 
 /**
@@ -124,7 +124,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var node2HasConnectedToNode1 = new Semaphore(0);
 		var node2HasAddedBlock = new Semaphore(0);
 
-		class MyLocalNode1 extends LocalNodeImpl {
+		class MyLocalNode1 extends AbstractLocalNode {
 
 			private MyLocalNode1() throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config1, node1Keys, app, true);
@@ -141,7 +141,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			}
 		}
 
-		class MyLocalNode2 extends LocalNodeImpl {
+		class MyLocalNode2 extends AbstractLocalNode {
 
 			private MyLocalNode2() throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
 				super(config2, node2Keys, app, false);
