@@ -69,12 +69,6 @@ public class BlockVerification {
 	private final Block previous;
 
 	/**
-	 * If true and verification succeeds, the state at the end of the execution of the transactions
-	 * in the block will be committed.
-	 */
-	private final boolean commit; // TODO: is this always true?
-
-	/**
 	 * The deadline of {@link #block}. This is {@code null} if and only if
 	 * {@link #block} is a genesis block.
 	 */
@@ -87,7 +81,6 @@ public class BlockVerification {
 	 * @param node the node whose blocks get verified
 	 * @param block the block
 	 * @param previous the previous of {@code block}; this can be empty only if {@code block} is a genesis block
-	 * @param commit if verification succeeds, commit the state at the end of the execution of the transactions in the block
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
@@ -98,12 +91,11 @@ public class BlockVerification {
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id used to verify the transactions became invalid
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous, boolean commit) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
 		this.previous = previous.orElse(null);
-		this.commit = commit;
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
 
 		if (block instanceof NonGenesisBlock ngb)
@@ -334,7 +326,7 @@ public class BlockVerification {
 			success = true;
 		}
 		finally {
-			if (success && commit)
+			if (success)
 				app.commitBlock(id);
 			else
 				app.abortBlock(id);

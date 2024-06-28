@@ -489,7 +489,7 @@ public class Blockchain implements AutoCloseable {
 
 		try {
 			if (verify)
-				new BlockVerification(node, block, previous, true);
+				new BlockVerification(node, block, previous);
 
 			if (db.add(block, updatedHead)) {
 				node.onAdded(block);
