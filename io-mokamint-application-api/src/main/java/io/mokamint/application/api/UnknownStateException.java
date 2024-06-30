@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.application.api;
 
+import java.util.Objects;
+
 /**
  * An exception stating that a state identifier is unknown to the application.
  */
@@ -23,11 +25,37 @@ package io.mokamint.application.api;
 public class UnknownStateException extends Exception {
 
 	/**
+	 * Creates a new exception.
+	 */
+	public UnknownStateException() {
+		super("Unknown state");
+	}
+
+	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
 	public UnknownStateException(String message) {
-		super(message);
+		super(Objects.requireNonNull(message, "message cannot be null"));
+	}
+
+	/**
+	 * Creates a new exception with the given cause.
+	 * 
+	 * @param cause the cause
+	 */
+	public UnknownStateException(Throwable cause) {
+		super(String.valueOf(cause.getMessage()), cause);
+	}
+
+	/**
+	 * Creates a new exception with the given message and cause.
+	 * 
+	 * @param message the message
+	 * @param cause the cause
+	 */
+	public UnknownStateException(String message, Throwable cause) {
+		super(Objects.requireNonNull(message, "message cannot be null"), Objects.requireNonNull(cause, "cause cannot be null"));
 	}
 }
