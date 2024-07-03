@@ -183,13 +183,13 @@ public class MiningTask implements Task {
 					break;
 				}
 				catch (ApplicationException | TimeoutException e) {
-					LOGGER.warning("mining: the application is misbehaving: I will wait five seconds and then try again: " + e.getMessage());
+					LOGGER.log(Level.SEVERE, "mining: the application is misbehaving: I will wait five seconds and then try again", e);
 
 					try {
 						Thread.sleep(5000L);
 					}
 					catch (InterruptedException e2) {
-						LOGGER.info("mining: restarting mining since the blockchain's head changed 2");
+						LOGGER.info("mining: restarting mining");
 					}
 				}
 				catch (UnknownStateException e) {

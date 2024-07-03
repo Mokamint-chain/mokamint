@@ -283,7 +283,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	private Boolean processCheckTransactionSuccess(RpcMessage message) {
-		return message instanceof CheckTransactionResultMessage ctrm ? Boolean.TRUE : null;
+		return message instanceof CheckTransactionResultMessage ? Boolean.TRUE : null;
 	}
 
 	private boolean processCheckTransactionExceptions(ExceptionMessage message) {
@@ -565,7 +565,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	private Boolean processDeliverTransactionSuccess(RpcMessage message) {
-		return message instanceof DeliverTransactionResultMessage dtrm ? Boolean.TRUE : null;
+		return message instanceof DeliverTransactionResultMessage ? Boolean.TRUE : null;
 	}
 
 	private boolean processDeliverTransactionExceptions(ExceptionMessage message) {
@@ -681,7 +681,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	private Boolean processCommitBlockSuccess(RpcMessage message) {
-		return message instanceof CommitBlockResultMessage cbrm ? Boolean.TRUE : null;
+		return message instanceof CommitBlockResultMessage ? Boolean.TRUE : null;
 	}
 
 	private boolean processCommitBlockExceptions(ExceptionMessage message) {
