@@ -199,7 +199,14 @@ public class TransactionsExecutionTask implements Task {
 	 * @throws UnknownGroupIdException if the group id for the transactions became invalid
 	 */
 	public void commitBlock() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
-		done.await();
+		try {
+			done.await();
+		}
+		catch (InterruptedException e) {
+			app.abortBlock(id);
+			throw e;
+		}
+
 		app.commitBlock(id);
 	}
 
@@ -214,8 +221,12 @@ public class TransactionsExecutionTask implements Task {
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
 	public void abortBlock() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
-		done.await();
-		app.abortBlock(id);
+		try {
+			done.await();
+		}
+		finally {
+			app.abortBlock(id);
+		}
 	}
 
 	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
