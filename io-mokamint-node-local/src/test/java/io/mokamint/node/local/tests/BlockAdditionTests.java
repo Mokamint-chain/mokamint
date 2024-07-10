@@ -152,10 +152,6 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		private TestNode(Path dir, Application application) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
-
-		private TestNode(LocalNodeConfig config) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
-			super(config, nodeKeys, application, false);
-		}
 	}
 
 	private static LocalNodeConfig mkConfig(Path dir) throws NoSuchAlgorithmException {
@@ -164,6 +160,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			.setChainId("octopus")
 			// we effectively disable the time check
 			.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
+			// we effectively disable the time check
+			.setMaximalHistoryChangeTime(-1L)
 			.build();
 	}
 

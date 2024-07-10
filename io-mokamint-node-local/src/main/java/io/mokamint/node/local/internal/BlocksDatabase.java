@@ -113,24 +113,42 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private final Hasher<io.mokamint.node.api.Transaction> hasherForTransactions;
 
 	/**
+	 * The maximal time (in milliseconds) that history can be changed before being considered as definitely frozen;
+	 * a negative value means that the history is always allowed to be changed, without limits.
+	 */
+	private final long maximalHistoryChangeTime;
+
+	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.
 	 */
-	private final static ByteIterable genesis = fromByte((byte) 42);
+	private final static ByteIterable GENESIS = fromByte((byte) 0);
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the head block.
 	 */
-	private final static ByteIterable head = fromByte((byte) 19);
+	private final static ByteIterable HEAD = fromByte((byte) 1);
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the power of the head block.
 	 */
-	private final static ByteIterable power = fromByte((byte) 11);
+	private final static ByteIterable POWER_OF_HEAD = fromByte((byte) 2);
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the height of the current best chain.
 	 */
-	private final static ByteIterable height = fromByte((byte) 29);
+	private final static ByteIterable HEIGHT_OF_HEAD = fromByte((byte) 3);
+
+	/**
+	 * The key mapped in the {@link #storeOfBlocks} to the hash of the block where
+	 * the non-frozen part of the blockchain starts.
+	 */
+	private final static ByteIterable START_OF_NON_FROZEN_PART = fromByte((byte) 4);
+
+	/**
+	 * The key mapped in the {@link #storeOfBlocks} to the total waiting time of the block where
+	 * the non-frozen part of the blockchain starts.
+	 */
+	private final static ByteIterable START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME = fromByte((byte) 5);
 
 	private final static Logger LOGGER = Logger.getLogger(BlocksDatabase.class.getName());
 
@@ -145,6 +163,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		this.node = node;
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
+		this.maximalHistoryChangeTime = node.getConfig().getMaximalHistoryChangeTime();
 		this.environment = createBlockchainEnvironment();
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
@@ -232,6 +251,25 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	public Optional<byte[]> getHeadHash() throws DatabaseException, ClosedDatabaseException {
 		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the starting block of the non-frozen part of the history of the blockchain, if any.
+	 * 
+	 * @return the starting block, if any
+	 * @throws NoSuchAlgorithmException if the starting block uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<Block> getStartOfNonFrozenPart() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		try (var scope = mkScope()) {
+			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(this::getStartOfNonFrozenPart))
+			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -463,13 +501,13 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 		try (var scope = mkScope()) {
 			hasBeenAdded = check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
+
+			if (hasBeenAdded)
+				LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(hashingForBlocks));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-
-		if (hasBeenAdded)
-			LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(node.getConfig().getHashingForBlocks()));
 
 		return hasBeenAdded;
 	}
@@ -491,16 +529,21 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
 		byte[] hashOfBlock = block.getHash(hashingForBlocks);
-	
+
 		if (containsBlock(txn, hashOfBlock)) {
 			LOGGER.warning("db: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
-			if (containsBlock(txn, ngb.getHashOfPreviousBlock())) {
-				byte[] bytesOfBlock = block.toByteArray();
-				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-				putInStore(txn, hashOfBlock, bytesOfBlock);
+			var maybePreviousOfBlock = getBlock(txn, ngb.getHashOfPreviousBlock());
+
+			if (maybePreviousOfBlock.isPresent()) {
+				if (isInFrozenPart(txn, maybePreviousOfBlock.get())) {
+					LOGGER.warning("db: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
+					return false;
+				}
+
+				putInStore(txn, hashOfBlock, block.toByteArray());
 				addToForwards(txn, ngb, hashOfBlock);
 				if (isBetterThanHead(txn, ngb, hashOfBlock)) {
 					setHeadHash(txn, block, hashOfBlock);
@@ -517,9 +560,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		}
 		else {
 			if (getGenesisHash(txn).isEmpty()) {
-				byte[] bytesOfBlock = block.toByteArray();
-				storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
-				putInStore(txn, hashOfBlock, bytesOfBlock);
+				putInStore(txn, hashOfBlock, block.toByteArray());
 				setGenesisHash(txn, hashOfBlock);
 				setHeadHash(txn, block, hashOfBlock);
 				updatedHead.set(block);
@@ -531,6 +572,11 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				return false;
 			}
 		}
+	}
+
+	private boolean isInFrozenPart(Transaction txn, Block block) throws NoSuchAlgorithmException, DatabaseException {
+		var totalWaitingTimeOfStartOfNonFrozenPart = getTotalWaitingTimeOfStartOfNonFrozenPart(txn);
+		return totalWaitingTimeOfStartOfNonFrozenPart.isPresent() && totalWaitingTimeOfStartOfNonFrozenPart.getAsLong() > block.getDescription().getTotalWaitingTime();
 	}
 
 	private Environment createBlockchainEnvironment() {
@@ -563,7 +609,24 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private Optional<byte[]> getHeadHash(Transaction txn) throws DatabaseException {
 		try {
-			return Optional.ofNullable(storeOfBlocks.get(txn, head)).map(ByteIterable::getBytes);
+			return Optional.ofNullable(storeOfBlocks.get(txn, HEAD)).map(ByteIterable::getBytes);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the hash of the starting block of the non-frozen part of the blockchain, if it has been set already,
+	 * running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the hash of the starting block, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<byte[]> getStartOfNonFrozenPartHash(Transaction txn) throws DatabaseException {
+		try {
+			return Optional.ofNullable(storeOfBlocks.get(txn, START_OF_NON_FROZEN_PART)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -580,7 +643,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private Optional<byte[]> getGenesisHash(Transaction txn) throws DatabaseException {
 		try {
-			return Optional.ofNullable(storeOfBlocks.get(txn, genesis)).map(ByteIterable::getBytes);
+			return Optional.ofNullable(storeOfBlocks.get(txn, GENESIS)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -596,7 +659,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private Optional<BigInteger> getPowerOfHead(Transaction txn) throws DatabaseException {
 		try {
-			return Optional.ofNullable(storeOfBlocks.get(txn, power)).map(ByteIterable::getBytes).map(BigInteger::new);
+			return Optional.ofNullable(storeOfBlocks.get(txn, POWER_OF_HEAD)).map(ByteIterable::getBytes).map(BigInteger::new);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -612,7 +675,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private OptionalLong getHeightOfHead(Transaction txn) throws DatabaseException {
 		try {
-			ByteIterable heightBI = storeOfBlocks.get(txn, height);
+			ByteIterable heightBI = storeOfBlocks.get(txn, HEIGHT_OF_HEAD);
 			if (heightBI == null)
 				return OptionalLong.empty();
 			else {
@@ -621,6 +684,31 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 					throw new DatabaseException("The database contains a negative chain length");
 
 				return OptionalLong.of(chainHeight);
+			}
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the total waiting time of the start of the non-frozen part of the blockchain, if any, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the total waiting time, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private OptionalLong getTotalWaitingTimeOfStartOfNonFrozenPart(Transaction txn) throws DatabaseException {
+		try {
+			ByteIterable totalWaitingTimeBI = storeOfBlocks.get(txn, START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME);
+			if (totalWaitingTimeBI == null)
+				return OptionalLong.empty();
+			else {
+				long totalWaitingTime = bytesToLong(totalWaitingTimeBI.getBytes());
+				if (totalWaitingTime < 0L)
+					throw new DatabaseException("The database contains a negative total waiting time for the start of the non-frozen part of the blockchain");
+
+				return OptionalLong.of(totalWaitingTime);
 			}
 		}
 		catch (ExodusException e) {
@@ -867,6 +955,31 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
+	 * Yields the starting block of the non-frozen part of the history of the blockchain, if any, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the starting block, if any
+	 * @throws NoSuchAlgorithmException if the starting block uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<Block> getStartOfNonFrozenPart(Transaction txn) throws NoSuchAlgorithmException, DatabaseException {
+		try {
+			Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
+			if (maybeStartOfNonFrozenPartHash.isEmpty())
+				return Optional.empty();
+
+			Optional<Block> maybeStartOfNonFrozenPart = getBlock(txn, maybeStartOfNonFrozenPartHash.get());
+			if (maybeStartOfNonFrozenPart.isPresent())
+				return maybeStartOfNonFrozenPart;
+			else
+				throw new DatabaseException("The hash of the start of non-frozen part of the blockchain is set but it is not in the database");
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
 	 * Yields the genesis block in this database, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -949,8 +1062,31 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws DatabaseException {
 		try {
-			storeOfBlocks.put(txn, genesis, fromBytes(newGenesisHash));
+			storeOfBlocks.put(txn, GENESIS, fromBytes(newGenesisHash));
 			LOGGER.info("db: height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Sets the hash of the starting block of the non-frozen part of the blockchain, running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @param startOfNonFrozenPartHash the hash of the starting block of the non-frozen part of the blockchain
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if the start of the non-frozen part refers to an unknown hashing algorithm
+	 */
+	private void setStartOfNonFrozenPartHash(Transaction txn, byte[] startOfNonFrozenPartHash) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			storeOfBlocks.put(txn, START_OF_NON_FROZEN_PART, fromBytes(startOfNonFrozenPartHash));
+			var maybeStartOfNonFrozenPart = getBlock(txn, startOfNonFrozenPartHash);
+			if (maybeStartOfNonFrozenPart.isEmpty())
+				throw new DatabaseException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database");
+			storeOfBlocks.put(txn, START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME, fromBytes(longToBytes(maybeStartOfNonFrozenPart.get().getDescription().getTotalWaitingTime())));
+			LOGGER.info("db: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + maybeStartOfNonFrozenPart.get().getDescription().getHeight());
+			System.out.println("Set to " + maybeStartOfNonFrozenPart.get().getDescription().getTotalWaitingTime()); // TODO: remove
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -969,10 +1105,10 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			updateChain(txn, newHead, newHeadHash);
-			storeOfBlocks.put(txn, head, fromBytes(newHeadHash));
-			storeOfBlocks.put(txn, power, fromBytes(newHead.getDescription().getPower().toByteArray()));
+			storeOfBlocks.put(txn, HEAD, fromBytes(newHeadHash));
+			storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
 			long heightOfHead = newHead.getDescription().getHeight();
-			storeOfBlocks.put(txn, height, fromBytes(longToBytes(heightOfHead)));
+			storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
 			LOGGER.info("db: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
 			sanityCheck(txn, newHead);
 		}
@@ -998,7 +1134,9 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 		try {
 			Block cursor = newHead;
+			byte[] previousHash = null;
 			byte[] cursorHash = newHeadHash;
+			long totalTimeOfNewHead = newHead.getDescription().getTotalWaitingTime();
 			long height = cursor.getDescription().getHeight();
 
 			removeDataHigherThan(txn, height);
@@ -1022,6 +1160,10 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 				addedBlocks.add(cursor);
 
+				if (maximalHistoryChangeTime >= 0L && totalTimeOfNewHead - cursor.getDescription().getTotalWaitingTime() > maximalHistoryChangeTime)
+					// the new branch is so long that it contains the new start of the non-frozen part of the blockchain
+					setStartOfNonFrozenPartHash(txn, previousHash);
+				
 				if (cursor instanceof NonGenesisBlock ngb) {
 					if (height <= 0L)
 						throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
@@ -1040,12 +1182,48 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				}
 				else if (height > 0L)
 					throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
+
+				previousHash = cursorHash;
 			}
 			while (cursor instanceof NonGenesisBlock && !_new.equals(old));
 
 			for (Block added: addedBlocks)
 				addReferencesToTransactionsInside(txn, added);
 
+			var maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
+			byte[] startOfNonFrozenPartHash;
+
+			if (maybeStartOfNonFrozenPartHash.isEmpty()) {
+				var maybeGenesisHash = getGenesisHash(txn);
+				if (maybeGenesisHash.isEmpty())
+					throw new DatabaseException("The head has changed but the genesis hash is missing");
+
+				startOfNonFrozenPartHash = maybeGenesisHash.get();
+				setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
+			}
+			else
+				startOfNonFrozenPartHash = maybeStartOfNonFrozenPartHash.get();
+
+			if (maximalHistoryChangeTime >= 0L) {
+				// we move startOfNonFrozenPartHash upwards along the current best chain, if it is too far away from the head of the blockchain
+				do {
+					var startOfNonFrozenPart = getBlock(txn, startOfNonFrozenPartHash);
+					if (startOfNonFrozenPart.isEmpty())
+						throw new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHash) + " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database");
+
+					if (totalTimeOfNewHead - startOfNonFrozenPart.get().getDescription().getTotalWaitingTime() <= maximalHistoryChangeTime)
+						break;
+
+					ByteIterable aboveStartOfNonFrozenPartHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(startOfNonFrozenPart.get().getDescription().getHeight() + 1)));
+					if (aboveStartOfNonFrozenPartHash == null)
+						throw new DatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
+
+					startOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
+					setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
+				}
+				while (true);
+			}
+				
 			sanityCheck(txn, newHead);
 		}
 		catch (ExodusException e) {
@@ -1260,7 +1438,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 			ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
 				.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
-				.toArray(ByteIterable[]::new);
+				.toArray(ByteIterable[]::new); // TODO: avoid repeated transformation Stream -> List -> Stream
 
 			if (Stream.of(hashes).anyMatch(Objects::isNull))
 				throw new DatabaseException("The current best chain contains a missing element");

@@ -34,9 +34,9 @@ public interface BlockDescription extends Marshallable {
 
 	/**
 	 * Yields the power of the block, computed as the sum, for each block from genesis to the block,
-	 * of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
-	 * forks and choose the one whose tip has the highest power. Intuitively, the power
-	 * expresses the space used to compute the chain leading to the block.
+	 * of 2^(hashing for deadlines length in bits) / (value of the deadline in the block + 1).
+	 * This allows one to compare forks and choose the one whose tip has the highest power.
+	 * Intuitively, the power expresses the space used to compute the chain leading to the block.
 	 * 
 	 * @return the power
 	 */

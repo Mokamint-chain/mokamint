@@ -186,4 +186,17 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @return this builder
 	 */
 	LocalNodeConfigBuilder setBlockMaxTimeInTheFuture(long blockMaxTimeInTheFuture);
+
+	/**
+	 * Sets the maximal history change time for the blockchain. That is, part of the history older
+	 * than this time is assumed to be definitely frozen and it is not allowed to be changed anymore.
+	 * 
+	 * @param maximalHistoryChangeTime the maximal history change time (in milliseconds);
+	 *                                 if negative, changes of history are always allowed, without any limit,
+	 *                                 which drastically reduces the opportunities for garbage-collection
+	 *                                 of the blocks' database and of the database for the states of the
+	 *                                 application, if the latter implements any garbage-collection strategy
+	 * @return this builder
+	 */
+	LocalNodeConfigBuilder setMaximalHistoryChangeTime(long maximalHistoryChangeTime);
 }

@@ -178,4 +178,13 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * @return the maximal time (in milliseconds) a block can be created in the future, from now
 	 */
 	long getBlockMaxTimeInTheFuture();
+
+	/**
+	 * Yields the maximal history change time for the blockchain. That is, part of the history older
+	 * than this time is assumed to be definitely frozen and it is not allowed to be changed anymore.
+	 * 
+	 * @return the maximal history change time (in milliseconds); if negative, changes of history are
+	 *         always allowed, without any limit
+	 */
+	long getMaximalHistoryChangeTime();
 }

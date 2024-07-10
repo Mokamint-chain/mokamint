@@ -415,7 +415,7 @@ public class Peers implements AutoCloseable {
 		}
 
 		if (somethingChanged) {
-			node.scheduleSynchronization(0L);
+			node.scheduleSynchronization();
 			node.scheduleWhisperingOfAllServices();
 		}
 	}

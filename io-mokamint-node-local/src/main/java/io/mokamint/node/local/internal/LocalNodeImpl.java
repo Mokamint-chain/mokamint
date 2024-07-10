@@ -239,7 +239,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			if (init)
 				blockchain.initialize();
 			else
-				scheduleSynchronization(0L);
+				scheduleSynchronization();
 
 			execute(this::processWhisperedPeers, "peers whispering process");
 			execute(this::processWhisperedBlocks, "blocks whispering process");
@@ -456,7 +456,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	
 		if (result.isPresent()) {
-			scheduleSynchronization(0L);
+			scheduleSynchronization();
 			scheduleWhisperingOfAllServices();
 			whisperWithoutAddition(peer);
 		}
@@ -704,13 +704,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Schedules a synchronization of the blockchain in this node, from the peers of the node,
 	 * if the node is not currently performing a synchronization. Otherwise, nothing happens.
-	 * 
-	 * @param initialHeight the height of the blockchain from where synchronization must be applied
 	 */
-	protected void scheduleSynchronization(long initialHeight) {
+	protected void scheduleSynchronization() {
 		// we avoid to synchronize if synchronization is already in process
 		if (isSynchronizing.getAndSet(true) == false)
-			execute(new SynchronizationTask(this, initialHeight), "synchronization from the peers");
+			execute(new SynchronizationTask(this), "synchronization from the peers");
 	}
 
 	/**

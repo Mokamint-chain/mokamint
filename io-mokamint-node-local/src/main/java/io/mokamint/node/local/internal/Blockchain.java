@@ -208,6 +208,18 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
+	 * Yields the starting block of the non-frozen part of the history of this blockchain, if any.
+	 * 
+	 * @return the starting block, if any
+	 * @throws NoSuchAlgorithmException if the starting block uses an unknown hashing algorithm
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<Block> getStartOfNonFrozenPart() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return db.getStartOfNonFrozenPart();
+	}
+
+	/**
 	 * Yields the block with the given hash, if it is contained in this blockchain.
 	 * 
 	 * @param hash the hash
@@ -431,7 +443,7 @@ public class Blockchain implements AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws DeadlineValidityCheckException if the validity of some deadline could not be determined
-	 * @throws ApplicationException if the applicatoin is not behaving correctly
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
 	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
 		boolean added = false, addedToOrphans = false;
@@ -479,7 +491,7 @@ public class Blockchain implements AutoCloseable {
 		else if (addedToOrphans && headIsLessPowerfulThan(block))
 			// the block was better than our current head, but its previous block is missing:
 			// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-			node.scheduleSynchronization(Math.max(0L, getHeightOfHead().orElse(0L) - 1000L));
+			node.scheduleSynchronization();
 
 		return added;
 	}

@@ -159,6 +159,15 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	public final long blockMaxTimeInTheFuture;
 
 	/**
+	 * The maximal history change time for the blockchain, in milliseconds. That is, part of the history older
+	 * than this time is assumed to be definitely frozen and it is not allowed to be changed anymore.
+	 * If negative, changes of history are always allowed, without any limit, which drastically reduces
+	 * the opportunities for garbage-collection of the blocks' database and of the database for the states of the
+	 * application, if the latter implements any garbage-collection strategy.
+	 */
+	public final long maximalHistoryChangeTime;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 */
 	private LocalNodeConfigImpl(LocalNodeConfigBuilderImpl builder) {
@@ -181,6 +190,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		this.orphansMemorySize = builder.orphansMemorySize;
 		this.mempoolSize = builder.mempoolSize;
 		this.blockMaxTimeInTheFuture = builder.blockMaxTimeInTheFuture;
+		this.maximalHistoryChangeTime = builder.maximalHistoryChangeTime;
 	}
 
 	@Override
@@ -269,6 +279,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
+	public long getMaximalHistoryChangeTime() {
+		return maximalHistoryChangeTime;
+	}
+
+	@Override
 	public String toToml() {
 		var sb = new StringBuilder(super.toToml());
 
@@ -328,6 +343,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("\n");
 		sb.append("# the maximal creation time in the future (in milliseconds) of a block\n");
 		sb.append("block_max_time_in_the_future = " + blockMaxTimeInTheFuture + "\n");
+		sb.append("\n");
+		sb.append("# the maximal time (in milliseconds) that history can be changed before being considered as definitely frozen;\n");
+		sb.append("# a negative value means that the history is always allowed to be changed, without limits\n");
+		sb.append("maximal_history_change_time = " + maximalHistoryChangeTime + "\n");
 
 		return sb.toString();
 	}
@@ -358,7 +377,8 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				whisperingMemorySize == otherConfig.whisperingMemorySize &&
 				orphansMemorySize == otherConfig.orphansMemorySize &&
 				mempoolSize == otherConfig.mempoolSize &&
-				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture;
+				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture &&
+				maximalHistoryChangeTime == otherConfig.maximalHistoryChangeTime;
 		}
 		else
 			return false;
@@ -385,6 +405,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private int orphansMemorySize = 1000;
 		private int mempoolSize = 100_000;
 		private long blockMaxTimeInTheFuture = 15000L;
+		private long maximalHistoryChangeTime = 60 * 60 * 1000; // one hour
 
 		/**
 		 * Creates a configuration builder with initial default values.
@@ -469,6 +490,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			var blockMaxTimeInTheFuture = toml.getLong("block_max_time_in_the_future");
 			if (blockMaxTimeInTheFuture != null)
 				setBlockMaxTimeInTheFuture(blockMaxTimeInTheFuture);
+
+			var maximalHistoryChangeTime = toml.getLong("maximal_history_change_time");
+			if (maximalHistoryChangeTime != null)
+				setMaximalHistoryChangeTime(maximalHistoryChangeTime);
 		}
 
 		/**
@@ -509,6 +534,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			this.orphansMemorySize = config.orphansMemorySize;
 			this.mempoolSize = config.mempoolSize;
 			this.blockMaxTimeInTheFuture = config.blockMaxTimeInTheFuture;
+			this.maximalHistoryChangeTime = config.maximalHistoryChangeTime;
 		}
 
 		@Override
@@ -707,6 +733,12 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				throw new IllegalArgumentException("blockMaxTimeInTheFuture must be non-negative");
 		
 			this.blockMaxTimeInTheFuture = blockMaxTimeInTheFuture;
+			return getThis();
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setMaximalHistoryChangeTime(long maximalHistoryChangeTime) {
+			this.maximalHistoryChangeTime = maximalHistoryChangeTime;
 			return getThis();
 		}
 

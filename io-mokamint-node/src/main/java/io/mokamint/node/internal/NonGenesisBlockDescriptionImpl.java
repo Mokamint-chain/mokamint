@@ -125,7 +125,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		}
 	}
 
-
 	@Override
 	public BigInteger getPower() {
 		return power;

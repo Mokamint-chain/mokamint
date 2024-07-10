@@ -57,22 +57,15 @@ public class SynchronizationTask implements Task {
 	 */
 	private final LocalNodeImpl node;
 
-	/**
-	 * The height of the chain from where synchronization is applied.
-	 */
-	private final long initialHeight;
-
 	private final static Logger LOGGER = Logger.getLogger(SynchronizationTask.class.getName());
 
 	/**
 	 * Creates a task that synchronizes the blockchain from the peers.
 	 * 
 	 * @param node the node for which synchronization is performed
-	 * @param initialHeight the height of the blockchain from where synchronization is applied
 	 */
-	public SynchronizationTask(LocalNodeImpl node, long initialHeight) {
+	public SynchronizationTask(LocalNodeImpl node) {
 		this.node = node;
-		this.initialHeight = initialHeight;
 	}
 
 	@Override
@@ -111,7 +104,7 @@ public class SynchronizationTask implements Task {
 		/**
 		 * The height of the next block whose hash must be downloaded.
 		 */
-		private long height = initialHeight;
+		private long height;
 
 		/**
 		 * The last groups of hashes downloaded, for each peer.
@@ -137,6 +130,10 @@ public class SynchronizationTask implements Task {
 		private final static int GROUP_SIZE = 500;
 
 		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, IOException, InterruptedException {
+			long heightOfHead = node.getBlockchain().getHeightOfHead().orElse(0L);
+			long heightOfNonFrozenPart = node.getBlockchain().getStartOfNonFrozenPart().map(block -> block.getDescription().getHeight()).orElse(0L);
+			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
+
 			do {
 				if (!downloadNextGroups()) {
 					LOGGER.info("sync: stop here since the peers do not provide more block hashes to download");
