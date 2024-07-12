@@ -22,6 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -396,6 +397,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		return result;
 	}
 
+	protected void remove(TransactionEntry transactionEntry) {
+		mempool.remove(transactionEntry);
+	}
+
 	@Override
 	public MempoolInfo getMempoolInfo() throws NodeException {
 		try (var scope = mkScope()) {
@@ -693,7 +698,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
-	 * @throws ApplicationException if the application is not beahving correctly
+	 * @throws ApplicationException if the application is not behaving correctly
 	 */
 	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		var result = new Mempool(mempool); // clone the mempool
@@ -905,9 +910,13 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Called when the head of the blockchain has been updated.
 	 * 
-	 * @param newHead the new head
+	 * @param pathToNewHead the path of blocks added to the blockchain and leading to the new head;
+	 *                      the last element of this list is the new head of the blockchain; very often, this list
+	 *                      contains only one element: the head; however, there might be history changes,
+	 *                      in which case the list is longer than a single element; in any case, this list is
+	 *                      never empty
 	 */
-	protected void onHeadChanged(Block newHead) {
+	protected void onHeadChanged(LinkedList<Block> pathToNewHead) {
 		if (miningTask != null)
 			miningTask.restartFromCurrentHead();
 	}

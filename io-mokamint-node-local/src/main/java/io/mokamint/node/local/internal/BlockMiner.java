@@ -248,7 +248,7 @@ public class BlockMiner {
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 		var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
 		if (processedTransactions.isPresent())
-			return Optional.of(Blocks.of(description, processedTransactions.get().getTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
+			return Optional.of(Blocks.of(description, processedTransactions.get().getSuccessfullyDeliveredTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
 		else
 			return Optional.empty();
 	}

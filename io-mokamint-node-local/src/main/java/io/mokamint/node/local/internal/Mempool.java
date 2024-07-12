@@ -214,6 +214,13 @@ public class Mempool {
 		return entry.getMempoolEntry();
 	}
 
+	protected void remove(TransactionEntry entry) {
+		synchronized (mempool) {
+			if (mempool.remove(entry))
+				mempoolAsList = null; // invalidation
+		}
+	}
+
 	/**
 	 * Yields the transactions inside this mempool.
 	 * 
@@ -455,12 +462,7 @@ public class Mempool {
 		private void removeAll(Set<Transaction> toRemove) {
 			new HashSet<>(mempool).stream()
 				.filter(entry -> toRemove.contains(entry.transaction))
-				.forEach(this::remove);
-		}
-
-		private void remove(TransactionEntry entry) {
-			if (mempool.remove(entry))
-				mempoolAsList = null; // invalidation
+				.forEach(Mempool.this::remove);
 		}
 
 		private Block getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {

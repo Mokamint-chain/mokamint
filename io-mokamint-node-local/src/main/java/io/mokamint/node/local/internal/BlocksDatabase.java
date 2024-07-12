@@ -1134,7 +1134,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 		try {
 			Block cursor = newHead;
-			byte[] previousHash = null;
 			byte[] cursorHash = newHeadHash;
 			long totalTimeOfNewHead = newHead.getDescription().getTotalWaitingTime();
 			long height = cursor.getDescription().getHeight();
@@ -1160,10 +1159,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 				addedBlocks.add(cursor);
 
-				if (maximalHistoryChangeTime >= 0L && totalTimeOfNewHead - cursor.getDescription().getTotalWaitingTime() > maximalHistoryChangeTime)
-					// the new branch is so long that it contains the new start of the non-frozen part of the blockchain
-					setStartOfNonFrozenPartHash(txn, previousHash);
-				
 				if (cursor instanceof NonGenesisBlock ngb) {
 					if (height <= 0L)
 						throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
@@ -1182,8 +1177,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				}
 				else if (height > 0L)
 					throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
-
-				previousHash = cursorHash;
 			}
 			while (cursor instanceof NonGenesisBlock && !_new.equals(old));
 

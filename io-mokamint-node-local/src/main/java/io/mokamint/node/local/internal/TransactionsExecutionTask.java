@@ -17,8 +17,10 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -34,8 +36,8 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
@@ -89,13 +91,19 @@ public class TransactionsExecutionTask implements Task {
 	private final Source source;
 
 	/**
-	 * The transactions that have been executed up to now, in order of execution.
+	 * The transactions that have been successfully executed up to now, in order of execution.
 	 */
-	private final List<Transaction> transactions = new ArrayList<>();
+	private final List<Transaction> successfullyDeliveredTransactions = new ArrayList<>();
+
+	/**
+	 * The transactions that have been executed with this executor but whose delivery failed
+	 * with a {@link TransactionRejectedException}.
+	 */
+	private final Set<Transaction> rejectedTransactions = new HashSet<>();
 
 	/**
 	 * The maximal size allowed for the transactions' table of a block. This task
-	 * ensures that the {@link #transactions} have a cumulative size that is never
+	 * ensures that the {@link #successfullyDeliveredTransactions} have a cumulative size that is never
 	 * larger than this constant.
 	 */
 	private final long maxSize;
@@ -185,7 +193,7 @@ public class TransactionsExecutionTask implements Task {
 		if (deliveryFailed)
 			return Optional.empty();
 		else
-			return Optional.of(new ProcessedTransactions(transactions, app.endBlock(id, deadline)));
+			return Optional.of(new ProcessedTransactions(successfullyDeliveredTransactions, app.endBlock(id, deadline)));
 	}
 
 	/**
@@ -232,7 +240,7 @@ public class TransactionsExecutionTask implements Task {
 	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var tx = next.getTransaction();
 
-		if (transactions.contains(tx))
+		if (successfullyDeliveredTransactions.contains(tx) || rejectedTransactions.contains(tx))
 			// this might actually occur if a transaction arrives during the execution of this task
 			// and it was already processed with this task
 			return sizeUpToNow;
@@ -254,13 +262,16 @@ public class TransactionsExecutionTask implements Task {
 						throw e;
 					}
 
-					transactions.add(tx);
+					successfullyDeliveredTransactions.add(tx);
 				}
 				sizeUpToNow += txSize;
 			}
 			catch (TransactionRejectedException e) {
-				// if tx is rejected by deliverTransaction, then it is just dropped
+				// if tx is rejected by deliverTransaction, then it is just ignored
 				LOGGER.log(Level.WARNING, "delivery of transaction " + next + " rejected: " + e.getMessage());
+				// we also remove the transaction from the mempool of the node
+				node.remove(next);
+				rejectedTransactions.add(tx);
 			}
 		}
 
@@ -273,40 +284,41 @@ public class TransactionsExecutionTask implements Task {
 	 * {@link TransactionsExecutionTask#previous} towards the genesis block, they
 	 * all pass the {@link Application#checkTransaction(Transaction)} test and they
 	 * all lead to a successful {@link Application#deliverTransaction(Transaction, int)}
-	 * execution. Moreover, it is guaranteed that {@link ProcessedTransactions#stateHash}
+	 * execution. Moreover, it is guaranteed that {@link ProcessedTransactions#stateId}
 	 * is the hash of the state resulting after the execution of
-	 * {@link ProcessedTransactions#transactions}, in order, from the final state
+	 * {@link ProcessedTransactions#successfullyDeliveredTransactions}, in order, from the final state
 	 * of {@link TransactionsExecutionTask#previous}, including potential coinbase
 	 * transactions executed at the end of all transactions (if the application adds them
 	 * inside its {@link Application#endBlock(int, Deadline)} method).
 	 */
 	@Immutable
 	public static class ProcessedTransactions {
-		private final Transaction[] transactions;
-		private final byte[] stateHash;
+		private final Transaction[] successfullyDeliveredTransactions;
+		private final byte[] stateId;
 
-		private ProcessedTransactions(List<Transaction> transactions, byte[] stateHash) {
-			this.transactions = transactions.toArray(Transaction[]::new);
-			this.stateHash = stateHash.clone();
+		private ProcessedTransactions(List<Transaction> transactions, byte[] stateId) {
+			this.successfullyDeliveredTransactions = transactions.toArray(Transaction[]::new);
+			this.stateId = stateId.clone();
 		}
 
 		/**
-		 * Yields the transactions processed with an executor, in order.
+		 * Yields the transactions successfully delivered with this executor, in order.
 		 * 
 		 * @return the transactions
 		 */
-		public Stream<Transaction> getTransactions() {
-			return Stream.of(transactions);
+		public Stream<Transaction> getSuccessfullyDeliveredTransactions() {
+			return Stream.of(successfullyDeliveredTransactions);
 		}
 
 		/**
-		 * Yields the final state resulting at the end of the execution of the transactions,
+		 * Yields the identifier of the final state resulting at the end of the execution
+		 * of the successfully delivered transactions,
 		 * including potential coinbase transactions, if the application uses them.
 		 * 
-		 * @return the final state
+		 * @return the identifier of the final state
 		 */
 		public byte[] getStateId() {
-			return stateHash.clone();
+			return stateId.clone();
 		}
 	}
 }

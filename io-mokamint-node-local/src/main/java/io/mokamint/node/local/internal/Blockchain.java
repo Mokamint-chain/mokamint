@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -486,7 +487,25 @@ public class Blockchain implements AutoCloseable {
 			// the block over which mining occurs, so it will be aligned there
 			node.rebaseMempoolAt(newHead);
 			// TODO: blocks added to the main chain should be signaled to the application here
-			node.onHeadChanged(newHead);
+			var blocksAdded = new LinkedList<Block>();
+
+			Block cursor = newHead;
+			blocksAdded.addLast(cursor);
+
+			while (!cursor.equals(block)) {
+				if (cursor instanceof NonGenesisBlock ngb) {
+					var maybePrevious = getBlock(ngb.getHashOfPreviousBlock());
+					if (maybePrevious.isEmpty())
+						throw new DatabaseException("The head has been added to a dangling path");
+
+					cursor = maybePrevious.get();
+					blocksAdded.addFirst(cursor);
+				}
+				else
+					throw new DatabaseException("The head has been added to a disconnected path");
+			}
+
+			node.onHeadChanged(blocksAdded);
 		}
 		else if (addedToOrphans && headIsLessPowerfulThan(block))
 			// the block was better than our current head, but its previous block is missing:
