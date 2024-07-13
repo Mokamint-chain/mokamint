@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal;
 import static java.util.function.Predicate.not;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -111,6 +112,11 @@ public class Peers implements AutoCloseable {
 	 * The time difference (in milliseconds) between the {@link #node} and each of its peers.
 	 */
 	private final ConcurrentMap<Peer, Long> timeDifferences = new ConcurrentHashMap<>();
+
+	/**
+	 * A set of URIs that have been banned: attempts to connect to peers with these URIs will be rejected.
+	 */
+	private final Set<URI> bannedURIs = ConcurrentHashMap.newKeySet();
 
 	private final static Logger LOGGER = Logger.getLogger(Peers.class.getName());
 
@@ -215,11 +221,27 @@ public class Peers implements AutoCloseable {
 				disconnect(peer, remotes.get(peer));
 			}
 		}
-		
+
 		if (removed)
 			node.onRemoved(peer);
 
 		return removed;
+	}
+
+	/**
+	 * Bans a peer. It gets removed and it will not be allowed to be added anymore.
+	 * 
+	 * @param peer the peer to ban
+	 * @return true if and only if the peer has been removed
+	 * @throws DatabaseException if the database of the node is corrupted
+	 * @throws ClosedDatabaseException if the database of the node is already closed
+	 * @throws InterruptedException if the operation was interrupted
+	 */
+	public boolean ban(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
+		bannedURIs.add(peer.getURI());
+		LOGGER.warning("peers: " + peer.toStringSanitized() + " has been banned");
+
+		return remove(peer);
 	}
 
 	/**
@@ -304,20 +326,22 @@ public class Peers implements AutoCloseable {
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException {
-		long lost = config.getPeerPunishmentForUnreachable();
-		boolean removed;
-		
-		synchronized (lock) {
-			if (removed = peers.punish(peer, lost)) {
-				db.remove(peer);
-				disconnect(peer, remotes.get(peer));
+		if (peers.contains(peer)) { // just for optimization and for keeping the logs clean
+			long lost = config.getPeerPunishmentForUnreachable();
+			boolean removed;
+
+			synchronized (lock) {
+				if (removed = peers.punish(peer, lost)) {
+					db.remove(peer);
+					disconnect(peer, remotes.get(peer));
+				}
 			}
+
+			if (removed)
+				node.onRemoved(peer);
+
+			LOGGER.warning("peers: " + peer.toStringSanitized() + " lost " + lost + " points because it is unreachable");
 		}
-		
-		if (removed)
-			node.onRemoved(peer);
-	
-		LOGGER.warning("peers: " + peer.toStringSanitized() + " lost " + lost + " points because it is unreachable");
 	}
 
 	private void pardonBecauseReachable(Peer peer) {
@@ -382,7 +406,9 @@ public class Peers implements AutoCloseable {
 	 * @throws IOException if an I/O error occurred
 	 */
 	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException, IOException, PeerRejectedException, TimeoutException {
-		if (peers.contains(peer))
+		if (bannedURIs.contains(peer.getURI()))
+			return false;
+		else if (peers.contains(peer))
 			return remotes.get(peer) == null && tryToCreateRemote(peer).isPresent();
 		else
 			return add(peer, force);

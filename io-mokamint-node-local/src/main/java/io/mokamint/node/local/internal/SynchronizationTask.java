@@ -127,6 +127,12 @@ public class SynchronizationTask implements Task {
 		 */
 		private Semaphore[] semaphores;
 
+		/**
+		 * A map from each downloaded block to the peer that downloaded that block.
+		 * This is used to blame that peer for blocks not verifiable.
+		 */
+		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
+
 		private final static int GROUP_SIZE = 500;
 
 		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, IOException, InterruptedException {
@@ -261,7 +267,7 @@ public class SynchronizationTask implements Task {
 
 		private void markAsMisbehaving(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
 			unusable.add(peer);
-			peers.remove(peer);
+			peers.ban(peer);
 		}
 
 		private void markAsUnreachable(Peer peer) throws DatabaseException, ClosedDatabaseException, InterruptedException, IOException {
@@ -437,8 +443,10 @@ public class SynchronizationTask implements Task {
 					if (!Arrays.equals(chosenGroup[h], block.getHash(hashingForBlocks)))
 						// the peer answered with a block with the wrong hash!
 						markAsMisbehaving(peer);
-					else
+					else {
 						blocks.set(h, block);
+						downloaders.put(block, peer);
+					}
 				}
 			}
 		}
@@ -454,7 +462,7 @@ public class SynchronizationTask implements Task {
 		 * @throws ClosedDatabaseException if the database is already closed
 		 * @throws InterruptedException if the current thread gets interrupted during this method
 		 */
-		private boolean addBlocksToBlockchain() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, InterruptedException {
+		private boolean addBlocksToBlockchain() throws DatabaseException, IOException, NoSuchAlgorithmException, ClosedDatabaseException, InterruptedException {
 			for (int h = 0; h < chosenGroup.length; h++) {
 				stopIfInterrupted();
 
@@ -470,6 +478,7 @@ public class SynchronizationTask implements Task {
 					}
 					catch (VerificationException | TimeoutException | DeadlineValidityCheckException | ApplicationException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
+						markAsMisbehaving(downloaders.get(block));
 						return false;
 					}
 				}
