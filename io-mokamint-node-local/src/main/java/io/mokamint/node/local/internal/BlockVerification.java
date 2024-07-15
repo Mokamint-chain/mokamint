@@ -293,7 +293,7 @@ public class BlockVerification {
 		int id;
 
 		try {
-			id = app.beginBlock(block.getDescription().getHeight(), node.getBlockchain().creationTimeOf(block), previous.getStateId());
+			id = app.beginBlock(block.getDescription().getHeight(), node.getBlockchain().creationTimeOf(previous), previous.getStateId());
 		}
 		catch (UnknownStateException e) {
 			throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());
@@ -318,10 +318,10 @@ public class BlockVerification {
 				}
 			}
 
-			var expected = app.endBlock(id, block.getDeadline());
+			var found = app.endBlock(id, block.getDeadline());
 
-			if (!Arrays.equals(block.getStateId(), expected))
-				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
+			if (!Arrays.equals(block.getStateId(), found))
+				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(found) + ")");
 
 			success = true;
 		}

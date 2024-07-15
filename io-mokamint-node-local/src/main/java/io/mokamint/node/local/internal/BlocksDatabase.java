@@ -1086,7 +1086,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				throw new DatabaseException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database");
 			storeOfBlocks.put(txn, START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME, fromBytes(longToBytes(maybeStartOfNonFrozenPart.get().getDescription().getTotalWaitingTime())));
 			LOGGER.info("db: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + maybeStartOfNonFrozenPart.get().getDescription().getHeight());
-			System.out.println("Set to " + maybeStartOfNonFrozenPart.get().getDescription().getTotalWaitingTime()); // TODO: remove
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
