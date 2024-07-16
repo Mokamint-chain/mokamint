@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -513,6 +514,33 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
+	 * Performs the given action for each block reachable from the block with the given hash.
+	 * 
+	 * @param hash the hash
+	 * @param action the action to perform
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws NoSuchAlgorithmException if some block in the database contains an unknown hashing algorithm
+	 */
+	public void forEachBlockReachableFrom(byte[] hash, Consumer<Block> action) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+		try (var scope = mkScope()) {
+			var currentBlock = getBlock(hash);
+			action.accept(currentBlock.get());
+	
+			var ws = new ArrayList<byte[]>();
+			getForwards(hash).forEach(ws::add);
+	
+			while (!ws.isEmpty()) {
+				var currentHash = ws.remove(ws.size() - 1);
+				getForwards(currentHash).forEach(ws::add);
+	
+				currentBlock = getBlock(currentHash);
+				action.accept(currentBlock.orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(currentHash) + " is in the forward list of another block, but it cannot be found in the database")));
+			}
+		}
+	}
+
+	/**
 	 * Adds a block to the tree of blocks rooted at the genesis block (if any), running
 	 * inside a given transaction. It updates the references to the genesis and to the
 	 * head of the longest chain, if needed.
@@ -550,7 +578,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 					updatedHead.set(block);
 				}
 
-				sanityCheck(txn, getHead(txn).get());
 				return true;
 			}
 			else {
@@ -564,7 +591,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				setGenesisHash(txn, hashOfBlock);
 				setHeadHash(txn, block, hashOfBlock);
 				updatedHead.set(block);
-				sanityCheck(txn, block);
 				return true;
 			}
 			else {
@@ -1109,7 +1135,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			long heightOfHead = newHead.getDescription().getHeight();
 			storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
 			LOGGER.info("db: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
-			sanityCheck(txn, newHead);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1217,8 +1242,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				}
 				while (true);
 			}
-				
-			sanityCheck(txn, newHead);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1237,126 +1260,18 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 			try {
 				storeOfBlocks.delete(txn, currentHashBI);
-				storeOfForwards.delete(txn, currentHashBI);
+
+				// blocks might have no forward blocks
+				if (storeOfForwards.get(txn, currentHashBI) != null)
+					storeOfForwards.delete(txn, currentHashBI);
 			}
 			catch (ExodusException e) {
 				throw new DatabaseException(e);
 			}
 			
-			LOGGER.info("gc: deleted block " + Hex.toHexString(currentHash));
+			LOGGER.info("db: deleted block " + Hex.toHexString(currentHash));
 		}
 		while (!ws.isEmpty());
-	}
-
-	private void sanityCheck(Transaction txn, Block head) throws DatabaseException, NoSuchAlgorithmException {
-		/*Block cursor = head;
-		do {
-			// we verify that the cursor is the block of the chain at its height
-			long height = cursor.getDescription().getHeight();
-			var actual = storeOfChain.get(txn, fromBytes(longToBytes(height)));
-			if (actual == null) {
-				System.out.println("A block of the chain is not in storeOfChain");
-				showChain(txn, head);
-				throw new DatabaseException("A block of the chain is not in storeOfChain");
-			}
-
-			if (!actual.equals(fromBytes(cursor.getHash(hashingForBlocks)))) {
-				System.out.println("A block of the chain is not in storeOfChain2");
-				showChain(txn, head);
-				throw new DatabaseException("A block of the chain is not in storeOfChain");
-			}
-
-			for (int pos = 0; pos < cursor.getTransactionsCount(); pos++) {
-				var tx = cursor.getTransaction(pos);
-				var actualTx = storeOfTransactions.get(txn, ByteIterable.fromBytes(hasherForTransactions.hash(tx)));
-				if (actualTx == null) {
-					System.out.println("A transaction in block is not in the store of transactions");
-					showChain(txn, head);
-					throw new DatabaseException("A transaction in block is not in the store of transactions");
-				}
-
-				TransactionRef ref;
-				
-				try {
-					ref = TransactionRef.from(actualTx);
-				}
-				catch (IOException e) {
-					System.out.println("A TransactionRef is corrupted");
-					showChain(txn, head);
-					throw new DatabaseException("A TransactionRef is corrupted");
-				}
-
-				if (ref.height != height) {
-					System.out.println("height " + height + ": TransactionRef height mismatch: " + ref.height + " vs " + height);
-					showChain(txn, head);
-					throw new DatabaseException("TransactionRef height mismatch: " + ref.height + " vs " + height);
-				}
-
-				if (ref.progressive != pos) {
-					System.out.println("height " + height + ": TransactionRef progressive mismatch: " + ref.progressive + " vs " + pos);
-					System.out.println(cursor.toString(Optional.of(node.getConfig()), Optional.empty()));
-					showChain(txn, head);
-					throw new DatabaseException("TransactionRef progressive mismatch: " + ref.progressive + " vs " + pos);
-				}
-			}
-
-			if (cursor instanceof NonGenesisBlock ngb) {
-				Optional<Block> maybePrevious = getBlock(txn, ngb.getHashOfPreviousBlock());
-				cursor = maybePrevious.orElseThrow(() -> new DatabaseException("Missing previous block"));
-			}
-		}
-		while (cursor instanceof NonGenesisBlock);
-
-		if (cursor.getDescription().getHeight() != 0) {
-			System.out.println("Genesis block not at height 0");
-			showChain(txn, head);
-			throw new DatabaseException("Genesis block not at height 0");
-		}
-		*/
-	}
-
-	@SuppressWarnings("unused")
-	private void showChain(Transaction txn, Block head) throws NoSuchAlgorithmException, DatabaseException {
-		Block cursor = head;
-		do {
-			long height = cursor.getDescription().getHeight();
-			var actual = storeOfChain.get(txn, fromBytes(longToBytes(height)));
-			System.out.println(height + ": " + Hex.toHexString(actual.getBytes()));
-
-			if (cursor instanceof NonGenesisBlock ngb) {
-				for (int pos = 0; pos < ngb.getTransactionsCount(); pos++) {
-					var tx = ngb.getTransaction(pos);
-					var actualTx = storeOfTransactions.get(txn, ByteIterable.fromBytes(hasherForTransactions.hash(tx)));
-					if (actualTx == null)
-						System.out.println("  " + pos + ": null");
-					else {
-						TransactionRef ref;
-
-						try {
-							ref = TransactionRef.from(actualTx);
-							System.out.println(ref);
-						}
-						catch (IOException e) {
-							System.out.println("  " + pos + ": corrupted");
-						}
-					}
-				}
-
-				Optional<Block> maybePrevious = getBlock(txn, ngb.getHashOfPreviousBlock());
-				if (maybePrevious.isEmpty()) {
-					System.out.println("missing previous");
-					break;
-				}
-				else
-					cursor = maybePrevious.get();
-			}
-			else
-				break;
-		}
-		while (true);
-
-		new RuntimeException().printStackTrace();
-		System.exit(0);
 	}
 
 	private void removeDataHigherThan(Transaction txn, long height) throws NoSuchAlgorithmException, DatabaseException {
@@ -1365,7 +1280,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 		if (cursor.isPresent()) {
 			Block block = cursor.get();
-			sanityCheck(txn, block);
 			byte[] blockHash = cursorHash.get();
 			long blockHeight;
 
