@@ -79,12 +79,12 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private final Environment environment;
 
 	/**
-	 * The Xodus store that holds the blocks, of all chains.
+	 * The Xodus store that holds the blocks, of all chains. It maps the hash of each block to that block.
 	 */
 	private final Store storeOfBlocks;
 
 	/**
-	 * The Xodus store that maps each block to its immediate successor(s).
+	 * The Xodus store that maps the hash of each block to the immediate successor(s) of that block.
 	 */
 	private final Store storeOfForwards;
 
@@ -420,7 +420,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException, ClosedDatabaseException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, fromBytes(hash)))));
+			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, hash))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -725,11 +725,11 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * @return the hashes
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private Stream<byte[]> getForwards(Transaction txn, ByteIterable hash) throws DatabaseException {
+	private Stream<byte[]> getForwards(Transaction txn, byte[] hash) throws DatabaseException {
 		ByteIterable forwards;
 
 		try {
-			forwards = storeOfForwards.get(txn, hash);
+			forwards = storeOfForwards.get(txn, fromBytes(hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1127,10 +1127,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private void updateChain(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
-		/*var maybeHead = getHead(txn);
-		if (maybeHead.isPresent())
-			sanityCheck(txn, maybeHead.get());*/
-
 		try {
 			Block cursor = newHead;
 			byte[] cursorHash = newHeadHash;
@@ -1210,8 +1206,14 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 					if (aboveStartOfNonFrozenPartHash == null)
 						throw new DatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
 
-					startOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
-					setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
+					byte[] newStartOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
+
+					for (byte[] forward: getForwards(txn, startOfNonFrozenPartHash).toArray(byte[][]::new))
+						if (!Arrays.equals(forward, newStartOfNonFrozenPartHash))
+							gcBlocksRootedAt(txn, forward);
+
+					setStartOfNonFrozenPartHash(txn, newStartOfNonFrozenPartHash);
+					startOfNonFrozenPartHash = newStartOfNonFrozenPartHash;
 				}
 				while (true);
 			}
@@ -1221,6 +1223,29 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
+	}
+
+	private void gcBlocksRootedAt(Transaction txn, byte[] hash) throws DatabaseException {
+		var ws = new ArrayList<byte[]>();
+		ws.add(hash);
+
+		do {
+			var currentHash = ws.remove(ws.size() - 1);
+			getForwards(txn, currentHash).forEach(ws::add);
+
+			var currentHashBI = fromBytes(currentHash);
+
+			try {
+				storeOfBlocks.delete(txn, currentHashBI);
+				storeOfForwards.delete(txn, currentHashBI);
+			}
+			catch (ExodusException e) {
+				throw new DatabaseException(e);
+			}
+			
+			LOGGER.info("gc: deleted block " + Hex.toHexString(currentHash));
+		}
+		while (!ws.isEmpty());
 	}
 
 	private void sanityCheck(Transaction txn, Block head) throws DatabaseException, NoSuchAlgorithmException {
