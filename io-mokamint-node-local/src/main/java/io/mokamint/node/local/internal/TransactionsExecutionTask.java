@@ -207,14 +207,7 @@ public class TransactionsExecutionTask implements Task {
 	 * @throws UnknownGroupIdException if the group id for the transactions became invalid
 	 */
 	public void commitBlock() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
-		try {
-			done.await();
-		}
-		catch (InterruptedException e) {
-			app.abortBlock(id);
-			throw e;
-		}
-
+		done.await();
 		app.commitBlock(id);
 	}
 

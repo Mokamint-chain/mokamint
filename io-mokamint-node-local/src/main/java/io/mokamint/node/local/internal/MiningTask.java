@@ -79,6 +79,11 @@ public class MiningTask implements Task {
 			miningThread.interrupt();
 			Thread.currentThread().interrupt();
 		}
+		catch (Throwable e) {
+			LOGGER.log(Level.SEVERE, "mining: dying because of unexpected exception", e);
+			e.printStackTrace(); // TODO: remove eventually
+			throw e;
+		}
 	}
 
 	/**
