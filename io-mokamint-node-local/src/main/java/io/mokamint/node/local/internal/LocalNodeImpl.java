@@ -22,6 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
@@ -247,6 +248,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			execute(this::processWhisperedTransactions, "transactions whispering process");
 			schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
 			schedulePeriodicWhisperingOfAllServices();
+			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
 			execute(this.miningTask = new MiningTask(this), "blocks mining process");
 		}
 		catch (ClosedDatabaseException | DatabaseException | IOException e) {
@@ -1047,6 +1049,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
+	 * Schedules a periodic task that identifies where the non-frozen part of the blockchain starts
+	 * and informs the application that states in the frozen part are eligible for garbage-collection.
+	 */
+	private void schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain() {
+		scheduleWithFixedDelay(this::identifyNonFrozenPartOfBlockchain, "identification of the non-frozen part of the blockchain", 10000L, 10000L, TimeUnit.MILLISECONDS);
+	}
+
+	/**
 	 * Schedules a periodic task that pings all peers, recreates their remotes and adds the peers of such peers.
 	 */
 	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
@@ -1181,6 +1191,20 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			.flatMap(Optional::stream)
 			.distinct()
 			.forEach(this::whisperWithoutAddition);
+	}
+
+	private void identifyNonFrozenPartOfBlockchain() {
+		try {
+			Optional<LocalDateTime> maybeStartTimeOfNonFrozenPart = blockchain.getStartingTimeOfNonFrozenHistory();
+			if (maybeStartTimeOfNonFrozenPart.isPresent())
+				app.keepFrom(maybeStartTimeOfNonFrozenPart.get());
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		catch (DatabaseException | NoSuchAlgorithmException | ClosedDatabaseException | TimeoutException | ApplicationException e) {
+			LOGGER.log(Level.SEVERE, "cannot identify the non-frozen part of the blockchain", e);
+		}
 	}
 
 	private void closeExecutorsHandlersMinersPeersAndBlockchain() throws NodeException, InterruptedException {

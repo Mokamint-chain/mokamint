@@ -25,6 +25,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -270,6 +272,26 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		try (var scope = mkScope()) {
 			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getStartOfNonFrozenPart))
+			);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the limit time used to deliver the transactions in the non-frozen part of the history.
+	 * Transactions delivered before that time have generated stores that can be considered as frozen.
+	 * 
+	 * @return the limit time; this is empty if the database is empty
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing or signature algorithm
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		try (var scope = mkScope()) {
+			return check(NoSuchAlgorithmException.class, DatabaseException.class, () ->
+				environment.computeInReadonlyTransaction(uncheck(this::getStartingTimeOfNonFrozenHistory))
 			);
 		}
 		catch (ExodusException e) {
@@ -653,6 +675,38 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private Optional<byte[]> getStartOfNonFrozenPartHash(Transaction txn) throws DatabaseException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, START_OF_NON_FROZEN_PART)).map(ByteIterable::getBytes);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the limit time used to deliver the transactions in the non-frozen part of the history,
+	 * running inside a Xodus transaction.
+	 * Application transactions delivered before that time have generated stores that can be considered as frozen.
+	 * 
+	 * @param txn the Xodus transaction where the operation is performed
+	 * @return the limit time; this is empty if the database is empty
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing or signature algorithm
+	 */
+	private Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory(Transaction txn) throws DatabaseException, NoSuchAlgorithmException {
+		try {
+			Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
+			if (maybeStartOfNonFrozenPartHash.isEmpty())
+				return Optional.empty();
+
+			Block startOfNonFrozenPart = getBlock(txn, maybeStartOfNonFrozenPartHash.get())
+				.orElseThrow(() -> new DatabaseException("The hash of the start of the non-frozen part of the blockchain is set but its block cannot be found in the database"));
+
+			if (startOfNonFrozenPart instanceof GenesisBlock gb)
+				return Optional.of(gb.getStartDateTimeUTC());
+
+			// the transactions in a non-genesis block are delivered in a time that is that of creation of the previous block
+			return Optional.of(getGenesis(txn)
+					.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
+					.getStartDateTimeUTC().plus(startOfNonFrozenPart.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);

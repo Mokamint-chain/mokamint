@@ -56,11 +56,12 @@ import io.mokamint.application.messages.api.EndBlockResultMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
+import io.mokamint.application.messages.api.KeepFromResultMessage;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.node.Transactions;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
@@ -735,6 +736,37 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendAbortBlock();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a keepFrom() request reaches the service, the application gets informed")
+	public void serviceKeepFromWorks() throws ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var start = LocalDateTime.now();
+		doNothing().when(app).keepFrom(start);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws DeploymentException, IOException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onKeepFromResult(KeepFromResultMessage message) {
+				if (ID.equals(message.getId()))
+					semaphore.release();
+			}
+
+			private void sendKeepFrom() throws ApplicationException {
+				sendKeepFrom(start, ID);
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendKeepFrom();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

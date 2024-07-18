@@ -75,6 +75,11 @@ public interface ApplicationService extends WebSocketServer {
 	 */
 	String ABORT_BLOCK_ENDPOINT = "/abort_block";
 
+	/**
+	 * The network endpoint path where {@link Application#keepFrom(java.time.LocalDateTime)} is published.
+	 */
+	String KEEP_FROM_ENDPOINT = "/keep_from";
+
 	@Override
 	void close() throws InterruptedException;
 }

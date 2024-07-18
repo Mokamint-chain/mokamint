@@ -50,6 +50,8 @@ import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.KeepFromMessages;
+import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
@@ -60,6 +62,7 @@ import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
+import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.service.api.ApplicationService;
 import io.mokamint.node.api.TransactionRejectedException;
 import jakarta.websocket.DeploymentException;
@@ -109,7 +112,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
 			DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
-			CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this)
+			CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this),
+			KeepFromEndpoint.config(this)
 		);
 
 		// if the application gets closed, then this service will be closed as well
@@ -428,6 +432,36 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, AbortBlockEndpoint.class, ABORT_BLOCK_ENDPOINT,
 				AbortBlockMessages.Decoder.class, AbortBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	protected void onKeepFrom(KeepFromMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + KEEP_FROM_ENDPOINT + " request");
+
+		try {
+			try {
+				application.keepFrom(message.getStart());
+				sendObjectAsync(session, KeepFromResultMessages.of(message.getId()));
+			}
+			catch (TimeoutException | InterruptedException | ApplicationException e) {
+				sendExceptionAsync(session, e, message.getId());
+			}
+		}
+		catch (IOException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		}
+	};
+
+	public static class KeepFromEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			addMessageHandler(session, (KeepFromMessage message) -> getServer().onKeepFrom(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, KeepFromEndpoint.class, KEEP_FROM_ENDPOINT,
+				KeepFromMessages.Decoder.class, KeepFromResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

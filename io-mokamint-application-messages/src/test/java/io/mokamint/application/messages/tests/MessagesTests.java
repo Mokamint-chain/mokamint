@@ -50,6 +50,8 @@ import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.KeepFromMessages;
+import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.node.Transactions;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -244,5 +246,23 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new AbortBlockResultMessages.Encoder().encode(abortBlockResultMessage1);
 		var abortBlockResultMessage2 = new AbortBlockResultMessages.Decoder().decode(encoded);
 		assertEquals(abortBlockResultMessage1, abortBlockResultMessage2);
+	}
+
+	@Test
+	@DisplayName("keepFrom messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForKeepFrom() throws EncodeException, DecodeException {
+		var keepFromMessage1 = KeepFromMessages.of(LocalDateTime.now(), "id");
+		String encoded = new KeepFromMessages.Encoder().encode(keepFromMessage1);
+		var keepFromMessage2 = new KeepFromMessages.Decoder().decode(encoded);
+		assertEquals(keepFromMessage1, keepFromMessage2);
+	}
+
+	@Test
+	@DisplayName("keepFrom result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForKeepFromResult() throws EncodeException, DecodeException {
+		var keepFromResultMessage1 = KeepFromResultMessages.of("id");
+		String encoded = new KeepFromResultMessages.Encoder().encode(keepFromResultMessage1);
+		var keepFromResultMessage2 = new KeepFromResultMessages.Decoder().decode(encoded);
+		assertEquals(keepFromResultMessage1, keepFromResultMessage2);
 	}
 }

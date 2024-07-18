@@ -222,6 +222,19 @@ public class Blockchain implements AutoCloseable {
 	}
 
 	/**
+	 * Yields the limit time used to deliver the transactions in the non-frozen part of the history.
+	 * Transactions delivered before that time have generated stores that can be considered as frozen.
+	 * 
+	 * @return the limit time; this is empty if the database is empty
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing or signature algorithm
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		return db.getStartingTimeOfNonFrozenHistory();
+	}
+
+	/**
 	 * Yields the block with the given hash, if it is contained in this blockchain.
 	 * 
 	 * @param hash the hash

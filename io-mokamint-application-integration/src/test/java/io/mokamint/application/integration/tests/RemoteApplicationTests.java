@@ -54,6 +54,7 @@ import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
@@ -64,6 +65,7 @@ import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
+import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
 import io.mokamint.node.Transactions;
@@ -649,6 +651,55 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(UnknownGroupIdException.class, () -> remote.abortBlock(groupId));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("keepFrom() works")
+	public void keepFromWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+		var start = LocalDateTime.now();
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onKeepFrom(KeepFromMessage message, Session session) {
+				try {
+					sendObjectAsync(session, KeepFromResultMessages.of(message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			remote.keepFrom(start);
+		}
+	}
+
+	@Test
+	@DisplayName("keepFrom() works if it throws ApplicationException")
+	public void keepFromWorksInCaseOfApplicationException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+		var start = LocalDateTime.now();
+
+		var exceptionMessage = "misbehaving application";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws DeploymentException, IOException {}
+
+			@Override
+			protected void onKeepFrom(KeepFromMessage message, Session session) {
+				try {
+					sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()));
+				}
+				catch (IOException e) {}
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(ApplicationException.class, () -> remote.keepFrom(start));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

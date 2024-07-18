@@ -245,6 +245,18 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	void abortBlock(int groupId) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException;
 
 	/**
+	 * Informs the application that states of blocks created with a {@link #beginBlock(long, LocalDateTime, byte[])} whose
+	 * {@code when} parameter is before {@code start} are allowed to be garbage-collected, if the application has some notion
+	 * of garbage-collection.
+	 * 
+	 * @param start the limit time, before which states can be garbage-collected
+	 * @throws ApplicationException if the application is misbehaving
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	void keepFrom(LocalDateTime start) throws ApplicationException, TimeoutException, InterruptedException;
+
+	/**
 	 * Closes this application. After this closure, the methods of this application might throw
 	 * an {@link ApplicationException} if the closure makes their work impossible.
 	 * An application cannot be reopened after being closed.

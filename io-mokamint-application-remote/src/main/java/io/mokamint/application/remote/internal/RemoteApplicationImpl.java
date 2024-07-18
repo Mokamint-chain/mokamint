@@ -26,6 +26,7 @@ import static io.mokamint.application.service.api.ApplicationService.END_BLOCK_E
 import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.KEEP_FROM_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -63,6 +64,8 @@ import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.mokamint.application.messages.KeepFromMessages;
+import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
@@ -83,9 +86,11 @@ import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
+import io.mokamint.application.messages.api.KeepFromMessage;
+import io.mokamint.application.messages.api.KeepFromResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -130,6 +135,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
 		addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
 		addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
+		addSession(KEEP_FROM_ENDPOINT, uri, KeepFromEndpoint::new);
 	}
 
 	@Override
@@ -165,6 +171,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 			onCommitBlockResult(cbrm);
 		else if (message instanceof AbortBlockResultMessage abrm)
 			onAbortBlockResult(abrm);
+		else if (message instanceof KeepFromResultMessage kfrm)
+			onKeepFromResult(kfrm);
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -759,6 +767,57 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, AbortBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AbortBlockMessages.Encoder.class);
+		}
+	}
+
+	@Override
+	public void keepFrom(LocalDateTime start) throws ApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen();
+		var id = nextId();
+		sendKeepFrom(start, id);
+		try {
+			waitForResult(id, this::processKeepFromSuccess, this::processStandardExceptions);
+		}
+		catch (RuntimeException | TimeoutException | InterruptedException | ApplicationException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			throw unexpectedException(e);
+		}
+	}
+
+	/**
+	 * Sends a {@link KeepFromMessage} to the application service.
+	 * 
+	 * @param start the limit time in the message, before which states can be garbage-collected
+	 * @param id the identifier of the message
+	 * @throws ApplicationException if the application could not send the message
+	 */
+	protected void sendKeepFrom(LocalDateTime start, String id) throws ApplicationException {
+		try {
+			sendObjectAsync(getSession(KEEP_FROM_ENDPOINT), KeepFromMessages.of(start, id));
+		}
+		catch (IOException e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Boolean processKeepFromSuccess(RpcMessage message) {
+		return message instanceof KeepFromResultMessage ? Boolean.TRUE : null;
+	}
+
+	/**
+	 * Hook called when a {@link KeepFromResultMessage} has been received.
+	 * 
+	 * @param message the message
+	 */
+	protected void onKeepFromResult(KeepFromResultMessage message) {}
+
+	private class KeepFromEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri, KeepFromResultMessages.Decoder.class, ExceptionMessages.Decoder.class, KeepFromMessages.Encoder.class);
 		}
 	}
 }

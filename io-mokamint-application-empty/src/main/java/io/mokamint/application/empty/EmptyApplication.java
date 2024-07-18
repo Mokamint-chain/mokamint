@@ -92,6 +92,10 @@ public class EmptyApplication implements Application { // TODO: it should extend
 	}
 
 	@Override
+	public void keepFrom(LocalDateTime start) {
+	}
+
+	@Override
 	public void close() {
 	}
 
