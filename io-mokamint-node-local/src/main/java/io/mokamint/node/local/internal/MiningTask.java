@@ -198,8 +198,7 @@ public class MiningTask implements Task {
 					}
 				}
 				catch (UnknownStateException e) {
-					LOGGER.log(Level.SEVERE, "mining: exiting since the state of the head of the blockchain is unknown to the application", e);
-					break;
+					LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
 				}
 				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException | UnknownGroupIdException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
@@ -210,6 +209,8 @@ public class MiningTask implements Task {
 					break;
 				}
 			}
+
+			Thread.currentThread().interrupt();
 		}
 	}
 }

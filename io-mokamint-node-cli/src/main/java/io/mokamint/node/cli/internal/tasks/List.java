@@ -54,7 +54,7 @@ public class List extends AbstractPublicRpcCommand {
 		@Override
 		public String toString(int pos, Table table) {
 			if (pos == 0)
-				return Ansi.AUTO.string("@|green " + String.format("%s", center(description, table.getSlotsForColumn(0))) + "|@");
+				return Ansi.AUTO.string("@|green " + String.format("%s", leftAlign(description, table.getSlotsForColumn(0))) + "|@");
 			else
 				return String.format("%s", leftAlign(description, table.getSlotsForColumn(0)));
 		}

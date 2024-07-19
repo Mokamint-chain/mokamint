@@ -99,6 +99,8 @@ public class Blockchain implements AutoCloseable {
 	@GuardedBy("orphans")
 	private int orphansPos;
 
+	private final Object modificationLock = new Object();
+
 	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
 	/**
@@ -218,7 +220,13 @@ public class Blockchain implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<Block> getStartOfNonFrozenPart() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		return db.getStartOfNonFrozenPart();
+		//TODO: this lock guarantees that the start of the frozen part is never beyond the head
+		// passed to the last onHeadChange, which ensures that the store of the head of the node has not been gc-ed yet
+		// in the very limit case of having 0 maximalHistoryChangeTime
+		// However, a better solution would be to make the updates of adding a block atomic in the database, hence removing this lock
+		synchronized (modificationLock) {
+			return db.getStartOfNonFrozenPart();
+		}
 	}
 
 	/**
@@ -231,7 +239,9 @@ public class Blockchain implements AutoCloseable {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
-		return db.getStartingTimeOfNonFrozenHistory();
+		synchronized (modificationLock) {
+			return db.getStartingTimeOfNonFrozenHistory();
+		}
 	}
 
 	/**
@@ -481,63 +491,65 @@ public class Blockchain implements AutoCloseable {
 		// trigger the further addition of orphan blocks, recursively
 		var ws = new ArrayList<Block>();
 		ws.add(block);
-	
-		do {
-			Block cursor = ws.remove(ws.size() - 1);
-			byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
-			if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
-				if (cursor instanceof NonGenesisBlock ngb) {
-					Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
-					if (previous.isEmpty()) {
-						putAmongOrphans(ngb);
-						if (block == ngb)
-							addedToOrphans = true;
+
+		synchronized (modificationLock) {
+			do {
+				Block cursor = ws.remove(ws.size() - 1);
+				byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
+				if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
+					if (cursor instanceof NonGenesisBlock ngb) {
+						Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
+						if (previous.isEmpty()) {
+							putAmongOrphans(ngb);
+							if (block == ngb)
+								addedToOrphans = true;
+						}
+						else
+							added |= add(ngb, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
 					}
 					else
-						added |= add(ngb, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
+						added |= add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
 				}
-				else
-					added |= add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
 			}
-		}
-		while (!ws.isEmpty());
+			while (!ws.isEmpty());
 
-		Block newHead = updatedHead.get();
-		if (newHead != null) {
-			// if the head has been improved, we update the mempool by removing
-			// the transactions that have been added in blockchain and potentially adding
-			// other transactions (if the history changed). Note that, in general, the mempool of
-			// the node might not always be aligned with the current head of the blockchain,
-			// since another task might execute this same update concurrently. This is not
-			// a problem, since this rebase is only an optimization, to keep the mempool small.
-			// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
-			// the block over which mining occurs, so it will be aligned there
-			node.rebaseMempoolAt(newHead);
-			// TODO: blocks added to the main chain should be signaled to the application here
-			var blocksAdded = new LinkedList<Block>();
+			Block newHead = updatedHead.get();
+			if (newHead != null) {
+				// if the head has been improved, we update the mempool by removing
+				// the transactions that have been added in blockchain and potentially adding
+				// other transactions (if the history changed). Note that, in general, the mempool of
+				// the node might not always be aligned with the current head of the blockchain,
+				// since another task might execute this same update concurrently. This is not
+				// a problem, since this rebase is only an optimization, to keep the mempool small.
+				// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
+				// the block over which mining occurs, so it will be aligned there
+				node.rebaseMempoolAt(newHead);
+				// TODO: blocks added to the main chain should be signaled to the application here
+				var blocksAdded = new LinkedList<Block>();
 
-			Block cursor = newHead;
-			blocksAdded.addLast(cursor);
+				Block cursor = newHead;
+				blocksAdded.addLast(cursor);
 
-			while (!cursor.equals(block)) {
-				if (cursor instanceof NonGenesisBlock ngb) {
-					var maybePrevious = getBlock(ngb.getHashOfPreviousBlock());
-					if (maybePrevious.isEmpty())
-						throw new DatabaseException("The head has been added to a dangling path");
+				while (!cursor.equals(block)) {
+					if (cursor instanceof NonGenesisBlock ngb) {
+						var maybePrevious = getBlock(ngb.getHashOfPreviousBlock());
+						if (maybePrevious.isEmpty())
+							throw new DatabaseException("The head has been added to a dangling path");
 
-					cursor = maybePrevious.get();
-					blocksAdded.addFirst(cursor);
+						cursor = maybePrevious.get();
+						blocksAdded.addFirst(cursor);
+					}
+					else
+						throw new DatabaseException("The head has been added to a disconnected path");
 				}
-				else
-					throw new DatabaseException("The head has been added to a disconnected path");
-			}
 
-			node.onHeadChanged(blocksAdded);
+				node.onHeadChanged(blocksAdded);
+			}
+			else if (addedToOrphans && headIsLessPowerfulThan(block))
+				// the block was better than our current head, but its previous block is missing:
+				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
+				node.scheduleSynchronization();
 		}
-		else if (addedToOrphans && headIsLessPowerfulThan(block))
-			// the block was better than our current head, but its previous block is missing:
-			// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-			node.scheduleSynchronization();
 
 		return added;
 	}
