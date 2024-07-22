@@ -30,7 +30,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,6 +44,8 @@ import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -524,13 +525,13 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 		try (var scope = mkScope()) {
 			hasBeenAdded = check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
-
-			if (hasBeenAdded)
-				LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(hashingForBlocks));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
+
+		if (hasBeenAdded)
+			LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(hashingForBlocks));
 
 		return hasBeenAdded;
 	}
@@ -1421,12 +1422,15 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			if (chainHeight.isEmpty())
 				return Stream.empty();
 
-			ByteIterable[] hashes = LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
+			ByteIterable[] hashes = CheckSupplier.check(DatabaseException.class, () -> LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
 				.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
-				.toArray(ByteIterable[]::new); // TODO: avoid repeated transformation Stream -> List -> Stream
+				.map(UncheckFunction.uncheck(bi -> {
+					if (bi == null)
+						throw new DatabaseException("The current best chain contains a missing element");
 
-			if (Stream.of(hashes).anyMatch(Objects::isNull))
-				throw new DatabaseException("The current best chain contains a missing element");
+					return bi;
+				}))
+				.toArray(ByteIterable[]::new));
 
 			return Stream.of(hashes).map(ByteIterable::getBytes);
 		}
