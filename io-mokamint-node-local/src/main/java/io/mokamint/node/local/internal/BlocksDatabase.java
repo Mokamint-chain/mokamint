@@ -24,14 +24,20 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,6 +45,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
@@ -53,6 +60,8 @@ import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
+import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
@@ -64,6 +73,9 @@ import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.local.AlreadyInitializedException;
+import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.nonce.api.DeadlineValidityCheckException;
 
 /**
  * The database where the blocks are persisted. Blocks are rooted at a genesis block
@@ -122,6 +134,25 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private final long maximalHistoryChangeTime;
 
 	/**
+	 * A cache for the genesis block, if it has been set already.
+	 * Otherwise it holds {@code null}.
+	 */
+	private volatile Optional<GenesisBlock> genesisCache;
+
+	/**
+	 * A buffer where blocks without a known previous block are parked, in case
+	 * their previous block arrives later.
+	 */
+	@GuardedBy("itself")
+	private final NonGenesisBlock[] orphans;
+
+	/**
+	 * The next insertion position inside the {@link #orphans} array.
+	 */
+	@GuardedBy("orphans")
+	private int orphansPos;
+
+	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.
 	 */
 	private final static ByteIterable GENESIS = fromByte((byte) 0);
@@ -169,9 +200,11 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		super(ClosedDatabaseException::new);
 
 		this.node = node;
-		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
-		this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
-		this.maximalHistoryChangeTime = node.getConfig().getMaximalHistoryChangeTime();
+		LocalNodeConfig config = node.getConfig();
+		this.hashingForBlocks = config.getHashingForBlocks();
+		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
+		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
+		this.orphans = new NonGenesisBlock[config.getOrphansMemorySize()];
 		this.environment = createBlockchainEnvironment();
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
@@ -194,6 +227,17 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				//throw new DatabaseException("Cannot close the blocks database", e);
 			}
 		}
+	}
+
+	/**
+	 * Determines if this blockchain is empty.
+	 * 
+	 * @return true if and only if this blockchain is empty
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public boolean isEmpty() throws DatabaseException, ClosedDatabaseException {
+		return getGenesisHash().isEmpty();
 	}
 
 	/**
@@ -220,10 +264,19 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException {
+		// we use a cache to avoid repeated access for reading the genesis block, that is not allowed to change after being set
+		if (genesisCache != null)
+			return genesisCache;
+
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () ->
+			Optional<GenesisBlock> result = check(DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getGenesis))
 			);
+
+			if (result.isPresent())
+				genesisCache = result;
+
+			return result;
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -439,23 +492,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the hashes of the blocks that follow the block with the given hash, if any.
-	 * 
-	 * @param hash the hash of the parent block
-	 * @return the hashes
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 */
-	public Stream<byte[]> getForwards(byte[] hash) throws DatabaseException, ClosedDatabaseException {
-		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getForwards(txn, hash))));
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
-	/**
 	 * Yields information about the current best chain.
 	 * 
 	 * @return the information
@@ -509,6 +545,196 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
+	 * Determines if the given block is more powerful than the current head.
+	 * 
+	 * @param block the block
+	 * @return true if and only if the current head is missing or {@code block} is more powerful
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws ClosedDatabaseException if the database is already closed
+	 */
+	public boolean headIsLessPowerfulThan(Block block) throws DatabaseException, ClosedDatabaseException {
+		return getPowerOfHead().map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
+	}
+
+	/**
+	 * Yields the creation time of the given block. It assumes that, if {@code block}
+	 * is not a genesis block, then the blockchain is not empty.
+	 * 
+	 * @param block the block whose creation time is computed
+	 * @return the creation time of {@code block}
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	public LocalDateTime creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
+		if (block instanceof GenesisBlock gb)
+			return gb.getStartDateTimeUTC();
+		else
+			return getGenesis()
+				.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
+				.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
+	}
+
+	/**
+	 * Initializes this blockchain, which must be empty. It adds a genesis block.
+	 * 
+	 * @throws DatabaseException if the database is corrupted
+	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
+	 * @throws InvalidKeyException if the key of the node is invalid
+	 * @throws SignatureException if the genesis block could not be signed
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
+	 * @throws ApplicationException if the application is not behaving correctly
+	 */
+	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, InterruptedException, ApplicationException {
+		try {
+			if (!isEmpty())
+				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
+	
+			var config = node.getConfig();
+			var keys = node.getKeys();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
+			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate());
+	
+			add(genesis);
+		}
+		catch (NoSuchAlgorithmException | ClosedDatabaseException | VerificationException | DeadlineValidityCheckException e) {
+			// the database cannot be closed at this moment;
+			// the genesis should be created correctly, hence should be verifiable;
+			// moreover, the genesis has no deadline
+			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
+		}
+	}
+
+	/**
+	 * If the block was already in the database, this method performs nothing. Otherwise,
+	 * it verifies the given block and adds it to the database of blocks of this node.
+	 * Note that the addition
+	 * of a block might actually induce the addition of more, orphan blocks,
+	 * if the block is recognized as the previous block of an orphan block.
+	 * The addition of a block might change the head of the best chain, in which case
+	 * mining will be started by this method. Moreover, if the block is an orphan
+	 * with higher power than the current head, its addition might trigger the synchronization
+	 * of the chain from the peers of the node.
+	 * 
+	 * @param block the block to add
+	 * @return true if the block has been actually added to the tree of blocks
+	 *         rooted at the genesis block, false otherwise.
+	 *         There are a few situations when the result can be false. For instance,
+	 *         if {@code block} was already in the tree, or if {@code block} is
+	 *         a genesis block but a genesis block is already present in the tree, or
+	 *         if {@code block} has no previous block already in the tree (it is orphaned),
+	 *         or if the block has a previous block in the tree but it cannot be
+	 *         correctly verified as a legal child of that previous block
+	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown cryptographic algorithm
+	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
+	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
+	 * @throws ApplicationException if the application is not behaving correctly
+	 */
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+		return add(block, true);
+	}
+
+	/**
+	 * This method behaves like {@link #add(Block)} but assumes that the given block is
+	 * verified, so that it does not need further verification before being added to blockchain.
+	 * 
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
+	 * @throws ApplicationException if the application is not behaving correctly
+	 */
+	public boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+		try {
+			return add(block, false);
+		}
+		catch (VerificationException | DeadlineValidityCheckException e) {
+			// impossible: we did not require block verification hence these exceptions should not have been generated
+			throw new RuntimeException("Unexpected exception", e);
+		}
+	}
+
+	/**
+	 * This method behaves like {@link #add(Block)} but allows one to specify if block verification is required.
+	 * 
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if the application did not answer in time
+	 * @throws DeadlineValidityCheckException if the validity of some deadline could not be determined
+	 * @throws ApplicationException if the application is not behaving correctly
+	 */
+	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+		boolean added = false, addedToOrphans = false;
+		var updatedHead = new AtomicReference<Block>();
+
+		// we use a working set, since the addition of a single block might
+		// trigger the further addition of orphan blocks, recursively
+		var ws = new ArrayList<Block>();
+		ws.add(block);
+
+		do {
+			Block cursor = ws.remove(ws.size() - 1);
+			byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
+			if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
+				if (cursor instanceof NonGenesisBlock ngb) {
+					Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
+					if (previous.isEmpty()) {
+						putAmongOrphans(ngb);
+						if (block == ngb)
+							addedToOrphans = true;
+					}
+					else
+						added |= add(ngb, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
+				}
+				else
+					added |= add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
+			}
+		}
+		while (!ws.isEmpty());
+
+		Block newHead = updatedHead.get();
+		if (newHead != null) {
+			// if the head has been improved, we update the mempool by removing
+			// the transactions that have been added in blockchain and potentially adding
+			// other transactions (if the history changed). Note that, in general, the mempool of
+			// the node might not always be aligned with the current head of the blockchain,
+			// since another task might execute this same update concurrently. This is not
+			// a problem, since this rebase is only an optimization, to keep the mempool small.
+			// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
+			// the block over which mining occurs, so it will be aligned there
+			node.rebaseMempoolAt(newHead);
+			// TODO: blocks added to the main chain should be signaled to the application here
+			var blocksAdded = new LinkedList<Block>();
+
+			Block cursor = newHead;
+			blocksAdded.addLast(cursor);
+
+			while (!cursor.equals(block)) {
+				if (cursor instanceof NonGenesisBlock ngb) {
+					var maybePrevious = getBlock(ngb.getHashOfPreviousBlock());
+					if (maybePrevious.isEmpty())
+						throw new DatabaseException("The head has been added to a dangling path");
+
+					cursor = maybePrevious.get();
+					blocksAdded.addFirst(cursor);
+				}
+				else
+					throw new DatabaseException("The head has been added to a disconnected path");
+			}
+
+			node.onHeadChanged(blocksAdded);
+		}
+		else if (addedToOrphans && headIsLessPowerfulThan(block))
+			// the block was better than our current head, but its previous block is missing:
+			// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
+			node.scheduleSynchronization();
+
+		return added;
+	}
+
+	/**
 	 * Adds the given block to this database.
 	 * If the block was already in the database, nothing happens.
 	 * 
@@ -524,7 +750,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+	private boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 		boolean hasBeenAdded;
 
 		try (var scope = mkScope()) {
@@ -538,6 +764,36 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(hashingForBlocks));
 
 		return hasBeenAdded;
+	}
+
+	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
+			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+
+		try {
+			if (verify)
+				new BlockVerification(node, block, previous);
+
+			if (add(block, updatedHead)) {
+				node.onAdded(block);
+				getOrphansWithParent(hashOfBlock).forEach(ws::add);
+				if (first)
+					return true;
+			}
+		}
+		catch (VerificationException e) {
+			if (first)
+				throw e;
+			else
+				LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
+		}
+		catch (UnknownGroupIdException e) {
+			// either the application is misbehaving or somebody has closed
+			// the group id of the application used for verifying the transactions;
+			// in any case, the node was not able to perform the operation
+			throw new ApplicationException(e); // TODO: this should become a NodeException
+		}
+
+		return false;
 	}
 
 	/**
@@ -1455,6 +1711,36 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		System.arraycopy(array1, 0, merge, 0, array1.length);
 		System.arraycopy(array2, 0, merge, array1.length, array2.length);
 		return merge;
+	}
+
+	/**
+	 * Adds the given block to {@link #orphans}.
+	 * 
+	 * @param block the block to add
+	 */
+	private void putAmongOrphans(NonGenesisBlock block) {
+		synchronized (orphans) {
+			if (Stream.of(orphans).anyMatch(block::equals))
+				// it is already inside the array: it is better not to waste a slot
+				return;
+
+			orphansPos = (orphansPos + 1) % orphans.length;
+			orphans[orphansPos] = block;
+		}
+	}
+
+	/**
+	 * Yields the orphans having the given parent.
+	 * 
+	 * @param hashOfParent the hash of {@code parent}
+	 * @return the orphans whose previous block is {@code parent}, if any
+	 */
+	private Stream<NonGenesisBlock> getOrphansWithParent(byte[] hashOfParent) {
+		synchronized (orphans) {
+			return Stream.of(orphans)
+					.filter(Objects::nonNull)
+					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
+		}
 	}
 
 	/**

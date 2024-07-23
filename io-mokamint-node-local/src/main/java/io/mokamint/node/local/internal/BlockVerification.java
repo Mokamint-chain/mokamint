@@ -245,7 +245,7 @@ public class BlockVerification {
 	 */
 	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, DatabaseException, ClosedDatabaseException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, node.getBlockchain().creationTimeOf(block));
+		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, node.getBlocksDatabase().creationTimeOf(block));
 		long max = node.getConfig().getBlockMaxTimeInTheFuture();
 		if (howMuchInTheFuture > max)
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
@@ -268,7 +268,7 @@ public class BlockVerification {
 	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 			var txHash = node.getHasherForTransactions().hash(tx);
-			if (node.getBlockchain().getTransactionAddress(previous, txHash).isPresent())
+			if (node.getBlocksDatabase().getTransactionAddress(previous, txHash).isPresent())
 				throw new VerificationException("Repeated transaction " + Hex.toHexString(txHash));
 		}
 	}
@@ -286,14 +286,14 @@ public class BlockVerification {
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id used to verify the transactions is not recognized
-	 * 								   anymore has open by the application
+	 * 								   anymore as valid by the application
 	 */
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
 		var app = node.getApplication();
 		int id;
 
 		try {
-			id = app.beginBlock(block.getDescription().getHeight(), node.getBlockchain().creationTimeOf(previous), previous.getStateId());
+			id = app.beginBlock(block.getDescription().getHeight(), node.getBlocksDatabase().creationTimeOf(previous), previous.getStateId());
 		}
 		catch (UnknownStateException e) {
 			throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());

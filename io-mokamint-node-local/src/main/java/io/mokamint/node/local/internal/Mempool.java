@@ -68,7 +68,7 @@ public class Mempool {
 	/**
 	 * The blockchain of the node having this mempool.
 	 */
-	private final Blockchain blockchain;
+	private final BlocksDatabase blockchain;
 
 	/**
 	 * The application running in the node having this mempool.
@@ -121,7 +121,7 @@ public class Mempool {
 	 */
 	public Mempool(LocalNodeImpl node) {
 		this.node = node;
-		this.blockchain = node.getBlockchain();
+		this.blockchain = node.getBlocksDatabase();
 		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.app = node.getApplication();
 		this.maxSize = node.getConfig().getMempoolSize();

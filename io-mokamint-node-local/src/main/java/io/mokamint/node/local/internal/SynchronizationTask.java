@@ -88,7 +88,7 @@ public class SynchronizationTask implements Task {
 		/**
 		 * The blockchain of the node.
 		 */
-		private final Blockchain blockchain = node.getBlockchain();
+		private final BlocksDatabase blockchain = node.getBlocksDatabase();
 
 		/**
 		 * The hashing algorithm used for the blocks.
@@ -136,8 +136,8 @@ public class SynchronizationTask implements Task {
 		private final static int GROUP_SIZE = 500;
 
 		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, IOException, InterruptedException {
-			long heightOfHead = node.getBlockchain().getHeightOfHead().orElse(0L);
-			long heightOfNonFrozenPart = node.getBlockchain().getStartOfNonFrozenPart().map(block -> block.getDescription().getHeight()).orElse(0L);
+			long heightOfHead = node.getBlocksDatabase().getHeightOfHead().orElse(0L); /// TODO: can I use filed blockchain?
+			long heightOfNonFrozenPart = node.getBlocksDatabase().getStartOfNonFrozenPart().map(block -> block.getDescription().getHeight()).orElse(0L);
 			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
 
 			do {
@@ -254,7 +254,7 @@ public class SynchronizationTask implements Task {
 				return true;
 			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
 			// then the first hash must be that genesis' hash
-			else if (hashes.length > 0 && height == 0L && (genesisHash = node.getBlockchain().getGenesisHash()).isPresent()
+			else if (hashes.length > 0 && height == 0L && (genesisHash = node.getBlocksDatabase().getGenesisHash()).isPresent() // TODO: can I use field blockchain?
 					&& !Arrays.equals(hashes[0], genesisHash.get()))
 				return true;
 			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or

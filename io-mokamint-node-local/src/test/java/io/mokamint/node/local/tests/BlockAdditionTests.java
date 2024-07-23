@@ -169,7 +169,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
 	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
@@ -187,7 +187,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
 	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			var description1 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis1 = Blocks.genesis(description1, stateHash, nodeKeys.getPrivate());
@@ -208,7 +208,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
 	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -234,7 +234,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
 	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
@@ -255,7 +255,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
 	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
@@ -292,7 +292,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
 	public void ifMorePowerfulChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
@@ -361,7 +361,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("if more children of the head are added, the one with higher power becomes head")
 	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			GenesisBlock genesis;
 			NonGenesisBlock mediumPowerful, mostPowerful, leastPowerful;
@@ -419,7 +419,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
 	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlockchain();
+			var blockchain = node.getBlocksDatabase();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
