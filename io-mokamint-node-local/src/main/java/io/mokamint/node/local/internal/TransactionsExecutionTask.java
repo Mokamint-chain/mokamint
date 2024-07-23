@@ -36,6 +36,7 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -126,13 +127,18 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException {
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
-		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, node.getBlockchain().creationTimeOf(previous), previous.getStateId());
+
+		var maybeCreationTime = node.getBlockchain().creationTimeOf(previous);
+		if (maybeCreationTime.isEmpty())
+			throw new NodeException("The blockchain should not be empty at this stage");
+
+		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, maybeCreationTime.get(), previous.getStateId());
 	}
 
 	public void start() throws RejectedExecutionException {

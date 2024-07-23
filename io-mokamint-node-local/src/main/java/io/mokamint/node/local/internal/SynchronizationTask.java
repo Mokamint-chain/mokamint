@@ -69,7 +69,7 @@ public class SynchronizationTask implements Task {
 	}
 
 	@Override
-	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, IOException, InterruptedException {
+	public void body() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, IOException, InterruptedException, NodeException {
 		try {
 			new Run();
 		}
@@ -135,7 +135,7 @@ public class SynchronizationTask implements Task {
 
 		private final static int GROUP_SIZE = 500;
 
-		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, IOException, InterruptedException {
+		private Run() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, IOException, InterruptedException, NodeException {
 			long heightOfHead = node.getBlockchain().getHeightOfHead().orElse(0L); /// TODO: can I use filed blockchain?
 			long heightOfNonFrozenPart = node.getBlockchain().getStartOfNonFrozenPart().map(block -> block.getDescription().getHeight()).orElse(0L);
 			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
@@ -461,8 +461,9 @@ public class SynchronizationTask implements Task {
 		 * @throws NoSuchAlgorithmException if some block in the database of the node uses an unknown hashing algorithm
 		 * @throws ClosedDatabaseException if the database is already closed
 		 * @throws InterruptedException if the current thread gets interrupted during this method
+		 * @throws NodeException if the node is misbehaving
 		 */
-		private boolean addBlocksToBlockchain() throws DatabaseException, IOException, NoSuchAlgorithmException, ClosedDatabaseException, InterruptedException {
+		private boolean addBlocksToBlockchain() throws DatabaseException, IOException, NoSuchAlgorithmException, ClosedDatabaseException, InterruptedException, NodeException {
 			for (int h = 0; h < chosenGroup.length; h++) {
 				stopIfInterrupted();
 

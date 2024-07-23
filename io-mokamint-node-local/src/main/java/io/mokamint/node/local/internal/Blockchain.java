@@ -71,6 +71,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -557,22 +558,27 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the creation time of the given block. It assumes that, if {@code block}
-	 * is not a genesis block, then the blockchain is not empty.
+	 * Yields the creation time of the given block, if it were to be added to this blockchain.
+	 * For genesis blocks, their creation time is explicit in the block.
+	 * For non-genesis blocks, this method adds the total waiting time of the block to the time of the genesis
+	 * of this blockchain.
 	 * 
 	 * @param block the block whose creation time is computed
-	 * @return the creation time of {@code block}
+	 * @return the creation time of {@code block}; this is missing only for non-genesis blocks if the blockchain is empty
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public LocalDateTime creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
+	public Optional<LocalDateTime> creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
 		// TODO: probably an exception is the blockchain is empty
 		if (block instanceof GenesisBlock gb)
-			return gb.getStartDateTimeUTC();
-		else
-			return getGenesis()
-				.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
-				.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
+			return Optional.of(gb.getStartDateTimeUTC());
+		else {
+			var maybeGenesis = getGenesis();
+			if (maybeGenesis.isEmpty())
+				return Optional.empty();
+			else
+				return Optional.of(maybeGenesis.get().getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
+		}
 	}
 
 	/**
@@ -585,8 +591,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, InterruptedException, ApplicationException {
+	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, InterruptedException, ApplicationException, NodeException {
 		try {
 			if (!isEmpty())
 				throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
@@ -601,7 +608,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
 			// the database cannot be closed at this moment
 			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
-			throw new RuntimeException("Unexpected exception", e);
+			throw new NodeException(e);
 		}
 	}
 
@@ -632,8 +639,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
 	 * @throws ApplicationException if the application is not behaving correctly
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, NodeException {
 		return add(block, true);
 	}
 
@@ -650,8 +658,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	public boolean addVerified(Block block) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
 		try {
 			return add(block, false);
 		}
@@ -676,8 +685,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
 	 * @throws ApplicationException if the application is not behaving correctly
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, NodeException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
@@ -773,7 +783,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+			throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, NodeException {
 
 		try {
 			if (verify)
@@ -796,7 +806,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			// either the application is misbehaving or somebody has closed
 			// the group id of the application used for verifying the transactions;
 			// in any case, the node was not able to perform the operation
-			throw new ApplicationException(e); // TODO: this should become a NodeException
+			throw new NodeException(e);
 		}
 
 		return false;

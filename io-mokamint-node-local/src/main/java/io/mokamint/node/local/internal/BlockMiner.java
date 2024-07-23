@@ -41,6 +41,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
@@ -145,8 +146,9 @@ public class BlockMiner {
 	 * @throws DatabaseException if the database of the node is corrupted
 	 * @throws ClosedDatabaseException if the database of the node is already closed
 	 * @throws ApplicationException if the application is misbehaving
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException {
+	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.blockchain = node.getBlockchain();
@@ -171,8 +173,9 @@ public class BlockMiner {
 	 * @throws RejectedExecutionException if the node is shutting down 
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException, ApplicationException, UnknownGroupIdException {
+	public void mine() throws InterruptedException, NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
 		transactionExecutor.start();
 
 		try {
@@ -264,8 +267,9 @@ public class BlockMiner {
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ApplicationException, UnknownGroupIdException {
+	private void commitIfBetterThanHead(Block block) throws DatabaseException, ClosedDatabaseException, InterruptedException, NoSuchAlgorithmException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
 			committed = true;
@@ -307,7 +311,7 @@ public class BlockMiner {
 		miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 	}
 
-	private void addBlockToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, TimeoutException, ApplicationException {
+	private void addBlockToBlockchain(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, InterruptedException, TimeoutException, ApplicationException, NodeException {
 		stopIfInterrupted();
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (blockchain.addVerified(block))

@@ -35,9 +35,10 @@ import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineValidityCheckException;
@@ -75,6 +76,11 @@ public class BlockVerification {
 	private final Deadline deadline;
 
 	/**
+	 * The creation time of the block under verification.
+	 */
+	private final LocalDateTime creationTime;
+
+	/**
 	 * Performs the verification that {@code block} satisfies all consensus rules required
 	 * for being a child of {@code previous}, in the given {@code node}.
 	 * 
@@ -90,13 +96,15 @@ public class BlockVerification {
 	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id used to verify the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException, NodeException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
+		this.creationTime = node.getBlockchain().creationTimeOf(block).orElseThrow(() -> new NodeException());
 
 		if (block instanceof NonGenesisBlock ngb)
 			verifyAsNonGenesis(ngb);
@@ -138,8 +146,9 @@ public class BlockVerification {
 	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id used to verify the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException, NodeException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
@@ -245,7 +254,7 @@ public class BlockVerification {
 	 */
 	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, DatabaseException, ClosedDatabaseException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, node.getBlockchain().creationTimeOf(block));
+		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime);
 		long max = node.getConfig().getBlockMaxTimeInTheFuture();
 		if (howMuchInTheFuture > max)
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
@@ -287,13 +296,14 @@ public class BlockVerification {
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id used to verify the transactions is not recognized
 	 * 								   anymore as valid by the application
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException, NodeException {
 		var app = node.getApplication();
 		int id;
 
 		try {
-			id = app.beginBlock(block.getDescription().getHeight(), node.getBlockchain().creationTimeOf(previous), previous.getStateId());
+			id = app.beginBlock(block.getDescription().getHeight(), creationTime, previous.getStateId());
 		}
 		catch (UnknownStateException e) {
 			throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());

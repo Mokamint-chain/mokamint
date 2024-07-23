@@ -30,6 +30,7 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 
@@ -200,7 +201,7 @@ public class MiningTask implements Task {
 				catch (UnknownStateException e) {
 					LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
 				}
-				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException | UnknownGroupIdException e) {
+				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException | UnknownGroupIdException | NodeException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
 					break;
 				}

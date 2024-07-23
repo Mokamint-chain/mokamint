@@ -1128,7 +1128,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedBlock whisperedBlock)
 						onWhispered(whisperedBlock.getBlock());
 				}
-				catch (NoSuchAlgorithmException | DatabaseException | ApplicationException e) {
+				catch (NoSuchAlgorithmException | DatabaseException | ApplicationException | NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
