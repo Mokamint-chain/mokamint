@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -432,19 +431,6 @@ public class Blockchain implements AutoCloseable {
 	 */
 	public boolean add(Block block) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
 		return add(block, true);
-	}
-
-	/**
-	 * Performs the given action for each block reachable from the block with the given hash.
-	 * 
-	 * @param hash the hash
-	 * @param action the action to perform
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws NoSuchAlgorithmException if some block in the database contains an unknown hashing algorithm
-	 */
-	public void forEachBlockReachableFrom(byte[] hash, Consumer<Block> action) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
-		db.forEachBlockReachableFrom(hash, action);
 	}
 
 	/**

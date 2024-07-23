@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -539,33 +538,6 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(hashingForBlocks));
 
 		return hasBeenAdded;
-	}
-
-	/**
-	 * Performs the given action for each block reachable from the block with the given hash.
-	 * 
-	 * @param hash the hash
-	 * @param action the action to perform
-	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws NoSuchAlgorithmException if some block in the database contains an unknown hashing algorithm
-	 */
-	public void forEachBlockReachableFrom(byte[] hash, Consumer<Block> action) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
-		try (var scope = mkScope()) {
-			var currentBlock = getBlock(hash);
-			action.accept(currentBlock.get());
-	
-			var ws = new ArrayList<byte[]>();
-			getForwards(hash).forEach(ws::add);
-	
-			while (!ws.isEmpty()) {
-				var currentHash = ws.remove(ws.size() - 1);
-				getForwards(currentHash).forEach(ws::add);
-	
-				currentBlock = getBlock(currentHash);
-				action.accept(currentBlock.orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(currentHash) + " is in the forward list of another block, but it cannot be found in the database")));
-			}
-		}
 	}
 
 	/**
