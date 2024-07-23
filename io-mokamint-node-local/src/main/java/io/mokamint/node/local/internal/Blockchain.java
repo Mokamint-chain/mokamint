@@ -78,13 +78,13 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.api.DeadlineValidityCheckException;
 
 /**
- * The database where the blocks are persisted. Blocks are rooted at a genesis block
+ * The blockchain is a database where the blocks are persisted. Blocks are rooted at a genesis block
  * and do not necessarily form a list but are in general a tree.
  */
-public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseException> {
+public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseException> {
 
 	/**
-	 * The node using this database of blocks.
+	 * The node using this blockchain.
 	 */
 	private final LocalNodeImpl node;
 
@@ -134,14 +134,17 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private final long maximalHistoryChangeTime;
 
 	/**
-	 * A cache for the genesis block, if it has been set already.
-	 * Otherwise it holds {@code null}.
+	 * A cache for the hash of the genesis block, if it has been set already. Otherwise it holds {@code null}.
+	 */
+	private volatile Optional<byte[]> genesisHashCache;
+
+	/**
+	 * A cache for the genesis block, if it has been set already. Otherwise it holds {@code null}.
 	 */
 	private volatile Optional<GenesisBlock> genesisCache;
 
 	/**
-	 * A buffer where blocks without a known previous block are parked, in case
-	 * their previous block arrives later.
+	 * A buffer where blocks without a known previous block are parked, in case their previous block arrives later.
 	 */
 	@GuardedBy("itself")
 	private final NonGenesisBlock[] orphans;
@@ -189,14 +192,14 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private final static ByteIterable START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME = fromByte((byte) 6);
 
-	private final static Logger LOGGER = Logger.getLogger(BlocksDatabase.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
 	/**
-	 * Opens the database of blocks.
+	 * Creates a blockchain, by opening the database of blocks.
 	 * 
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public BlocksDatabase(LocalNodeImpl node) throws DatabaseException {
+	public Blockchain(LocalNodeImpl node) throws DatabaseException {
 		super(ClosedDatabaseException::new);
 
 		this.node = node;
@@ -217,13 +220,13 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		if (stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
-				LOGGER.info("db: closed the blocks database");
+				LOGGER.info("blockchain: closed the blocks database");
 			}
 			catch (ExodusException e) {
 				// TODO
 				// not sure while this happens, it seems there might be transactions run for garbage collection,
 				// that will consequently find a closed environment
-				LOGGER.log(Level.WARNING, "db: failed to close the blocks database", e);
+				LOGGER.log(Level.WARNING, "blockchain: failed to close the blocks database", e);
 				//throw new DatabaseException("Cannot close the blocks database", e);
 			}
 		}
@@ -241,13 +244,16 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the hash of the genesis block in this database, if any.
+	 * Yields the hash of the genesis block in this blockchain, if any.
 	 * 
 	 * @return the hash of the genesis block, if any
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<byte[]> getGenesisHash() throws DatabaseException, ClosedDatabaseException {
+		if (genesisHashCache != null)
+			return Optional.of(genesisHashCache.get().clone());
+
 		try (var scope = mkScope()) {
 			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
 		}
@@ -257,26 +263,20 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the genesis block in this database, if any.
+	 * Yields the genesis block in this blockchain, if any.
 	 * 
 	 * @return the genesis block, if any
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public Optional<GenesisBlock> getGenesis() throws DatabaseException, ClosedDatabaseException {
-		// we use a cache to avoid repeated access for reading the genesis block, that is not allowed to change after being set
 		if (genesisCache != null)
 			return genesisCache;
 
 		try (var scope = mkScope()) {
-			Optional<GenesisBlock> result = check(DatabaseException.class, () ->
+			return check(DatabaseException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getGenesis))
 			);
-
-			if (result.isPresent())
-				genesisCache = result;
-
-			return result;
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -284,7 +284,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the head of the best chain in this database, if any.
+	 * Yields the head of the best chain in this blockchain, if any.
 	 * 
 	 * @return the head block, if any
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
@@ -303,7 +303,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the hash of the head of the best chain in this database, if any.
+	 * Yields the hash of the head of the best chain in this blockchain, if any.
 	 * 
 	 * @return the hash of the head block, if any
 	 * @throws DatabaseException if the database is corrupted
@@ -319,7 +319,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the starting block of the non-frozen part of the history of the blockchain, if any.
+	 * Yields the starting block of the non-frozen part of the history of this blockchain, if any.
 	 * 
 	 * @return the starting block, if any
 	 * @throws NoSuchAlgorithmException if the starting block uses an unknown hashing algorithm
@@ -358,7 +358,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the height of the head of the best chain in this database, if any.
+	 * Yields the height of the head of the best chain in this blockchain, if any.
 	 * 
 	 * @return the height of the head block, if any
 	 * @throws DatabaseException if the database is corrupted
@@ -374,7 +374,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the power of the head of the best chain in this database, if any.
+	 * Yields the power of the head of the best chain in this blockchain, if any.
 	 * 
 	 * @return the power of the head block, if any
 	 * @throws DatabaseException if the database is corrupted
@@ -390,7 +390,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the block with the given hash, if it is contained in this database.
+	 * Yields the block with the given hash, if it is contained in this blockchain.
 	 * 
 	 * @param hash the hash
 	 * @return the block, if any
@@ -410,7 +410,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the description of the block with the given hash, if it is contained in this database.
+	 * Yields the description of the block with the given hash, if it is contained in this blockchain.
 	 * 
 	 * @param hash the hash
 	 * @return the description of the block, if any
@@ -430,7 +430,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this database.
+	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this blockchain.
 	 * 
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction, if any
@@ -451,7 +451,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 	/**
 	 * Yields the address of the transaction with the given hash, if it is contained in some block
-	 * of the best chain of this database.
+	 * of the best chain of this blockchain.
 	 * 
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
@@ -492,7 +492,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields information about the current best chain.
+	 * Yields information about the current best chain of this blockchain.
 	 * 
 	 * @return the information
 	 * @throws DatabaseException if the database is corrupted
@@ -566,6 +566,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public LocalDateTime creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
+		// TODO: probably an exception is the blockchain is empty
 		if (block instanceof GenesisBlock gb)
 			return gb.getStartDateTimeUTC();
 		else
@@ -588,28 +589,25 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, InterruptedException, ApplicationException {
 		try {
 			if (!isEmpty())
-				throw new AlreadyInitializedException("init cannot be required for an already initialized blockchain");
+				throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 	
 			var config = node.getConfig();
 			var keys = node.getKeys();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
 			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate());
 	
-			add(genesis);
+			addVerified(genesis);
 		}
-		catch (NoSuchAlgorithmException | ClosedDatabaseException | VerificationException | DeadlineValidityCheckException e) {
-			// the database cannot be closed at this moment;
-			// the genesis should be created correctly, hence should be verifiable;
-			// moreover, the genesis has no deadline
+		catch (NoSuchAlgorithmException | ClosedDatabaseException e) {
+			// the database cannot be closed at this moment
 			LOGGER.log(Level.SEVERE, "blockchain: unexpected exception", e);
 			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 
 	/**
-	 * If the block was already in the database, this method performs nothing. Otherwise,
-	 * it verifies the given block and adds it to the database of blocks of this node.
-	 * Note that the addition
+	 * If the block was already in the database, this method performs nothing. Otherwise, it verifies
+	 * the given block and adds it to the database of blocks of this blockchain. Note that the addition
 	 * of a block might actually induce the addition of more, orphan blocks,
 	 * if the block is recognized as the previous block of an orphan block.
 	 * The addition of a block might change the head of the best chain, in which case
@@ -643,6 +641,12 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * This method behaves like {@link #add(Block)} but assumes that the given block is
 	 * verified, so that it does not need further verification before being added to blockchain.
 	 * 
+	 * @param block the block to add
+	 * @return true if the block has been actually added to the tree of blocks
+	 *         rooted at the genesis block, false otherwise
+	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown cryptographic algorithm
+	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
@@ -658,11 +662,19 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * This method behaves like {@link #add(Block)} but allows one to specify if block verification is required.
+	 * Adds the given block to this blockchain, allowing one to specify if block verification is required.
 	 * 
+	 * @param block the block to add
+	 * @param verify true if and only if verification of {@code block} must be performed
+	 * @return true if the block has been actually added to the tree of blocks
+	 *         rooted at the genesis block, false otherwise.
+	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
+	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown cryptographic algorithm
+	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
+	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
-	 * @throws DeadlineValidityCheckException if the validity of some deadline could not be determined
+	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
 	 * @throws ApplicationException if the application is not behaving correctly
 	 */
 	private boolean add(Block block, boolean verify) throws DatabaseException, NoSuchAlgorithmException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
@@ -705,10 +717,9 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
 			// the block over which mining occurs, so it will be aligned there
 			node.rebaseMempoolAt(newHead);
-			// TODO: blocks added to the main chain should be signaled to the application here
-			var blocksAdded = new LinkedList<Block>();
 
 			Block cursor = newHead;
+			var blocksAdded = new LinkedList<Block>();
 			blocksAdded.addLast(cursor);
 
 			while (!cursor.equals(block)) {
@@ -735,17 +746,12 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Adds the given block to this database.
-	 * If the block was already in the database, nothing happens.
+	 * Adds the given block to this blockchain. If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
 	 * @param updatedHead the new head of the best chain resulting from the addition,
 	 *                    if it changed wrt the previous head
-	 * @return true if the block has been actually added to the database, false otherwise.
-	 *         There are a few situations when the result can be false. For instance,
-	 *         if {@code block} was already in the database, or if {@code block} is
-	 *         a genesis block but the genesis block is already set in the database;
-	 *         or if {@code block} is a non-genesis block whose previous is not in the tree
+	 * @return true if the block has been actually added to the database, false otherwise
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
@@ -761,7 +767,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		}
 
 		if (hasBeenAdded)
-			LOGGER.info("db: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(hashingForBlocks));
+			LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash(hashingForBlocks));
 
 		return hasBeenAdded;
 	}
@@ -815,7 +821,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 		byte[] hashOfBlock = block.getHash(hashingForBlocks);
 
 		if (containsBlock(txn, hashOfBlock)) {
-			LOGGER.warning("db: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
+			LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
@@ -823,7 +829,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 			if (maybePreviousOfBlock.isPresent()) {
 				if (isInFrozenPart(txn, maybePreviousOfBlock.get())) {
-					LOGGER.warning("db: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
+					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
 					return false;
 				}
 
@@ -837,7 +843,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				return true;
 			}
 			else {
-				LOGGER.warning("db: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
+				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
 				return false;
 			}
 		}
@@ -850,7 +856,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				return true;
 			}
 			else {
-				LOGGER.warning("not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
+				LOGGER.warning("blockchain: not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
 				return false;
 			}
 		}
@@ -863,7 +869,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 	private Environment createBlockchainEnvironment() {
 		var env = new Environment(node.getConfig().getDir().resolve("blocks").toString());
-		LOGGER.info("db: opened the blocks database");
+		LOGGER.info("blockchain: opened the blocks database");
 		return env;
 	}
 
@@ -877,7 +883,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			throw new DatabaseException(e);
 		}
 
-		LOGGER.info("db: opened the store of " + name + " inside the blocks database");
+		LOGGER.info("blockchain: opened the store of " + name + " inside the blocks database");
 		return store.get();
 	}
 
@@ -965,20 +971,30 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	}
 
 	/**
-	 * Yields the hash of the genesis block in this database, if any,
-	 * running inside a transaction.
+	 * Yields the hash of the genesis block in this database, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @return the hash of the genesis block, if any
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private Optional<byte[]> getGenesisHash(Transaction txn) throws DatabaseException {
+		// we use a cache to avoid repeated access for reading the hash of the genesis block, that is not allowed to change after being set
+		if (genesisHashCache != null)
+			return Optional.of(genesisHashCache.get().clone());
+
+		Optional<byte[]> result;
+
 		try {
-			return Optional.ofNullable(storeOfBlocks.get(txn, GENESIS)).map(ByteIterable::getBytes);
+			result = Optional.ofNullable(storeOfBlocks.get(txn, GENESIS)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
+
+		if (result.isPresent())
+			genesisHashCache = Optional.of(result.get().clone());
+
+		return result;
 	}
 
 	/**
@@ -1318,6 +1334,10 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	private Optional<GenesisBlock> getGenesis(Transaction txn) throws DatabaseException {
+		// we use a cache to avoid repeated access for reading the genesis block, that is not allowed to change after being set
+		if (genesisCache != null)
+			return genesisCache;
+
 		try {
 			Optional<byte[]> maybeGenesisHash = getGenesisHash(txn);
 			if (maybeGenesisHash.isEmpty())
@@ -1325,8 +1345,11 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 
 			Optional<Block> maybeGenesis = getBlock(txn, maybeGenesisHash.get());
 			if (maybeGenesis.isPresent()) {
-				if (maybeGenesis.get() instanceof GenesisBlock gb)
-					return Optional.of(gb);
+				if (maybeGenesis.get() instanceof GenesisBlock gb) {
+					var result = Optional.of(gb);
+					genesisCache = result;
+					return result;
+				}
 				else
 					throw new DatabaseException("The genesis hash is set but it refers to a non-genesis block in the database");
 			}
@@ -1394,7 +1417,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws DatabaseException {
 		try {
 			storeOfBlocks.put(txn, GENESIS, fromBytes(newGenesisHash));
-			LOGGER.info("db: height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
+			LOGGER.info("blockchain: height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1416,7 +1439,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			if (maybeStartOfNonFrozenPart.isEmpty())
 				throw new DatabaseException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database");
 			storeOfBlocks.put(txn, START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME, fromBytes(longToBytes(maybeStartOfNonFrozenPart.get().getDescription().getTotalWaitingTime())));
-			LOGGER.info("db: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + maybeStartOfNonFrozenPart.get().getDescription().getHeight());
+			LOGGER.info("blockchain: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + maybeStartOfNonFrozenPart.get().getDescription().getHeight());
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1440,7 +1463,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
 			long heightOfHead = newHead.getDescription().getHeight();
 			storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
-			LOGGER.info("db: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
+			LOGGER.info("blockchain: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1575,7 +1598,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				throw new DatabaseException(e);
 			}
 			
-			LOGGER.info("db: deleted block " + Hex.toHexString(currentHash));
+			LOGGER.info("blockchain: garbage-collected block " + Hex.toHexString(currentHash));
 		}
 		while (!ws.isEmpty());
 	}

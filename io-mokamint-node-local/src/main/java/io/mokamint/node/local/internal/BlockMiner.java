@@ -62,7 +62,7 @@ public class BlockMiner {
 	/**
 	 * The blockchain of the node.
 	 */
-	private final BlocksDatabase blockchain;
+	private final Blockchain blockchain;
 
 	/**
 	 * The configuration of the node running this task.
@@ -149,7 +149,7 @@ public class BlockMiner {
 	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException {
 		this.node = node;
 		this.previous = previous;
-		this.blockchain = node.getBlocksDatabase();
+		this.blockchain = node.getBlockchain();
 		this.config = node.getConfig();
 		this.miners = node.getMiners();
 		this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);

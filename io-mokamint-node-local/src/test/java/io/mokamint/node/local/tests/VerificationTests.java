@@ -66,7 +66,7 @@ import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.BlocksDatabase;
+import io.mokamint.node.local.internal.Blockchain;
 import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.VerificationException;
 import io.mokamint.nonce.Deadlines;
@@ -171,7 +171,7 @@ public class VerificationTests extends AbstractLoggedTests {
 				.build();
 
 		try (var node = new TestNode(config)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var hashingForBlocks = config.getHashingForBlocks();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -200,7 +200,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			.build();
 
 		try (var node = new TestNode(config)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var description1 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis1 = Blocks.genesis(description1, stateId, nodePrivateKey);
 			var description2 = BlockDescriptions.genesis(genesis1.getStartDateTimeUTC().plus(config.getBlockMaxTimeInTheFuture() + 1000, ChronoUnit.MINUTES), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -217,7 +217,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has inconsistent height, verification rejects it")
 	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir, application)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -240,7 +240,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has inconsistent acceleration, verification rejects it")
 	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -263,7 +263,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has inconsistent power, verification rejects it")
 	public void powerMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -286,7 +286,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has inconsistent total waiting time, verification rejects it")
 	public void totalWaitingTimeMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -341,7 +341,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has inconsistent deadline's scoop number, verification rejects it")
 	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -370,7 +370,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -399,7 +399,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var config = mkConfig(dir).toBuilder().setMaxBlockSize(6).build();
 
 		try (var node = new TestNode(config)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
@@ -424,7 +424,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -454,7 +454,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -482,7 +482,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
 
 		try (var node = new TestNode(dir, app)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -502,7 +502,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has inconsistent deadline's data, verification rejects it")
 	public void deadlineDataMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -530,7 +530,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has inconsistent deadline's hashing algorithm, verification rejects it")
 	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -557,7 +557,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has the wrong deadline's prolog chain identifier, verification rejects it")
 	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -585,7 +585,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has the wrong blocks' signature algorithm, verification rejects it")
 	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -618,7 +618,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has the wrong deadlines' signature algorithm, verification rejects it")
 	public void deadlinePrologDeadlinesSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -654,7 +654,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		when(application.checkPrologExtra(any())).thenReturn(false);
 
 		try (var node = new TestNode(dir, application)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -676,7 +676,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has an invalid deadline progressive, verification rejects it")
 	public void invalidDeadlineProgressiveGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -702,7 +702,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if an added non-genesis block has an invalid deadline value, verification rejects it")
 	public void invalidDeadlineValueGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, ClosedDatabaseException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir, application)) {
-			var blockchain = node.getBlocksDatabase();
+			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -735,7 +735,7 @@ public class VerificationTests extends AbstractLoggedTests {
 				.build();
 	}
 
-	private static void assertBlockchainIsJustGenesis(BlocksDatabase blockchain, GenesisBlock genesis, LocalNodeConfig config) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis, LocalNodeConfig config) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(genesis, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
@@ -743,7 +743,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
 	}
 
-	private static void assertBlockchainIsJustTwoBlocks(BlocksDatabase blockchain, GenesisBlock genesis, NonGenesisBlock block, LocalNodeConfig config) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
+	private static void assertBlockchainIsJustTwoBlocks(Blockchain blockchain, GenesisBlock genesis, NonGenesisBlock block, LocalNodeConfig config) throws DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(block, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);

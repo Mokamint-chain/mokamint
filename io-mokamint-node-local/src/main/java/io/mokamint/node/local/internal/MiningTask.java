@@ -145,7 +145,7 @@ public class MiningTask implements Task {
 		public void run() {
 			while (!taskHasBeenInterrupted) {
 				try {
-					Optional<Block> maybeHead = node.getBlocksDatabase().getHead();
+					Optional<Block> maybeHead = node.getBlockchain().getHead();
 
 					if (maybeHead.isEmpty()) {
 						LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");

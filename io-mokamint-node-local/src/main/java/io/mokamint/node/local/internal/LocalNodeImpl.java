@@ -132,7 +132,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * The blockchain of this node.
 	 */
-	private final BlocksDatabase blockchain;
+	private final Blockchain blockchain;
 
 	/**
 	 * The mempool of this node.
@@ -232,7 +232,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			this.app = app;
 			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
 			this.miners = new Miners(this);
-			this.blockchain = new BlocksDatabase(this);
+			this.blockchain = new Blockchain(this);
 			this.mempool = new Mempool(this);
 			this.peers = new Peers(this);
 			this.uuid = getInfo().getUUID();
@@ -397,10 +397,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		whisperWithoutAddition(transaction);
 
 		return result;
-	}
-
-	protected void remove(TransactionEntry transactionEntry) {
-		mempool.remove(transactionEntry);
 	}
 
 	@Override
@@ -571,7 +567,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the blockchain
 	 */
-	public BlocksDatabase getBlocksDatabase() {
+	public Blockchain getBlockchain() {
 		return blockchain;
 	}
 
@@ -582,6 +578,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	public KeyPair getKeys() {
 		return keyPair;
+	}
+
+	protected void remove(TransactionEntry transactionEntry) {
+		mempool.remove(transactionEntry);
 	}
 
 	/**

@@ -132,7 +132,7 @@ public class TransactionsExecutionTask implements Task {
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
-		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, node.getBlocksDatabase().creationTimeOf(previous), previous.getStateId());
+		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, node.getBlockchain().creationTimeOf(previous), previous.getStateId());
 	}
 
 	public void start() throws RejectedExecutionException {
