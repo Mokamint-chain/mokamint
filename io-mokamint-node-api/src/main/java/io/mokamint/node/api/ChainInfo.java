@@ -48,6 +48,13 @@ public interface ChainInfo {
 	 */
 	Optional<byte[]> getHeadHash();
 
+	/**
+	 * Yields the state identifier of the head block of the chain, if any.
+	 * 
+	 * @return the state identifier, if any
+	 */
+	Optional<byte[]> getHeadStateId();
+
 	@Override
 	boolean equals(Object other);
 

@@ -37,10 +37,11 @@ public abstract class ChainInfos {
 	 * @param height the height of the chain
 	 * @param genesisHash the hash of the genesis block, if any
 	 * @param headHash the hash of the head block, if any
+	 * @param headStateId the state identifier at the end of the execution of the head block, if any
 	 * @return the chain information object
 	 */
-	public static ChainInfo of(long height, Optional<byte[]> genesisHash, Optional<byte[]> headHash) {
-		return new ChainInfoImpl(height, genesisHash, headHash);
+	public static ChainInfo of(long height, Optional<byte[]> genesisHash, Optional<byte[]> headHash, Optional<byte[]> headStateId) {
+		return new ChainInfoImpl(height, genesisHash, headHash, headStateId);
 	}
 
 	/**

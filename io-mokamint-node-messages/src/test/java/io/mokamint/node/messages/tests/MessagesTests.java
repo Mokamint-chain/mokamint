@@ -380,7 +380,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getChainInfo result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetChainInfoResult() throws EncodeException, DecodeException {
-		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 3, 7, 8, 11 }));
+		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 3, 7, 8, 11 }), Optional.of(new byte[] { 13, 17, 19 }));
 		var getChainInfoResultMessage1 = GetChainInfoResultMessages.of(info, "id");
 		String encoded = new GetChainInfoResultMessages.Encoder().encode(getChainInfoResultMessage1);
 		var getChainInfoResultMessage2 = new GetChainInfoResultMessages.Decoder().decode(encoded);

@@ -922,7 +922,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getChainInfo() works")
 	public void getChainInfoWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException {
-		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }));
+		var info1 = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 17, 13, 19 }), Optional.of(new byte[] { 13, 17, 19 }));
 
 		class MyServer extends PublicTestServer {
 

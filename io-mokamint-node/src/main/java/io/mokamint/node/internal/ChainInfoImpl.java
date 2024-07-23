@@ -45,16 +45,23 @@ public class ChainInfoImpl implements ChainInfo {
 	private final Optional<byte[]> headHash;
 
 	/**
+	 * The state identifier of the head block, if any.
+	 */
+	private final Optional<byte[]> headStateId;
+
+	/**
 	 * Constructs a new chain information object.
 	 * 
 	 * @param length the length of the chain
 	 * @param genesisHash the hash of the genesis block, if any
-	 * @param the hash of the head block, if any
+	 * @param headHash the hash of the head block, if any
+	 * @param headStateId the state identifier of the head block, if any
 	 */
-	public ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash) {
+	public ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash, Optional<byte[]> headStateId) {
 		this.length = length;
 		this.genesisHash = genesisHash.map(byte[]::clone);
 		this.headHash = headHash.map(byte[]::clone);
+		this.headStateId = headStateId.map(byte[]::clone);
 	}
 
 	@Override
@@ -73,11 +80,17 @@ public class ChainInfoImpl implements ChainInfo {
 	}
 
 	@Override
+	public Optional<byte[]> getHeadStateId() {
+		return headStateId.map(byte[]::clone);
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof ChainInfo otherChainInfo &&
 			length == otherChainInfo.getLength() &&
 			same(genesisHash, otherChainInfo.getGenesisHash()) &&
-			same(headHash, otherChainInfo.getHeadHash());
+			same(headHash, otherChainInfo.getHeadHash()) &&
+			same(headStateId, otherChainInfo.getHeadStateId());
 	}
 
 	@Override
@@ -89,8 +102,9 @@ public class ChainInfoImpl implements ChainInfo {
 	public String toString() {
 		var builder = new StringBuilder();
 		builder.append("* height: " + length + "\n");
+		builder.append("* hash of the genesis block: " + toString(genesisHash) + "\n");
 		builder.append("* hash of the head block: " + toString(headHash) + "\n");
-		builder.append("* hash of the genesis block: " + toString(genesisHash));
+		builder.append("* state id of the head block: " + toString(headStateId));
 	
 		return builder.toString();
 	}

@@ -31,6 +31,7 @@ public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
 	private final long height;
 	private final String genesisHash;
 	private final String headHash;
+	private final String headStateId;
 
 	protected ChainInfoJson(ChainInfo info) {
 		this.height = info.getLength();
@@ -38,12 +39,15 @@ public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
 		this.genesisHash = genesisHash.isEmpty() ? null : Hex.toHexString(genesisHash.get());
 		var headHash = info.getHeadHash();
 		this.headHash = headHash.isEmpty() ? null : Hex.toHexString(headHash.get());
+		var headStateId = info.getHeadStateId();
+		this.headStateId = headStateId.isEmpty() ? null : Hex.toHexString(headStateId.get());
 	}
 
 	@Override
 	public ChainInfo unmap() throws HexConversionException {
 		return ChainInfos.of(height,
 			genesisHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(genesisHash)),
-			headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash)));
+			headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash)),
+			headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId)));
 	}
 }

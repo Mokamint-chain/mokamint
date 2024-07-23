@@ -130,7 +130,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the head block.
 	 */
-	private final static ByteIterable HEAD = fromByte((byte) 1);
+	private final static ByteIterable HASH_OF_HEAD = fromByte((byte) 1);
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the power of the head block.
@@ -143,16 +143,21 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private final static ByteIterable HEIGHT_OF_HEAD = fromByte((byte) 3);
 
 	/**
+	 * The key mapped in the {@link #storeOfBlocks} to the state id of the head block.
+	 */
+	private final static ByteIterable STATE_ID_OF_HEAD = fromByte((byte) 4);
+
+	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the hash of the block where
 	 * the non-frozen part of the blockchain starts.
 	 */
-	private final static ByteIterable START_OF_NON_FROZEN_PART = fromByte((byte) 4);
+	private final static ByteIterable START_OF_NON_FROZEN_PART = fromByte((byte) 5);
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the total waiting time of the block where
 	 * the non-frozen part of the blockchain starts.
 	 */
-	private final static ByteIterable START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME = fromByte((byte) 5);
+	private final static ByteIterable START_OF_NON_FROZEN_PART_TOTAL_WAITING_TIME = fromByte((byte) 6);
 
 	private final static Logger LOGGER = Logger.getLogger(BlocksDatabase.class.getName());
 
@@ -597,7 +602,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 				putInStore(txn, hashOfBlock, block.toByteArray());
 				addToForwards(txn, ngb, hashOfBlock);
 				if (isBetterThanHead(txn, ngb, hashOfBlock)) {
-					setHeadHash(txn, block, hashOfBlock);
+					setHead(txn, block, hashOfBlock);
 					updatedHead.set(block);
 				}
 
@@ -612,7 +617,7 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 			if (getGenesisHash(txn).isEmpty()) {
 				putInStore(txn, hashOfBlock, block.toByteArray());
 				setGenesisHash(txn, hashOfBlock);
-				setHeadHash(txn, block, hashOfBlock);
+				setHead(txn, block, hashOfBlock);
 				updatedHead.set(block);
 				return true;
 			}
@@ -658,7 +663,24 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 */
 	private Optional<byte[]> getHeadHash(Transaction txn) throws DatabaseException {
 		try {
-			return Optional.ofNullable(storeOfBlocks.get(txn, HEAD)).map(ByteIterable::getBytes);
+			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_HEAD)).map(ByteIterable::getBytes);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the state identifier of yje head block of the blockchain in this database, if it has been set already,
+	 * running inside a transaction.
+	 * 
+	 * @param txn the transaction
+	 * @return the state identifier, if any
+	 * @throws DatabaseException if the database is corrupted
+	 */
+	private Optional<byte[]> getStateIdOfHead(Transaction txn) throws DatabaseException {
+		try {
+			return Optional.ofNullable(storeOfBlocks.get(txn, STATE_ID_OF_HEAD)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1182,10 +1204,11 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	 * @throws NoSuchAlgorithmException if {@code newHead} uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void setHeadHash(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
+	private void setHead(Transaction txn, Block newHead, byte[] newHeadHash) throws NoSuchAlgorithmException, DatabaseException {
 		try {
 			updateChain(txn, newHead, newHeadHash);
-			storeOfBlocks.put(txn, HEAD, fromBytes(newHeadHash));
+			storeOfBlocks.put(txn, HASH_OF_HEAD, fromBytes(newHeadHash));
+			storeOfBlocks.put(txn, STATE_ID_OF_HEAD, fromBytes(newHead.getStateId()));
 			storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
 			long heightOfHead = newHead.getDescription().getHeight();
 			storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
@@ -1400,17 +1423,21 @@ public class BlocksDatabase extends AbstractAutoCloseableWithLock<ClosedDatabase
 	private ChainInfo getChainInfo(Transaction txn) throws DatabaseException {
 		var maybeGenesisHash = getGenesisHash(txn);
 		if (maybeGenesisHash.isEmpty())
-			return ChainInfos.of(0L, Optional.empty(), Optional.empty());
+			return ChainInfos.of(0L, Optional.empty(), Optional.empty(), Optional.empty());
 
 		var maybeHeadHash = getHeadHash(txn);
 		if (maybeHeadHash.isEmpty())
 			throw new DatabaseException("The hash of the genesis is set but there is no head hash set in the database");
 
-		OptionalLong chainHeight = getHeightOfHead(txn);
-		if (chainHeight.isEmpty())
+		OptionalLong maybeChainHeight = getHeightOfHead(txn);
+		if (maybeChainHeight.isEmpty())
 			throw new DatabaseException("The hash of the genesis is set but the height of the current best chain is missing");
 
-		return ChainInfos.of(chainHeight.getAsLong() + 1, maybeGenesisHash, maybeHeadHash);
+		Optional<byte[]> maybeStateId = getStateIdOfHead(txn);
+		if (maybeStateId.isEmpty())
+			throw new DatabaseException("The hash of the genesis is set but there is no state identifier for the head set in the database");
+
+		return ChainInfos.of(maybeChainHeight.getAsLong() + 1, maybeGenesisHash, maybeHeadHash, maybeStateId);
 	}
 
 	private Stream<byte[]> getChain(Transaction txn, long start, int count) throws DatabaseException {

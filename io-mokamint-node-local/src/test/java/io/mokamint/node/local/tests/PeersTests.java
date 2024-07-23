@@ -91,7 +91,7 @@ public class PeersTests extends AbstractLoggedTests {
 	/**
 	 * The chain information of the nodes used in the tests.
 	 */
-	private final static ChainInfo chainInfo = ChainInfos.of(2L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 5, 6, 7, 8 }));
+	private final static ChainInfo chainInfo = ChainInfos.of(2L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 5, 6, 7, 8 }), Optional.of(new byte[] { 13, 17, 19 }));
 
 	/**
 	 * The application of the node used for testing.
@@ -383,7 +383,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 			@Override
 			public ChainInfo getChainInfo() {
-				return ChainInfos.of(chainInfo.getLength(), Optional.of(new byte[] { 10, 11, 23, 34, 56, 7 }), chainInfo.getHeadHash());
+				return ChainInfos.of(chainInfo.getLength(), Optional.of(new byte[] { 10, 11, 23, 34, 56, 7 }), chainInfo.getHeadHash(), chainInfo.getHeadStateId());
 			}
 		}
 

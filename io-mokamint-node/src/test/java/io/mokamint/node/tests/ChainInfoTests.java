@@ -18,17 +18,11 @@ package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
-import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ChainInfos;
@@ -37,12 +31,10 @@ import jakarta.websocket.EncodeException;
 
 public class ChainInfoTests extends AbstractLoggedTests {
 
-	private final static Logger LOGGER = Logger.getLogger(ChainInfoTests.class.getName());
-
 	@Test
 	@DisplayName("chain infos with non-empty hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 3, 6, 8, 11 }), Optional.of(new byte[] { 0, 90, 91 }));
+		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 3, 6, 8, 11 }), Optional.of(new byte[] { 0, 90, 91 }), Optional.of(new byte[] { 13, 17, 19 }));
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);
@@ -51,7 +43,7 @@ public class ChainInfoTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("chain infos with empty hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForEmpty1() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var info1 = ChainInfos.of(1317L, Optional.empty(), Optional.of(new byte[] { 0, 90, 91 }));
+		var info1 = ChainInfos.of(1317L, Optional.empty(), Optional.of(new byte[] { 0, 90, 91 }), Optional.of(new byte[] { 13, 17, 19 }));
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);
@@ -60,7 +52,7 @@ public class ChainInfoTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("chain infos with empty hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForEmpty2() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 0, 90, 91 }), Optional.empty());
+		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 0, 90, 91 }), Optional.empty(), Optional.of(new byte[] { 13, 17, 19 }));
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);
@@ -69,30 +61,9 @@ public class ChainInfoTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("chain infos with empty hashes are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForEmpty3() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var info1 = ChainInfos.of(1317L, Optional.empty(), Optional.empty());
+		var info1 = ChainInfos.of(1317L, Optional.empty(), Optional.empty(), Optional.empty());
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);
-	}
-
-	static {
-		String current = System.getProperty("java.util.logging.config.file");
-		if (current == null) {
-			// if the property is not set, we provide a default (if it exists)
-			URL resource = ChainInfoTests.class.getClassLoader().getResource("logging.properties");
-			if (resource != null)
-				try (var is = resource.openStream()) {
-					LogManager.getLogManager().readConfiguration(is);
-				}
-				catch (SecurityException | IOException e) {
-					throw new RuntimeException("Cannot load logging.properties file", e);
-				}
-		}
-	}
-
-	@BeforeEach
-	public void beforeEach(TestInfo testInfo) {
-		var separator = System.lineSeparator();
-		LOGGER.info(separator + separator + " * * * " + testInfo.getDisplayName() + " * * *" + separator + separator);
 	}
 }

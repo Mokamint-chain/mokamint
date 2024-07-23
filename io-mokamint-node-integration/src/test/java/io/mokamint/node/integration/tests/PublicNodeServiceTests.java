@@ -475,7 +475,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getChainInfo() request reaches the service, it sends back its chain information")
 	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, DatabaseException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
 		var semaphore = new Semaphore(0);
-		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }));
+		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }), Optional.of(new byte[] { 13, 17, 19 }));
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
