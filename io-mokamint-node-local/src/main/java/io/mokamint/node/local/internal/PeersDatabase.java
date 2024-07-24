@@ -83,9 +83,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * Creates the database of a node.
 	 * 
 	 * @param node the node
-	 * @throws DatabaseException if the database cannot be opened, because it is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public PeersDatabase(LocalNodeImpl node) throws DatabaseException {
+	public PeersDatabase(LocalNodeImpl node) throws NodeException {
 		super(ClosedDatabaseException::new);
 
 		LocalNodeConfig config = node.getConfig();
@@ -96,7 +96,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	}
 
 	@Override
-	public void close() throws DatabaseException, InterruptedException {
+	public void close() throws NodeException, InterruptedException {
 		if (stopNewCalls()) {
 			try {
 				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
@@ -156,12 +156,11 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * @return true if the peer has been added; false otherwise, which means
 	 *         that the peer was already present or that it was not forced
 	 *         and there are already {@link maxPeers} peers
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean add(Peer peer, boolean force) throws DatabaseException, NodeException {
+	public boolean add(Peer peer, boolean force) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
+			return check(URISyntaxException.class, IOException.class, NodeException.class,
 				() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
@@ -218,7 +217,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		}
 	}
 
-	private void ensureNodeUUID() throws DatabaseException {
+	private void ensureNodeUUID() throws NodeException {
 		try {
 			CheckRunnable.check(IOException.class, () -> {
 				environment.executeInTransaction(txn -> {
@@ -297,7 +296,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		}
 	}
 
-	private boolean add(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException, DatabaseException {
+	private boolean add(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException, NodeException {
 		try {
 			var bi = storeOfPeers.get(txn, PEERS);
 			if (bi == null) {

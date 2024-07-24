@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -43,7 +42,7 @@ import io.mokamint.node.local.internal.PeersDatabase;
 
 public class PeersDatabaseTests extends AbstractLoggedTests {
 
-	private static PeersDatabase mkDatabase(Path dir) throws NoSuchAlgorithmException, DatabaseException {
+	private static PeersDatabase mkDatabase(Path dir) throws NoSuchAlgorithmException, NodeException {
 		var config = LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.build();
@@ -56,7 +55,7 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("peers added to the database are still there at next opening")
-	public void peersAreKeptForNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, NodeException {
+	public void peersAreKeptForNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, URISyntaxException, InterruptedException, NodeException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
 
@@ -73,7 +72,7 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("peers removed from the database are not there at next opening")
-	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, NodeException {
+	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, URISyntaxException, InterruptedException, NodeException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
 		var peer3 = Peers.of(new URI("ws://www.amazon.com:8032"));
@@ -93,7 +92,7 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("duplicate peers are kept only once")
-	public void peersHaveNoDuplicates(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, URISyntaxException, InterruptedException, NodeException {
+	public void peersHaveNoDuplicates(@TempDir Path dir) throws NoSuchAlgorithmException, URISyntaxException, InterruptedException, NodeException {
 		var peer1 = Peers.of(new URI("ws://localhost:8030"));
 		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
 
