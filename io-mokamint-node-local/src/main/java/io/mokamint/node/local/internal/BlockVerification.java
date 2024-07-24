@@ -104,7 +104,7 @@ public class BlockVerification {
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
-		this.creationTime = node.getBlockchain().creationTimeOf(block).orElseThrow(() -> new NodeException());
+		this.creationTime = node.getBlockchain().creationTimeOf(block).orElseThrow(() -> new NodeException("Cannot determine the creation time of the block under verification"));
 
 		if (block instanceof NonGenesisBlock ngb)
 			verifyAsNonGenesis(ngb);
