@@ -34,7 +34,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainPortion;
@@ -457,12 +456,11 @@ public class SynchronizationTask implements Task {
 		 * @return true if and only if no block was missing and all blocks could be
 		 *         successfully verified and added to blockchain; if false, synchronization must stop here
 		 * @throws DatabaseException if the database of the node is corrupted
-		 * @throws NoSuchAlgorithmException if some block in the database of the node uses an unknown hashing algorithm
 		 * @throws ClosedDatabaseException if the database is already closed
 		 * @throws InterruptedException if the current thread gets interrupted during this method
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private boolean addBlocksToBlockchain() throws DatabaseException, IOException, NoSuchAlgorithmException, ClosedDatabaseException, InterruptedException, NodeException {
+		private boolean addBlocksToBlockchain() throws DatabaseException, IOException, ClosedDatabaseException, InterruptedException, NodeException {
 			for (int h = 0; h < chosenGroup.length; h++) {
 				stopIfInterrupted();
 
@@ -476,7 +474,7 @@ public class SynchronizationTask implements Task {
 					try {
 						blockchain.add(block);
 					}
-					catch (VerificationException | TimeoutException | ApplicationException e) {
+					catch (VerificationException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
 						markAsMisbehaving(downloaders.get(block));
 						return false;

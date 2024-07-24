@@ -160,10 +160,8 @@ public class Mempool {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is not working properly
 	 */
-	public void rebaseAt(Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	public void rebaseAt(Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		new RebaseAt(newBase);
 	}
 
@@ -346,7 +344,7 @@ public class Mempool {
 		private final Set<Transaction> toRemove = new HashSet<>();
 		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
-		private RebaseAt(final Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+		private RebaseAt(final Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
 			this.newBlock = newBase;
 
 			synchronized (mempool) {
@@ -398,7 +396,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(hashingForBlocks) + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NodeException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NodeException, ClosedDatabaseException, InterruptedException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -420,10 +418,9 @@ public class Mempool {
 		 * @param block the block
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws TimeoutException if the application did not provide an answer in time
-		 * @throws ApplicationException if the application is not working properly
+		 * @throws NodeException if the node is misbehaving
 		 */
-		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException, TimeoutException, InterruptedException, ApplicationException {
+		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException, InterruptedException, NodeException {
 			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
 				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
 		}
@@ -445,16 +442,19 @@ public class Mempool {
 		 * @return the resulting transaction entry
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws TimeoutException if the application did not provide an answer in time
-		 * @throws ApplicationException if the application is not working properly
+		 * @throws NodeException if the node is misbehaving
 		 */
-		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException, TimeoutException, InterruptedException, ApplicationException {
+		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException, InterruptedException, NodeException {
 			try {
 				return new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction));
 			}
 			catch (TransactionRejectedException e) {
 				// the database contains a block with a rejected transaction: it should not be there!
 				throw new DatabaseException(e);
+			}
+			catch (TimeoutException | ApplicationException e) {
+				// the node is misbehaving because the application it is connected to is misbehaving
+				throw new NodeException(e);
 			}
 		}
 

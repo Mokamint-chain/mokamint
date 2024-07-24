@@ -654,11 +654,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
-	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean add(Block block) throws DatabaseException, NodeException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
+	public boolean add(Block block) throws DatabaseException, NodeException, VerificationException, ClosedDatabaseException, InterruptedException {
 		return add(block, true);
 	}
 
@@ -673,11 +670,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NodeException if the node is misbehaving
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
-	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean addVerified(Block block) throws DatabaseException, NodeException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
+	public boolean addVerified(Block block) throws DatabaseException, NodeException, ClosedDatabaseException, InterruptedException {
 		try {
 			return add(block, false);
 		}
@@ -699,10 +693,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	private boolean add(Block block, boolean verify) throws DatabaseException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
+	private boolean add(Block block, boolean verify) throws DatabaseException, VerificationException, ClosedDatabaseException, InterruptedException, NodeException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
@@ -767,7 +759,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, NodeException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, ApplicationException {
+			throws DatabaseException, NodeException, ClosedDatabaseException, VerificationException, InterruptedException {
 
 		try {
 			if (verify)

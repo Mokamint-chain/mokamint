@@ -90,11 +90,8 @@ public class BlockVerification {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is misbehaving
-	 * @throws NodeException if the node is misbehaving
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NodeException, TimeoutException, InterruptedException, ApplicationException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NodeException, InterruptedException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
@@ -116,10 +113,9 @@ public class BlockVerification {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NodeException, InterruptedException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
 		finalStateIsTheInitialStateOfTheApplication();
@@ -138,11 +134,9 @@ public class BlockVerification {
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is misbehaving
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NodeException, TimeoutException, InterruptedException, ApplicationException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NodeException, InterruptedException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
@@ -167,11 +161,10 @@ public class BlockVerification {
 	 * Checks if the deadline of {@link #block} has a prolog valid for the {@link #node}.
 	 * 
 	 * @throws VerificationException if that condition in violated
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if the application did not provide an answer in time
 	 */
-	private void deadlineHasValidProlog() throws VerificationException, TimeoutException, InterruptedException, ApplicationException {
+	private void deadlineHasValidProlog() throws VerificationException, NodeException, InterruptedException {
 		var prolog = deadline.getProlog();
 
 		if (!prolog.getChainId().equals(config.getChainId()))
@@ -183,8 +176,13 @@ public class BlockVerification {
 		if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
 			throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
 
-		if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
-			throw new VerificationException("Invalid deadline prolog's extra");
+		try {
+			if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
+				throw new VerificationException("Invalid deadline prolog's extra");
+		}
+		catch (TimeoutException | ApplicationException e) {
+			throw new NodeException(e);
+		}
 	}
 
 	/**
@@ -281,24 +279,23 @@ public class BlockVerification {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is misbehaving
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, InterruptedException, NodeException {
 		var app = node.getApplication();
-		int id;
 
 		try {
-			id = app.beginBlock(block.getDescription().getHeight(), creationTime, previous.getStateId());
-		}
-		catch (UnknownStateException e) {
-			throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());
-		}
+			int id;
 
-		boolean success = false;
+			try {
+				id = app.beginBlock(block.getDescription().getHeight(), creationTime, previous.getStateId());
+			}
+			catch (UnknownStateException e) {
+				throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());
+			}
 
-		try {
+			boolean success = false;
+
 			try {
 				for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 					try {
@@ -334,11 +331,21 @@ public class BlockVerification {
 			// somebody has closed the group id that we are using: the node is not working properly
 			throw new NodeException(e);
 		}
+		catch (ApplicationException | TimeoutException e) {
+			// the node is misbehaving because the application it is connected to is misbehaving
+			throw new NodeException(e);
+		}
 	}
 
-	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, TimeoutException, InterruptedException, ApplicationException {
-		var expected = node.getApplication().getInitialStateId();
-		if (!Arrays.equals(block.getStateId(), expected))
-			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
+	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, InterruptedException, NodeException {
+		try {
+			var expected = node.getApplication().getInitialStateId();
+			if (!Arrays.equals(block.getStateId(), expected))
+				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
+		}
+		catch (ApplicationException | TimeoutException e) {
+			// the node is misbehaving because the application it is connected to is misbehaving
+			throw new NodeException(e);
+		}
 	}
 }

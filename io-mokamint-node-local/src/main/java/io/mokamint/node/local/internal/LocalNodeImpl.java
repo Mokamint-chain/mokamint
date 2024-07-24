@@ -679,11 +679,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws NodeException if the node is misbehaving
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application does not answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	protected void rebaseMempoolAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	protected void rebaseMempoolAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		mempool.rebaseAt(block);
 	}
 
@@ -697,10 +695,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		return result.getTransactions(); // extract the resulting transactions
@@ -1109,15 +1105,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				try {
 					var whispered = whisperedInfo.whispered;
 
-					if (whisperedInfo.add)
-						if (whispered instanceof WhisperedBlock whisperedBlock) {
-							try {
-								blockchain.add(whisperedBlock.getBlock());
-							}
-							catch (TimeoutException e) {
-								LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
-							}
-						}
+					if (whisperedInfo.add && whispered instanceof WhisperedBlock whisperedBlock)
+						blockchain.add(whisperedBlock.getBlock());
 
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 					peers.whisper(whispered, newSeen, whisperedInfo.description);
@@ -1126,7 +1115,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedBlock whisperedBlock)
 						onWhispered(whisperedBlock.getBlock());
 				}
-				catch (DatabaseException | ApplicationException | NodeException e) {
+				catch (DatabaseException | NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
