@@ -56,7 +56,6 @@ import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NodeException;
@@ -146,22 +145,22 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+		private TestNode(Path dir) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+		private TestNode(Path dir, Application application) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 
-		private TestNode(LocalNodeConfig config) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+		private TestNode(LocalNodeConfig config) throws InvalidKeyException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 			super(config, nodeKeys, application, false);
 		}
 	}
 
 	@Test
 	@DisplayName("if an added non-genesis block is too much in the future, verification rejects it")
-	public void blockTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, InvalidKeyException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException {
+	public void blockTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException {
 		var config = LocalNodeConfigBuilders.defaults()
 				.setDir(dir)
 				.setBlockMaxTimeInTheFuture(1000)
@@ -190,7 +189,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added genesis block is too much in the future, verification rejects it")
-	public void genesisTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, InvalidKeyException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void genesisTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		var config = LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.setChainId("octopus")
@@ -213,7 +212,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent height, verification rejects it")
-	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir, application)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -236,7 +235,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent acceleration, verification rejects it")
-	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -259,7 +258,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent power, verification rejects it")
-	public void powerMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void powerMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -282,7 +281,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent total waiting time, verification rejects it")
-	public void totalWaitingTimeMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void totalWaitingTimeMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -305,7 +304,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a non-genesis block is signed with the wrong key, its creation fails")
-	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException {
+	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -320,7 +319,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a repeated transaction, its creation fails")
-	public void repeatedTransactionGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException {
+	public void repeatedTransactionGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var hashingForDeadlines = config.getHashingForDeadlines();
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
@@ -337,7 +336,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's scoop number, verification rejects it")
-	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void deadlineScoopNumberMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -362,7 +361,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block contains a transaction already in blockchain, verification rejects it")
-	public void transactionAlreadyInBlockchainGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void transactionAlreadyInBlockchainGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
@@ -390,7 +389,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the transactions table of an added non-genesis block is too big, verification rejects it")
-	public void transactionsTooBigForNonGenesisGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void transactionsTooBigForNonGenesisGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var tx3 = Transactions.of(new byte[] { 4, 50 });
@@ -414,7 +413,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a transaction that does not pass the application check, verification rejects it")
-	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
+	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
 		var app = mockApplication();
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -444,7 +443,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a transaction that does not pass the delivery check, verification rejects it")
-	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
+	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
 		var app = mockApplication();
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -474,7 +473,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of its transactions, verification rejects it")
-	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
+	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
 		var app = mockApplication();
 		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
@@ -498,7 +497,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's data, verification rejects it")
-	public void deadlineDataMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void deadlineDataMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -526,7 +525,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's hashing algorithm, verification rejects it")
-	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -553,7 +552,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong deadline's prolog chain identifier, verification rejects it")
-	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -581,7 +580,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong blocks' signature algorithm, verification rejects it")
-	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -614,7 +613,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong deadlines' signature algorithm, verification rejects it")
-	public void deadlinePrologDeadlinesSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void deadlinePrologDeadlinesSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -647,7 +646,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has a wrong deadline's prolog extra, verification rejects it")
-	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
+	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
 		var application = mockApplication();
 		when(application.checkPrologExtra(any())).thenReturn(false);
 
@@ -672,7 +671,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has an invalid deadline progressive, verification rejects it")
-	public void invalidDeadlineProgressiveGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void invalidDeadlineProgressiveGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -698,7 +697,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has an invalid deadline value, verification rejects it")
-	public void invalidDeadlineValueGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, DatabaseException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+	public void invalidDeadlineValueGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		try (var node = new TestNode(dir, application)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -733,7 +732,7 @@ public class VerificationTests extends AbstractLoggedTests {
 				.build();
 	}
 
-	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis, LocalNodeConfig config) throws DatabaseException, NodeException {
+	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis, LocalNodeConfig config) throws NodeException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(genesis, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
@@ -741,7 +740,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
 	}
 
-	private static void assertBlockchainIsJustTwoBlocks(Blockchain blockchain, GenesisBlock genesis, NonGenesisBlock block, LocalNodeConfig config) throws DatabaseException, NodeException {
+	private static void assertBlockchainIsJustTwoBlocks(Blockchain blockchain, GenesisBlock genesis, NonGenesisBlock block, LocalNodeConfig config) throws NodeException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(block, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
