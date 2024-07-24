@@ -52,7 +52,6 @@ import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -118,14 +117,14 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if the application fails temporarily, the node resumes mining")
 	@Timeout(20)
-	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, InvalidKeyException, SignatureException, NodeException, DatabaseException, AlreadyInitializedException, TimeoutException, UnknownStateException {
+	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, InvalidKeyException, SignatureException, NodeException, AlreadyInitializedException, TimeoutException, UnknownStateException {
 		var port = 8032;
 		var uri = new URI("ws://localhost:" + port);
 		var sevenBlocksAdded = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InvalidKeyException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(config, nodeKeys, app, true);
 				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 			}

@@ -48,7 +48,6 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -89,7 +88,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@Timeout(20)
 	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -108,7 +107,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -155,7 +154,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@Timeout(20)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -215,8 +214,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer adds another peer, eventually to end up being a peer of each other")
 	public void ifPeerAddsPeerThenTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
-			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DatabaseException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -231,7 +230,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expected;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expected) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Peer expected) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expected = expected;

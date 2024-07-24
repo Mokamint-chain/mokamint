@@ -52,7 +52,6 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
@@ -144,7 +143,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends AbstractLocalNode {
 
-		private MiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+		private MiningNode(LocalNodeConfig config) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
 			super(config, nodeKeys, app, true);
 			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
@@ -162,7 +161,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends AbstractLocalNode {
 
-		private NonMiningNode(LocalNodeConfig config) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+		private NonMiningNode(LocalNodeConfig config) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 
@@ -181,7 +180,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity synchronizes from its peer")
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
 		var uri2 = new URI("ws://localhost:" + port2);
@@ -207,7 +206,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity, once stopped and restarted, synchronizes from its peer")
 	public void nodeWithoutMinerStopRestartFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
 		var uri2 = new URI("ws://localhost:" + port2);
@@ -247,7 +246,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity, once disconnected and reconnected, synchronizes from its peer")
 	public void nodeWithoutMinerDisconnectConnectFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   DatabaseException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port2 = 8034;
 		var uri2 = new URI("ws://localhost:" + port2);

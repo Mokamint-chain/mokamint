@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.ExceptionMessages;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
@@ -90,7 +89,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Peer) works")
-	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, PeerRejectedException, DatabaseException, NodeException {
+	public void addPeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, PeerRejectedException, NodeException {
 		var peers1 = Set.of(Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")));
 		var peers2 = new HashSet<Peer>();
 
@@ -295,7 +294,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("remove(Peer) works")
-	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, DatabaseException, NodeException {
+	public void removePeerWorks() throws DeploymentException, IOException, URISyntaxException, TimeoutException, InterruptedException, NodeException {
 		var peers1 = Set.of(Peers.of(new URI("ws://my.machine:1024")), Peers.of(new URI("ws://your.machine:1025")));
 		var peers2 = new HashSet<Peer>();
 

@@ -113,10 +113,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * Yields the UUID of the node having this database.
 	 * 
 	 * @return the UUID
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the database is already closed
 	 */
-	public UUID getUUID() throws DatabaseException, NodeException {
+	public UUID getUUID() throws NodeException {
 		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, UUID));
 			if (bi == null)
@@ -133,10 +132,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * Yields the set of peers saved in this database, if any.
 	 * 
 	 * @return the peers
-	 * @throws DatabaseException of the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Stream<Peer> getPeers() throws DatabaseException, NodeException {
+	public Stream<Peer> getPeers() throws NodeException {
 		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, PEERS));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
@@ -174,12 +172,11 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * @param peer the peer to remove
 	 * @return true if the peer has been actually removed; false otherwise, which means
 	 *         that the peer was not in the database
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean remove(Peer peer) throws DatabaseException, NodeException {
+	public boolean remove(Peer peer) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
+			return check(URISyntaxException.class, IOException.class, NodeException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
 		}
 		catch (IOException | URISyntaxException | ExodusException e) {
@@ -323,7 +320,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		}
 	}
 
-	private boolean remove(Transaction txn, Peer peer) throws IOException, URISyntaxException, DatabaseException {
+	private boolean remove(Transaction txn, Peer peer) throws IOException, URISyntaxException, NodeException {
 		try {
 			var bi = storeOfPeers.get(txn, PEERS);
 			if (bi == null)
@@ -350,7 +347,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		return env;
 	}
 
-	private Store openStore(String name) throws DatabaseException {
+	private Store openStore(String name) throws NodeException {
 		var store = new AtomicReference<Store>();
 
 		try {

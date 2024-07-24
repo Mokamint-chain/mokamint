@@ -37,7 +37,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -63,7 +62,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Peer) request reaches the service, it adds the peers to the node and it sends back a result")
-	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, PeerRejectedException, DatabaseException, NodeException {
+	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, PeerRejectedException, NodeException {
 		var semaphore = new Semaphore(0);
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(Peers.of(new URI("ws://my.machine:8032")));
@@ -98,7 +97,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a remove(Peer) request reaches the service, it removes the peers from the node and it sends back a result")
-	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, DatabaseException, NodeException {
+	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -206,7 +205,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a restricted service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
-	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, DatabaseException, InterruptedException, DeploymentException, URISyntaxException, NodeException {
+	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, InterruptedException, DeploymentException, URISyntaxException, NodeException {
 		var node = mock(RestrictedNode.class);
 		var semaphore = new Semaphore(0);
 		

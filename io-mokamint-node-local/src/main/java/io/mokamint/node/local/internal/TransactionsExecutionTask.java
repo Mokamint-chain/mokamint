@@ -34,7 +34,6 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Transaction;
@@ -127,7 +126,7 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, UnknownStateException, InterruptedException, TimeoutException, NodeException {
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws UnknownStateException, InterruptedException, TimeoutException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
