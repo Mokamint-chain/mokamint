@@ -778,7 +778,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (verify)
 				new BlockVerification(node, block, previous);
 
-			if (add(block, updatedHead)) {
+			if (add(block, hashOfBlock, updatedHead)) {
 				node.onAdded(block);
 				getOrphansWithParent(hashOfBlock).forEach(ws::add);
 				if (first)
@@ -805,6 +805,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Adds the given block to this blockchain. If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
+	 * @param hashOfBlock the hash of {@code block}
 	 * @param updatedHead the new head of the best chain resulting from the addition,
 	 *                    if it changed wrt the previous head
 	 * @return true if the block has been actually added to the database, false otherwise
@@ -812,11 +813,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NoSuchAlgorithmException if some block in the database uses an unknown hashing algorithm
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	private boolean add(Block block, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+	private boolean add(Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
 		boolean hasBeenAdded;
 	
 		try (var scope = mkScope()) {
-			hasBeenAdded = check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, updatedHead))));
+			hasBeenAdded = check(DatabaseException.class, NoSuchAlgorithmException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, updatedHead))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -835,6 +836,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @param block the block to add
+	 * @param hashOfBlock the hash of {@code block}
 	 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head
 	 * @return true if and only if the block has been added. False means that
 	 *         the block was already in the tree; or that {@code block} is a genesis
@@ -843,9 +845,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NoSuchAlgorithmException if some block uses an unknown hashing algorithm
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	private boolean add(Transaction txn, Block block, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
-		byte[] hashOfBlock = block.getHash(hashingForBlocks);
-
+	private boolean add(Transaction txn, Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws NoSuchAlgorithmException, DatabaseException {
 		if (containsBlock(txn, hashOfBlock)) {
 			LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
