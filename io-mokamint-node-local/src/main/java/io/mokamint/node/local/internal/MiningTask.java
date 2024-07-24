@@ -180,7 +180,7 @@ public class MiningTask implements Task {
 					LOGGER.warning("mining: exiting since the node is being shut down");
 					break;
 				}
-				catch (DatabaseException | InvalidKeyException | SignatureException | NodeException e) {
+				catch (InvalidKeyException | SignatureException | NodeException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
 					break;
 				}

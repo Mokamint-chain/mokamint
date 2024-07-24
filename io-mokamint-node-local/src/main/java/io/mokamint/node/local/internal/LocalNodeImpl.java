@@ -1113,7 +1113,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedBlock whisperedBlock)
 						onWhispered(whisperedBlock.getBlock());
 				}
-				catch (DatabaseException | NodeException | TimeoutException e) {
+				catch (NodeException | TimeoutException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
@@ -1147,7 +1147,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedTransaction whisperedTransaction)
 						onWhispered(whisperedTransaction.getTransaction());
 				}
-				catch (NodeException | DatabaseException | TimeoutException e) {
+				catch (NodeException | TimeoutException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				catch (TransactionRejectedException e) {
@@ -1180,7 +1180,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		catch (DatabaseException | NodeException | TimeoutException | ApplicationException e) {
+		catch (NodeException | TimeoutException | ApplicationException e) {
 			LOGGER.log(Level.SEVERE, "cannot identify the non-frozen part of the blockchain", e);
 		}
 	}

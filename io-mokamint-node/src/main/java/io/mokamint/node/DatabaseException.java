@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import io.mokamint.node.api.NodeException;
+
 /**
  * An exception stating that the database of a Mokamint node is corrupted.
  */
 @SuppressWarnings("serial")
-public class DatabaseException extends Exception {
+public class DatabaseException extends NodeException {
 
 	/**
 	 * Creates a new exception.
