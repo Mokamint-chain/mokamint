@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.chain;
 
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;

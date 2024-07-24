@@ -30,7 +30,6 @@ import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.BlockDescriptions;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlock;
@@ -86,12 +85,11 @@ public class BlockVerification {
 	 * @param block the block
 	 * @param previous the previous of {@code block}; this can be empty only if {@code block} is a genesis block
 	 * @throws VerificationException if verification fails
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if some operation timed out
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, NodeException, InterruptedException, TimeoutException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, NodeException, InterruptedException, TimeoutException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
@@ -110,12 +108,11 @@ public class BlockVerification {
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, DatabaseException, NodeException, InterruptedException, TimeoutException {
+	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, NodeException, InterruptedException, TimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
 		finalStateIsTheInitialStateOfTheApplication();
@@ -130,13 +127,12 @@ public class BlockVerification {
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, NodeException, InterruptedException, TimeoutException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, NodeException, InterruptedException, TimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
@@ -238,9 +234,8 @@ public class BlockVerification {
 	 * 
 	 * @throws VerificationException if the creationTime of {@link #block} is too much in the future
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, DatabaseException, NodeException {
+	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, NodeException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime);
 		long max = node.getConfig().getBlockMaxTimeInTheFuture();
@@ -258,10 +253,9 @@ public class BlockVerification {
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if some transaction is already contained in blockchain
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NodeException, DatabaseException {
+	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NodeException {
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 			var txHash = node.getHasherForTransactions().hash(tx);
 			if (node.getBlockchain().getTransactionAddress(previous, txHash).isPresent())
@@ -276,12 +270,11 @@ public class BlockVerification {
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if that condition does not hold
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, InterruptedException, TimeoutException, NodeException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, TimeoutException, NodeException {
 		var app = node.getApplication();
 
 		try {

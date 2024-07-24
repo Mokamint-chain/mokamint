@@ -38,7 +38,6 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -142,10 +141,9 @@ public class BlockMiner {
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if some operation timed out
 	 * @throws UnknownStateException if the state of {@code previous} is unknown to the application 
-	 * @throws DatabaseException if the database of the node is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public BlockMiner(LocalNodeImpl node, Block previous) throws DatabaseException, UnknownStateException, InterruptedException, TimeoutException, NodeException {
+	public BlockMiner(LocalNodeImpl node, Block previous) throws UnknownStateException, InterruptedException, TimeoutException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.blockchain = node.getBlockchain();
@@ -162,13 +160,12 @@ public class BlockMiner {
 	 * 
 	 * @throws InterruptedException if the thread running this code gets interrupted
 	 * @throws TimeoutException if some operation timed out
-	 * @throws DatabaseException if the database of the node is corrupted
 	 * @throws SignatureException if the block could not be signed with the key of the node
 	 * @throws InvalidKeyException if the key of the node for signing the block is invalid
 	 * @throws RejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void mine() throws InterruptedException, TimeoutException, DatabaseException, InvalidKeyException, SignatureException, RejectedExecutionException, NodeException {
+	public void mine() throws InterruptedException, TimeoutException, InvalidKeyException, SignatureException, RejectedExecutionException, NodeException {
 		transactionExecutor.start();
 
 		try {
@@ -205,9 +202,8 @@ public class BlockMiner {
 	 * 
 	 * @param entry the entry to add
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public void add(TransactionEntry entry) throws NodeException, DatabaseException {
+	public void add(TransactionEntry entry) throws NodeException {
 		if (blockchain.getTransactionAddress(previous, entry.getHash()).isEmpty())
 			synchronized (mempool) {
 				if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
@@ -255,14 +251,13 @@ public class BlockMiner {
 	 * Commits the given block, if it is better than the current head.
 	 *
 	 * @param block the block
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void commitIfBetterThanHead(Block block) throws DatabaseException, InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
+	private void commitIfBetterThanHead(Block block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
 			committed = true;
@@ -306,7 +301,7 @@ public class BlockMiner {
 		miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 	}
 
-	private void addBlockToBlockchain(Block block) throws DatabaseException, InterruptedException, TimeoutException, NodeException {
+	private void addBlockToBlockchain(Block block) throws InterruptedException, TimeoutException, NodeException {
 		stopIfInterrupted();
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (blockchain.addVerified(block))

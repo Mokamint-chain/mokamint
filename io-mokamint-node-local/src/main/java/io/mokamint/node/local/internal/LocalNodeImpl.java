@@ -53,7 +53,6 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -223,35 +222,30 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, TimeoutException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 		super(ClosedNodeException::new);
 
-		try {
-			this.config = config;
-			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
-			this.keyPair = keyPair;
-			this.app = app;
-			this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
-			this.miners = new Miners(this);
-			this.blockchain = new Blockchain(this);
-			this.mempool = new Mempool(this);
-			this.peers = new Peers(this);
-			this.uuid = getInfo().getUUID();
-			peers.reconnectToSeedsAndPreviousPeers();
+		this.config = config;
+		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
+		this.keyPair = keyPair;
+		this.app = app;
+		this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
+		this.miners = new Miners(this);
+		this.blockchain = new Blockchain(this);
+		this.mempool = new Mempool(this);
+		this.peers = new Peers(this);
+		this.uuid = getInfo().getUUID();
+		peers.reconnectToSeedsAndPreviousPeers();
 
-			if (init)
-				blockchain.initialize();
-			else
-				scheduleSynchronization();
+		if (init)
+			blockchain.initialize();
+		else
+			scheduleSynchronization();
 
-			execute(this::processWhisperedPeers, "peers whispering process");
-			execute(this::processWhisperedBlocks, "blocks whispering process");
-			execute(this::processWhisperedTransactions, "transactions whispering process");
-			schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
-			schedulePeriodicWhisperingOfAllServices();
-			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
-			execute(this.miningTask = new MiningTask(this), "blocks mining process");
-		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
-		}
+		execute(this::processWhisperedPeers, "peers whispering process");
+		execute(this::processWhisperedBlocks, "blocks whispering process");
+		execute(this::processWhisperedTransactions, "transactions whispering process");
+		schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
+		schedulePeriodicWhisperingOfAllServices();
+		schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
+		execute(this.miningTask = new MiningTask(this), "blocks mining process");
 	}
 
 	@Override
@@ -302,18 +296,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
-		}
 	}
 
 	@Override
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
-		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
 		}
 	}
 
@@ -357,18 +345,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getChainInfo();
 		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
-		}
 	}
 
 	@Override
 	public ChainPortion getChainPortion(long start, int count) throws NodeException {
 		try (var scope = mkScope()) {
 			return ChainPortions.of(blockchain.getChain(start, count));
-		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
 		}
 	}
 
@@ -379,17 +361,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
 		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
-		}
 
-		try {
-			if (miningTask != null)
-				miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
-		}
-		catch (DatabaseException e) {
-			LOGGER.warning("cannot inform the block miner of the new transaction " + transaction.getHexHash(hasherForTransactions) + ": " + e.getMessage());
-		}
+		if (miningTask != null)
+			miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
 
 		whisperWithoutAddition(transaction);
 
@@ -415,9 +389,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getTransaction(hash);
 		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
-		}
 	}
 
 	@Override
@@ -429,7 +400,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
 		}
-		catch (ApplicationException | DatabaseException e) {
+		catch (ApplicationException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -439,9 +410,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getTransactionAddress(hash);
 		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
-		}
 	}
 
 	@Override
@@ -450,9 +418,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	
 		try (var scope = mkScope()) {
 			result = peers.add(peer);
-		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
 		}
 	
 		if (result.isPresent()) {
@@ -468,9 +433,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	public boolean remove(Peer peer) throws NodeException, InterruptedException {
 		try (var scope = mkScope()) {
 			return peers.remove(peer);
-		}
-		catch (DatabaseException e) {
-			throw new NodeException(e);
 		}
 	}
 
@@ -676,10 +638,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param block the block
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws InterruptedException if the current thread gets interrupted while performing the operation
 	 * @throws TimeoutException if some operation timed out
 	 */
-	protected void rebaseMempoolAt(Block block) throws NodeException, DatabaseException, InterruptedException, TimeoutException {
+	protected void rebaseMempoolAt(Block block) throws NodeException, InterruptedException, TimeoutException {
 		mempool.rebaseAt(block);
 	}
 
@@ -690,11 +652,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param block the block
 	 * @return the transactions, in decreasing order of priority
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, DatabaseException, InterruptedException, TimeoutException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, InterruptedException, TimeoutException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		return result.getTransactions(); // extract the resulting transactions
@@ -1079,10 +1040,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedPeer whisperedPeers)
 						onWhispered(whisperedPeers.getPeer());
 				}
-				catch (DatabaseException e) {
+				catch (NodeException | IOException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
-				catch (NodeException | IOException | PeerRejectedException | TimeoutException e) {
+				catch (PeerRejectedException | TimeoutException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 				}
 			}
@@ -1242,10 +1203,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void closePeersAndBlockchain() throws InterruptedException, NodeException {
 		try {
 			peers.close();
-		}
-		catch (DatabaseException e) {
-			LOGGER.log(Level.SEVERE, "cannot close the peers", e);
-			throw new NodeException(e);
 		}
 		finally {
 			closeBlockchain();

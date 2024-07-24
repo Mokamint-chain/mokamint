@@ -25,7 +25,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.application.api.UnknownStateException;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -125,9 +124,8 @@ public class MiningTask implements Task {
 	 * 
 	 * @param entry the transaction entry
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public void add(TransactionEntry entry) throws NodeException, DatabaseException {
+	public void add(TransactionEntry entry) throws NodeException {
 		var blockMiner = this.blockMiner;
 		if (blockMiner != null)
 			blockMiner.add(entry);
