@@ -23,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -47,11 +46,10 @@ public abstract class AbstractLocalNode extends LocalNodeImpl {
 	 *                                     contains a genesis block already
 	 * @throws SignatureException if the genesis block cannot be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
-	 * @throws NodeException if the node is not behaving correctly
+	 * @throws NodeException if the node is misbehaving
+	 * @throws TimeoutException if some operation timed out
 	 */
-	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
+	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
 		super(config, keyPair, app, init);
 	}
 }

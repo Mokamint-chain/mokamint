@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.Optional;
 import java.util.concurrent.RejectedExecutionException;
@@ -25,8 +24,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
@@ -128,10 +125,9 @@ public class MiningTask implements Task {
 	 * 
 	 * @param entry the transaction entry
 	 * @throws NodeException if the node is misbehaving
-	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
-	public void add(TransactionEntry entry) throws NodeException, ClosedDatabaseException, DatabaseException {
+	public void add(TransactionEntry entry) throws NodeException, DatabaseException {
 		var blockMiner = this.blockMiner;
 		if (blockMiner != null)
 			blockMiner.add(entry);
@@ -180,16 +176,16 @@ public class MiningTask implements Task {
 				catch (InterruptedException e) {
 					LOGGER.info("mining: restarting mining since the blockchain's head changed");
 				}
-				catch (ClosedDatabaseException e) {
-					LOGGER.warning("mining: exiting since the database has been closed");
-					break;
-				}
 				catch (RejectedExecutionException e) {
 					LOGGER.warning("mining: exiting since the node is being shut down");
 					break;
 				}
-				catch (ApplicationException | TimeoutException e) {
-					LOGGER.log(Level.SEVERE, "mining: the application is misbehaving: I will wait five seconds and then try again", e);
+				catch (DatabaseException | InvalidKeyException | SignatureException | NodeException e) {
+					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
+					break;
+				}
+				catch (TimeoutException e) {
+					LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
 
 					try {
 						Thread.sleep(5000L);
@@ -200,10 +196,6 @@ public class MiningTask implements Task {
 				}
 				catch (UnknownStateException e) {
 					LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
-				}
-				catch (NoSuchAlgorithmException | DatabaseException | InvalidKeyException | SignatureException | UnknownGroupIdException | NodeException e) {
-					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
-					break;
 				}
 				catch (RuntimeException e) {
 					LOGGER.log(Level.SEVERE, "mining: exiting because of unexpected exception", e);

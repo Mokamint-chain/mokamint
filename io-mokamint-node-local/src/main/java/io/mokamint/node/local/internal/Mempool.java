@@ -158,10 +158,10 @@ public class Mempool {
 	 * @param newBase the new base that must be set for this mempool
 	 * @throws NodeException if the node is misbehaving
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws TimeoutException if some operation timed out
 	 */
-	public void rebaseAt(Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
+	public void rebaseAt(Block newBase) throws NodeException, DatabaseException, InterruptedException, TimeoutException {
 		new RebaseAt(newBase);
 	}
 
@@ -175,40 +175,44 @@ public class Mempool {
 	 *                                      transaction as invalid or if its priority cannot be computed
 	 *                                      or if the transaction is already contained in the blockchain or mempool
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is not working properly
+	 * @throws TimeoutException if some operation timed out
 	 */
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, DatabaseException, InterruptedException, TimeoutException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
-	
-		app.checkTransaction(transaction);
-		long priority = app.getPriority(transaction);
-		var entry = new TransactionEntry(transaction, priority, hash);
-	
-		synchronized (mempool) {
-			if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
-				//the transaction was already in the blockchain
-				throw new TransactionRejectedException("Repeated transaction " + hexHash);
-	
-			if (mempool.size() < maxSize) {
-				if (!mempool.add(entry))
-					// the transaction was already in the mempool
+
+
+		try {
+			app.checkTransaction(transaction);
+			long priority = app.getPriority(transaction);
+			var entry = new TransactionEntry(transaction, priority, hash);
+
+			synchronized (mempool) {
+				if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
+					//the transaction was already in the blockchain
 					throw new TransactionRejectedException("Repeated transaction " + hexHash);
-	
-				mempoolAsList = null; // invalidation
+
+				if (mempool.size() < maxSize) {
+					if (!mempool.add(entry))
+						// the transaction was already in the mempool
+						throw new TransactionRejectedException("Repeated transaction " + hexHash);
+
+					mempoolAsList = null; // invalidation
+				}
+				else
+					throw new TransactionRejectedException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
 			}
-			else
-				throw new TransactionRejectedException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
+
+			LOGGER.info("mempool: added transaction " + hexHash);
+			node.onAdded(transaction);
+
+			return entry.getMempoolEntry();
 		}
-	
-		LOGGER.info("mempool: added transaction " + hexHash);
-		node.onAdded(transaction);
-	
-		return entry.getMempoolEntry();
+		catch (ApplicationException e) {
+			throw new NodeException(e);
+		}
 	}
 
 	protected void remove(TransactionEntry entry) {
@@ -344,7 +348,7 @@ public class Mempool {
 		private final Set<Transaction> toRemove = new HashSet<>();
 		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
-		private RebaseAt(final Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
+		private RebaseAt(final Block newBase) throws NodeException, DatabaseException, InterruptedException, TimeoutException {
 			this.newBlock = newBase;
 
 			synchronized (mempool) {
@@ -387,7 +391,7 @@ public class Mempool {
 				return false;
 		}
 
-		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws DatabaseException, NodeException, ClosedDatabaseException {
+		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws DatabaseException, NodeException {
 			if (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -396,7 +400,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(hashingForBlocks) + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NodeException, ClosedDatabaseException, InterruptedException {
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NodeException, InterruptedException, TimeoutException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -405,7 +409,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(hashingForBlocks) + " at height " + oldBlock.getDescription().getHeight());
 		}
 
-		private void removeAllTransactionsFromNewBaseToGenesis() throws NodeException, DatabaseException, ClosedDatabaseException {
+		private void removeAllTransactionsFromNewBaseToGenesis() throws NodeException, DatabaseException {
 			while (!mempool.isEmpty() && newBlock instanceof NonGenesisBlock ngb) {
 				removeAll(ngb.getTransactions().collect(Collectors.toCollection(HashSet::new)));
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -418,9 +422,10 @@ public class Mempool {
 		 * @param block the block
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if some operation timed out
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException, InterruptedException, NodeException {
+		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws DatabaseException, InterruptedException, TimeoutException, NodeException {
 			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
 				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
 		}
@@ -442,9 +447,10 @@ public class Mempool {
 		 * @return the resulting transaction entry
 		 * @throws DatabaseException if the database is corrupted
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if some operation timed out
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException, InterruptedException, NodeException {
+		private TransactionEntry intoTransactionEntry(Transaction transaction) throws DatabaseException, InterruptedException, TimeoutException, NodeException {
 			try {
 				return new TransactionEntry(transaction, app.getPriority(transaction), hasher.hash(transaction));
 			}
@@ -452,7 +458,7 @@ public class Mempool {
 				// the database contains a block with a rejected transaction: it should not be there!
 				throw new DatabaseException(e);
 			}
-			catch (TimeoutException | ApplicationException e) {
+			catch (ApplicationException e) {
 				// the node is misbehaving because the application it is connected to is misbehaving
 				throw new NodeException(e);
 			}
@@ -464,7 +470,7 @@ public class Mempool {
 				.forEach(Mempool.this::remove);
 		}
 
-		private Block getBlock(byte[] hash) throws NodeException, DatabaseException, ClosedDatabaseException {
+		private Block getBlock(byte[] hash) throws NodeException, DatabaseException {
 			return blockchain.getBlock(hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
 		}
 	}

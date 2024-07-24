@@ -127,18 +127,22 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, ClosedDatabaseException, UnknownStateException, TimeoutException, InterruptedException, ApplicationException, NodeException {
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws DatabaseException, UnknownStateException, InterruptedException, TimeoutException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
 
-		var maybeCreationTime = node.getBlockchain().creationTimeOf(previous);
-		if (maybeCreationTime.isEmpty())
-			throw new NodeException("The blockchain should not be empty at this stage");
+		var creationTime = node.getBlockchain().creationTimeOf(previous).orElseThrow(() -> new NodeException("The blockchain should not be empty at this stage"));
 
-		this.id = app.beginBlock(previous.getDescription().getHeight() + 1, maybeCreationTime.get(), previous.getStateId());
+		try {
+			this.id = app.beginBlock(previous.getDescription().getHeight() + 1, creationTime, previous.getStateId());
+		}
+		catch (ApplicationException e) {
+			// the node is misbehaving because the application it is connected to is misbehaving
+			throw new NodeException(e);
+		}
 	}
 
 	public void start() throws RejectedExecutionException {

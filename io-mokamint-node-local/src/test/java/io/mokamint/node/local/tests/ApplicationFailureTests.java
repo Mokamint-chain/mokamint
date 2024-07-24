@@ -125,7 +125,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InvalidKeyException, SignatureException, DatabaseException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(config, nodeKeys, app, true);
 				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 			}
@@ -140,7 +140,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 		var stopDone = new AtomicInteger(0);
 		// we simulate an application failure at the fifth block, but only at the first attempts
-		when(app.beginBlock(longThat(l -> l == 4 && stopDone.getAndIncrement() <= 1), any(), any())).thenThrow(new ApplicationException("stopped at fifth"));
+		when(app.beginBlock(longThat(l -> l == 4 && stopDone.getAndIncrement() <= 1), any(), any())).thenThrow(new TimeoutException("stopped at fifth"));
 
 		try (var service = ApplicationServices.open(app, port);
 			 var remote = RemoteApplications.of(uri, 2000);

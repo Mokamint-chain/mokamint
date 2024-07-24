@@ -112,7 +112,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, TimeoutException, ApplicationException, NodeException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, NodeException, TimeoutException {
 			super(config, SignatureAlgorithms.ed25519().getKeyPair(), app, init);
 
 			var ed25519 = SignatureAlgorithms.ed25519();
@@ -208,7 +208,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, TimeoutException, ApplicationException, NodeException {
+				private TestNode(LocalNodeConfig config, boolean init) throws IOException, DatabaseException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, NodeException, TimeoutException {
 					super(config, init); // TODO: init should be called after creation?
 				}
 

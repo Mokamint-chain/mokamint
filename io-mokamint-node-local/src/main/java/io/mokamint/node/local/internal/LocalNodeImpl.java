@@ -213,15 +213,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws TimeoutException if some operation timed out
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
 	 * @throws SignatureException if the genesis block cannot be signed
 	 * @throws InvalidKeyException if the private key of the node is invalid
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws NodeException if the node is not behaving correctly
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, TimeoutException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
 		super(ClosedNodeException::new);
 
 		try {
@@ -250,7 +249,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
 			execute(this.miningTask = new MiningTask(this), "blocks mining process");
 		}
-		catch (ClosedDatabaseException | DatabaseException | IOException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -303,7 +302,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
-		catch (ClosedDatabaseException | DatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -313,7 +312,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
 		}
-		catch (ClosedDatabaseException | DatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -358,7 +357,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getChainInfo();
 		}
-		catch (DatabaseException | ClosedDatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -368,7 +367,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return ChainPortions.of(blockchain.getChain(start, count));
 		}
-		catch (DatabaseException | ClosedDatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -380,7 +379,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
 		}
-		catch (ApplicationException | DatabaseException | ClosedDatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 
@@ -388,7 +387,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			if (miningTask != null)
 				miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
 		}
-		catch (DatabaseException | ClosedDatabaseException e) {
+		catch (DatabaseException e) {
 			LOGGER.warning("cannot inform the block miner of the new transaction " + transaction.getHexHash(hasherForTransactions) + ": " + e.getMessage());
 		}
 
@@ -416,7 +415,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getTransaction(hash);
 		}
-		catch (ClosedDatabaseException | DatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -430,7 +429,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
 		}
-		catch (ApplicationException | DatabaseException | ClosedDatabaseException e) {
+		catch (ApplicationException | DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -440,7 +439,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getTransactionAddress(hash);
 		}
-		catch (DatabaseException | ClosedDatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -452,7 +451,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = peers.add(peer);
 		}
-		catch (DatabaseException | ClosedDatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	
@@ -470,7 +469,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return peers.remove(peer);
 		}
-		catch (DatabaseException | ClosedDatabaseException e) {
+		catch (DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -678,10 +677,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param block the block
 	 * @throws NodeException if the node is misbehaving
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws TimeoutException if the application does not answer in time
+	 * @throws TimeoutException if some operation timed out
 	 */
-	protected void rebaseMempoolAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
+	protected void rebaseMempoolAt(Block block) throws NodeException, DatabaseException, InterruptedException, TimeoutException {
 		mempool.rebaseAt(block);
 	}
 
@@ -693,10 +691,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @return the transactions, in decreasing order of priority
 	 * @throws NodeException if the node is misbehaving
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if some operation timed out
 	 */
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, InterruptedException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, DatabaseException, InterruptedException, TimeoutException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		return result.getTransactions(); // extract the resulting transactions
@@ -1084,7 +1082,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				catch (DatabaseException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
-				catch (NodeException | ClosedDatabaseException | IOException | PeerRejectedException | TimeoutException e) {
+				catch (NodeException | IOException | PeerRejectedException | TimeoutException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 				}
 			}
@@ -1115,11 +1113,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedBlock whisperedBlock)
 						onWhispered(whisperedBlock.getBlock());
 				}
-				catch (DatabaseException | NodeException e) {
+				catch (DatabaseException | NodeException | TimeoutException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
-				catch (VerificationException | ClosedDatabaseException e) {
+				catch (VerificationException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 				}
 			}
@@ -1138,15 +1136,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				var whisperedInfo = whisperedTransactionsQueue.take();
 
 				try {
-					if (whisperedInfo.add)
-						if (whisperedInfo.whispered instanceof WhisperedTransaction whisperedTransaction) {
-							try {
-								mempool.add(whisperedTransaction.getTransaction());
-							}
-							catch (TimeoutException e) {
-								LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
-							}
-						}
+					if (whisperedInfo.add && whisperedInfo.whispered instanceof WhisperedTransaction whisperedTransaction)
+						mempool.add(whisperedTransaction.getTransaction());
 
 					var whispered = whisperedInfo.whispered;
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
@@ -1156,10 +1147,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedTransaction whisperedTransaction)
 						onWhispered(whisperedTransaction.getTransaction());
 				}
-				catch (NodeException | DatabaseException | ApplicationException e) {
+				catch (NodeException | DatabaseException | TimeoutException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
-				catch (TransactionRejectedException | ClosedDatabaseException e) {
+				catch (TransactionRejectedException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 				}
 			}
@@ -1189,7 +1180,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		catch (DatabaseException | NodeException | ClosedDatabaseException | TimeoutException | ApplicationException e) {
+		catch (DatabaseException | NodeException | TimeoutException | ApplicationException e) {
 			LOGGER.log(Level.SEVERE, "cannot identify the non-frozen part of the blockchain", e);
 		}
 	}

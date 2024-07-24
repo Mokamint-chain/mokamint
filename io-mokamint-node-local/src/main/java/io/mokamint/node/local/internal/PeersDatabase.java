@@ -42,6 +42,7 @@ import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.DatabaseException;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.api.LocalNodeConfig;
 
@@ -113,9 +114,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * 
 	 * @return the UUID
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws NodeException if the database is already closed
 	 */
-	public UUID getUUID() throws DatabaseException, ClosedDatabaseException {
+	public UUID getUUID() throws DatabaseException, NodeException {
 		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, UUID));
 			if (bi == null)
@@ -133,9 +134,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * 
 	 * @return the peers
 	 * @throws DatabaseException of the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public Stream<Peer> getPeers() throws DatabaseException, ClosedDatabaseException {
+	public Stream<Peer> getPeers() throws DatabaseException, NodeException {
 		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, PEERS));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
@@ -156,9 +157,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 *         that the peer was already present or that it was not forced
 	 *         and there are already {@link maxPeers} peers
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean add(Peer peer, boolean force) throws DatabaseException, ClosedDatabaseException {
+	public boolean add(Peer peer, boolean force) throws DatabaseException, NodeException {
 		try (var scope = mkScope()) {
 			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 				() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
@@ -175,9 +176,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * @return true if the peer has been actually removed; false otherwise, which means
 	 *         that the peer was not in the database
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean remove(Peer peer) throws DatabaseException, ClosedDatabaseException {
+	public boolean remove(Peer peer) throws DatabaseException, NodeException {
 		try (var scope = mkScope()) {
 			return check(URISyntaxException.class, IOException.class, DatabaseException.class,
 					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
