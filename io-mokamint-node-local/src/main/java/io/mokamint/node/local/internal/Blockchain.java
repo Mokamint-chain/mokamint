@@ -585,12 +585,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * of this blockchain.
 	 * 
 	 * @param block the block whose creation time is computed
-	 * @return the creation time of {@code block}; this is missing only for non-genesis blocks if the blockchain is empty
+	 * @return the creation time of {@code block}; this is empty only for non-genesis blocks if the blockchain is empty
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
 	 */
 	public Optional<LocalDateTime> creationTimeOf(Block block) throws DatabaseException, ClosedDatabaseException {
-		// TODO: probably an exception is the blockchain is empty
 		if (block instanceof GenesisBlock gb)
 			return Optional.of(gb.getStartDateTimeUTC());
 		else {
@@ -723,13 +722,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
 				if (cursor instanceof NonGenesisBlock ngb) {
 					Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
-					if (previous.isEmpty()) {
+					if (previous.isPresent())
+						added |= add(ngb, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
+					else {
 						putAmongOrphans(ngb);
 						if (block == ngb)
 							addedToOrphans = true;
 					}
-					else
-						added |= add(ngb, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
 				}
 				else
 					added |= add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
@@ -755,11 +754,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			while (!cursor.equals(block)) {
 				if (cursor instanceof NonGenesisBlock ngb) {
-					var maybePrevious = getBlock(ngb.getHashOfPreviousBlock());
-					if (maybePrevious.isEmpty())
-						throw new DatabaseException("The head has been added to a dangling path");
-
-					cursor = maybePrevious.get();
+					cursor = getBlock(ngb.getHashOfPreviousBlock()).orElseThrow(() -> new DatabaseException("The head has been added to a dangling path"));
 					blocksAdded.addFirst(cursor);
 				}
 				else
@@ -856,10 +851,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return false;
 		}
 		else if (block instanceof NonGenesisBlock ngb) {
-			var maybePreviousOfBlock = getBlock(txn, ngb.getHashOfPreviousBlock());
+			var maybeDescriptionOfPreviousOfBlock = getBlockDescription(txn, ngb.getHashOfPreviousBlock());
 
-			if (maybePreviousOfBlock.isPresent()) {
-				if (isInFrozenPart(txn, maybePreviousOfBlock.get())) {
+			if (maybeDescriptionOfPreviousOfBlock.isPresent()) {
+				if (isInFrozenPart(txn, maybeDescriptionOfPreviousOfBlock.get())) {
 					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
 					return false;
 				}
@@ -893,9 +888,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private boolean isInFrozenPart(Transaction txn, Block block) throws NoSuchAlgorithmException, DatabaseException {
+	private boolean isInFrozenPart(Transaction txn, BlockDescription blockDescription) throws NoSuchAlgorithmException, DatabaseException {
 		var totalWaitingTimeOfStartOfNonFrozenPart = getTotalWaitingTimeOfStartOfNonFrozenPart(txn);
-		return totalWaitingTimeOfStartOfNonFrozenPart.isPresent() && totalWaitingTimeOfStartOfNonFrozenPart.getAsLong() > block.getDescription().getTotalWaitingTime();
+		return totalWaitingTimeOfStartOfNonFrozenPart.isPresent() && totalWaitingTimeOfStartOfNonFrozenPart.getAsLong() > blockDescription.getTotalWaitingTime();
 	}
 
 	private Environment createBlockchainEnvironment() {
