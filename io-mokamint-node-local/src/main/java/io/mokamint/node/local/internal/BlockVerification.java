@@ -18,7 +18,6 @@ package io.mokamint.node.local.internal;
 
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -90,15 +89,14 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 * @throws ApplicationException if the application is misbehaving
-	 * @throws UnknownGroupIdException if the group id used to verify the transactions became invalid
 	 * @throws NodeException if the node is misbehaving
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException, NodeException {
+	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, DatabaseException, ClosedDatabaseException, NodeException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.block = block;
@@ -140,15 +138,14 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws DatabaseException if the database is corrupted
-	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws DeadlineValidityCheckException if the validity of the prolog of the deadline could not be determined
 	 * @throws ApplicationException if the application is misbehaving
-	 * @throws UnknownGroupIdException if the group id used to verify the transactions became invalid
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, UnknownGroupIdException, NodeException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, NodeException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedDescription();
 		deadlineHasValidProlog();
@@ -272,9 +269,9 @@ public class BlockVerification {
 	 * @throws VerificationException if some transaction is already contained in blockchain
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NodeException, ClosedDatabaseException, DatabaseException {
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 			var txHash = node.getHasherForTransactions().hash(tx);
 			if (node.getBlockchain().getTransactionAddress(previous, txHash).isPresent())
@@ -294,11 +291,9 @@ public class BlockVerification {
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
-	 * @throws UnknownGroupIdException if the group id used to verify the transactions is not recognized
-	 * 								   anymore as valid by the application
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException, NodeException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
 		var app = node.getApplication();
 		int id;
 
@@ -312,34 +307,40 @@ public class BlockVerification {
 		boolean success = false;
 
 		try {
-			for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
-				try {
-					app.checkTransaction(tx);
-				}
-				catch (TransactionRejectedException e) {
-					throw new VerificationException("Failed check of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
+			try {
+				for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+					try {
+						app.checkTransaction(tx);
+					}
+					catch (TransactionRejectedException e) {
+						throw new VerificationException("Failed check of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
+					}
+
+					try {
+						app.deliverTransaction(id, tx);
+					}
+					catch (TransactionRejectedException e) {
+						throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
+					}
 				}
 
-				try {
-					app.deliverTransaction(id, tx);
-				}
-				catch (TransactionRejectedException e) {
-					throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
-				}
+				var found = app.endBlock(id, block.getDeadline());
+
+				if (!Arrays.equals(block.getStateId(), found))
+					throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(found) + ")");
+
+				success = true;
 			}
-
-			var found = app.endBlock(id, block.getDeadline());
-
-			if (!Arrays.equals(block.getStateId(), found))
-				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(found) + ")");
-
-			success = true;
+			finally {
+				if (success)
+					app.commitBlock(id);
+				else
+					app.abortBlock(id);
+			}
 		}
-		finally {
-			if (success)
-				app.commitBlock(id);
-			else
-				app.abortBlock(id);
+		catch (UnknownGroupIdException e) {
+			// somebody has closed the group id that we are using: the node is not working properly
+			throw new NodeException(e);
 		}
 	}
 

@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -48,9 +47,10 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
@@ -156,15 +156,14 @@ public class Mempool {
 	 * all transactions in the blocks from P (excluded) to {@code newBase} in this mempool.
 	 * 
 	 * @param newBase the new base that must be set for this mempool
-	 * @throws NoSuchAlgorithmException if some block in the blockchain uses refers to an unknown
-	 *                                  cryptographic algorithm
+	 * @throws NodeException if the node is misbehaving
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not working properly
 	 */
-	public void rebaseAt(Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	public void rebaseAt(Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		new RebaseAt(newBase);
 	}
 
@@ -179,12 +178,12 @@ public class Mempool {
 	 *                                      or if the transaction is already contained in the blockchain or mempool
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
-	 * @throws NoSuchAlgorithmException if the database contains a block referring to an unknown cryptographic algorithm
+	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not working properly
 	 */
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, ClosedDatabaseException, DatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
 	
@@ -347,7 +346,7 @@ public class Mempool {
 		private final Set<Transaction> toRemove = new HashSet<>();
 		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
-		private RebaseAt(final Block newBase) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+		private RebaseAt(final Block newBase) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 			this.newBlock = newBase;
 
 			synchronized (mempool) {
@@ -390,7 +389,7 @@ public class Mempool {
 				return false;
 		}
 
-		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException {
+		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws DatabaseException, NodeException, ClosedDatabaseException {
 			if (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -399,7 +398,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(hashingForBlocks) + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NoSuchAlgorithmException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws DatabaseException, NodeException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -408,7 +407,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(hashingForBlocks) + " at height " + oldBlock.getDescription().getHeight());
 		}
 
-		private void removeAllTransactionsFromNewBaseToGenesis() throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		private void removeAllTransactionsFromNewBaseToGenesis() throws NodeException, DatabaseException, ClosedDatabaseException {
 			while (!mempool.isEmpty() && newBlock instanceof NonGenesisBlock ngb) {
 				removeAll(ngb.getTransactions().collect(Collectors.toCollection(HashSet::new)));
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -465,7 +464,7 @@ public class Mempool {
 				.forEach(Mempool.this::remove);
 		}
 
-		private Block getBlock(byte[] hash) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException {
+		private Block getBlock(byte[] hash) throws NodeException, DatabaseException, ClosedDatabaseException {
 			return blockchain.getBlock(hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
 		}
 	}

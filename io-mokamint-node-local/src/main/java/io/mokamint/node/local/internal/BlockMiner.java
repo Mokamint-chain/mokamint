@@ -208,11 +208,11 @@ public class BlockMiner {
 	 * Adds the given transaction entry to the mempool of the mining task.
 	 * 
 	 * @param entry the entry to add
-	 * @throws {@link NoSuchAlgorithmException} if some block in blockchain refers to an unknown cryptographic algorithm
-	 * @throws {@link ClosedDatabaseException} if the database is closed
-	 * @throws {@link DatabaseException} if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is closed
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+	public void add(TransactionEntry entry) throws NodeException, ClosedDatabaseException, DatabaseException {
 		if (blockchain.getTransactionAddress(previous, entry.getHash()).isEmpty())
 			synchronized (mempool) {
 				if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
@@ -304,7 +303,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
-		catch (ClosedDatabaseException | NoSuchAlgorithmException | DatabaseException e) {
+		catch (ClosedDatabaseException | DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -314,7 +313,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
 		}
-		catch (ClosedDatabaseException | NoSuchAlgorithmException | DatabaseException e) {
+		catch (ClosedDatabaseException | DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -381,7 +380,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
 		}
-		catch (ApplicationException | DatabaseException | NoSuchAlgorithmException | ClosedDatabaseException e) {
+		catch (ApplicationException | DatabaseException | ClosedDatabaseException e) {
 			throw new NodeException(e);
 		}
 
@@ -389,9 +388,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			if (miningTask != null)
 				miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
 		}
-		catch (DatabaseException | NoSuchAlgorithmException | ClosedDatabaseException e) {
-			LOGGER.warning("cannot inform the block miner of the new transaction "
-				+ transaction.getHexHash(hasherForTransactions) + ": " + e.getMessage());
+		catch (DatabaseException | ClosedDatabaseException e) {
+			LOGGER.warning("cannot inform the block miner of the new transaction " + transaction.getHexHash(hasherForTransactions) + ": " + e.getMessage());
 		}
 
 		whisperWithoutAddition(transaction);
@@ -418,7 +416,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getTransaction(hash);
 		}
-		catch (ClosedDatabaseException | NoSuchAlgorithmException | DatabaseException e) {
+		catch (ClosedDatabaseException | DatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -432,7 +430,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
 		}
-		catch (ApplicationException | NoSuchAlgorithmException | DatabaseException | ClosedDatabaseException e) {
+		catch (ApplicationException | DatabaseException | ClosedDatabaseException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -678,14 +676,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * mempool can be updated as well.
 	 * 
 	 * @param block the block
-	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws NodeException if the node is misbehaving
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application does not answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	protected void rebaseMempoolAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	protected void rebaseMempoolAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		mempool.rebaseAt(block);
 	}
 
@@ -695,14 +693,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param block the block
 	 * @return the transactions, in decreasing order of priority
-	 * @throws NoSuchAlgorithmException if some block in blockchain refers to an unknown cryptographic algorithm
+	 * @throws NodeException if the node is misbehaving
 	 * @throws DatabaseException if the database is corrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
 	 */
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NoSuchAlgorithmException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
+	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, DatabaseException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		return result.getTransactions(); // extract the resulting transactions
@@ -1128,7 +1126,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedBlock whisperedBlock)
 						onWhispered(whisperedBlock.getBlock());
 				}
-				catch (NoSuchAlgorithmException | DatabaseException | ApplicationException | NodeException e) {
+				catch (DatabaseException | ApplicationException | NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
@@ -1169,7 +1167,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedTransaction whisperedTransaction)
 						onWhispered(whisperedTransaction.getTransaction());
 				}
-				catch (NoSuchAlgorithmException | DatabaseException | ApplicationException e) {
+				catch (NodeException | DatabaseException | ApplicationException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				catch (TransactionRejectedException | ClosedDatabaseException e) {
@@ -1202,7 +1200,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		catch (DatabaseException | NoSuchAlgorithmException | ClosedDatabaseException | TimeoutException | ApplicationException e) {
+		catch (DatabaseException | NodeException | ClosedDatabaseException | TimeoutException | ApplicationException e) {
 			LOGGER.log(Level.SEVERE, "cannot identify the non-frozen part of the blockchain", e);
 		}
 	}

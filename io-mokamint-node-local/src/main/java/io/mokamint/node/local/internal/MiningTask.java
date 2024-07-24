@@ -127,11 +127,11 @@ public class MiningTask implements Task {
 	 * to process transactions that arrive during the mining of the block.
 	 * 
 	 * @param entry the transaction entry
-	 * @throws {@link NoSuchAlgorithmException} if the blockchain contains a block that refers to an unknown cryptographic algorithm
-	 * @throws {@link ClosedDatabaseException} if the database is already closed
-	 * @throws {@link DatabaseException} if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws DatabaseException if the database is corrupted
 	 */
-	public void add(TransactionEntry entry) throws NoSuchAlgorithmException, ClosedDatabaseException, DatabaseException {
+	public void add(TransactionEntry entry) throws NodeException, ClosedDatabaseException, DatabaseException {
 		var blockMiner = this.blockMiner;
 		if (blockMiner != null)
 			blockMiner.add(entry);
