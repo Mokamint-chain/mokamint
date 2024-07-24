@@ -43,7 +43,6 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.remote.api.RemotePublicNode;
-import io.mokamint.nonce.api.DeadlineValidityCheckException;
 
 /**
  * A task that synchronizes the blockchain from the peers.
@@ -477,7 +476,7 @@ public class SynchronizationTask implements Task {
 					try {
 						blockchain.add(block);
 					}
-					catch (VerificationException | TimeoutException | DeadlineValidityCheckException | ApplicationException e) {
+					catch (VerificationException | TimeoutException | ApplicationException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
 						markAsMisbehaving(downloaders.get(block));
 						return false;

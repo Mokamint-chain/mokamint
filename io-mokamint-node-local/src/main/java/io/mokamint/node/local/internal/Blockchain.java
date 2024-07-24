@@ -75,7 +75,6 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.nonce.api.DeadlineValidityCheckException;
 
 /**
  * The blockchain is a database where the blocks are persisted. Blocks are rooted at a genesis block
@@ -656,11 +655,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
-	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean add(Block block) throws DatabaseException, NodeException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, NodeException {
+	public boolean add(Block block) throws DatabaseException, NodeException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
 		return add(block, true);
 	}
 
@@ -683,7 +681,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		try {
 			return add(block, false);
 		}
-		catch (VerificationException | DeadlineValidityCheckException e) {
+		catch (VerificationException e) {
 			// impossible: we did not require block verification hence these exceptions should not have been generated
 			throw new NodeException("Unexpected exception", e);
 		}
@@ -702,11 +700,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if the application did not answer in time
-	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
 	 * @throws ApplicationException if the application is not behaving correctly
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean add(Block block, boolean verify) throws DatabaseException, NodeException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, NodeException {
+	private boolean add(Block block, boolean verify) throws DatabaseException, VerificationException, ClosedDatabaseException, TimeoutException, InterruptedException, ApplicationException, NodeException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
@@ -771,7 +767,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, NodeException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException {
+			throws DatabaseException, NodeException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, ApplicationException {
 
 		try {
 			if (verify)
@@ -794,37 +790,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		return false;
 	}
 
-	private boolean add(Transaction txn, Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, ClosedDatabaseException, VerificationException, TimeoutException, InterruptedException, DeadlineValidityCheckException, ApplicationException, NodeException {
-
-		try {
-			if (verify)
-				new BlockVerification(node, block, previous);
-
-			if (add(txn, block, hashOfBlock, updatedHead)) {
-				node.onAdded(block);
-				getOrphansWithParent(hashOfBlock).forEach(ws::add);
-				if (first)
-					return true;
-			}
-		}
-		catch (VerificationException e) {
-			if (first)
-				throw e;
-			else
-				LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
-		}
-
-		return false;
-	}
-
 	/**
 	 * Adds the given block to this blockchain. If the block was already in the database, nothing happens.
 	 * 
 	 * @param block the block to add
 	 * @param hashOfBlock the hash of {@code block}
-	 * @param updatedHead the new head of the best chain resulting from the addition,
-	 *                    if it changed wrt the previous head
+	 * @param updatedHead the new head of the best chain resulting from the addition, if it changed wrt the previous head
 	 * @return true if the block has been actually added to the database, false otherwise
 	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NodeException if the node is misbehaving
