@@ -100,7 +100,7 @@ public class List extends AbstractPublicRpcCommand {
 		private final byte[][] hashes;
 		private final LocalDateTime startDateTimeUTC;
 
-		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws NoSuchAlgorithmException, DatabaseException, TimeoutException, InterruptedException, NodeException {
+		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
 			super(mkHeader(remote), 5, json());
 
 			this.remote = remote;
@@ -120,7 +120,7 @@ public class List extends AbstractPublicRpcCommand {
 					"miner's public key (" + config.getSignatureForDeadlines() + ", base58)");
 		}
 
-		private LocalDateTime getStartDateTimeUTC(byte[] genesisHash) throws DatabaseException, NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
+		private LocalDateTime getStartDateTimeUTC(byte[] genesisHash) throws TimeoutException, InterruptedException, NodeException {
 			var maybeGenesis = remote.getBlockDescription(genesisHash);
 			if (maybeGenesis.isEmpty())
 				throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
@@ -130,7 +130,7 @@ public class List extends AbstractPublicRpcCommand {
 				throw new DatabaseException("The type of the genesis block is inconsistent!");
 		}
 
-		private void add(int pos) throws NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
+		private void add(int pos) throws TimeoutException, InterruptedException, NodeException {
 			long height = from + pos;
 			String rowHeight = height + ":";
 			String rowHash = Hex.toHexString(hashes[pos]);
@@ -173,21 +173,13 @@ public class List extends AbstractPublicRpcCommand {
 		if (from < -1L)
 			throw new CommandException("from cannot be smaller than -1!");
 
-		try {
-			var info = remote.getChainInfo();
-			if (from == -1L)
-				from = Math.max(0L, info.getLength() - 1 - count + 1);
+		var info = remote.getChainInfo();
+		if (from == -1L)
+			from = Math.max(0L, info.getLength() - 1 - count + 1);
 
-			var maybeGenesisHash = info.getGenesisHash();
-			if (maybeGenesisHash.isPresent())
-				new MyTable(maybeGenesisHash.get(), remote).print();
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("Unknown hashing algorithm in the head of the chain of the node at \"" + publicUri() + "\"!", e);
-		}
-		catch (DatabaseException e) {
-			throw new CommandException(e.getMessage(), e);
-		}
+		var maybeGenesisHash = info.getGenesisHash();
+		if (maybeGenesisHash.isPresent())
+			new MyTable(maybeGenesisHash.get(), remote).print();
 	}
 
 	@Override

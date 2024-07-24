@@ -196,9 +196,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * Creates a blockchain, by opening the database of blocks.
 	 * 
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public Blockchain(LocalNodeImpl node) throws DatabaseException {
+	public Blockchain(LocalNodeImpl node) throws NodeException {
 		super(ClosedDatabaseException::new);
 
 		this.node = node;
@@ -235,12 +235,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Determines if this blockchain is empty.
 	 * 
 	 * @return true if and only if this blockchain is empty
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean isEmpty() throws DatabaseException, NodeException {
+	public boolean isEmpty() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::isEmpty)));
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::isEmpty)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -251,10 +250,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Yields the hash of the genesis block in this blockchain, if any.
 	 * 
 	 * @return the hash of the genesis block, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<byte[]> getGenesisHash() throws DatabaseException, NodeException {
+	public Optional<byte[]> getGenesisHash() throws NodeException {
 		// we use a cache to avoid repeated access for reading the hash of the genesis block, that is not allowed to change after being set
 		if (genesisHashCache != null)
 			return Optional.of(genesisHashCache.get().clone());
@@ -262,7 +260,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		Optional<byte[]> result;
 
 		try (var scope = mkScope()) {
-			result = check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
+			result = check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -278,10 +276,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Yields the genesis block in this blockchain, if any.
 	 * 
 	 * @return the genesis block, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<GenesisBlock> getGenesis() throws DatabaseException, NodeException {
+	public Optional<GenesisBlock> getGenesis() throws NodeException {
 		// we use a cache to avoid repeated access for reading the genesis block, that is not allowed to change after being set
 		if (genesisCache != null)
 			return genesisCache;
@@ -289,7 +286,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		Optional<GenesisBlock> result;
 
 		try (var scope = mkScope()) {
-			result = check(DatabaseException.class, NodeException.class, () ->
+			result = check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getGenesis))
 			);
 		}
@@ -308,11 +305,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @return the head block, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<Block> getHead() throws NodeException, DatabaseException {
+	public Optional<Block> getHead() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, DatabaseException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getHead))
 			);
 		}
@@ -325,12 +321,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Yields the hash of the head of the best chain in this blockchain, if any.
 	 * 
 	 * @return the hash of the head block, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<byte[]> getHeadHash() throws DatabaseException, NodeException {
+	public Optional<byte[]> getHeadHash() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -342,11 +337,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @return the starting block, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<Block> getStartOfNonFrozenPart() throws NodeException, DatabaseException {
+	public Optional<Block> getStartOfNonFrozenPart() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, DatabaseException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getStartOfNonFrozenPart))
 			);
 		}
@@ -360,12 +354,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Transactions delivered before that time have generated stores that can be considered as frozen.
 	 * 
 	 * @return the limit time; this is empty if the database is empty
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory() throws NodeException, DatabaseException {
+	public Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, DatabaseException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(this::getStartingTimeOfNonFrozenHistory))
 			);
 		}
@@ -378,12 +371,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Yields the height of the head of the best chain in this blockchain, if any.
 	 * 
 	 * @return the height of the head block, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public OptionalLong getHeightOfHead() throws DatabaseException, NodeException {
+	public OptionalLong getHeightOfHead() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -394,12 +386,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Yields the power of the head of the best chain in this blockchain, if any.
 	 * 
 	 * @return the power of the head block, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<BigInteger> getPowerOfHead() throws DatabaseException, NodeException {
+	public Optional<BigInteger> getPowerOfHead() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -412,11 +403,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash
 	 * @return the block, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<Block> getBlock(byte[] hash) throws NodeException, DatabaseException {
+	public Optional<Block> getBlock(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, DatabaseException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
 			);
 		}
@@ -431,11 +421,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash
 	 * @return the description of the block, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NodeException, DatabaseException {
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, DatabaseException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getBlockDescription(txn, hash)))
 			);
 		}
@@ -450,11 +439,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws DatabaseException, NodeException {
+	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, DatabaseException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getTransaction(txn, hash)))
 			);
 		}
@@ -469,12 +457,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException, DatabaseException {
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, hash)))
 			);
 		}
@@ -490,12 +477,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param block the block
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws DatabaseException, NodeException {
+	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, NodeException.class, () ->
+			return check(NodeException.class, () ->
 				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, block, hash)))
 			);
 		}
@@ -508,12 +494,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Yields information about the current best chain of this blockchain.
 	 * 
 	 * @return the information
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public ChainInfo getChainInfo() throws DatabaseException, NodeException {
+	public ChainInfo getChainInfo() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getChainInfo)));
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getChainInfo)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -528,12 +513,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param start the height of the first block whose hash is returned
 	 * @param count how many hashes (maximum) must be reported
 	 * @return the hashes, in order
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Stream<byte[]> getChain(long start, int count) throws DatabaseException, NodeException {
+	public Stream<byte[]> getChain(long start, int count) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -545,12 +529,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param hash the hash of the block
 	 * @return true if and only if that condition holds
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean containsBlock(byte[] hash) throws DatabaseException, NodeException {
+	public boolean containsBlock(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> containsBlock(txn, hash))));
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> containsBlock(txn, hash))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -562,10 +545,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param block the block
 	 * @return true if and only if the current head is missing or {@code block} is more powerful
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean headIsLessPowerfulThan(Block block) throws DatabaseException, NodeException {
+	public boolean headIsLessPowerfulThan(Block block) throws NodeException {
 		return getPowerOfHead().map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
 	}
 
@@ -577,10 +559,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param block the block whose creation time is computed
 	 * @return the creation time of {@code block}; this is empty only for non-genesis blocks if the blockchain is empty
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<LocalDateTime> creationTimeOf(Block block) throws DatabaseException, NodeException {
+	public Optional<LocalDateTime> creationTimeOf(Block block) throws NodeException {
 		if (block instanceof GenesisBlock gb)
 			return Optional.of(gb.getStartDateTimeUTC());
 		else {
@@ -595,7 +576,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * Initializes this blockchain, which must be empty. It adds a genesis block.
 	 * 
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
 	 * @throws InvalidKeyException if the key of the node is invalid
 	 * @throws SignatureException if the genesis block could not be signed
@@ -603,7 +583,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void initialize() throws DatabaseException, AlreadyInitializedException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException {
+	public void initialize() throws AlreadyInitializedException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException {
 		if (!isEmpty())
 			throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 
@@ -640,13 +620,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 *         if {@code block} has no previous block already in the tree (it is orphaned),
 	 *         or if the block has a previous block in the tree but it cannot be
 	 *         correctly verified as a legal child of that previous block
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
-	public boolean add(Block block) throws DatabaseException, NodeException, VerificationException, InterruptedException, TimeoutException {
+	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, TimeoutException {
 		return add(block, true);
 	}
 
@@ -657,12 +636,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param block the block to add
 	 * @return true if the block has been actually added to the tree of blocks
 	 *         rooted at the genesis block, false otherwise
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
-	public boolean addVerified(Block block) throws DatabaseException, NodeException, InterruptedException, TimeoutException {
+	public boolean addVerified(Block block) throws NodeException, InterruptedException, TimeoutException {
 		try {
 			return add(block, false);
 		}
@@ -679,13 +657,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param verify true if and only if verification of {@code block} must be performed
 	 * @return true if the block has been actually added to the tree of blocks
 	 *         rooted at the genesis block, false otherwise.
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
-	private boolean add(Block block, boolean verify) throws DatabaseException, VerificationException, InterruptedException, TimeoutException, NodeException {
+	private boolean add(Block block, boolean verify) throws VerificationException, InterruptedException, TimeoutException, NodeException {
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
@@ -750,7 +727,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws DatabaseException, NodeException, VerificationException, InterruptedException, TimeoutException {
+			throws NodeException, VerificationException, InterruptedException, TimeoutException {
 
 		try {
 			if (verify)
@@ -780,12 +757,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hashOfBlock the hash of {@code block}
 	 * @param updatedHead the new head of the best chain resulting from the addition, if it changed wrt the previous head
 	 * @return true if the block has been actually added to the database, false otherwise
-	 * @throws DatabaseException if the block cannot be added, because the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean add(Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws DatabaseException, NodeException {
+	private boolean add(Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(DatabaseException.class, NodeException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, updatedHead))));
+			return check(NodeException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, updatedHead))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -806,9 +782,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 *         block and there is already a genesis block in the tree; or that {@code block}
 	 *         is a non-genesis block whose previous is not in the tree
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private boolean add(Transaction txn, Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws NodeException, DatabaseException {
+	private boolean add(Transaction txn, Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws NodeException {
 		if (containsBlock(txn, hashOfBlock)) {
 			LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
 			return false;
@@ -853,7 +828,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private boolean isInFrozenPart(Transaction txn, BlockDescription blockDescription) throws DatabaseException {
+	private boolean isInFrozenPart(Transaction txn, BlockDescription blockDescription) throws NodeException {
 		var totalWaitingTimeOfStartOfNonFrozenPart = getTotalWaitingTimeOfStartOfNonFrozenPart(txn);
 		return totalWaitingTimeOfStartOfNonFrozenPart.isPresent() && totalWaitingTimeOfStartOfNonFrozenPart.getAsLong() > blockDescription.getTotalWaitingTime();
 	}
@@ -864,7 +839,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		return env;
 	}
 
-	private Store openStore(String name) throws DatabaseException {
+	private Store openStore(String name) throws NodeException {
 		var store = new AtomicReference<Store>();
 
 		try {
@@ -884,9 +859,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the hash of the head block, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<byte[]> getHeadHash(Transaction txn) throws DatabaseException {
+	private Optional<byte[]> getHeadHash(Transaction txn) throws NodeException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_HEAD)).map(ByteIterable::getBytes);
 		}
@@ -901,9 +876,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the state identifier, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<byte[]> getStateIdOfHead(Transaction txn) throws DatabaseException {
+	private Optional<byte[]> getStateIdOfHead(Transaction txn) throws NodeException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, STATE_ID_OF_HEAD)).map(ByteIterable::getBytes);
 		}
@@ -918,9 +893,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the hash of the starting block, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<byte[]> getStartOfNonFrozenPartHash(Transaction txn) throws DatabaseException {
+	private Optional<byte[]> getStartOfNonFrozenPartHash(Transaction txn) throws NodeException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_START_OF_NON_FROZEN_PART)).map(ByteIterable::getBytes);
 		}
@@ -936,10 +911,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the Xodus transaction where the operation is performed
 	 * @return the limit time; this is empty if the database is empty
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory(Transaction txn) throws DatabaseException, NodeException {
+	private Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory(Transaction txn) throws NodeException {
 		try {
 			Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
 			if (maybeStartOfNonFrozenPartHash.isEmpty())
@@ -966,9 +940,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the hash of the genesis block, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<byte[]> getGenesisHash(Transaction txn) throws DatabaseException {
+	private Optional<byte[]> getGenesisHash(Transaction txn) throws NodeException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, GENESIS)).map(ByteIterable::getBytes);
 		}
@@ -982,9 +956,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the power of the head block, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<BigInteger> getPowerOfHead(Transaction txn) throws DatabaseException {
+	private Optional<BigInteger> getPowerOfHead(Transaction txn) throws NodeException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, POWER_OF_HEAD)).map(ByteIterable::getBytes).map(BigInteger::new);
 		}
@@ -998,9 +972,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the height of the head block, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private OptionalLong getHeightOfHead(Transaction txn) throws DatabaseException {
+	private OptionalLong getHeightOfHead(Transaction txn) throws NodeException {
 		try {
 			ByteIterable heightBI = storeOfBlocks.get(txn, HEIGHT_OF_HEAD);
 			if (heightBI == null)
@@ -1023,9 +997,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the total waiting time, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private OptionalLong getTotalWaitingTimeOfStartOfNonFrozenPart(Transaction txn) throws DatabaseException {
+	private OptionalLong getTotalWaitingTimeOfStartOfNonFrozenPart(Transaction txn) throws NodeException {
 		try {
 			ByteIterable totalWaitingTimeBI = storeOfBlocks.get(txn, TOTAL_WAITING_TIME_OF_START_OF_NON_FROZEN_PART);
 			if (totalWaitingTimeBI == null)
@@ -1050,9 +1024,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param txn the transaction
 	 * @param hash the hash of the parent block
 	 * @return the hashes
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Stream<byte[]> getForwards(Transaction txn, byte[] hash) throws DatabaseException {
+	private Stream<byte[]> getForwards(Transaction txn, byte[] hash) throws NodeException {
 		ByteIterable forwards;
 
 		try {
@@ -1090,9 +1064,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash
 	 * @return the block, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NodeException, DatabaseException {
+	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NodeException {
 		try {
 			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
 			if (blockBI == null)
@@ -1118,9 +1091,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash
 	 * @return the description of the block, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private Optional<BlockDescription> getBlockDescription(Transaction txn, byte[] hash) throws NodeException, DatabaseException {
+	private Optional<BlockDescription> getBlockDescription(Transaction txn, byte[] hash) throws NodeException {
 		try {
 			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
 			if (blockBI == null)
@@ -1147,9 +1119,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private Optional<io.mokamint.node.api.Transaction> getTransaction(Transaction txn, byte[] hash) throws DatabaseException, NodeException {
+	private Optional<io.mokamint.node.api.Transaction> getTransaction(Transaction txn, byte[] hash) throws NodeException {
 		try {
 			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
 			if (txBI == null)
@@ -1180,9 +1151,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param txn the database transaction
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] hash) throws DatabaseException {
+	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] hash) throws NodeException {
 		try {
 			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
 			if (txBI == null)
@@ -1208,10 +1179,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param block the block
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) throws DatabaseException, NodeException {
+	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) throws NodeException {
 		try {
 			byte[] hashOfBlock = block.getHash(hashingForBlocks);
 			String initialHash = Hex.toHexString(hashOfBlock);
@@ -1266,9 +1236,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return true if and only if this blockchain is empty
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean isEmpty(Transaction txn) throws DatabaseException {
+	private boolean isEmpty(Transaction txn) throws NodeException {
 		return getGenesisHash(txn).isEmpty();
 	}
 
@@ -1278,9 +1248,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param txn the transaction
 	 * @return the head, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private Optional<Block> getHead(Transaction txn) throws NodeException, DatabaseException {
+	private Optional<Block> getHead(Transaction txn) throws NodeException {
 		try {
 			Optional<byte[]> maybeHeadHash = getHeadHash(txn);
 			if (maybeHeadHash.isEmpty())
@@ -1303,9 +1272,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param txn the transaction
 	 * @return the starting block, if any
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private Optional<Block> getStartOfNonFrozenPart(Transaction txn) throws NodeException, DatabaseException {
+	private Optional<Block> getStartOfNonFrozenPart(Transaction txn) throws NodeException {
 		try {
 			Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
 			if (maybeStartOfNonFrozenPartHash.isEmpty())
@@ -1327,10 +1295,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the genesis block, if any
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<GenesisBlock> getGenesis(Transaction txn) throws DatabaseException, NodeException {
+	private Optional<GenesisBlock> getGenesis(Transaction txn) throws NodeException {
 		try {
 			Optional<byte[]> maybeGenesisHash = getGenesisHash(txn);
 			if (maybeGenesisHash.isEmpty())
@@ -1354,9 +1321,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param txn the transaction
 	 * @param hashOfBlock the hash of the block
 	 * @param bytesOfBlock the bytes of the block
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void putInStore(Transaction txn, byte[] hashOfBlock, byte[] bytesOfBlock) throws DatabaseException {
+	private void putInStore(Transaction txn, byte[] hashOfBlock, byte[] bytesOfBlock) throws NodeException {
 		try {
 			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
 		}
@@ -1371,9 +1338,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param txn the transaction
 	 * @param hashOfBlock the hash
 	 * @return true if and only if that condition holds
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws DatabaseException {
+	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws NodeException {
 		try {
 			return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
 		}
@@ -1382,7 +1349,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private boolean isBetterThanHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws DatabaseException {
+	private boolean isBetterThanHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws NodeException {
 		BigInteger powerOfHead = getPowerOfHead(txn).orElseThrow(() -> new DatabaseException("The database of blocks is non-empty but the power of the head is not set"));
 		return block.getDescription().getPower().compareTo(powerOfHead) > 0;
 	}
@@ -1392,9 +1359,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @param newGenesisHash the hash of the genesis block
-	 * @throws DatabaseException if the database is corrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws DatabaseException {
+	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws NodeException {
 		try {
 			storeOfBlocks.put(txn, GENESIS, fromBytes(newGenesisHash));
 			LOGGER.info("blockchain: height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
@@ -1409,10 +1376,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @param startOfNonFrozenPartHash the hash of the starting block of the non-frozen part of the blockchain
-	 * @throws DatabaseException if the database is corrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void setStartOfNonFrozenPartHash(Transaction txn, byte[] startOfNonFrozenPartHash) throws DatabaseException, NodeException {
+	private void setStartOfNonFrozenPartHash(Transaction txn, byte[] startOfNonFrozenPartHash) throws NodeException {
 		try {
 			storeOfBlocks.put(txn, HASH_OF_START_OF_NON_FROZEN_PART, fromBytes(startOfNonFrozenPartHash));
 			var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database"));
@@ -1431,9 +1397,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param newHead the new head
 	 * @param newHeadHash the hash of {@code newHead}
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void setHead(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException, DatabaseException {
+	private void setHead(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
 		try {
 			updateChain(txn, newHead, newHeadHash);
 			storeOfBlocks.put(txn, HASH_OF_HEAD, fromBytes(newHeadHash));
@@ -1456,9 +1421,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param newHead the block that gets set as new head
 	 * @param newHeadHash the hash of {@code block}
 	 * @throws NodeException if the node is misbehaving
-	 * @throws DatabaseException if the database is corrupted
 	 */
-	private void updateChain(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException, DatabaseException {
+	private void updateChain(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
 		try {
 			Block cursor = newHead;
 			byte[] cursorHash = newHeadHash;
@@ -1548,7 +1512,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private void gcBlocksRootedAt(Transaction txn, byte[] hash) throws DatabaseException {
+	private void gcBlocksRootedAt(Transaction txn, byte[] hash) throws NodeException {
 		var ws = new ArrayList<byte[]>();
 		ws.add(hash);
 
@@ -1574,7 +1538,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		while (!ws.isEmpty());
 	}
 
-	private void removeDataHigherThan(Transaction txn, long height) throws NodeException, DatabaseException {
+	private void removeDataHigherThan(Transaction txn, long height) throws NodeException {
 		Optional<Block> cursor = getHead(txn);
 		Optional<byte[]> cursorHash = getHeadHash(txn);
 
@@ -1642,7 +1606,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	    return result;
 	}
 
-	private ChainInfo getChainInfo(Transaction txn) throws DatabaseException {
+	private ChainInfo getChainInfo(Transaction txn) throws NodeException {
 		var maybeGenesisHash = getGenesisHash(txn);
 		if (maybeGenesisHash.isEmpty())
 			return ChainInfos.of(0L, Optional.empty(), Optional.empty(), Optional.empty());
@@ -1662,7 +1626,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		return ChainInfos.of(maybeChainHeight.getAsLong() + 1, maybeGenesisHash, maybeHeadHash, maybeStateId);
 	}
 
-	private Stream<byte[]> getChain(Transaction txn, long start, int count) throws DatabaseException {
+	private Stream<byte[]> getChain(Transaction txn, long start, int count) throws NodeException {
 		try {
 			if (start < 0L || count <= 0)
 				return Stream.empty();
@@ -1671,7 +1635,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (chainHeight.isEmpty())
 				return Stream.empty();
 
-			ByteIterable[] hashes = CheckSupplier.check(DatabaseException.class, () -> LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
+			ByteIterable[] hashes = CheckSupplier.check(NodeException.class, () -> LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
 				.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
 				.map(UncheckFunction.uncheck(bi -> {
 					if (bi == null)
@@ -1688,7 +1652,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) throws DatabaseException {
+	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) throws NodeException {
 		try {
 			var hashOfPrevious = fromBytes(block.getHashOfPreviousBlock());
 			var oldForwards = storeOfForwards.get(txn, hashOfPrevious);
