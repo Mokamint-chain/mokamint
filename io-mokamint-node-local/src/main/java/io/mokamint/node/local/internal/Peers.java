@@ -135,12 +135,13 @@ public class Peers implements AutoCloseable {
 
 		try {
 			this.version = Versions.current();
-			this.uuid = db.getUUID();
-			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
 		}
 		catch (IOException e) {
 			throw new NodeException(e);
 		}
+
+		this.uuid = db.getUUID();
+		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
 	}
 
 	/**
@@ -183,13 +184,12 @@ public class Peers implements AutoCloseable {
 	 * @param peer the peer to add
 	 * @return the information about the peer; this is empty if the peer has not been added nor reconnected,
 	 *         for instance, because it was already present or a maximum number of peers has been already reached
-	 * @throws IOException if an I/O error occurs
 	 * @throws PeerRejectedException if the addition of {@code peer} was rejected for some reason
 	 * @throws TimeoutException if the addition does not complete in time
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the addition to complete
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, IOException, PeerRejectedException, NodeException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, PeerRejectedException, NodeException {
 		if (tryToReconnectOrAdd(peer, true))
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		else
@@ -306,8 +306,8 @@ public class Peers implements AutoCloseable {
 	 * Pings all peers, tries to recreate their remote (if missing)
 	 * and collects their peers, in case they might be useful for the node.
 	 */
-	public void pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException, IOException {
-		var allPeers = CheckSupplier.check(NodeException.class, InterruptedException.class, IOException.class, () ->
+	public void pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
+		var allPeers = CheckSupplier.check(NodeException.class, InterruptedException.class, () ->
 			peers.getElements()
 				.flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers))
 				.toArray(Peer[]::new)
@@ -348,9 +348,8 @@ public class Peers implements AutoCloseable {
 	 * @return the peers of {@code peer}
 	 * @throws NodeException if {@link #node} could not complete the operation
 	 * @throws InterruptedException if the execution was interrupted while waiting to establish a connection to the peer
-	 * @throws IOException if an I/O exception occurred while contacting the peer
 	 */
-	private Stream<Peer> pingPeerRecreateRemoteAndCollectPeers(Peer peer) throws NodeException, InterruptedException, IOException {
+	private Stream<Peer> pingPeerRecreateRemoteAndCollectPeers(Peer peer) throws NodeException, InterruptedException {
 		Optional<RemotePublicNode> remote = getRemote(peer);
 		if (remote.isEmpty())
 			remote = tryToCreateRemote(peer);
@@ -358,7 +357,7 @@ public class Peers implements AutoCloseable {
 		return remote.isPresent() ? askForPeers(peer, remote.get()) : Stream.empty();
 	}
 
-	private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) throws InterruptedException, NodeException, IOException {
+	private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) throws InterruptedException, NodeException {
 		if (peers.getElements().count() < config.getMaxPeers()) { // optimization
 			try {
 				var peerInfos = remote.getPeerInfos();
@@ -390,15 +389,20 @@ public class Peers implements AutoCloseable {
 	 * @return true if and only if the peer has been added or reconnected
 	 * @throws InterruptedException if the execution was interrupted
 	 * @throws NodeException if {@link #node} node could not complete the operation
-	 * @throws IOException if an I/O error occurred
 	 */
-	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, IOException, PeerRejectedException, TimeoutException {
+	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, TimeoutException {
 		if (bannedURIs.contains(peer.getURI()))
 			return false;
 		else if (peers.contains(peer))
 			return remotes.get(peer) == null && tryToCreateRemote(peer).isPresent();
-		else
-			return add(peer, force);
+		else {
+			try {
+				return add(peer, force);
+			}
+			catch (IOException e) {
+				throw new PeerRejectedException("Cannot connect to " + peer.toStringSanitized() + ": " + e.getMessage());
+			}
+		}
 	}
 
 	/**
@@ -420,7 +424,7 @@ public class Peers implements AutoCloseable {
 			try {
 				somethingChanged |= tryToReconnectOrAdd(peer, force.test(peer));
 			}
-			catch (PeerRejectedException | IOException | TimeoutException e) {
+			catch (PeerRejectedException | TimeoutException e) {
 				// the peer does not answer: never mind
 			}
 		}

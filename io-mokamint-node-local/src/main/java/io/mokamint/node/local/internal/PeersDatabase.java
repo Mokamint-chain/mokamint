@@ -158,10 +158,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 */
 	public boolean add(Peer peer, boolean force) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(URISyntaxException.class, IOException.class, NodeException.class,
-				() -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
+			return check(NodeException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
 		}
-		catch (IOException | URISyntaxException | ExodusException e) {
+		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
@@ -176,11 +175,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 */
 	public boolean remove(Peer peer) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(URISyntaxException.class, IOException.class, NodeException.class,
-					() -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
-		}
-		catch (IOException | URISyntaxException | ExodusException e) {
-			throw new DatabaseException(e);
+			return check(NodeException.class, () -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
 		}
 	}
 
@@ -293,7 +288,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		}
 	}
 
-	private boolean add(Transaction txn, Peer peer, boolean force) throws IOException, URISyntaxException, NodeException {
+	private boolean add(Transaction txn, Peer peer, boolean force) throws NodeException {
 		try {
 			var bi = storeOfPeers.get(txn, PEERS);
 			if (bi == null) {
@@ -315,12 +310,12 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 				}
 			}
 		}
-		catch (ExodusException e) {
+		catch (ExodusException | IOException | URISyntaxException e) {
 			throw new DatabaseException(e);
 		}
 	}
 
-	private boolean remove(Transaction txn, Peer peer) throws IOException, URISyntaxException, NodeException {
+	private boolean remove(Transaction txn, Peer peer) throws NodeException {
 		try {
 			var bi = storeOfPeers.get(txn, PEERS);
 			if (bi == null)
@@ -336,7 +331,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 					return false;
 			}
 		}
-		catch (ExodusException e) {
+		catch (ExodusException | IOException | URISyntaxException e) {
 			throw new DatabaseException(e);
 		}
 	}

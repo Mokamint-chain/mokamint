@@ -1040,7 +1040,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (whispered instanceof WhisperedPeer whisperedPeers)
 						onWhispered(whisperedPeers.getPeer());
 				}
-				catch (NodeException | IOException e) {
+				catch (NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				catch (PeerRejectedException | TimeoutException e) {

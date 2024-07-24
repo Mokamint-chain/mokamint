@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
@@ -42,7 +41,8 @@ import io.mokamint.node.local.internal.PeersDatabase;
 
 public class PeersDatabaseTests extends AbstractLoggedTests {
 
-	private static PeersDatabase mkDatabase(Path dir) throws NoSuchAlgorithmException, NodeException {
+	private static PeersDatabase mkDatabase(Path dir) throws NodeException {
+		try {
 		var config = LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.build();
@@ -51,13 +51,17 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 		when(node.getConfig()).thenReturn(config);
 
 		return new PeersDatabase(node);
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new NodeException(e);
+		}
 	}
 
 	@Test
 	@DisplayName("peers added to the database are still there at next opening")
-	public void peersAreKeptForNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, URISyntaxException, InterruptedException, NodeException {
-		var peer1 = Peers.of(new URI("ws://localhost:8030"));
-		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
+	public void peersAreKeptForNextOpening(@TempDir Path dir) throws InterruptedException, NodeException {
+		var peer1 = Peers.of(URI.create("ws://localhost:8030"));
+		var peer2 = Peers.of(URI.create("ws://www.mokamint.io:8032"));
 
 		try (var db = mkDatabase(dir)) {
 			assertTrue(db.getPeers().count() == 0);
@@ -72,10 +76,10 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("peers removed from the database are not there at next opening")
-	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws NoSuchAlgorithmException, URISyntaxException, InterruptedException, NodeException {
-		var peer1 = Peers.of(new URI("ws://localhost:8030"));
-		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
-		var peer3 = Peers.of(new URI("ws://www.amazon.com:8032"));
+	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws InterruptedException, NodeException {
+		var peer1 = Peers.of(URI.create("ws://localhost:8030"));
+		var peer2 = Peers.of(URI.create("ws://www.mokamint.io:8032"));
+		var peer3 = Peers.of(URI.create("ws://www.amazon.com:8032"));
 
 		try (var db = mkDatabase(dir)) {
 			assertTrue(db.getPeers().count() == 0);
@@ -92,9 +96,9 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("duplicate peers are kept only once")
-	public void peersHaveNoDuplicates(@TempDir Path dir) throws NoSuchAlgorithmException, URISyntaxException, InterruptedException, NodeException {
-		var peer1 = Peers.of(new URI("ws://localhost:8030"));
-		var peer2 = Peers.of(new URI("ws://www.mokamint.io:8032"));
+	public void peersHaveNoDuplicates(@TempDir Path dir) throws InterruptedException, NodeException {
+		var peer1 = Peers.of(URI.create("ws://localhost:8030"));
+		var peer2 = Peers.of(URI.create("ws://www.mokamint.io:8032"));
 
 		try (var db = mkDatabase(dir)) {
 			assertTrue(db.getPeers().count() == 0);
