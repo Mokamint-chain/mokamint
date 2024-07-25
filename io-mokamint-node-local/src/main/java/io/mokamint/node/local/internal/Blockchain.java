@@ -562,10 +562,30 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public Optional<LocalDateTime> creationTimeOf(Block block) throws NodeException {
+		try (var scope = mkScope()) {
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> creationTimeOf(txn, block))));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Yields the creation time of the given block, if it were to be added to this blockchain, running
+	 * inside a transaction. For genesis blocks, their creation time is explicit in the block.
+	 * For non-genesis blocks, this method adds the total waiting time of the block to the time of the genesis
+	 * of this blockchain.
+	 * 
+	 * @param txn the Xodus transaction
+	 * @param block the block whose creation time is computed
+	 * @return the creation time of {@code block}; this is empty only for non-genesis blocks if the blockchain is empty
+	 * @throws NodeException if the node is misbehaving
+	 */
+	Optional<LocalDateTime> creationTimeOf(Transaction txn, Block block) throws NodeException {
 		if (block instanceof GenesisBlock gb)
 			return Optional.of(gb.getStartDateTimeUTC());
 		else {
-			var maybeGenesis = getGenesis();
+			var maybeGenesis = getGenesis(txn);
 			if (maybeGenesis.isEmpty())
 				return Optional.empty();
 			else
@@ -729,43 +749,40 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
 			throws NodeException, VerificationException, InterruptedException, TimeoutException {
 
-		try {
-			if (verify)
-				new BlockVerification(node, block, previous);
+		try (var scope = mkScope()) {
+			boolean result = check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
+				() -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, verify, previous, first, updatedHead)))
+			);
 
-			if (add(block, hashOfBlock, updatedHead)) {
+			if (result) {
 				node.onAdded(block);
 				getOrphansWithParent(hashOfBlock).forEach(ws::add);
-				if (first)
-					return true;
+				result &= first;
 			}
-		}
-		catch (VerificationException e) {
-			if (first)
-				throw e;
-			else
-				LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
-		}
 
-		return false;
-	}
-
-	/**
-	 * Adds the given block to this blockchain. If the block was already in the database, nothing happens.
-	 * 
-	 * @param block the block to add
-	 * @param hashOfBlock the hash of {@code block}
-	 * @param updatedHead the new head of the best chain resulting from the addition, if it changed wrt the previous head
-	 * @return true if the block has been actually added to the database, false otherwise
-	 * @throws NodeException if the node is misbehaving
-	 */
-	private boolean add(Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws NodeException {
-		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, updatedHead))));
+			return result;
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
+		}		
+	}
+
+	private boolean add(Transaction txn, Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, AtomicReference<Block> updatedHead)
+			throws NodeException, VerificationException, InterruptedException, TimeoutException {
+
+		if (verify) {
+			try {
+				new BlockVerification(txn, node, block, previous);
+			}
+			catch (VerificationException e) {
+				if (first)
+					throw e;
+				else
+					LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
+			}
 		}
+
+		return add(txn, block, hashOfBlock, updatedHead);
 	}
 
 	/**
@@ -1181,7 +1198,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the transaction address, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) throws NodeException {
+	Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) throws NodeException {
 		try {
 			byte[] hashOfBlock = block.getHash(hashingForBlocks);
 			String initialHash = Hex.toHexString(hashOfBlock);

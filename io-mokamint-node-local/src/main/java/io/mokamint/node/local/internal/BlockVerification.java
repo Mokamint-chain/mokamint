@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
@@ -51,9 +52,19 @@ public class BlockVerification {
 	private final LocalNodeImpl node;
 
 	/**
+	 * The Xodus transaction during which verification occurs.
+	 */
+	private final io.hotmoka.xodus.env.Transaction txn;
+
+	/**
 	 * The configuration of {@link #node}.
 	 */
 	private final LocalNodeConfig config;
+
+	/**
+	 * The hasher for the application transactions.
+	 */
+	private final Hasher<Transaction> hasherForTransactions;
 
 	/**
 	 * The block to verify.
@@ -81,6 +92,7 @@ public class BlockVerification {
 	 * Performs the verification that {@code block} satisfies all consensus rules required
 	 * for being a child of {@code previous}, in the given {@code node}.
 	 * 
+	 * @param txn the Xodus transaction during which verification occurs
 	 * @param node the node whose blocks get verified
 	 * @param block the block
 	 * @param previous the previous of {@code block}, already in blockchain; this can be empty only if {@code block} is a genesis block
@@ -89,13 +101,15 @@ public class BlockVerification {
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws TimeoutException if some operation timed out
 	 */
-	BlockVerification(LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, NodeException, InterruptedException, TimeoutException {
+	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, NodeException, InterruptedException, TimeoutException {
+		this.txn = txn;
 		this.node = node;
+		this.hasherForTransactions = node.getHasherForTransactions();
 		this.config = node.getConfig();
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
-		this.creationTime = node.getBlockchain().creationTimeOf(block).orElseThrow(() -> new NodeException("Cannot determine the creation time of the block under verification"));
+		this.creationTime = node.getBlockchain().creationTimeOf(txn, block).orElseThrow(() -> new NodeException("Cannot determine the creation time of the block under verification"));
 
 		if (block instanceof NonGenesisBlock ngb)
 			verifyAsNonGenesis(ngb);
@@ -257,8 +271,8 @@ public class BlockVerification {
 	 */
 	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NodeException {
 		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
-			var txHash = node.getHasherForTransactions().hash(tx);
-			if (node.getBlockchain().getTransactionAddress(previous, txHash).isPresent())
+			var txHash = hasherForTransactions.hash(tx);
+			if (node.getBlockchain().getTransactionAddress(txn, previous, txHash).isPresent())
 				throw new VerificationException("Repeated transaction " + Hex.toHexString(txHash));
 		}
 	}
@@ -277,7 +291,7 @@ public class BlockVerification {
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, TimeoutException, NodeException {
 		var app = node.getApplication();
 
-		var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(previous);
+		var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous);
 		if (creationTimeOfPrevious.isEmpty())
 			throw new NodeException("The previous of the block under verification was expected to be in blockchain");
 
@@ -299,14 +313,14 @@ public class BlockVerification {
 						app.checkTransaction(tx);
 					}
 					catch (TransactionRejectedException e) {
-						throw new VerificationException("Failed check of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
+						throw new VerificationException("Failed check of transaction " + tx.getHexHash(hasherForTransactions) + ": " + e.getMessage());
 					}
 
 					try {
 						app.deliverTransaction(id, tx);
 					}
 					catch (TransactionRejectedException e) {
-						throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(node.getHasherForTransactions()) + ": " + e.getMessage());
+						throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(hasherForTransactions) + ": " + e.getMessage());
 					}
 				}
 
