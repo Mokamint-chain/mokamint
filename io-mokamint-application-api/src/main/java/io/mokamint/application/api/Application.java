@@ -21,8 +21,8 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandlersContainer;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.api.Deadline;
 
 /**

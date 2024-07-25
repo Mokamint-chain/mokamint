@@ -83,7 +83,7 @@ public class BlockVerification {
 	 * 
 	 * @param node the node whose blocks get verified
 	 * @param block the block
-	 * @param previous the previous of {@code block}; this can be empty only if {@code block} is a genesis block
+	 * @param previous the previous of {@code block}, already in blockchain; this can be empty only if {@code block} is a genesis block
 	 * @throws VerificationException if verification fails
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
@@ -277,11 +277,15 @@ public class BlockVerification {
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, TimeoutException, NodeException {
 		var app = node.getApplication();
 
+		var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(previous);
+		if (creationTimeOfPrevious.isEmpty())
+			throw new NodeException("The previous of the block under verification was expected to be in blockchain");
+
 		try {
 			int id;
 
 			try {
-				id = app.beginBlock(block.getDescription().getHeight(), creationTime, previous.getStateId());
+				id = app.beginBlock(block.getDescription().getHeight(), creationTimeOfPrevious.get(), previous.getStateId());
 			}
 			catch (UnknownStateException e) {
 				throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());
