@@ -646,7 +646,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-		return add(block, true);
+		return new BlockAddition(block, true).blockWasAdded;
 	}
 
 	/**
@@ -662,7 +662,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean addVerified(Block block) throws NodeException, InterruptedException, TimeoutException {
 		try {
-			return add(block, false);
+			return new BlockAddition(block, false).blockWasAdded;
 		}
 		catch (VerificationException e) {
 			// impossible: we did not require block verification hence these exceptions should not have been generated
@@ -670,188 +670,293 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	/**
-	 * Adds the given block to this blockchain, allowing one to specify if block verification is required.
-	 * 
-	 * @param block the block to add
-	 * @param verify true if and only if verification of {@code block} must be performed
-	 * @return true if the block has been actually added to the tree of blocks
-	 *         rooted at the genesis block, false otherwise.
-	 * @throws NodeException if the node is misbehaving
-	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
-	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if some operation timed out
-	 */
-	private boolean add(Block block, boolean verify) throws VerificationException, InterruptedException, TimeoutException, NodeException {
-		boolean added = false, addedToOrphans = false;
-		var updatedHead = new AtomicReference<Block>();
+	private class BlockAddition {
+		private final Block block;
+		private final boolean verify;
+		private boolean blockWasAdded;
+		private final List<Block> blocksAdded = new ArrayList<>();
+		private final LinkedList<Block> blocksAddedToTheCurrentBestChain = new LinkedList<>();
+		/**
+		 * Adds the given block to this blockchain, allowing one to specify if block verification is required.
+		 * 
+		 * @param block the block to add
+		 * @param verify true if and only if verification of {@code block} must be performed
+		 * @return true if the block has been actually added to the tree of blocks
+		 *         rooted at the genesis block, false otherwise.
+		 * @throws NodeException if the node is misbehaving
+		 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
+		 * @throws InterruptedException if the current thread is interrupted
+		 * @throws TimeoutException if some operation timed out
+		 */
+		private BlockAddition(final Block block, boolean verify) throws VerificationException, InterruptedException, TimeoutException, NodeException {
+			this.block = block;
+			this.verify = verify;
 
-		var blocksAdded = new ArrayList<Block>();
+			boolean blockWasAddedToOrphans = false;
 
-		// we use a working set, since the addition of a single block might
-		// trigger the further addition of orphan blocks, recursively
-		var ws = new ArrayList<Block>();
-		ws.add(block);
+			// we use a working set, since the addition of a single block might
+			// trigger the further addition of orphan blocks, recursively
+			var ws = new ArrayList<Block>();
+			ws.add(block);
 
-		do {
-			Block cursor = ws.remove(ws.size() - 1);
-			byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
-			if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
-				if (cursor instanceof NonGenesisBlock ngb) {
-					Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
-					if (previous.isPresent()) {
-						boolean cursorAdded = add(cursor, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
+			do {
+				final Block cursor = ws.remove(ws.size() - 1);
+				byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
+				if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
+					if (cursor instanceof final NonGenesisBlock ngb) {
+						Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
+						if (previous.isPresent()) {
+							boolean cursorAdded = add(cursor, hashOfCursor, previous, block == cursor);
+							if (cursorAdded) {
+								blocksAdded.add(cursor);
+								getOrphansWithParent(hashOfCursor).forEach(ws::add);
+							}
+
+							blockWasAdded |= block == cursor & cursorAdded;
+						}
+						else {
+							putAmongOrphans(ngb);
+							if (block == cursor)
+								blockWasAddedToOrphans = true;
+						}
+					}
+					else {
+						boolean cursorAdded = add(cursor, hashOfCursor, Optional.empty(), block == cursor);
 						if (cursorAdded) {
 							blocksAdded.add(cursor);
 							getOrphansWithParent(hashOfCursor).forEach(ws::add);
 						}
 
-						added |= block == ngb & cursorAdded;
+						blockWasAdded |= block == cursor & cursorAdded;
 					}
-					else {
-						putAmongOrphans(ngb);
-						if (block == ngb)
-							addedToOrphans = true;
+				}
+			}
+			while (!ws.isEmpty());
+
+			for (Block blockAdded: blocksAdded)
+				node.onAdded(blockAdded);
+
+			if (!blocksAddedToTheCurrentBestChain.isEmpty()) {
+				// if the head has been improved, we update the mempool by removing
+				// the transactions that have been added in blockchain and potentially adding
+				// other transactions (if the history changed). Note that, in general, the mempool of
+				// the node might not always be aligned with the current head of the blockchain,
+				// since another task might execute this same update concurrently. This is not
+				// a problem, since this rebase is only an optimization, to keep the mempool small.
+				// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
+				// the block over which mining occurs, so it will be aligned there
+				node.rebaseMempoolAt(blocksAddedToTheCurrentBestChain.getLast());
+				node.onHeadChanged(blocksAddedToTheCurrentBestChain);
+			}
+			else if (blockWasAddedToOrphans && headIsLessPowerfulThan(block))
+				// the block was better than our current head, but its previous block is missing:
+				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
+				node.scheduleSynchronization();
+		}
+
+		private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			try (var scope = mkScope()) {
+				return check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
+					() -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, previous, first)))
+				);
+			}
+			catch (ExodusException e) {
+				throw new DatabaseException(e);
+			}		
+		}
+
+		private boolean add(Transaction txn, Block block, byte[] hashOfBlock, Optional<Block> previous, boolean first) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			if (verify) {
+				try {
+					new BlockVerification(txn, node, block, previous);
+				}
+				catch (VerificationException e) {
+					if (first)
+						throw e;
+					else
+						LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
+				}
+			}
+
+			return add(txn, block, hashOfBlock);
+		}
+
+		/**
+		 * Adds a block to the tree of blocks rooted at the genesis block (if any), running
+		 * inside a given transaction. It updates the references to the genesis and to the
+		 * head of the longest chain, if needed.
+		 * 
+		 * @param txn the transaction
+		 * @param block the block to add
+		 * @param hashOfBlock the hash of {@code block}
+		 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head
+		 * @return true if and only if the block has been added. False means that
+		 *         the block was already in the tree; or that {@code block} is a genesis
+		 *         block and there is already a genesis block in the tree; or that {@code block}
+		 *         is a non-genesis block whose previous is not in the tree
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private boolean add(Transaction txn, Block block, byte[] hashOfBlock) throws NodeException {
+			if (containsBlock(txn, hashOfBlock)) {
+				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
+				return false;
+			}
+			else if (block instanceof NonGenesisBlock ngb) {
+				var maybeDescriptionOfPreviousOfBlock = getBlockDescription(txn, ngb.getHashOfPreviousBlock());
+
+				if (maybeDescriptionOfPreviousOfBlock.isPresent()) {
+					if (isInFrozenPart(txn, maybeDescriptionOfPreviousOfBlock.get())) {
+						LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
+						return false;
 					}
+
+					putInStore(txn, hashOfBlock, block.toByteArray());
+					addToForwards(txn, ngb, hashOfBlock);
+					if (isBetterThanHead(txn, ngb, hashOfBlock))
+						setHead(txn, block, hashOfBlock);
+
+					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
+					return true;
 				}
 				else {
-					boolean cursorAdded = add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
-					if (cursorAdded) {
-						blocksAdded.add(cursor);
-						getOrphansWithParent(hashOfCursor).forEach(ws::add);
-					}
-
-					added |= block == cursor & cursorAdded;
-				}
-			}
-		}
-		while (!ws.isEmpty());
-
-		for (Block blockAdded: blocksAdded)
-			node.onAdded(blockAdded);
-
-		Block newHead = updatedHead.get();
-		if (newHead != null) {
-			// if the head has been improved, we update the mempool by removing
-			// the transactions that have been added in blockchain and potentially adding
-			// other transactions (if the history changed). Note that, in general, the mempool of
-			// the node might not always be aligned with the current head of the blockchain,
-			// since another task might execute this same update concurrently. This is not
-			// a problem, since this rebase is only an optimization, to keep the mempool small.
-			// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
-			// the block over which mining occurs, so it will be aligned there
-			node.rebaseMempoolAt(newHead);
-
-			Block cursor = newHead;
-			var blocksAddedOnBestChain = new LinkedList<Block>();
-			blocksAddedOnBestChain.addLast(cursor);
-
-			while (!cursor.equals(block)) {
-				if (cursor instanceof NonGenesisBlock ngb) {
-					cursor = getBlock(ngb.getHashOfPreviousBlock()).orElseThrow(() -> new DatabaseException("The head has been added to a dangling path"));
-					blocksAddedOnBestChain.addFirst(cursor);
-				}
-				else
-					throw new DatabaseException("The head has been added to a disconnected path");
-			}
-
-			node.onHeadChanged(blocksAddedOnBestChain);
-		}
-		else if (addedToOrphans && headIsLessPowerfulThan(block))
-			// the block was better than our current head, but its previous block is missing:
-			// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-			node.scheduleSynchronization();
-
-		return added;
-	}
-
-	private boolean add(Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, List<Block> ws, AtomicReference<Block> updatedHead)
-			throws NodeException, VerificationException, InterruptedException, TimeoutException {
-
-		try (var scope = mkScope()) {
-			return check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
-				() -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, verify, previous, first, updatedHead)))
-			);
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}		
-	}
-
-	private boolean add(Transaction txn, Block block, byte[] hashOfBlock, boolean verify, Optional<Block> previous, boolean first, AtomicReference<Block> updatedHead)
-			throws NodeException, VerificationException, InterruptedException, TimeoutException {
-
-		if (verify) {
-			try {
-				new BlockVerification(txn, node, block, previous);
-			}
-			catch (VerificationException e) {
-				if (first)
-					throw e;
-				else
-					LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlock) + " since it does not pass verification: " + e.getMessage());
-			}
-		}
-
-		return add(txn, block, hashOfBlock, updatedHead);
-	}
-
-	/**
-	 * Adds a block to the tree of blocks rooted at the genesis block (if any), running
-	 * inside a given transaction. It updates the references to the genesis and to the
-	 * head of the longest chain, if needed.
-	 * 
-	 * @param txn the transaction
-	 * @param block the block to add
-	 * @param hashOfBlock the hash of {@code block}
-	 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head
-	 * @return true if and only if the block has been added. False means that
-	 *         the block was already in the tree; or that {@code block} is a genesis
-	 *         block and there is already a genesis block in the tree; or that {@code block}
-	 *         is a non-genesis block whose previous is not in the tree
-	 * @throws NodeException if the node is misbehaving
-	 */
-	private boolean add(Transaction txn, Block block, byte[] hashOfBlock, AtomicReference<Block> updatedHead) throws NodeException {
-		if (containsBlock(txn, hashOfBlock)) {
-			LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
-			return false;
-		}
-		else if (block instanceof NonGenesisBlock ngb) {
-			var maybeDescriptionOfPreviousOfBlock = getBlockDescription(txn, ngb.getHashOfPreviousBlock());
-
-			if (maybeDescriptionOfPreviousOfBlock.isPresent()) {
-				if (isInFrozenPart(txn, maybeDescriptionOfPreviousOfBlock.get())) {
-					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
+					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
 					return false;
 				}
-
-				putInStore(txn, hashOfBlock, block.toByteArray());
-				addToForwards(txn, ngb, hashOfBlock);
-				if (isBetterThanHead(txn, ngb, hashOfBlock)) {
-					setHead(txn, block, hashOfBlock);
-					updatedHead.set(block);
-				}
-
-				LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
-				return true;
 			}
 			else {
-				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is not in the database");
-				return false;
+				if (isEmpty(txn)) {
+					putInStore(txn, hashOfBlock, block.toByteArray());
+					setGenesisHash(txn, hashOfBlock);
+					setHead(txn, block, hashOfBlock);
+					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
+					return true;
+				}
+				else {
+					LOGGER.warning("blockchain: not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
+					return false;
+				}
 			}
 		}
-		else {
-			if (isEmpty(txn)) {
-				putInStore(txn, hashOfBlock, block.toByteArray());
-				setGenesisHash(txn, hashOfBlock);
-				setHead(txn, block, hashOfBlock);
-				updatedHead.set(block);
-				LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
-				return true;
+
+		/**
+		 * Sets the head of the best chain in this database, running inside a transaction.
+		 * 
+		 * @param txn the transaction
+		 * @param newHead the new head
+		 * @param newHeadHash the hash of {@code newHead}
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void setHead(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
+			try {
+				updateChain(txn, newHead, newHeadHash);
+				storeOfBlocks.put(txn, HASH_OF_HEAD, fromBytes(newHeadHash));
+				storeOfBlocks.put(txn, STATE_ID_OF_HEAD, fromBytes(newHead.getStateId()));
+				storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
+				long heightOfHead = newHead.getDescription().getHeight();
+				storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
+				LOGGER.info("blockchain: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
 			}
-			else {
-				LOGGER.warning("blockchain: not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
-				return false;
+			catch (ExodusException e) {
+				throw new DatabaseException(e);
+			}
+		}
+
+		/**
+		 * Updates the current best chain in this database, to the chain having the given block as head,
+		 * running inside a transaction.
+		 * 
+		 * @param txn the transaction
+		 * @param newHead the block that gets set as new head
+		 * @param newHeadHash the hash of {@code block}
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void updateChain(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
+			try {
+				Block cursor = newHead;
+				byte[] cursorHash = newHeadHash;
+				long totalTimeOfNewHead = newHead.getDescription().getTotalWaitingTime();
+				long height = newHead.getDescription().getHeight();
+
+				removeDataHigherThan(txn, height);
+
+				var heightBI = fromBytes(longToBytes(height));
+				var _new = fromBytes(newHeadHash);
+				var old = storeOfChain.get(txn, heightBI);
+
+				blocksAddedToTheCurrentBestChain.clear();
+
+				do {
+					storeOfChain.put(txn, heightBI, _new);
+
+					if (old != null) {
+						long heightCopy = height;
+						var oldBytes = old.getBytes();
+						Block oldBlock = getBlock(txn, oldBytes)
+							.orElseThrow(() -> new DatabaseException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
+
+						removeReferencesToTransactionsInside(txn, oldBlock);
+					}
+
+					blocksAddedToTheCurrentBestChain.addFirst(cursor);
+
+					if (cursor instanceof NonGenesisBlock ngb) {
+						if (height <= 0L)
+							throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
+
+						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
+						var cursorHashCopy = cursorHash;
+						cursor = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(cursorHashCopy) + " has no previous block in the database"));
+						cursorHash = hashOfPrevious;
+						height--;
+						heightBI = fromBytes(longToBytes(height));
+						_new = fromBytes(cursorHash);
+						old = storeOfChain.get(txn, heightBI);
+					}
+					else if (height > 0L)
+						throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
+				}
+				while (cursor instanceof NonGenesisBlock && !_new.equals(old));
+
+				for (Block added: blocksAddedToTheCurrentBestChain)
+					addReferencesToTransactionsInside(txn, added);
+
+				var maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
+				byte[] startOfNonFrozenPartHash;
+
+				if (maybeStartOfNonFrozenPartHash.isEmpty()) {
+					startOfNonFrozenPartHash = getGenesisHash(txn).orElseThrow(() -> new DatabaseException("The head has changed but the genesis hash is missing"));
+					setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
+				}
+				else
+					startOfNonFrozenPartHash = maybeStartOfNonFrozenPartHash.get();
+
+				if (maximalHistoryChangeTime >= 0L) {
+					// we move startOfNonFrozenPartHash upwards along the current best chain, if it is too far away from the head of the blockchain
+					do {
+						var startOfNonFrozenPartHashCopy = startOfNonFrozenPartHash;
+						var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy) + " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database"));
+
+						if (totalTimeOfNewHead - descriptionOfStartOfNonFrozenPart.getTotalWaitingTime() <= maximalHistoryChangeTime)
+							break;
+
+						ByteIterable aboveStartOfNonFrozenPartHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getHeight() + 1)));
+						if (aboveStartOfNonFrozenPartHash == null)
+							throw new DatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
+
+						byte[] newStartOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
+
+						for (byte[] forward: getForwards(txn, startOfNonFrozenPartHash).toArray(byte[][]::new))
+							if (!Arrays.equals(forward, newStartOfNonFrozenPartHash))
+								gcBlocksRootedAt(txn, forward);
+
+						setStartOfNonFrozenPartHash(txn, newStartOfNonFrozenPartHash);
+						startOfNonFrozenPartHash = newStartOfNonFrozenPartHash;
+					}
+					while (true);
+				}
+			}
+			catch (ExodusException e) {
+				throw new DatabaseException(e);
 			}
 		}
 	}
@@ -1253,10 +1358,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private boolean isContainedInTheBestChain(Transaction txn, Block block, byte[] blockHash) {
-		var height = block.getDescription().getHeight();
-		var hashOfBlockFromBestChain = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height)));
-		return hashOfBlockFromBestChain != null && Arrays.equals(hashOfBlockFromBestChain.getBytes(), blockHash);
+	private boolean isContainedInTheBestChain(Transaction txn, Block block, byte[] blockHash) throws NodeException {
+		try {
+			var height = block.getDescription().getHeight();
+			var hashOfBlockFromBestChain = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height)));
+			return hashOfBlockFromBestChain != null && Arrays.equals(hashOfBlockFromBestChain.getBytes(), blockHash);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	/**
@@ -1412,128 +1522,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database"));
 			storeOfBlocks.put(txn, TOTAL_WAITING_TIME_OF_START_OF_NON_FROZEN_PART, fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getTotalWaitingTime())));
 			LOGGER.info("blockchain: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + descriptionOfStartOfNonFrozenPart.getHeight());
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
-	/**
-	 * Sets the head of the best chain in this database, running inside a transaction.
-	 * 
-	 * @param txn the transaction
-	 * @param newHead the new head
-	 * @param newHeadHash the hash of {@code newHead}
-	 * @throws NodeException if the node is misbehaving
-	 */
-	private void setHead(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
-		try {
-			updateChain(txn, newHead, newHeadHash);
-			storeOfBlocks.put(txn, HASH_OF_HEAD, fromBytes(newHeadHash));
-			storeOfBlocks.put(txn, STATE_ID_OF_HEAD, fromBytes(newHead.getStateId()));
-			storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
-			long heightOfHead = newHead.getDescription().getHeight();
-			storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
-			LOGGER.info("blockchain: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}
-
-	/**
-	 * Updates the current best chain in this database, to the chain having the given block as head,
-	 * running inside a transaction.
-	 * 
-	 * @param txn the transaction
-	 * @param newHead the block that gets set as new head
-	 * @param newHeadHash the hash of {@code block}
-	 * @throws NodeException if the node is misbehaving
-	 */
-	private void updateChain(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
-		try {
-			Block cursor = newHead;
-			byte[] cursorHash = newHeadHash;
-			long totalTimeOfNewHead = newHead.getDescription().getTotalWaitingTime();
-			long height = cursor.getDescription().getHeight();
-
-			removeDataHigherThan(txn, height);
-
-			var heightBI = fromBytes(longToBytes(height));
-			var _new = fromBytes(cursorHash);
-			var old = storeOfChain.get(txn, heightBI);
-
-			List<Block> addedBlocks = new ArrayList<>();
-
-			do {
-				storeOfChain.put(txn, heightBI, _new);
-
-				if (old != null) {
-					long heightCopy = height;
-					var oldBytes = old.getBytes();
-					Block oldBlock = getBlock(txn, oldBytes)
-						.orElseThrow(() -> new DatabaseException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
-
-					removeReferencesToTransactionsInside(txn, oldBlock);
-				}
-
-				addedBlocks.add(cursor);
-
-				if (cursor instanceof NonGenesisBlock ngb) {
-					if (height <= 0L)
-						throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
-
-					byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
-					var cursorHashCopy = cursorHash;
-					cursor = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(cursorHashCopy) + " has no previous block in the database"));
-					cursorHash = hashOfPrevious;
-					height--;
-					heightBI = fromBytes(longToBytes(height));
-					_new = fromBytes(cursorHash);
-					old = storeOfChain.get(txn, heightBI);
-				}
-				else if (height > 0L)
-					throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
-			}
-			while (cursor instanceof NonGenesisBlock && !_new.equals(old));
-
-			for (Block added: addedBlocks)
-				addReferencesToTransactionsInside(txn, added);
-
-			var maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
-			byte[] startOfNonFrozenPartHash;
-
-			if (maybeStartOfNonFrozenPartHash.isEmpty()) {
-				startOfNonFrozenPartHash = getGenesisHash(txn).orElseThrow(() -> new DatabaseException("The head has changed but the genesis hash is missing"));
-				setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
-			}
-			else
-				startOfNonFrozenPartHash = maybeStartOfNonFrozenPartHash.get();
-
-			if (maximalHistoryChangeTime >= 0L) {
-				// we move startOfNonFrozenPartHash upwards along the current best chain, if it is too far away from the head of the blockchain
-				do {
-					var startOfNonFrozenPartHashCopy = startOfNonFrozenPartHash;
-					var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy) + " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database"));
-
-					if (totalTimeOfNewHead - descriptionOfStartOfNonFrozenPart.getTotalWaitingTime() <= maximalHistoryChangeTime)
-						break;
-
-					ByteIterable aboveStartOfNonFrozenPartHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getHeight() + 1)));
-					if (aboveStartOfNonFrozenPartHash == null)
-						throw new DatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
-
-					byte[] newStartOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
-
-					for (byte[] forward: getForwards(txn, startOfNonFrozenPartHash).toArray(byte[][]::new))
-						if (!Arrays.equals(forward, newStartOfNonFrozenPartHash))
-							gcBlocksRootedAt(txn, forward);
-
-					setStartOfNonFrozenPartHash(txn, newStartOfNonFrozenPartHash);
-					startOfNonFrozenPartHash = newStartOfNonFrozenPartHash;
-				}
-				while (true);
-			}
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
