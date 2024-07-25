@@ -686,6 +686,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		boolean added = false, addedToOrphans = false;
 		var updatedHead = new AtomicReference<Block>();
 
+		var blocksAdded = new ArrayList<Block>();
+
 		// we use a working set, since the addition of a single block might
 		// trigger the further addition of orphan blocks, recursively
 		var ws = new ArrayList<Block>();
@@ -697,19 +699,36 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
 				if (cursor instanceof NonGenesisBlock ngb) {
 					Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
-					if (previous.isPresent())
-						added |= add(ngb, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
+					if (previous.isPresent()) {
+						boolean cursorAdded = add(cursor, hashOfCursor, verify, previous, block == ngb, ws, updatedHead);
+						if (cursorAdded) {
+							blocksAdded.add(cursor);
+							getOrphansWithParent(hashOfCursor).forEach(ws::add);
+						}
+
+						added |= block == ngb & cursorAdded;
+					}
 					else {
 						putAmongOrphans(ngb);
 						if (block == ngb)
 							addedToOrphans = true;
 					}
 				}
-				else
-					added |= add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
+				else {
+					boolean cursorAdded = add(cursor, hashOfCursor, verify, Optional.empty(), block == cursor, ws, updatedHead);
+					if (cursorAdded) {
+						blocksAdded.add(cursor);
+						getOrphansWithParent(hashOfCursor).forEach(ws::add);
+					}
+
+					added |= block == cursor & cursorAdded;
+				}
 			}
 		}
 		while (!ws.isEmpty());
+
+		for (Block blockAdded: blocksAdded)
+			node.onAdded(blockAdded);
 
 		Block newHead = updatedHead.get();
 		if (newHead != null) {
@@ -724,19 +743,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			node.rebaseMempoolAt(newHead);
 
 			Block cursor = newHead;
-			var blocksAdded = new LinkedList<Block>();
-			blocksAdded.addLast(cursor);
+			var blocksAddedOnBestChain = new LinkedList<Block>();
+			blocksAddedOnBestChain.addLast(cursor);
 
 			while (!cursor.equals(block)) {
 				if (cursor instanceof NonGenesisBlock ngb) {
 					cursor = getBlock(ngb.getHashOfPreviousBlock()).orElseThrow(() -> new DatabaseException("The head has been added to a dangling path"));
-					blocksAdded.addFirst(cursor);
+					blocksAddedOnBestChain.addFirst(cursor);
 				}
 				else
 					throw new DatabaseException("The head has been added to a disconnected path");
 			}
 
-			node.onHeadChanged(blocksAdded);
+			node.onHeadChanged(blocksAddedOnBestChain);
 		}
 		else if (addedToOrphans && headIsLessPowerfulThan(block))
 			// the block was better than our current head, but its previous block is missing:
@@ -750,17 +769,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			throws NodeException, VerificationException, InterruptedException, TimeoutException {
 
 		try (var scope = mkScope()) {
-			boolean result = check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
+			return check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
 				() -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, verify, previous, first, updatedHead)))
 			);
-
-			if (result) {
-				node.onAdded(block);
-				getOrphansWithParent(hashOfBlock).forEach(ws::add);
-				result &= first;
-			}
-
-			return result;
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
