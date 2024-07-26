@@ -548,7 +548,24 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public boolean headIsLessPowerfulThan(Block block) throws NodeException {
-		return getPowerOfHead().map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
+		try (var scope = mkScope()) {
+			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> headIsLessPowerfulThan(txn, block))));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
+	/**
+	 * Determines if the given block is more powerful than the current head, running inside a transaction.
+	 * 
+	 * @param txn the Xodus transaction
+	 * @param block the block
+	 * @return true if and only if the current head is missing or {@code block} is more powerful
+	 * @throws NodeException if the node is misbehaving
+	 */
+	public boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException {
+		return getPowerOfHead(txn).map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
 	}
 
 	/**
@@ -692,8 +709,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			this.blockToAdd = blockToAdd;
 			this.verify = verify;
 
-			boolean blockWasAddedToOrphans = false;
-
 			// we use a working set, since the addition of a single block might
 			// trigger the further addition of orphan blocks, recursively
 			var ws = new ArrayList<Block>();
@@ -705,51 +720,48 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
 					if (cursor instanceof final NonGenesisBlock ngb) {
 						Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
-						if (previous.isPresent()) {
-							boolean cursorAdded = add(cursor, hashOfCursor, previous);
-							if (cursorAdded) {
-								blocksAdded.add(cursor);
-								getOrphansWithParent(hashOfCursor).forEach(ws::add);
-								blockWasAdded |= blockToAdd == cursor;
-							}
-						}
-						else {
-							putAmongOrphans(ngb);
-							if (blockToAdd == cursor)
-								blockWasAddedToOrphans = true;
-						}
-					}
-					else {
-						boolean cursorAdded = add(cursor, hashOfCursor, Optional.empty());
-						if (cursorAdded) {
+						if (previous.isPresent() && add(cursor, hashOfCursor, previous)) {
 							blocksAdded.add(cursor);
 							getOrphansWithParent(hashOfCursor).forEach(ws::add);
-							blockWasAdded |= blockToAdd == cursor;
 						}
+					}
+					else if (add(cursor, hashOfCursor, Optional.empty())) {
+						blocksAdded.add(cursor);
+						getOrphansWithParent(hashOfCursor).forEach(ws::add);
 					}
 				}
 			}
 			while (!ws.isEmpty());
 
-			for (Block blockAdded: blocksAdded)
-				node.onAdded(blockAdded);
+			boolean synchronize = blocksAdded.isEmpty() && blockToAdd instanceof NonGenesisBlock ngb && headIsLessPowerfulThan(blockToAdd);
 
-			if (!blocksAddedToTheCurrentBestChain.isEmpty()) {
-				// if the head has been improved, we update the mempool by removing
-				// the transactions that have been added in blockchain and potentially adding
-				// other transactions (if the history changed). Note that, in general, the mempool of
-				// the node might not always be aligned with the current head of the blockchain,
-				// since another task might execute this same update concurrently. This is not
-				// a problem, since this rebase is only an optimization, to keep the mempool small.
-				// In any case, when a new mining task is spawn, its mempool gets recomputed wrt
-				// the block over which mining occurs, so it will be aligned there
-				node.rebaseMempoolAt(blocksAddedToTheCurrentBestChain.getLast());
-				node.onHeadChanged(blocksAddedToTheCurrentBestChain);
+			if (blocksAdded.isEmpty()) {
+				if (blockToAdd instanceof NonGenesisBlock ngb) {
+					putAmongOrphans(ngb);
+					if (synchronize)
+						// the block was better than our current head, but its previous block is missing: we synchronize from our peers
+						node.scheduleSynchronization();
+				}
 			}
-			else if (blockWasAddedToOrphans && headIsLessPowerfulThan(blockToAdd))
-				// the block was better than our current head, but its previous block is missing:
-				// we synchronize from the upper portion (1000 blocks deep) of the blockchain, upwards
-				node.scheduleSynchronization();
+			else {
+				blockWasAdded = true;
+
+				for (Block blockAdded: blocksAdded)
+					node.onAdded(blockAdded);
+
+				if (!blocksAddedToTheCurrentBestChain.isEmpty()) {
+					// if the head has been improved, we update the mempool by removing
+					// the transactions that have been added in blockchain and potentially adding
+					// other transactions (if the history changed). Note that, in general, the mempool of
+					// the node might not always be aligned with the current head of the blockchain,
+					// since another task might execute this same update concurrently. This is not
+					// a problem, since this rebase is only an optimization, to keep the mempool small;
+					// in any case, when a new mining task is spawn, its mempool gets recomputed wrt
+					// the block over which mining occurs, so it will be aligned there
+					node.rebaseMempoolAt(blocksAddedToTheCurrentBestChain.getLast());
+					node.onHeadChanged(blocksAddedToTheCurrentBestChain);
+				}
+			}
 		}
 
 		private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous) throws NodeException, VerificationException, InterruptedException, TimeoutException {
