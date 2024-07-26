@@ -557,18 +557,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Determines if the given block is more powerful than the current head, running inside a transaction.
-	 * 
-	 * @param txn the Xodus transaction
-	 * @param block the block
-	 * @return true if and only if the current head is missing or {@code block} is more powerful
-	 * @throws NodeException if the node is misbehaving
-	 */
-	public boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException {
-		return getPowerOfHead(txn).map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
-	}
-
-	/**
 	 * Yields the creation time of the given block, if it were to be added to this blockchain.
 	 * For genesis blocks, their creation time is explicit in the block.
 	 * For non-genesis blocks, this method adds the total waiting time of the block to the time of the genesis
@@ -663,7 +651,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-		return !new BlockAddition(block, true).blocksAdded.isEmpty();
+		return new BlockAddition(block, true).hasBeenAdded();
 	}
 
 	/**
@@ -679,7 +667,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean addVerified(Block block) throws NodeException, InterruptedException, TimeoutException {
 		try {
-			return !new BlockAddition(block, false).blocksAdded.isEmpty();
+			return new BlockAddition(block, false).hasBeenAdded();
 		}
 		catch (VerificationException e) {
 			// impossible: we did not require block verification hence these exceptions should not have been generated
@@ -699,16 +687,23 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private final List<Block> blocksAdded = new ArrayList<>();
 
 		/**
+		 * The hash of {@link #blockToAdd}.
+		 */
+		private final byte[] hashOfBlockToAdd;
+
+		/**
 		 * The blocks added to the current best chain of the blockchain. If not empty, this starts with
 		 * {@code blockToAdd} and ends with the new head of the blockchain. This is always a subset
 		 * of {@link #blocksAdded}.
 		 */
 		private final LinkedList<Block> blocksAddedToTheCurrentBestChain = new LinkedList<>();
 
+		private boolean synchronize;
+
 		/**
 		 * Adds the given block to this blockchain, allowing one to specify if block verification is required.
 		 * 
-		 * @param blockToAdd the block to add
+		 * @param block the block to add
 		 * @param verify true if and only if verification of {@code block} must be performed
 		 * @return true if the block has been actually added to the tree of blocks
 		 *         rooted at the genesis block, false otherwise.
@@ -717,15 +712,48 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the current thread is interrupted
 		 * @throws TimeoutException if some operation timed out
 		 */
-		private BlockAddition(final Block blockToAdd, boolean verify) throws VerificationException, InterruptedException, TimeoutException, NodeException {
-			this.blockToAdd = blockToAdd;
+		private BlockAddition(Block block, boolean verify) throws VerificationException, InterruptedException, TimeoutException, NodeException {
+			this.blockToAdd = block;
+			this.hashOfBlockToAdd = blockToAdd.getHash(hashingForBlocks);
 			this.verify = verify;
 
+			if (performAddition())
+				informNode();
+		}
+
+		/**
+		 * Performs the addition in blockchain of {@link #blockToAdd}, running inside a transaction.
+		 * 
+		 * @return true if and only if the block was added, to the blockchain or among the orphan blocks;
+		 *         false means that the block was already present in blockchain
+		 */
+		private boolean performAddition() throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			try (var scope = mkScope()) {
+				return check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
+					() -> environment.computeInTransaction(uncheck(txn -> performAddition(txn)))
+				);
+			}
+			catch (ExodusException e) {
+				throw new DatabaseException(e);
+			}
+		}
+
+		/**
+		 * Performs the addition in blockchain of {@link #blockToAdd}, running inside a transaction.
+		 * 
+		 * @param txn the Xodus transaction where the addition is performed
+		 * @return true if and only if the block was added, to the blockchain or among the orphan blocks;
+		 *         false means that the block was already present in blockchain
+		 */
+		private boolean performAddition(Transaction txn) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			blocksAdded.clear();
+			blocksAddedToTheCurrentBestChain.clear();
+			synchronize = false;
+
 			// optimization check, to avoid repeated verification
-			byte[] hashOfBlock = blockToAdd.getHash(hashingForBlocks);
-			if (containsBlock(hashOfBlock)) {
-				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
-				return;
+			if (containsBlock(txn, hashOfBlockToAdd)) {
+				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlockToAdd) + " since it is already in the database");
+				return false;
 			}
 
 			// we use a working set, since the addition of a single block might
@@ -737,9 +765,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				Block cursor = ws.remove(ws.size() - 1);
 				Optional<Block> previous = Optional.empty();
 
-				if (cursor instanceof GenesisBlock || (previous = getBlock(((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
+				if (cursor instanceof GenesisBlock || (previous = getBlock(txn, ((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
 					byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
-					if (add(cursor, hashOfCursor, previous)) {
+					if (add(txn, cursor, hashOfCursor, previous)) {
 						blocksAdded.add(cursor);
 						getOrphansWithParent(hashOfCursor).forEach(ws::add);
 					}
@@ -747,8 +775,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 			while (!ws.isEmpty());
 
-			boolean synchronize = blocksAdded.isEmpty() && blockToAdd instanceof NonGenesisBlock ngb && headIsLessPowerfulThan(blockToAdd);
+			synchronize = blocksAdded.isEmpty() && blockToAdd instanceof NonGenesisBlock ngb && headIsLessPowerfulThan(txn, blockToAdd);
 
+			return true;
+		}
+
+		private void informNode() throws NodeException, InterruptedException, TimeoutException {
 			if (blocksAdded.isEmpty()) {
 				if (blockToAdd instanceof NonGenesisBlock ngb) {
 					putAmongOrphans(ngb);
@@ -761,7 +793,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				// the first added block is the block itself, the others are all orphans that have been connected to the blockchain
 				blocksAdded.stream().skip(1).forEach(this::removeFromOrphans);
 				blocksAdded.stream().forEachOrdered(node::onAdded);
-
+		
 				if (!blocksAddedToTheCurrentBestChain.isEmpty()) {
 					// if the head has been improved, we update the mempool by removing
 					// the transactions that have been added in blockchain and potentially adding
@@ -777,15 +809,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 
-		private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-			try (var scope = mkScope()) {
-				return check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
-					() -> environment.computeInTransaction(uncheck(txn -> add(txn, block, hashOfBlock, previous)))
-				);
-			}
-			catch (ExodusException e) {
-				throw new DatabaseException(e);
-			}		
+		private boolean hasBeenAdded() {
+			return !blocksAdded.isEmpty();
 		}
 
 		private boolean add(Transaction txn, Block block, byte[] hashOfBlock, Optional<Block> previous) throws NodeException, VerificationException, InterruptedException, TimeoutException {
@@ -1419,6 +1444,18 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
 		}
+	}
+
+	/**
+	 * Determines if the given block is more powerful than the current head, running inside a transaction.
+	 * 
+	 * @param txn the Xodus transaction
+	 * @param block the block
+	 * @return true if and only if the current head is missing or {@code block} is more powerful
+	 * @throws NodeException if the node is misbehaving
+	 */
+	private boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException {
+		return getPowerOfHead(txn).map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
 	}
 
 	private boolean isContainedInTheBestChain(Transaction txn, Block block, byte[] blockHash) throws NodeException {
