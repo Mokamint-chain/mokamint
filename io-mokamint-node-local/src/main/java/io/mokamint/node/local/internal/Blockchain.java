@@ -663,7 +663,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-		return new BlockAddition(block, true).blockWasAdded;
+		return !new BlockAddition(block, true).blocksAdded.isEmpty();
 	}
 
 	/**
@@ -679,7 +679,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean addVerified(Block block) throws NodeException, InterruptedException, TimeoutException {
 		try {
-			return new BlockAddition(block, false).blockWasAdded;
+			return !new BlockAddition(block, false).blocksAdded.isEmpty();
 		}
 		catch (VerificationException e) {
 			// impossible: we did not require block verification hence these exceptions should not have been generated
@@ -690,9 +690,21 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private class BlockAddition {
 		private final Block blockToAdd;
 		private final boolean verify;
-		private boolean blockWasAdded;
+
+		/**
+		 * The blocks added to the blockchain, as result of the addition of {@code blockToAdd}.
+		 * If not empty, this starts with {@code blockToAdd} itself, potentially followed
+		 * by previously orphan blocks that have been integrate into the blockchain.
+		 */
 		private final List<Block> blocksAdded = new ArrayList<>();
+
+		/**
+		 * The blocks added to the current best chain of the blockchain. If not empty, this starts with
+		 * {@code blockToAdd} and ends with the new head of the blockchain. This is always a subset
+		 * of {@link #blocksAdded}.
+		 */
 		private final LinkedList<Block> blocksAddedToTheCurrentBestChain = new LinkedList<>();
+
 		/**
 		 * Adds the given block to this blockchain, allowing one to specify if block verification is required.
 		 * 
@@ -709,6 +721,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			this.blockToAdd = blockToAdd;
 			this.verify = verify;
 
+			// optimization check, to avoid repeated verification
+			byte[] hashOfBlock = blockToAdd.getHash(hashingForBlocks);
+			if (containsBlock(hashOfBlock)) {
+				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
+				return;
+			}
+
 			// we use a working set, since the addition of a single block might
 			// trigger the further addition of orphan blocks, recursively
 			var ws = new ArrayList<Block>();
@@ -717,19 +736,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			do {
 				final Block cursor = ws.remove(ws.size() - 1);
 				byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
-				if (!containsBlock(hashOfCursor)) { // optimization check, to avoid repeated verification
-					if (cursor instanceof final NonGenesisBlock ngb) {
-						Optional<Block> previous = getBlock(ngb.getHashOfPreviousBlock());
-						if (previous.isPresent() && add(cursor, hashOfCursor, previous)) {
-							blocksAdded.add(cursor);
-							getOrphansWithParent(hashOfCursor).forEach(ws::add);
-						}
-					}
-					else if (add(cursor, hashOfCursor, Optional.empty())) {
+				Optional<Block> previous = Optional.empty();
+
+				if (cursor instanceof GenesisBlock || (previous = getBlock(((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent())
+					if (add(cursor, hashOfCursor, previous)) {
 						blocksAdded.add(cursor);
 						getOrphansWithParent(hashOfCursor).forEach(ws::add);
 					}
-				}
 			}
 			while (!ws.isEmpty());
 
@@ -744,8 +757,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				}
 			}
 			else {
-				blockWasAdded = true;
-
 				for (Block blockAdded: blocksAdded)
 					node.onAdded(blockAdded);
 
@@ -807,11 +818,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private boolean add(Transaction txn, Block block, byte[] hashOfBlock) throws NodeException {
-			if (containsBlock(txn, hashOfBlock)) {
-				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already in the database");
-				return false;
-			}
-			else if (block instanceof NonGenesisBlock ngb) {
+			if (block instanceof NonGenesisBlock ngb) {
 				var maybeDescriptionOfPreviousOfBlock = getBlockDescription(txn, ngb.getHashOfPreviousBlock());
 
 				if (maybeDescriptionOfPreviousOfBlock.isPresent()) {
