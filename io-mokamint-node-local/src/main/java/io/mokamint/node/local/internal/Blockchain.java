@@ -694,7 +694,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		/**
 		 * The blocks added to the blockchain, as result of the addition of {@code blockToAdd}.
 		 * If not empty, this starts with {@code blockToAdd} itself, potentially followed
-		 * by previously orphan blocks that have been integrate into the blockchain.
+		 * by previously orphan blocks that have been connected to the blockchain.
 		 */
 		private final List<Block> blocksAdded = new ArrayList<>();
 
@@ -734,15 +734,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			ws.add(blockToAdd);
 
 			do {
-				final Block cursor = ws.remove(ws.size() - 1);
-				byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
+				Block cursor = ws.remove(ws.size() - 1);
 				Optional<Block> previous = Optional.empty();
 
-				if (cursor instanceof GenesisBlock || (previous = getBlock(((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent())
+				if (cursor instanceof GenesisBlock || (previous = getBlock(((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
+					byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
 					if (add(cursor, hashOfCursor, previous)) {
 						blocksAdded.add(cursor);
 						getOrphansWithParent(hashOfCursor).forEach(ws::add);
 					}
+				}
 			}
 			while (!ws.isEmpty());
 
@@ -757,8 +758,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				}
 			}
 			else {
-				for (Block blockAdded: blocksAdded)
-					node.onAdded(blockAdded);
+				// the first added block is the block itself, the others are all orphans that have been connected to the blockchain
+				blocksAdded.stream().skip(1).forEach(this::removeFromOrphans);
+				blocksAdded.stream().forEachOrdered(node::onAdded);
 
 				if (!blocksAddedToTheCurrentBestChain.isEmpty()) {
 					// if the head has been improved, we update the mempool by removing
@@ -893,33 +895,33 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				byte[] cursorHash = newHeadHash;
 				long totalTimeOfNewHead = newHead.getDescription().getTotalWaitingTime();
 				long height = newHead.getDescription().getHeight();
-
+		
 				removeDataHigherThan(txn, height);
-
+		
 				var heightBI = fromBytes(longToBytes(height));
 				var _new = fromBytes(newHeadHash);
 				var old = storeOfChain.get(txn, heightBI);
-
+		
 				blocksAddedToTheCurrentBestChain.clear();
-
+		
 				do {
 					storeOfChain.put(txn, heightBI, _new);
-
+		
 					if (old != null) {
 						long heightCopy = height;
 						var oldBytes = old.getBytes();
 						Block oldBlock = getBlock(txn, oldBytes)
 							.orElseThrow(() -> new DatabaseException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
-
+		
 						removeReferencesToTransactionsInside(txn, oldBlock);
 					}
-
+		
 					blocksAddedToTheCurrentBestChain.addFirst(cursor);
-
+		
 					if (cursor instanceof NonGenesisBlock ngb) {
 						if (height <= 0L)
 							throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
-
+		
 						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
 						var cursorHashCopy = cursorHash;
 						cursor = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(cursorHashCopy) + " has no previous block in the database"));
@@ -933,39 +935,39 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
 				}
 				while (cursor instanceof NonGenesisBlock && !_new.equals(old));
-
+		
 				for (Block added: blocksAddedToTheCurrentBestChain)
 					addReferencesToTransactionsInside(txn, added);
-
+		
 				var maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
 				byte[] startOfNonFrozenPartHash;
-
+		
 				if (maybeStartOfNonFrozenPartHash.isEmpty()) {
 					startOfNonFrozenPartHash = getGenesisHash(txn).orElseThrow(() -> new DatabaseException("The head has changed but the genesis hash is missing"));
 					setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
 				}
 				else
 					startOfNonFrozenPartHash = maybeStartOfNonFrozenPartHash.get();
-
+		
 				if (maximalHistoryChangeTime >= 0L) {
 					// we move startOfNonFrozenPartHash upwards along the current best chain, if it is too far away from the head of the blockchain
 					do {
 						var startOfNonFrozenPartHashCopy = startOfNonFrozenPartHash;
 						var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy) + " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database"));
-
+		
 						if (totalTimeOfNewHead - descriptionOfStartOfNonFrozenPart.getTotalWaitingTime() <= maximalHistoryChangeTime)
 							break;
-
+		
 						ByteIterable aboveStartOfNonFrozenPartHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getHeight() + 1)));
 						if (aboveStartOfNonFrozenPartHash == null)
 							throw new DatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
-
+		
 						byte[] newStartOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
-
+		
 						for (byte[] forward: getForwards(txn, startOfNonFrozenPartHash).toArray(byte[][]::new))
 							if (!Arrays.equals(forward, newStartOfNonFrozenPartHash))
 								gcBlocksRootedAt(txn, forward);
-
+		
 						setStartOfNonFrozenPartHash(txn, newStartOfNonFrozenPartHash);
 						startOfNonFrozenPartHash = newStartOfNonFrozenPartHash;
 					}
@@ -974,6 +976,50 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 			catch (ExodusException e) {
 				throw new DatabaseException(e);
+			}
+		}
+
+		/**
+		 * Adds the given block to {@link #orphans}.
+		 * 
+		 * @param block the block to add
+		 */
+		private void putAmongOrphans(NonGenesisBlock block) {
+			synchronized (orphans) {
+				if (Stream.of(orphans).anyMatch(block::equals))
+					// it is already inside the array: it is better not to waste a slot
+					return;
+		
+				orphansPos = (orphansPos + 1) % orphans.length;
+				orphans[orphansPos] = block;
+			}
+		}
+
+		/**
+		 * Yields the orphans having the given parent.
+		 * 
+		 * @param hashOfParent the hash of {@code parent}
+		 * @return the orphans whose previous block is {@code parent}, if any
+		 */
+		private Stream<NonGenesisBlock> getOrphansWithParent(byte[] hashOfParent) {
+			synchronized (orphans) {
+				return Stream.of(orphans)
+						.filter(Objects::nonNull)
+						.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
+			}
+		}
+
+		/**
+		 * Yields the orphans having the given parent.
+		 * 
+		 * @param hashOfParent the hash of {@code parent}
+		 * @return the orphans whose previous block is {@code parent}, if any
+		 */
+		private void removeFromOrphans(Block blockToRemove) {
+			synchronized (orphans) {
+				for (int pos = 0; pos < orphans.length; pos++)
+					if (orphans[pos] == blockToRemove)
+						orphans[pos] = null;
 			}
 		}
 	}
@@ -1702,36 +1748,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		System.arraycopy(array1, 0, merge, 0, array1.length);
 		System.arraycopy(array2, 0, merge, array1.length, array2.length);
 		return merge;
-	}
-
-	/**
-	 * Adds the given block to {@link #orphans}.
-	 * 
-	 * @param block the block to add
-	 */
-	private void putAmongOrphans(NonGenesisBlock block) {
-		synchronized (orphans) {
-			if (Stream.of(orphans).anyMatch(block::equals))
-				// it is already inside the array: it is better not to waste a slot
-				return;
-
-			orphansPos = (orphansPos + 1) % orphans.length;
-			orphans[orphansPos] = block;
-		}
-	}
-
-	/**
-	 * Yields the orphans having the given parent.
-	 * 
-	 * @param hashOfParent the hash of {@code parent}
-	 * @return the orphans whose previous block is {@code parent}, if any
-	 */
-	private Stream<NonGenesisBlock> getOrphansWithParent(byte[] hashOfParent) {
-		synchronized (orphans) {
-			return Stream.of(orphans)
-					.filter(Objects::nonNull)
-					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
-		}
 	}
 
 	/**
