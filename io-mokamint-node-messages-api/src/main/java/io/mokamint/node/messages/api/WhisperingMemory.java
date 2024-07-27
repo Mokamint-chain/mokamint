@@ -17,15 +17,16 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.api.Whispered;
 
 /**
  * A memory of whispered things, that remembers that last inserted things.
  * In this way, it is possible to know if something has been already whispered.
  * The test is incomplete, in general, since this memory has limited size.
+ * 
+ * @param <W> the type of the objects that get whispered
  */
 @ThreadSafe
-public interface WhisperingMemory {
+public interface WhisperingMemory<W> {
 
 	/**
 	 * Adds the given whispered thing to this container. If it is full already,
@@ -35,5 +36,5 @@ public interface WhisperingMemory {
 	 * @return true if and only if {@code whispered} was not in the container
 	 *              and has been consequently added
 	 */
-	boolean add(Whispered whispered);
+	boolean add(W whispered);
 }

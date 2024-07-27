@@ -18,11 +18,19 @@ package io.mokamint.node.messages.api;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.WhisperedPeer;
+import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.Whispered;
 
 /**
  * The network message sent to whisper some peers between whisperers.
  */
 @Immutable
-public interface WhisperPeerMessage extends RpcMessage, WhisperedPeer {
+public interface WhisperPeerMessage extends RpcMessage, Whispered {
+
+	/**
+	 * Yields the whispered peer.
+	 * 
+	 * @return the whispered peer
+	 */
+	Peer getPeer();
 }

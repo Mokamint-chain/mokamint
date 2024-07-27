@@ -29,11 +29,12 @@ public final class WhisperedMemories {
 	/**
 	 * Yields a memory with the given maximal size.
 	 * 
+	 * @param <W> the type of the whispered things
 	 * @param size the size (maximal number of stored whispered things)
 	 * @return the memory
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public static WhisperingMemory of(int size) {
-		return new WhisperedMemoryImpl(size);
+	public static <W> WhisperingMemory<W> of(int size) {
+		return new WhisperedMemoryImpl<>(size);
 	}
 }

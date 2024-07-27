@@ -43,12 +43,9 @@ import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Whispered;
-import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeer;
-import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -163,7 +160,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory alreadyWhispered;
+	private final WhisperingMemory<Whispered> alreadyWhispered;
 
 	/**
 	 * The prefix used in the log messages;
@@ -259,11 +256,11 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		LOGGER.info(logPrefix + "got whispered " + description);
 
 		Set<Session> sessions;
-		if (whispered instanceof WhisperedPeer)
+		if (whispered instanceof WhisperPeerMessage)
 			sessions = whisperPeerSessions;
-		else if (whispered instanceof WhisperedBlock)
+		else if (whispered instanceof WhisperBlockMessage)
 			sessions = whisperBlockSessions;
-		else if (whispered instanceof WhisperedTransaction)
+		else if (whispered instanceof WhisperTransactionMessage)
 			sessions = whisperTransactionSessions;
 		else {
 			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());

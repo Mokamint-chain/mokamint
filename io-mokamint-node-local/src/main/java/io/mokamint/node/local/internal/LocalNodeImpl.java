@@ -72,9 +72,6 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Whispered;
-import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeer;
-import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
@@ -84,6 +81,9 @@ import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.WhisperedMemories;
+import io.mokamint.node.messages.api.WhisperBlockMessage;
+import io.mokamint.node.messages.api.WhisperPeerMessage;
+import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
@@ -169,10 +169,22 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * A memory of the last whispered messages,
+	 * A memory of the last whispered peers.
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory alreadyWhispered;
+	private final WhisperingMemory<WhisperPeerMessage> peersAlreadyWhispered;
+
+	/**
+	 * A memory of the last whispered blocks.
+	 * This is used to avoid whispering already whispered messages again.
+	 */
+	private final WhisperingMemory<Block> blocksAlreadyWhispered;
+
+	/**
+	 * A memory of the last whispered transactions.
+	 * This is used to avoid whispering already whispered messages again.
+	 */
+	private final WhisperingMemory<Transaction> transactionsAlreadyWhispered;
 
 	/**
 	 * True if and only if a synchronization task is in process.
@@ -226,7 +238,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.keyPair = keyPair;
 		this.app = app;
-		this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
+		this.peersAlreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
+		this.blocksAlreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
+		this.transactionsAlreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
 		this.miners = new Miners(this);
 		this.blockchain = new Blockchain(this);
 		this.mempool = new Mempool(this);
@@ -282,12 +296,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 	@Override
 	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
-		if (!seen.test(this) && alreadyWhispered.add(whispered))
-			if (whispered instanceof WhisperedPeer)
+		if (!seen.test(this))
+			if (whispered instanceof WhisperPeerMessage)
 				whisperedPeersQueue.offer(new WhisperedInfo(whispered, seen, description, true));
-			else if (whispered instanceof WhisperedBlock)
+			else if (whispered instanceof WhisperBlockMessage)
 				whisperedBlocksQueue.offer(new WhisperedInfo(whispered, seen, description, true));
-			else if (whispered instanceof WhisperedTransaction)
+			else if (whispered instanceof WhisperTransactionMessage wtm && transactionsAlreadyWhispered.add(wtm.getTransaction()))
 				whisperedTransactionsQueue.offer(new WhisperedInfo(whispered, seen, description, true));
 	}
 
@@ -694,9 +708,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	private void whisperWithoutAddition(Peer peer) {
 		var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
-		alreadyWhispered.add(whisperedPeers);
-		String description = "peer " + peer.toStringSanitized();
-		whisperedPeersQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
+
+		if (peersAlreadyWhispered.add(whisperedPeers)) {
+			String description = "peer " + peer.toStringSanitized();
+			whisperedPeersQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
+		}
 	}
 
 	/**
@@ -706,9 +722,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	private void whisperWithoutAddition(URI uri) {
 		var whisperedPeers = WhisperPeerMessages.of(uri, UUID.randomUUID().toString());
-		alreadyWhispered.add(whisperedPeers);
-		String description = "peer " + whisperedPeers.getPeer().toStringSanitized();
-		whisperedPeersQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
+
+		if (peersAlreadyWhispered.add(whisperedPeers)) {
+			String description = "peer " + whisperedPeers.getPeer().toStringSanitized();
+			whisperedPeersQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
+		}
 	}
 
 	/**
@@ -717,10 +735,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param block the block to whisper
 	 */
 	protected void whisperWithoutAddition(Block block) {
-		var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
-		alreadyWhispered.add(whisperedBlock);
-		String description = "block " + block.getHexHash(config.getHashingForBlocks());
-		whisperedBlocksQueue.offer(new WhisperedInfo(whisperedBlock, isThis, description, false));
+		if (blocksAlreadyWhispered.add(block)) {
+			var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
+			String description = "block " + block.getHexHash(config.getHashingForBlocks());
+			whisperedBlocksQueue.offer(new WhisperedInfo(whisperedBlock, isThis, description, false));
+		}
 	}
 
 	/**
@@ -729,10 +748,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param transaction the transaction to whisper
 	 */
 	private void whisperWithoutAddition(Transaction transaction) {
-		var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
-		alreadyWhispered.add(whisperedTransaction);
-		String description = "transaction " + transaction.getHexHash(hasherForTransactions);
-		whisperedTransactionsQueue.offer(new WhisperedInfo(whisperedTransaction, isThis, description, false));
+		if (transactionsAlreadyWhispered.add(transaction)) {
+			var whisperedTransaction = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
+			String description = "transaction " + transaction.getHexHash(hasherForTransactions);
+			whisperedTransactionsQueue.offer(new WhisperedInfo(whisperedTransaction, isThis, description, false));
+		}
 	}
 
 	/**
@@ -1029,16 +1049,16 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 				try {
 					if (whisperedInfo.add)
-						if (whisperedInfo.whispered instanceof WhisperedPeer whisperedPeers)
-							peers.add(whisperedPeers.getPeer());
+						if (whisperedInfo.whispered instanceof WhisperPeerMessage whisperedPeer)
+							peers.add(whisperedPeer.getPeer());
 
 					var whispered = whisperedInfo.whispered;
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 					peers.whisper(whispered, newSeen, whisperedInfo.description);
 					boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
 
-					if (whispered instanceof WhisperedPeer whisperedPeers)
-						onWhispered(whisperedPeers.getPeer());
+					if (whispered instanceof WhisperPeerMessage whisperedPeer)
+						onWhispered(whisperedPeer.getPeer());
 				}
 				catch (NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
@@ -1064,14 +1084,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				try {
 					var whispered = whisperedInfo.whispered;
 
-					if (whisperedInfo.add && whispered instanceof WhisperedBlock whisperedBlock)
+					if (whisperedInfo.add && whispered instanceof WhisperBlockMessage whisperedBlock)
 						blockchain.add(whisperedBlock.getBlock());
 
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 					peers.whisper(whispered, newSeen, whisperedInfo.description);
 					boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
 
-					if (whispered instanceof WhisperedBlock whisperedBlock)
+					if (whispered instanceof WhisperBlockMessage whisperedBlock)
 						onWhispered(whisperedBlock.getBlock());
 				}
 				catch (NodeException | TimeoutException e) {
@@ -1097,7 +1117,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				var whisperedInfo = whisperedTransactionsQueue.take();
 
 				try {
-					if (whisperedInfo.add && whisperedInfo.whispered instanceof WhisperedTransaction whisperedTransaction)
+					if (whisperedInfo.add && whisperedInfo.whispered instanceof WhisperTransactionMessage whisperedTransaction)
 						mempool.add(whisperedTransaction.getTransaction());
 
 					var whispered = whisperedInfo.whispered;
@@ -1105,7 +1125,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					peers.whisper(whispered, newSeen, whisperedInfo.description);
 					boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
 
-					if (whispered instanceof WhisperedTransaction whisperedTransaction)
+					if (whispered instanceof WhisperTransactionMessage whisperedTransaction)
 						onWhispered(whisperedTransaction.getTransaction());
 				}
 				catch (NodeException | TimeoutException e) {

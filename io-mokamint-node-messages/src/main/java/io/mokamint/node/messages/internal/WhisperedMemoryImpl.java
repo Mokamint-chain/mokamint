@@ -23,7 +23,6 @@ import java.util.Set;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.api.Whispered;
 import io.mokamint.node.messages.api.WhisperingMemory;
 
 /**
@@ -32,7 +31,7 @@ import io.mokamint.node.messages.api.WhisperingMemory;
  * The test is incomplete, in general, since this memory has limited size.
  */
 @ThreadSafe
-public class WhisperedMemoryImpl implements WhisperingMemory {
+public class WhisperedMemoryImpl<W> implements WhisperingMemory<W> {
 
 	/**
 	 * The size of the memory (number of whispered things that can be stored).
@@ -48,13 +47,13 @@ public class WhisperedMemoryImpl implements WhisperingMemory {
 	 * The whispered things added to this container.
 	 */
 	@GuardedBy("lock")
-	private final Set<Whispered> seen = new HashSet<>();
+	private final Set<W> seen = new HashSet<>();
 
 	/**
 	 * The whispered things added to this container, in order of addition.
 	 */
 	@GuardedBy("lock")
-	private final Deque<Whispered> elements = new LinkedList<>();
+	private final Deque<W> elements = new LinkedList<>();
 
 	/**
 	 * Creates a memory of the given size.
@@ -70,7 +69,7 @@ public class WhisperedMemoryImpl implements WhisperingMemory {
 	}
 
 	@Override
-	public boolean add(Whispered whispered) {
+	public boolean add(W whispered) {
 		synchronized (lock) {
 			boolean reachedMax = seen.size() == size;
 
@@ -81,6 +80,15 @@ public class WhisperedMemoryImpl implements WhisperingMemory {
 					var toRemove = elements.removeFirst();
 					seen.remove(toRemove);
 				}
+
+				/*Set<Transaction> txs = new HashSet<>();
+				for (W e: elements)
+					if (e instanceof Transaction tx) {
+						txs.add(tx);
+					}
+
+				if (txs.size() > 0)
+					System.out.println(elements.size() + " vs " + txs.size());*/
 
 				return true;
 			}

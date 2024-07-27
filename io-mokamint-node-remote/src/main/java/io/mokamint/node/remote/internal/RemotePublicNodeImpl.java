@@ -68,14 +68,11 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Whispered;
-import io.mokamint.node.api.WhisperedBlock;
-import io.mokamint.node.api.WhisperedPeer;
-import io.mokamint.node.api.WhisperedTransaction;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -158,7 +155,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory alreadyWhispered;
+	private final WhisperingMemory<Whispered> alreadyWhispered;
 
 	/**
 	 * The hashing to use for the blocks.
@@ -273,15 +270,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		Predicate<Whisperer> newSeen = seen.or(isThis);
 		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
 
-		if (whispered instanceof WhisperedPeer whisperedPeer) {
+		if (whispered instanceof WhisperPeerMessage whisperedPeer) {
 			sendWhisperedAsync(whisperedPeer, WHISPER_PEER_ENDPOINT, description, includeNetwork);
 			onWhispered(whisperedPeer.getPeer());
 		}
-		else if (whispered instanceof WhisperedBlock whisperedBlock) {
+		else if (whispered instanceof WhisperBlockMessage whisperedBlock) {
 			sendWhisperedAsync(whisperedBlock, WHISPER_BLOCK_ENDPOINT, description, includeNetwork);
 			onWhispered(whisperedBlock.getBlock());
 		}
-		else if (whispered instanceof WhisperedTransaction whisperedTransaction) {
+		else if (whispered instanceof WhisperTransactionMessage whisperedTransaction) {
 			sendWhisperedAsync(whisperedTransaction, WHISPER_TRANSACTION_ENDPOINT, description, includeNetwork);
 			onWhispered(whisperedTransaction.getTransaction());
 		}
