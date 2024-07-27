@@ -72,7 +72,7 @@ import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
-import io.mokamint.node.api.Whispered;
+import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -155,7 +155,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory<Whispered> alreadyWhispered;
+	private final WhisperingMemory<WhisperMessage<?>> alreadyWhispered;
 
 	/**
 	 * The hashing to use for the blocks.
@@ -257,39 +257,39 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
-		whisper(whispered, seen, true, description);
+	public void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, String description) {
+		whisper(message, seen, true, description);
 	}
 
-	private void whisper(Whispered whispered, Predicate<Whisperer> seen, boolean includeNetwork, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whispered))
+	private void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, boolean includeNetwork, String description) {
+		if (seen.test(this) || !alreadyWhispered.add(message))
 			return;
 
 		LOGGER.info(logPrefix + "got whispered " + description);
 
 		Predicate<Whisperer> newSeen = seen.or(isThis);
-		boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, description));
+		boundWhisperers.forEach(whisperer -> whisperer.whisper(message, newSeen, description));
 
-		if (whispered instanceof WhisperPeerMessage whisperedPeer) {
-			sendWhisperedAsync(whisperedPeer, WHISPER_PEER_ENDPOINT, description, includeNetwork);
-			onWhispered(whisperedPeer.getPeer());
+		if (message instanceof WhisperPeerMessage wpm) {
+			sendWhisperedAsync(wpm, WHISPER_PEER_ENDPOINT, description, includeNetwork);
+			onWhispered(wpm.getWhispered());
 		}
-		else if (whispered instanceof WhisperBlockMessage whisperedBlock) {
-			sendWhisperedAsync(whisperedBlock, WHISPER_BLOCK_ENDPOINT, description, includeNetwork);
-			onWhispered(whisperedBlock.getBlock());
+		else if (message instanceof WhisperBlockMessage wbm) {
+			sendWhisperedAsync(wbm, WHISPER_BLOCK_ENDPOINT, description, includeNetwork);
+			onWhispered(wbm.getWhispered());
 		}
-		else if (whispered instanceof WhisperTransactionMessage whisperedTransaction) {
-			sendWhisperedAsync(whisperedTransaction, WHISPER_TRANSACTION_ENDPOINT, description, includeNetwork);
-			onWhispered(whisperedTransaction.getTransaction());
+		else if (message instanceof WhisperTransactionMessage wtm) {
+			sendWhisperedAsync(wtm, WHISPER_TRANSACTION_ENDPOINT, description, includeNetwork);
+			onWhispered(wtm.getWhispered());
 		}
 		else
-			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());
+			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + message.getClass().getName());
 	}
 
-	private void sendWhisperedAsync(Whispered whispered, String endpoint, String description, boolean includeNetwork) {
+	private void sendWhisperedAsync(WhisperMessage<?> message, String endpoint, String description, boolean includeNetwork) {
 		if (includeNetwork) {
 			try {
-				sendObjectAsync(getSession(endpoint), whispered);
+				sendObjectAsync(getSession(endpoint), message);
 			}
 			catch (IOException e) {
 				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
@@ -307,7 +307,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			.distinct()
 			.forEach(uri -> {
 				var whisperedPeers = WhisperPeerMessages.of(uri, UUID.randomUUID().toString());
-				String description = "peer " + whisperedPeers.getPeer().toStringSanitized();
+				String description = "peer " + whisperedPeers.getWhispered().toStringSanitized();
 				whisper(whisperedPeers, _whisperer -> false, false, description);
 			});
 	}
@@ -951,7 +951,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperPeerMessage message) -> whisper(message, _whisperer -> false, false, "peer " + message.getPeer().toStringSanitized()));
+			addMessageHandler(session, (WhisperPeerMessage message) -> whisper(message, _whisperer -> false, false, "peer " + message.getWhispered().toStringSanitized()));
 		}
 
 		@Override
@@ -964,7 +964,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperBlockMessage message) -> whisper(message, _whisperer -> false, false, "block " + message.getBlock().getHexHash(hashingForBlocks)));
+			addMessageHandler(session, (WhisperBlockMessage message) -> whisper(message, _whisperer -> false, false, "block " + message.getWhispered().getHexHash(hashingForBlocks)));
 		}
 
 		@Override
@@ -977,7 +977,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperTransactionMessage message) -> whisper(message, _whisperer -> false, false, "transaction " + message.getTransaction().getHexHash(hasherForTransactions)));
+			addMessageHandler(session, (WhisperTransactionMessage message) -> whisper(message, _whisperer -> false, false, "transaction " + message.getWhispered().getHexHash(hasherForTransactions)));
 		}
 
 		@Override

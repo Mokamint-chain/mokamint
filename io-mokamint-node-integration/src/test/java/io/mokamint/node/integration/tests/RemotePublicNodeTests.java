@@ -1202,7 +1202,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		doAnswer(invocation -> {
 			WhisperPeerMessage message = invocation.getArgument(0);
 
-			if (message.getPeer().equals(peer))
+			if (message.getWhispered().equals(peer))
 				semaphore.release();
 
 			return null;
@@ -1240,7 +1240,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		doAnswer(invocation -> {
 			WhisperBlockMessage message = invocation.getArgument(0);
 
-			if (message.getBlock().equals(block))
+			if (message.getWhispered().equals(block))
 				semaphore.release();
 
 			return null;

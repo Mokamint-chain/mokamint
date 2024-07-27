@@ -45,13 +45,13 @@ public class WhisperPeerMessageImpl extends AbstractRpcMessage implements Whispe
 	}
 
 	@Override
-	public Peer getPeer() {
+	public Peer getWhispered() {
 		return peer;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof WhisperPeerMessage wpm && super.equals(other) && peer.equals(wpm.getPeer());
+		return other instanceof WhisperPeerMessage wpm && super.equals(other) && peer.equals(wpm.getWhispered());
 	}
 
 	@Override

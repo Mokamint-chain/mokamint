@@ -19,18 +19,11 @@ package io.mokamint.node.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.Whispered;
+import io.mokamint.node.api.WhisperMessage;
 
 /**
  * The network message sent to whisper a block between whisperers.
  */
 @Immutable
-public interface WhisperBlockMessage extends RpcMessage, Whispered {
-
-	/**
-	 * Yields the whispered block.
-	 * 
-	 * @return the whispered block
-	 */
-	Block getBlock();
+public interface WhisperBlockMessage extends RpcMessage, WhisperMessage<Block> {
 }

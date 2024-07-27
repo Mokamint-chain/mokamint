@@ -45,13 +45,13 @@ public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements
 	}
 
 	@Override
-	public Transaction getTransaction() {
+	public Transaction getWhispered() {
 		return transaction;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof WhisperTransactionMessage wtm && super.equals(other) && transaction.equals(wtm.getTransaction());
+		return other instanceof WhisperTransactionMessage wtm && super.equals(other) && transaction.equals(wtm.getWhispered());
 	}
 
 	@Override

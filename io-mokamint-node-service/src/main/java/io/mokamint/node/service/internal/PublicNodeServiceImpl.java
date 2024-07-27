@@ -45,7 +45,7 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
-import io.mokamint.node.api.Whispered;
+import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -160,7 +160,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * A memory of the last whispered messages,
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory<Whispered> alreadyWhispered;
+	private final WhisperingMemory<WhisperMessage<?>> alreadyWhispered;
 
 	/**
 	 * The prefix used in the log messages;
@@ -245,39 +245,39 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
-	public void whisper(Whispered whispered, Predicate<Whisperer> seen, String description) {
-		whisper(whispered, seen, null, description);
+	public void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, String description) {
+		whisper(message, seen, null, description);
 	}
 
-	private void whisper(Whispered whispered, Predicate<Whisperer> seen, Session excluded, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(whispered))
+	private void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, Session excluded, String description) {
+		if (seen.test(this) || !alreadyWhispered.add(message))
 			return;
 	
 		LOGGER.info(logPrefix + "got whispered " + description);
 
 		Set<Session> sessions;
-		if (whispered instanceof WhisperPeerMessage)
+		if (message instanceof WhisperPeerMessage)
 			sessions = whisperPeerSessions;
-		else if (whispered instanceof WhisperBlockMessage)
+		else if (message instanceof WhisperBlockMessage)
 			sessions = whisperBlockSessions;
-		else if (whispered instanceof WhisperTransactionMessage)
+		else if (message instanceof WhisperTransactionMessage)
 			sessions = whisperTransactionSessions;
 		else {
-			LOGGER.log(Level.SEVERE, "unexpected whispered object of class " + whispered.getClass().getName());
+			LOGGER.log(Level.SEVERE, "unexpected whispered message of class " + message.getClass().getName());
 			sessions = Collections.emptySet();
 		}
 
 		sessions.stream()
 			.filter(Session::isOpen)
 			.filter(session -> session != excluded)
-			.forEach(s -> whisperToSession(s, whispered, description));
+			.forEach(s -> whisperToSession(s, message, description));
 	
-		node.whisper(whispered, seen.or(isThis), description);
+		node.whisper(message, seen.or(isThis), description);
 	}
 
-	private void whisperToSession(Session session, Whispered whispered, String description) {
+	private void whisperToSession(Session session, WhisperMessage<?> message, String description) {
 		try {
-			sendObjectAsync(session, whispered);
+			sendObjectAsync(session, message);
 		}
 		catch (IOException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to session: it might be closed: " + e.getMessage());
@@ -778,7 +778,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperPeerSessions.add(session);
-			addMessageHandler(session, (WhisperPeerMessage message) -> server.whisper(message, _whisperer -> false, session, "peer " + message.getPeer().toStringSanitized()));
+			addMessageHandler(session, (WhisperPeerMessage message) -> server.whisper(message, _whisperer -> false, session, "peer " + message.getWhispered().toStringSanitized()));
 		}
 
 		@SuppressWarnings("resource")
@@ -798,7 +798,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperBlockSessions.add(session);
-			addMessageHandler(session, (WhisperBlockMessage message) -> server.whisper(message, _whisperer -> false, session, "block " + message.getBlock().getHexHash(server.config.getHashingForBlocks())));
+			addMessageHandler(session, (WhisperBlockMessage message) -> server.whisper(message, _whisperer -> false, session, "block " + message.getWhispered().getHexHash(server.config.getHashingForBlocks())));
 	    }
 
 		@SuppressWarnings("resource")
@@ -818,7 +818,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperTransactionSessions.add(session);
-			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getTransaction().getHexHash(server.hasherForTransactions)));
+			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getWhispered().getHexHash(server.hasherForTransactions)));
 	    }
 
 		@SuppressWarnings("resource")

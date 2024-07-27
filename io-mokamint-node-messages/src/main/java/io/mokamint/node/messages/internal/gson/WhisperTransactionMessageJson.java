@@ -31,7 +31,7 @@ public abstract class WhisperTransactionMessageJson extends AbstractRpcMessageJs
 	protected WhisperTransactionMessageJson(WhisperTransactionMessage message) {
 		super(message);
 
-		this.transaction = new Transactions.Json(message.getTransaction());
+		this.transaction = new Transactions.Json(message.getWhispered());
 	}
 
 	@Override

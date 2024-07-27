@@ -32,7 +32,7 @@ public abstract class WhisperPeerMessageJson extends AbstractRpcMessageJsonRepre
 	protected WhisperPeerMessageJson(WhisperPeerMessage message) {
 		super(message);
 
-		this.peer = new Peers.Json(message.getPeer());
+		this.peer = new Peers.Json(message.getWhispered());
 	}
 
 	@Override

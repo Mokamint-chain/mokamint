@@ -17,9 +17,18 @@ limitations under the License.
 package io.mokamint.node.api;
 
 /**
- * Information whispered among peers.
+ * A message whispered among peers.
+ * 
+ * @param <W> the type of the whispered information in the message
  */
-public interface Whispered {
+public interface WhisperMessage<W> {
+
+	/**
+	 * Yields the whispered information.
+	 * 
+	 * @return the whispered information
+	 */
+	W getWhispered();
 
 	@Override
 	boolean equals(Object obj);

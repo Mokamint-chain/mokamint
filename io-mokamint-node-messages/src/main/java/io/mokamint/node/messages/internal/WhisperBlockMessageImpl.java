@@ -45,13 +45,13 @@ public class WhisperBlockMessageImpl extends AbstractRpcMessage implements Whisp
 	}
 
 	@Override
-	public Block getBlock() {
+	public Block getWhispered() {
 		return block;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof WhisperBlockMessage wbm && super.equals(other) && block.equals(wbm.getBlock());
+		return other instanceof WhisperBlockMessage wbm && super.equals(other) && block.equals(wbm.getWhispered());
 	}
 
 	@Override

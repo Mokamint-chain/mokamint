@@ -37,7 +37,7 @@ public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepr
 	protected WhisperBlockMessageJson(WhisperBlockMessage message) {
 		super(message);
 
-		this.block = new Blocks.Json(message.getBlock());
+		this.block = new Blocks.Json(message.getWhispered());
 	}
 
 	@Override
