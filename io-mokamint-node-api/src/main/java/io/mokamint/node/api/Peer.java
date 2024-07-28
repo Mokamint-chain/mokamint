@@ -27,7 +27,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * by URL string.
  */
 @Immutable
-public interface Peer extends Marshallable, Comparable<Peer> {
+public interface Peer extends Marshallable, Whisperable, Comparable<Peer> {
 
 	/**
 	 * Yields the URI of this peer. It is the network address (including the port, if any)
@@ -36,12 +36,6 @@ public interface Peer extends Marshallable, Comparable<Peer> {
 	 * @return the URI
 	 */
 	URI getURI();
-
-	@Override
-	boolean equals(Object obj);
-
-	@Override
-	int hashCode();
 
 	@Override
 	String toString();

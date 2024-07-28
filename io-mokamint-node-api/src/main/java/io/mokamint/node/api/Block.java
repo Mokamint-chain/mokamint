@@ -30,7 +30,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
  * A block of the Mokamint blockchain.
  */
 @Immutable
-public interface Block extends Marshallable {
+public interface Block extends Marshallable, Whisperable {
 
 	/**
 	 * Yields the description of this block.

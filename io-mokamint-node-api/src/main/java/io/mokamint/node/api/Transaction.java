@@ -25,7 +25,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * by increasing bytes, lexicographically.
  */
 @Immutable
-public interface Transaction extends Marshallable, Comparable<Transaction> {
+public interface Transaction extends Marshallable, Whisperable, Comparable<Transaction> {
 
 	/**
 	 * Yields the bytes of the transaction. The meaning of these bytes if application-dependent.
@@ -33,12 +33,6 @@ public interface Transaction extends Marshallable, Comparable<Transaction> {
 	 * @return the bytes of the transaction
 	 */
 	byte[] getBytes();
-
-	@Override
-	boolean equals(Object other);
-
-	@Override
-	int hashCode();
 
 	@Override
 	String toString();
