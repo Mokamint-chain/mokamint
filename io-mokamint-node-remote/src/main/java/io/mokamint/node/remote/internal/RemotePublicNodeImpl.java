@@ -73,6 +73,7 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
+import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
@@ -152,10 +153,17 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * A memory of the last whispered messages,
+	 * A memory of the last whispered things.
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory<WhisperMessage<?>> alreadyWhispered;
+	private final WhisperingMemory<Whisperable> alreadyWhispered;
+
+	/**
+	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
+	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
+	 * whispered also after being whispered already.
+	 */
+	private final WhisperingMemory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
 	 * The hashing to use for the blocks.
@@ -196,6 +204,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		this.logPrefix = "public remote(" + uri + "): ";
 		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
+		this.peersAlreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
 
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
 		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
@@ -262,7 +271,13 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	private void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, boolean includeNetwork, String description) {
-		if (seen.test(this) || !alreadyWhispered.add(message))
+		if (seen.test(this))
+			return;
+		else if (message instanceof WhisperPeerMessage wpm) {
+			if (!peersAlreadyWhispered.add(wpm))
+				return;
+		}
+		else if (!alreadyWhispered.add(message.getWhispered()))
 			return;
 
 		LOGGER.info(logPrefix + "got whispered " + description);
