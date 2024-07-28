@@ -169,16 +169,17 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final CopyOnWriteArrayList<Whisperer> boundWhisperers = new CopyOnWriteArrayList<>();
 
 	/**
-	 * A memory of the last whispered peers.
-	 * This is used to avoid whispering already whispered messages again.
-	 */
-	private final WhisperingMemory<WhisperPeerMessage> peersAlreadyWhispered;
-
-	/**
 	 * A memory of the last whispered things.
 	 * This is used to avoid whispering already whispered messages again.
 	 */
 	private final WhisperingMemory<Whisperable> alreadyWhispered;
+
+	/**
+	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
+	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
+	 * whispered also after being whispered already.
+	 */
+	private final WhisperingMemory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
 	 * True if and only if a synchronization task is in process.
@@ -273,7 +274,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		boundWhisperers.remove(whisperer);
 	}
 
-	private static class WhisperedInfo { // TODO: make it generic on the type of whispered thing?
+	private static class WhisperedInfo {
 		private final WhisperMessage<?> message;
 		private final Predicate<Whisperer> seen;
 		private final String description;
@@ -290,7 +291,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, String description) {
 		if (!seen.test(this))
-			if (message instanceof WhisperPeerMessage)
+			if (message instanceof WhisperPeerMessage wpm && peersAlreadyWhispered.add(wpm))
 				whisperedPeersQueue.offer(new WhisperedInfo(message, seen, description, true));
 			else if (message instanceof WhisperBlockMessage && alreadyWhispered.add(message.getWhispered()))
 				whisperedBlocksQueue.offer(new WhisperedInfo(message, seen, description, true));
@@ -700,11 +701,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param peer the peer to whisper
 	 */
 	private void whisperWithoutAddition(Peer peer) {
-		var whisperedPeers = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
+		var whisperPeerMessage = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
 
-		if (peersAlreadyWhispered.add(whisperedPeers)) {
+		if (peersAlreadyWhispered.add(whisperPeerMessage)) {
 			String description = "peer " + peer.toStringSanitized();
-			whisperedPeersQueue.offer(new WhisperedInfo(whisperedPeers, isThis, description, false));
+			whisperedPeersQueue.offer(new WhisperedInfo(whisperPeerMessage, isThis, description, false));
 		}
 	}
 
@@ -715,9 +716,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	protected void whisperWithoutAddition(Block block) {
 		if (alreadyWhispered.add(block)) {
-			var whisperedBlock = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
+			var whisperBlockMessage = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
 			String description = "block " + block.getHexHash(config.getHashingForBlocks());
-			whisperedBlocksQueue.offer(new WhisperedInfo(whisperedBlock, isThis, description, false));
+			whisperedBlocksQueue.offer(new WhisperedInfo(whisperBlockMessage, isThis, description, false));
 		}
 	}
 
