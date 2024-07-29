@@ -32,6 +32,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -578,29 +579,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the creation time of the given block, if it were to be added to this blockchain, running
-	 * inside a transaction. For genesis blocks, their creation time is explicit in the block.
-	 * For non-genesis blocks, this method adds the total waiting time of the block to the time of the genesis
-	 * of this blockchain.
-	 * 
-	 * @param txn the Xodus transaction
-	 * @param block the block whose creation time is computed
-	 * @return the creation time of {@code block}; this is empty only for non-genesis blocks if the blockchain is empty
-	 * @throws NodeException if the node is misbehaving
-	 */
-	Optional<LocalDateTime> creationTimeOf(Transaction txn, Block block) throws NodeException {
-		if (block instanceof GenesisBlock gb)
-			return Optional.of(gb.getStartDateTimeUTC());
-		else {
-			var maybeGenesis = getGenesis(txn);
-			if (maybeGenesis.isEmpty())
-				return Optional.empty();
-			else
-				return Optional.of(maybeGenesis.get().getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
-		}
-	}
-
-	/**
 	 * Initializes this blockchain, which must be empty. It adds a genesis block.
 	 * 
 	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
@@ -653,20 +631,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-		BlockAddition addition;
-
-		try (var scope = mkScope()) {
-			addition = check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
-				() -> environment.computeInTransaction(uncheck(txn -> new BlockAddition(txn, block, true)))
-			);
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-
-		addition.informNode(block);
-
-		return addition.somethingHasBeenAdded();
+		return add(block, true);
 	}
 
 	/**
@@ -681,85 +646,156 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public boolean addVerified(Block block) throws NodeException, InterruptedException, TimeoutException {
-		BlockAddition addition;
+		try {
+			return add(block, false);
+		}
+		catch (VerificationException e) {
+			// impossible: we did not require block verification hence this exception should not have been generated
+			throw new NodeException("Unexpected exception", e);
+		}
+	}
 
+	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+		BlockAdder adder;
+	
 		try (var scope = mkScope()) {
-			addition = check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
-				() -> environment.computeInTransaction(uncheck(txn -> new BlockAddition(txn, block, false)))
+			adder = check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
+				() -> environment.computeInTransaction(uncheck(txn -> new BlockAdder(txn).add(block, verify)))
 			);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-		catch (VerificationException e) {
-			// impossible: we did not require block verification hence these exceptions should not have been generated
-			throw new NodeException("Unexpected exception", e);
-		}
-
-		addition.informNode(block);
-
-		return addition.somethingHasBeenAdded();
+	
+		adder.informNode();
+		adder.updateMempool();
+		adder.scheduleSynchronizationIfUseful();
+	
+		return adder.somethingHasBeenAdded();
 	}
 
-	private class BlockAddition {
+	/**
+	 * A context for the addition of one or more blocks to this blockchain, inside the same databse transaction.
+	 */
+	public class BlockAdder {
 
 		/**
-		 * The blocks added to the blockchain, as result of the addition of {@code blockToAdd}.
-		 * If not empty, this starts with {@code blockToAdd} itself, potentially followed
-		 * by previously orphan blocks that have been connected to the blockchain.
+		 * The database transaction where the additions are performed.
+		 */
+		private final Transaction txn;
+
+		/**
+		 * The hash of the head before performing the additions with this adder, if any.
+		 */
+		private final Optional<byte[]> initialHeadHash;
+
+		/**
+		 * The blocks added to the blockchain, as result of the addition of some blocks and,
+		 * potentially, of some previously orphan blocks that have been connected to the blockchain.
 		 */
 		private final List<Block> blocksAdded = new ArrayList<>();
 
 		/**
-		 * The blocks added to the current best chain of the blockchain. If not empty, this starts with
-		 * {@code blockToAdd} and ends with the new head of the blockchain. This is always a subset
-		 * of {@link #blocksAdded}.
+		 * The blocks added to the current best chain of the blockchain. If not empty, this
+		 * might contain some added block, some previously orphan blocks, some blocks from previously
+		 * secondary branches, and ends with the new head of the blockchain.
 		 */
-		private final LinkedList<Block> blocksAddedToTheCurrentBestChain = new LinkedList<>();
+		private final Deque<Block> blocksAddedToTheCurrentBestChain = new LinkedList<>();
 
 		/**
-		 * The blocks that should be added among the orphan blocks after addition has been performed.
+		 * The blocks that can be added among the orphan blocks after the additions have been performed.
 		 */
 		private final Set<NonGenesisBlock> blocksToAddAmongOrphans = new HashSet<>();
 
 		/**
-		 * True if and only if a synchronization is suggested at the end of the addition of the block.
-		 * This happens only when the block gets added to the orphan blocks and it looks better than the head.
+		 * The blocks that can be removed from the orphan blocks after the additions have been performed.
 		 */
-		private boolean synchronize;
+		private final Set<NonGenesisBlock> blocksToRemoveFromOrphans = new HashSet<>();
+
+		/**
+		 * Creates a context for the addition of blocks, inside the same database transaction.
+		 * 
+		 * @param txn the database transaction
+		 * @throws NodeException if the node is misbehaving
+		 */
+		public BlockAdder(Transaction txn) throws NodeException {
+			this.txn = txn;
+			this.initialHeadHash = getHeadHash(txn);
+		}
 
 		/**
 		 * Adds the given block to this blockchain, allowing one to specify if block verification is required.
 		 * 
 		 * @param block the block to add
 		 * @param verify true if and only if verification of {@code block} must be performed
-		 * @return true if the block has been actually added to the tree of blocks
-		 *         rooted at the genesis block, false otherwise.
+		 * @return this same adder
 		 * @throws NodeException if the node is misbehaving
-		 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
+		 * @throws VerificationException if {@code block} cannot be added since it does not respect the consensus rules
 		 * @throws InterruptedException if the current thread is interrupted
 		 * @throws TimeoutException if some operation timed out
 		 */
-		private BlockAddition(Transaction txn, Block block, boolean verify) throws VerificationException, InterruptedException, TimeoutException, NodeException {
-			performAddition(txn, block, block.getHash(hashingForBlocks), verify);
+		public BlockAdder add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			byte[] hashOfBlockToAdd = block.getHash(hashingForBlocks);
+
+			// optimization check, to avoid repeated verification
+			if (containsBlock(txn, hashOfBlockToAdd))
+				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlockToAdd) + " since it is already in the database");
+
+			addBlockAndConnectOrphans(block, verify);
+			computeBlocksAddedToTheCurrentBestChain();
+
+			return this;
+		}
+
+		public void informNode() throws NodeException, InterruptedException, TimeoutException {
+			blocksToAddAmongOrphans.forEach(this::putAmongOrphans);
+			blocksToRemoveFromOrphans.forEach(this::removeFromOrphans);
+			blocksAdded.forEach(node::onAdded);
+
+			if (!blocksAddedToTheCurrentBestChain.isEmpty())
+				node.onHeadChanged(blocksAddedToTheCurrentBestChain);
+		}
+
+		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
+			if (!blocksAddedToTheCurrentBestChain.isEmpty())
+				// if the head has been improved, we update the mempool by removing
+				// the transactions that have been added in blockchain and potentially adding
+				// other transactions (if the history changed). Note that, in general, the mempool of
+				// the node might not always be aligned with the current head of the blockchain,
+				// since another task might execute this same update concurrently. This is not
+				// a problem, since this rebase is only an optimization, to keep the mempool small;
+				// in any case, when a new mining task is spawn, its mempool gets recomputed wrt
+				// the block over which mining occurs, so it will be aligned there
+				node.rebaseMempoolAt(blocksAddedToTheCurrentBestChain.getLast());
 		}
 
 		/**
-		 * Performs the addition in blockchain of {@link #blockToAdd}, running inside a transaction.
+		 * Schedules a synchronization operation if it might be worthwhile, since, for instance,
+		 * an orphan block has been added, that is better than the current head.
 		 * 
-		 * @param txn the Xodus transaction where the addition is performed
-		 * @return true if and only if the block was added, to the blockchain or among the orphan blocks;
-		 *         false means that the block was already present in blockchain
+		 * @throws NodeException if the node is misbehaving
 		 */
-		private boolean performAddition(Transaction txn, Block blockToAdd, byte[] hashOfBlockToAdd, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-			// optimization check, to avoid repeated verification
-			if (containsBlock(txn, hashOfBlockToAdd)) {
-				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlockToAdd) + " since it is already in the database");
-				return false;
-			}
+		public void scheduleSynchronizationIfUseful() throws NodeException {
+			for (var newOrphan: blocksToAddAmongOrphans)
+				if (headIsLessPowerfulThan(newOrphan)) {
+					// the new orphan was better than our current head: we synchronize from our peers
+					node.scheduleSynchronization();
+					break;
+				}
+		}
 
-			// we use a working set, since the addition of a single block might
-			// trigger the further addition of orphan blocks, recursively
+		/**
+		 * Determines if this blockchain has been expanded with this adder, not necessarily
+		 * along its best chain. The addition of orphan blocks is not considered as an expansion.
+		 * 
+		 * @return true if and only if this blockchain has been expanded
+		 */
+		public boolean somethingHasBeenAdded() {
+			return !blocksAdded.isEmpty();
+		}
+
+		private void addBlockAndConnectOrphans(Block blockToAdd, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			// we use a working set, since the addition of a single block might trigger the further addition of orphan blocks, recursively
 			var ws = new ArrayList<Block>();
 			ws.add(blockToAdd);
 
@@ -769,67 +805,71 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 				if (cursor instanceof GenesisBlock || (previous = getBlock(txn, ((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
 					byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
-					if (add(txn, blockToAdd, cursor, hashOfCursor, previous, verify)) {
+					if (add(blockToAdd, cursor, hashOfCursor, previous, verify)) {
 						blocksAdded.add(cursor);
 						getOrphansWithParent(hashOfCursor).forEach(ws::add);
+						if (cursor instanceof NonGenesisBlock ngb && cursor != blockToAdd)
+							blocksToRemoveFromOrphans.add(ngb);
 					}
 				}
 				else if (cursor instanceof NonGenesisBlock ngb)
 					blocksToAddAmongOrphans.add(ngb);
 			}
 			while (!ws.isEmpty());
-
-			synchronize = blocksAdded.isEmpty() && blockToAdd instanceof NonGenesisBlock ngb && headIsLessPowerfulThan(txn, blockToAdd);
-
-			return true;
 		}
 
-		private void informNode(Block blockToAdd) throws NodeException, InterruptedException, TimeoutException {
-			blocksToAddAmongOrphans.stream().forEach(this::putAmongOrphans);
+		private void computeBlocksAddedToTheCurrentBestChain() throws NodeException {
+			if (blocksAdded.isEmpty())
+				return;
 
-			if (blocksAdded.isEmpty()) {
-				if (synchronize)
-					// the block was better than our current head, but its previous block is missing: we synchronize from our peers
-					node.scheduleSynchronization();
-			}
+			// we move backwards from the initial head until my hit the current best chain
+			Block start;
+			if (initialHeadHash.isEmpty())
+				start = getGenesis(txn).orElseThrow(() -> new DatabaseException("The blockchain has been expanded but it still misses a genesis block"));
 			else {
-				// the first added block is the block itself, the others are all orphans that have been connected to the blockchain
-				blocksAdded.stream().skip(1).forEach(this::removeFromOrphans);
-				blocksAdded.stream().forEachOrdered(node::onAdded);
-		
-				if (!blocksAddedToTheCurrentBestChain.isEmpty()) {
-					// if the head has been improved, we update the mempool by removing
-					// the transactions that have been added in blockchain and potentially adding
-					// other transactions (if the history changed). Note that, in general, the mempool of
-					// the node might not always be aligned with the current head of the blockchain,
-					// since another task might execute this same update concurrently. This is not
-					// a problem, since this rebase is only an optimization, to keep the mempool small;
-					// in any case, when a new mining task is spawn, its mempool gets recomputed wrt
-					// the block over which mining occurs, so it will be aligned there
-					node.rebaseMempoolAt(blocksAddedToTheCurrentBestChain.getLast());
-					node.onHeadChanged(blocksAddedToTheCurrentBestChain);
+				byte[] hashOfCursor = initialHeadHash.get();
+				Block cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot find the original head of the blockchain"));
+				while (!isContainedInTheBestChain(txn, cursor, hashOfCursor)) {
+					if (cursor instanceof NonGenesisBlock ngb) {
+						hashOfCursor = ngb.getHashOfPreviousBlock();
+						cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot follow the path to the original head of the blockchain, backwards"));
+					}
+					else
+						throw new DatabaseException("The original head is in a dangling path");
 				}
+
+				start = cursor;
 			}
+
+			// once we reached the current best chain, we move upwards along it and collect all blocks that have been added to it
+			var height = start.getDescription().getHeight();
+			ByteIterable hashOfBlockFromBestChain;
+
+			do {
+				height++;
+				hashOfBlockFromBestChain = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height)));
+				if (hashOfBlockFromBestChain != null)
+					blocksAddedToTheCurrentBestChain.addLast(getBlock(txn, hashOfBlockFromBestChain.getBytes()).orElseThrow(() -> new DatabaseException("Cannot follow the new best chain upwards")));
+			}
+			while (hashOfBlockFromBestChain != null);
 		}
 
-		private boolean somethingHasBeenAdded() {
-			return !blocksAdded.isEmpty();
-		}
-
-		private boolean add(Transaction txn, Block initialBlockToAdd, Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-			if (verify) { // TODO: also when it is not the initial block
+		private boolean add(Block initialBlockToAdd, Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			if (verify || initialBlockToAdd != blockToAdd) {
 				try {
 					new BlockVerification(txn, node, blockToAdd, previous);
 				}
 				catch (VerificationException e) {
 					if (blockToAdd == initialBlockToAdd)
 						throw e;
-					else
+					else {
 						LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlockToAdd) + " since it does not pass verification: " + e.getMessage());
+						return false;
+					}
 				}
 			}
 
-			return add(txn, blockToAdd, hashOfBlockToAdd, previous);
+			return add(blockToAdd, hashOfBlockToAdd, previous);
 		}
 
 		/**
@@ -847,7 +887,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 *         is a non-genesis block whose previous is not in the tree
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private boolean add(Transaction txn, Block block, byte[] hashOfBlock, Optional<Block> previous) throws NodeException {
+		private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous) throws NodeException {
 			if (block instanceof NonGenesisBlock ngb) {
 				if (isInFrozenPart(txn, previous.get().getDescription())) {
 					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
@@ -857,7 +897,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					putInStore(txn, hashOfBlock, block.toByteArray());
 					addToForwards(txn, ngb, hashOfBlock);
 					if (isBetterThanHead(txn, ngb, hashOfBlock))
-						setHead(txn, block, hashOfBlock);
+						setHead(block, hashOfBlock);
 
 					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
 					return true;
@@ -867,7 +907,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				if (isEmpty(txn)) {
 					putInStore(txn, hashOfBlock, block.toByteArray());
 					setGenesisHash(txn, hashOfBlock);
-					setHead(txn, block, hashOfBlock);
+					setHead(block, hashOfBlock);
 					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
 					return true;
 				}
@@ -886,9 +926,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @param newHeadHash the hash of {@code newHead}
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void setHead(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
+		private void setHead(Block newHead, byte[] newHeadHash) throws NodeException {
 			try {
-				updateChain(txn, newHead, newHeadHash);
+				updateChain(newHead, newHeadHash);
 				storeOfBlocks.put(txn, HASH_OF_HEAD, fromBytes(newHeadHash));
 				storeOfBlocks.put(txn, STATE_ID_OF_HEAD, fromBytes(newHead.getStateId()));
 				storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
@@ -905,12 +945,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * Updates the current best chain in this database, to the chain having the given block as head,
 		 * running inside a transaction.
 		 * 
-		 * @param txn the transaction
 		 * @param newHead the block that gets set as new head
 		 * @param newHeadHash the hash of {@code block}
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void updateChain(Transaction txn, Block newHead, byte[] newHeadHash) throws NodeException {
+		private void updateChain(Block newHead, byte[] newHeadHash) throws NodeException {
 			try {
 				Block cursor = newHead;
 				byte[] cursorHash = newHeadHash;
@@ -922,8 +961,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				var heightBI = fromBytes(longToBytes(height));
 				var _new = fromBytes(newHeadHash);
 				var old = storeOfChain.get(txn, heightBI);
-		
-				blocksAddedToTheCurrentBestChain.clear();
+
+				var blocksAddedToTheCurrentBestChain = new LinkedList<Block>();
 		
 				do {
 					storeOfChain.put(txn, heightBI, _new);
@@ -958,7 +997,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				while (cursor instanceof NonGenesisBlock && !_new.equals(old));
 		
 				for (Block added: blocksAddedToTheCurrentBestChain)
-					addReferencesToTransactionsInside(txn, added);
+					addReferencesToTransactionsInside(added);
 		
 				var maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
 				byte[] startOfNonFrozenPartHash;
@@ -1000,6 +1039,32 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 
+		private void addReferencesToTransactionsInside(Block block) {
+			if (block instanceof NonGenesisBlock ngb) {
+				long height = ngb.getDescription().getHeight();
+				int count = ngb.getTransactionsCount();
+				for (int pos = 0; pos < count; pos++) {
+					var ref = new TransactionRef(height, pos);
+					storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
+				};
+			}
+		}
+
+		/**
+		 * Yields the orphans having the given parent.
+		 * 
+		 * @param hashOfParent the hash of {@code parent}
+		 * @return the orphans whose previous block is {@code parent}, if any
+		 */
+		private Stream<NonGenesisBlock> getOrphansWithParent(byte[] hashOfParent) {
+			synchronized (orphans) {
+				// we also look in the orphans that have been added during the life of this adder
+				return Stream.concat(Stream.of(orphans), blocksToAddAmongOrphans.stream())
+					.filter(Objects::nonNull)
+					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
+			}
+		}
+
 		/**
 		 * Adds the given block to {@link #orphans}.
 		 * 
@@ -1013,20 +1078,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		
 				orphansPos = (orphansPos + 1) % orphans.length;
 				orphans[orphansPos] = block;
-			}
-		}
-
-		/**
-		 * Yields the orphans having the given parent.
-		 * 
-		 * @param hashOfParent the hash of {@code parent}
-		 * @return the orphans whose previous block is {@code parent}, if any
-		 */
-		private Stream<NonGenesisBlock> getOrphansWithParent(byte[] hashOfParent) {
-			synchronized (orphans) {
-				return Stream.of(orphans)
-						.filter(Objects::nonNull)
-						.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
 			}
 		}
 
@@ -1455,6 +1506,29 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
+	 * Yields the creation time of the given block, if it were to be added to this blockchain, running
+	 * inside a transaction. For genesis blocks, their creation time is explicit in the block.
+	 * For non-genesis blocks, this method adds the total waiting time of the block to the time of the genesis
+	 * of this blockchain.
+	 * 
+	 * @param txn the Xodus transaction
+	 * @param block the block whose creation time is computed
+	 * @return the creation time of {@code block}; this is empty only for non-genesis blocks if the blockchain is empty
+	 * @throws NodeException if the node is misbehaving
+	 */
+	Optional<LocalDateTime> creationTimeOf(Transaction txn, Block block) throws NodeException {
+		if (block instanceof GenesisBlock gb)
+			return Optional.of(gb.getStartDateTimeUTC());
+		else {
+			var maybeGenesis = getGenesis(txn);
+			if (maybeGenesis.isEmpty())
+				return Optional.empty();
+			else
+				return Optional.of(maybeGenesis.get().getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
+		}
+	}
+
+	/**
 	 * Determines if the given block is more powerful than the current head, running inside a transaction.
 	 * 
 	 * @param txn the Xodus transaction
@@ -1686,17 +1760,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				else
 					throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(blockHash) + " at height " + blockHeight);
 			}
-		}
-	}
-
-	private void addReferencesToTransactionsInside(Transaction txn, Block block) {
-		if (block instanceof NonGenesisBlock ngb) {
-			long height = ngb.getDescription().getHeight();
-			int count = ngb.getTransactionsCount();
-			for (int pos = 0; pos < count; pos++) {
-				var ref = new TransactionRef(height, pos);
-				storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
-			};
 		}
 	}
 

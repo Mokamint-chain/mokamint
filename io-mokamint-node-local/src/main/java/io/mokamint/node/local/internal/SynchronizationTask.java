@@ -133,7 +133,7 @@ public class SynchronizationTask implements Task {
 		 * A map from each downloaded block to the peer that downloaded that block.
 		 * This is used to blame that peer if the block is not verifiable.
 		 */
-		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
+		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>(); // TODO: remember to clean this
 
 		private final static int GROUP_SIZE = 500;
 

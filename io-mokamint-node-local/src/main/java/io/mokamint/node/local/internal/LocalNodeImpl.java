@@ -21,7 +21,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -871,7 +871,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 *                      in which case the list is longer than a single element; in any case, this list is
 	 *                      never empty
 	 */
-	protected void onHeadChanged(LinkedList<Block> pathToNewHead) {
+	protected void onHeadChanged(Deque<Block> pathToNewHead) {
 		if (miningTask != null)
 			miningTask.restartFromCurrentHead();
 	}
