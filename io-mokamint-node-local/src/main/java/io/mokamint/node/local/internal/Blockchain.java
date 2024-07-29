@@ -50,7 +50,9 @@ import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -323,14 +325,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the hash of the head block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<byte[]> getHeadHash() throws NodeException {
+	/*public Optional<byte[]> getHeadHash() throws NodeException {
 		try (var scope = mkScope()) {
 			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-	}
+	}*/
 
 	/**
 	 * Yields the starting block of the non-frozen part of the history of this blockchain, if any.
@@ -388,14 +390,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the power of the head block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<BigInteger> getPowerOfHead() throws NodeException {
+	/*public Optional<BigInteger> getPowerOfHead() throws NodeException {
 		try (var scope = mkScope()) {
 			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-	}
+	}*/
 
 	/**
 	 * Yields the block with the given hash, if it is contained in this blockchain.
@@ -655,6 +657,35 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
+	 * If the block was already in the database, this method performs nothing. Otherwise, it verifies
+	 * the given block and adds it to the database of blocks of this blockchain. Note that the addition
+	 * of a block might actually induce the addition of more, orphan blocks,
+	 * if the block is recognized as the previous block of an orphan block.
+	 * The addition of a block might change the head of the best chain, in which case
+	 * mining will be started by this method. Moreover, if the block is an orphan
+	 * with higher power than the current head, its addition might trigger the synchronization
+	 * of the chain from the peers of the node.
+	 * 
+	 * @param txn the transaction where the addition is performed
+	 * @param block the block to add
+	 * @return true if the block has been actually added to the tree of blocks
+	 *         rooted at the genesis block, false otherwise.
+	 *         There are a few situations when the result can be false. For instance,
+	 *         if {@code block} was already in the tree, or if {@code block} is
+	 *         a genesis block but a genesis block is already present in the tree, or
+	 *         if {@code block} has no previous block already in the tree (it is orphaned),
+	 *         or if the block has a previous block in the tree but it cannot be
+	 *         correctly verified as a legal child of that previous block
+	 * @throws NodeException if the node is misbehaving
+	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
+	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws TimeoutException if some operation timed out
+	 */
+	boolean add(Transaction txn, Block block) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+		return new BlockAddition(txn, block, true).hasBeenAdded();
+	}
+
+	/**
 	 * This method behaves like {@link #add(Block)} but assumes that the given block is
 	 * verified, so that it does not need further verification before being added to blockchain.
 	 * 
@@ -676,7 +707,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	private class BlockAddition {
+
+		/**
+		 * The block to add in blockchain.
+		 */
 		private final Block blockToAdd;
+
+		/**
+		 * The hash of {@link #blockToAdd}.
+		 */
+		private final byte[] hashOfBlockToAdd;
+
+		/**
+		 * True if and only if the block must be verified before being attached to the blockchain.
+		 */
 		private final boolean verify;
 
 		/**
@@ -687,17 +731,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private final List<Block> blocksAdded = new ArrayList<>();
 
 		/**
-		 * The hash of {@link #blockToAdd}.
-		 */
-		private final byte[] hashOfBlockToAdd;
-
-		/**
 		 * The blocks added to the current best chain of the blockchain. If not empty, this starts with
 		 * {@code blockToAdd} and ends with the new head of the blockchain. This is always a subset
 		 * of {@link #blocksAdded}.
 		 */
 		private final LinkedList<Block> blocksAddedToTheCurrentBestChain = new LinkedList<>();
 
+		/**
+		 * True if and only if a synchronization is suggested at the end of the addition of the block.
+		 * This happens only when the block gets added to the orphan blocks and it looks better than the head.
+		 */
 		private boolean synchronize;
 
 		/**
@@ -718,6 +761,29 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			this.verify = verify;
 
 			if (performAddition())
+				informNode();
+		}
+
+		/**
+		 * Adds the given block to this blockchain, allowing one to specify if block verification is required,
+		 * running inside a transaction.
+		 * 
+		 * @param txn the transaction
+		 * @param block the block to add
+		 * @param verify true if and only if verification of {@code block} must be performed
+		 * @return true if the block has been actually added to the tree of blocks
+		 *         rooted at the genesis block, false otherwise.
+		 * @throws NodeException if the node is misbehaving
+		 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
+		 * @throws InterruptedException if the current thread is interrupted
+		 * @throws TimeoutException if some operation timed out
+		 */
+		private BlockAddition(Transaction txn, Block block, boolean verify) throws VerificationException, InterruptedException, TimeoutException, NodeException {
+			this.blockToAdd = block;
+			this.hashOfBlockToAdd = blockToAdd.getHash(hashingForBlocks);
+			this.verify = verify;
+
+			if (performAddition(txn))
 				informNode();
 		}
 
@@ -1049,6 +1115,18 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
+	void synchronize(SynchronizationTask task) throws NodeException, InterruptedException, TimeoutException {
+		try (var scope = mkScope()) {
+			task.new Run();
+			/*CheckRunnable.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+				environment.executeInExclusiveTransaction(UncheckConsumer.uncheck(txn -> task.new Run(txn)))
+			);*/
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	}
+
 	private boolean isInFrozenPart(Transaction txn, BlockDescription blockDescription) throws NodeException {
 		var totalWaitingTimeOfStartOfNonFrozenPart = getTotalWaitingTimeOfStartOfNonFrozenPart(txn);
 		return totalWaitingTimeOfStartOfNonFrozenPart.isPresent() && totalWaitingTimeOfStartOfNonFrozenPart.getAsLong() > blockDescription.getTotalWaitingTime();
@@ -1163,7 +1241,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the hash of the genesis block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<byte[]> getGenesisHash(Transaction txn) throws NodeException {
+	Optional<byte[]> getGenesisHash(Transaction txn) throws NodeException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, GENESIS)).map(ByteIterable::getBytes);
 		}
@@ -1195,7 +1273,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the height of the head block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private OptionalLong getHeightOfHead(Transaction txn) throws NodeException {
+	OptionalLong getHeightOfHead(Transaction txn) throws NodeException {
 		try {
 			ByteIterable heightBI = storeOfBlocks.get(txn, HEIGHT_OF_HEAD);
 			if (heightBI == null)
@@ -1511,7 +1589,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the starting block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<Block> getStartOfNonFrozenPart(Transaction txn) throws NodeException {
+	Optional<Block> getStartOfNonFrozenPart(Transaction txn) throws NodeException {
 		try {
 			Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
 			if (maybeStartOfNonFrozenPartHash.isEmpty())
@@ -1578,7 +1656,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return true if and only if that condition holds
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws NodeException {
+	boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws NodeException {
 		try {
 			return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
 		}

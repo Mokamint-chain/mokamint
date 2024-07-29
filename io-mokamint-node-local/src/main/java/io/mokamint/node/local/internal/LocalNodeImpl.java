@@ -853,7 +853,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Called when a block gets added to the blockchain.
+	 * Called when a block gets added to the blockchain, not necessarily to the current best chain.
 	 * 
 	 * @param block the added block
 	 */

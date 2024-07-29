@@ -90,7 +90,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 
 		LocalNodeConfig config = node.getConfig();
 		this.maxPeers = config.getMaxPeers();
-		this.environment = createBlockchainEnvironment(config);
+		this.environment = createPeersEnvironment(config);
 		this.storeOfPeers = openStore("peers");
 		ensureNodeUUID();
 	}
@@ -336,7 +336,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		}
 	}
 
-	private Environment createBlockchainEnvironment(LocalNodeConfig config) {
+	private Environment createPeersEnvironment(LocalNodeConfig config) {
 		var env = new Environment(config.getDir().resolve("peers").toString());
 		LOGGER.info("db: opened the peers database");
 		return env;

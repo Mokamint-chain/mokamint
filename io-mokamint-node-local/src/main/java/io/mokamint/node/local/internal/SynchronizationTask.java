@@ -32,7 +32,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -66,14 +68,19 @@ public class SynchronizationTask implements Task {
 	@Override
 	public void body() throws InterruptedException, TimeoutException, NodeException {
 		try {
-			new Run();
+			node.getBlockchain().synchronize(this);
 		}
 		finally {
 			node.onSynchronizationCompleted();
 		}
 	}
 
-	private class Run {
+	class Run {
+
+		/**
+		 * The database transaction where the synchronization occurs.
+		 */
+		//private final Transaction txn;
 
 		/**
 		 * The peers of the node.
@@ -124,15 +131,15 @@ public class SynchronizationTask implements Task {
 
 		/**
 		 * A map from each downloaded block to the peer that downloaded that block.
-		 * This is used to blame that peer for blocks not verifiable.
+		 * This is used to blame that peer if the block is not verifiable.
 		 */
 		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
 
 		private final static int GROUP_SIZE = 500;
 
-		private Run() throws InterruptedException, TimeoutException, NodeException {
+		Run() throws InterruptedException, TimeoutException, NodeException {
 			long heightOfHead = blockchain.getHeightOfHead().orElse(0L);
-			long heightOfNonFrozenPart = blockchain.getStartOfNonFrozenPart().map(block -> block.getDescription().getHeight()).orElse(0L);
+			long heightOfNonFrozenPart = blockchain.getStartOfNonFrozenPart().map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
 			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
 
 			do {
@@ -268,8 +275,7 @@ public class SynchronizationTask implements Task {
 		}
 
 		/**
-		 * Selects the group in {@link #groups} that looks as the most reliable, since the most
-		 * peers agree on its hashes.
+		 * Selects the group in {@link #groups} that looks as the most reliable, since the most peers agree on its hashes.
 		 * 
 		 * @throws InterruptedException if the current thread gets interrupted
 		 */
