@@ -46,6 +46,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -809,9 +810,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 				if (cursor instanceof GenesisBlock || (previous = getBlock(txn, ((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
 					byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
-					if (add(blockToAdd, cursor, hashOfCursor, previous, verify)) {
+					if (add(cursor, hashOfCursor, previous, blockToAdd != cursor, verify)) {
 						blocksAdded.add(cursor);
-						getOrphansWithParent(hashOfCursor).forEach(ws::add);
+						forEachOrphanWithParent(hashOfCursor, ws::add);
 						if (cursor instanceof NonGenesisBlock ngb && cursor != blockToAdd)
 							blocksToRemoveFromOrphans.add(ngb);
 					}
@@ -833,14 +834,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			else {
 				byte[] hashOfCursor = initialHeadHash.get();
 				Block cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot find the original head of the blockchain"));
-				while (!isContainedInTheBestChain(txn, cursor, hashOfCursor)) {
+				while (!isContainedInTheBestChain(txn, cursor, hashOfCursor))
 					if (cursor instanceof NonGenesisBlock ngb) {
 						hashOfCursor = ngb.getHashOfPreviousBlock();
 						cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot follow the path to the original head of the blockchain, backwards"));
 					}
 					else
 						throw new DatabaseException("The original head is in a dangling path");
-				}
 
 				start = cursor;
 			}
@@ -858,18 +858,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			while (hashOfBlockFromBestChain != null);
 		}
 
-		private boolean add(Block initialBlockToAdd, Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-			if (verify || initialBlockToAdd != blockToAdd) {
+		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+			if (verify || isOrphan) {
 				try {
 					new BlockVerification(txn, node, blockToAdd, previous);
 				}
 				catch (VerificationException e) {
-					if (blockToAdd == initialBlockToAdd)
-						throw e;
-					else {
-						LOGGER.warning("blockchain: discarding block " + Hex.toHexString(hashOfBlockToAdd) + " since it does not pass verification: " + e.getMessage());
+					if (isOrphan) {
+						LOGGER.warning("blockchain: discarding orphan block " + Hex.toHexString(hashOfBlockToAdd) + " since it does not pass verification: " + e.getMessage());
+						blocksToRemoveFromOrphans.add((NonGenesisBlock) blockToAdd); // orphan blocks are never genesis blocks
 						return false;
 					}
+					else
+						throw e;
 				}
 			}
 
@@ -895,6 +896,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (block instanceof NonGenesisBlock ngb) {
 				if (isInFrozenPart(txn, previous.get().getDescription())) {
 					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
+					return false;
+				}
+				else if (containsBlock(txn, hashOfBlock)) {
+					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already present in blockchain");
 					return false;
 				}
 				else {
@@ -1055,17 +1060,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Yields the orphans having the given parent.
+		 * Performs an action for each orphan having the given parent.
 		 * 
-		 * @param hashOfParent the hash of {@code parent}
-		 * @return the orphans whose previous block is {@code parent}, if any
+		 * @param hashOfParent the hash of the parent
+		 * @param action the action to perform
 		 */
-		private Stream<NonGenesisBlock> getOrphansWithParent(byte[] hashOfParent) {
+		private void forEachOrphanWithParent(byte[] hashOfParent, Consumer<NonGenesisBlock> action) {
 			synchronized (orphans) {
 				// we also look in the orphans that have been added during the life of this adder
-				return Stream.concat(Stream.of(orphans), blocksToAddAmongOrphans.stream())
+				Stream.concat(Stream.of(orphans), blocksToAddAmongOrphans.stream())
 					.filter(Objects::nonNull)
-					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent));
+					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent))
+					.filter(orphan -> !blocksToRemoveFromOrphans.contains(orphan))
+					.forEach(action);
 			}
 		}
 
@@ -1155,24 +1162,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>(); // TODO: remember to clean this
 
-		private final static int GROUP_SIZE = 500;
+		private final static int GROUP_SIZE = 3;
 
 		public Synchronization(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
 			this.txn = txn;
 			this.blockAdder = new BlockAdder(txn);
-			run(txn);
-		}
-
-		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
-			blockAdder.updateMempool();
-		}
-
-		public void informNode() {
-			blockAdder.informNode();
-			node.onSynchronizationCompleted();
-		}
-
-		private void run(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
 			long heightOfHead = getHeightOfHead(txn).orElse(0L);
 			long heightOfNonFrozenPart = getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
 			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
@@ -1200,6 +1194,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			while (chosenGroup.length == GROUP_SIZE);
 		}
 
+		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
+			blockAdder.updateMempool();
+		}
+
+		public void informNode() {
+			blockAdder.informNode();
+			node.onSynchronizationCompleted();
+		}
+
 		/**
 		 * Checks if the current thread has been interrupted and, in that case, throws an exception.
 		 * 
@@ -1220,6 +1223,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private boolean downloadNextGroups() throws InterruptedException, NodeException {
 			stopIfInterrupted();
+			System.out.println("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
 			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
 
 			groups.clear();
@@ -2210,28 +2214,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private static byte[] longToBytes(long l) {
-		var result = new byte[Long.BYTES];
-
-		for (int i = Long.BYTES - 1; i >= 0; i--) {
-	        result[i] = (byte) (l & 0xFF);
-	        l >>= Byte.SIZE;
-	    }
-
-	    return result;
-	}
-
-	private static long bytesToLong(final byte[] b) {
-	    long result = 0;
-
-	    for (int i = 0; i < Long.BYTES; i++) {
-	        result <<= Byte.SIZE;
-	        result |= (b[i] & 0xFF);
-	    }
-
-	    return result;
-	}
-
 	private ChainInfo getChainInfo(Transaction txn) throws NodeException {
 		var maybeGenesisHash = getGenesisHash(txn);
 		if (maybeGenesisHash.isEmpty())
@@ -2288,6 +2270,28 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
+	}
+
+	private static byte[] longToBytes(long l) {
+		var result = new byte[Long.BYTES];
+	
+		for (int i = Long.BYTES - 1; i >= 0; i--) {
+	        result[i] = (byte) (l & 0xFF);
+	        l >>= Byte.SIZE;
+	    }
+	
+	    return result;
+	}
+
+	private static long bytesToLong(final byte[] b) {
+	    long result = 0;
+	
+	    for (int i = 0; i < Long.BYTES; i++) {
+	        result <<= Byte.SIZE;
+	        result |= (b[i] & 0xFF);
+	    }
+	
+	    return result;
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {

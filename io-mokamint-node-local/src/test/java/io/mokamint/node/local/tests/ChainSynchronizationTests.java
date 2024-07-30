@@ -192,8 +192,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 			// we give miningNode the time to mine HOW_MANY / 2 blocks
 			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2, 20, TimeUnit.SECONDS));
 
-			// by adding miningPeer as peer of nonMiningNode, the latter will synchronize and then follow
-			// the other howMany / 2 blocks by whispering
+			// by adding miningPeer as peer of nonMiningNode, the latter will synchronize and then follow the other howMany / 2 blocks by whispering
 			nonMiningNode.add(miningPeer);
 
 			assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY, 20, TimeUnit.SECONDS));
@@ -279,8 +278,6 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
 		}
 
-		//System.out.println("nonMiningBlocks: " + nonMiningBlocks.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
-		//	System.out.println("miningBlocks: " + miningBlocks.stream().map(Block::getHeight).sorted().map(Object::toString).collect(Collectors.joining(",")));
 		assertEquals(nonMiningBlocks, miningBlocks);
 	}
 }
