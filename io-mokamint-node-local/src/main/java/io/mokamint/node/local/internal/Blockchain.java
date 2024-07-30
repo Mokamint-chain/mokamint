@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
+import static io.hotmoka.exceptions.CheckRunnable.check;
+import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
@@ -40,8 +40,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -54,6 +58,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -72,12 +77,16 @@ import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.node.remote.api.RemotePublicNode;
 
 /**
  * The blockchain is a database where the blocks are persisted. Blocks are rooted at a genesis block
@@ -242,7 +251,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean isEmpty() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::isEmpty)));
+			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::isEmpty)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -263,7 +272,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		Optional<byte[]> result;
 
 		try (var scope = mkScope()) {
-			result = check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getGenesisHash)));
+			result = CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getGenesisHash)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -289,8 +298,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		Optional<GenesisBlock> result;
 
 		try (var scope = mkScope()) {
-			result = check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(this::getGenesis))
+			result = CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getGenesis))
 			);
 		}
 		catch (ExodusException e) {
@@ -311,8 +320,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<Block> getHead() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(this::getHead))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getHead))
 			);
 		}
 		catch (ExodusException e) {
@@ -343,8 +352,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<Block> getStartOfNonFrozenPart() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(this::getStartOfNonFrozenPart))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getStartOfNonFrozenPart))
 			);
 		}
 		catch (ExodusException e) {
@@ -361,8 +370,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(this::getStartingTimeOfNonFrozenHistory))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getStartingTimeOfNonFrozenHistory))
 			);
 		}
 		catch (ExodusException e) {
@@ -378,7 +387,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public OptionalLong getHeightOfHead() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeightOfHead)));
+			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getHeightOfHead)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -409,8 +418,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<Block> getBlock(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(txn -> getBlock(txn, hash)))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getBlock(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -427,8 +436,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(txn -> getBlockDescription(txn, hash)))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getBlockDescription(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -445,8 +454,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(txn -> getTransaction(txn, hash)))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getTransaction(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -464,8 +473,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, hash)))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getTransactionAddress(txn, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -484,8 +493,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(uncheck(txn -> getTransactionAddress(txn, block, hash)))
+			return CheckSupplier.check(NodeException.class, () ->
+				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getTransactionAddress(txn, block, hash)))
 			);
 		}
 		catch (ExodusException e) {
@@ -501,7 +510,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public ChainInfo getChainInfo() throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getChainInfo)));
+			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getChainInfo)));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -520,7 +529,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Stream<byte[]> getChain(long start, int count) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> getChain(txn, start, count))));
+			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getChain(txn, start, count))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -536,7 +545,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean containsBlock(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> containsBlock(txn, hash))));
+			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> containsBlock(txn, hash))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -552,7 +561,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean headIsLessPowerfulThan(Block block) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> headIsLessPowerfulThan(txn, block))));
+			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> headIsLessPowerfulThan(txn, block))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -571,7 +580,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<LocalDateTime> creationTimeOf(Block block) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(txn -> creationTimeOf(txn, block))));
+			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> creationTimeOf(txn, block))));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -652,6 +661,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		catch (VerificationException e) {
 			// impossible: we did not require block verification hence this exception should not have been generated
 			throw new NodeException("Unexpected exception", e);
+		}
+	}
+
+	public void synchronize() throws InterruptedException, TimeoutException, NodeException {
+		try {
+			Synchronization synchronization = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+				environment.computeInExclusiveTransaction(UncheckFunction.uncheck(Synchronization::new))
+			);
+
+			synchronization.updateMempool();
+			synchronization.informNode();
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
 		}
 	}
 
@@ -1077,12 +1100,451 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
+	public class Synchronization {
+
+		/**
+		 * The database transaction where the synchronization occurs.
+		 */
+		private final Transaction txn;
+
+		/**
+		 * The object used to add blocks to the blockchain, during synchronization.
+		 */
+		private final BlockAdder blockAdder;
+
+		/**
+		 * The peers of the node.
+		 */
+		private final Peers peers = node.getPeers();
+
+		/**
+		 * The blockchain of the node.
+		 */
+		private final Blockchain blockchain = node.getBlockchain();
+
+		/**
+		 * The hashing algorithm used for the blocks.
+		 */
+		private final HashingAlgorithm hashingForBlocks = node.getConfig().getHashingForBlocks();
+
+		/**
+		 * The peers that have been discarded so far during this synchronization, since
+		 * for instance they timed out or provided illegal blocks.
+		 */
+		private final Set<Peer> unusable = ConcurrentHashMap.newKeySet();
+
+		/**
+		 * The height of the next block whose hash must be downloaded.
+		 */
+		private long height;
+
+		/**
+		 * The last groups of hashes downloaded, for each peer.
+		 */
+		private final ConcurrentMap<Peer, byte[][]> groups = new ConcurrentHashMap<>();
+
+		/**
+		 * The group in {@link #groups} that has been selected as more
+		 * reliable chain, because the most peers agree on its hashes.
+		 */
+		private byte[][] chosenGroup;
+
+		/**
+		 * The downloaded blocks, whose hashes are in {@link #chosenGroup}.
+		 */
+		private AtomicReferenceArray<Block> blocks;
+
+		/**
+		 * Semaphores used to avoid having two peers downloading the same block.
+		 */
+		private Semaphore[] semaphores;
+
+		/**
+		 * A map from each downloaded block to the peer that downloaded that block.
+		 * This is used to blame that peer if the block is not verifiable.
+		 */
+		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>(); // TODO: remember to clean this
+
+		private final static int GROUP_SIZE = 500;
+
+		public Synchronization(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
+			this.txn = txn;
+			this.blockAdder = blockchain.new BlockAdder(txn);
+			run(txn);
+		}
+
+		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
+			blockAdder.updateMempool();
+		}
+
+		public void informNode() {
+			blockAdder.informNode();
+			node.onSynchronizationCompleted();
+		}
+
+		private void run(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
+			long heightOfHead = blockchain.getHeightOfHead(txn).orElse(0L);
+			long heightOfNonFrozenPart = blockchain.getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
+			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
+
+			do {
+				if (!downloadNextGroups()) {
+					LOGGER.info("sync: stop here since the peers do not provide more block hashes to download");
+					return;
+				}
+
+				chooseMostReliableGroup();
+				downloadBlocks();
+
+				if (!addBlocksToBlockchain()) {
+					LOGGER.info("sync: stop here since no more verifiable blocks can be downloaded");
+					return;
+				}
+
+				keepOnlyPeersAgreeingOnChosenGroup();
+
+				// -1 is used in order the link the next group with the previous one:
+				// they must coincide for the first (respectively, last) block hash
+				height += GROUP_SIZE - 1;
+			}
+			while (chosenGroup.length == GROUP_SIZE);
+		}
+
+		/**
+		 * Checks if the current thread has been interrupted and, in that case, throws an exception.
+		 * 
+		 * @throws InterruptedException if and only if the current thread has been interrupted
+		 */
+		private static void stopIfInterrupted() throws InterruptedException {
+			if (Thread.currentThread().isInterrupted())
+				throw new InterruptedException("Interrupted");
+		}
+
+		/**
+		 * Downloads the next group of hashes with each available peer.
+		 * 
+		 * @return true if and only if at least a group could be downloaded,
+		 *         from at least one peer; if false, synchronization must stop here
+		 * @throws InterruptedException if the execution has been interrupted
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private boolean downloadNextGroups() throws InterruptedException, NodeException {
+			stopIfInterrupted();
+			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
+
+			groups.clear();
+
+			check(InterruptedException.class, NodeException.class, () -> {
+				peers.get().parallel()
+					.filter(PeerInfo::isConnected)
+					.map(PeerInfo::getPeer)
+					.filter(peer -> !unusable.contains(peer))
+					.forEach(uncheck(this::downloadNextGroup));
+			});
+
+			return !groups.isEmpty();
+		}
+
+		/**
+		 * Download, into the {@link #groups} map, the next group of hashes with the given peer.
+		 * 
+		 * @param peer the peer
+		 * @throws InterruptedException if the execution has been interrupted
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void downloadNextGroup(Peer peer) throws InterruptedException, NodeException {
+			Optional<RemotePublicNode> maybeRemote = peers.getRemote(peer);
+			if (maybeRemote.isEmpty())
+				return;
+
+			ChainPortion chain;
+
+			try {
+				chain = maybeRemote.get().getChainPortion(height, GROUP_SIZE);
+			}
+			catch (NodeException e) {
+				// it is the peer that is misbehaving, not {@code node}
+				markAsMisbehaving(peer);
+				return;
+			}
+			catch (TimeoutException e) {
+				markAsUnreachable(peer);
+				return;
+			}
+
+			var hashes = chain.getHashes().toArray(byte[][]::new);
+			// if a peer sends inconsistent information, we ban it
+			if (hashes.length > GROUP_SIZE)
+				markAsMisbehaving(peer);
+			else if (groupIsUseless(hashes))
+				unusable.add(peer);
+			else
+				groups.put(peer, hashes);
+		}
+
+		/**
+		 * Determines if the given group of hashes can be discarded since it does not match some expected constraints.
+		 * 
+		 * @param hashes the group of hashes
+		 * @return true if and only if it can be discarded
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private boolean groupIsUseless(byte[][] hashes) throws NodeException {
+			Optional<byte[]> genesisHash;
+
+			// the first hash must coincide with the last hash of the previous group,
+			// or otherwise the peer is cheating or there has been a change in the best chain
+			// and we must anyway stop downloading blocks here from this peer
+			if (hashes.length > 0 && chosenGroup != null && !Arrays.equals(hashes[0], chosenGroup[chosenGroup.length - 1]))
+				return true;
+			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
+			// then the first hash must be that genesis' hash
+			else if (hashes.length > 0 && height == 0L && (genesisHash = blockchain.getGenesisHash(txn)).isPresent() && !Arrays.equals(hashes[0], genesisHash.get()))
+				return true;
+			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or otherwise the hashes are useless
+			else if (hashes.length > 0 && chosenGroup == null && height > 0L && !blockchain.containsBlock(txn, hashes[0]))
+				return true;
+			else
+				return false;
+		}
+
+		private void markAsMisbehaving(Peer peer) throws NodeException, InterruptedException {
+			unusable.add(peer);
+			peers.ban(peer);
+		}
+
+		private void markAsUnreachable(Peer peer) throws NodeException, InterruptedException {
+			unusable.add(peer);
+			peers.punishBecauseUnreachable(peer);
+		}
+
+		/**
+		 * Selects the group in {@link #groups} that looks as the most reliable, since the most peers agree on its hashes.
+		 * 
+		 * @throws InterruptedException if the current thread gets interrupted
+		 */
+		private void chooseMostReliableGroup() throws InterruptedException {
+			stopIfInterrupted();
+			var alternatives = new HashSet<byte[][]>(groups.values());
+
+			for (int h = 1; h < GROUP_SIZE && alternatives.size() > 1; h++) {
+				Optional<byte[][]> mostFrequent = findMostFrequent(alternatives, h);
+				// there might be no alternatives with at least h hashes
+				if (mostFrequent.isEmpty())
+					break;
+
+				byte[] mostFrequentHash = mostFrequent.get()[h];
+				for (byte[][] alternative: new HashSet<>(alternatives))
+					if (alternative.length <= h || !Arrays.equals(alternative[h], mostFrequentHash))
+						alternatives.remove(alternative);
+			}
+
+			// the remaining alternatives actually coincide: just take one
+			chosenGroup = alternatives.stream().findAny().get();
+		}
+
+		/**
+		 * Yields the alternative whose {@code h}'s hash is the most frequent
+		 * among the given {@code alternatives}.
+		 * 
+		 * @param alternatives the alternatives
+		 * @param h the index of the compared hash of the alternatives
+		 * @return the alternative whose {@code h}'s hash is the most frequent among {@code alternatives};
+		 *         this is missing when all alternatives have fewer than {@code h} hashes
+		 */
+		private Optional<byte[][]> findMostFrequent(Set<byte[][]> alternatives, int h) {
+			byte[][] result = null;
+			long bestFrequency = 0L;
+			for (byte[][] alternative: alternatives)
+				if (alternative.length > h) {
+					long frequency = computeFrequency(alternative, alternatives, h);
+					if (frequency > bestFrequency) {
+						bestFrequency = frequency;
+						result = alternative;
+					}
+				}
+
+			return Optional.ofNullable(result);
+		}
+
+		/**
+		 * Counts how many {@code alternatives} have their {@code h}'s hash coinciding
+		 * with that of {@code alternative}.
+		 * 
+		 * @param alternative the reference alternative
+		 * @param alternatives the alternatives
+		 * @param h the height of the counted hash
+		 * @return the count; this is 0 if all alternatives have fewer than {@code h} hashes
+		 */
+		private long computeFrequency(byte[][] alternative, Set<byte[][]> alternatives, int h) {
+			return alternatives.stream()
+				.filter(hashes -> hashes.length > h)
+				.map(hashes -> hashes[h])
+				.filter(hash -> Arrays.equals(hash, alternative[h]))
+				.count();
+		}
+
+		/**
+		 * Downloads as many blocks as possible whose hashes are in {@link #chosenGroup},
+		 * by using the peers whose group agrees on such hashes, in parallel. Some block
+		 * might no be downloaded if all peers time out or no peer contains that block.
+		 * 
+		 * @throws InterruptedException if the current thread gets interrupted
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void downloadBlocks() throws InterruptedException, NodeException {
+			stopIfInterrupted();
+			blocks = new AtomicReferenceArray<>(chosenGroup.length);
+			semaphores = new Semaphore[chosenGroup.length];
+			Arrays.setAll(semaphores, _index -> new Semaphore(1));
+
+			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
+
+			check(InterruptedException.class, NodeException.class, () -> {
+				peers.get().parallel()
+					.filter(PeerInfo::isConnected)
+					.map(PeerInfo::getPeer)
+					.filter(peer -> !unusable.contains(peer))
+					.forEach(UncheckConsumer.uncheck(this::downloadBlocks));
+			});
+		}
+
+		private void downloadBlocks(Peer peer) throws NodeException, InterruptedException {
+			byte[][] ownGroup = groups.get(peer);
+			if (ownGroup != null) {
+				var alreadyTried = new boolean[chosenGroup.length];
+
+				// we try twice: the second time to help peers that are trying to download something
+				for (int time = 1; time <= 2; time++) {
+					for (int h = chosenGroup.length - 1; h >= 0; h--)
+						if (canDownload(peer, h, ownGroup, alreadyTried))
+							if (time == 2 || semaphores[h].tryAcquire()) {
+								try {
+									alreadyTried[h] = true;
+									tryToDownloadBlock(peer, h);
+								}
+								finally {
+									if (time == 1)
+										semaphores[h].release();
+								}
+							}
+				}
+			}
+		}
+
+		/**
+		 * Determines if the given peer could be used to download the block with the {@code h}th hash in {@link #chosenGroup}.
+		 * 
+		 * @param peer the peer
+		 * @param h the index of the hash
+		 * @param ownGroup the group of hashes for the peer
+		 * @param alreadyTried information about which hashes have already been tried with this same peer
+		 * @return true if and only if it is sensible to use {@code peer} to download the block
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private boolean canDownload(Peer peer, int h, byte[][] ownGroup, boolean[] alreadyTried) throws NodeException {
+			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h]) && !blockchain.containsBlock(txn, chosenGroup[h]) && blocks.get(h) == null;
+		}
+
+		/**
+		 * Tries to download the block with the {@code h}th hash in {@link #chosenGroup},
+		 * from the given peer.
+		 * 
+		 * @param peer the peer
+		 * @param h the height of the hash
+		 * @throws InterruptedException if the executed was interrupted
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void tryToDownloadBlock(Peer peer, int h) throws InterruptedException, NodeException {
+			var maybeRemote = peers.getRemote(peer);
+			if (maybeRemote.isEmpty())
+				unusable.add(peer);
+			else {
+				var remote = maybeRemote.get();
+				Optional<Block> maybeBlock;
+
+				try {
+					maybeBlock = remote.getBlock(chosenGroup[h]);
+				}
+				catch (NodeException e) {
+					markAsMisbehaving(peer);
+					return;
+				}
+				catch (TimeoutException e) {
+					markAsUnreachable(peer);
+					return;
+				}
+
+				if (maybeBlock.isPresent()) {
+					Block block = maybeBlock.get();
+					if (!Arrays.equals(chosenGroup[h], block.getHash(hashingForBlocks)))
+						// the peer answered with a block with the wrong hash!
+						markAsMisbehaving(peer);
+					else {
+						blocks.set(h, block);
+						downloaders.put(block, peer);
+					}
+				}
+			}
+		}
+
+		/**
+		 * Adds the {@link #blocks} to the blockchain, stopping at the first missing block
+		 * or at the first block that cannot be verified.
+		 * 
+		 * @return true if and only if no block was missing and all blocks could be
+		 *         successfully verified and added to blockchain; if false, synchronization must stop here
+		 * @throws InterruptedException if the current thread gets interrupted during this method
+		 * @throws TimeoutException if some operation timed out
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private boolean addBlocksToBlockchain() throws InterruptedException, TimeoutException, NodeException {
+			for (int h = 0; h < chosenGroup.length; h++) {
+				stopIfInterrupted();
+
+				if (!blockchain.containsBlock(txn, chosenGroup[h])) {
+					Block block = blocks.get(h);
+					if (block == null)
+						return false;
+
+					stopIfInterrupted();
+
+					try {
+						blockAdder.add(block, true);
+						//blockchain.add(block); // TODO
+					}
+					catch (VerificationException e) {
+						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
+						markAsMisbehaving(downloaders.get(block));
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
+		/**
+		 * Puts in the {@link #unusable} set all peers that downloaded a group
+		 * different from {@link #chosenGroup}: in any case, their subsequent groups are more
+		 * a less reliable history and won't be downloaded.
+		 * 
+		 * @throws InterruptedException if the current thread gets interrupted
+		 */
+		private void keepOnlyPeersAgreeingOnChosenGroup() throws InterruptedException {
+			stopIfInterrupted();
+			for (var entry: groups.entrySet())
+				if (!Arrays.deepEquals(chosenGroup, entry.getValue()))
+					unusable.add(entry.getKey());
+		}
+	}
+
 	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
 		BlockAdder adder;
 	
 		try (var scope = mkScope()) {
-			adder = check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
-				() -> environment.computeInTransaction(uncheck(txn -> new BlockAdder(txn).add(block, verify)))
+			adder = CheckSupplier.check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
+				() -> environment.computeInTransaction(UncheckFunction.uncheck(txn -> new BlockAdder(txn).add(block, verify)))
 			);
 		}
 		catch (ExodusException e) {
