@@ -666,7 +666,24 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	public void synchronize() throws InterruptedException, TimeoutException, NodeException {
-		new Synchronization();
+		DownloadedGroupOfBlocks group = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+			environment.computeInExclusiveTransaction(UncheckFunction.uncheck(DownloadedGroupOfBlocks::new))
+		);
+
+		group.updateMempool();
+		group.informNode();
+
+		while (group.thereMightBeMoreGroupsToDownload()) {
+			DownloadedGroupOfBlocks previousGroup = group;
+
+			group = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+				environment.computeInExclusiveTransaction(UncheckFunction.uncheck(txn -> new DownloadedGroupOfBlocks(txn, previousGroup)))
+			);
+
+			group.updateMempool();
+			group.informNode();
+		}
+
 		node.onSynchronizationCompleted();
 	}
 
@@ -1098,32 +1115,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	public class Synchronization {
-
-		public Synchronization() throws InterruptedException, TimeoutException, NodeException {
-			Set<Peer> unusable = ConcurrentHashMap.newKeySet();
-
-			DownloaderOfGroupOfBlocks downloader = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-				environment.computeInExclusiveTransaction(UncheckFunction.uncheck(txn -> new DownloaderOfGroupOfBlocks(txn, unusable)))
-			);
-
-			downloader.updateMempool();
-			downloader.informNode();
-
-			while (downloader.thereMightBeMoreGroupsToDownload()) {
-				long nextHeight = downloader.nextHeightToDownload();
-
-				downloader = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-					environment.computeInExclusiveTransaction(UncheckFunction.uncheck(txn -> new DownloaderOfGroupOfBlocks(txn, nextHeight, unusable)))
-				);
-
-				downloader.updateMempool();
-				downloader.informNode();
-			}
-		}
-	}
-
-	public class DownloaderOfGroupOfBlocks {
+	public class DownloadedGroupOfBlocks {
 	
 		/**
 		 * The database transaction where the synchronization occurs.
@@ -1178,45 +1170,45 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
 	
-		private final static int GROUP_SIZE = 3; // TODO: remember to increase this
+		private final static int GROUP_SIZE = 500; // TODO: possibly add a configuration parameter
 	
-		public DownloaderOfGroupOfBlocks(Transaction txn, long height, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
+		public DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
+			this(txn,
+				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
+				ConcurrentHashMap.newKeySet());
+		}
+
+		public DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, TimeoutException, NodeException {
+			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
+			this(txn, previous.height  + GROUP_SIZE - 1, previous.unusable);
+		}
+
+		private DownloadedGroupOfBlocks(Transaction txn, long height, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
 			this.txn = txn;
 			this.blockAdder = new BlockAdder(txn);
 			this.unusable = unusable;
 			this.height = height;
-	
+		
 			if (!downloadNextGroups()) {
 				LOGGER.info("sync: stop here since the peers do not provide more block hashes to download");
 				return;
 			}
-	
-			chooseMostReliableGroup();
+		
+			this.chosenGroup = chooseMostReliableGroup();
 			downloadBlocks();
-	
+		
 			if (!addBlocksToBlockchain()) {
 				LOGGER.info("sync: stop here since no more verifiable blocks can be downloaded");
 				return;
 			}
-	
+		
 			keepOnlyPeersAgreeingOnChosenGroup();
-		}
-
-		public DownloaderOfGroupOfBlocks(Transaction txn, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
-			this(txn,
-				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
-				unusable);
 		}
 
 		public boolean thereMightBeMoreGroupsToDownload() {
 			return chosenGroup != null && chosenGroup.length == GROUP_SIZE;
 		}
 	
-		public long nextHeightToDownload() {
-			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
-			return height + GROUP_SIZE - 1;
-		}
-
 		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
 			blockAdder.updateMempool();
 		}
@@ -1245,10 +1237,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private boolean downloadNextGroups() throws InterruptedException, NodeException {
 			stopIfInterrupted();
-			System.out.println("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
 			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
-	
-			groups.clear();
 	
 			check(InterruptedException.class, NodeException.class, () -> {
 				peers.get().parallel()
@@ -1339,7 +1328,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @throws InterruptedException if the current thread gets interrupted
 		 */
-		private void chooseMostReliableGroup() throws InterruptedException {
+		private byte[][] chooseMostReliableGroup() throws InterruptedException {
 			stopIfInterrupted();
 			var alternatives = new HashSet<byte[][]>(groups.values());
 	
@@ -1356,7 +1345,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 	
 			// the remaining alternatives actually coincide: just take one
-			chosenGroup = alternatives.stream().findAny().get();
+			return alternatives.stream().findAny().get();
 		}
 	
 		/**
