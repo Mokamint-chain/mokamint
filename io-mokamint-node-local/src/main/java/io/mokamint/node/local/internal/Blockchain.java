@@ -666,17 +666,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	public void synchronize() throws InterruptedException, TimeoutException, NodeException {
-		try {
-			Synchronization synchronization = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-				environment.computeInExclusiveTransaction(UncheckFunction.uncheck(Synchronization::new))
-			);
-
-			synchronization.updateMempool();
-			synchronization.informNode();
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
+		new Synchronization();
+		node.onSynchronizationCompleted();
 	}
 
 	/**
@@ -1109,42 +1100,30 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	public class Synchronization {
 
-		/**
-		 * The object used to add blocks to the blockchain, during synchronization.
-		 */
-		private final BlockAdder blockAdder;
-
-		private final static int GROUP_SIZE = 3; // TODO: remember to increase this
-
-		public Synchronization(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
-			this.blockAdder = new BlockAdder(txn);
-			long heightOfHead = getHeightOfHead(txn).orElse(0L);
-			long heightOfNonFrozenPart = getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
-			long height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
+		public Synchronization() throws InterruptedException, TimeoutException, NodeException {
 			Set<Peer> unusable = ConcurrentHashMap.newKeySet();
 
-			BlocksDownloader blocksDownloader;
+			DownloaderOfGroupOfBlocks downloader = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+				environment.computeInExclusiveTransaction(UncheckFunction.uncheck(txn -> new DownloaderOfGroupOfBlocks(txn, unusable)))
+			);
 
-			do {
-				blocksDownloader = new BlocksDownloader(txn, height, unusable, blockAdder);
-				// -1 is used in order the link the next group with the previous one:
-				// they must coincide for the first (respectively, last) block hash
-				height += GROUP_SIZE - 1;
+			downloader.updateMempool();
+			downloader.informNode();
+
+			while (downloader.thereMightBeMoreGroupsToDownload()) {
+				long nextHeight = downloader.nextHeightToDownload();
+
+				downloader = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+					environment.computeInExclusiveTransaction(UncheckFunction.uncheck(txn -> new DownloaderOfGroupOfBlocks(txn, nextHeight, unusable)))
+				);
+
+				downloader.updateMempool();
+				downloader.informNode();
 			}
-			while (!blocksDownloader.isLastGroup());
-		}
-
-		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
-			blockAdder.updateMempool();
-		}
-
-		public void informNode() {
-			blockAdder.informNode();
-			node.onSynchronizationCompleted();
 		}
 	}
 
-	public class BlocksDownloader {
+	public class DownloaderOfGroupOfBlocks {
 	
 		/**
 		 * The database transaction where the synchronization occurs.
@@ -1201,9 +1180,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 		private final static int GROUP_SIZE = 3; // TODO: remember to increase this
 	
-		public BlocksDownloader(Transaction txn, long height, Set<Peer> unusable, BlockAdder blockAdder) throws InterruptedException, TimeoutException, NodeException {
+		public DownloaderOfGroupOfBlocks(Transaction txn, long height, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
 			this.txn = txn;
-			this.blockAdder = blockAdder; //new BlockAdder(txn); // TODO
+			this.blockAdder = new BlockAdder(txn);
 			this.unusable = unusable;
 			this.height = height;
 	
@@ -1222,11 +1201,22 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 			keepOnlyPeersAgreeingOnChosenGroup();
 		}
-	
-		public boolean isLastGroup() {
-			return chosenGroup == null || chosenGroup.length != GROUP_SIZE;
+
+		public DownloaderOfGroupOfBlocks(Transaction txn, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
+			this(txn,
+				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
+				unusable);
+		}
+
+		public boolean thereMightBeMoreGroupsToDownload() {
+			return chosenGroup != null && chosenGroup.length == GROUP_SIZE;
 		}
 	
+		public long nextHeightToDownload() {
+			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
+			return height + GROUP_SIZE - 1;
+		}
+
 		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
 			blockAdder.updateMempool();
 		}
