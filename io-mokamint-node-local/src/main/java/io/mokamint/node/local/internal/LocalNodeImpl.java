@@ -676,7 +676,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	protected void scheduleSynchronization() {
 		// we avoid to synchronize if synchronization is already in process
 		if (isSynchronizing.getAndSet(true) == false)
-			execute(new SynchronizationTask(this), "synchronization from the peers");
+			execute(blockchain::synchronize, "synchronization from the peers");
 	}
 
 	/**

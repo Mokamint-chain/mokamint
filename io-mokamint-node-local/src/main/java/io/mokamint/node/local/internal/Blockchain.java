@@ -102,7 +102,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * The Xodus environment that holds the database of blocks.
 	 */
-	final Environment environment;
+	private final Environment environment;
 
 	/**
 	 * The Xodus store that holds the blocks, of all chains. It maps the hash of each block to that block.
@@ -1118,16 +1118,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private final Peers peers = node.getPeers();
 
 		/**
-		 * The blockchain of the node.
-		 */
-		private final Blockchain blockchain = node.getBlockchain();
-
-		/**
-		 * The hashing algorithm used for the blocks.
-		 */
-		private final HashingAlgorithm hashingForBlocks = node.getConfig().getHashingForBlocks();
-
-		/**
 		 * The peers that have been discarded so far during this synchronization, since
 		 * for instance they timed out or provided illegal blocks.
 		 */
@@ -1169,7 +1159,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		public Synchronization(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
 			this.txn = txn;
-			this.blockAdder = blockchain.new BlockAdder(txn);
+			this.blockAdder = new BlockAdder(txn);
 			run(txn);
 		}
 
@@ -1183,8 +1173,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		private void run(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
-			long heightOfHead = blockchain.getHeightOfHead(txn).orElse(0L);
-			long heightOfNonFrozenPart = blockchain.getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
+			long heightOfHead = getHeightOfHead(txn).orElse(0L);
+			long heightOfNonFrozenPart = getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
 			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
 
 			do {
@@ -1299,10 +1289,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return true;
 			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
 			// then the first hash must be that genesis' hash
-			else if (hashes.length > 0 && height == 0L && (genesisHash = blockchain.getGenesisHash(txn)).isPresent() && !Arrays.equals(hashes[0], genesisHash.get()))
+			else if (hashes.length > 0 && height == 0L && (genesisHash = getGenesisHash(txn)).isPresent() && !Arrays.equals(hashes[0], genesisHash.get()))
 				return true;
 			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or otherwise the hashes are useless
-			else if (hashes.length > 0 && chosenGroup == null && height > 0L && !blockchain.containsBlock(txn, hashes[0]))
+			else if (hashes.length > 0 && chosenGroup == null && height > 0L && !containsBlock(txn, hashes[0]))
 				return true;
 			else
 				return false;
@@ -1443,7 +1433,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private boolean canDownload(Peer peer, int h, byte[][] ownGroup, boolean[] alreadyTried) throws NodeException {
-			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h]) && !blockchain.containsBlock(txn, chosenGroup[h]) && blocks.get(h) == null;
+			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h]) && !containsBlock(txn, chosenGroup[h]) && blocks.get(h) == null;
 		}
 
 		/**
@@ -1502,7 +1492,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			for (int h = 0; h < chosenGroup.length; h++) {
 				stopIfInterrupted();
 
-				if (!blockchain.containsBlock(txn, chosenGroup[h])) {
+				if (!containsBlock(txn, chosenGroup[h])) {
 					Block block = blocks.get(h);
 					if (block == null)
 						return false;
@@ -1511,7 +1501,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 					try {
 						blockAdder.add(block, true);
-						//blockchain.add(block); // TODO
 					}
 					catch (VerificationException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
@@ -1672,7 +1661,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the hash of the genesis block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	Optional<byte[]> getGenesisHash(Transaction txn) throws NodeException {
+	private Optional<byte[]> getGenesisHash(Transaction txn) throws NodeException {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, GENESIS)).map(ByteIterable::getBytes);
 		}
@@ -1704,7 +1693,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the height of the head block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	OptionalLong getHeightOfHead(Transaction txn) throws NodeException {
+	private OptionalLong getHeightOfHead(Transaction txn) throws NodeException {
 		try {
 			ByteIterable heightBI = storeOfBlocks.get(txn, HEIGHT_OF_HEAD);
 			if (heightBI == null)
@@ -2043,7 +2032,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the starting block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	Optional<Block> getStartOfNonFrozenPart(Transaction txn) throws NodeException {
+	private Optional<Block> getStartOfNonFrozenPart(Transaction txn) throws NodeException {
 		try {
 			Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
 			if (maybeStartOfNonFrozenPartHash.isEmpty())
@@ -2110,7 +2099,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return true if and only if that condition holds
 	 * @throws NodeException if the node is misbehaving
 	 */
-	boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws NodeException {
+	private boolean containsBlock(Transaction txn, byte[] hashOfBlock) throws NodeException {
 		try {
 			return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
 		}
