@@ -32,6 +32,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.UncheckConsumer;
+import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -39,6 +42,7 @@ import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.local.internal.Blockchain.BlockAdder;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.remote.api.RemotePublicNode;
 
@@ -80,7 +84,9 @@ public class SynchronizationTask implements Task {
 		/**
 		 * The database transaction where the synchronization occurs.
 		 */
-		//private final Transaction txn;
+		private Transaction txn;
+
+		private BlockAdder blockAdder;
 
 		/**
 		 * The peers of the node.
@@ -137,9 +143,20 @@ public class SynchronizationTask implements Task {
 
 		private final static int GROUP_SIZE = 500;
 
-		Run() throws InterruptedException, TimeoutException, NodeException {
-			long heightOfHead = blockchain.getHeightOfHead().orElse(0L);
-			long heightOfNonFrozenPart = blockchain.getStartOfNonFrozenPart().map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
+		Run(Environment environment) throws InterruptedException, TimeoutException, NodeException {
+			CheckRunnable.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+				environment.executeInExclusiveTransaction(UncheckConsumer.uncheck(txn -> run(txn)))
+			);
+
+			blockAdder.informNode();
+			blockAdder.updateMempool();
+		}
+
+		private void run(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
+			this.txn = txn;
+			this.blockAdder = blockchain.new BlockAdder(txn);
+			long heightOfHead = blockchain.getHeightOfHead(txn).orElse(0L);
+			long heightOfNonFrozenPart = blockchain.getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
 			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
 
 			do {
@@ -254,11 +271,10 @@ public class SynchronizationTask implements Task {
 				return true;
 			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
 			// then the first hash must be that genesis' hash
-			else if (hashes.length > 0 && height == 0L && (genesisHash = blockchain.getGenesisHash()).isPresent() && !Arrays.equals(hashes[0], genesisHash.get()))
+			else if (hashes.length > 0 && height == 0L && (genesisHash = blockchain.getGenesisHash(txn)).isPresent() && !Arrays.equals(hashes[0], genesisHash.get()))
 				return true;
-			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or
-			// otherwise the hashes are useless
-			else if (hashes.length > 0 && chosenGroup == null && height > 0L && !blockchain.containsBlock(hashes[0]))
+			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or otherwise the hashes are useless
+			else if (hashes.length > 0 && chosenGroup == null && height > 0L && !blockchain.containsBlock(txn, hashes[0]))
 				return true;
 			else
 				return false;
@@ -399,7 +415,7 @@ public class SynchronizationTask implements Task {
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private boolean canDownload(Peer peer, int h, byte[][] ownGroup, boolean[] alreadyTried) throws NodeException {
-			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h]) && !blockchain.containsBlock(chosenGroup[h]) && blocks.get(h) == null;
+			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h]) && !blockchain.containsBlock(txn, chosenGroup[h]) && blocks.get(h) == null;
 		}
 
 		/**
@@ -458,7 +474,7 @@ public class SynchronizationTask implements Task {
 			for (int h = 0; h < chosenGroup.length; h++) {
 				stopIfInterrupted();
 
-				if (!blockchain.containsBlock(chosenGroup[h])) {
+				if (!blockchain.containsBlock(txn, chosenGroup[h])) {
 					Block block = blocks.get(h);
 					if (block == null)
 						return false;
@@ -466,7 +482,8 @@ public class SynchronizationTask implements Task {
 					stopIfInterrupted();
 
 					try {
-						blockchain.add(block);
+						blockAdder.add(block, true);
+						//blockchain.add(block); // TODO
 					}
 					catch (VerificationException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());

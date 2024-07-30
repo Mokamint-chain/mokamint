@@ -53,7 +53,9 @@ import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -78,6 +80,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.node.local.internal.SynchronizationTask.Run;
 
 /**
  * The blockchain is a database where the blocks are persisted. Blocks are rooted at a genesis block
@@ -1098,13 +1101,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	void synchronize(SynchronizationTask task) throws NodeException, InterruptedException, TimeoutException {
 		try (var scope = mkScope()) {
-			task.new Run();
-			/*CheckRunnable.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-				environment.executeInExclusiveTransaction(UncheckConsumer.uncheck(txn -> task.new Run(txn)))
-			);*/
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			task.new Run(environment);
 		}
 	}
 
