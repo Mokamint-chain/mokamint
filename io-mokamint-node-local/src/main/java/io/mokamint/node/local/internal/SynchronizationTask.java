@@ -32,10 +32,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.exceptions.CheckRunnable;
-import io.hotmoka.exceptions.UncheckConsumer;
-import io.hotmoka.xodus.env.Environment;
+import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckFunction;
+import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Transaction;
+import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
@@ -72,21 +73,29 @@ public class SynchronizationTask implements Task {
 	@Override
 	public void body() throws InterruptedException, TimeoutException, NodeException {
 		try {
-			node.getBlockchain().synchronize(this);
+			Synchronization synchronization = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+				node.getBlockchain().environment.computeInExclusiveTransaction(UncheckFunction.uncheck(Synchronization::new))
+			);
+
+			synchronization.updateMempool();
+			synchronization.informNode();
 		}
-		finally {
-			node.onSynchronizationCompleted();
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
 		}
 	}
 
-	class Run {
+	private class Synchronization {
 
 		/**
 		 * The database transaction where the synchronization occurs.
 		 */
-		private Transaction txn;
+		private final Transaction txn;
 
-		private BlockAdder blockAdder;
+		/**
+		 * The object used to add blocks to the blockchain, during synchronization.
+		 */
+		private final BlockAdder blockAdder;
 
 		/**
 		 * The peers of the node.
@@ -143,18 +152,22 @@ public class SynchronizationTask implements Task {
 
 		private final static int GROUP_SIZE = 500;
 
-		Run(Environment environment) throws InterruptedException, TimeoutException, NodeException {
-			CheckRunnable.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-				environment.executeInExclusiveTransaction(UncheckConsumer.uncheck(txn -> run(txn)))
-			);
+		private Synchronization(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
+			this.txn = txn;
+			this.blockAdder = blockchain.new BlockAdder(txn);
+			run(txn);
+		}
 
-			blockAdder.informNode();
+		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
 			blockAdder.updateMempool();
 		}
 
+		public void informNode() {
+			blockAdder.informNode();
+			node.onSynchronizationCompleted();
+		}
+
 		private void run(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
-			this.txn = txn;
-			this.blockAdder = blockchain.new BlockAdder(txn);
 			long heightOfHead = blockchain.getHeightOfHead(txn).orElse(0L);
 			long heightOfNonFrozenPart = blockchain.getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L);
 			this.height = Math.max(heightOfNonFrozenPart, heightOfHead - 1000L);
