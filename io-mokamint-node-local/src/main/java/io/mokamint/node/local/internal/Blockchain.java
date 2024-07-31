@@ -1100,6 +1100,41 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 
+		private void removeDataHigherThan(Transaction txn, long height) throws NodeException {
+			Optional<Block> cursor = getHead(txn);
+			Optional<byte[]> cursorHash = getHeadHash(txn);
+		
+			if (cursor.isPresent()) {
+				Block block = cursor.get();
+				byte[] blockHash = cursorHash.get();
+				long blockHeight;
+		
+				while ((blockHeight = block.getDescription().getHeight()) > height) {
+					if (block instanceof NonGenesisBlock ngb) {
+						removeReferencesToTransactionsInside(txn, block);
+						storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
+						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
+						Optional<Block> previous = getBlock(txn, hashOfPrevious);
+						if (previous.isEmpty())
+							throw new DatabaseException("Block " + Hex.toHexString(blockHash) + " has no previous block in the database");
+		
+						block = previous.get();
+						blockHash = hashOfPrevious;
+					}
+					else
+						throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(blockHash) + " at height " + blockHeight);
+				}
+			}
+		}
+
+		private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
+			if (block instanceof NonGenesisBlock ngb) {
+				int count = ngb.getTransactionsCount();
+				for (int pos = 0; pos < count; pos++)
+					storeOfTransactions.delete(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
+			}
+		}
+
 		/**
 		 * Yields the orphans having the given parent.
 		 * 
@@ -2201,41 +2236,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			LOGGER.info("blockchain: garbage-collected block " + Hex.toHexString(currentHash));
 		}
 		while (!ws.isEmpty());
-	}
-
-	private void removeDataHigherThan(Transaction txn, long height) throws NodeException {
-		Optional<Block> cursor = getHead(txn);
-		Optional<byte[]> cursorHash = getHeadHash(txn);
-
-		if (cursor.isPresent()) {
-			Block block = cursor.get();
-			byte[] blockHash = cursorHash.get();
-			long blockHeight;
-
-			while ((blockHeight = block.getDescription().getHeight()) > height) {
-				if (block instanceof NonGenesisBlock ngb) {
-					removeReferencesToTransactionsInside(txn, block);
-					storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
-					byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
-					Optional<Block> previous = getBlock(txn, hashOfPrevious);
-					if (previous.isEmpty())
-						throw new DatabaseException("Block " + Hex.toHexString(blockHash) + " has no previous block in the database");
-
-					block = previous.get();
-					blockHash = hashOfPrevious;
-				}
-				else
-					throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(blockHash) + " at height " + blockHeight);
-			}
-		}
-	}
-
-	private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
-		if (block instanceof NonGenesisBlock ngb) {
-			int count = ngb.getTransactionsCount();
-			for (int pos = 0; pos < count; pos++)
-				storeOfTransactions.delete(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
-		}
 	}
 
 	private ChainInfo getChainInfo(Transaction txn) throws NodeException {

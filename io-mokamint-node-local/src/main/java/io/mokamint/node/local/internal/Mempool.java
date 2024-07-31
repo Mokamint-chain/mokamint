@@ -32,6 +32,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.application.api.Application;
@@ -309,10 +310,10 @@ public class Mempool {
 	private class RebaseAt {
 		private final io.hotmoka.xodus.env.Transaction txn;
 		private final Block newBase;
+		private final Set<TransactionEntry> toRemove = new HashSet<>();
+		private final Set<TransactionEntry> toAdd = new HashSet<>();
 		private Block newBlock;
 		private Block oldBlock;
-		private final Set<Transaction> toRemove = new HashSet<>();
-		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
 		private RebaseAt(io.hotmoka.xodus.env.Transaction txn, Block newBase) throws NodeException, InterruptedException, TimeoutException {
 			this.txn = txn;
@@ -320,19 +321,6 @@ public class Mempool {
 			this.newBlock = newBase;
 			this.oldBlock = base.orElse(null);
 
-			rebase();
-		}
-
-		private void updateMempool() {
-			mempool.addAll(toAdd);
-
-			if (!mempool.isEmpty())
-				removeAll(toRemove);
-
-			base = Optional.of(newBase);
-		}
-
-		private void rebase() throws NodeException, InterruptedException, TimeoutException {
 			if (oldBlock == null)
 				markToRemoveAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
 			else {
@@ -351,6 +339,12 @@ public class Mempool {
 			}
 		}
 
+		private void updateMempool() {
+			mempool.addAll(toAdd);
+			mempool.removeAll(toRemove);
+			base = Optional.of(newBase);
+		}
+
 		private boolean reachedSharedAncestor() throws NodeException {
 			if (newBlock.equals(oldBlock))
 				return true;
@@ -361,7 +355,7 @@ public class Mempool {
 				return false;
 		}
 
-		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws NodeException {
+		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws NodeException, InterruptedException, TimeoutException {
 			if (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -379,7 +373,7 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + oldBlock.getDescription().getHeight());
 		}
 
-		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException {
+		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException, InterruptedException, TimeoutException {
 			while (!mempool.isEmpty() && newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -403,10 +397,16 @@ public class Mempool {
 		 * Adds the transactions from the given block to those that must be removed from the mempool.
 		 * 
 		 * @param block the block
+		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if some operation timed out
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws NodeException {
-			block.getTransactions().forEach(toRemove::add);
+		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
+			CheckRunnable.check(InterruptedException.class, TimeoutException.class, NodeException.class, () ->
+				block.getTransactions()
+					.map(UncheckFunction.uncheck(this::intoTransactionEntry))
+					.forEach(toRemove::add)
+			);
 		}
 
 		/**
@@ -430,12 +430,6 @@ public class Mempool {
 				// the node is misbehaving because the application it is connected to is misbehaving
 				throw new NodeException(e);
 			}
-		}
-
-		private void removeAll(Set<Transaction> toRemove) {
-			new HashSet<>(mempool).stream()
-				.filter(entry -> toRemove.contains(entry.transaction))
-				.forEach(mempool::remove);
 		}
 
 		private Block getBlock(byte[] hash) throws NodeException {
