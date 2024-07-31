@@ -146,6 +146,7 @@ public class Mempool {
 		synchronized (parent.mempool) {
 			this.base = parent.base;
 			this.mempool = new TreeSet<>(parent.mempool);
+			this.mempoolAsList = parent.mempoolAsList;
 		}
 	}
 
@@ -184,23 +185,20 @@ public class Mempool {
 
 		try {
 			app.checkTransaction(transaction);
-			long priority = app.getPriority(transaction);
-			var entry = new TransactionEntry(transaction, priority, hash);
+			var entry = new TransactionEntry(transaction, app.getPriority(transaction), hash);
 
 			synchronized (mempool) {
 				if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
-					//the transaction was already in the blockchain
+					// the transaction was already in blockchain
 					throw new TransactionRejectedException("Repeated transaction " + hexHash);
 
-				if (mempool.size() < maxSize) {
-					if (!mempool.add(entry))
-						// the transaction was already in the mempool
-						throw new TransactionRejectedException("Repeated transaction " + hexHash);
-
-					mempoolAsList = null; // invalidation
-				}
-				else
+				if (mempool.size() >= maxSize)
 					throw new TransactionRejectedException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
+				else if (!mempool.add(entry))
+					// the transaction was already in the mempool
+					throw new TransactionRejectedException("Repeated transaction " + hexHash);
+
+				mempoolAsList = null; // invalidation
 			}
 
 			LOGGER.info("mempool: added transaction " + hexHash);
@@ -362,7 +360,7 @@ public class Mempool {
 					while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight())
 						markToAddAllTransactionsInOldBlockAndMoveItBackwards();
 
-					// then we continue towards the genesis, until they meet
+					// then we continue backwards, until they meet
 					while (!reachedSharedAncestor()) {
 						markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
 						markToAddAllTransactionsInOldBlockAndMoveItBackwards();

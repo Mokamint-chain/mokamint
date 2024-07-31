@@ -835,7 +835,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (blocksAdded.isEmpty())
 				return;
 
-			// we move backwards from the initial head until my hit the current best chain
+			// we move backwards from the initial head until we hit the current best chain
 			Block start;
 			if (initialHeadHash.isEmpty())
 				start = getGenesis(txn).orElseThrow(() -> new DatabaseException("The blockchain has been expanded but it still misses a genesis block"));
