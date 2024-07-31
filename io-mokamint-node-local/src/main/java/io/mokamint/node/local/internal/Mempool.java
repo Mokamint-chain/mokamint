@@ -26,13 +26,14 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.DatabaseException;
@@ -137,7 +138,13 @@ public class Mempool {
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public void rebaseAt(Block newBase) throws NodeException, InterruptedException, TimeoutException {
-		new RebaseAt(newBase);
+		synchronized (mempool) {
+			RebaseAt rebaseAt = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+				blockchain.getEnvironment().computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> new RebaseAt(txn, newBase)))
+			);
+
+			rebaseAt.updateMempool();
+		}
 	}
 
 	/**
@@ -300,41 +307,47 @@ public class Mempool {
 	 * The algorithm for rebasing this mempool at a given, new base.
 	 */
 	private class RebaseAt {
+		private final io.hotmoka.xodus.env.Transaction txn;
+		private final Block newBase;
 		private Block newBlock;
 		private Block oldBlock;
 		private final Set<Transaction> toRemove = new HashSet<>();
 		private final Set<TransactionEntry> toAdd = new HashSet<>();
 
-		private RebaseAt(final Block newBase) throws NodeException, InterruptedException, TimeoutException {
+		private RebaseAt(io.hotmoka.xodus.env.Transaction txn, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+			this.txn = txn;
+			this.newBase = newBase;
 			this.newBlock = newBase;
+			this.oldBlock = base.orElse(null);
 
-			synchronized (mempool) {
-				oldBlock = base.orElse(null);
+			rebase();
+		}
 
-				if (oldBlock == null)
-					removeAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
-				else {
-					// first we move new and old bases to the same height
-					while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight())
-						markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
+		private void updateMempool() {
+			mempool.addAll(toAdd);
 
-					while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight())
-						markToAddAllTransactionsInOldBlockAndMoveItBackwards();
+			if (!mempool.isEmpty())
+				removeAll(toRemove);
 
-					// then we continue backwards, until they meet
-					while (!reachedSharedAncestor()) {
-						markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
-						markToAddAllTransactionsInOldBlockAndMoveItBackwards();
-					}
+			base = Optional.of(newBase);
+		}
 
-					if (!toAdd.isEmpty())
-						mempool.addAll(toAdd);
+		private void rebase() throws NodeException, InterruptedException, TimeoutException {
+			if (oldBlock == null)
+				markToRemoveAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
+			else {
+				// first we move new and old bases to the same height
+				while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight())
+					markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
 
-					if (!mempool.isEmpty())
-						removeAll(toRemove);
+				while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight())
+					markToAddAllTransactionsInOldBlockAndMoveItBackwards();
+
+				// then we continue backwards, until they meet
+				while (!reachedSharedAncestor()) {
+					markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
+					markToAddAllTransactionsInOldBlockAndMoveItBackwards();
 				}
-
-				base = Optional.of(newBase);
 			}
 		}
 
@@ -366,9 +379,9 @@ public class Mempool {
 				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + oldBlock.getDescription().getHeight());
 		}
 
-		private void removeAllTransactionsFromNewBaseToGenesis() throws NodeException {
+		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException {
 			while (!mempool.isEmpty() && newBlock instanceof NonGenesisBlock ngb) {
-				removeAll(ngb.getTransactions().collect(Collectors.toCollection(HashSet::new)));
+				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 		}
@@ -426,7 +439,7 @@ public class Mempool {
 		}
 
 		private Block getBlock(byte[] hash) throws NodeException {
-			return blockchain.getBlock(hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
+			return blockchain.getBlock(txn, hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
 		}
 	}
 }

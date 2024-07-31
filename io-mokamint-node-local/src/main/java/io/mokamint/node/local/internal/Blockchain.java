@@ -1552,6 +1552,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
+	protected Environment getEnvironment() {
+		return environment;
+	}
+
 	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
 		BlockAdder adder;
 	
@@ -1808,7 +1812,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NodeException {
+	Optional<Block> getBlock(Transaction txn, byte[] hash) throws NodeException {
 		try {
 			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
 			if (blockBI == null)

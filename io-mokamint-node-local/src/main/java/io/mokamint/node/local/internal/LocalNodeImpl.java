@@ -659,6 +659,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * {@link #rebaseMempoolAt(Block)}. The mempool of this node is not modified.
 	 * 
 	 * @param block the block
+	 * @param action the action
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
