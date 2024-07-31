@@ -16,26 +16,23 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.DatabaseException;
@@ -76,11 +73,6 @@ public class Mempool {
 	private final Application app;
 
 	/**
-	 * The maximal size of the mempool (number of slots).
-	 */
-	private final int maxSize;
-
-	/**
 	 * The hasher of the transactions.
 	 */
 	private final Hasher<Transaction> hasher;
@@ -100,18 +92,6 @@ public class Mempool {
 	@GuardedBy("itself")
 	private final SortedSet<TransactionEntry> mempool;
 
-	/**
-	 * The container of the transactions inside this mempool, as a list. This is used as 
-	 * a snapshot of {@link #mempool}, for optimization of the {@link #getPortion(int, int)} method.
-	 */
-	@GuardedBy("this.mempool")
-	private List<TransactionEntry> mempoolAsList;
-
-	/**
-	 * The hashing algorithm for the blocks.
-	 */
-	private final HashingAlgorithm hashingForBlocks;
-
 	private final static Logger LOGGER = Logger.getLogger(Mempool.class.getName());
 
 	/**
@@ -122,9 +102,7 @@ public class Mempool {
 	public Mempool(LocalNodeImpl node) {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
-		this.hashingForBlocks = node.getConfig().getHashingForBlocks();
 		this.app = node.getApplication();
-		this.maxSize = node.getConfig().getMempoolSize();
 		this.hasher = node.getHasherForTransactions();
 		this.base = Optional.empty();
 		this.mempool = new TreeSet<>(Comparator.reverseOrder()); // decreasing priority
@@ -138,15 +116,12 @@ public class Mempool {
 	protected Mempool(Mempool parent) {
 		this.node = parent.node;
 		this.blockchain = parent.blockchain;
-		this.hashingForBlocks = parent.hashingForBlocks;
 		this.app = parent.app;
-		this.maxSize = parent.maxSize;
 		this.hasher = parent.hasher;
 
 		synchronized (parent.mempool) {
 			this.base = parent.base;
 			this.mempool = new TreeSet<>(parent.mempool);
-			this.mempoolAsList = parent.mempoolAsList;
 		}
 	}
 
@@ -182,23 +157,22 @@ public class Mempool {
 		byte[] hash = hasher.hash(transaction);
 		String hexHash = Hex.toHexString(hash);
 
-
 		try {
 			app.checkTransaction(transaction);
 			var entry = new TransactionEntry(transaction, app.getPriority(transaction), hash);
+			int maxSize = node.getConfig().getMempoolSize();
 
 			synchronized (mempool) {
 				if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
 					// the transaction was already in blockchain
 					throw new TransactionRejectedException("Repeated transaction " + hexHash);
-
-				if (mempool.size() >= maxSize)
-					throw new TransactionRejectedException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
-				else if (!mempool.add(entry))
+				else if (mempool.contains(entry))
 					// the transaction was already in the mempool
 					throw new TransactionRejectedException("Repeated transaction " + hexHash);
-
-				mempoolAsList = null; // invalidation
+				else if (mempool.size() >= maxSize)
+					throw new TransactionRejectedException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
+				else
+					mempool.add(entry);
 			}
 
 			LOGGER.info("mempool: added transaction " + hexHash);
@@ -211,20 +185,21 @@ public class Mempool {
 		}
 	}
 
-	protected void remove(TransactionEntry entry) {
+	public void remove(TransactionEntry entry) {
 		synchronized (mempool) {
-			if (mempool.remove(entry))
-				mempoolAsList = null; // invalidation
+			mempool.remove(entry);
 		}
 	}
 
 	/**
-	 * Yields the transactions inside this mempool.
+	 * Performs an action for each transaction in this mempool.
 	 * 
-	 * @return the transactions
+	 * @param the action
 	 */
-	public Stream<TransactionEntry> getTransactions() {
-		return mempool.stream();
+	public void forEachTransaction(Consumer<TransactionEntry> action) {
+		synchronized (mempool) {
+			mempool.stream().forEachOrdered(action);
+		}
 	}
 
 	/**
@@ -253,23 +228,9 @@ public class Mempool {
 		if (start < 0L || count <= 0)
 			return MempoolPortions.of(Stream.empty());
 	
-		List<TransactionEntry> list;
-	
 		synchronized (mempool) {
-			if (start >= mempool.size())
-				return MempoolPortions.of(Stream.empty());
-	
-			if (mempoolAsList == null)
-				mempoolAsList = new ArrayList<>(mempool);
-	
-			list = mempoolAsList;
+			return MempoolPortions.of(mempool.stream().skip(start).limit(count).map(TransactionEntry::getMempoolEntry));
 		}
-	
-		Stream<MempoolEntry> entries = IntStream.range(start, Math.min(start + count, list.size()))
-			.mapToObj(list::get)
-			.map(TransactionEntry::getMempoolEntry);
-	
-		return MempoolPortions.of(entries);
 	}
 
 	/**
@@ -366,8 +327,8 @@ public class Mempool {
 						markToAddAllTransactionsInOldBlockAndMoveItBackwards();
 					}
 
-					if (!toAdd.isEmpty() && mempool.addAll(toAdd))
-						mempoolAsList = null; // invalidation
+					if (!toAdd.isEmpty())
+						mempool.addAll(toAdd);
 
 					if (!mempool.isEmpty())
 						removeAll(toRemove);
@@ -381,8 +342,8 @@ public class Mempool {
 			if (newBlock.equals(oldBlock))
 				return true;
 			else if (newBlock instanceof GenesisBlock || oldBlock instanceof GenesisBlock)
-				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash(hashingForBlocks)
-					+ " and " + newBlock.getHexHash(hashingForBlocks));
+				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks())
+					+ " and " + newBlock.getHexHash(node.getConfig().getHashingForBlocks()));
 			else
 				return false;
 		}
@@ -393,7 +354,7 @@ public class Mempool {
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(hashingForBlocks) + " at height " + newBlock.getDescription().getHeight());
+				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + newBlock.getDescription().getHeight());
 		}
 
 		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws NodeException, InterruptedException, TimeoutException {
@@ -402,7 +363,7 @@ public class Mempool {
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(hashingForBlocks) + " at height " + oldBlock.getDescription().getHeight());
+				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + oldBlock.getDescription().getHeight());
 		}
 
 		private void removeAllTransactionsFromNewBaseToGenesis() throws NodeException {
@@ -461,7 +422,7 @@ public class Mempool {
 		private void removeAll(Set<Transaction> toRemove) {
 			new HashSet<>(mempool).stream()
 				.filter(entry -> toRemove.contains(entry.transaction))
-				.forEach(Mempool.this::remove);
+				.forEach(mempool::remove);
 		}
 
 		private Block getBlock(byte[] hash) throws NodeException {

@@ -37,6 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -654,19 +655,18 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Yields the transactions from the mempool, rebased at the given {@code block} (see
+	 * Performs an action for each transaction from the mempool, rebased at the given {@code block} (see
 	 * {@link #rebaseMempoolAt(Block)}. The mempool of this node is not modified.
 	 * 
 	 * @param block the block
-	 * @return the transactions, in decreasing order of priority
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
-	protected Stream<TransactionEntry> getMempoolTransactionsAt(Block block) throws NodeException, InterruptedException, TimeoutException {
+	protected void forEachMempoolTransactionAt(Block block, Consumer<TransactionEntry> action) throws NodeException, InterruptedException, TimeoutException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
-		return result.getTransactions(); // extract the resulting transactions
+		result.forEachTransaction(action); // extract the resulting transactions
 	}
 
 	/**

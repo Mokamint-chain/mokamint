@@ -170,7 +170,7 @@ public class BlockMiner {
 
 		try {
 			stopIfInterrupted();
-			node.getMempoolTransactionsAt(previous).forEach(mempool::add);
+			node.forEachMempoolTransactionAt(previous, mempool::add);
 			node.onMiningStarted(previous);
 			requestDeadlineToEveryMiner();
 
