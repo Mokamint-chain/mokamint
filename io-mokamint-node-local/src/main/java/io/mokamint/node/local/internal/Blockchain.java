@@ -1147,22 +1147,29 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * The last groups of hashes downloaded, for each peer.
 		 */
 		private final ConcurrentMap<Peer, byte[][]> groups = new ConcurrentHashMap<>();
-	
+
+		/**
+		 * The last hash in the previous group loaded before this group. This is used
+		 * to compare it against the beginning of the new group loaded by this object,
+		 * in order to check that they actually match. The first download has no previous group.
+		 */
+		private final Optional<byte[]> lastHashOfPreviousGroup;
+
 		/**
 		 * The group in {@link #groups} that has been selected as more
 		 * reliable chain, because the most peers agree on its hashes.
 		 */
-		private byte[][] chosenGroup;
+		private final byte[][] chosenGroup;
 	
 		/**
 		 * The downloaded blocks, whose hashes are in {@link #chosenGroup}.
 		 */
-		private AtomicReferenceArray<Block> blocks;
+		private final AtomicReferenceArray<Block> blocks;
 	
 		/**
 		 * Semaphores used to avoid having two peers downloading the same block.
 		 */
-		private Semaphore[] semaphores;
+		private final Semaphore[] semaphores;
 	
 		/**
 		 * A map from each downloaded block to the peer that downloaded that block.
@@ -1175,26 +1182,33 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		public DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
 			this(txn,
 				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
+				Optional.empty(),
 				ConcurrentHashMap.newKeySet());
 		}
 
 		public DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, TimeoutException, NodeException {
 			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
-			this(txn, previous.height  + GROUP_SIZE - 1, previous.unusable);
+			this(txn, previous.height  + GROUP_SIZE - 1, Optional.of(previous.chosenGroup[previous.chosenGroup.length - 1]), previous.unusable);
 		}
 
-		private DownloadedGroupOfBlocks(Transaction txn, long height, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
+		private DownloadedGroupOfBlocks(Transaction txn, long height, Optional<byte[]> lastHashOfPreviousGroup, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
 			this.txn = txn;
 			this.blockAdder = new BlockAdder(txn);
+			this.lastHashOfPreviousGroup = lastHashOfPreviousGroup;
 			this.unusable = unusable;
 			this.height = height;
 		
-			if (!downloadNextGroups()) {
+			if (!downloadNextGroupFromEachPeer()) {
 				LOGGER.info("sync: stop here since the peers do not provide more block hashes to download");
+				this.chosenGroup = null;
+				this.semaphores = null;
+				this.blocks = null;
 				return;
 			}
 		
 			this.chosenGroup = chooseMostReliableGroup();
+			this.semaphores = new Semaphore[chosenGroup.length];
+			this.blocks = new AtomicReferenceArray<Block>(chosenGroup.length);
 			downloadBlocks();
 		
 			if (!addBlocksToBlockchain()) {
@@ -1202,7 +1216,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return;
 			}
 		
-			keepOnlyPeersAgreeingOnChosenGroup();
+			keepOnlyPeersAgreeingOnTheChosenGroup();
 		}
 
 		public boolean thereMightBeMoreGroupsToDownload() {
@@ -1235,7 +1249,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the execution has been interrupted
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private boolean downloadNextGroups() throws InterruptedException, NodeException {
+		private boolean downloadNextGroupFromEachPeer() throws InterruptedException, NodeException {
 			stopIfInterrupted();
 			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
 	
@@ -1244,7 +1258,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					.filter(PeerInfo::isConnected)
 					.map(PeerInfo::getPeer)
 					.filter(peer -> !unusable.contains(peer))
-					.forEach(uncheck(this::downloadNextGroup));
+					.forEach(uncheck(this::downloadNextGroupFrom));
 			});
 	
 			return !groups.isEmpty();
@@ -1257,7 +1271,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the execution has been interrupted
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void downloadNextGroup(Peer peer) throws InterruptedException, NodeException {
+		private void downloadNextGroupFrom(Peer peer) throws InterruptedException, NodeException {
 			Optional<RemotePublicNode> maybeRemote = peers.getRemote(peer);
 			if (maybeRemote.isEmpty())
 				return;
@@ -1278,9 +1292,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 	
 			var hashes = chain.getHashes().toArray(byte[][]::new);
-			// if a peer sends inconsistent information, we ban it
 			if (hashes.length > GROUP_SIZE)
-				markAsMisbehaving(peer);
+				markAsMisbehaving(peer); // if a peer sends inconsistent information, we take note
 			else if (groupIsUseless(hashes))
 				unusable.add(peer);
 			else
@@ -1297,17 +1310,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private boolean groupIsUseless(byte[][] hashes) throws NodeException {
 			Optional<byte[]> genesisHash;
 	
-			// the first hash must coincide with the last hash of the previous group,
-			// or otherwise the peer is cheating or there has been a change in the best chain
-			// and we must anyway stop downloading blocks here from this peer
-			if (hashes.length > 0 && chosenGroup != null && !Arrays.equals(hashes[0], chosenGroup[chosenGroup.length - 1]))
+			// the first hash must coincide with the last hash of the previous group, or otherwise the peer is cheating
+			// or there has been a change in the best chain and we must anyway stop downloading blocks here from this group
+			if (hashes.length > 0 && lastHashOfPreviousGroup.isPresent() && !Arrays.equals(hashes[0], lastHashOfPreviousGroup.get()))
 				return true;
 			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
 			// then the first hash must be that genesis' hash
 			else if (hashes.length > 0 && height == 0L && (genesisHash = getGenesisHash(txn)).isPresent() && !Arrays.equals(hashes[0], genesisHash.get()))
 				return true;
 			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or otherwise the hashes are useless
-			else if (hashes.length > 0 && chosenGroup == null && height > 0L && !containsBlock(txn, hashes[0]))
+			else if (hashes.length > 0 && lastHashOfPreviousGroup.isEmpty() && height > 0L && !containsBlock(txn, hashes[0]))
 				return true;
 			else
 				return false;
@@ -1399,8 +1411,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private void downloadBlocks() throws InterruptedException, NodeException {
 			stopIfInterrupted();
-			blocks = new AtomicReferenceArray<>(chosenGroup.length);
-			semaphores = new Semaphore[chosenGroup.length];
 			Arrays.setAll(semaphores, _index -> new Semaphore(1));
 	
 			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
@@ -1410,11 +1420,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					.filter(PeerInfo::isConnected)
 					.map(PeerInfo::getPeer)
 					.filter(peer -> !unusable.contains(peer))
-					.forEach(UncheckConsumer.uncheck(this::downloadBlocks));
+					.forEach(UncheckConsumer.uncheck(peer -> downloadBlocksFrom(peer)));
 			});
 		}
 	
-		private void downloadBlocks(Peer peer) throws NodeException, InterruptedException {
+		private void downloadBlocksFrom(Peer peer) throws NodeException, InterruptedException {
 			byte[][] ownGroup = groups.get(peer);
 			if (ownGroup != null) {
 				var alreadyTried = new boolean[chosenGroup.length];
@@ -1426,7 +1436,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 							if (time == 2 || semaphores[h].tryAcquire()) {
 								try {
 									alreadyTried[h] = true;
-									tryToDownloadBlock(peer, h);
+									tryToDownloadBlockFrom(peer, h);
 								}
 								finally {
 									if (time == 1)
@@ -1452,15 +1462,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	
 		/**
-		 * Tries to download the block with the {@code h}th hash in {@link #chosenGroup},
-		 * from the given peer.
+		 * Tries to download the block with the {@code h}th hash in {@link #chosenGroup}, from the given peer.
 		 * 
 		 * @param peer the peer
 		 * @param h the height of the hash
 		 * @throws InterruptedException if the executed was interrupted
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void tryToDownloadBlock(Peer peer, int h) throws InterruptedException, NodeException {
+		private void tryToDownloadBlockFrom(Peer peer, int h) throws InterruptedException, NodeException {
 			var maybeRemote = peers.getRemote(peer);
 			if (maybeRemote.isEmpty())
 				unusable.add(peer);
@@ -1535,7 +1544,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @throws InterruptedException if the current thread gets interrupted
 		 */
-		private void keepOnlyPeersAgreeingOnChosenGroup() throws InterruptedException {
+		private void keepOnlyPeersAgreeingOnTheChosenGroup() throws InterruptedException {
 			stopIfInterrupted();
 			for (var entry: groups.entrySet())
 				if (!Arrays.deepEquals(chosenGroup, entry.getValue()))
