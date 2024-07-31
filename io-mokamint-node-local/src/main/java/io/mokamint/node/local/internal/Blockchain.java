@@ -58,6 +58,7 @@ import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
@@ -85,8 +86,10 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.node.remote.api.RemotePublicNode;
 
 /**
@@ -685,6 +688,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		node.onSynchronizationCompleted();
+	}
+
+	public void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+		CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
+			environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> new Rebase(txn, mempool, newBase)))
+		)
+		.updateMempool();
 	}
 
 	/**
@@ -1587,8 +1597,139 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	protected Environment getEnvironment() {
-		return environment;
+	/**
+	 * The algorithm for rebasing a mempool at a given, new base.
+	 */
+	public class Rebase {
+		private final io.hotmoka.xodus.env.Transaction txn;
+		private final Mempool mempool;
+		private final Block newBase;
+		private final Set<TransactionEntry> toRemove = new HashSet<>();
+		private final Set<TransactionEntry> toAdd = new HashSet<>();
+		private Block newBlock;
+		private Block oldBlock;
+
+		public Rebase(io.hotmoka.xodus.env.Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+			this.txn = txn;
+			this.mempool = mempool;
+			this.newBase = newBase;
+			this.newBlock = newBase;
+			this.oldBlock = mempool.getBase().orElse(null);
+
+			if (oldBlock == null)
+				markToRemoveAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
+			else {
+				// first we move new and old bases to the same height
+				while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight())
+					markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
+
+				while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight())
+					markToAddAllTransactionsInOldBlockAndMoveItBackwards();
+
+				// then we continue backwards, until they meet
+				while (!reachedSharedAncestor()) {
+					markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
+					markToAddAllTransactionsInOldBlockAndMoveItBackwards();
+				}
+			}
+		}
+
+		public void updateMempool() {
+			mempool.addAll(toAdd.stream());
+			mempool.removeAll(toRemove.stream());
+			mempool.setBase(newBase);
+		}
+
+		private boolean reachedSharedAncestor() throws NodeException {
+			if (newBlock.equals(oldBlock))
+				return true;
+			else if (newBlock instanceof GenesisBlock || oldBlock instanceof GenesisBlock)
+				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks())
+					+ " and " + newBlock.getHexHash(node.getConfig().getHashingForBlocks()));
+			else
+				return false;
+		}
+
+		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws NodeException, InterruptedException, TimeoutException {
+			if (newBlock instanceof NonGenesisBlock ngb) {
+				markAllTransactionsAsToRemove(ngb);
+				newBlock = getBlock(ngb.getHashOfPreviousBlock());
+			}
+			else
+				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + newBlock.getDescription().getHeight());
+		}
+
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws NodeException, InterruptedException, TimeoutException {
+			if (oldBlock instanceof NonGenesisBlock ngb) {
+				markAllTransactionsAsToAdd(ngb);
+				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
+			}
+			else
+				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + oldBlock.getDescription().getHeight());
+		}
+
+		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException, InterruptedException, TimeoutException {
+			while (!mempool.isEmpty() && newBlock instanceof NonGenesisBlock ngb) {
+				markAllTransactionsAsToRemove(ngb);
+				newBlock = getBlock(ngb.getHashOfPreviousBlock());
+			}
+		}
+
+		/**
+		 * Adds the transaction entries to those that must be added to the mempool.
+		 * 
+		 * @param block the block
+		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if some operation timed out
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
+			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
+				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
+		}
+
+		/**
+		 * Adds the transactions from the given block to those that must be removed from the mempool.
+		 * 
+		 * @param block the block
+		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if some operation timed out
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
+			CheckRunnable.check(InterruptedException.class, TimeoutException.class, NodeException.class, () ->
+				block.getTransactions()
+					.map(UncheckFunction.uncheck(this::intoTransactionEntry))
+					.forEach(toRemove::add)
+			);
+		}
+
+		/**
+		 * Expands the given transaction into a transaction entry, by filling its priority and hash.
+		 * 
+		 * @param transaction the transaction
+		 * @return the resulting transaction entry
+		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+		 * @throws TimeoutException if some operation timed out
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Transaction transaction) throws InterruptedException, TimeoutException, NodeException {
+			try {
+				return new TransactionEntry(transaction, node.getApplication().getPriority(transaction), hasherForTransactions.hash(transaction));
+			}
+			catch (TransactionRejectedException e) {
+				// the database contains a block with a rejected transaction: it should not be there!
+				throw new DatabaseException(e);
+			}
+			catch (ApplicationException e) {
+				// the node is misbehaving because the application it is connected to is misbehaving
+				throw new NodeException(e);
+			}
+		}
+
+		private Block getBlock(byte[] hash) throws NodeException {
+			return Blockchain.this.getBlock(txn, hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
+		}
 	}
 
 	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
@@ -1847,7 +1988,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
-	Optional<Block> getBlock(Transaction txn, byte[] hash) throws NodeException {
+	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NodeException {
 		try {
 			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
 			if (blockBI == null)
