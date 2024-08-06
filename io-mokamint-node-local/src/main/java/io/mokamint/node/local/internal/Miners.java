@@ -82,8 +82,11 @@ public class Miners {
 	 * @return the information about the added miner; this is empty if the miner has not been added
 	 */
 	public Optional<MinerInfo> add(Miner miner) {
-		if (miners.add(miner))
-			return Optional.of(MinerInfos.of(miner.getUUID(), config.getMinerInitialPoints(), miner.toString()));
+		if (miners.add(miner)) {
+			var result = Optional.of(MinerInfos.of(miner.getUUID(), config.getMinerInitialPoints(), miner.toString()));
+			node.onAdded(miner);
+			return result;
+		}
 		else
 			return Optional.empty();
 	}

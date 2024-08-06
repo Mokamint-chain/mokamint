@@ -450,10 +450,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			var miner = RemoteMiners.of(port, this::check);
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
-			if (maybeInfo.isPresent()) {
+			if (maybeInfo.isPresent())
 				minersToCloseAtTheEnd.add(miner);
-				onAdded(miner);
-			}
 			else {
 				try {
 					miner.close();
@@ -473,11 +471,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<MinerInfo> add(Miner miner) throws NodeException {
 		try (var scope = mkScope()) {
-			Optional<MinerInfo> maybeInfo = miners.add(miner);
-			if (maybeInfo.isPresent())
-				onAdded(miner);
-
-			return maybeInfo;
+			return miners.add(miner);
 		}
 	}
 
