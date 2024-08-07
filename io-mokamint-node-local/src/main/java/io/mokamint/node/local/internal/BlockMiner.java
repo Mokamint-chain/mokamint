@@ -126,38 +126,13 @@ public class BlockMiner {
 	 */
 	private volatile boolean done;
 
-	/**
-	 * True if and only if a new block has been committed to blockchain.
-	 */
-	private boolean committed;
-
 	private final static Logger LOGGER = Logger.getLogger(BlockMiner.class.getName());
 
 	/**
 	 * Creates a task that mines a new block.
 	 * 
 	 * @param node the node performing the mining
-	 * @param previous the block over which mining must be performed
-	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if some operation timed out
-	 * @throws UnknownStateException if the state of {@code previous} is unknown to the application 
-	 * @throws NodeException if the node is misbehaving
-	 */
-	public BlockMiner(LocalNodeImpl node, Block previous) throws UnknownStateException, InterruptedException, TimeoutException, NodeException {
-		this.node = node;
-		this.previous = previous;
-		this.blockchain = node.getBlockchain();
-		this.config = node.getConfig();
-		this.miners = node.getMiners();
-		this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
-		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
-		this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
-		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
-	}
-
-	/**
-	 * Looks for a subsequent block on top of the previous block provided at construction time.
-	 * 
+	 * @throws UnknownStateException if the state of the head of the blockchain is unknown to the application
 	 * @throws InterruptedException if the thread running this code gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws SignatureException if the block could not be signed with the key of the node
@@ -165,7 +140,19 @@ public class BlockMiner {
 	 * @throws RejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void mine() throws InterruptedException, TimeoutException, InvalidKeyException, SignatureException, RejectedExecutionException, NodeException {
+	public BlockMiner(LocalNodeImpl node) throws UnknownStateException, InterruptedException, TimeoutException, NodeException, InvalidKeyException, SignatureException {
+		this.node = node;
+		this.blockchain = node.getBlockchain();
+		this.previous = blockchain.getHead().get();
+		this.config = node.getConfig();
+		this.miners = node.getMiners();
+		this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
+		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
+		this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
+		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
+
+		LOGGER.info("mining: starting mining over block " + previous.getHexHash(config.getHashingForBlocks()));
+		boolean committed = false;
 		transactionExecutor.start();
 
 		try {
@@ -184,16 +171,15 @@ public class BlockMiner {
 			}
 
 			waitUntilDeadlineExpires();
-			transactionExecutor.stop();
 			var block = createNewBlock();
 			if (block.isPresent())
-				commitIfBetterThanHead(block.get());
+				committed = commitIfBetterThanHead(block.get());
 		}
 		catch (ApplicationException | UnknownGroupIdException e) {
 			throw new NodeException(e);
 		}
 		finally {
-			cleanUp();
+			cleanUp(committed);
 		}
 	}
 
@@ -238,6 +224,7 @@ public class BlockMiner {
 	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		stopIfInterrupted();
 		var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
+		transactionExecutor.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 		var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
@@ -251,31 +238,35 @@ public class BlockMiner {
 	 * Commits the given block, if it is better than the current head.
 	 *
 	 * @param block the block
+	 * @return true if and only if the block has been committed
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void commitIfBetterThanHead(Block block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
+	private boolean commitIfBetterThanHead(Block block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
-			committed = true;
 			node.onMined(block);
-			addBlockToBlockchain(block);
+			addToBlockchain(block);
+			return true;
 		}
-		else
+		else {
 			LOGGER.info(heightMessage + "not adding any block on top of " + previous.getHexHash(config.getHashingForBlocks()) + " since it would not improve the head");
+			return false;
+		}
 	}
 
 	/**
 	 * Cleans up everything at the end of mining.
 	 * 
+	 * @param committed true if and only if a new block has been committed
 	 * @throws InterruptedException if the operation gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void cleanUp() throws InterruptedException, TimeoutException, NodeException {
+	private void cleanUp(boolean committed) throws InterruptedException, TimeoutException, NodeException {
 		this.done = true;
 		transactionExecutor.stop();
 
@@ -301,7 +292,7 @@ public class BlockMiner {
 		miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
 	}
 
-	private void addBlockToBlockchain(Block block) throws InterruptedException, TimeoutException, NodeException {
+	private void addToBlockchain(Block block) throws InterruptedException, TimeoutException, NodeException {
 		stopIfInterrupted();
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (blockchain.addVerified(block))
@@ -328,9 +319,7 @@ public class BlockMiner {
 				if (minersThatDidNotAnswer.remove(miner))
 					miners.pardon(miner, config.getMinerPunishmentForTimeout());
 
-				if (!currentDeadline.isWorseThan(deadline))
-					LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
-				else {
+				if (currentDeadline.isWorseThan(deadline)) {
 					if (currentDeadline.updateIfWorseThan(deadline)) {
 						LOGGER.info(heightMessage + "improved deadline to " + deadline);
 						setWaker(deadline);
@@ -338,11 +327,12 @@ public class BlockMiner {
 					else
 						LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
 				}
+				else
+					LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
 			}
 			catch (IllegalDeadlineException e) {
 				LOGGER.warning(heightMessage + "discarding illegal deadline " + deadline + ": " + e.getMessage());
 				node.onIllegalDeadlineComputed(deadline, miner);
-
 				long points = config.getMinerPunishmentForIllegalDeadline();
 				LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " punished for an illegal deadline event [-" + points + " points]");
 				node.punish(miner, points);

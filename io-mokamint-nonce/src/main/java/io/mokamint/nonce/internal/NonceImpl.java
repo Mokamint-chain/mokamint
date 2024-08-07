@@ -48,8 +48,8 @@ public class NonceImpl implements Nonce {
 	/**
 	 * The hashing algorithm used for creating this nonce.
 	 */
-	private final HashingAlgorithm hashing;
-
+	private final Hasher<byte[]> hasher;
+	
 	private final int hashSize;
 	private final byte[] data;
 
@@ -76,7 +76,7 @@ public class NonceImpl implements Nonce {
 			throw new IllegalArgumentException("progressive cannot be negative");
 
 		this.prolog = prolog;
-		this.hashing = hashing;
+		this.hasher = hashing.getHasher(Function.identity());
 		this.hashSize = hashing.length();
 		this.progressive = progressive;
 		this.data = new Builder().data;
@@ -91,7 +91,7 @@ public class NonceImpl implements Nonce {
 	byte[] getValueFor(DeadlineDescription description) {
 		byte[] data = description.getData();
 		int scoopNumber = description.getScoopNumber();
-		return hashing.getHasher(Function.identity()).hash(extractScoopAndConcat(scoopNumber, data));
+		return hasher.hash(extractScoopAndConcat(scoopNumber, data));
 	}
 
 	/**
@@ -148,11 +148,6 @@ public class NonceImpl implements Nonce {
 		private final int scoopSize;
 
 		/**
-		 * The hasher derived from the hashing algorithm.
-		 */
-		private final Hasher<byte[]> hasher;
-
-		/**
 		 * Temporary data of the nonce. This is {@code data} followed by
 		 * the prolog and progressive of the nonce.
 		 */
@@ -162,7 +157,6 @@ public class NonceImpl implements Nonce {
 			this.data = new byte[(Deadline.MAX_SCOOP_NUMBER + 1) * 2 * hashSize];
 			this.nonceSize = data.length;
 			this.scoopSize = 2 * hashSize;
-			this.hasher = hashing.getHasher(Function.identity());
 			this.buffer = initWithPrologAndProgressive();
 			fillWithScoops();
 			applyFinalHash();

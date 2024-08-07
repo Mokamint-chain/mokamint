@@ -18,14 +18,12 @@ package io.mokamint.node.local.internal;
 
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
-import java.util.Optional;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.application.api.UnknownStateException;
-import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -60,53 +58,14 @@ public class MiningTask implements Task {
 	@Override
 	public void body() {
 		try {
-			while (true) {
-				try {
-					Optional<Block> maybeHead = node.getBlockchain().getHead();
-
-					if (maybeHead.isEmpty()) {
-						LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
-
-						synchronized (onBlockAddedWaitingLock) {
-							onBlockAddedWaitingLock.wait(2000L);
-						}
-					}
-					else if (node.getMiners().get().count() == 0L) {
-						LOGGER.warning("mining: cannot mine with no miners attached, will retry later");
-						node.onNoMinersAvailable();
-
-						synchronized (onMinerAddedWaitingLock) {
-							onMinerAddedWaitingLock.wait(2000L);
-						}
-					}
-					else if (node.isSynchronizing()) {
-						LOGGER.warning("mining: delaying mining since synchronization is in progress, will retry later");
-
-						synchronized (onSynchronizationCompletedWaitingLock) {
-							onSynchronizationCompletedWaitingLock.wait(2000L);
-						}
-					}
-					else {
-						var head = maybeHead.get();
-						LOGGER.info("mining: starting mining over block " + head.getHexHash(node.getConfig().getHashingForBlocks()));
-						blockMiner = new BlockMiner(node, head);
-						blockMiner.mine();
-					}
-				}
-				catch (TimeoutException e) {
-					LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
-					Thread.sleep(5000L);
-				}
-				catch (UnknownStateException e) {
-					LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
-				}
-			}
+			while (true)
+				mineOverHead();
 		}
 		catch (RejectedExecutionException | ClosedDatabaseException e) {
 			LOGGER.warning("mining: exiting since the node is shutting down");
 		}
 		catch (InterruptedException e) {
-			LOGGER.info("mining: exiting since the node is shutting down");
+			LOGGER.warning("mining: exiting since the node is shutting down");
 			Thread.currentThread().interrupt();
 		}
 		catch (InvalidKeyException | SignatureException | NodeException | RuntimeException e) {
@@ -161,5 +120,41 @@ public class MiningTask implements Task {
 		var blockMiner = this.blockMiner;
 		if (blockMiner != null)
 			blockMiner.add(entry);
+	}
+
+	private void mineOverHead() throws NodeException, InterruptedException, InvalidKeyException, SignatureException {
+		try {
+			if (node.getBlockchain().isEmpty()) {
+				LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
+	
+				synchronized (onBlockAddedWaitingLock) {
+					onBlockAddedWaitingLock.wait(2000L);
+				}
+			}
+			else if (node.getMiners().get().count() == 0L) {
+				LOGGER.warning("mining: cannot mine with no miners attached, will retry later");
+				node.onNoMinersAvailable();
+	
+				synchronized (onMinerAddedWaitingLock) {
+					onMinerAddedWaitingLock.wait(2000L);
+				}
+			}
+			else if (node.isSynchronizing()) {
+				LOGGER.warning("mining: delaying mining since synchronization is in progress, will retry later");
+	
+				synchronized (onSynchronizationCompletedWaitingLock) {
+					onSynchronizationCompletedWaitingLock.wait(2000L);
+				}
+			}
+			else
+				blockMiner = new BlockMiner(node);
+		}
+		catch (TimeoutException e) {
+			LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
+			Thread.sleep(5000L);
+		}
+		catch (UnknownStateException e) {
+			LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
+		}
 	}
 }
