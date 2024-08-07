@@ -42,11 +42,6 @@ public class MiningTask implements Task {
 	 */
 	private final LocalNodeImpl node;
 
-	/**
-	 * The thread that performs the mining.
-	 */
-	private final MiningThread miningThread = new MiningThread();
-
 	private final Object onBlockAddedWaitingLock = new Object();
 	private final Object onMinerAddedWaitingLock = new Object();
 	private final Object onSynchronizationCompletedWaitingLock = new Object();
@@ -56,8 +51,6 @@ public class MiningTask implements Task {
 	 */
 	private volatile BlockMiner blockMiner;
 
-	private volatile boolean taskHasBeenInterrupted;
-
 	private final static Logger LOGGER = Logger.getLogger(MiningTask.class.getName());
 
 	public MiningTask(LocalNodeImpl node) {
@@ -66,20 +59,59 @@ public class MiningTask implements Task {
 
 	@Override
 	public void body() {
-		miningThread.start();
-
 		try {
-			miningThread.join();
+			while (true) {
+				try {
+					Optional<Block> maybeHead = node.getBlockchain().getHead();
+
+					if (maybeHead.isEmpty()) {
+						LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
+
+						synchronized (onBlockAddedWaitingLock) {
+							onBlockAddedWaitingLock.wait(2000L);
+						}
+					}
+					else if (node.getMiners().get().count() == 0L) {
+						LOGGER.warning("mining: cannot mine with no miners attached, will retry later");
+						node.onNoMinersAvailable();
+
+						synchronized (onMinerAddedWaitingLock) {
+							onMinerAddedWaitingLock.wait(2000L);
+						}
+					}
+					else if (node.isSynchronizing()) {
+						LOGGER.warning("mining: delaying mining since synchronization is in progress, will retry later");
+
+						synchronized (onSynchronizationCompletedWaitingLock) {
+							onSynchronizationCompletedWaitingLock.wait(2000L);
+						}
+					}
+					else {
+						var head = maybeHead.get();
+						LOGGER.info("mining: starting mining over block " + head.getHexHash(node.getConfig().getHashingForBlocks()));
+						blockMiner = new BlockMiner(node, head);
+						blockMiner.mine();
+					}
+				}
+				catch (TimeoutException e) {
+					LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
+					Thread.sleep(5000L);
+				}
+				catch (UnknownStateException e) {
+					LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
+				}
+			}
+		}
+		catch (RejectedExecutionException | ClosedDatabaseException e) {
+			LOGGER.warning("mining: exiting since the node is shutting down");
 		}
 		catch (InterruptedException e) {
-			taskHasBeenInterrupted = true; // so that the mining thread exits when we interrupt it at the following line
-			miningThread.interrupt();
+			LOGGER.info("mining: exiting since the node is shutting down");
 			Thread.currentThread().interrupt();
 		}
-		catch (Throwable e) {
-			LOGGER.log(Level.SEVERE, "mining: dying because of unexpected exception", e);
+		catch (InvalidKeyException | SignatureException | NodeException | RuntimeException e) {
+			LOGGER.log(Level.SEVERE, "mining: dying because of exception", e);
 			e.printStackTrace(); // TODO: remove eventually
-			throw e;
 		}
 	}
 
@@ -88,7 +120,7 @@ public class MiningTask implements Task {
 	 */
 	public void restartFromCurrentHead() {
 		// since taskHasBeenInterrupted remains false, this will interrupt the current mining activity and restart it on top of the new head
-		miningThread.interrupt();
+		//miningThread.interrupt();
 	}
 
 	/**
@@ -129,79 +161,5 @@ public class MiningTask implements Task {
 		var blockMiner = this.blockMiner;
 		if (blockMiner != null)
 			blockMiner.add(entry);
-	}
-
-	/**
-	 * The actual thread that performs the mining.
-	 */
-	private class MiningThread extends Thread {
-
-		@Override
-		public void run() {
-			while (!taskHasBeenInterrupted) {
-				try {
-					Optional<Block> maybeHead = node.getBlockchain().getHead();
-
-					if (maybeHead.isEmpty()) {
-						LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
-
-						synchronized (onBlockAddedWaitingLock) {
-							onBlockAddedWaitingLock.wait(2000L);
-						}
-					}
-					else if (node.getMiners().get().count() == 0L) {
-						LOGGER.warning("mining: cannot mine with no miners attached, will retry later");
-						node.onNoMinersAvailable();
-
-						synchronized (onMinerAddedWaitingLock) {
-							onMinerAddedWaitingLock.wait(2000L);
-						}
-					}
-					else if (node.isSynchronizing()) {
-						LOGGER.warning("mining: delaying mining since synchronization is in progress, will retry later");
-
-						synchronized (onSynchronizationCompletedWaitingLock) {
-							onSynchronizationCompletedWaitingLock.wait(2000L);
-						}
-					}
-					else {
-						var head = maybeHead.get();
-						LOGGER.info("mining: starting mining over block " + head.getHexHash(node.getConfig().getHashingForBlocks()));
-						blockMiner = new BlockMiner(node, head);
-						blockMiner.mine();
-					}
-				}
-				catch (InterruptedException e) {
-					LOGGER.info("mining: restarting mining since the blockchain's head changed");
-				}
-				catch (RejectedExecutionException e) {
-					LOGGER.warning("mining: exiting since the node is being shut down");
-					break;
-				}
-				catch (InvalidKeyException | SignatureException | NodeException e) {
-					LOGGER.log(Level.SEVERE, "mining: exiting because of exception", e);
-					break;
-				}
-				catch (TimeoutException e) {
-					LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
-
-					try {
-						Thread.sleep(5000L);
-					}
-					catch (InterruptedException e2) {
-						LOGGER.info("mining: restarting mining");
-					}
-				}
-				catch (UnknownStateException e) {
-					LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
-				}
-				catch (RuntimeException e) {
-					LOGGER.log(Level.SEVERE, "mining: exiting because of unexpected exception", e);
-					break;
-				}
-			}
-
-			Thread.currentThread().interrupt();
-		}
 	}
 }

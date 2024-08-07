@@ -114,6 +114,7 @@ public class EventsTests extends AbstractLoggedTests {
 			.setDir(dir)
 			.setChainId("octopus")
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
+			.setInitialAcceleration(5000000000000000000L)
 			.build();
 	}
 
@@ -121,22 +122,25 @@ public class EventsTests extends AbstractLoggedTests {
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException, ApplicationException {
 		var semaphore = new Semaphore(0);
-		var deadlineValue = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+		//byte[] deadlineValue; // = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 
 		var myMiner = new Miner() {
 
+			byte[] deadlineValue; // = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+
 			@Override
 			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
-				// we mock the deadline since we need a very small value in order to discover a block quickly
-				Deadline deadline = mock(Deadline.class);
-				when(deadline.isValid()).thenReturn(true); // <--
-				when(deadline.getProlog()).thenReturn(prolog);
-				when(deadline.getData()).thenReturn(description.getData());
-				when(deadline.getScoopNumber()).thenReturn(description.getScoopNumber());
-				when(deadline.getValue()).thenReturn(deadlineValue);
-				when(deadline.getHashing()).thenReturn(description.getHashing());
-
-				onDeadlineComputed.accept(deadline);
+				try {
+					Deadline deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
+					deadlineValue = deadline.getValue();
+					onDeadlineComputed.accept(deadline);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				catch (IOException | InvalidKeyException | SignatureException e) {
+					e.printStackTrace();
+				}
 			}
 
 			@Override
@@ -158,7 +162,7 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			protected void onMined(Block block) {
 				super.onMined(block);
-				if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDeadline().getValue(), deadlineValue))
+				if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDeadline().getValue(), myMiner.deadlineValue))
 					semaphore.release();
 			}
 		}

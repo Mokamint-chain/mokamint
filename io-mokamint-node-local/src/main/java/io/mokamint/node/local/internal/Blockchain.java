@@ -1980,7 +1980,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the block with the given hash, if it is contained in this database,
+	 * Yields the block with the given hash, if it is contained in this blockchain,
 	 * running inside the given transaction.
 	 * 
 	 * @param txn the transaction

@@ -178,7 +178,7 @@ public class BlockMiner {
 				waitUntilFirstDeadlineArrives();
 			}
 			catch (TimeoutException e) {
-				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline): " + e.getMessage());
+				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
 				node.onNoDeadlineFound(previous);
 				return;
 			}
@@ -318,7 +318,7 @@ public class BlockMiner {
 		LOGGER.info(heightMessage + "miner " + miner.getUUID() + " sent deadline " + deadline);
 
 		if (done)
-			LOGGER.warning(heightMessage + "discarding deadline " + deadline + " since it arrived too late");
+			LOGGER.warning(heightMessage + "discarding belated deadline " + deadline);
 		else {
 			try {
 				deadline.matchesOrThrow(description, IllegalDeadlineException::new);
@@ -329,26 +329,26 @@ public class BlockMiner {
 					miners.pardon(miner, config.getMinerPunishmentForTimeout());
 
 				if (!currentDeadline.isWorseThan(deadline))
-					LOGGER.info(heightMessage + "discarding deadline " + deadline + " since it is not better than the current deadline");
+					LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
 				else {
 					if (currentDeadline.updateIfWorseThan(deadline)) {
 						LOGGER.info(heightMessage + "improved deadline to " + deadline);
 						setWaker(deadline);
 					}
 					else
-						LOGGER.info(heightMessage + "discarding deadline " + deadline + " since it is not better than the current deadline");
+						LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
 				}
 			}
 			catch (IllegalDeadlineException e) {
-				LOGGER.warning(heightMessage + "discarding deadline " + deadline + " since it is illegal: " + e.getMessage());
+				LOGGER.warning(heightMessage + "discarding illegal deadline " + deadline + ": " + e.getMessage());
 				node.onIllegalDeadlineComputed(deadline, miner);
 
 				long points = config.getMinerPunishmentForIllegalDeadline();
-				LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " computed an illegal deadline event [-" + points + " points]");
+				LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " punished for an illegal deadline event [-" + points + " points]");
 				node.punish(miner, points);
 			}
 			catch (TimeoutException | DeadlineValidityCheckException e) {
-				LOGGER.warning(heightMessage + "discarding deadline " + deadline + " since its validity could not be checked: " + e.getMessage());
+				LOGGER.warning(heightMessage + "discarding uncheckable deadline " + deadline + ": " + e.getMessage());
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
