@@ -28,11 +28,15 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
+import io.hotmoka.annotations.GuardedBy;
+import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
@@ -106,6 +110,16 @@ public class BlockMiner {
 	private final ImprovableDeadline currentDeadline = new ImprovableDeadline();
 
 	/**
+	 * A semaphore used to wait for the arrival of the first deadline from the miners.
+	 */
+	private final Semaphore endOfDeadlineArrivalPeriod = new Semaphore(0);
+
+	/**
+	 * A semaphore used to wait for the end of the deadline.
+	 */
+	private final Semaphore endOfWaitingPeriod = new Semaphore(0);
+
+	/**
 	 * The waker used to wait for a deadline to expire.
 	 */
 	private final Waker waker = new Waker();
@@ -126,6 +140,8 @@ public class BlockMiner {
 	 */
 	private volatile boolean done;
 
+	private volatile boolean interrupted;
+
 	private final static Logger LOGGER = Logger.getLogger(BlockMiner.class.getName());
 
 	/**
@@ -135,12 +151,9 @@ public class BlockMiner {
 	 * @throws UnknownStateException if the state of the head of the blockchain is unknown to the application
 	 * @throws InterruptedException if the thread running this code gets interrupted
 	 * @throws TimeoutException if some operation timed out
-	 * @throws SignatureException if the block could not be signed with the key of the node
-	 * @throws InvalidKeyException if the key of the node for signing the block is invalid
-	 * @throws RejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public BlockMiner(LocalNodeImpl node) throws UnknownStateException, InterruptedException, TimeoutException, NodeException, InvalidKeyException, SignatureException {
+	public BlockMiner(LocalNodeImpl node) throws UnknownStateException, InterruptedException, TimeoutException, NodeException {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.previous = blockchain.getHead().get();
@@ -150,28 +163,50 @@ public class BlockMiner {
 		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
 		this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
+	}
 
+	/**
+	 * Mines the new block.
+	 * 
+	 * @throws InterruptedException if the thread running this code gets interrupted
+	 * @throws TimeoutException if some operation timed out
+	 * @throws SignatureException if the block could not be signed with the key of the node
+	 * @throws InvalidKeyException if the key of the node for signing the block is invalid
+	 * @throws RejectedExecutionException if the node is shutting down 
+	 * @throws NodeException if the node is misbehaving
+	 */
+	public void mine() throws InvalidKeyException, NodeException, InterruptedException, TimeoutException, SignatureException, RejectedExecutionException {
 		LOGGER.info("mining: starting mining over block " + previous.getHexHash(config.getHashingForBlocks()));
 		boolean committed = false;
 		transactionExecutor.start();
 
 		try {
-			stopIfInterrupted();
+			if (interrupted)
+				return;
+
 			node.forEachMempoolTransactionAt(previous, mempool::add);
 			node.onMiningStarted(previous);
 			requestDeadlineToEveryMiner();
 
-			try {
-				waitUntilFirstDeadlineArrives();
-			}
-			catch (TimeoutException e) {
+			if (interrupted)
+				return;
+
+			if (!waitUntilFirstDeadlineArrives()) {
 				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
 				node.onNoDeadlineFound(previous);
 				return;
 			}
 
 			waitUntilDeadlineExpires();
+
+			if (interrupted)
+				return;
+
 			var block = createNewBlock();
+
+			if (interrupted)
+				return;
+
 			if (block.isPresent())
 				committed = commitIfBetterThanHead(block.get());
 		}
@@ -197,17 +232,24 @@ public class BlockMiner {
 			}
 	}
 
+	public void interrupt() {
+		interrupted = true;
+		endOfDeadlineArrivalPeriod.release();
+		endOfWaitingPeriod.release();
+		waker.turnOff();
+	}
+
 	private void requestDeadlineToEveryMiner() throws InterruptedException {
 		for (Miner miner: miners.get().toArray(Miner[]::new))
 			requestDeadlineTo(miner);
 	}
 
-	private void waitUntilFirstDeadlineArrives() throws InterruptedException, TimeoutException {
-		currentDeadline.await(config.getDeadlineWaitTimeout(), MILLISECONDS);
+	private boolean waitUntilFirstDeadlineArrives() throws InterruptedException {
+		return endOfDeadlineArrivalPeriod.tryAcquire(config.getDeadlineWaitTimeout(), MILLISECONDS);
 	}
 
 	private void waitUntilDeadlineExpires() throws InterruptedException {
-		waker.await();
+		endOfWaitingPeriod.acquire();
 	}
 
 	/**
@@ -222,8 +264,7 @@ public class BlockMiner {
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
 	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
-		stopIfInterrupted();
-		var deadline = currentDeadline.get().get(); // here, we know that a deadline has been computed
+		var deadline = currentDeadline.deadline; // here, we know that a deadline has been computed
 		transactionExecutor.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
@@ -280,22 +321,21 @@ public class BlockMiner {
 			throw new NodeException(e);
 		}
 		finally {
-			turnWakerOff();
 			punishMinersThatDidNotAnswer();
 		}
 	}
 
 	private void requestDeadlineTo(Miner miner) throws InterruptedException {
-		stopIfInterrupted();
-		LOGGER.info(heightMessage + "asking miner " + miner.getUUID() + " for a deadline: " + description);
-		minersThatDidNotAnswer.add(miner);
-		miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
+		if (!interrupted) {
+			LOGGER.info(heightMessage + "asking miner " + miner.getUUID() + " for a deadline: " + description);
+			minersThatDidNotAnswer.add(miner);
+			miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
+		}
 	}
 
 	private void addToBlockchain(Block block) throws InterruptedException, TimeoutException, NodeException {
-		stopIfInterrupted();
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
-		if (blockchain.addVerified(block))
+		if (!interrupted && blockchain.addVerified(block))
 			node.whisperWithoutAddition(block);
 	}
 
@@ -359,22 +399,105 @@ public class BlockMiner {
 			LOGGER.info(heightMessage + "set up a waker in " + stillToWait + " ms");
 	}
 
-	private void turnWakerOff() {
-		waker.shutdownNow();
-	}
-
 	private void punishMinersThatDidNotAnswer() {
 		var points = config.getMinerPunishmentForTimeout();
 		minersThatDidNotAnswer.forEach(miner -> node.punish(miner, points));
 	}
 
 	/**
-	 * Checks if the current thread has been interrupted and, in that case, throws an exception.
-	 * 
-	 * @throws InterruptedException if and only if the current thread has been interrupted
+	 * A wrapper for a deadline, that can progressively improved.
 	 */
-	private static void stopIfInterrupted() throws InterruptedException {
-		if (Thread.currentThread().isInterrupted())
-			throw new InterruptedException("Interrupted");
+	@ThreadSafe
+	private class ImprovableDeadline {
+
+		@GuardedBy("this.lock")
+		private Deadline deadline;
+		private final Object lock = new Object();
+
+		/**
+		 * Determines if the given deadline is better than this.
+		 * 
+		 * @param other the given deadline
+		 * @return true if and only if this is not set yet or {@code other} is smaller than this
+		 */
+		private boolean isWorseThan(Deadline other) {
+			synchronized (lock) {
+				return deadline == null || other.compareByValue(deadline) < 0;
+			}
+		}
+
+		/**
+		 * Updates this deadline if the given deadline is better.
+		 * 
+		 * @param other the given deadline
+		 * @return true if and only if this deadline has been updated
+		 */
+		private boolean updateIfWorseThan(Deadline other) {
+			synchronized (lock) {
+				if (isWorseThan(other)) {
+					deadline = other;
+					endOfDeadlineArrivalPeriod.release();
+					return true;
+				}
+				else
+					return false;
+			}
+		}
+	}
+
+	/**
+	 * A synchronization primitive that allows to await a waker.
+	 * The waker can be set many times. Setting a new waker replaces the
+	 * previous one, that gets discarded.
+	 */
+	@ThreadSafe
+	private class Waker {
+
+		/**
+		 * The current future of the waiting task, if any.
+		 */
+		@GuardedBy("this.lock")
+		private Future<?> future;
+
+		/**
+		 * A lock to synchronize access to {@link #future}.
+		 */
+		private final Object lock = new Object();
+
+		/**
+		 * Sets a waker at the given time distance from now. If the waker was already set,
+		 * it gets replaced with the new timeout. If this object was already shut down, it does nothing.
+		 * 
+		 * @param millisecondsToWait the timeout to wait for
+		 * @return true if the waker has been set, false otherwise (if this object was already shut down)
+		 */
+		private boolean set(long millisecondsToWait) {
+			synchronized (lock) {
+				turnOff();
+
+				if (millisecondsToWait <= 0)
+					endOfWaitingPeriod.release();
+				else {
+					try {
+						future = node.submit(() -> taskBody(millisecondsToWait), "waker set in " + millisecondsToWait + " ms");
+					}
+					catch (RejectedExecutionException e) {
+						return false;
+					}
+				}
+
+				return true;
+			}
+		}
+
+		private void taskBody(long millisecondsToWait) throws InterruptedException {
+			Thread.sleep(millisecondsToWait);
+			endOfWaitingPeriod.release();
+		}
+
+		private void turnOff() {
+			if (future != null)
+				future.cancel(true);
+		}
 	}
 }

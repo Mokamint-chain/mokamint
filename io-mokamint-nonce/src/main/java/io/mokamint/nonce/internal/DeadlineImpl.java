@@ -212,7 +212,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public int compareByValue(Deadline other) {
-		byte[] left = value, right = other.getValue();
+		byte[] left = value, right = other instanceof DeadlineImpl di ? di.value : other.getValue(); // optimization
 
 		for (int i = 0; i < left.length; i++) {
 			int a = left[i] & 0xff;
@@ -221,7 +221,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 				return a - b;
 		}
 
-		return 0; // deadlines with the same hashingName algorithm have the same length
+		return 0; // deadlines with the same hashing algorithm have the same length
 	}
 
 	@Override

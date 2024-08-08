@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
@@ -738,7 +737,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws RejectedExecutionException if the task could not be started
 	 */
 	protected Future<?> scheduleTransactionExecutor(TransactionsExecutionTask task) throws RejectedExecutionException {
-		return submit(task, "transactions execution from state " + Hex.toHexString(task.getPrevious().getStateId()));
+		return submit(task, "transactions execution over block " + task.getPrevious().getHexHash(config.getHashingForBlocks()));
 	}
 
 	/**
@@ -954,7 +953,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private Future<?> submit(Task task, String description) throws RejectedExecutionException {
+	Future<?> submit(Task task, String description) throws RejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
 		try {
 			var future = executors.submit(runnable);
