@@ -136,6 +136,11 @@ public class BlockMiner {
 	private final TransactionsExecutionTask transactionExecutor;
 
 	/**
+	 * True if and only if a new block has been committed.
+	 */
+	private boolean committed;
+
+	/**
 	 * Set to true when the task has completed, also in the case when it could not find any deadline.
 	 */
 	private volatile boolean done;
@@ -177,7 +182,6 @@ public class BlockMiner {
 	 */
 	public void mine() throws InvalidKeyException, NodeException, InterruptedException, TimeoutException, SignatureException, RejectedExecutionException {
 		LOGGER.info("mining: starting mining over block " + previous.getHexHash(config.getHashingForBlocks()));
-		boolean committed = false;
 		transactionExecutor.start();
 
 		try {
@@ -208,13 +212,13 @@ public class BlockMiner {
 				return;
 
 			if (block.isPresent())
-				committed = commitIfBetterThanHead(block.get());
+				commitIfBetterThanHead(block.get());
 		}
 		catch (ApplicationException | UnknownGroupIdException e) {
 			throw new NodeException(e);
 		}
 		finally {
-			cleanUp(committed);
+			cleanUp();
 		}
 	}
 
@@ -279,35 +283,31 @@ public class BlockMiner {
 	 * Commits the given block, if it is better than the current head.
 	 *
 	 * @param block the block
-	 * @return true if and only if the block has been committed
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is not behaving correctly
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean commitIfBetterThanHead(Block block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
+	private void commitIfBetterThanHead(Block block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
+			committed = true;
 			node.onMined(block);
 			addToBlockchain(block);
-			return true;
 		}
-		else {
+		else
 			LOGGER.info(heightMessage + "not adding any block on top of " + previous.getHexHash(config.getHashingForBlocks()) + " since it would not improve the head");
-			return false;
-		}
 	}
 
 	/**
 	 * Cleans up everything at the end of mining.
 	 * 
-	 * @param committed true if and only if a new block has been committed
 	 * @throws InterruptedException if the operation gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void cleanUp(boolean committed) throws InterruptedException, TimeoutException, NodeException {
+	private void cleanUp() throws InterruptedException, TimeoutException, NodeException {
 		this.done = true;
 		transactionExecutor.stop();
 
@@ -317,7 +317,7 @@ public class BlockMiner {
 
 			node.onMiningCompleted(previous);
 		}
-		catch (ApplicationException | UnknownGroupIdException e) {
+		catch (UnknownGroupIdException | ApplicationException e) {
 			throw new NodeException(e);
 		}
 		finally {

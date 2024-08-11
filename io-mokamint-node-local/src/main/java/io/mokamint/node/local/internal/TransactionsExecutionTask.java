@@ -169,7 +169,7 @@ public class TransactionsExecutionTask implements Task {
 
 		try {
 			// infinite loop: this task is expected to be interrupted by the mining task that has spawned it
-			while (!Thread.currentThread().isInterrupted())
+			while (true)
 				sizeUpToNow = processNextTransaction(source.take(), sizeUpToNow);
 		}
 		catch (InterruptedException e) {
