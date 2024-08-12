@@ -491,10 +491,19 @@ public class BlockMiner {
 		}
 
 		private void taskBody(long millisecondsToWait) throws InterruptedException {
-			Thread.sleep(millisecondsToWait);
-			endOfWaitingPeriod.release();
+			try {
+				Thread.sleep(millisecondsToWait);
+				endOfWaitingPeriod.release();
+			}
+			catch (InterruptedException e) {
+				// we avoid throwing the exception, since it would result in an ugly warning message in the logs, since a task has been interrupted...
+				// but interruption for this task is expected: it means that it has been cancelled in {@link #turnOff()} since the head of the blockchain
+				// changed and it is better to move mining on top of it
+				Thread.currentThread().interrupt();
+			}
 		}
 
+		@GuardedBy("this.lock")
 		private void turnOff() {
 			if (future != null)
 				future.cancel(true);
