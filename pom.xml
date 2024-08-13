@@ -26,7 +26,6 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <maven.compiler.release>17</maven.compiler.release>
       <mokamint.version>1.0.0</mokamint.version>
-      <hotmoka.version>1.4.1</hotmoka.version>
       <io.hotmoka.annotations.version>1.4.1</io.hotmoka.annotations.version>
       <io.hotmoka.crypto.version>1.4.2</io.hotmoka.crypto.version>
       <io.hotmoka.closeables.version>1.4.1</io.hotmoka.closeables.version>
