@@ -2179,7 +2179,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return true if and only if the current head is missing or {@code block} is more powerful
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException {
+	private boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException { // TODO: in case of identical power, compare the hash of the blocks
 		return getPowerOfHead(txn).map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
 	}
 
