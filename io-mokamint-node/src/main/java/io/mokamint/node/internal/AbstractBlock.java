@@ -191,7 +191,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
+	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) { // TODO: rename into getNextChallenge()
 		var nextGenerationSignature = description.getNextGenerationSignature(hashingForGenerations);
 		return DeadlineDescriptions.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}

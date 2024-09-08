@@ -24,7 +24,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
  * a miner to describe the properties if the deadline one is looking for.
  */
 @Immutable
-public interface DeadlineDescription {
+public interface DeadlineDescription { // TODO: rename into Challenge
 
 	/**
 	 * Yields the number of the scoop considered to compute the deadline.
@@ -38,7 +38,7 @@ public interface DeadlineDescription {
 	 * 
 	 * @return the data
 	 */
-	byte[] getData();
+	byte[] getData(); // TODO: rename into getSignature()
 
 	/**
 	 * The hashing algorithm used for the plot file from which

@@ -53,6 +53,7 @@ public final class Deadlines {
 	 * @throws SignatureException if the signature of the deadline failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
+	// TODO: pass a DeadlineDescription instead of scoopNumber and data
 	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm hashing, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		return new DeadlineImpl(hashing, prolog, progressive, value, scoopNumber, data, privateKey);
 	}

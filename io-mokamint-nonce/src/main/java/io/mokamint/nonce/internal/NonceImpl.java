@@ -154,9 +154,9 @@ public class NonceImpl implements Nonce {
 		private final byte[] buffer;
 
 		private Builder() {
-			this.data = new byte[(Deadline.MAX_SCOOP_NUMBER + 1) * 2 * hashSize];
-			this.nonceSize = data.length;
 			this.scoopSize = 2 * hashSize;
+			this.nonceSize = (Deadline.MAX_SCOOP_NUMBER + 1) * scoopSize;
+			this.data = new byte[nonceSize];
 			this.buffer = initWithPrologAndProgressive();
 			fillWithScoops();
 			applyFinalHash();

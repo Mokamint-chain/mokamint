@@ -36,15 +36,12 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 	private final HashingAlgorithm hashing;
 
 	public DeadlineDescriptionImpl(int scoopNumber, byte[] data, HashingAlgorithm hashing) {
-		Objects.requireNonNull(data, "data cannot be null");
-		Objects.requireNonNull(hashing, "hashing cannot be null");
-
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
 		this.scoopNumber = scoopNumber;
-		this.data = data;
-		this.hashing = hashing;
+		this.data = Objects.requireNonNull(data, "data cannot be null");
+		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null");
 	}
 
 	@Override
