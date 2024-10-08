@@ -24,6 +24,7 @@ import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -57,8 +58,13 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	}
 
 	@Override
-	public Deadline unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, IllegalArgumentException, Base58ConversionException {
-		return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber,
-			Hex.fromHexString(data), HashingAlgorithms.of(hashing), Hex.fromHexString(signature));
+	public Deadline unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
+		try {
+			return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber,
+				Hex.fromHexString(data), HashingAlgorithms.of(hashing), Hex.fromHexString(signature));
+		}
+		catch (IllegalArgumentException | InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

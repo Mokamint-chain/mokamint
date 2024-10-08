@@ -120,18 +120,18 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		try {
-			this.hashing = HashingAlgorithms.of(context.readStringUnshared());
-			this.prolog = Prologs.from(context);
-			this.progressive = context.readLong();
-			this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
-			this.scoopNumber = context.readInt();
-			this.data = context.readBytes(context.readCompactInt(), "Mismatch in deadline's data length");
-			this.signature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's signature length");
+		this.hashing = HashingAlgorithms.of(context.readStringUnshared());
+		this.prolog = Prologs.from(context);
+		this.progressive = context.readLong();
+		this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
+		this.scoopNumber = context.readInt();
+		this.data = context.readBytes(context.readCompactInt(), "Mismatch in deadline's data length");
+		this.signature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's signature length");
 
+		try {
 			verify();
 		}
-		catch (RuntimeException e) {
+		catch (NullPointerException | IllegalArgumentException e) {
 			throw new IOException(e);
 		}
 	}
@@ -142,7 +142,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
 	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid)
 	 */
-	private void verify() {
+	private void verify() throws IllegalArgumentException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(value, "value cannot be null");
 		Objects.requireNonNull(data, "data cannot be null");

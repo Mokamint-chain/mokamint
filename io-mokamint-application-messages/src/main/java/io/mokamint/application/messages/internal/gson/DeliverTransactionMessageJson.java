@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.gson;
 
-import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.node.Transactions;
@@ -37,7 +37,7 @@ public abstract class DeliverTransactionMessageJson extends AbstractRpcMessageJs
 	}
 
 	@Override
-	public DeliverTransactionMessage unmap() throws Base64ConversionException {
+	public DeliverTransactionMessage unmap() throws InconsistentJsonException {
 		return DeliverTransactionMessages.of(groupId, transaction.unmap(), getId());
 	}
 

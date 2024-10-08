@@ -18,6 +18,7 @@ package io.mokamint.node.internal.gson;
 
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Transaction;
@@ -37,7 +38,12 @@ public abstract class TransactionJson implements JsonRepresentation<Transaction>
 	}
 
 	@Override
-	public Transaction unmap() throws Base64ConversionException {
-		return Transactions.of(Base64.fromBase64String(bytes));
+	public Transaction unmap() throws InconsistentJsonException {
+		try {
+			return Transactions.of(Base64.fromBase64String(bytes));
+		}
+		catch (Base64ConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

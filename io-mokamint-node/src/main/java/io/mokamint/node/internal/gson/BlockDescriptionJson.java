@@ -29,6 +29,7 @@ import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.BlockDescription;
@@ -72,14 +73,19 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	}
 
 	@Override
-	public BlockDescription unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, Base58ConversionException {
-		if (startDateTimeUTC == null)
-			return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
-		else {
-			var signature = SignatureAlgorithms.of(signatureForBlocks);
+	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
+		try {
+			if (startDateTimeUTC == null)
+				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
+			else {
+				var signature = SignatureAlgorithms.of(signatureForBlocks);
 
-			return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
-				acceleration, signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
+				return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
+						acceleration, signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
+			}
+		}
+		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException e) {
+			throw new InconsistentJsonException(e);
 		}
 	}
 }

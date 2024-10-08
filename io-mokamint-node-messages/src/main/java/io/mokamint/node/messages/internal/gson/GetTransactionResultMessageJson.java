@@ -18,8 +18,8 @@ package io.mokamint.node.messages.internal.gson;
 
 import java.util.Optional;
 
-import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
@@ -37,7 +37,7 @@ public abstract class GetTransactionResultMessageJson extends AbstractRpcMessage
 	}
 
 	@Override
-	public GetTransactionResultMessage unmap() throws Base64ConversionException {
+	public GetTransactionResultMessage unmap() throws InconsistentJsonException {
 		return GetTransactionResultMessages.of(Optional.ofNullable(transaction == null ? null : transaction.unmap()), getId());
 	}
 

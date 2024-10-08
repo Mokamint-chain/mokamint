@@ -25,6 +25,7 @@ import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
@@ -42,7 +43,7 @@ public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRe
 	}
 
 	@Override
-	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException, InvalidKeyException, Base58ConversionException {
+	public GetBlockResultMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException, InvalidKeySpecException, HexConversionException, Base64ConversionException, InvalidKeyException, Base58ConversionException {
 		return GetBlockResultMessages.of(Optional.ofNullable(block == null ? null : block.unmap()), getId());
 	}
 
