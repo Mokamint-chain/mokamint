@@ -24,6 +24,7 @@ import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
@@ -41,7 +42,7 @@ public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepr
 	}
 
 	@Override
-	public WhisperBlockMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, Base64ConversionException, InvalidKeyException, Base58ConversionException {
+	public WhisperBlockMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException, InvalidKeySpecException, HexConversionException, Base64ConversionException, InvalidKeyException, Base58ConversionException {
 		return WhisperBlockMessages.of(block.unmap(), getId());
 	}
 

@@ -23,6 +23,7 @@ import java.security.spec.InvalidKeySpecException;
 import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.nonce.Deadlines;
@@ -42,7 +43,7 @@ public abstract class EndBlockMessageJson extends AbstractRpcMessageJsonRepresen
 	}
 
 	@Override
-	public EndBlockMessage unmap() throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IllegalArgumentException, HexConversionException, Base58ConversionException {
+	public EndBlockMessage unmap() throws InvalidKeyException, NoSuchAlgorithmException, InconsistentJsonException, InvalidKeySpecException, IllegalArgumentException, HexConversionException, Base58ConversionException {
 		return EndBlockMessages.of(groupId, deadline.unmap(), getId());
 	}
 

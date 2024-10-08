@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.gson;
 
-import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.node.Transactions;
@@ -35,7 +35,7 @@ public abstract class GetPriorityMessageJson extends AbstractRpcMessageJsonRepre
 	}
 
 	@Override
-	public GetPriorityMessage unmap() throws Base64ConversionException {
+	public GetPriorityMessage unmap() throws InconsistentJsonException {
 		return GetPriorityMessages.of(transaction.unmap(), getId());
 	}
 
