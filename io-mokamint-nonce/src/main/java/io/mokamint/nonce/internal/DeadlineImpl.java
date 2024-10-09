@@ -52,7 +52,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final int scoopNumber;
 	private final byte[] data;
 	private final HashingAlgorithm hashing;
-	private final byte[] signature;
+	private final byte[] signature;  // TODO: do we really need to sign deadlines?
 
 	private final static BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 

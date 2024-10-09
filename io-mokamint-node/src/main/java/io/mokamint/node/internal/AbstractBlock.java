@@ -280,7 +280,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private BigInteger computePower(Deadline deadline, HashingAlgorithm hashingForDeadlines) {
 		byte[] valueAsBytes = deadline.getValue();
 		var value = new BigInteger(1, valueAsBytes);
-		return description.getPower().add(BigInteger.TWO.shiftLeft(hashingForDeadlines.length() * 8).divide(value.add(BigInteger.ONE)));
+		return description.getPower().add(BigInteger.TWO.shiftLeft(hashingForDeadlines.length() * 8).divide(value.add(BigInteger.ONE))); // TODO: TWO should be ONE
 	}
 
 	private long computeTotalWaitingTime(long waitingTime) {
@@ -305,7 +305,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		var oldAcceleration = description.getAcceleration();
 		var delta = oldAcceleration
 			.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
-			.divide(BigInteger.valueOf(targetBlockCreationTime))
+			.divide(BigInteger.valueOf(targetBlockCreationTime)) // TODO: I would stop here
 			.subtract(oldAcceleration);
 	
 		var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
