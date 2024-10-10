@@ -34,6 +34,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
@@ -49,9 +50,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final Prolog prolog;
 	private final long progressive;
 	private final byte[] value;
-	private final int scoopNumber;
-	private final byte[] generationSignature;
-	private final HashingAlgorithm hashing;
+	private final Challenge challenge;
 	private final byte[] signature;  // TODO: do we really need to sign deadlines?
 
 	private final static BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
@@ -62,25 +61,21 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @param prolog the prolog of the nonce of the deadline
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
-	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
-	 * @param generationSignature the generation signature used to compute the deadline
-	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
+	 * @param challenge the challenge the deadline responds to
 	 * @param privateKey the private key that will be used to sign the deadline; it must match the
 	 *                   public key contained in the prolog
 	 * @return the deadline
 	 * @throws SignatureException if the signature of the deadline failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public DeadlineImpl(HashingAlgorithm hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] generationSignature, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(privateKey, "privateKey cannot be null");
 
-		this.hashing = hashing;
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
-		this.scoopNumber = scoopNumber;
-		this.generationSignature = generationSignature;
+		this.challenge = challenge;
 		this.signature = prolog.getSignatureForDeadlines().getSigner(privateKey, DeadlineImpl::toByteArrayWithoutSignature).sign(this);
 
 		verify();
@@ -92,21 +87,16 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @param prolog the prolog of the nonce of the deadline
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
-	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
-	 * @param generationSignature the generation signature used to compute the deadline
-	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
-	 * @param privateKey the private key that will be used to sign the deadline; it must match the
-	 *                   public key contained in the prolog
+	 * @param challenge the challenge the deadline responds to
+	 * @param signature the signature of the deadline with the private key corresponding to the public key contained in the prolog
 	 * @return the deadline
 	 * @throws IllegalArgumentException if some argument is illegal
 	 */
-	public DeadlineImpl(HashingAlgorithm hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] generationSignature, byte[] signature) throws IllegalArgumentException {
-		this.hashing = hashing;
+	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException {
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
-		this.scoopNumber = scoopNumber;
-		this.generationSignature = generationSignature;
+		this.challenge = challenge;
 		this.signature = signature.clone();
 
 		verify();
@@ -120,12 +110,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		this.hashing = HashingAlgorithms.of(context.readStringUnshared());
+		// TODO: possibly make challenges marshallable
+		var hashing = HashingAlgorithms.of(context.readStringUnshared());
 		this.prolog = Prologs.from(context);
 		this.progressive = context.readLong();
 		this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
-		this.scoopNumber = context.readInt();
-		this.generationSignature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's generation signature length");
+		var scoopNumber = context.readInt();
+		var generationSignature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's generation signature length");
+		this.challenge = Challenges.of(scoopNumber, generationSignature, hashing);
 		this.signature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's signature length");
 
 		try {
@@ -145,18 +137,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private void verify() throws IllegalArgumentException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(value, "value cannot be null");
-		Objects.requireNonNull(generationSignature, "generationSignature cannot be null");
-		Objects.requireNonNull(hashing, "hashing cannot be null");
+		Objects.requireNonNull(challenge, "challenge cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
 	
-		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
-			throw new IllegalArgumentException("Illegal scoopNumber: it must be between 0 and " + MAX_SCOOP_NUMBER);
-	
-		if (value.length != hashing.length())
-			throw new IllegalArgumentException("Illegal deadline value: expected an array of length " + hashing.length() + " rather than " + value.length);
+		if (value.length != challenge.getHashing().length())
+			throw new IllegalArgumentException("Illegal deadline value: expected an array of length " + challenge.getHashing().length() + " rather than " + value.length);
 
 		try {
 			if (!prolog.getSignatureForDeadlines().getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
@@ -174,17 +162,20 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	public boolean equals(Object other) {
 		return other instanceof Deadline otherAsDeadline &&
 			progressive == otherAsDeadline.getProgressive() &&
-			scoopNumber == otherAsDeadline.getScoopNumber() &&
+			challenge.equals(otherAsDeadline.getChallenge()) &&
 			Arrays.equals(value, otherAsDeadline.getValue()) &&
 			prolog.equals(otherAsDeadline.getProlog()) &&
-			Arrays.equals(generationSignature, otherAsDeadline.getGenerationSignature()) &&
-			hashing.equals(otherAsDeadline.getHashing()) &&
 			Arrays.equals(signature, otherAsDeadline.getSignature());
 	}
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(generationSignature);
+		return challenge.hashCode();
+	}
+
+	@Override
+	public Challenge getChallenge() {
+		return challenge;
 	}
 
 	@Override
@@ -241,17 +232,17 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public int getScoopNumber() {
-		return scoopNumber;
+		return challenge.getScoopNumber();
 	}
 
 	@Override
 	public byte[] getGenerationSignature() {
-		return generationSignature.clone();
+		return challenge.getGenerationSignature();
 	}
 
 	@Override
 	public HashingAlgorithm getHashing() {
-		return hashing;
+		return challenge.getHashing();
 	}
 
 	@Override
@@ -259,45 +250,39 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		return signature.clone();
 	}
 
+	// TODO: maybe move inside Challenge ?
 	@Override
-	public <E extends Exception> void matchesOrThrow(Challenge description, Function<String, E> exceptionSupplier) throws E {
-		if (scoopNumber != description.getScoopNumber())
-			throw exceptionSupplier.apply("Scoop number mismatch (expected " + description.getScoopNumber() + " but found " + scoopNumber + ")");
+	public <E extends Exception> void matchesOrThrow(Challenge challenge, Function<String, E> exceptionSupplier) throws E {
+		if (this.challenge.getScoopNumber() != challenge.getScoopNumber())
+			throw exceptionSupplier.apply("Scoop number mismatch (expected " + challenge.getScoopNumber() + " but found " + this.challenge.getScoopNumber() + ")");
 
-		if (!Arrays.equals(generationSignature, description.getGenerationSignature()))
+		if (!Arrays.equals(this.challenge.getGenerationSignature(), challenge.getGenerationSignature()))
 			throw exceptionSupplier.apply("Generation signature mismatch");
 
-		if (!hashing.equals(description.getHashing()))
+		if (!this.challenge.getHashing().equals(challenge.getHashing()))
 			throw exceptionSupplier.apply("Hashing algorithm mismatch");
 	}
 
 	@Override
 	public boolean isValid() {
-		return Arrays.equals(value, new NonceImpl(prolog, progressive, hashing).getValueFor(this));
+		return Arrays.equals(value, new NonceImpl(prolog, progressive, challenge.getHashing()).getValueFor(this));
 	}
 
 	@Override
 	public String toString() {
-		return "prolog: { " + prolog + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(generationSignature)
-			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing
-			+ ", signature: " + Hex.toHexString(signature);
+		return "prolog: { " + prolog + " }, progressive: " + progressive + ", challenge : { " + challenge + " }, value: " + Hex.toHexString(value) + ", signature: " + Hex.toHexString(signature);
 	}
 
 	@Override
 	public String toStringSanitized() {
-		var trimmedData = new byte[Math.min(256, generationSignature.length)];
-		System.arraycopy(generationSignature, 0, trimmedData, 0, trimmedData.length);
 		var trimmedSignature = new byte[Math.min(256, signature.length)];
 		System.arraycopy(signature, 0, trimmedSignature, 0, trimmedSignature.length);
-		// no risk with the value, since its length is bound to the length of the hashing algorithm
-		return "prolog: { " + prolog.toStringSanitized() + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(trimmedData)
-			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing
-			+ ", signature: " + Hex.toHexString(trimmedSignature);
+		// the length of the value is fixed, so no problem with it
+		return "prolog: { " + prolog.toStringSanitized() + " }, progressive: " + progressive + ", challenge : { " + challenge.toStringSanitized() + " }, value: " + Hex.toHexString(value) + ", signature: " + Hex.toHexString(trimmedSignature);
 	}
 
 	/**
-	 * Yields a marshalling of this object into a byte array, without considering
-	 * its signature.
+	 * Yields a marshalling of this object into a byte array, without considering its signature.
 	 * 
 	 * @return the marshalled bytes
 	 */
@@ -320,13 +305,13 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws IOException if marshalling fails
 	 */
 	private void intoWithoutSignature(MarshallingContext context) throws IOException {
-		context.writeStringUnshared(hashing.getName());
+		context.writeStringUnshared(challenge.getHashing().getName());
 		prolog.into(context);
 		context.writeLong(progressive);
 		// we do not write value.length, since it coincides with hashing.length()
 		context.writeBytes(value);
-		context.writeInt(scoopNumber);
-		context.writeLengthAndBytes(generationSignature);
+		context.writeInt(challenge.getScoopNumber());
+		context.writeLengthAndBytes(challenge.getGenerationSignature());
 	}
 
 	@Override

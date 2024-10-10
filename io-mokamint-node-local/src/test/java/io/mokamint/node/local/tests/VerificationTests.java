@@ -67,6 +67,7 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Blockchain;
 import io.mokamint.node.local.internal.VerificationException;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
@@ -176,7 +177,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
-			var deadline = Deadlines.of(prolog, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines, plotPrivateKey);
+			var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines), plotPrivateKey);
 			byte[] previous = genesis.getHash(hashingForBlocks);
 			var block = Blocks.of(BlockDescriptions.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous), Stream.empty(), stateId, nodePrivateKey);
 
@@ -347,7 +348,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 			// we replace the expected deadline
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-				(deadline.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, deadline.getGenerationSignature(), deadline.getHashing(), plotPrivateKey);
+				Challenges.of((deadline.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, deadline.getGenerationSignature(), deadline.getHashing()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -511,7 +512,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var modifiedData = deadline.getGenerationSignature();
 			// blocks' deadlines have a non-empty generation signature array
 			modifiedData[0]++;
-			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), deadline.getScoopNumber(), modifiedData, deadline.getHashing(), plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(deadline.getScoopNumber(), modifiedData, deadline.getHashing()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -538,7 +539,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			// we replace the expected deadline
 			var sha256 = HashingAlgorithms.sha256();
 			var otherAlgorithm = deadline.getHashing().equals(sha256) ? HashingAlgorithms.shabal256() : sha256;
-			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), deadline.getScoopNumber(), deadline.getGenerationSignature(), otherAlgorithm, plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(deadline.getScoopNumber(), deadline.getGenerationSignature(), otherAlgorithm), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -565,8 +566,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			// we create a different prolog
 			var modifiedProlog = Prologs.of(prolog.getChainId() + "+", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 					prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
-			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
-					deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(), plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(), deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 					modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -598,8 +598,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var newKeyPair = newSignature.getKeyPair();
 			var modifiedProlog = Prologs.of(prolog.getChainId(), newSignature, newKeyPair.getPublic(),
 					prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
-			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
-					deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(), plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(), deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 					modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, newKeyPair.getPrivate());
@@ -631,8 +630,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var newKeyPair = newSignature.getKeyPair();
 			var modifiedProlog = Prologs.of(prolog.getChainId(), prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 					newSignature, newKeyPair.getPublic(), prolog.getExtra());
-			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(),
-					deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(), newKeyPair.getPrivate());
+			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(), deadline.getChallenge(), newKeyPair.getPrivate());
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 					modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -682,8 +680,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var expected = genesis.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), hashingForDeadlines);
 
 			// we make the deadline invalid by changing its progressive
-			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive() + 1, deadline.getValue(),
-					deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(), plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive() + 1, deadline.getValue(), deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 					modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -710,8 +707,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			// we make the deadline invalid by changing its value (it is not empty since it is a hash)
 			var value = deadline.getValue();
 			value[0]++;
-			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), value,
-					deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(), plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), value, deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 					modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);

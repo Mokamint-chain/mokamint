@@ -80,7 +80,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber, data, shabal256, plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256), plotKeyPair.getPrivate());
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
@@ -100,9 +100,9 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256();
-		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
+		var generationSignature = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
-		var description = Challenges.of(scoopNumber, data, shabal256);
+		var challenge = Challenges.of(scoopNumber, generationSignature, shabal256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -110,7 +110,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, scoopNumber + 1, data, shabal256, plotKeyPair.getPrivate()); // <-- +1
+		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber + 1, generationSignature, shabal256), plotKeyPair.getPrivate()); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
@@ -118,7 +118,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		};
 
 		try (var remote = RemoteMiners.of(8025, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
-			remote.requestDeadline(description, onDeadlineReceived);
+			remote.requestDeadline(challenge, onDeadlineReceived);
 			client.send(deadline);
 			assertFalse(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}

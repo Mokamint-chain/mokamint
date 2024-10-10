@@ -186,7 +186,7 @@ public class EventsTests extends AbstractLoggedTests {
 					var illegalDeadline = Deadlines.of(
 							deadline.getProlog(),
 							Math.abs(deadline.getProgressive() + 1), deadline.getValue(),
-							deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(),
+							deadline.getChallenge(),
 							plotKeys.getPrivate());
 
 					onDeadlineComputed.accept(illegalDeadline);
@@ -298,8 +298,7 @@ public class EventsTests extends AbstractLoggedTests {
 							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 							prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra()),
 							deadline.getProgressive(), deadline.getValue(),
-							deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(),
-							plotKeys.getPrivate());
+							deadline.getChallenge(), plotKeys.getPrivate());
 
 					onDeadlineComputed.accept(illegalDeadline);
 				}

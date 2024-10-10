@@ -35,12 +35,12 @@ public class ChallengeImpl implements Challenge {
 	private final byte[] generationSignature;
 	private final HashingAlgorithm hashing;
 
-	public ChallengeImpl(int scoopNumber, byte[] data, HashingAlgorithm hashing) {
+	public ChallengeImpl(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashing) {
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
 		this.scoopNumber = scoopNumber;
-		this.generationSignature = Objects.requireNonNull(data, "generation signature cannot be null");
+		this.generationSignature = Objects.requireNonNull(generationSignature, "generation signature cannot be null");
 		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null");
 	}
 
@@ -80,5 +80,13 @@ public class ChallengeImpl implements Challenge {
 	@Override
 	public String toString() {
 		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(generationSignature) + ", hashing: " + hashing;
+	}
+
+	@Override
+	public String toStringSanitized() {
+		var trimmedGenerationSignature = new byte[Math.min(256, generationSignature.length)];
+		System.arraycopy(generationSignature, 0, trimmedGenerationSignature, 0, trimmedGenerationSignature.length);
+
+		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(trimmedGenerationSignature) + ", hashing: " + hashing;
 	}
 }

@@ -50,11 +50,12 @@ import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.UnmarshallingContexts;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
 
@@ -347,7 +348,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) throws IOException, InvalidKeyException, SignatureException {
-			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), scoopNumber, data, hashing, privateKey);
+			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), Challenges.of(scoopNumber, data, hashing), privateKey);
 		}
 
 		/**

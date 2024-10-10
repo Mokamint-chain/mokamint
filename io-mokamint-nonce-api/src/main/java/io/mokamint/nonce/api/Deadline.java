@@ -59,6 +59,13 @@ public interface Deadline extends Challenge, Marshallable {
 	byte[] getValue();
 
 	/**
+	 * Yields the challenge this deadline responds to.
+	 * 
+	 * @return the challenge this deadline responds to
+	 */
+	Challenge getChallenge();
+
+	/**
 	 * The signature of the deadline. This has been computed with the
 	 * private key corresponding to {@link Prolog#getPublicKeyForSigningDeadlines()}
 	 * in the prolog.
@@ -123,7 +130,7 @@ public interface Deadline extends Challenge, Marshallable {
 	 * A sanitized version of {@link #toString()}. It imposed a maximal length to the data reported
 	 * in the resulting string. This is important if the deadline comes from the network,
 	 * since it might contain arbitrarily long strings that might, for instance, pollute the logs.
-	 * For typical deadlines, this usually coincides with {@link #toString()}.
+	 * For most deadlines, this coincides with {@link #toString()}.
 	 * 
 	 * @return the sanitized string
 	 */

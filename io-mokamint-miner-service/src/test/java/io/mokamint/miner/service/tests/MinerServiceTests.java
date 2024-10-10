@@ -89,7 +89,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256, plotKeys.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
 
 		var miner = new Miner() {
 
@@ -131,8 +131,8 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeys = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
-		var deadline1 = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256, plotKeys.getPrivate());
-		var deadline2 = Deadlines.of(prolog, 43L, value, 11, new byte[] { 1, 2, 3 }, shabal256, plotKeys.getPrivate());
+		var deadline1 = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
+		var deadline2 = Deadlines.of(prolog, 43L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
 		var delay = 2000L;
 
 		var miner = new Miner() {
@@ -183,7 +183,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeys = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 42L, value, 11, new byte[] { 1, 2, 3 }, shabal256, plotKeys.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
 		long delay = 2000;
 
 		var miner = new Miner() {

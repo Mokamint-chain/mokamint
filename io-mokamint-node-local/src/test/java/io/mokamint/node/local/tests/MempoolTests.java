@@ -63,6 +63,7 @@ import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.VerificationException;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.DeadlineValidityCheckException;
@@ -171,7 +172,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
-			var deadline = Deadlines.of(PROLOG, 13, value, 11, new byte[] { 90, 91, 92 }, hashingForDeadlines, plotPrivateKey);
+			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines), plotPrivateKey);
 			var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
 			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious), Stream.empty(), stateHash, privateKey);
 
