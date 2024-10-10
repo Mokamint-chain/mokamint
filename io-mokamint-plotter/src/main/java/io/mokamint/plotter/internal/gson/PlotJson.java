@@ -18,13 +18,10 @@ package io.mokamint.plotter.internal.gson;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
-import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.Plots;
@@ -47,7 +44,7 @@ public abstract class PlotJson implements JsonRepresentation<Plot> {
 	}
 
 	@Override
-	public Plot unmap() throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IOException, HexConversionException, Base58ConversionException {
+	public Plot unmap() throws InconsistentJsonException, NoSuchAlgorithmException, IOException {
 		return Plots.create(Files.createTempFile("tmp", ".plot"), prolog.unmap(), start, length, HashingAlgorithms.of(hashing), __ -> {});
 	}
 }

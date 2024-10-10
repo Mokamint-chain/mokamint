@@ -29,10 +29,10 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.DeadlineValidityCheck;
 import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
@@ -99,7 +99,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
+	public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
 		requests.add(description, onDeadlineComputed);
 
 		LOGGER.info(logPrefix + "requesting " + description + " to " + sessions.size() + " open sessions");
@@ -109,7 +109,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			.forEach(session -> sendDescription(session, description));
 	}
 
-	private void sendDescription(Session session, DeadlineDescription description) {
+	private void sendDescription(Session session, Challenge description) {
 		try {
 			sendObjectAsync(session, description);
 		}
@@ -197,7 +197,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	    }
 
 		private static ServerEndpointConfig config(RemoteMinerImpl server) {
-			return simpleConfig(server, RemoteMinerEndpoint.class, "/", Deadlines.Decoder.class, DeadlineDescriptions.Encoder.class);
+			return simpleConfig(server, RemoteMinerEndpoint.class, "/", Deadlines.Decoder.class, Challenges.Encoder.class);
 		}
 	}
 }

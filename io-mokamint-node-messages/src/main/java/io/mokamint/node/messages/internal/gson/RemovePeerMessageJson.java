@@ -16,9 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.net.URISyntaxException;
-
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.api.RemovePeerMessage;
@@ -36,7 +35,7 @@ public abstract class RemovePeerMessageJson extends AbstractRpcMessageJsonRepres
 	}
 
 	@Override
-	public RemovePeerMessage unmap() throws URISyntaxException {
+	public RemovePeerMessage unmap() throws InconsistentJsonException {
 		return RemovePeerMessages.of(peer.unmap(), getId());
 	}
 

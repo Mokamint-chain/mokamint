@@ -16,9 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.net.URISyntaxException;
-
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.api.AddPeerMessage;
@@ -36,7 +35,7 @@ public abstract class AddPeerMessageJson extends AbstractRpcMessageJsonRepresent
 	}
 
 	@Override
-	public AddPeerMessage unmap() throws URISyntaxException {
+	public AddPeerMessage unmap() throws InconsistentJsonException {
 		return AddPeerMessages.of(peer.unmap(), getId());
 	}
 

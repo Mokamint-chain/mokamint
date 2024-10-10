@@ -25,6 +25,7 @@ import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
@@ -55,11 +56,16 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 	}
 
 	@Override
-	public Prolog unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, Base58ConversionException {
+	public Prolog unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		var nodeSignature = SignatureAlgorithms.of(nodeSignatureName);
 		var plotSignature = SignatureAlgorithms.of(plotSignatureName);
 
-		return Prologs.of(chainId, nodeSignature, nodeSignature.publicKeyFromEncoding(Base58.decode(nodePublicKey)),
-				plotSignature, plotSignature.publicKeyFromEncoding(Base58.decode(plotPublicKey)), Hex.fromHexString(extra));
+		try {
+			return Prologs.of(chainId, nodeSignature, nodeSignature.publicKeyFromEncoding(Base58.decode(nodePublicKey)),
+					plotSignature, plotSignature.publicKeyFromEncoding(Base58.decode(plotPublicKey)), Hex.fromHexString(extra));
+		}
+		catch (InvalidKeyException | InvalidKeySpecException | Base58ConversionException | HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

@@ -39,9 +39,9 @@ import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 
 /**
  * Shared code of all classes implementing blocks.
@@ -191,9 +191,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) { // TODO: rename into getNextChallenge()
+	public final Challenge getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) { // TODO: rename into getNextChallenge()
 		var nextGenerationSignature = description.getNextGenerationSignature(hashingForGenerations);
-		return DeadlineDescriptions.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
+		return Challenges.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
 	@Override

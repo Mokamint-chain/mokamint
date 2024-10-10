@@ -47,7 +47,7 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
@@ -101,7 +101,7 @@ public class BlockMiner {
 	/**
 	 * The description of the deadline required for the next block.
 	 */
-	private final DeadlineDescription description;
+	private final Challenge description;
 
 	/**
 	 * The best deadline computed so far. This is empty until a first deadline is found. Since more miners

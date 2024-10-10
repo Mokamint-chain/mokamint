@@ -17,12 +17,12 @@ limitations under the License.
 package io.mokamint.nonce.internal.gson;
 
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.nonce.DeadlineDescriptions;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.Challenges;
+import io.mokamint.nonce.api.Challenge;
 
-public class DeadlineDescriptionEncoder extends MappedEncoder<DeadlineDescription, DeadlineDescriptions.Json> {
+public class ChallengeEncoder extends MappedEncoder<Challenge, Challenges.Json> {
 
-	public DeadlineDescriptionEncoder() {
-		super(DeadlineDescriptions.Json::new);
+	public ChallengeEncoder() {
+		super(Challenges.Json::new);
 	}
 }

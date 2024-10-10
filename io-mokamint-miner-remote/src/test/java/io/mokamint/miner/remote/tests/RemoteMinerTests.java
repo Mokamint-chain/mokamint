@@ -36,11 +36,11 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.remote.RemoteMiners;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import jakarta.websocket.DeploymentException;
 
 public class RemoteMinerTests extends AbstractLoggedTests {
@@ -50,9 +50,9 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	public void remoteMinerForwardsToServices() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256();
-		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
 
-		Consumer<DeadlineDescription> onDeadlineDescriptionReceived = received -> {
+		Consumer<Challenge> onDeadlineDescriptionReceived = received -> {
 			if (description.equals(received))
 				semaphore.release();
 		};
@@ -75,7 +75,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 			value[pos] = (byte) pos;
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
-		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
+		var description = Challenges.of(scoopNumber, data, shabal256);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
 		var plotKeyPair = ed25519.getKeyPair();
@@ -102,7 +102,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var shabal256 = shabal256();
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
-		var description = DeadlineDescriptions.of(scoopNumber, data, shabal256);
+		var description = Challenges.of(scoopNumber, data, shabal256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -128,7 +128,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	@DisplayName("if a client has been closed, it does not receive descriptions anymore")
 	public void remoteMinerDoesNotForwardDescriptionToClosedClient() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
-		var description = DeadlineDescriptions.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256());
+		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256());
 
 		try (var remote = RemoteMiners.of(8025, _deadline -> {});
 			 var client = new TestClient(new URI("ws://localhost:8025"), _description -> semaphore.release())) {

@@ -22,10 +22,10 @@ import java.util.function.Consumer;
 
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -34,10 +34,10 @@ import jakarta.websocket.Session;
  * The implementation of a test websocket client that forwards deadlines.
  */
 public class TestClient extends AbstractWebSocketClient {
-	private final Consumer<DeadlineDescription> onDeadlineDescriptionReceived;
+	private final Consumer<Challenge> onDeadlineDescriptionReceived;
 	private final Session session;
 
-	public TestClient(URI uri, Consumer<DeadlineDescription> onDeadlineDescriptionReceived) throws DeploymentException, IOException {
+	public TestClient(URI uri, Consumer<Challenge> onDeadlineDescriptionReceived) throws DeploymentException, IOException {
 		this.onDeadlineDescriptionReceived = onDeadlineDescriptionReceived;
 		this.session = new MyEndpoint().deployAt(uri);
 	}
@@ -54,7 +54,7 @@ public class TestClient extends AbstractWebSocketClient {
 	private class MyEndpoint extends AbstractClientEndpoint<TestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, DeadlineDescriptions.Decoder.class, Deadlines.Encoder.class);
+			return deployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override

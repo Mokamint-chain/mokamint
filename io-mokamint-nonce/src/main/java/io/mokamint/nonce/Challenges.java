@@ -17,35 +17,35 @@ limitations under the License.
 package io.mokamint.nonce;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.nonce.api.DeadlineDescription;
-import io.mokamint.nonce.internal.DeadlineDescriptionImpl;
-import io.mokamint.nonce.internal.gson.DeadlineDescriptionDecoder;
-import io.mokamint.nonce.internal.gson.DeadlineDescriptionEncoder;
-import io.mokamint.nonce.internal.gson.DeadlineDescriptionJson;
+import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.internal.ChallengeImpl;
+import io.mokamint.nonce.internal.gson.ChallengeDecoder;
+import io.mokamint.nonce.internal.gson.ChallengeEncoder;
+import io.mokamint.nonce.internal.gson.ChallengeJson;
 
 /**
- * A provider of deadline descriptions.
+ * A provider of challenges.
  */
-public final class DeadlineDescriptions {
+public final class Challenges {
 
-	private DeadlineDescriptions() {}
+	private Challenges() {}
 
 	/**
-	 * Yields a deadline description.
+	 * Yields a challenge.
 	 * 
 	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
-	 * @param data the data used to compute the deadline
+	 * @param generationSignature the generation signature used to compute the deadline
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
-	 * @return the deadline description
+	 * @return the challenge
 	 */
-	public static DeadlineDescription of(int scoopNumber, byte[] data, HashingAlgorithm hashing) {
-		return new DeadlineDescriptionImpl(scoopNumber, data, hashing);
+	public static Challenge of(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashing) {
+		return new ChallengeImpl(scoopNumber, generationSignature, hashing);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends DeadlineDescriptionEncoder {
+	public static class Encoder extends ChallengeEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +56,7 @@ public final class DeadlineDescriptions {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends DeadlineDescriptionDecoder {
+	public static class Decoder extends ChallengeDecoder {
 
 		/**
 		 * Creates a new decoder.
@@ -67,7 +67,7 @@ public final class DeadlineDescriptions {
     /**
      * Json representation.
      */
-	public static class Json extends DeadlineDescriptionJson {
+	public static class Json extends ChallengeJson {
 
     	/**
     	 * Used by Gson.
@@ -75,12 +75,12 @@ public final class DeadlineDescriptions {
 		public Json() {}
 
 		/**
-    	 * Creates the Json representation for the given deadline description.
+    	 * Creates the Json representation for the given challenge.
     	 * 
-    	 * @param description the deadline description
+    	 * @param challenge the challenge
     	 */
-    	public Json(DeadlineDescription description) {
-    		super(description);
+    	public Json(Challenge challenge) {
+    		super(challenge);
     	}
     }
 }

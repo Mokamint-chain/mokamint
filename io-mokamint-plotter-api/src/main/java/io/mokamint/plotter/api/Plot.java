@@ -24,7 +24,7 @@ import java.security.SignatureException;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Prolog;
 
 /**
@@ -84,7 +84,7 @@ public interface Plot extends AutoCloseable {
 	 * @throws InvalidKeyException if {@code privateKey} is invalid
 	 * @throws SignatureException if the deadline could not be signed
 	 */
-	Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException;
+	Deadline getSmallestDeadline(Challenge description, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException;
 
 	/**
 	 * Determines if this plot is semantically equivalent to the {@code other}.

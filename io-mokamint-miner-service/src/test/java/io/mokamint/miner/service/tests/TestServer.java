@@ -24,10 +24,10 @@ import java.util.function.Consumer;
 
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -46,7 +46,7 @@ public class TestServer extends AbstractWebSocketServer {
 		startContainer("", port, MyEndpoint.config(this));
 	}
 
-	public void requestDeadline(DeadlineDescription description) throws TimeoutException, InterruptedException, IOException {
+	public void requestDeadline(Challenge description) throws TimeoutException, InterruptedException, IOException {
 		if (!latch.await(1, TimeUnit.SECONDS))
 			throw new TimeoutException();
 
@@ -56,7 +56,7 @@ public class TestServer extends AbstractWebSocketServer {
 	public static class MyEndpoint extends AbstractServerEndpoint<TestServer> {
 
 		private static ServerEndpointConfig config(TestServer server) {
-			return simpleConfig(server, MyEndpoint.class, "/", Deadlines.Decoder.class, DeadlineDescriptions.Encoder.class);
+			return simpleConfig(server, MyEndpoint.class, "/", Deadlines.Decoder.class, Challenges.Encoder.class);
 		}
 
 		@Override

@@ -18,6 +18,7 @@ package io.mokamint.node.internal.gson;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.TransactionAddress;
@@ -35,7 +36,12 @@ public abstract class TransactionAddressJson implements JsonRepresentation<Trans
 	}
 
 	@Override
-	public TransactionAddress unmap() throws HexConversionException {
-		return TransactionAddresses.of(Hex.fromHexString(blockHash), progressive);
+	public TransactionAddress unmap() throws InconsistentJsonException {
+		try {
+			return TransactionAddresses.of(Hex.fromHexString(blockHash), progressive);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

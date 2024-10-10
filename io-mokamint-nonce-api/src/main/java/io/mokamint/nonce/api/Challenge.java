@@ -20,11 +20,11 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 
 /**
- * The description of a deadline. This can be provided for instance to
- * a miner to describe the properties if the deadline one is looking for.
+ * The challenge to build a deadline. This can be provided for instance to
+ * a miner to describe the properties of the deadline one is looking for.
  */
 @Immutable
-public interface DeadlineDescription { // TODO: rename into Challenge
+public interface Challenge {
 
 	/**
 	 * Yields the number of the scoop considered to compute the deadline.
@@ -34,22 +34,21 @@ public interface DeadlineDescription { // TODO: rename into Challenge
 	int getScoopNumber();
 
 	/**
-	 * Yields the data used to compute the deadline.
+	 * Yields the generation signature used to compute the deadline.
 	 * 
-	 * @return the data
+	 * @return the generation signature
 	 */
-	byte[] getData(); // TODO: rename into getSignature()
+	byte[] getGenerationSignature();
 
 	/**
-	 * The hashing algorithm used for the plot file from which
-	 * this deadline has been generated.
+	 * The hashing algorithm used for generating the deadline.
 	 * 
 	 * @return the hashing algorithm
 	 */
 	HashingAlgorithm getHashing();
 
 	/**
-	 * Yields a string representation of this deadline description.
+	 * Yields a string representation of this challenge.
 	 * 
 	 * @return the string representation
 	 */

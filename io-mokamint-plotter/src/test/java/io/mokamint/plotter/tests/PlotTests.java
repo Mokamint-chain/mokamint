@@ -32,7 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
@@ -65,7 +65,7 @@ public class PlotTests extends AbstractLoggedTests {
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;
 		var hashing = HashingAlgorithms.shabal256();
-		var description = DeadlineDescriptions.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
+		var description = Challenges.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
 			Deadline deadline = plot.getSmallestDeadline(description, plotKeyPair.getPrivate());

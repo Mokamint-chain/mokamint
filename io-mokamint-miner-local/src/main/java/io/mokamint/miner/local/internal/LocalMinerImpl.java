@@ -30,7 +30,7 @@ import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 
@@ -78,7 +78,7 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
+	public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info(logPrefix + "received deadline request: " + description);
 
 		try {
@@ -105,7 +105,7 @@ public class LocalMinerImpl implements Miner {
 	 * @return the deadline, if any
 	 * @throws InterruptedException if the thread is interrupted while computing the smallest deadline
 	 */
-	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, DeadlineDescription description) throws InterruptedException {
+	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, Challenge description) throws InterruptedException {
 		try {
 			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(description, plotAndKeyPair.getKeyPair().getPrivate()));
 		}

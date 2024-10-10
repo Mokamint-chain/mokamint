@@ -27,10 +27,10 @@ import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.service.api.MinerService;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.CloseReason.CloseCodes;
 import jakarta.websocket.DeploymentException;
@@ -117,7 +117,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * 
 	 * @param description the description of the requested deadline
 	 */
-	private void requestDeadline(DeadlineDescription description) {
+	private void requestDeadline(Challenge description) {
 		if (!isClosed.get()) {
 			LOGGER.info("received deadline request: " + description + " from " + uri);
 			miner.requestDeadline(description, this::onDeadlineComputed);
@@ -146,7 +146,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	private class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, DeadlineDescriptions.Decoder.class, Deadlines.Encoder.class);
+			return deployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override

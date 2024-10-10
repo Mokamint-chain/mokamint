@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 
 /**
  * A list of requests still potentially to serve.
@@ -35,7 +35,7 @@ import io.mokamint.nonce.api.DeadlineDescription;
 public class ListOfMiningRequests {
 	
 	@GuardedBy("lock")
-	private final Deque<DeadlineDescription> descriptions = new LinkedList<>();
+	private final Deque<Challenge> descriptions = new LinkedList<>();
 
 	@GuardedBy("lock")
 	private final Deque<Consumer<Deadline>> actions = new LinkedList<>();
@@ -64,7 +64,7 @@ public class ListOfMiningRequests {
 	 * @param description the description of the requested deadline
 	 * @param action the action to perform when a corresponding deadline is found
 	 */
-	public void add(DeadlineDescription description, Consumer<Deadline> action) {
+	public void add(Challenge description, Consumer<Deadline> action) {
 		synchronized (lock) {
 			if (descriptions.size() == max) {
 				descriptions.removeFirst();
@@ -101,8 +101,8 @@ public class ListOfMiningRequests {
 	 * 
 	 * @param what the code to run
 	 */
-	public void forAllDescriptions(Consumer<DeadlineDescription> what) {
-		List<DeadlineDescription> copy;
+	public void forAllDescriptions(Consumer<Challenge> what) {
+		List<Challenge> copy;
 
 		synchronized (lock) {
 			copy = new ArrayList<>(descriptions);

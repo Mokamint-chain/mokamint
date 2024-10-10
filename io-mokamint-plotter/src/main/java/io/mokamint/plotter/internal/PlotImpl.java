@@ -54,7 +54,7 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
 
@@ -283,7 +283,7 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(DeadlineDescription description, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
+	public Deadline getSmallestDeadline(Challenge description, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
 		if (!description.getHashing().equals(hashing))
 			throw new IllegalArgumentException("The deadline description and the plot file use different hashing algorithms");
 
@@ -331,9 +331,9 @@ public class PlotImpl implements Plot {
 		private final Hasher<byte[]> hasher;
 		private final PrivateKey privateKey;
 
-		private SmallestDeadlineFinder(DeadlineDescription description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
+		private SmallestDeadlineFinder(Challenge description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
 			this.scoopNumber = description.getScoopNumber();
-			this.data = description.getData();
+			this.data = description.getGenerationSignature();
 			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
 			this.deadline = CheckSupplier.check(IOException.class, InvalidKeyException.class, SignatureException.class, () ->

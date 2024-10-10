@@ -23,38 +23,43 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 
 /**
- * Implementation of a deadline description. It reports the information needed
- * to compute a deadline from a plot file.
+ * Implementation of a challenge. It reports the information needed
+ * to compute a deadline for this challenge.
  */
 @Immutable
-public class DeadlineDescriptionImpl implements DeadlineDescription {
+public class ChallengeImpl implements Challenge {
 	private final int scoopNumber;
-	private final byte[] data;
+	private final byte[] generationSignature;
 	private final HashingAlgorithm hashing;
 
-	public DeadlineDescriptionImpl(int scoopNumber, byte[] data, HashingAlgorithm hashing) {
+	public ChallengeImpl(int scoopNumber, byte[] data, HashingAlgorithm hashing) {
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
 		this.scoopNumber = scoopNumber;
-		this.data = Objects.requireNonNull(data, "data cannot be null");
+		this.generationSignature = Objects.requireNonNull(data, "generation signature cannot be null");
 		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null");
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof DeadlineDescription otherAsDeadlineDescription &&
-			scoopNumber == otherAsDeadlineDescription.getScoopNumber() &&
-			Arrays.equals(data, otherAsDeadlineDescription.getData()) &&
-			hashing.equals(otherAsDeadlineDescription.getHashing());
+		if (other instanceof ChallengeImpl ci) // optimization
+			return scoopNumber == ci.getScoopNumber() &&
+				Arrays.equals(generationSignature, ci.generationSignature) &&
+				hashing.equals(ci.getHashing());
+		else
+			return other instanceof Challenge otherAsChallenge &&
+				scoopNumber == otherAsChallenge.getScoopNumber() &&
+				Arrays.equals(generationSignature, otherAsChallenge.getGenerationSignature()) &&
+				hashing.equals(otherAsChallenge.getHashing());
 	}
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(data) ^ hashing.hashCode();
+		return scoopNumber ^ Arrays.hashCode(generationSignature) ^ hashing.hashCode();
 	}
 
 	@Override
@@ -63,8 +68,8 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 	}
 
 	@Override
-	public byte[] getData() {
-		return data.clone();
+	public byte[] getGenerationSignature() {
+		return generationSignature.clone();
 	}
 
 	@Override
@@ -74,6 +79,6 @@ public class DeadlineDescriptionImpl implements DeadlineDescription {
 
 	@Override
 	public String toString() {
-		return "scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data) + ", hashing: " + hashing;
+		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(generationSignature) + ", hashing: " + hashing;
 	}
 }

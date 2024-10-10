@@ -28,7 +28,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * by the lexicographical ordering of their values.
  */
 @Immutable
-public interface Deadline extends DeadlineDescription, Marshallable {
+public interface Deadline extends Challenge, Marshallable {
 
 	/**
 	 * The maximal scoop number in a deadline (inclusive).
@@ -101,7 +101,7 @@ public interface Deadline extends DeadlineDescription, Marshallable {
 	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
 	 * @throws E if the match fails
 	 */
-	<E extends Exception> void matchesOrThrow(DeadlineDescription description, Function<String, E> exceptionSupplier) throws E;
+	<E extends Exception> void matchesOrThrow(Challenge description, Function<String, E> exceptionSupplier) throws E;
 
 	/**
 	 * Determines if this deadline is valid, that is, its corresponding nonce

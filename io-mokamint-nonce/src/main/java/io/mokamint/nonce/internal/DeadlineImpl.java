@@ -36,7 +36,7 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Prolog;
 
 /**
@@ -50,7 +50,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final long progressive;
 	private final byte[] value;
 	private final int scoopNumber;
-	private final byte[] data;
+	private final byte[] generationSignature;
 	private final HashingAlgorithm hashing;
 	private final byte[] signature;  // TODO: do we really need to sign deadlines?
 
@@ -63,7 +63,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
 	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
-	 * @param data the data used to compute the deadline
+	 * @param generationSignature the generation signature used to compute the deadline
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @param privateKey the private key that will be used to sign the deadline; it must match the
 	 *                   public key contained in the prolog
@@ -71,7 +71,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws SignatureException if the signature of the deadline failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public DeadlineImpl(HashingAlgorithm hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	public DeadlineImpl(HashingAlgorithm hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] generationSignature, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(privateKey, "privateKey cannot be null");
 
@@ -80,7 +80,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		this.progressive = progressive;
 		this.value = value;
 		this.scoopNumber = scoopNumber;
-		this.data = data;
+		this.generationSignature = generationSignature;
 		this.signature = prolog.getSignatureForDeadlines().getSigner(privateKey, DeadlineImpl::toByteArrayWithoutSignature).sign(this);
 
 		verify();
@@ -93,20 +93,20 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
 	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
-	 * @param data the data used to compute the deadline
+	 * @param generationSignature the generation signature used to compute the deadline
 	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
 	 * @param privateKey the private key that will be used to sign the deadline; it must match the
 	 *                   public key contained in the prolog
 	 * @return the deadline
 	 * @throws IllegalArgumentException if some argument is illegal
 	 */
-	public DeadlineImpl(HashingAlgorithm hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, byte[] signature) throws IllegalArgumentException {
+	public DeadlineImpl(HashingAlgorithm hashing, Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] generationSignature, byte[] signature) throws IllegalArgumentException {
 		this.hashing = hashing;
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
 		this.scoopNumber = scoopNumber;
-		this.data = data;
+		this.generationSignature = generationSignature;
 		this.signature = signature.clone();
 
 		verify();
@@ -125,7 +125,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		this.progressive = context.readLong();
 		this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
 		this.scoopNumber = context.readInt();
-		this.data = context.readBytes(context.readCompactInt(), "Mismatch in deadline's data length");
+		this.generationSignature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's generation signature length");
 		this.signature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's signature length");
 
 		try {
@@ -145,7 +145,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private void verify() throws IllegalArgumentException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(value, "value cannot be null");
-		Objects.requireNonNull(data, "data cannot be null");
+		Objects.requireNonNull(generationSignature, "generationSignature cannot be null");
 		Objects.requireNonNull(hashing, "hashing cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
 	
@@ -177,14 +177,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			scoopNumber == otherAsDeadline.getScoopNumber() &&
 			Arrays.equals(value, otherAsDeadline.getValue()) &&
 			prolog.equals(otherAsDeadline.getProlog()) &&
-			Arrays.equals(data, otherAsDeadline.getData()) &&
+			Arrays.equals(generationSignature, otherAsDeadline.getGenerationSignature()) &&
 			hashing.equals(otherAsDeadline.getHashing()) &&
 			Arrays.equals(signature, otherAsDeadline.getSignature());
 	}
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(data);
+		return scoopNumber ^ Arrays.hashCode(generationSignature);
 	}
 
 	@Override
@@ -245,8 +245,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public byte[] getData() {
-		return data.clone();
+	public byte[] getGenerationSignature() {
+		return generationSignature.clone();
 	}
 
 	@Override
@@ -260,12 +260,12 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public <E extends Exception> void matchesOrThrow(DeadlineDescription description, Function<String, E> exceptionSupplier) throws E {
+	public <E extends Exception> void matchesOrThrow(Challenge description, Function<String, E> exceptionSupplier) throws E {
 		if (scoopNumber != description.getScoopNumber())
 			throw exceptionSupplier.apply("Scoop number mismatch (expected " + description.getScoopNumber() + " but found " + scoopNumber + ")");
 
-		if (!Arrays.equals(data, description.getData()))
-			throw exceptionSupplier.apply("Data mismatch");
+		if (!Arrays.equals(generationSignature, description.getGenerationSignature()))
+			throw exceptionSupplier.apply("Generation signature mismatch");
 
 		if (!hashing.equals(description.getHashing()))
 			throw exceptionSupplier.apply("Hashing algorithm mismatch");
@@ -278,15 +278,15 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public String toString() {
-		return "prolog: { " + prolog + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(data)
+		return "prolog: { " + prolog + " }, scoopNumber: " + scoopNumber + ", data: " + Hex.toHexString(generationSignature)
 			+ ", nonce: " + progressive + ", value: " + Hex.toHexString(value) + ", hashing: " + hashing
 			+ ", signature: " + Hex.toHexString(signature);
 	}
 
 	@Override
 	public String toStringSanitized() {
-		var trimmedData = new byte[Math.min(256, data.length)];
-		System.arraycopy(data, 0, trimmedData, 0, trimmedData.length);
+		var trimmedData = new byte[Math.min(256, generationSignature.length)];
+		System.arraycopy(generationSignature, 0, trimmedData, 0, trimmedData.length);
 		var trimmedSignature = new byte[Math.min(256, signature.length)];
 		System.arraycopy(signature, 0, trimmedSignature, 0, trimmedSignature.length);
 		// no risk with the value, since its length is bound to the length of the hashing algorithm
@@ -326,7 +326,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		// we do not write value.length, since it coincides with hashing.length()
 		context.writeBytes(value);
 		context.writeInt(scoopNumber);
-		context.writeLengthAndBytes(data);
+		context.writeLengthAndBytes(generationSignature);
 	}
 
 	@Override

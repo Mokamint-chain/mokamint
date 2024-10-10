@@ -19,6 +19,7 @@ package io.mokamint.node.internal.gson;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
@@ -34,7 +35,12 @@ public abstract class PeerJson implements JsonRepresentation<Peer> {
 	}
 
 	@Override
-	public Peer unmap() throws URISyntaxException {
-		return Peers.of(new URI(uri));
+	public Peer unmap() throws InconsistentJsonException {
+		try {
+			return Peers.of(new URI(uri));
+		}
+		catch (URISyntaxException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

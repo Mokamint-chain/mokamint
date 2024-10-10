@@ -27,7 +27,7 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Nonce;
 import io.mokamint.nonce.api.Prolog;
 
@@ -88,8 +88,8 @@ public class NonceImpl implements Nonce {
 	 * @param description the description of requested deadline
 	 * @return the value
 	 */
-	byte[] getValueFor(DeadlineDescription description) {
-		byte[] data = description.getData();
+	byte[] getValueFor(Challenge description) {
+		byte[] data = description.getGenerationSignature();
 		int scoopNumber = description.getScoopNumber();
 		return hasher.hash(extractScoopAndConcat(scoopNumber, data));
 	}

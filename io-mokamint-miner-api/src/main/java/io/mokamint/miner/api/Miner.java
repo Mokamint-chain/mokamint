@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 
 /**
  * A miner in an object that computes deadlines on request.
@@ -41,7 +41,7 @@ public interface Miner extends AutoCloseable {
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
 	 */
-	void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed);
+	void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed);
 
 	/**
 	 * Closes the miner.

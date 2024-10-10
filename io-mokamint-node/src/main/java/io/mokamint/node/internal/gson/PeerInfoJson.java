@@ -16,8 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.net.URISyntaxException;
-
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
@@ -38,7 +37,7 @@ public abstract class PeerInfoJson implements JsonRepresentation<PeerInfo> {
 	}
 
 	@Override
-	public PeerInfo unmap() throws URISyntaxException {
+	public PeerInfo unmap() throws InconsistentJsonException {
 		return PeerInfos.of(peer.unmap(), points, connected);
 	}
 }

@@ -16,11 +16,8 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
-import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
@@ -52,7 +49,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 		this.progressive = deadline.getProgressive();
 		this.value = Hex.toHexString(deadline.getValue());
 		this.scoopNumber = deadline.getScoopNumber();
-		this.data = Hex.toHexString(deadline.getData());
+		this.data = Hex.toHexString(deadline.getGenerationSignature());
 		this.hashing = deadline.getHashing().getName();
 		this.signature = Hex.toHexString(deadline.getSignature());
 	}
@@ -63,7 +60,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 			return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber,
 				Hex.fromHexString(data), HashingAlgorithms.of(hashing), Hex.fromHexString(signature));
 		}
-		catch (IllegalArgumentException | InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException e) {
+		catch (NullPointerException | IllegalArgumentException | HexConversionException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

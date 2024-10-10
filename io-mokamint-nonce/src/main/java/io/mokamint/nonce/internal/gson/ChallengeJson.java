@@ -21,31 +21,37 @@ import java.security.NoSuchAlgorithmException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.nonce.DeadlineDescriptions;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.Challenges;
+import io.mokamint.nonce.api.Challenge;
 
 /**
- * The JSON representation of a {@link DeadlineDescription}.
+ * The JSON representation of a {@link Challenge}.
  */
-public abstract class DeadlineDescriptionJson implements JsonRepresentation<DeadlineDescription> {
+public abstract class ChallengeJson implements JsonRepresentation<Challenge> {
 	private int scoopNumber;
-	private String data;
+	private String generationSignature;
 	private String hashing;
 
 	/**
 	 * Used by Gson.
 	 */
-	protected DeadlineDescriptionJson() {}
+	protected ChallengeJson() {}
 
-	protected DeadlineDescriptionJson(DeadlineDescription description) {
+	protected ChallengeJson(Challenge description) {
 		this.scoopNumber = description.getScoopNumber();
-		this.data = Hex.toHexString(description.getData());
+		this.generationSignature = Hex.toHexString(description.getGenerationSignature());
 		this.hashing = description.getHashing().getName();
 	}
 
 	@Override
-	public DeadlineDescription unmap() throws NoSuchAlgorithmException, HexConversionException {
-		return DeadlineDescriptions.of(scoopNumber, Hex.fromHexString(data), HashingAlgorithms.of(hashing));
+	public Challenge unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
+		try {
+			return Challenges.of(scoopNumber, Hex.fromHexString(generationSignature), HashingAlgorithms.of(hashing));
+		}
+		catch (HexConversionException | IllegalArgumentException | NullPointerException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

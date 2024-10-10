@@ -24,7 +24,7 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 
 /**
  * A block of the Mokamint blockchain.
@@ -83,7 +83,7 @@ public interface Block extends Marshallable, Whisperable {
 	 * @param hashingForDeadlines the hashing algorithm used for the deadlines and the plot files
 	 * @return the description
 	 */
-	DeadlineDescription getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
+	Challenge getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
 
 	/**
 	 * Yields the description of the next block, assuming that it has the given deadline.

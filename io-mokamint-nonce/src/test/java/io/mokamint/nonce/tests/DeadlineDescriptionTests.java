@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.nonce.DeadlineDescriptions;
+import io.mokamint.nonce.Challenges;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
@@ -32,9 +32,9 @@ public class DeadlineDescriptionTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deadline descriptions are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeadlineDescriptions() throws EncodeException, DecodeException {
-		var deadlineDescription1 = DeadlineDescriptions.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256());
-		String encoded = new DeadlineDescriptions.Encoder().encode(deadlineDescription1);
-		var deadlineDescription2 = new DeadlineDescriptions.Decoder().decode(encoded);
+		var deadlineDescription1 = Challenges.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256());
+		String encoded = new Challenges.Encoder().encode(deadlineDescription1);
+		var deadlineDescription2 = new Challenges.Decoder().decode(encoded);
 		assertEquals(deadlineDescription1, deadlineDescription2);
 	}
 }

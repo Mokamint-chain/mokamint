@@ -58,7 +58,7 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineDescription;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -129,7 +129,7 @@ public class EventsTests extends AbstractLoggedTests {
 			byte[] deadlineValue; // = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 
 			@Override
-			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
+			public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
 				try {
 					Deadline deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
 					deadlineValue = deadline.getValue();
@@ -180,13 +180,13 @@ public class EventsTests extends AbstractLoggedTests {
 		var myMiner = new Miner() {
 	
 			@Override
-			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
+			public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
 				try {
 					var deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
 					var illegalDeadline = Deadlines.of(
 							deadline.getProlog(),
 							Math.abs(deadline.getProgressive() + 1), deadline.getValue(),
-							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(),
+							deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(),
 							plotKeys.getPrivate());
 
 					onDeadlineComputed.accept(illegalDeadline);
@@ -290,7 +290,7 @@ public class EventsTests extends AbstractLoggedTests {
 		var myMiner = new Miner() {
 
 			@Override
-			public void requestDeadline(DeadlineDescription description, Consumer<Deadline> onDeadlineComputed) {
+			public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
 				try {
 					var deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
 					var prolog = deadline.getProlog();
@@ -298,7 +298,7 @@ public class EventsTests extends AbstractLoggedTests {
 							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 							prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra()),
 							deadline.getProgressive(), deadline.getValue(),
-							deadline.getScoopNumber(), deadline.getData(), deadline.getHashing(),
+							deadline.getScoopNumber(), deadline.getGenerationSignature(), deadline.getHashing(),
 							plotKeys.getPrivate());
 
 					onDeadlineComputed.accept(illegalDeadline);
