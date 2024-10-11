@@ -58,18 +58,18 @@ public class PlotTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("the best deadline of a plot respects the description and is valid")
+	@DisplayName("the best deadline of a plot respects the challenge and is valid")
 	public void testDeadlineFromPlotIsValid(@TempDir Path dir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, InterruptedException {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;
 		var hashing = HashingAlgorithms.shabal256();
-		var description = Challenges.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
+		var challenge = Challenges.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
 
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
-			Deadline deadline = plot.getSmallestDeadline(description, plotKeyPair.getPrivate());
-			deadline.matchesOrThrow(description, IllegalArgumentException::new);
+			Deadline deadline = plot.getSmallestDeadline(challenge, plotKeyPair.getPrivate());
+			deadline.getChallenge().matchesOrThrow(challenge, IllegalArgumentException::new);
 			assertTrue(deadline.isValid());
 		}
 	}

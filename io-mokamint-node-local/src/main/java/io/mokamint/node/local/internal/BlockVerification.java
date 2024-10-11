@@ -148,7 +148,7 @@ public class BlockVerification {
 	 */
 	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, NodeException, InterruptedException, TimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
-		deadlineMatchesItsExpectedDescription();
+		deadlineMatchesItsExpectedChallenge();
 		deadlineHasValidProlog();
 		deadlineIsValid();
 		blockMatchesItsExpectedDescription(block);
@@ -197,13 +197,13 @@ public class BlockVerification {
 	}
 
 	/**
-	 * Checks if the deadline of {@link #block} matches its expected description.
+	 * Checks if the deadline of {@link #block} matches its expected challenge.
 	 * 
 	 * @throws VerificationException if that condition in violated
 	 */
-	private void deadlineMatchesItsExpectedDescription() throws VerificationException {
-		var description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
-		deadline.matchesOrThrow(description, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
+	private void deadlineMatchesItsExpectedChallenge() throws VerificationException {
+		var challenge = previous.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines());
+		deadline.getChallenge().matchesOrThrow(challenge, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
 	}
 
 	private static String toLowerInitial(String message) {

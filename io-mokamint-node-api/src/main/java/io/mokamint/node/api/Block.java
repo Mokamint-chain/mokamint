@@ -77,13 +77,13 @@ public interface Block extends Marshallable, Whisperable {
 	String getHexHash(HashingAlgorithm hashing);
 
 	/**
-	 * Yields the description of the deadline that must be computed for the next block.
+	 * Yields the challenge for the deadline that must be computed for the next block.
 	 * 
 	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature
 	 * @param hashingForDeadlines the hashing algorithm used for the deadlines and the plot files
-	 * @return the description
+	 * @return the challenge
 	 */
-	Challenge getNextDeadlineDescription(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
+	Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
 
 	/**
 	 * Yields the description of the next block, assuming that it has the given deadline.

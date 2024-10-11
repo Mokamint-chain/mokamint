@@ -99,9 +99,9 @@ public class BlockMiner {
 	private final LocalDateTime startTime;
 
 	/**
-	 * The description of the deadline required for the next block.
+	 * The challenge of the deadline required for the next block.
 	 */
-	private final Challenge description;
+	private final Challenge challenge;
 
 	/**
 	 * The best deadline computed so far. This is empty until a first deadline is found. Since more miners
@@ -166,7 +166,7 @@ public class BlockMiner {
 		this.miners = node.getMiners();
 		this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
-		this.description = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
+		this.challenge = previous.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
 	}
 
@@ -327,9 +327,9 @@ public class BlockMiner {
 
 	private void requestDeadlineTo(Miner miner) throws InterruptedException {
 		if (!interrupted) {
-			LOGGER.info(heightMessage + "asking miner " + miner.getUUID() + " for a deadline: " + description);
+			LOGGER.info(heightMessage + "asking miner " + miner.getUUID() + " for a deadline: " + challenge);
 			minersThatDidNotAnswer.add(miner);
-			miner.requestDeadline(description, deadline -> onDeadlineComputed(deadline, miner));
+			miner.requestDeadline(challenge, deadline -> onDeadlineComputed(deadline, miner));
 		}
 	}
 
@@ -352,7 +352,7 @@ public class BlockMiner {
 			LOGGER.warning(heightMessage + "discarding belated deadline " + deadline);
 		else {
 			try {
-				deadline.matchesOrThrow(description, IllegalDeadlineException::new);
+				deadline.getChallenge().matchesOrThrow(challenge, IllegalDeadlineException::new);
 				node.check(deadline);
 
 				// we increase the points of the miner, but only for the first deadline that it provides

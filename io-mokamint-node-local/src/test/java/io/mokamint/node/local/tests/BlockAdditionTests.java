@@ -470,7 +470,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
-		var nextDeadlineDescription = previous.getNextDeadlineDescription(config.getHashingForGenerations(), config.getHashingForDeadlines());
+		var nextDeadlineDescription = previous.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription, plotPrivateKey);
 		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
 		return Blocks.of(description, Stream.empty(), stateHash, privateKey);

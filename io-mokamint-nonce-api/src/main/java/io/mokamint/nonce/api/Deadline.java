@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.nonce.api;
 
 import java.math.BigInteger;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
@@ -28,7 +27,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * by the lexicographical ordering of their values.
  */
 @Immutable
-public interface Deadline extends Challenge, Marshallable {
+public interface Deadline extends Marshallable {
 
 	/**
 	 * The maximal scoop number in a deadline (inclusive).
@@ -98,17 +97,6 @@ public interface Deadline extends Challenge, Marshallable {
 	 *         if larger than the value of the other deadline; 0 if the value are equal
 	 */
 	int compareByValue(Deadline other); // TODO: why not making Deadlines comparable?
-
-	/**
-	 * Checks if this deadline matches the given description.
-	 * If it doesn't, an exception is thrown by using the given supplier.
-	 * 
-	 * @param <E> the type of the thrown exception
-	 * @param description the description matched against this deadline
-	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
-	 * @throws E if the match fails
-	 */
-	<E extends Exception> void matchesOrThrow(Challenge description, Function<String, E> exceptionSupplier) throws E;
 
 	/**
 	 * Determines if this deadline is valid, that is, its corresponding nonce

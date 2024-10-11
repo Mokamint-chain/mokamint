@@ -25,11 +25,9 @@ import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -226,41 +224,13 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	@Override
-	public int getScoopNumber() {
-		return challenge.getScoopNumber();
-	}
-
-	@Override
-	public byte[] getGenerationSignature() {
-		return challenge.getGenerationSignature();
-	}
-
-	@Override
-	public HashingAlgorithm getHashing() {
-		return challenge.getHashing();
-	}
-
-	@Override
 	public byte[] getSignature() {
 		return signature.clone();
 	}
 
-	// TODO: maybe move inside Challenge ?
-	@Override
-	public <E extends Exception> void matchesOrThrow(Challenge challenge, Function<String, E> exceptionSupplier) throws E {
-		if (this.challenge.getScoopNumber() != challenge.getScoopNumber())
-			throw exceptionSupplier.apply("Scoop number mismatch (expected " + challenge.getScoopNumber() + " but found " + this.challenge.getScoopNumber() + ")");
-
-		if (!Arrays.equals(this.challenge.getGenerationSignature(), challenge.getGenerationSignature()))
-			throw exceptionSupplier.apply("Generation signature mismatch");
-
-		if (!this.challenge.getHashing().equals(challenge.getHashing()))
-			throw exceptionSupplier.apply("Hashing algorithm mismatch");
-	}
-
 	@Override
 	public boolean isValid() {
-		return Arrays.equals(value, new NonceImpl(prolog, progressive, challenge.getHashing()).getValueFor(this));
+		return Arrays.equals(value, new NonceImpl(prolog, progressive, challenge.getHashing()).getValueFor(challenge));
 	}
 
 	@Override

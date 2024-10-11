@@ -35,7 +35,7 @@ import io.mokamint.nonce.api.Challenge;
 public class ListOfMiningRequests {
 	
 	@GuardedBy("lock")
-	private final Deque<Challenge> descriptions = new LinkedList<>();
+	private final Deque<Challenge> challenges = new LinkedList<>();
 
 	@GuardedBy("lock")
 	private final Deque<Consumer<Deadline>> actions = new LinkedList<>();
@@ -66,12 +66,12 @@ public class ListOfMiningRequests {
 	 */
 	public void add(Challenge description, Consumer<Deadline> action) {
 		synchronized (lock) {
-			if (descriptions.size() == max) {
-				descriptions.removeFirst();
+			if (challenges.size() == max) {
+				challenges.removeFirst();
 				actions.removeFirst();
 			}
 
-			descriptions.addLast(description);
+			challenges.addLast(description);
 			actions.addLast(action);
 		}
 	}
@@ -86,9 +86,9 @@ public class ListOfMiningRequests {
 
 		synchronized (lock) {
 			Iterator<Consumer<Deadline>> it = actions.iterator();
-			for (var description: descriptions) {
+			for (var challenge: challenges) {
 				Consumer<Deadline> action = it.next();
-				if (description.equals(deadline))
+				if (challenge.equals(deadline.getChallenge()))
 					filtered.add(action);
 			}
 		}
@@ -105,7 +105,7 @@ public class ListOfMiningRequests {
 		List<Challenge> copy;
 
 		synchronized (lock) {
-			copy = new ArrayList<>(descriptions);
+			copy = new ArrayList<>(challenges);
 		}
 
 		copy.forEach(what);

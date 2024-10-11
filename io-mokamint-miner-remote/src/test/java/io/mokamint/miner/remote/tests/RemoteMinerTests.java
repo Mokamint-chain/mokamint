@@ -66,7 +66,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a client sends a deadline, it reaches the requester of the corresponding description")
+	@DisplayName("if a client sends a deadline, it reaches the requester of the corresponding challenge")
 	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256();
@@ -75,28 +75,28 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 			value[pos] = (byte) pos;
 		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		int scoopNumber = 42;
-		var description = Challenges.of(scoopNumber, data, shabal256);
+		var challenge = Challenges.of(scoopNumber, data, shabal256);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 43L, value, challenge, plotKeyPair.getPrivate());
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
-			remote.requestDeadline(description, onDeadlineReceived);
-			remote.requestDeadline(description, onDeadlineReceived);
+		try (var remote = RemoteMiners.of(8025, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _challenge -> {})) {
+			remote.requestDeadline(challenge, onDeadlineReceived);
+			remote.requestDeadline(challenge, onDeadlineReceived);
 			client.send(deadline);
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a client sends a deadline, it does not reach the requester of another description")
+	@DisplayName("if a client sends a deadline, it does not reach the requester of another challenge")
 	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256();

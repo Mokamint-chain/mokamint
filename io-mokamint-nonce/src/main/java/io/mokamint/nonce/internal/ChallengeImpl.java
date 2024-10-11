@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -97,6 +98,18 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	@Override
 	public HashingAlgorithm getHashing() {
 		return hashing;
+	}
+
+	@Override
+	public <E extends Exception> void matchesOrThrow(Challenge other, Function<String, E> exceptionSupplier) throws E {
+		if (scoopNumber != other.getScoopNumber())
+			throw exceptionSupplier.apply("Scoop number mismatch (expected " + other.getScoopNumber() + " but found " + scoopNumber + ")");
+
+		if (!Arrays.equals(generationSignature, other.getGenerationSignature()))
+			throw exceptionSupplier.apply("Generation signature mismatch");
+
+		if (!hashing.equals(other.getHashing()))
+			throw exceptionSupplier.apply("Hashing algorithm mismatch");
 	}
 
 	@Override
