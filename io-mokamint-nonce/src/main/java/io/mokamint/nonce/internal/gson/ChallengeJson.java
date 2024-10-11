@@ -39,10 +39,10 @@ public abstract class ChallengeJson implements JsonRepresentation<Challenge> {
 	 */
 	protected ChallengeJson() {}
 
-	protected ChallengeJson(Challenge description) {
-		this.scoopNumber = description.getScoopNumber();
-		this.generationSignature = Hex.toHexString(description.getGenerationSignature());
-		this.hashing = description.getHashing().getName();
+	protected ChallengeJson(Challenge challenge) {
+		this.scoopNumber = challenge.getScoopNumber();
+		this.generationSignature = Hex.toHexString(challenge.getGenerationSignature());
+		this.hashing = challenge.getHashing().getName();
 	}
 
 	@Override

@@ -284,14 +284,14 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(Challenge description, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
-		if (!description.getHashing().equals(hashing))
-			throw new IllegalArgumentException("The deadline description and the plot file use different hashing algorithms");
+	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
+		if (!challenge.getHashing().equals(hashing))
+			throw new IllegalArgumentException("The challenge and the plot file use different hashing algorithms");
 
 		// we run this is its own thread, since it uses nio channels that would be closed
 		// if the executing thread is interrupted, which is not what we want
 		try {
-			return executors.submit(() -> new SmallestDeadlineFinder(description, privateKey).deadline).get();
+			return executors.submit(() -> new SmallestDeadlineFinder(challenge, privateKey).deadline).get();
 		}
 		catch (RejectedExecutionException e) {
 			throw new IOException("Cannot look for the smallest deadline", e);
@@ -332,9 +332,9 @@ public class PlotImpl implements Plot {
 		private final Hasher<byte[]> hasher;
 		private final PrivateKey privateKey;
 
-		private SmallestDeadlineFinder(Challenge description, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
-			this.scoopNumber = description.getScoopNumber();
-			this.data = description.getGenerationSignature();
+		private SmallestDeadlineFinder(Challenge challenge, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
+			this.scoopNumber = challenge.getScoopNumber();
+			this.data = challenge.getGenerationSignature();
 			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
 			this.deadline = CheckSupplier.check(IOException.class, InvalidKeyException.class, SignatureException.class, () ->

@@ -18,13 +18,14 @@ package io.mokamint.nonce.api;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * The challenge to build a deadline. This can be provided for instance to
  * a miner to describe the properties of the deadline one is looking for.
  */
 @Immutable
-public interface Challenge {
+public interface Challenge extends Marshallable {
 
 	/**
 	 * Yields the number of the scoop considered to compute the deadline.

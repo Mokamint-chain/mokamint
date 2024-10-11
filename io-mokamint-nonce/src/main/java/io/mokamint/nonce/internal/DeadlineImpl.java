@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -36,8 +35,8 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 
 /**
@@ -110,15 +109,11 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		// TODO: possibly make challenges marshallable
-		var hashing = HashingAlgorithms.of(context.readStringUnshared());
 		this.prolog = Prologs.from(context);
+		this.challenge = Challenges.from(context);
 		this.progressive = context.readLong();
-		this.value = context.readBytes(hashing.length(), "Mismatch in deadline's value length");
-		var scoopNumber = context.readInt();
-		var generationSignature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's generation signature length");
-		this.challenge = Challenges.of(scoopNumber, generationSignature, hashing);
-		this.signature = context.readBytes(context.readCompactInt(), "Mismatch in deadline's signature length");
+		this.value = context.readBytes(challenge.getHashing().length(), "Mismatch in deadline's value length");
+		this.signature = context.readLengthAndBytes("Mismatch in deadline's signature length");
 
 		try {
 			verify();
@@ -305,13 +300,11 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * @throws IOException if marshalling fails
 	 */
 	private void intoWithoutSignature(MarshallingContext context) throws IOException {
-		context.writeStringUnshared(challenge.getHashing().getName());
 		prolog.into(context);
+		challenge.into(context);
 		context.writeLong(progressive);
 		// we do not write value.length, since it coincides with hashing.length()
 		context.writeBytes(value);
-		context.writeInt(challenge.getScoopNumber());
-		context.writeLengthAndBytes(challenge.getGenerationSignature());
 	}
 
 	@Override

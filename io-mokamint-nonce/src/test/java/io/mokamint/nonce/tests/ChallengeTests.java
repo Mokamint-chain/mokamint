@@ -27,14 +27,14 @@ import io.mokamint.nonce.Challenges;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.EncodeException;
 
-public class DeadlineDescriptionTests extends AbstractLoggedTests {
+public class ChallengeTests extends AbstractLoggedTests {
 
 	@Test
-	@DisplayName("deadline descriptions are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForDeadlineDescriptions() throws EncodeException, DecodeException {
-		var deadlineDescription1 = Challenges.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256());
-		String encoded = new Challenges.Encoder().encode(deadlineDescription1);
-		var deadlineDescription2 = new Challenges.Decoder().decode(encoded);
-		assertEquals(deadlineDescription1, deadlineDescription2);
+	@DisplayName("challenges are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForChallenges() throws EncodeException, DecodeException {
+		var challenge1 = Challenges.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256());
+		String encoded = new Challenges.Encoder().encode(challenge1);
+		var challenge2 = new Challenges.Decoder().decode(encoded);
+		assertEquals(challenge1, challenge2);
 	}
 }

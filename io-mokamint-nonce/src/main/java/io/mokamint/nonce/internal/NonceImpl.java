@@ -83,30 +83,30 @@ public class NonceImpl implements Nonce {
 	}
 
 	/**
-	 * Yields the value of the deadline of this nonce, with the given description.
+	 * Yields the value of the deadline of this nonce, with the given challenge.
 	 * 
-	 * @param description the description of requested deadline
+	 * @param challenge the description of requested deadline
 	 * @return the value
 	 */
-	byte[] getValueFor(Challenge description) {
-		byte[] data = description.getGenerationSignature();
-		int scoopNumber = description.getScoopNumber();
-		return hasher.hash(extractScoopAndConcat(scoopNumber, data));
+	byte[] getValueFor(Challenge challenge) {
+		byte[] generationSignature = challenge.getGenerationSignature();
+		int scoopNumber = challenge.getScoopNumber();
+		return hasher.hash(extractScoopAndConcat(scoopNumber, generationSignature));
 	}
 
 	/**
-	 * Selects the given scoop from this nonce and adds the given data at its end.
+	 * Selects the given scoop from this nonce and adds the given generation signature at its end.
 	 * 
 	 * @param scoopNumber the number of the scoop to select, between 0 (inclusive) and
 	 *                    {@link Deadline#MAX_SCOOP_NUMBER} (inclusive)
-	 * @param data the data to end after the scoop
+	 * @param generationSignature the generation signature to add after the scoop
 	 * @return the concatenation of the scoop and the data
 	 */
-	private byte[] extractScoopAndConcat(int scoopNumber, byte[] data) {
+	private byte[] extractScoopAndConcat(int scoopNumber, byte[] generationSignature) {
 		int scoopSize = hashSize * 2;
-		var result = new byte[scoopSize + data.length];
-		System.arraycopy(this.data, scoopNumber * scoopSize, result, 0, scoopSize);
-		System.arraycopy(data, 0, result, scoopSize, data.length);
+		var result = new byte[scoopSize + generationSignature.length];
+		System.arraycopy(data, scoopNumber * scoopSize, result, 0, scoopSize);
+		System.arraycopy(generationSignature, 0, result, scoopSize, generationSignature.length);
 		return result;
 	}
 

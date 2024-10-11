@@ -22,7 +22,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
@@ -63,22 +62,20 @@ public final class Deadlines {
 	 * @param prolog the prolog of the nonce of the deadline
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
-	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
-	 * @param data the data used to compute the deadline
-	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
+	 * @param challenge the challenge the deadline responds to
 	 * @param signature the signature of the resulting deadline
 	 * @return the deadline
 	 * @throws IllegalArgumentException if some argument is illegal
 	 */
-	public static Deadline of(Prolog prolog, long progressive, byte[] value, int scoopNumber, byte[] data, HashingAlgorithm hashing, byte[] signature) throws IllegalArgumentException {
-		return new DeadlineImpl(prolog, progressive, value, Challenges.of(scoopNumber, data, hashing), signature); // TODO: pass challenge
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException {
+		return new DeadlineImpl(prolog, progressive, value, challenge, signature);
 	}
 
 	/**
 	 * Factory method that unmarshals a deadline from the given context.
 	 * 
 	 * @param context the unmarshalling context
-	 * @return the request
+	 * @return the deadline
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */

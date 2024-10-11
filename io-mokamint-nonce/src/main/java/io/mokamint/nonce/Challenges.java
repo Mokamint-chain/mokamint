@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.nonce;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.internal.ChallengeImpl;
 import io.mokamint.nonce.internal.gson.ChallengeDecoder;
@@ -40,6 +44,18 @@ public final class Challenges {
 	 */
 	public static Challenge of(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashing) {
 		return new ChallengeImpl(scoopNumber, generationSignature, hashing);
+	}
+
+	/**
+	 * Factory method that unmarshals a challenge from the given context.
+	 * 
+	 * @param context the unmarshalling context
+	 * @return the challenge
+	 * @throws NoSuchAlgorithmException if the hashing algorithm of the challenge is unknown
+	 * @throws IOException if the challenge could not be unmarshalled
+	 */
+	public static Challenge from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+		return new ChallengeImpl(context);
 	}
 
 	/**

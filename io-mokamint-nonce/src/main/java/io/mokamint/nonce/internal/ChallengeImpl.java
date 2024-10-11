@@ -16,21 +16,27 @@ limitations under the License.
 
 package io.mokamint.nonce.internal;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.nonce.api.Deadline;
+import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
+import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * Implementation of a challenge. It reports the information needed
  * to compute a deadline for this challenge.
  */
 @Immutable
-public class ChallengeImpl implements Challenge {
+public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	private final int scoopNumber;
 	private final byte[] generationSignature;
 	private final HashingAlgorithm hashing;
@@ -42,6 +48,22 @@ public class ChallengeImpl implements Challenge {
 		this.scoopNumber = scoopNumber;
 		this.generationSignature = Objects.requireNonNull(generationSignature, "generation signature cannot be null");
 		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null");
+	}
+
+	/**
+	 * Unmarshals a challenge from the given context.
+	 * 
+	 * @param context the unmarshalling context
+	 * @throws NoSuchAlgorithmException if the challenge uses an unknown hashing algorithm
+	 * @throws IOException if the challenge could not be unmarshalled
+	 */
+	public ChallengeImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {		
+		this.scoopNumber = context.readCompactInt();
+		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
+			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
+
+		this.generationSignature = context.readLengthAndBytes("Mismatch in deadline's generation signature length");
+		this.hashing = HashingAlgorithms.of(context.readStringUnshared());
 	}
 
 	@Override
@@ -88,5 +110,17 @@ public class ChallengeImpl implements Challenge {
 		System.arraycopy(generationSignature, 0, trimmedGenerationSignature, 0, trimmedGenerationSignature.length);
 
 		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(trimmedGenerationSignature) + ", hashing: " + hashing;
+	}
+
+	/**
+	 * Marshals this challenge into the given context.
+	 * 
+	 * @param context the context
+	 * @throws IOException if marshalling fails
+	 */
+	public void into(MarshallingContext context) throws IOException {
+		context.writeCompactInt(scoopNumber);
+		context.writeLengthAndBytes(generationSignature);
+		context.writeStringUnshared(hashing.getName());
 	}
 }

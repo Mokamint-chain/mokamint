@@ -18,11 +18,11 @@ package io.mokamint.nonce.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
+import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
@@ -34,9 +34,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	private Prologs.Json prolog;
 	private long progressive;
 	private String value;
-	private int scoopNumber;
-	private String data;
-	private String hashing;
+	private Challenges.Json challenge;
 	private String signature;
 
 	/**
@@ -48,17 +46,14 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 		this.prolog = new Prologs.Json(deadline.getProlog());
 		this.progressive = deadline.getProgressive();
 		this.value = Hex.toHexString(deadline.getValue());
-		this.scoopNumber = deadline.getScoopNumber();
-		this.data = Hex.toHexString(deadline.getGenerationSignature());
-		this.hashing = deadline.getHashing().getName();
+		this.challenge = new Challenges.Json(deadline.getChallenge());
 		this.signature = Hex.toHexString(deadline.getSignature());
 	}
 
 	@Override
 	public Deadline unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
-			return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), scoopNumber,
-				Hex.fromHexString(data), HashingAlgorithms.of(hashing), Hex.fromHexString(signature));
+			return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), challenge.unmap(), Hex.fromHexString(signature));
 		}
 		catch (NullPointerException | IllegalArgumentException | HexConversionException e) {
 			throw new InconsistentJsonException(e);

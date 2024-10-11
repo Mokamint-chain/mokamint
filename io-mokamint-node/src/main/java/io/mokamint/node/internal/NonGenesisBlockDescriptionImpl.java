@@ -224,8 +224,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("    * public key of the node that signed the block: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ", base58)\n");
 		builder.append("    * public key of the miner that signed the deadline: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ", base58)\n");
 		builder.append("    * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
-		builder.append("  * scoopNumber: " + deadline.getScoopNumber() + "\n");
-		builder.append("  * generation signature: " + Hex.toHexString(deadline.getGenerationSignature()));
+		builder.append("  * challenge:\n");
+		var challenge = deadline.getChallenge();
+		builder.append("    * scoopNumber: " + challenge.getScoopNumber() + "\n");
+		builder.append("    * generation signature: " + Hex.toHexString(challenge.getGenerationSignature()));
 		config.map(ConsensusConfig::getHashingForGenerations).ifPresent(hashingForGenerations -> builder.append(" (" + hashingForGenerations + ")"));
 		builder.append("\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
