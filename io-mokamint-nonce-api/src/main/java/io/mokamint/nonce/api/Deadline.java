@@ -96,7 +96,7 @@ public interface Deadline extends Marshallable {
 	 *         value of the other deadline; positive if the value of this deadline
 	 *         if larger than the value of the other deadline; 0 if the value are equal
 	 */
-	int compareByValue(Deadline other); // TODO: why not making Deadlines comparable?
+	int compareByValue(Deadline other);
 
 	/**
 	 * Determines if this deadline is valid, that is, its corresponding nonce

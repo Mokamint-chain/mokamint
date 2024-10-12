@@ -21,7 +21,7 @@ module io.mokamint.application.empty {
 	exports io.mokamint.application.empty;
 	provides io.mokamint.application.api.Application with io.mokamint.application.empty.EmptyApplication;
 
-    requires io.mokamint.application.api;
+    requires io.mokamint.application;
     requires transitive io.mokamint.nonce.api;
     requires transitive io.mokamint.node.api;
     requires transitive io.hotmoka.closeables.api;

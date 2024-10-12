@@ -324,7 +324,7 @@ public class PlotImpl implements Plot {
 
 	private class SmallestDeadlineFinder {
 		private final int scoopNumber;
-		private final byte[] data;
+		private final byte[] generationSignature;
 		private final Deadline deadline;
 		private final int scoopSize = 2 * hashing.length();
 		private final long groupSize = length * scoopSize;
@@ -334,13 +334,13 @@ public class PlotImpl implements Plot {
 
 		private SmallestDeadlineFinder(Challenge challenge, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
 			this.scoopNumber = challenge.getScoopNumber();
-			this.data = challenge.getGenerationSignature();
+			this.generationSignature = challenge.getGenerationSignature();
 			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
 			this.deadline = CheckSupplier.check(IOException.class, InvalidKeyException.class, SignatureException.class, () ->
 				LongStream.range(start, start + length)
-					.mapToObj(Long::valueOf)
 					.parallel()
+					.mapToObj(Long::valueOf)
 					.map(UncheckFunction.uncheck(this::mkDeadline))
 					.min(Deadline::compareByValue)
 					.get() // OK, since plots contain at least one nonce
@@ -348,7 +348,7 @@ public class PlotImpl implements Plot {
 		}
 
 		private Deadline mkDeadline(long n) throws IOException, InvalidKeyException, SignatureException {
-			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), Challenges.of(scoopNumber, data, hashing), privateKey);
+			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), Challenges.of(scoopNumber, generationSignature, hashing), privateKey);
 		}
 
 		/**
@@ -363,7 +363,7 @@ public class PlotImpl implements Plot {
 		private byte[] extractScoopAndConcatData(long progressive) throws IOException {
 			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
 				channel.transferTo(metadataSize + scoopNumber * groupSize + progressive * scoopSize, scoopSize, destination);
-				destination.write(ByteBuffer.wrap(data));
+				destination.write(ByteBuffer.wrap(generationSignature));
 				return os.toByteArray();
 			}
 		}

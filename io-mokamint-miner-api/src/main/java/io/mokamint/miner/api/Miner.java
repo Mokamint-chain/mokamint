@@ -36,12 +36,12 @@ public interface Miner extends AutoCloseable {
 	/**
 	 * Request to the miner the computation of a deadline.
 	 * 
-	 * @param description the description of the requested deadline
+	 * @param challenge the challenge for which the deadline is requested
 	 * @param onDeadlineComputed the callback executed when a deadline has been found.
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
 	 */
-	void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed);
+	void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed);
 
 	/**
 	 * Closes the miner.

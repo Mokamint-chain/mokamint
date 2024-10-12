@@ -51,7 +51,6 @@ public final class Deadlines {
 	 * @throws SignatureException if the signature of the deadline failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	// TODO: pass a Challenge instead of scoopNumber and data
 	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		return new DeadlineImpl(prolog, progressive, value, challenge, privateKey);
 	}

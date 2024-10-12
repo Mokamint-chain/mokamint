@@ -78,14 +78,14 @@ public class LocalMinerImpl implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
-		LOGGER.info(logPrefix + "received deadline request: " + description);
+	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
+		LOGGER.info(logPrefix + "received challenge: " + challenge);
 
 		try {
 			CheckRunnable.check(InterruptedException.class, () -> {
 				Stream.of(plotsAndKeyPairs)
-					.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(description.getHashing()))
-					.map(UncheckFunction.uncheck(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, description)))
+					.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(challenge.getHashing()))
+					.map(UncheckFunction.uncheck(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))
 					.flatMap(Optional::stream)
 					.min(Deadline::compareByValue)
 					.ifPresent(onDeadlineComputed::accept);
@@ -101,13 +101,13 @@ public class LocalMinerImpl implements Miner {
 	 * cannot be read, an empty optional is returned.
 	 * 
 	 * @param plotAndKeyPair the plot file with its associated key pair for signing deadlines
-	 * @param description the description of the deadline
+	 * @param challenge the challenge for which the deadline is requested
 	 * @return the deadline, if any
 	 * @throws InterruptedException if the thread is interrupted while computing the smallest deadline
 	 */
-	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, Challenge description) throws InterruptedException {
+	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, Challenge challenge) throws InterruptedException {
 		try {
-			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(description, plotAndKeyPair.getKeyPair().getPrivate()));
+			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(challenge, plotAndKeyPair.getKeyPair().getPrivate()));
 		}
 		catch (IOException | InvalidKeyException | SignatureException e) {
 			LOGGER.log(Level.SEVERE, logPrefix + "cannot access a plot file: ", e.getMessage());

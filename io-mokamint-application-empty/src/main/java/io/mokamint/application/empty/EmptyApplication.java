@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
-import io.mokamint.application.api.Application;
+import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
 import io.mokamint.node.api.Transaction;
@@ -32,7 +32,7 @@ import io.mokamint.nonce.api.Deadline;
  */
 @Name("empty")
 @Description("an application with no state, accepting all transactions, useful for experiments")
-public class EmptyApplication implements Application { // TODO: it should extend AbstractApplication
+public class EmptyApplication extends AbstractApplication {
 	private final AtomicInteger nextId = new AtomicInteger();
 
 	/**
@@ -93,10 +93,6 @@ public class EmptyApplication implements Application { // TODO: it should extend
 
 	@Override
 	public void keepFrom(LocalDateTime start) {
-	}
-
-	@Override
-	public void close() {
 	}
 
 	@Override

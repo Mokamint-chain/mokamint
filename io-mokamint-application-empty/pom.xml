@@ -16,7 +16,7 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-application-api</artifactId>
+      <artifactId>io-mokamint-application</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
   </dependencies>
