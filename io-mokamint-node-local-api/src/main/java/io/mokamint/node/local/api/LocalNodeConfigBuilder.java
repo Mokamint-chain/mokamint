@@ -178,6 +178,14 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	LocalNodeConfigBuilder setMempoolSize(int mempoolSize);
 
 	/**
+	 * Sets the size of the group of blocks whose hashes get downloaded in one shot during synchronization.
+	 * 
+	 * @param synchronizationGroupSize the size
+	 * @return this builder
+	 */
+	LocalNodeConfigBuilder setSynchronizationGroupSize(int synchronizationGroupSize);
+
+	/**
 	 * Sets the maximal time (in milliseconds) a block can be created in the future,
 	 * from now (intended as network time now). Block verification will reject blocks created
 	 * beyond this threshold. It defaults to 15,000 (15 seconds).

@@ -171,6 +171,14 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	int getMempoolSize();
 
 	/**
+	 * Yields the size of the group of blocks whose hashes get downloaded
+	 * in one shot during synchronization.
+	 * 
+	 * @return the size of the group
+	 */
+	int getSynchronizationGroupSize();
+
+	/**
 	 * Yields the maximal time (in milliseconds) a block can be created in the future,
 	 * from now (intended as network time now). Block verification will reject blocks created
 	 * beyond this threshold. It defaults to 15,000 (15 seconds).

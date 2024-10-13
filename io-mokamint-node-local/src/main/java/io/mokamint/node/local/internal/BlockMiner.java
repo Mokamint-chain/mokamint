@@ -290,6 +290,10 @@ public class BlockMiner {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void commitIfBetterThanHead(Block block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
+		// it is theoretically possible that head and block have exactly the same power:
+		// this might lead to temporary forks, when a node follows one chain and another node
+		// follows another chain, both with the same power. However, such forks would be
+		// subsequently resolved, when a further block will expand either of the chains
 		if (blockchain.headIsLessPowerfulThan(block)) {
 			transactionExecutor.commitBlock();
 			committed = true;

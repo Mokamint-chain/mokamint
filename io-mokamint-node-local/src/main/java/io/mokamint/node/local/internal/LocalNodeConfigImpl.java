@@ -152,6 +152,12 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	public final int mempoolSize;
 
 	/**
+	 * The size of the group of blocks whose hashes get downloaded
+	 * in one shot during synchronization.
+	 */
+	public final int synchronizationGroupSize;
+
+	/**
 	 * The maximal time (in milliseconds) a block can be created in the future,
 	 * from now (intended as network time now). Block verification will reject blocks created
 	 * beyond this threshold. It defaults to 15,000 (15 seconds).
@@ -189,6 +195,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		this.whisperingMemorySize = builder.whisperingMemorySize;
 		this.orphansMemorySize = builder.orphansMemorySize;
 		this.mempoolSize = builder.mempoolSize;
+		this.synchronizationGroupSize = builder.synchronizationGroupSize;
 		this.blockMaxTimeInTheFuture = builder.blockMaxTimeInTheFuture;
 		this.maximalHistoryChangeTime = builder.maximalHistoryChangeTime;
 	}
@@ -274,6 +281,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
+	public int getSynchronizationGroupSize() {
+		return synchronizationGroupSize;
+	}
+
+	@Override
 	public long getBlockMaxTimeInTheFuture() {
 		return blockMaxTimeInTheFuture;
 	}
@@ -339,7 +351,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("orphans_memory_size = " + orphansMemorySize + "\n");
 		sb.append("\n");
 		sb.append("# the size of the memory used to hold incoming transactions before they get put into blocks\n");
-		sb.append("mempool_size = " + mempoolSize + "\n");		
+		sb.append("mempool_size = " + mempoolSize + "\n");
+		sb.append("\n");
+		sb.append("# the size of the group of blocks whose hashes get downloaded in one shot during synchronization\n");
+		sb.append("synchronization_group_size = " + synchronizationGroupSize + "\n");
 		sb.append("\n");
 		sb.append("# the maximal creation time in the future (in milliseconds) of a block\n");
 		sb.append("block_max_time_in_the_future = " + blockMaxTimeInTheFuture + "\n");
@@ -377,6 +392,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				whisperingMemorySize == otherConfig.whisperingMemorySize &&
 				orphansMemorySize == otherConfig.orphansMemorySize &&
 				mempoolSize == otherConfig.mempoolSize &&
+				synchronizationGroupSize == otherConfig.synchronizationGroupSize &&
 				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture &&
 				maximalHistoryChangeTime == otherConfig.maximalHistoryChangeTime;
 		}
@@ -404,6 +420,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private int whisperingMemorySize = 1000;
 		private int orphansMemorySize = 1000;
 		private int mempoolSize = 100_000;
+		private int synchronizationGroupSize = 500;
 		private long blockMaxTimeInTheFuture = 15000L;
 		private long maximalHistoryChangeTime = 60 * 60 * 1000; // one hour
 
@@ -487,6 +504,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (mempoolSize != null)
 				setMempoolSize(mempoolSize);
 
+			var synchronizationGroupSize = toml.getLong("synchronization_group_size");
+			if (synchronizationGroupSize != null)
+				setSynchronizationGroupSize(synchronizationGroupSize);
+
 			var blockMaxTimeInTheFuture = toml.getLong("block_max_time_in_the_future");
 			if (blockMaxTimeInTheFuture != null)
 				setBlockMaxTimeInTheFuture(blockMaxTimeInTheFuture);
@@ -533,6 +554,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			this.whisperingMemorySize = config.whisperingMemorySize;
 			this.orphansMemorySize = config.orphansMemorySize;
 			this.mempoolSize = config.mempoolSize;
+			this.synchronizationGroupSize = config.synchronizationGroupSize;
 			this.blockMaxTimeInTheFuture = config.blockMaxTimeInTheFuture;
 			this.maximalHistoryChangeTime = config.maximalHistoryChangeTime;
 		}
@@ -725,6 +747,22 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				throw new IllegalArgumentException("mempoolSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
 
 			return setMempoolSize((int) mempoolSize);
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setSynchronizationGroupSize(int synchronizationGroupSize) {
+			if (synchronizationGroupSize <= 0)
+				throw new IllegalArgumentException("synchronizationGroupSize must be positive");
+
+			this.synchronizationGroupSize = synchronizationGroupSize;
+			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setSynchronizationGroupSize(long synchronizationGroupSize) {
+			if (synchronizationGroupSize <= 0 || synchronizationGroupSize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("synchronizationGroupSize must be between 1 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setSynchronizationGroupSize((int) synchronizationGroupSize);
 		}
 
 		@Override

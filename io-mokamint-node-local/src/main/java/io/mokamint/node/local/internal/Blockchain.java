@@ -149,6 +149,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final long maximalHistoryChangeTime;
 
 	/**
+	 * The size of the group of blocks whose hashes get downloaded in one shot during synchronization.
+	 */
+	private final int synchronizationGroupSize;
+
+	/**
 	 * A cache for the hash of the genesis block, if it has been set already. Otherwise it holds {@code null}.
 	 */
 	private volatile Optional<byte[]> genesisHashCache;
@@ -222,6 +227,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		this.hashingForBlocks = config.getHashingForBlocks();
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
+		this.synchronizationGroupSize = config.getSynchronizationGroupSize();
 		this.orphans = new NonGenesisBlock[config.getOrphansMemorySize()];
 		this.environment = createBlockchainEnvironment();
 		this.storeOfBlocks = openStore("blocks");
@@ -1222,8 +1228,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
 	
-		private final static int GROUP_SIZE = 500; // TODO: possibly add a configuration parameter
-	
 		public DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
 			this(txn,
 				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
@@ -1233,7 +1237,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		public DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, TimeoutException, NodeException {
 			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
-			this(txn, previous.height  + GROUP_SIZE - 1, Optional.of(previous.chosenGroup[previous.chosenGroup.length - 1]), previous.unusable);
+			this(txn, previous.height  + synchronizationGroupSize - 1, Optional.of(previous.chosenGroup[previous.chosenGroup.length - 1]), previous.unusable);
 		}
 
 		private DownloadedGroupOfBlocks(Transaction txn, long height, Optional<byte[]> lastHashOfPreviousGroup, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
@@ -1265,7 +1269,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		public boolean thereMightBeMoreGroupsToDownload() {
-			return chosenGroup != null && chosenGroup.length == GROUP_SIZE;
+			return chosenGroup != null && chosenGroup.length == synchronizationGroupSize;
 		}
 	
 		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
@@ -1296,7 +1300,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private boolean downloadNextGroupFromEachPeer() throws InterruptedException, NodeException {
 			stopIfInterrupted();
-			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + GROUP_SIZE) + ")");
+			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + ")");
 	
 			check(InterruptedException.class, NodeException.class, () -> {
 				peers.get().parallel()
@@ -1324,7 +1328,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			ChainPortion chain;
 	
 			try {
-				chain = maybeRemote.get().getChainPortion(height, GROUP_SIZE);
+				chain = maybeRemote.get().getChainPortion(height, synchronizationGroupSize);
 			}
 			catch (NodeException e) {
 				// it is the peer that is misbehaving, not {@code node}
@@ -1337,7 +1341,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 	
 			var hashes = chain.getHashes().toArray(byte[][]::new);
-			if (hashes.length > GROUP_SIZE)
+			if (hashes.length > synchronizationGroupSize)
 				markAsMisbehaving(peer); // if a peer sends inconsistent information, we take note
 			else if (groupIsUseless(hashes))
 				unusable.add(peer);
@@ -1389,7 +1393,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			stopIfInterrupted();
 			var alternatives = new HashSet<byte[][]>(groups.values());
 	
-			for (int h = 1; h < GROUP_SIZE && alternatives.size() > 1; h++) {
+			for (int h = 1; h < synchronizationGroupSize && alternatives.size() > 1; h++) {
 				Optional<byte[][]> mostFrequent = findMostFrequent(alternatives, h);
 				// there might be no alternatives with at least h hashes
 				if (mostFrequent.isEmpty())
@@ -2179,7 +2183,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return true if and only if the current head is missing or {@code block} is more powerful
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException { // TODO: in case of identical power, compare the hash of the blocks
+	private boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException {
 		return getPowerOfHead(txn).map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
 	}
 
