@@ -83,12 +83,18 @@ public class LocalMinerImpl implements Miner {
 
 		try {
 			CheckRunnable.check(InterruptedException.class, () -> {
-				Stream.of(plotsAndKeyPairs)
+				PlotAndKeyPair[] plots = Stream.of(plotsAndKeyPairs)
 					.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(challenge.getHashing()))
-					.map(UncheckFunction.uncheck(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))
-					.flatMap(Optional::stream)
-					.min(Deadline::compareByValue)
-					.ifPresent(onDeadlineComputed::accept);
+					.toArray(PlotAndKeyPair[]::new);
+
+				if (plots.length == 0)
+					LOGGER.warning(logPrefix + "no matching plot for hashing " + challenge.getHashing());
+				else
+					Stream.of(plots)
+						.map(UncheckFunction.uncheck(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))
+						.flatMap(Optional::stream)
+						.min(Deadline::compareByValue)
+						.ifPresent(onDeadlineComputed::accept);
 			});
 		}
 		catch (InterruptedException e) {

@@ -46,8 +46,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
-import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.testing.AbstractLoggedTests;
@@ -112,14 +110,14 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final KeyPair plotKeys;
 
 		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, NodeException, TimeoutException {
-			super(config, SignatureAlgorithms.ed25519().getKeyPair(), app, init);
+			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
-			var ed25519 = SignatureAlgorithms.ed25519();
-			this.plotKeys = ed25519.getKeyPair();
-			var prolog = Prologs.of("octopus", ed25519, getKeys().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
+			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
+			var prolog = Prologs.of(config.getChainId(), config.getSignatureForBlocks(), getKeys().getPublic(),
+					config.getSignatureForDeadlines(), plotKeys.getPublic(), new byte[0]);
 			long start = 65536L;
 			long length = new Random().nextInt(50, 200);
-			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, HashingAlgorithms.shabal256(), __ -> {});
+			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, config.getHashingForDeadlines(), __ -> {});
 			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
@@ -208,7 +206,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				}
 
 				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, NodeException, TimeoutException {
-					super(config, init); // TODO: init should be called after creation?
+					super(config, init);
 				}
 
 				@Override

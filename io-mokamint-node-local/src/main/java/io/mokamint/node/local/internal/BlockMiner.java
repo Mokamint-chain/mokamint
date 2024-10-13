@@ -331,7 +331,7 @@ public class BlockMiner {
 
 	private void requestDeadlineTo(Miner miner) throws InterruptedException {
 		if (!interrupted) {
-			LOGGER.info(heightMessage + "asking miner " + miner.getUUID() + " for a deadline: " + challenge);
+			LOGGER.info(heightMessage + "challenging miner " + miner.getUUID() + " with: " + challenge);
 			minersThatDidNotAnswer.add(miner);
 			miner.requestDeadline(challenge, deadline -> onDeadlineComputed(deadline, miner));
 		}
@@ -378,8 +378,7 @@ public class BlockMiner {
 				LOGGER.warning(heightMessage + "discarding illegal deadline " + deadline + ": " + e.getMessage());
 				node.onIllegalDeadlineComputed(deadline, miner);
 				long points = config.getMinerPunishmentForIllegalDeadline();
-				LOGGER.warning(heightMessage + "miner " + miner.getUUID() + " punished for an illegal deadline event [-" + points + " points]");
-				node.punish(miner, points);
+				node.punish(miner, points, "it provided an illegal deadline");
 			}
 			catch (TimeoutException | DeadlineValidityCheckException e) {
 				LOGGER.warning(heightMessage + "discarding uncheckable deadline " + deadline + ": " + e.getMessage());
@@ -405,7 +404,7 @@ public class BlockMiner {
 
 	private void punishMinersThatDidNotAnswer() {
 		var points = config.getMinerPunishmentForTimeout();
-		minersThatDidNotAnswer.forEach(miner -> node.punish(miner, points));
+		minersThatDidNotAnswer.forEach(miner -> node.punish(miner, points, "it didn't answer to the challenge"));
 	}
 
 	/**

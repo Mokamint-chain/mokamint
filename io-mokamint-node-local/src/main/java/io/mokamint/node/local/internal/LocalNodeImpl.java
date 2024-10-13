@@ -561,9 +561,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param miner the miner to punish
 	 * @param points how many points get removed
+	 * @param reason the reason why the miner got punished
 	 */
-	protected void punish(Miner miner, long points) {
-		LOGGER.info("punishing miner " + miner.getUUID() + " by removing " + points + " points");
+	protected void punish(Miner miner, long points, String reason) {
+		LOGGER.warning("punishing miner " + miner.getUUID() + " by removing " + points + " points since " + reason);
 	
 		if (miners.punish(miner, points) && minersToCloseAtTheEnd.contains(miner)) {
 			try {

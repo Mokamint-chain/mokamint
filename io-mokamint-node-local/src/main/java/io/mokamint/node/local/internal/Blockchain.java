@@ -240,15 +240,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	public void close() throws InterruptedException {
 		if (stopNewCalls()) {
 			try {
-				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
+				environment.close(); // stopNewCalls() guarantees that there are no unfinished transactions at this moment
 				LOGGER.info("blockchain: closed the blocks database");
 			}
 			catch (ExodusException e) {
-				// TODO
-				// not sure while this happens, it seems there might be transactions run for garbage collection,
+				// TODO not sure while this happens, it seems there might be transactions run for garbage collection,
 				// that will consequently find a closed environment
-				LOGGER.log(Level.WARNING, "blockchain: failed to close the blocks database", e);
-				//throw new DatabaseException("Cannot close the blocks database", e);
+				LOGGER.log(Level.SEVERE, "blockchain: failed to close the blocks database", e);
 			}
 		}
 	}

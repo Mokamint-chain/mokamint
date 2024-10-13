@@ -99,6 +99,14 @@ public interface BlockDescription extends Marshallable {
 	String getPublicKeyForSigningBlockBase58();
 
 	/**
+	 * Yields the generation signature of any block that can legally follow this block.
+	 * 
+	 * @param hashingForGenerations the hashing used for the generation of deadlines.
+	 * @return the generation signature
+	 */
+	byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
+
+	/**
 	 * Checks if this block description is equal to another object.
 	 * 
 	 * @param other the other object
@@ -124,12 +132,4 @@ public interface BlockDescription extends Marshallable {
 	 * @return the representation
 	 */
 	String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
-
-	/**
-	 * Yields the generation signature of any block that can legally follow this block.
-	 * 
-	 * @param hashingForGenerations the hashing used for the generation of deadlines.
-	 * @return the generation signature
-	 */
-	byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
 }
