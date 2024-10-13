@@ -33,4 +33,7 @@ public interface GenesisBlock extends Block {
 	 * @return the moment when the block has been mined
 	 */
 	LocalDateTime getStartDateTimeUTC();
+
+	@Override
+	GenesisBlockDescription getDescription();
 }

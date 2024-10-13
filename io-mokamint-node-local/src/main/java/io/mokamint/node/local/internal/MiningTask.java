@@ -68,9 +68,8 @@ public class MiningTask implements Task {
 			LOGGER.warning("mining: exiting since the node is shutting down");
 			Thread.currentThread().interrupt();
 		}
-		catch (InvalidKeyException | SignatureException | NodeException | RuntimeException e) {
+		catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "mining: dying because of exception", e);
-			e.printStackTrace(); // TODO: remove eventually
 		}
 	}
 

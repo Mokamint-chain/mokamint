@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -30,9 +29,7 @@ import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
-import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -220,16 +217,17 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void blockMatchesItsExpectedDescription(GenesisBlock block) throws VerificationException {
-		BlockDescription description;
+		var description = block.getDescription();
 
-		try {
-			description = BlockDescriptions.genesis(block.getStartDateTimeUTC(), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), block.getDescription().getPublicKeyForSigningBlock());
-		}
-		catch (InvalidKeyException e) {
-			throw new VerificationException("The block contains an invalid key");
-		}
+		var acceleration = description.getAcceleration();
+		var expectedAcceleration = BigInteger.valueOf(config.getInitialAcceleration());
+		if (!acceleration.equals(expectedAcceleration))
+			throw new VerificationException("Acceleration mismatch (expected " + expectedAcceleration + " but found " + acceleration + ")");
 
-		block.matchesOrThrow(description, VerificationException::new);
+		var signatureForBlocks = description.getSignatureForBlock();
+		var expectedSignatureForBlocks = config.getSignatureForBlocks();
+		if (!signatureForBlocks.equals(expectedSignatureForBlocks))
+			throw new VerificationException("Block signature algorithm mismatch (expected " + expectedSignatureForBlocks + " but found " + signatureForBlocks + ")");
 	}
 
 	/**
@@ -239,8 +237,32 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
-		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
-		block.matchesOrThrow(description, VerificationException::new);
+		var expectedDescription = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
+
+		var description = block.getDescription();
+		var height = description.getHeight();
+		if (height != expectedDescription.getHeight())
+			throw new VerificationException("Height mismatch (expected " + expectedDescription.getHeight() + " but found " + height + ")");
+
+		var acceleration = description.getAcceleration();
+		if (!acceleration.equals(expectedDescription.getAcceleration()))
+			throw new VerificationException("Acceleration mismatch (expected " + expectedDescription.getAcceleration() + " but found " + acceleration + ")");
+
+		var power = description.getPower();
+		if (!power.equals(expectedDescription.getPower()))
+			throw new VerificationException("Power mismatch (expected " + expectedDescription.getPower() + " but found " + power + ")");
+
+		var totalWaitingTime = description.getTotalWaitingTime();
+		if (totalWaitingTime != expectedDescription.getTotalWaitingTime())
+			throw new VerificationException("Total waiting time mismatch (expected " + expectedDescription.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
+
+		var weightedWaitingTime = description.getWeightedWaitingTime();
+		if (weightedWaitingTime != expectedDescription.getWeightedWaitingTime())
+			throw new VerificationException("Weighted waiting time mismatch (expected " + expectedDescription.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
+
+		var hashOfPreviousBlock = description.getHashOfPreviousBlock();
+		if (!Arrays.equals(hashOfPreviousBlock, expectedDescription.getHashOfPreviousBlock()))
+			throw new VerificationException("Hash of previous block mismatch");
 	}
 
 	/**

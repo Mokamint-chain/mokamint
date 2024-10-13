@@ -59,7 +59,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	/**
 	 * The signature algorithm used to sign this block.
 	 */
-	private final SignatureAlgorithm signatureForBlocks;
+	private final SignatureAlgorithm signatureForBlock;
 
 	/**
 	 * The public key of the node that signed this block.
@@ -81,12 +81,12 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException {
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
-		this.signatureForBlocks = signatureForBlocks;
+		this.signatureForBlock = signatureForBlock;
 		this.publicKey = publicKey;
-		this.publicKeyBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKey));
+		this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(publicKey));
 
 		verify();
 	}
@@ -102,9 +102,9 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.acceleration = context.readBigInteger();
-			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared());
+			this.signatureForBlock = SignatureAlgorithms.of(context.readStringShared());
 			byte[] publicKeyEncoding = context.readLengthAndBytes("Mismatch in the length of the public key");
-			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
+			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 	
 			verify();
@@ -123,7 +123,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	private void verify() {
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
-		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
+		Objects.requireNonNull(signatureForBlock, "signatureForBlocks cannot be null");
 		Objects.requireNonNull(publicKey, "publicKey cannot be null");
 
 		if (acceleration.signum() <= 0)
@@ -157,7 +157,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	public SignatureAlgorithm getSignatureForBlock() {
-		return signatureForBlocks;
+		return signatureForBlock;
 	}
 
 	@Override
@@ -186,7 +186,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
 			acceleration.equals(gbd.getAcceleration()) &&
 			publicKey.equals(gbd.getPublicKeyForSigningBlock()) &&
-			signatureForBlocks.equals(gbd.getSignatureForBlock());
+			signatureForBlock.equals(gbd.getSignatureForBlock());
 	}
 
 	@Override
@@ -198,7 +198,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
 		super.populate(builder, config, startDateTimeUTC);
-		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlocks + ", base58)");
+		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlock + ", base58)");
 	}
 
 	@Override
@@ -210,8 +210,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeLong(0L);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
-			context.writeStringShared(signatureForBlocks.getName());
-			context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKey));
+			context.writeStringShared(signatureForBlock.getName());
+			context.writeLengthAndBytes(signatureForBlock.encodingOf(publicKey));
 		}
 		catch (DateTimeException | InvalidKeyException e) {
 			throw new IOException(e);

@@ -34,6 +34,9 @@ public interface NonGenesisBlock extends Block {
 	 */
 	Deadline getDeadline();
 
+	@Override
+	NonGenesisBlockDescription getDescription();
+
 	/**
 	 * Yields the reference to the previous block.
 	 * 

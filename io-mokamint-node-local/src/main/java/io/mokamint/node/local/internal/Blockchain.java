@@ -1130,11 +1130,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						removeReferencesToTransactionsInside(txn, block);
 						storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
 						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
-						Optional<Block> previous = getBlock(txn, hashOfPrevious);
-						if (previous.isEmpty())
-							throw new DatabaseException("Block " + Hex.toHexString(blockHash) + " has no previous block in the database");
-		
-						block = previous.get();
+						var blockHashCopy = blockHash;
+						block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(blockHashCopy) + " has no previous block in the database"));
 						blockHash = hashOfPrevious;
 					}
 					else

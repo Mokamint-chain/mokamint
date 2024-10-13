@@ -22,12 +22,10 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.AbstractMarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
 
@@ -103,22 +101,5 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	@Override
 	public LocalDateTime getStartDateTimeUTC() {
 		return getDescription().getStartDateTimeUTC();
-	}
-
-	@Override
-	public <E extends Exception> void matchesOrThrow(BlockDescription description, Function<String, E> exceptionSupplier) throws E {
-		if (description instanceof GenesisBlockDescription) {
-			var acceleration = getDescription().getAcceleration();
-			if (!acceleration.equals(description.getAcceleration()))
-				throw exceptionSupplier.apply("Acceleration mismatch (expected " + description.getAcceleration() + " but found " + acceleration + ")");
-
-			var signatureForBlocks = getDescription().getSignatureForBlock();
-			if (!signatureForBlocks.equals(description.getSignatureForBlock()))
-				throw exceptionSupplier.apply("Block signature algorithm mismatch (expected " + description.getSignatureForBlock() + " but found " + signatureForBlocks + ")");
-
-			// TODO: in the future, maybe check for the public key as well
-		}
-		else
-			throw exceptionSupplier.apply("Block type mismatch (expected non-genesis but found genesis)");
 	}
 }
