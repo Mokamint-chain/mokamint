@@ -219,8 +219,13 @@ public class BlockVerification {
 	private void blockMatchesItsExpectedDescription(GenesisBlock block) throws VerificationException {
 		var description = block.getDescription();
 
-		var acceleration = description.getAcceleration();
+		var acceleration = description.getAcceleration(config);
+		// TODO
+		var generationSignature = new byte[config.getHashingForGenerations().length()];
+		generationSignature[0] = (byte) 0x80;
+		//var expectedAcceleration = new BigInteger(1, generationSignature).divide(BigInteger.valueOf(config.getTargetBlockCreationTime()));
 		var expectedAcceleration = BigInteger.valueOf(config.getInitialAcceleration());
+
 		if (!acceleration.equals(expectedAcceleration))
 			throw new VerificationException("Acceleration mismatch (expected " + expectedAcceleration + " but found " + acceleration + ")");
 
@@ -237,16 +242,16 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
-		var expectedDescription = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
+		var expectedDescription = previous.getNextBlockDescription(deadline, config, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
 
 		var description = block.getDescription();
 		var height = description.getHeight();
 		if (height != expectedDescription.getHeight())
 			throw new VerificationException("Height mismatch (expected " + expectedDescription.getHeight() + " but found " + height + ")");
 
-		var acceleration = description.getAcceleration();
-		if (!acceleration.equals(expectedDescription.getAcceleration()))
-			throw new VerificationException("Acceleration mismatch (expected " + expectedDescription.getAcceleration() + " but found " + acceleration + ")");
+		var acceleration = description.getAcceleration(config);
+		if (!acceleration.equals(expectedDescription.getAcceleration(config)))
+			throw new VerificationException("Acceleration mismatch (expected " + expectedDescription.getAcceleration(config) + " but found " + acceleration + ")");
 
 		var power = description.getPower();
 		if (!power.equals(expectedDescription.getPower()))

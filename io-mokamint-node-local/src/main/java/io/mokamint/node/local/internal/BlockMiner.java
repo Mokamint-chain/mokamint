@@ -271,7 +271,7 @@ public class BlockMiner {
 		var deadline = currentDeadline.deadline; // here, we know that a deadline has been computed
 		transactionExecutor.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
-		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
+		var description = previous.getNextBlockDescription(deadline, config, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
 		var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
 		if (processedTransactions.isPresent())
 			return Optional.of(Blocks.of(description, processedTransactions.get().getSuccessfullyDeliveredTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
@@ -395,7 +395,7 @@ public class BlockMiner {
 	 * @param deadline the deadline
 	 */
 	private void setWaker(Deadline deadline) {
-		long millisecondsToWait = deadline.getMillisecondsToWaitFor(previous.getDescription().getAcceleration());
+		long millisecondsToWait = deadline.getMillisecondsToWaitFor(previous.getDescription().getAcceleration(config));
 		long millisecondsAlreadyPassed = Duration.between(startTime, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
 		long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
 		if (waker.set(stillToWait))

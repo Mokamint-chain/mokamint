@@ -140,6 +140,11 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
+	public final ConsensusConfig<?, ?> getConfig() {
+		return description.getConfig();
+	}
+
+	@Override
 	public final D getDescription() {
 		return description;
 	}
@@ -148,12 +153,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * Unmarshals a block from the given context.
 	 * 
 	 * @param context the context
+	 * @param config the consensus configuration of the node storing the block
 	 * @return the block
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		var description = AbstractBlockDescription.from(context);
+	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
+		var description = AbstractBlockDescription.from(context, config);
 		if (description instanceof GenesisBlockDescription gbd)
 			return new GenesisBlockImpl(gbd, context);
 		else
@@ -201,17 +207,17 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
+	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, ConsensusConfig<?,?> config, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
 		var heightForNewBlock = description.getHeight() + 1;
 		var powerForNewBlock = computePower(deadline);
-		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(description.getAcceleration());
+		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(description.getAcceleration(config));
 		var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 		var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
-		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, targetBlockCreationTime);
+		var accelerationForNewBlock = computeAcceleration(config, weightedWaitingTimeForNewBlock, targetBlockCreationTime);
 		var hashOfPreviousBlock = getHash(hashingForBlocks);
 
 		return new NonGenesisBlockDescriptionImpl(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
-			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
+			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, getConfig());
 	}
 
 	@Override
@@ -298,12 +304,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	/**
 	 * Computes the acceleration for the new block, in order to get closer to the target creation time.
 	 * 
+	 * @param config the consensus configuration of the node storing this block
 	 * @param weightedWaitingTimeForNewBlock the weighted waiting time for the new block
 	 * @param targetBlockCreationTime 
 	 * @return the acceleration for the new block
 	 */
-	private BigInteger computeAcceleration(long weightedWaitingTimeForNewBlock, long targetBlockCreationTime) {
-		var oldAcceleration = description.getAcceleration();
+	private BigInteger computeAcceleration(ConsensusConfig<?,?> config, long weightedWaitingTimeForNewBlock, long targetBlockCreationTime) {
+		var oldAcceleration = description.getAcceleration(config);
 		var delta = oldAcceleration
 			.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
 			.divide(BigInteger.valueOf(targetBlockCreationTime))

@@ -31,6 +31,7 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -43,7 +44,8 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 	@DisplayName("genesis block descriptions are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var description1 = BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, ed25519, ed25519.getKeyPair().getPublic());
+		var config = ConsensusConfigBuilders.defaults().build();
+		var description1 = BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, ed25519, ed25519.getKeyPair().getPublic(), config);
 		String encoded = new BlockDescriptions.Encoder().encode(description1);
 		var description2 = new BlockDescriptions.Decoder().decode(encoded);
 		assertEquals(description1, description2);
@@ -61,7 +63,8 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashing), plotKeyPair.getPrivate());
-		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
+		var config = ConsensusConfigBuilders.defaults().build();
+		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}, config);
 		String encoded = new BlockDescriptions.Encoder().encode(description1);
 		var description2 = new BlockDescriptions.Decoder().decode(encoded);
 		assertEquals(description1, description2);

@@ -32,6 +32,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
@@ -55,7 +56,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	protected BlockDescriptionJson(BlockDescription description) {
 		if (description instanceof GenesisBlockDescription gbd) {
 			this.startDateTimeUTC = ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
-			this.acceleration = gbd.getAcceleration();
+			this.acceleration = gbd.getAcceleration(description.getConfig());
 			var signature = gbd.getSignatureForBlock();
 			this.signatureForBlocks = signature.getName();
 			this.publicKey = gbd.getPublicKeyForSigningBlockBase58();
@@ -66,22 +67,22 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 			this.power = ngbd.getPower();
 			this.totalWaitingTime = ngbd.getTotalWaitingTime();
 			this.weightedWaitingTime = ngbd.getWeightedWaitingTime();
-			this.acceleration = ngbd.getAcceleration();
+			this.acceleration = ngbd.getAcceleration(ngbd.getConfig());
 			this.deadline = new Deadlines.Json(ngbd.getDeadline());
 			this.hashOfPreviousBlock = Hex.toHexString(ngbd.getHashOfPreviousBlock());
 		}
 	}
 
 	@Override
-	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
+	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException { // TODO: inject consensus config
 		try {
 			if (startDateTimeUTC == null)
-				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
+				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), ConsensusConfigBuilders.defaults().build());
 			else {
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 
 				return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
-						acceleration, signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
+						acceleration, signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)), ConsensusConfigBuilders.defaults().build());
 			}
 		}
 		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException e) {

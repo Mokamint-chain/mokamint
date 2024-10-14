@@ -87,7 +87,9 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	/**
 	 * Creates a new non-genesis block description.
 	 */
-	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
+	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, ConsensusConfig<?,?> config) {
+		super(config);
+
 		this.height = height;
 		this.power = power;
 		this.totalWaitingTime = totalWaitingTime;
@@ -104,10 +106,13 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * 
 	 * @param height the height of the block
 	 * @param context the unmarshalling context
+	 * @param config the consensus configuration of the node storing the description
 	 * @throws IOException if unmarshalling failed
 	 * @throws NoSuchAlgorithmException if the block uses some unknown signature or hashing algorithm
 	 */
-	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException, NoSuchAlgorithmException {
+		super(config);
+
 		this.height = height;
 
 		try {
@@ -141,7 +146,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public BigInteger getAcceleration() {
+	public BigInteger getAcceleration(ConsensusConfig<?,?> config) {
 		return acceleration;
 	}
 
@@ -182,7 +187,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			power.equals(ngbd.getPower()) &&
 			totalWaitingTime == ngbd.getTotalWaitingTime() &&
 			weightedWaitingTime == ngbd.getWeightedWaitingTime() &&
-			acceleration.equals(ngbd.getAcceleration()) &&
+			acceleration.equals(ngbd.getAcceleration(getConfig())) &&
 			deadline.equals(ngbd.getDeadline()) &&
 			Arrays.equals(hashOfPreviousBlock, ngbd.getHashOfPreviousBlock());
 	}

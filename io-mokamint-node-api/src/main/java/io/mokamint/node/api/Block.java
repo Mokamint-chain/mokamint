@@ -32,6 +32,13 @@ import io.mokamint.nonce.api.Deadline;
 public interface Block extends Marshallable, Whisperable {
 
 	/**
+	 * Yields the consensus configuration of the node storing this block.
+	 * 
+	 * @return the consensus configuration of the node storing this block
+	 */
+	ConsensusConfig<?, ?> getConfig();
+
+	/**
 	 * Yields the description of this block.
 	 * 
 	 * @return the description
@@ -88,12 +95,13 @@ public interface Block extends Marshallable, Whisperable {
 	 * Yields the description of the next block, assuming that it has the given deadline.
 	 * 
 	 * @param deadline the deadline of the next block
+	 * @param config the consensus configuration of the node storing this block
 	 * @param targetBlockCreationTime the target time interval, in milliseconds, between the creation of a block
 	 *                                and the creation of a next block
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @return the description
 	 */
-	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks);
+	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, ConsensusConfig<?,?> config, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks); // TODO: remove last two arguments
 
 	@Override
 	String toString();
