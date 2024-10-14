@@ -177,7 +177,9 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	public byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
-		return BLOCK_1_GENERATION_SIGNATURE;
+		var generationSignature = new byte[hashing.length()];
+		generationSignature[0] = (byte) 0x80;
+		return generationSignature;
 	}
 
 	@Override

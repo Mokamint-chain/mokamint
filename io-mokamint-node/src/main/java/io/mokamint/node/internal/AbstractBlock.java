@@ -82,9 +82,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
 
-	private final static BigInteger _20 = BigInteger.valueOf(20L);
+	private final static double oblivion = 0.05;
 
-	private final static BigInteger _100 = BigInteger.valueOf(100L);
+	private final static BigInteger _100000 = BigInteger.valueOf(100000L);
+
+	private final static BigInteger OBLIVION = BigInteger.valueOf((long) (oblivion * _100000.longValue()));
+
+	private final static BigInteger COMPLEMENT_OF_OBLIVION = BigInteger.valueOf(_100000.longValue() - OBLIVION.longValue());
 
 	/**
 	 * Creates an abstract block with the given description.
@@ -286,9 +290,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 	private long computeWeightedWaitingTime(long waitingTime) {
 		// probably irrelevant, but by using BigInteger we reduce the risk of overflow
-		var previousWeightedWaitingTime_95 = BigInteger.valueOf(description.getWeightedWaitingTime()).multiply(BigInteger.valueOf(95L));
-		var waitingTime_5 = BigInteger.valueOf(waitingTime).multiply(BigInteger.valueOf(5L));
-		return previousWeightedWaitingTime_95.add(waitingTime_5).divide(BigInteger.valueOf(100L)).longValue();
+		var previousWeightedWaitingTimeWeighted = BigInteger.valueOf(description.getWeightedWaitingTime()).multiply(COMPLEMENT_OF_OBLIVION);
+		var waitingTimeWeighted = BigInteger.valueOf(waitingTime).multiply(OBLIVION);
+		return previousWeightedWaitingTimeWeighted.add(waitingTimeWeighted).divide(_100000).longValue();
 	}
 
 	/**
@@ -302,14 +306,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		var oldAcceleration = description.getAcceleration();
 		var delta = oldAcceleration
 			.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
-			.divide(BigInteger.valueOf(targetBlockCreationTime)) // TODO: I would stop here
-			.subtract(oldAcceleration);
-	
-		var acceleration = oldAcceleration.add(delta.multiply(_20).divide(_100));
-		if (acceleration.signum() == 0)
-			acceleration = BigInteger.ONE; // acceleration must be strictly positive
-	
-		return acceleration;
+			.divide(BigInteger.valueOf(targetBlockCreationTime))
+			.subtract(oldAcceleration);	
+
+		var acceleration = oldAcceleration.add(delta.multiply(OBLIVION).divide(_100000));
+
+		// acceleration must be strictly positive
+		return acceleration.signum() == 0 ? BigInteger.ONE : acceleration;
 	}
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {
