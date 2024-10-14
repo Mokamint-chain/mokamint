@@ -237,7 +237,7 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
-		var expectedDescription = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
+		var expectedDescription = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
 
 		var description = block.getDescription();
 		var height = description.getHeight();

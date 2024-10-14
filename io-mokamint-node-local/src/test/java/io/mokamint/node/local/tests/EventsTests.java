@@ -126,7 +126,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		var myMiner = new Miner() {
 
-			byte[] deadlineValue; // = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
+			byte[] deadlineValue;
 
 			@Override
 			public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {

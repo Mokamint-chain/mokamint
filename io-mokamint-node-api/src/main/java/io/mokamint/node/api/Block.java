@@ -91,10 +91,9 @@ public interface Block extends Marshallable, Whisperable {
 	 * @param targetBlockCreationTime the target time interval, in milliseconds, between the creation of a block
 	 *                                and the creation of a next block
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
-	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @return the description
 	 */
-	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines);
+	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks);
 
 	@Override
 	String toString();

@@ -107,6 +107,14 @@ public interface Deadline extends Marshallable {
 	boolean isValid();
 
 	/**
+	 * Yields the power of this deadline. This is the ratio between the worst possible deadline value
+	 * and the actual deadline value.
+	 * 
+	 * @return the power of this deadline
+	 */
+	BigInteger getPower();
+
+	/**
 	 * Yields a string representation of this deadline.
 	 * 
 	 * @return the string representation

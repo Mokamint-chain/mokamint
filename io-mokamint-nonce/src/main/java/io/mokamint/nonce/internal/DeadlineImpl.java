@@ -50,8 +50,6 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final Challenge challenge;
 	private final byte[] signature;  // TODO: do we really need to sign deadlines?
 
-	private final static BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
-
 	/**
 	 * Yields a deadline.
 	 * 
@@ -185,13 +183,10 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],
 			dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
 		};
-		var result = new BigInteger(1, firstEightBytes);
-		if (result.subtract(MAX_LONG_VALUE).signum() == 1)
-			// theoretically, there might be an overflow when converting into long,
-			// but this would mean that the waiting time is larger than the life of the universe...
-			throw new ArithmeticException("Overflow in the waiting time!");
 
-		return result.longValue();
+		// theoretically, there might be an overflow when converting into long,
+		// but this would mean that the waiting time is larger than the life of the universe...
+		return new BigInteger(1, firstEightBytes).longValueExact();
 	}
 
 	@Override
@@ -231,6 +226,11 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public boolean isValid() {
 		return Arrays.equals(value, new NonceImpl(prolog, progressive, challenge.getHashing()).getValueFor(challenge));
+	}
+
+	@Override
+	public BigInteger getPower() {
+		return BigInteger.ONE.shiftLeft(challenge.getHashing().length() * 8).divide(new BigInteger(1, value).add(BigInteger.ONE));
 	}
 
 	@Override

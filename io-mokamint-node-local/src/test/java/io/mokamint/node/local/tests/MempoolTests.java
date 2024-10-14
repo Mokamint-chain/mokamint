@@ -439,7 +439,7 @@ public class MempoolTests extends AbstractLoggedTests {
 	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var nextDeadlineDescription = previous.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription, plotPrivateKey);
-		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines());
+		var description = previous.getNextBlockDescription(deadline, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
 		return Blocks.of(description, transactions, stateHash, privateKey);
 	}
 }

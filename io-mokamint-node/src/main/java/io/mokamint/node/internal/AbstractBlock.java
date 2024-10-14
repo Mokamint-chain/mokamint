@@ -197,9 +197,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines) {
+	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, long targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
 		var heightForNewBlock = description.getHeight() + 1;
-		var powerForNewBlock = computePower(deadline, hashingForDeadlines);
+		var powerForNewBlock = computePower(deadline);
 		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(description.getAcceleration());
 		var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 		var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
@@ -213,8 +213,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	@Override
 	public boolean equals(Object other) {
 		if (other instanceof Block block
-			// this guarantees that genesis is only equal to genesis
-			// and non-genesis is only equals to non-genesis
+			// this guarantees that genesis is only equal to genesis, and that non-genesis is only equals to non-genesis
 			&& description.equals(block.getDescription()))
 			if (other instanceof AbstractBlock<?> oab)
 				return Arrays.equals(signature, oab.signature) && Arrays.equals(stateId, oab.stateId); // optimization
@@ -277,10 +276,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		}
 	}
 
-	private BigInteger computePower(Deadline deadline, HashingAlgorithm hashingForDeadlines) {
-		byte[] valueAsBytes = deadline.getValue();
-		var value = new BigInteger(1, valueAsBytes);
-		return description.getPower().add(BigInteger.TWO.shiftLeft(hashingForDeadlines.length() * 8).divide(value.add(BigInteger.ONE))); // TODO: TWO should be ONE
+	private BigInteger computePower(Deadline deadline) {
+		return description.getPower().add(deadline.getPower());
 	}
 
 	private long computeTotalWaitingTime(long waitingTime) {
