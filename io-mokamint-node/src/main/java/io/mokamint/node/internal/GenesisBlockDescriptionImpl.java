@@ -171,13 +171,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
-	public byte[] getNextGenerationSignature(HashingAlgorithm hashing) {
-		var generationSignature = new byte[hashing.length()];
-		generationSignature[0] = (byte) 0x80;
-		return generationSignature;
-	}
-
-	@Override
 	public boolean equals(Object other) {
 		return other instanceof GenesisBlockDescription gbd &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
@@ -196,6 +189,13 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
 		super.populate(builder, config, startDateTimeUTC);
 		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlock + ", base58)");
+	}
+
+	@Override
+	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+		var generationSignature = new byte[hashingForGenerations.length()];
+		generationSignature[0] = (byte) 0x80;
+		return generationSignature;
 	}
 
 	@Override

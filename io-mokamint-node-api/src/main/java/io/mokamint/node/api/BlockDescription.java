@@ -100,14 +100,6 @@ public interface BlockDescription extends Marshallable {
 	String getPublicKeyForSigningBlockBase58();
 
 	/**
-	 * Yields the generation signature of any block that can legally follow this block.
-	 * 
-	 * @param hashingForGenerations the hashing used for the generation of deadlines.
-	 * @return the generation signature
-	 */
-	byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
-
-	/**
 	 * Yields the challenge for the deadline that must be computed for the next block.
 	 * 
 	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature

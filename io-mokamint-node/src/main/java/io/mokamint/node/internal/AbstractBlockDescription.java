@@ -111,6 +111,14 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		builder.append("* acceleration: " + getAcceleration());
 	}
 
+	/**
+	 * Yields the generation signature of any block that can legally follow this block.
+	 * 
+	 * @param hashingForGenerations the hashing used for the generation of deadlines.
+	 * @return the generation signature
+	 */
+	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
+
 	@Override
 	public final String toString() {
 		var builder = new StringBuilder();

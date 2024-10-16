@@ -193,13 +193,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
-		byte[] previousGenerationSignature = deadline.getChallenge().getGenerationSignature();
-		byte[] previousProlog = deadline.getProlog().toByteArray();
-		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
-	}
-
-	@Override
 	public void into(MarshallingContext context) throws IOException {
 		context.writeLong(height);
 		context.writeBigInteger(power);
@@ -233,6 +226,13 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + challenge.getHashing() + ")\n");
 		builder.append("  * miner's signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")");
+	}
+
+	@Override
+	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+		byte[] previousGenerationSignature = deadline.getChallenge().getGenerationSignature();
+		byte[] previousProlog = deadline.getProlog().toByteArray();
+		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
 	}
 
 	/**
