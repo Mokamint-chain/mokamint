@@ -22,7 +22,6 @@ import java.util.Optional;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
-import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -74,15 +73,6 @@ public interface Block extends Marshallable, Whisperable {
 	 * @return the hash of this block, as a hexadecimal string
 	 */
 	String getHexHash(HashingAlgorithm hashing);
-
-	/**
-	 * Yields the challenge for the deadline that must be computed for the next block.
-	 * 
-	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature
-	 * @param hashingForDeadlines the hashing algorithm used for the deadlines and the plot files
-	 * @return the challenge
-	 */
-	Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
 
 	/**
 	 * Yields the description of the next block, assuming that it has the given deadline.

@@ -25,6 +25,7 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.mokamint.nonce.api.Challenge;
 
 /**
  * The description of a block of the Mokamint blockchain.
@@ -105,6 +106,15 @@ public interface BlockDescription extends Marshallable {
 	 * @return the generation signature
 	 */
 	byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
+
+	/**
+	 * Yields the challenge for the deadline that must be computed for the next block.
+	 * 
+	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature
+	 * @param hashingForDeadlines the hashing algorithm used for the deadlines and the plot files
+	 * @return the challenge
+	 */
+	Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
 
 	/**
 	 * Checks if this block description is equal to another object.

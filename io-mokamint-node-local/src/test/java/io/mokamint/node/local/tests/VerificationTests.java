@@ -220,7 +220,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected block hash
 			var actual = BlockDescriptions.of(expected.getHeight() + 1, expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
@@ -243,7 +243,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected acceleration
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration().add(BigInteger.ONE),
@@ -266,7 +266,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected power
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower().add(BigInteger.ONE), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
@@ -289,7 +289,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected total waiting time
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime() + 1, expected.getWeightedWaitingTime(), expected.getAcceleration(),
@@ -309,7 +309,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var config = mkConfig(dir);
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-		var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines()), plotPrivateKey);
+		var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines()), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config);
 		// we replace the correct signature with a fake one
 		var newKeys = config.getSignatureForBlocks().getKeyPair();
@@ -323,7 +323,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var config = mkConfig(dir);
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-		var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines()), plotPrivateKey);
+		var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines()), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline, config);
 		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -342,7 +342,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected deadline
 			var challenge = deadline.getChallenge();
@@ -372,10 +372,10 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			var block1 = Blocks.of(expected, Stream.of(tx2), stateId, nodePrivateKey);
-			deadline = plot.getSmallestDeadline(block1.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			deadline = plot.getSmallestDeadline(expected.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			expected = block1.getNextBlockDescription(deadline, config);
 			var block2 = Blocks.of(expected, Stream.of(tx1, tx2, tx3), stateId, nodePrivateKey);
 
@@ -400,7 +400,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			var block = Blocks.of(expected, Stream.of(tx1, tx2, tx3), stateId, nodePrivateKey);
 
@@ -426,10 +426,10 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			var block1 = Blocks.of(expected, Stream.of(tx1, tx3), stateId, nodePrivateKey);
-			deadline = plot.getSmallestDeadline(block1.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			deadline = plot.getSmallestDeadline(expected.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			expected = block1.getNextBlockDescription(deadline, config);
 			var block2 = Blocks.of(expected, Stream.of(tx2), stateId, nodePrivateKey);
 
@@ -456,10 +456,10 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			var block1 = Blocks.of(expected, Stream.of(tx1, tx3), stateId, nodePrivateKey);
-			deadline = plot.getSmallestDeadline(block1.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			deadline = plot.getSmallestDeadline(expected.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			expected = block1.getNextBlockDescription(deadline, config);
 			var block2 = Blocks.of(expected, Stream.of(tx2), stateId, nodePrivateKey);
 
@@ -484,7 +484,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			var block = Blocks.of(expected, Stream.of(tx), stateId, nodePrivateKey);
 
@@ -504,7 +504,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 
 			// we replace the expected deadline
@@ -533,7 +533,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 
 			// we replace the expected deadline
@@ -561,7 +561,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 
 			// we create a different prolog
@@ -588,7 +588,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 
 			// we create a different prolog
@@ -620,7 +620,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 
 			// we create a different prolog
@@ -655,7 +655,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expectedDescription = genesis.getNextBlockDescription(deadline, config);
 			var expected = Blocks.of(BlockDescriptions.of(expectedDescription.getHeight(), expectedDescription.getPower(), expectedDescription.getTotalWaitingTime(),
 					expectedDescription.getWeightedWaitingTime(), expectedDescription.getAcceleration(), expectedDescription.getDeadline(), expectedDescription.getHashOfPreviousBlock()),
@@ -677,7 +677,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 
 			// we make the deadline invalid by changing its progressive
@@ -702,7 +702,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-			var deadline = plot.getSmallestDeadline(genesis.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expected = genesis.getNextBlockDescription(deadline, config);
 
 			// we make the deadline invalid by changing its value (it is not empty since it is a hash)

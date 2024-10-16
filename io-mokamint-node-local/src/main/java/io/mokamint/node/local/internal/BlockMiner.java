@@ -166,7 +166,7 @@ public class BlockMiner {
 		this.miners = node.getMiners();
 		this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
 		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
-		this.challenge = previous.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines());
+		this.challenge = previous.getDescription().getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
 	}
 

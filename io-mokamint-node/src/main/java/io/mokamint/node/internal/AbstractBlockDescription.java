@@ -21,20 +21,29 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.nonce.Challenges;
+import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * Shared code for block descriptions.
  */
 public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
+
+
+	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
 
 	/**
 	 * Creates a block description.
@@ -57,6 +66,32 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 			return new GenesisBlockDescriptionImpl(context);
 		else
 			return new NonGenesisBlockDescriptionImpl(height, context);
+	}
+
+	@Override
+	public final Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
+		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations); // TODO: make this private?
+		return Challenges.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
+	}
+
+	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {
+		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
+		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
+	}
+
+	private static byte[] concat(byte[] array1, byte[] array2) {
+		var merge = new byte[array1.length + array2.length];
+		System.arraycopy(array1, 0, merge, 0, array1.length);
+		System.arraycopy(array2, 0, merge, array1.length, array2.length);
+		return merge;
+	}
+
+	private static byte[] longToBytesBE(long l) {
+		var target = new byte[8];
+		for (int i = 0; i <= 7; i++)
+			target[7 - i] = (byte) ((l >> (8 * i)) & 0xFF);
+
+		return target;
 	}
 
 	/**

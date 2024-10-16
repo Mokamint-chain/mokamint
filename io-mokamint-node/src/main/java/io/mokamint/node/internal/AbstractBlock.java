@@ -39,9 +39,7 @@ import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.Challenge;
 
 /**
  * Shared code of all classes implementing blocks.
@@ -79,8 +77,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 */
 	@GuardedBy("lock")
 	private byte[] lastHash;
-
-	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
 
 	private final static double oblivion = 0.05;
 
@@ -192,12 +188,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	@Override
 	public final String getHexHash(HashingAlgorithm hashing) {
 		return Hex.toHexString(getHash(hashing));
-	}
-
-	@Override
-	public final Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
-		var nextGenerationSignature = description.getNextGenerationSignature(hashingForGenerations);
-		return Challenges.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
 	}
 
 	@Override
@@ -314,25 +304,5 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 		// acceleration must be strictly positive
 		return acceleration.signum() == 0 ? BigInteger.ONE : acceleration;
-	}
-
-	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {
-		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(description.getHeight() + 1)));
-		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
-	}
-
-	private static byte[] concat(byte[] array1, byte[] array2) {
-		var merge = new byte[array1.length + array2.length];
-		System.arraycopy(array1, 0, merge, 0, array1.length);
-		System.arraycopy(array2, 0, merge, array1.length, array2.length);
-		return merge;
-	}
-
-	private static byte[] longToBytesBE(long l) {
-		var target = new byte[8];
-		for (int i = 0; i <= 7; i++)
-			target[7 - i] = (byte) ((l >> (8 * i)) & 0xFF);
-
-		return target;
 	}
 }
