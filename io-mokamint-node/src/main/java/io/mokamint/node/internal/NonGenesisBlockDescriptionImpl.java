@@ -104,10 +104,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * 
 	 * @param height the height of the block
 	 * @param context the unmarshalling context
+	 * @param config the consensus configuration of the node storing the block description
 	 * @throws IOException if unmarshalling failed
 	 * @throws NoSuchAlgorithmException if the block uses some unknown signature or hashing algorithm
 	 */
-	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException, NoSuchAlgorithmException {
 		this.height = height;
 
 		try {
@@ -115,7 +116,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.totalWaitingTime = context.readLong();
 			this.weightedWaitingTime = context.readLong();
 			this.acceleration = context.readBigInteger();
-			this.deadline = Deadlines.from(context);
+			this.deadline = Deadlines.from(context, config.getHashingForDeadlines());
 			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
 
 			verify();
@@ -224,7 +225,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		config.map(ConsensusConfig::getHashingForGenerations).ifPresent(hashingForGenerations -> builder.append(" (" + hashingForGenerations + ")"));
 		builder.append("\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
-		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + challenge.getHashing() + ")\n");
+		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + challenge.getHashingForDeadlines() + ")\n");
 		builder.append("  * miner's signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")");
 	}
 

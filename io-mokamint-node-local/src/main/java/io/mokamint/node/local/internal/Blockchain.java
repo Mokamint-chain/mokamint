@@ -2002,7 +2002,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return Optional.empty();
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return Optional.of(Blocks.from(context));
+				return Optional.of(Blocks.from(context, node.getConfig()));
 			}
 		}
 		catch (ExodusException | IOException e) {
@@ -2030,7 +2030,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				// the marshalling of a block starts with that of its description
-				return Optional.of(BlockDescriptions.from(context));
+				return Optional.of(BlockDescriptions.from(context, node.getConfig()));
 			}
 		}
 		catch (ExodusException | IOException e) {

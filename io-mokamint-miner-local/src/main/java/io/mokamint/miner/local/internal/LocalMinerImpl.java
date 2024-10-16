@@ -80,15 +80,16 @@ public class LocalMinerImpl implements Miner {
 	@Override
 	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info(logPrefix + "received challenge: " + challenge);
+		var hashingForDeadlines = challenge.getHashingForDeadlines();
 
 		try {
 			CheckRunnable.check(InterruptedException.class, () -> {
 				PlotAndKeyPair[] plots = Stream.of(plotsAndKeyPairs)
-					.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(challenge.getHashing()))
+					.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(hashingForDeadlines))
 					.toArray(PlotAndKeyPair[]::new);
 
 				if (plots.length == 0)
-					LOGGER.warning(logPrefix + "no matching plot for hashing " + challenge.getHashing());
+					LOGGER.warning(logPrefix + "no matching plot for hashing " + hashingForDeadlines);
 				else
 					Stream.of(plots)
 						.map(UncheckFunction.uncheck(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))

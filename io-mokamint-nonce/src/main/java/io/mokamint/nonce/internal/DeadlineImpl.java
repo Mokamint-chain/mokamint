@@ -28,6 +28,7 @@ import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -101,14 +102,15 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * Unmarshals a deadline from the given context.
 	 * 
 	 * @param context the unmarshalling context
+	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @throws NoSuchAlgorithmException if the deadline uses an unknown hashing algorithm
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	public DeadlineImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+	public DeadlineImpl(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines) throws NoSuchAlgorithmException, IOException {
 		this.prolog = Prologs.from(context);
-		this.challenge = Challenges.from(context);
+		this.challenge = Challenges.from(context, hashingForDeadlines);
 		this.progressive = context.readLong();
-		this.value = context.readBytes(challenge.getHashing().length(), "Mismatch in deadline's value length");
+		this.value = context.readBytes(hashingForDeadlines.length(), "Mismatch in deadline's value length");
 		this.signature = context.readLengthAndBytes("Mismatch in deadline's signature length");
 
 		try {
@@ -134,8 +136,8 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
 	
-		if (value.length != challenge.getHashing().length())
-			throw new IllegalArgumentException("Illegal deadline value: expected an array of length " + challenge.getHashing().length() + " rather than " + value.length);
+		if (value.length != challenge.getHashingForDeadlines().length())
+			throw new IllegalArgumentException("Illegal deadline value: expected an array of length " + challenge.getHashingForDeadlines().length() + " rather than " + value.length);
 
 		try {
 			if (!prolog.getSignatureForDeadlines().getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
@@ -225,12 +227,12 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public boolean isValid() {
-		return Arrays.equals(value, new NonceImpl(prolog, progressive, challenge.getHashing()).getValueFor(challenge));
+		return Arrays.equals(value, new NonceImpl(prolog, progressive, challenge.getHashingForDeadlines()).getValueFor(challenge));
 	}
 
 	@Override
 	public BigInteger getPower() {
-		return BigInteger.ONE.shiftLeft(challenge.getHashing().length() * 8).divide(new BigInteger(1, value).add(BigInteger.ONE));
+		return BigInteger.ONE.shiftLeft(challenge.getHashingForDeadlines().length() * 8).divide(new BigInteger(1, value).add(BigInteger.ONE));
 	}
 
 	@Override

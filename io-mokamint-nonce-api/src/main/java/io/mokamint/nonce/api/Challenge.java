@@ -48,7 +48,7 @@ public interface Challenge extends Marshallable {
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm getHashing();
+	HashingAlgorithm getHashingForDeadlines();
 
 	/**
 	 * Checks if this challenge matches the given one.

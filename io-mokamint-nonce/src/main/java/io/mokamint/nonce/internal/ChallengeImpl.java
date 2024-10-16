@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -40,7 +39,7 @@ import io.mokamint.nonce.api.Deadline;
 public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	private final int scoopNumber;
 	private final byte[] generationSignature;
-	private final HashingAlgorithm hashing;
+	private final HashingAlgorithm hashingForDeadlines;
 
 	public ChallengeImpl(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashing) {
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
@@ -48,23 +47,24 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 
 		this.scoopNumber = scoopNumber;
 		this.generationSignature = Objects.requireNonNull(generationSignature, "generation signature cannot be null");
-		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null");
+		this.hashingForDeadlines = Objects.requireNonNull(hashing, "hashing cannot be null");
 	}
 
 	/**
 	 * Unmarshals a challenge from the given context.
 	 * 
 	 * @param context the unmarshalling context
+	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @throws NoSuchAlgorithmException if the challenge uses an unknown hashing algorithm
 	 * @throws IOException if the challenge could not be unmarshalled
 	 */
-	public ChallengeImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {		
+	public ChallengeImpl(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines) throws NoSuchAlgorithmException, IOException {		
 		this.scoopNumber = context.readCompactInt();
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
 		this.generationSignature = context.readLengthAndBytes("Mismatch in deadline's generation signature length");
-		this.hashing = HashingAlgorithms.of(context.readStringUnshared());
+		this.hashingForDeadlines = hashingForDeadlines;
 	}
 
 	@Override
@@ -72,17 +72,17 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 		if (other instanceof ChallengeImpl ci) // optimization
 			return scoopNumber == ci.getScoopNumber() &&
 				Arrays.equals(generationSignature, ci.generationSignature) &&
-				hashing.equals(ci.getHashing());
+				hashingForDeadlines.equals(ci.getHashingForDeadlines());
 		else
 			return other instanceof Challenge otherAsChallenge &&
 				scoopNumber == otherAsChallenge.getScoopNumber() &&
 				Arrays.equals(generationSignature, otherAsChallenge.getGenerationSignature()) &&
-				hashing.equals(otherAsChallenge.getHashing());
+				hashingForDeadlines.equals(otherAsChallenge.getHashingForDeadlines());
 	}
 
 	@Override
 	public int hashCode() {
-		return scoopNumber ^ Arrays.hashCode(generationSignature) ^ hashing.hashCode();
+		return scoopNumber ^ Arrays.hashCode(generationSignature) ^ hashingForDeadlines.hashCode();
 	}
 
 	@Override
@@ -96,8 +96,8 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	}
 
 	@Override
-	public HashingAlgorithm getHashing() {
-		return hashing;
+	public HashingAlgorithm getHashingForDeadlines() {
+		return hashingForDeadlines;
 	}
 
 	@Override
@@ -108,13 +108,13 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 		if (!Arrays.equals(generationSignature, other.getGenerationSignature()))
 			throw exceptionSupplier.apply("Generation signature mismatch");
 
-		if (!hashing.equals(other.getHashing()))
+		if (!hashingForDeadlines.equals(other.getHashingForDeadlines()))
 			throw exceptionSupplier.apply("Hashing algorithm mismatch");
 	}
 
 	@Override
 	public String toString() {
-		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(generationSignature) + ", hashing: " + hashing;
+		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(generationSignature) + ", hashing: " + hashingForDeadlines;
 	}
 
 	@Override
@@ -122,7 +122,7 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 		var trimmedGenerationSignature = new byte[Math.min(256, generationSignature.length)];
 		System.arraycopy(generationSignature, 0, trimmedGenerationSignature, 0, trimmedGenerationSignature.length);
 
-		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(trimmedGenerationSignature) + ", hashing: " + hashing;
+		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(trimmedGenerationSignature) + ", hashing: " + hashingForDeadlines;
 	}
 
 	/**
@@ -134,6 +134,6 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	public void into(MarshallingContext context) throws IOException {
 		context.writeCompactInt(scoopNumber);
 		context.writeLengthAndBytes(generationSignature);
-		context.writeStringUnshared(hashing.getName());
+		// we do not write the hashing for deadlines since it will be reconstructed from the configuration of the node
 	}
 }

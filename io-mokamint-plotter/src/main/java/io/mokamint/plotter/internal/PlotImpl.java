@@ -285,7 +285,7 @@ public class PlotImpl implements Plot {
 
 	@Override
 	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
-		if (!challenge.getHashing().equals(hashing))
+		if (!challenge.getHashingForDeadlines().equals(hashing))
 			throw new IllegalArgumentException("The challenge and the plot file use different hashing algorithms");
 
 		// we run this is its own thread, since it uses nio channels that would be closed

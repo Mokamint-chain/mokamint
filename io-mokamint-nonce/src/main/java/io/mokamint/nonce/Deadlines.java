@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
@@ -74,12 +75,13 @@ public final class Deadlines {
 	 * Factory method that unmarshals a deadline from the given context.
 	 * 
 	 * @param context the unmarshalling context
+	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @return the deadline
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	public static Deadline from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		return new DeadlineImpl(context);
+	public static Deadline from(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines) throws NoSuchAlgorithmException, IOException {
+		return new DeadlineImpl(context, hashingForDeadlines);
 	}
 
 	/**

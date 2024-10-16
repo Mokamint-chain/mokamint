@@ -105,6 +105,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * @param description the description of the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
+	 * @param bytesToSign the bytes of the block to sign
 	 * @throws SignatureException if signing failed
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
@@ -144,12 +145,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * Unmarshals a block from the given context.
 	 * 
 	 * @param context the context
+	 * @param config the consensus configuration of the node storing the block description
 	 * @return the block
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		var description = AbstractBlockDescription.from(context);
+	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
+		var description = AbstractBlockDescription.from(context, config);
 		if (description instanceof GenesisBlockDescription gbd)
 			return new GenesisBlockImpl(gbd, context);
 		else

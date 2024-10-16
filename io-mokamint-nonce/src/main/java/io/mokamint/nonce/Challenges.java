@@ -39,23 +39,24 @@ public final class Challenges {
 	 * 
 	 * @param scoopNumber the number of the scoop of the nonce used to compute the deadline
 	 * @param generationSignature the generation signature used to compute the deadline
-	 * @param hashing the hashing algorithm used to compute the deadline and the nonce
+	 * @param hashingForDeadlines the hashing algorithm used to compute the deadline and the nonce
 	 * @return the challenge
 	 */
-	public static Challenge of(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashing) {
-		return new ChallengeImpl(scoopNumber, generationSignature, hashing);
+	public static Challenge of(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashingForDeadlines) {
+		return new ChallengeImpl(scoopNumber, generationSignature, hashingForDeadlines);
 	}
 
 	/**
 	 * Factory method that unmarshals a challenge from the given context.
 	 * 
 	 * @param context the unmarshalling context
+	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @return the challenge
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the challenge is unknown
 	 * @throws IOException if the challenge could not be unmarshalled
 	 */
-	public static Challenge from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		return new ChallengeImpl(context);
+	public static Challenge from(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines) throws NoSuchAlgorithmException, IOException {
+		return new ChallengeImpl(context, hashingForDeadlines);
 	}
 
 	/**
