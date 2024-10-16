@@ -219,7 +219,7 @@ public class BlockVerification {
 	private void blockMatchesItsExpectedDescription(GenesisBlock block) throws VerificationException {
 		var description = block.getDescription();
 
-		var acceleration = description.getAcceleration(config);
+		var acceleration = description.getAcceleration();
 		// TODO
 		var generationSignature = new byte[config.getHashingForGenerations().length()];
 		generationSignature[0] = (byte) 0x80;
@@ -242,16 +242,16 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
-		var expectedDescription = previous.getNextBlockDescription(deadline, config, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
+		var expectedDescription = previous.getNextBlockDescription(deadline, config);
 
 		var description = block.getDescription();
 		var height = description.getHeight();
 		if (height != expectedDescription.getHeight())
 			throw new VerificationException("Height mismatch (expected " + expectedDescription.getHeight() + " but found " + height + ")");
 
-		var acceleration = description.getAcceleration(config);
-		if (!acceleration.equals(expectedDescription.getAcceleration(config)))
-			throw new VerificationException("Acceleration mismatch (expected " + expectedDescription.getAcceleration(config) + " but found " + acceleration + ")");
+		var acceleration = description.getAcceleration();
+		if (!acceleration.equals(expectedDescription.getAcceleration()))
+			throw new VerificationException("Acceleration mismatch (expected " + expectedDescription.getAcceleration() + " but found " + acceleration + ")");
 
 		var power = description.getPower();
 		if (!power.equals(expectedDescription.getPower()))

@@ -33,7 +33,6 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.Transactions;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
@@ -48,8 +47,7 @@ public class BlockTests extends AbstractLoggedTests {
 	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var keys = ed25519.getKeyPair();
-		var config = ConsensusConfigBuilders.defaults().build();
-		var block1 = Blocks.genesis(BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, ed25519, keys.getPublic(), config), new byte[] { 1, 2, 3, 4 }, keys.getPrivate());
+		var block1 = Blocks.genesis(BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, ed25519, keys.getPublic()), new byte[] { 1, 2, 3, 4 }, keys.getPrivate());
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);
@@ -70,8 +68,7 @@ public class BlockTests extends AbstractLoggedTests {
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
-		var config = ConsensusConfigBuilders.defaults().build();
-		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}, config), Stream.of(transaction1, transaction2, transaction3), new byte[] { 1, 2, 3, 4 }, nodeKeyPair.getPrivate());
+		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}), Stream.of(transaction1, transaction2, transaction3), new byte[] { 1, 2, 3, 4 }, nodeKeyPair.getPrivate());
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);

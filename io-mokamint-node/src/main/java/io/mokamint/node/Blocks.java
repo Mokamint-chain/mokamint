@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -80,13 +79,12 @@ public abstract class Blocks {
 	 * Unmarshals a block from the given context.
 	 * 
 	 * @param context the context
-	 * @param config the consensus configuration of the node storing the block
 	 * @return the block
 	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm in the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
-		return AbstractBlock.from(context, config);
+	public static Block from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+		return AbstractBlock.from(context);
 	}
 
 	/**

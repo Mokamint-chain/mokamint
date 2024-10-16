@@ -33,13 +33,6 @@ import io.hotmoka.marshalling.api.Marshallable;
 public interface BlockDescription extends Marshallable {
 
 	/**
-	 * Yields the consensus configuration of the node storing this description.
-	 * 
-	 * @return the consensus configuration of the node storing this description
-	 */
-	ConsensusConfig<?, ?> getConfig();
-
-	/**
 	 * Yields the power of the block, computed as the sum, for each block from genesis to the block,
 	 * of 2^(hashing for deadlines length in bits) / (value of the deadline in the block + 1).
 	 * This allows one to compare forks and choose the one whose tip has the highest power.
@@ -73,10 +66,9 @@ public interface BlockDescription extends Marshallable {
 	 * The higher, the shorter the time. This value changes from block to block in order
 	 * to cope with varying mining power in the network. It is the inverse of Bitcoin's difficulty.
 	 * 
-	 * @param config the consensus configuration of the node holding this block
 	 * @return the acceleration
 	 */
-	BigInteger getAcceleration(ConsensusConfig<?,?> config);
+	BigInteger getAcceleration();
 
 	/**
 	 * Yields the height of the block, counting from 0 for the genesis block.

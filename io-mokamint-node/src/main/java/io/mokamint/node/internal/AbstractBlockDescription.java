@@ -37,40 +37,26 @@ import io.mokamint.node.api.ConsensusConfig;
 public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 	/**
-	 * The consensus configuration of the node storing this description.
-	 */
-	private final ConsensusConfig<?,?> config;
-
-	/**
 	 * Creates a block description.
-	 * 
-	 * @param config the consensus configuration of the node storing the description
 	 */
-	protected AbstractBlockDescription(ConsensusConfig<?,?> config) {
-		this.config = config;
-	}
-
-	@Override
-	public final ConsensusConfig<?, ?> getConfig() {
-		return config;
+	protected AbstractBlockDescription() {
 	}
 
 	/**
 	 * Unmarshals a block description from the given context.
 	 * 
 	 * @param context the context
-	 * @param config the consensus configuration of the node storing the description
 	 * @return the block description
 	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm is not available
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
-	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
+	public static BlockDescription from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
 		// by reading the height, we can determine if it's a genesis block description or not
 		var height = context.readLong();
 		if (height == 0L)
-			return new GenesisBlockDescriptionImpl(context, config);
+			return new GenesisBlockDescriptionImpl(context);
 		else
-			return new NonGenesisBlockDescriptionImpl(height, context, config);
+			return new NonGenesisBlockDescriptionImpl(height, context);
 	}
 
 	/**
@@ -87,7 +73,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
 		config.map(ConsensusConfig::getHashingForGenerations).ifPresent(hashingForGenerations ->
 			builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(hashingForGenerations)) + " (" + hashingForGenerations + ")\n"));
-		config.ifPresent(_config -> builder.append("* acceleration: " + getAcceleration(_config)));
+		builder.append("* acceleration: " + getAcceleration());
 	}
 
 	@Override

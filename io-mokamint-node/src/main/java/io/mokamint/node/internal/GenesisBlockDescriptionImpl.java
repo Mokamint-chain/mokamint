@@ -76,9 +76,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlock, PublicKey publicKey, ConsensusConfig<?,?> config) throws InvalidKeyException {
-		super(config);
-
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
 		this.signatureForBlock = signatureForBlock;
@@ -92,13 +90,10 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * Unmarshals a genesis block.
 	 * 
 	 * @param context the unmarshalling context
-	 * @param config the consensus configuration of the node storing the description
 	 * @throws IOException if unmarshalling failed
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 */
-	GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?, ?> config) throws IOException, NoSuchAlgorithmException {
-		super(config);
-
+	GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.acceleration = context.readBigInteger();
@@ -146,7 +141,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
-	public BigInteger getAcceleration(ConsensusConfig<?,?> config) {
+	public BigInteger getAcceleration() {
 		return acceleration;
 	}
 
@@ -186,7 +181,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	public boolean equals(Object other) {
 		return other instanceof GenesisBlockDescription gbd &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
-			acceleration.equals(gbd.getAcceleration(getConfig())) &&
+			acceleration.equals(gbd.getAcceleration()) &&
 			publicKey.equals(gbd.getPublicKeyForSigningBlock()) &&
 			signatureForBlock.equals(gbd.getSignatureForBlock());
 	}

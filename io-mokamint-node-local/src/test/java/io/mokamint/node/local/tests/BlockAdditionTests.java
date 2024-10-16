@@ -170,7 +170,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			assertTrue(blockchain.add(genesis));
@@ -188,9 +188,9 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description1 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description1 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis1 = Blocks.genesis(description1, stateHash, nodeKeys.getPrivate());
-			var description2 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description2 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis2 = Blocks.genesis(description2, stateHash, nodeKeys.getPrivate());
 
 			assertTrue(blockchain.add(genesis1));
@@ -210,14 +210,14 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
 			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines), plotPrivateKey);
 			var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
-			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, config), Stream.empty(), stateHash, privateKey);
+			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious), Stream.empty(), stateHash, privateKey);
 
 			assertTrue(blockchain.add(genesis));
 			assertFalse(blockchain.add(block));
@@ -235,7 +235,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block = computeNextBlock(genesis, config);
 
@@ -256,7 +256,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, config, plot1);
 			var added = computeNextBlock(genesis, config, plot2);
@@ -293,7 +293,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, config, plot1);
 			var block0 = computeNextBlock(genesis, config, plot2);
@@ -366,7 +366,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			NonGenesisBlock mediumPowerful, mostPowerful, leastPowerful;
 
 			do {
-				var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+				var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 				genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 				var sorted = Stream.of(computeNextBlock(genesis, config, plot1), computeNextBlock(genesis, config, plot2), computeNextBlock(genesis, config, plot3))
 						.sorted(Comparator.comparing(block -> block.getDescription().getPower())).toArray(NonGenesisBlock[]::new);
@@ -420,7 +420,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic(), config);
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, config);
 			var block2 = computeNextBlock(block1, config);
@@ -472,7 +472,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var nextDeadlineDescription = previous.getNextChallenge(config.getHashingForGenerations(), config.getHashingForDeadlines());
 		var deadline = plot.getSmallestDeadline(nextDeadlineDescription, plotPrivateKey);
-		var description = previous.getNextBlockDescription(deadline, config, config.getTargetBlockCreationTime(), config.getHashingForBlocks());
+		var description = previous.getNextBlockDescription(deadline, config);
 		return Blocks.of(description, Stream.empty(), stateHash, privateKey);
 	}
 }

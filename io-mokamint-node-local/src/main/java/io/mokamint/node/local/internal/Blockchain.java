@@ -619,7 +619,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		var acceleration = new BigInteger(1, generationSignature).divide(BigInteger.valueOf(config.getTargetBlockCreationTime()));
 		*/
 
-		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic(), config);
+		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), keys.getPublic());
 
 		try {
 			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate());
@@ -2002,7 +2002,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return Optional.empty();
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return Optional.of(Blocks.from(context, node.getConfig()));
+				return Optional.of(Blocks.from(context));
 			}
 		}
 		catch (ExodusException | IOException e) {
@@ -2030,7 +2030,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				// the marshalling of a block starts with that of its description
-				return Optional.of(BlockDescriptions.from(context, node.getConfig()));
+				return Optional.of(BlockDescriptions.from(context));
 			}
 		}
 		catch (ExodusException | IOException e) {

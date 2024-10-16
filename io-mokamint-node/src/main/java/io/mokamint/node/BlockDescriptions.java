@@ -26,7 +26,6 @@ import java.time.LocalDateTime;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.internal.AbstractBlockDescription;
@@ -59,11 +58,10 @@ public abstract class BlockDescriptions {
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @param deadline the deadline computed for the block
 	 * @param hashOfPreviousBlock the reference to the previous block
-	 * @param config the consensus configuration of the node storing the description
 	 * @return the non-genesis block description
 	 */
-	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, ConsensusConfig<?,?> config) {
-		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, config);
+	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
+		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
 	}
 
 	/**
@@ -76,25 +74,23 @@ public abstract class BlockDescriptions {
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @param signatureForBlock the signature algorithm for the block
 	 * @param publicKey the public key of the signer of the block
-	 * @param config the consensus configuration of the node storing the description
 	 * @return the genesis block description
 	 * @throws InvalidKeyException if the public key is invalid
 	 */
-	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlock, PublicKey publicKey, ConsensusConfig<?,?> config) throws InvalidKeyException {
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlock, publicKey, config);
+	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, signatureForBlock, publicKey);
 	}
 
 	/**
 	 * Unmarshals a block description from the given context.
 	 * 
 	 * @param context the context
-	 * @param config the consensus configuration of the node storing that description
 	 * @return the block description
 	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm in the block description is unknown
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
-	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
-		return AbstractBlockDescription.from(context, config);
+	public static BlockDescription from(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
+		return AbstractBlockDescription.from(context);
 	}
 
 	/**
