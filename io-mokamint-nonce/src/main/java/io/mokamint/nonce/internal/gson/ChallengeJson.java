@@ -32,7 +32,8 @@ import io.mokamint.nonce.api.Challenge;
 public abstract class ChallengeJson implements JsonRepresentation<Challenge> {
 	private int scoopNumber;
 	private String generationSignature;
-	private String hashing;
+	private String hashingForDeadlines;
+	private String hashingForGenerations;
 
 	/**
 	 * Used by Gson.
@@ -42,13 +43,14 @@ public abstract class ChallengeJson implements JsonRepresentation<Challenge> {
 	protected ChallengeJson(Challenge challenge) {
 		this.scoopNumber = challenge.getScoopNumber();
 		this.generationSignature = Hex.toHexString(challenge.getGenerationSignature());
-		this.hashing = challenge.getHashingForDeadlines().getName();
+		this.hashingForDeadlines = challenge.getHashingForDeadlines().getName();
+		this.hashingForGenerations = challenge.getHashingForGenerations().getName();
 	}
 
 	@Override
 	public Challenge unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
-			return Challenges.of(scoopNumber, Hex.fromHexString(generationSignature), HashingAlgorithms.of(hashing));
+			return Challenges.of(scoopNumber, Hex.fromHexString(generationSignature), HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations));
 		}
 		catch (HexConversionException | IllegalArgumentException | NullPointerException e) {
 			throw new InconsistentJsonException(e);

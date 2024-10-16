@@ -190,14 +190,14 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("endBlock messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForEndBlock() throws EncodeException, DecodeException, InvalidKeyException, NoSuchAlgorithmException, SignatureException {
-		var hashing = HashingAlgorithms.shabal256();
-		var value = new byte[hashing.length()];
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashing), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
 		var endBlockMessage1 = EndBlockMessages.of(13, deadline, "id");
 		String encoded = new EndBlockMessages.Encoder().encode(endBlockMessage1);
 		var endBlockMessage2 = new EndBlockMessages.Decoder().decode(encoded);

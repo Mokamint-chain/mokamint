@@ -76,12 +76,13 @@ public final class Deadlines {
 	 * 
 	 * @param context the unmarshalling context
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
+	 * @param hashingForGenerations the hashing algorithm for the generation signatures
 	 * @return the deadline
 	 * @throws NoSuchAlgorithmException if the hashing algorithm of the deadline is unknown
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	public static Deadline from(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines) throws NoSuchAlgorithmException, IOException {
-		return new DeadlineImpl(context, hashingForDeadlines);
+	public static Deadline from(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations) throws NoSuchAlgorithmException, IOException {
+		return new DeadlineImpl(context, hashingForDeadlines, hashingForGenerations);
 	}
 
 	/**

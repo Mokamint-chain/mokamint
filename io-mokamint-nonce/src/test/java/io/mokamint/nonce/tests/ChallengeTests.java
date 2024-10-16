@@ -18,6 +18,8 @@ package io.mokamint.nonce.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.security.NoSuchAlgorithmException;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -31,8 +33,8 @@ public class ChallengeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("challenges are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForChallenges() throws EncodeException, DecodeException {
-		var challenge1 = Challenges.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256());
+	public void encodeDecodeWorksForChallenges() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var challenge1 = Challenges.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256(), HashingAlgorithms.sha256());
 		String encoded = new Challenges.Encoder().encode(challenge1);
 		var challenge2 = new Challenges.Decoder().decode(encoded);
 		assertEquals(challenge1, challenge2);

@@ -103,12 +103,13 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * 
 	 * @param context the unmarshalling context
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
+	 * @param hashingForGenerations the hashing algorithm for the generation signatures
 	 * @throws NoSuchAlgorithmException if the deadline uses an unknown hashing algorithm
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	public DeadlineImpl(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines) throws NoSuchAlgorithmException, IOException {
+	public DeadlineImpl(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations) throws NoSuchAlgorithmException, IOException {
 		this.prolog = Prologs.from(context);
-		this.challenge = Challenges.from(context, hashingForDeadlines);
+		this.challenge = Challenges.from(context, hashingForDeadlines, hashingForGenerations);
 		this.progressive = context.readLong();
 		this.value = context.readBytes(hashingForDeadlines.length(), "Mismatch in deadline's value length");
 		this.signature = context.readLengthAndBytes("Mismatch in deadline's signature length");
@@ -245,7 +246,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		var trimmedSignature = new byte[Math.min(256, signature.length)];
 		System.arraycopy(signature, 0, trimmedSignature, 0, trimmedSignature.length);
 		// the length of the value is fixed, so no problem with it
-		return "prolog: { " + prolog.toStringSanitized() + " }, progressive: " + progressive + ", challenge : { " + challenge.toStringSanitized() + " }, value: " + Hex.toHexString(value) + ", signature: " + Hex.toHexString(trimmedSignature);
+		return "prolog: { " + prolog.toStringSanitized() + " }, progressive: " + progressive + ", challenge : { " + challenge + " }, value: " + Hex.toHexString(value) + ", signature: " + Hex.toHexString(trimmedSignature);
 	}
 
 	/**

@@ -177,7 +177,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
-			var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines), plotPrivateKey);
+			var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, config.getHashingForGenerations()), plotPrivateKey);
 			byte[] previous = genesis.getHash(hashingForBlocks);
 			var block = Blocks.of(BlockDescriptions.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous), Stream.empty(), stateId, nodePrivateKey);
 
@@ -347,7 +347,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			// we replace the expected deadline
 			var challenge = deadline.getChallenge();
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-				Challenges.of((challenge.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, challenge.getGenerationSignature(), challenge.getHashingForDeadlines()), plotPrivateKey);
+				Challenges.of((challenge.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, challenge.getGenerationSignature(), challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -512,7 +512,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var modifiedGenerationSignature = challenge.getGenerationSignature();
 			// blocks' deadlines have a non-empty generation signature array
 			modifiedGenerationSignature[0]++;
-			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(challenge.getScoopNumber(), modifiedGenerationSignature, challenge.getHashingForDeadlines()), plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(challenge.getScoopNumber(), modifiedGenerationSignature, challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
@@ -540,14 +540,14 @@ public class VerificationTests extends AbstractLoggedTests {
 			var sha256 = HashingAlgorithms.sha256();
 			var challenge = deadline.getChallenge();
 			var otherAlgorithm = challenge.getHashingForDeadlines().equals(sha256) ? HashingAlgorithms.shabal256() : sha256;
-			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(challenge.getScoopNumber(), challenge.getGenerationSignature(), otherAlgorithm), plotPrivateKey);
+			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(challenge.getScoopNumber(), challenge.getGenerationSignature(), otherAlgorithm, challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
-			assertTrue(e.getMessage().startsWith("Deadline mismatch: hashing algorithm mismatch"));
+			assertTrue(e.getMessage().startsWith("Deadline mismatch: hashing algorithm for deadlines mismatch"));
 			assertBlockchainIsJustGenesis(blockchain, genesis, config);
 		}
 	}

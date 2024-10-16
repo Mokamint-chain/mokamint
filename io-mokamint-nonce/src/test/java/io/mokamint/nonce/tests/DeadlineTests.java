@@ -39,14 +39,14 @@ public class DeadlineTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deadlines are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeadlines() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-		var hashing = HashingAlgorithms.shabal256();
-		var value = new byte[hashing.length()];
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline1 = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashing), plotKeyPair.getPrivate());
+		var deadline1 = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
 		String encoded = new Deadlines.Encoder().encode(deadline1);
 		var deadline2 = new Deadlines.Decoder().decode(encoded);
 		assertEquals(deadline1, deadline2);

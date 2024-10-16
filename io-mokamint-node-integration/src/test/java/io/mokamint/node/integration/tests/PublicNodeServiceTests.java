@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
@@ -265,7 +266,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
@@ -378,7 +379,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
 		var description = BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
 		class MyTestClient extends RemotePublicNodeImpl {

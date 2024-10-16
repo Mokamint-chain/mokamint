@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.service.tests;
 
+import static io.hotmoka.crypto.HashingAlgorithms.sha256;
 import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,17 +43,17 @@ import io.mokamint.miner.service.MinerServices;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.DeploymentException;
 
 public class MinerServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline description is requested to a miner service, it gets forwarded to the adapted miner")
-	public void minerServiceForwardsToMiner() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException {
+	public void minerServiceForwardsToMiner() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
-		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256());
+		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256(), sha256());
 
 		var miner = new Miner() {
 
@@ -82,14 +83,15 @@ public class MinerServiceTests extends AbstractLoggedTests {
 	public void minerForwardsToRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
+		HashingAlgorithm sha256 = sha256();
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeys = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
-		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256, sha256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
-		var deadline = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256, sha256), plotKeys.getPrivate());
 
 		var miner = new Miner() {
 
@@ -123,16 +125,17 @@ public class MinerServiceTests extends AbstractLoggedTests {
 	public void minerForwardsToRequesterAfterDelay() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
-		var description1 = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
-		var description2 = Challenges.of(43, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		HashingAlgorithm sha256 = sha256();
+		var description1 = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256, sha256);
+		var description2 = Challenges.of(43, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256, sha256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeys = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
-		var deadline1 = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
-		var deadline2 = Deadlines.of(prolog, 43L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
+		var deadline1 = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256, sha256), plotKeys.getPrivate());
+		var deadline2 = Deadlines.of(prolog, 43L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256, sha256), plotKeys.getPrivate());
 		var delay = 2000L;
 
 		var miner = new Miner() {
@@ -176,14 +179,15 @@ public class MinerServiceTests extends AbstractLoggedTests {
 	@DisplayName("a deadline sent back after the requester disconnects is simply lost, without errors")
 	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		HashingAlgorithm shabal256 = shabal256();
-		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256);
+		HashingAlgorithm sha256 = sha256();
+		var description = Challenges.of(42, new byte[] { 1, 2, 3, 4, 5, 6 }, shabal256, sha256);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeys = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256), plotKeys.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, Challenges.of(11, new byte[] { 1, 2, 3 }, shabal256, sha256), plotKeys.getPrivate());
 		long delay = 2000;
 
 		var miner = new Miner() {

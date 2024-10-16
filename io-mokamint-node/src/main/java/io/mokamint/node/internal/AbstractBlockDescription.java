@@ -72,7 +72,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	@Override
 	public final Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
 		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
-		return Challenges.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines);
+		return Challenges.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines, hashingForGenerations);
 	}
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {

@@ -138,15 +138,15 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("non-empty getBlockResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-		var hashing = HashingAlgorithms.shabal256();
-		var value = new byte[hashing.length()];
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashing), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
@@ -179,15 +179,15 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("non-empty getBlockDescriptionResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetBlockDescriptionResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-		var hashing = HashingAlgorithms.shabal256();
-		var value = new byte[hashing.length()];
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashing), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
 		var block = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
 		var getBlockDescriptionResultMessage1 = GetBlockDescriptionResultMessages.of(Optional.of(block), "id");
 		String encoded = new GetBlockDescriptionResultMessages.Encoder().encode(getBlockDescriptionResultMessage1);
@@ -511,15 +511,15 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("whisper block messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-		var hashing = HashingAlgorithms.shabal256();
-		var value = new byte[hashing.length()];
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashing), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});

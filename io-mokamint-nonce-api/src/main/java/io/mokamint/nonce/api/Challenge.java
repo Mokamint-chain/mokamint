@@ -51,6 +51,13 @@ public interface Challenge extends Marshallable {
 	HashingAlgorithm getHashingForDeadlines();
 
 	/**
+	 * The hashing algorithm used for the generation signatures.
+	 * 
+	 * @return the hashing algorithm
+	 */
+	HashingAlgorithm getHashingForGenerations();
+
+	/**
 	 * Checks if this challenge matches the given one.
 	 * If it doesn't, an exception is thrown by using the given supplier.
 	 * 
@@ -68,14 +75,4 @@ public interface Challenge extends Marshallable {
 	 */
 	@Override
 	String toString();
-
-	/**
-	 * A sanitized version of {@link #toString()}. It imposed a maximal length to the generation signature reported
-	 * in the resulting string. This is important if the challenge comes from the network,
-	 * since it might contain arbitrarily long strings that might, for instance, pollute the logs.
-	 * For most challenges, this coincides with {@link #toString()}.
-	 * 
-	 * @return the sanitized string
-	 */
-	String toStringSanitized();
 }

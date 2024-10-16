@@ -64,10 +64,11 @@ public class PlotTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		long start = 65536L, length = 100L;
-		var hashing = HashingAlgorithms.shabal256();
-		var challenge = Challenges.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashing);
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var hashingForGenerations = HashingAlgorithms.sha256();
+		var challenge = Challenges.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashingForDeadlines, hashingForGenerations);
 
-		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
+		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashingForDeadlines, __ -> {})) {
 			Deadline deadline = plot.getSmallestDeadline(challenge, plotKeyPair.getPrivate());
 			deadline.getChallenge().matchesOrThrow(challenge, IllegalArgumentException::new);
 			assertTrue(deadline.isValid());

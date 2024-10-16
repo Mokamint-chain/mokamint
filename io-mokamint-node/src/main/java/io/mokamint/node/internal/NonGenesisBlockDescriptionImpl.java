@@ -116,7 +116,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.totalWaitingTime = context.readLong();
 			this.weightedWaitingTime = context.readLong();
 			this.acceleration = context.readBigInteger();
-			this.deadline = Deadlines.from(context, config.getHashingForDeadlines());
+			this.deadline = Deadlines.from(context, config.getHashingForDeadlines(), config.getHashingForGenerations());
 			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
 
 			verify();
