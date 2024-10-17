@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.integration.tests;
 
+import static io.hotmoka.crypto.HashingAlgorithms.sha256;
 import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -256,8 +257,11 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
 	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
 		var semaphore = new Semaphore(0);
+		var hashingForGenerations = sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
 		HashingAlgorithm shabal256 = shabal256();
-		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -266,7 +270,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, generationSignature, shabal256, hashingForGenerations), plotKeyPair.getPrivate());
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
@@ -370,7 +374,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	public void serviceGetBlockDescriptionNonEmptyWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
-		var data = new byte[] { 1, 2, 3, 4, 5, 6 };
+		var hashingForGenerations = sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
@@ -379,7 +386,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, data, shabal256, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, generationSignature, shabal256, hashingForGenerations), plotKeyPair.getPrivate());
 		var description = BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
 
 		class MyTestClient extends RemotePublicNodeImpl {

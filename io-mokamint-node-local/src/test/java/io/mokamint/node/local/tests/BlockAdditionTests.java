@@ -47,6 +47,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
@@ -210,12 +211,16 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
+			var hashingForGenerations = HashingAlgorithms.sha256();
+			var generationSignature = new byte[hashingForGenerations.length()];
+			for (int pos = 0; pos < generationSignature.length; pos++)
+				generationSignature[pos] = (byte) (42 + pos);
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
-			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, config.getHashingForGenerations()), plotPrivateKey);
+			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotPrivateKey);
 			var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
 			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious), Stream.empty(), stateHash, privateKey);
 

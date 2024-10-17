@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.integration.tests;
 
+import static io.hotmoka.crypto.HashingAlgorithms.sha256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -541,6 +542,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
+		var hashingForGenerations = sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -548,7 +553,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
 		byte[] finalStateId = { 25, 12, 20, 24 };
 		when(app.endBlock(groupId, deadline)).thenReturn(finalStateId);
 
@@ -581,6 +586,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
+		var hashingForGenerations = sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -588,7 +597,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
 		var exceptionMessage = "unknown group id";
 		when(app.endBlock(groupId, deadline)).thenThrow(new UnknownGroupIdException(exceptionMessage));
 	

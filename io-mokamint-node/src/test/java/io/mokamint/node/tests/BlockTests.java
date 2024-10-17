@@ -56,6 +56,10 @@ public class BlockTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("non-genesis blocks are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForNonGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		var hashingForGenerations = HashingAlgorithms.sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var value = new byte[hashingForDeadlines.length()];
 		for (int pos = 0; pos < value.length; pos++)
@@ -64,7 +68,7 @@ public class BlockTests extends AbstractLoggedTests {
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, new byte[] { 90, 91, 92 }, hashingForDeadlines, HashingAlgorithms.sha256()), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});

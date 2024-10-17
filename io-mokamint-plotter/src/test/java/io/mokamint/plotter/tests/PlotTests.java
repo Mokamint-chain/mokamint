@@ -66,7 +66,10 @@ public class PlotTests extends AbstractLoggedTests {
 		long start = 65536L, length = 100L;
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
-		var challenge = Challenges.of(13, new byte[] { 1, 90, (byte) 180, (byte) 255, 11 }, hashingForDeadlines, hashingForGenerations);
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
+		var challenge = Challenges.of(13, generationSignature, hashingForDeadlines, hashingForGenerations);
 
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashingForDeadlines, __ -> {})) {
 			Deadline deadline = plot.getSmallestDeadline(challenge, plotKeyPair.getPrivate());

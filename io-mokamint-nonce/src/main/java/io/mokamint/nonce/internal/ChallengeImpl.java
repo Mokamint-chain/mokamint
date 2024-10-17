@@ -46,11 +46,12 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
 		this.scoopNumber = scoopNumber;
-		this.generationSignature = Objects.requireNonNull(generationSignature, "generation signature cannot be null");
+		this.generationSignature = Objects.requireNonNull(generationSignature, "generation signature cannot be null").clone();
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 	
-		
+		if (generationSignature.length != hashingForGenerations.length())
+			throw new IllegalArgumentException("Mismatch in generation signature length: found " + generationSignature.length + " but expected " + hashingForGenerations.length());
 	}
 
 	/**

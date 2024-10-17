@@ -34,7 +34,11 @@ public class ChallengeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("challenges are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForChallenges() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var challenge1 = Challenges.of(13, new byte[] { 4, 5, 6 }, HashingAlgorithms.shabal256(), HashingAlgorithms.sha256());
+		var hashingForGenerations = HashingAlgorithms.sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
+		var challenge1 = Challenges.of(13, generationSignature, HashingAlgorithms.shabal256(), hashingForGenerations);
 		String encoded = new Challenges.Encoder().encode(challenge1);
 		var challenge2 = new Challenges.Decoder().decode(encoded);
 		assertEquals(challenge1, challenge2);
