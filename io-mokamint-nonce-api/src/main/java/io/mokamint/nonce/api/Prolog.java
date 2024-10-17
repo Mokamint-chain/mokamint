@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
+import java.io.IOException;
 import java.security.PublicKey;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
 
 /**
  * The prolog of a deadline.
@@ -106,6 +108,17 @@ public interface Prolog extends Marshallable {
 	 * @return the sanitized string
 	 */
 	String toStringSanitized();
+
+	/**
+	 * Marshals this object into a given stream. This method in general
+	 * performs better than standard Java serialization, wrt the size of the marshalled data.
+	 * It does not report information that can be recomputed from the configuration of the
+	 * node storing this prolog.
+	 * 
+	 * @param context the context holding the stream
+	 * @throws IOException if this object cannot be marshalled
+	 */
+	void intoWithoutConfigurationData(MarshallingContext context) throws IOException;
 
 	@Override
 	boolean equals(Object other);

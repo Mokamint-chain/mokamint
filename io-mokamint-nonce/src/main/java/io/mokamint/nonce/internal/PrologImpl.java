@@ -124,9 +124,11 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	/**
-	 * Unmarshals a prolog from the given context.
+	 * Unmarshals a prolog from the given context.  It assumes that the prolog was previously marshalled through
+	 * {@link Prolog#into(MarshallingContext)}.
 	 * 
 	 * @param context the unmarshalling context
+	 * @param chainId the chain identifier of the node storing the prolog
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws IOException if the prolog could not be unmarshalled
 	 */
@@ -137,6 +139,35 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 			byte[] publicKeyForSigningBlocksEncoding = context.readLengthAndBytes("Mismatch in the length of the public key for signing blocks");
 			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
 			this.signatureForDeadlines = SignatureAlgorithms.of(context.readStringShared());
+			byte[] plotPublicKeyEncoding = context.readLengthAndBytes("Mismatch in the plot's public key length");
+			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
+			this.extra = context.readLengthAndBytes("Mismatch in prolog's extra length");
+
+			verify();
+
+			this.publicKeyForSigningBlocksBase58 = Base58.encode(publicKeyForSigningBlocksEncoding);
+			this.publicKeyForSigningDeadlinesBase58 = Base58.encode(plotPublicKeyEncoding);
+		}
+		catch (RuntimeException | InvalidKeySpecException e) {
+			throw new IOException(e);
+		}
+	}
+
+	/**
+	 * Unmarshals a prolog from the given context.  It assumes that the prolog was previously marshalled through
+	 * {@link Prolog#intoWithoutConfigurationData(MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @param chainId the chain identifier of the node storing the prolog
+	 * @throws IOException if the prolog could not be unmarshalled
+	 */
+	public PrologImpl(UnmarshallingContext context, String chainId, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
+		try {
+			this.chainId = chainId;
+			this.signatureForBlocks = signatureForBlocks;
+			byte[] publicKeyForSigningBlocksEncoding = context.readLengthAndBytes("Mismatch in the length of the public key for signing blocks");
+			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
+			this.signatureForDeadlines = signatureForDeadlines;
 			byte[] plotPublicKeyEncoding = context.readLengthAndBytes("Mismatch in the plot's public key length");
 			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
 			this.extra = context.readLengthAndBytes("Mismatch in prolog's extra length");
@@ -245,6 +276,18 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 			context.writeStringShared(signatureForBlocks.getName());
 			context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
 			context.writeStringShared(signatureForDeadlines.getName());
+			context.writeLengthAndBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+			context.writeLengthAndBytes(extra);
+		}
+		catch (InvalidKeyException e) {
+			throw new IOException("Cannot marshal the prolog into bytes", e);
+		}
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		try {
+			context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
 			context.writeLengthAndBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
 			context.writeLengthAndBytes(extra);
 		}

@@ -20,7 +20,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
@@ -29,6 +28,7 @@ import java.util.Objects;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -102,13 +102,14 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 * Unmarshals a deadline from the given context.
 	 * 
 	 * @param context the unmarshalling context
+	 * @param chainId the chain identifier of the node storing the deadline
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @param hashingForGenerations the hashing algorithm for the generation signatures
-	 * @throws NoSuchAlgorithmException if the deadline uses an unknown hashing algorithm
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
-	public DeadlineImpl(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations) throws NoSuchAlgorithmException, IOException {
-		this.prolog = Prologs.from(context);
+	public DeadlineImpl(UnmarshallingContext context, String chainId, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
+			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
+		this.prolog = Prologs.from(context, chainId, signatureForBlocks, signatureForDeadlines);
 		this.challenge = Challenges.from(context, hashingForDeadlines, hashingForGenerations);
 		this.progressive = context.readLong();
 		this.value = context.readBytes(hashingForDeadlines.length(), "Mismatch in deadline's value length");
@@ -280,9 +281,30 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		context.writeBytes(value);
 	}
 
+	/**
+	 * Marshals this deadline into the given context, without its signature and without
+	 * information that can be recovered from the configuration of the node storing this deadline.
+	 * 
+	 * @param context the context
+	 * @throws IOException if marshalling fails
+	 */
+	private void intoWithoutSignatureWithoutConfigurationData(MarshallingContext context) throws IOException {
+		prolog.intoWithoutConfigurationData(context);
+		challenge.into(context);
+		context.writeLong(progressive);
+		// we do not write value.length, since it coincides with hashing.length()
+		context.writeBytes(value);
+	}
+
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		intoWithoutSignature(context);
+		context.writeLengthAndBytes(signature);
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		intoWithoutSignatureWithoutConfigurationData(context);
 		context.writeLengthAndBytes(signature);
 	}
 }

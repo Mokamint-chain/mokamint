@@ -50,7 +50,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;

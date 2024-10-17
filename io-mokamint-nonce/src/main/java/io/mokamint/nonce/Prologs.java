@@ -59,7 +59,21 @@ public final class Prologs {
 	}
 
 	/**
-	 * Unmarshals a prolog from the given context.
+	 * Unmarshals a prolog from the given context. It assumes that the prolog was previously marshalled through
+	 * {@link Prolog#intoWithoutConfigurationData(io.hotmoka.marshalling.api.MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @param chainId the chain identifier of the node storing the prolog
+	 * @return the prolog
+	 * @throws IOException if the prolog could not be unmarshalled
+	 */
+	public static Prolog from(UnmarshallingContext context, String chainId, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
+		return new PrologImpl(context, chainId, signatureForBlocks, signatureForDeadlines);
+	}
+
+	/**
+	 * Unmarshals a prolog from the given context. It assumes that the prolog was previously marshalled through
+	 * {@link Prolog#into(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 
 	 * @param context the unmarshalling context
 	 * @return the prolog

@@ -18,7 +18,6 @@ package io.mokamint.node.internal;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -106,9 +105,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @param context the unmarshalling context
 	 * @param config the consensus configuration of the node storing the block description
 	 * @throws IOException if unmarshalling failed
-	 * @throws NoSuchAlgorithmException if the block uses some unknown signature or hashing algorithm
 	 */
-	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException, NoSuchAlgorithmException {
+	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		this.height = height;
 
 		try {
@@ -116,7 +114,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.totalWaitingTime = context.readLong();
 			this.weightedWaitingTime = context.readLong();
 			this.acceleration = context.readBigInteger();
-			this.deadline = Deadlines.from(context, config.getHashingForDeadlines(), config.getHashingForGenerations());
+			this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
 			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
 
 			verify();

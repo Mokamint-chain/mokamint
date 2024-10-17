@@ -219,12 +219,12 @@ public class PlotImpl implements Plot {
 
 		private void dumpMetadata() throws IOException {
 			var buffer = ByteBuffer.allocate(metadataSize);
-			byte[] prologBytes = prolog.toByteArray();
+			var prologBytes = prolog.toByteArray();
 			buffer.putInt(prologBytes.length);
 			buffer.put(prologBytes);
 			buffer.putLong(start);
 			buffer.putLong(length);
-			byte[] name = hashingForDeadlines.getName().getBytes(Charset.forName("UTF-8"));
+			var name = hashingForDeadlines.getName().getBytes(Charset.forName("UTF-8"));
 			buffer.putInt(name.length);
 			buffer.put(name);
 

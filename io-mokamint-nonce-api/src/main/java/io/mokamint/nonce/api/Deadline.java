@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
+import java.io.IOException;
 import java.math.BigInteger;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
 
 /**
  * A deadline inside a plot file. It is a reference to a nonce
@@ -113,6 +115,17 @@ public interface Deadline extends Marshallable {
 	 * @return the power of this deadline
 	 */
 	BigInteger getPower();
+
+	/**
+	 * Marshals this object into a given stream. This method in general
+	 * performs better than standard Java serialization, wrt the size of the marshalled data.
+	 * It does not marshal information that can be recovered from the configuration of
+	 * a Mokamint node storing this deadline.
+	 * 
+	 * @param context the context holding the stream
+	 * @throws IOException if this object cannot be marshalled
+	 */
+	void intoWithoutConfigurationData(MarshallingContext context) throws IOException;
 
 	/**
 	 * Yields a string representation of this deadline.
