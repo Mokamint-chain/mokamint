@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.nonce.api;
 
+import java.io.IOException;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
 
 /**
  * The challenge to build a deadline. This can be provided for instance to
@@ -67,6 +69,17 @@ public interface Challenge extends Marshallable {
 	 * @throws E if the match fails
 	 */
 	<E extends Exception> void matchesOrThrow(Challenge other, Function<String, E> exceptionSupplier) throws E;
+
+	/**
+	 * Marshals this object into a given stream. This method in general
+	 * performs better than standard Java serialization, wrt the size of the marshalled data.
+	 * It does not report information that can be recomputed from the configuration of the
+	 * node storing this challenge.
+	 * 
+	 * @param context the context holding the stream
+	 * @throws IOException if this object cannot be marshalled
+	 */
+	void intoWithoutConfigurationData(MarshallingContext context) throws IOException;
 
 	/**
 	 * Yields a string representation of this challenge.

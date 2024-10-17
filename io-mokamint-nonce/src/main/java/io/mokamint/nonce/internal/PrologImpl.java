@@ -159,6 +159,8 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * 
 	 * @param context the unmarshalling context
 	 * @param chainId the chain identifier of the node storing the prolog
+	 * @param signatureForBlocks the signature algorithm for the blocks
+	 * @param signatureForDeadlines the signature algorithm for the deadlines
 	 * @throws IOException if the prolog could not be unmarshalled
 	 */
 	public PrologImpl(UnmarshallingContext context, String chainId, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {

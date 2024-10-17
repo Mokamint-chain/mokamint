@@ -198,7 +198,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		context.writeLong(totalWaitingTime);
 		context.writeLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
-		deadline.into(context);
+		deadline.intoWithoutConfigurationData(context);
 		context.writeLengthAndBytes(hashOfPreviousBlock);
 	}
 

@@ -18,6 +18,7 @@ package io.mokamint.nonce;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 
@@ -72,7 +73,9 @@ public final class Deadlines {
 	}
 
 	/**
-	 * Factory method that unmarshals a deadline from the given context.
+	 * Factory method that unmarshals a deadline from the given context. It assumes
+	 * that the deadline was marshalled by using
+	 * {@link Deadline#intoWithoutConfigurationData(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 
 	 * @param context the unmarshalling context
 	 * @param chainId the chain identifier of the node storing the deadline
@@ -84,6 +87,20 @@ public final class Deadlines {
 	public static Deadline from(UnmarshallingContext context, String chainId, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
 			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
 		return new DeadlineImpl(context, chainId, hashingForDeadlines, hashingForGenerations, signatureForBlocks, signatureForDeadlines);
+	}
+
+	/**
+	 * Factory method that unmarshals a deadline from the given context. It assumes
+	 * that the deadline was marshalled by using
+	 * {@link Deadline#into(io.hotmoka.marshalling.api.MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @return the deadline
+	 * @throws IOException if the deadline could not be unmarshalled
+	 * @throws NoSuchAlgorithmException if the deadline refers to an unknown cryptographic algorithm
+	 */
+	public static Deadline from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		return new DeadlineImpl(context);
 	}
 
 	/**

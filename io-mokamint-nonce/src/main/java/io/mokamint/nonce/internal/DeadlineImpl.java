@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
@@ -99,12 +100,38 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	}
 
 	/**
-	 * Unmarshals a deadline from the given context.
+	 * Unmarshals a deadline from the given context. It assumes that it was marshalled
+	 * by using {@link Deadline#into(MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @throws IOException if the deadline could not be unmarshalled
+	 * @throws NoSuchAlgorithmException if the deadline refers to an unknown cryptographic algorithm
+	 */
+	public DeadlineImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		this.prolog = Prologs.from(context);
+		this.challenge = Challenges.from(context);
+		this.progressive = context.readLong();
+		this.value = context.readBytes(challenge.getHashingForDeadlines().length(), "Mismatch in deadline's value length");
+		this.signature = context.readLengthAndBytes("Mismatch in deadline's signature length");
+
+		try {
+			verify();
+		}
+		catch (NullPointerException | IllegalArgumentException e) {
+			throw new IOException(e);
+		}
+	}
+
+	/**
+	 * Unmarshals a deadline from the given context. It assumes that it was marshalled
+	 * by using {@link Deadline#intoWithoutConfigurationData(MarshallingContext)}.
 	 * 
 	 * @param context the unmarshalling context
 	 * @param chainId the chain identifier of the node storing the deadline
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @param hashingForGenerations the hashing algorithm for the generation signatures
+	 * @param signatureForBlocks the signature algorithm for the blocks
+	 * @param signatureForDeadlines the signature algorithm for the deadlines
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context, String chainId, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
@@ -290,7 +317,7 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	 */
 	private void intoWithoutSignatureWithoutConfigurationData(MarshallingContext context) throws IOException {
 		prolog.intoWithoutConfigurationData(context);
-		challenge.into(context);
+		challenge.intoWithoutConfigurationData(context);
 		context.writeLong(progressive);
 		// we do not write value.length, since it coincides with hashing.length()
 		context.writeBytes(value);

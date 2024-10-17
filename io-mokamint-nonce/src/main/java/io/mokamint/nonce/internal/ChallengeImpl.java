@@ -17,11 +17,13 @@ limitations under the License.
 package io.mokamint.nonce.internal;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -55,7 +57,8 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	}
 
 	/**
-	 * Unmarshals a challenge from the given context.
+	 * Unmarshals a challenge from the given context. It assumes that the challenge
+	 * was marshalled by using {@link Challenge#intoWithoutConfigurationData(MarshallingContext)}.
 	 * 
 	 * @param context the unmarshalling context
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
@@ -67,9 +70,27 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
-		this.generationSignature = context.readLengthAndBytes("Mismatch in challenge's generation signature length");
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
+		this.generationSignature = context.readLengthAndBytes("Mismatch in challenge's generation signature length");
+	}
+
+	/**
+	 * Unmarshals a challenge from the given context. It assumes that the challenge
+	 * was marshalled by using {@link Challenge#into(MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @throws IOException if the challenge could not be unmarshalled
+	 * @throws NoSuchAlgorithmException if the challenge refers to an unknown cryptographic algorithm
+	 */
+	public ChallengeImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {		
+		this.scoopNumber = context.readCompactInt();
+		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
+			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
+
+		this.hashingForDeadlines = HashingAlgorithms.of(context.readStringShared());
+		this.hashingForGenerations = HashingAlgorithms.of(context.readStringShared());
+		this.generationSignature = context.readLengthAndBytes("Mismatch in challenge's generation signature length");
 	}
 
 	@Override
@@ -129,15 +150,17 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 				+ ", hashing for generations: " + hashingForGenerations;
 	}
 
-	/**
-	 * Marshals this challenge into the given context.
-	 * 
-	 * @param context the context
-	 * @throws IOException if marshalling fails
-	 */
+	@Override
 	public void into(MarshallingContext context) throws IOException {
 		context.writeCompactInt(scoopNumber);
+		context.writeStringShared(hashingForDeadlines.getName());
+		context.writeStringShared(hashingForGenerations.getName());
 		context.writeLengthAndBytes(generationSignature);
-		// we do not write the hashing algorithms since they will be reconstructed from the configuration of the node
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		context.writeCompactInt(scoopNumber);
+		context.writeLengthAndBytes(generationSignature);
 	}
 }
