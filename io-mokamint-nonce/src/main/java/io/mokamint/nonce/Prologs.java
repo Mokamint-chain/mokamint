@@ -64,6 +64,8 @@ public final class Prologs {
 	 * 
 	 * @param context the unmarshalling context
 	 * @param chainId the chain identifier of the node storing the prolog
+	 * @param signatureForBlocks the signature algorithm for the blocks
+	 * @param signatureForDeadlines the signature algorithm for the deadlines
 	 * @return the prolog
 	 * @throws IOException if the prolog could not be unmarshalled
 	 */

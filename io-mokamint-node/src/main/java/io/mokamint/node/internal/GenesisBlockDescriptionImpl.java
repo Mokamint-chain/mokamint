@@ -35,6 +35,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 
@@ -87,7 +88,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	/**
-	 * Unmarshals a genesis block.
+	 * Unmarshals a genesis block description. It assumes that the description was marshalled
+	 * by using {@link BlockDescription#into(MarshallingContext)}.
 	 * 
 	 * @param context the unmarshalling context
 	 * @throws IOException if unmarshalling failed
@@ -98,6 +100,30 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.acceleration = context.readBigInteger();
 			this.signatureForBlock = SignatureAlgorithms.of(context.readStringShared());
+			byte[] publicKeyEncoding = context.readLengthAndBytes("Mismatch in the length of the public key");
+			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
+			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
+	
+			verify();
+		}
+		catch (RuntimeException | InvalidKeySpecException e) {
+			throw new IOException(e);
+		}
+	}
+
+	/**
+	 * Unmarshals a genesis block description. It assumes that the description was marshalled
+	 * by using {@link BlockDescription#intoWithoutConfigurationData(MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @param config the configuration of the node storing the description
+	 * @throws IOException if unmarshalling failed
+	 */
+	GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+		try {
+			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+			this.acceleration = context.readBigInteger();
+			this.signatureForBlock = config.getSignatureForBlocks();
 			byte[] publicKeyEncoding = context.readLengthAndBytes("Mismatch in the length of the public key");
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
@@ -208,6 +234,22 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
 			context.writeStringShared(signatureForBlock.getName());
+			context.writeLengthAndBytes(signatureForBlock.encodingOf(publicKey));
+		}
+		catch (DateTimeException | InvalidKeyException e) {
+			throw new IOException(e);
+		}
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		try {
+			// we write the height of the block anyway, so that, by reading the first long,
+			// it is possible to distinguish between a genesis block (height == 0)
+			// and a non-genesis block (height > 0)
+			context.writeLong(0L);
+			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
+			context.writeBigInteger(acceleration);
 			context.writeLengthAndBytes(signatureForBlock.encodingOf(publicKey));
 		}
 		catch (DateTimeException | InvalidKeyException e) {

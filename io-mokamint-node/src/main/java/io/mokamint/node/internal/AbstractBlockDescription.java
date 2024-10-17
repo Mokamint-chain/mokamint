@@ -52,21 +52,40 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	/**
-	 * Unmarshals a block description from the given context.
+	 * Unmarshals a block description from the given context. It assumes that it was marshalled by using
+	 * {@link BlockDescription#intoWithoutConfigurationData(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 
 	 * @param context the context
 	 * @param config the consensus configuration of the node storing the block description
 	 * @return the block description
-	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm is not available
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
-	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
+	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+		// by reading the height, we can determine if it's a genesis block description or not
+		var height = context.readLong();
+		if (height == 0L)
+			return new GenesisBlockDescriptionImpl(context, config);
+		else
+			return new NonGenesisBlockDescriptionImpl(height, context, config);
+	}
+
+	/**
+	 * Unmarshals a block description from the given context. It assumes that it was marshalled by using
+	 * {@link BlockDescription#into(io.hotmoka.marshalling.api.MarshallingContext)}.
+	 * 
+	 * @param context the context
+	 * @param config the consensus configuration of the node storing the block description
+	 * @return the block description
+	 * @throws IOException if the block description cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
+	 */
+	public static BlockDescription from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		// by reading the height, we can determine if it's a genesis block description or not
 		var height = context.readLong();
 		if (height == 0L)
 			return new GenesisBlockDescriptionImpl(context);
 		else
-			return new NonGenesisBlockDescriptionImpl(height, context, config);
+			return new NonGenesisBlockDescriptionImpl(height, context);
 	}
 
 	@Override

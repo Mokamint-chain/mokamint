@@ -16,12 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -97,4 +99,15 @@ public interface Block extends Marshallable, Whisperable {
 	 * @return the representation
 	 */
 	String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
+
+	/**
+	 * Marshals this object into a given stream. This method in general
+	 * performs better than standard Java serialization, wrt the size of the marshalled data.
+	 * It does not report information that can be recomputed from the configuration of the
+	 * node storing this block.
+	 * 
+	 * @param context the context holding the stream
+	 * @throws IOException if this object cannot be marshalled
+	 */
+	void intoWithoutConfigurationData(MarshallingContext context) throws IOException;
 }

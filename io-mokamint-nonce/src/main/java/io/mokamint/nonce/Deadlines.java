@@ -81,6 +81,8 @@ public final class Deadlines {
 	 * @param chainId the chain identifier of the node storing the deadline
 	 * @param hashingForDeadlines the hashing algorithm for the deadlines
 	 * @param hashingForGenerations the hashing algorithm for the generation signatures
+	 * @param signatureForBlocks the signature algorithm for the blocks
+	 * @param signatureForDeadlines the signature algorithm for the deadlines
 	 * @return the deadline
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */

@@ -83,16 +83,29 @@ public abstract class BlockDescriptions {
 	}
 
 	/**
-	 * Unmarshals a block description from the given context.
+	 * Unmarshals a block description from the given context. It assumes that the description was marshalled
+	 * by using {@link BlockDescription#intoWithoutConfigurationData(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 
 	 * @param context the context
 	 * @param config the consensus configuration of the node storing the block description
 	 * @return the block description
-	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm in the block description is unknown
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
-	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
+	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		return AbstractBlockDescription.from(context, config);
+	}
+
+	/**
+	 * Unmarshals a block description from the given context. It assumes that the description was marshalled
+	 * by using {@link BlockDescription#into(io.hotmoka.marshalling.api.MarshallingContext)}.
+	 * 
+	 * @param context the context
+	 * @return the block description
+	 * @throws IOException if the block description cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
+	 */
+	public static BlockDescription from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		return AbstractBlockDescription.from(context);
 	}
 
 	/**

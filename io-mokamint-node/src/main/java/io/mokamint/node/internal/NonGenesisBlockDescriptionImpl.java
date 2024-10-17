@@ -18,6 +18,7 @@ package io.mokamint.node.internal;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +33,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.nonce.Deadlines;
@@ -100,6 +102,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	/**
 	 * Unmarshals a non-genesis block. The height of the block has been already read.
+	 * It assumes that the description was marshalled by using
+	 * {@link BlockDescription#intoWithoutConfigurationData(MarshallingContext)}.
 	 * 
 	 * @param height the height of the block
 	 * @param context the unmarshalling context
@@ -115,6 +119,35 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.weightedWaitingTime = context.readLong();
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
+			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
+
+			verify();
+		}
+		catch (RuntimeException e) {
+			throw new IOException(e);
+		}
+	}
+
+	/**
+	 * Unmarshals a non-genesis block. The height of the block has been already read.
+	 * It assumes that the description was marshalled by using
+	 * {@link BlockDescription#intoWithoutConfigurationData(MarshallingContext)}.
+	 * 
+	 * @param height the height of the block
+	 * @param context the unmarshalling context
+	 * @param config the consensus configuration of the node storing the block description
+	 * @throws IOException if unmarshalling failed
+	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
+	 */
+	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		this.height = height;
+
+		try {
+			this.power = context.readBigInteger();
+			this.totalWaitingTime = context.readLong();
+			this.weightedWaitingTime = context.readLong();
+			this.acceleration = context.readBigInteger();
+			this.deadline = Deadlines.from(context);
 			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
 
 			verify();
@@ -193,6 +226,17 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
+		context.writeLong(height);
+		context.writeBigInteger(power);
+		context.writeLong(totalWaitingTime);
+		context.writeLong(weightedWaitingTime);
+		context.writeBigInteger(acceleration);
+		deadline.into(context);
+		context.writeLengthAndBytes(hashOfPreviousBlock);
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		context.writeLong(height);
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);

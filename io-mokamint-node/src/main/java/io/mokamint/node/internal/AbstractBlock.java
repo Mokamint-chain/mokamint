@@ -142,16 +142,34 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	/**
-	 * Unmarshals a block from the given context.
+	 * Unmarshals a block from the given context. It assumes that the block was marshalled
+	 * by using {@link Block#into(MarshallingContext)}.
 	 * 
 	 * @param context the context
 	 * @param config the consensus configuration of the node storing the block description
 	 * @return the block
-	 * @throws NoSuchAlgorithmException if the hashing algorithm of the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
+	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		var description = AbstractBlockDescription.from(context, config);
+		if (description instanceof GenesisBlockDescription gbd)
+			return new GenesisBlockImpl(gbd, context);
+		else
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context); // cast verified by sealedness
+	}
+
+	/**
+	 * Unmarshals a block from the given context. It assumes that the block was marshalled
+	 * by using {@link Block#into(MarshallingContext)}.
+	 * 
+	 * @param context the context
+	 * @param config the consensus configuration of the node storing the block description
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the block refers to an unknown cryptographic algorithm
+	 */
+	public static Block from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		var description = AbstractBlockDescription.from(context);
 		if (description instanceof GenesisBlockDescription gbd)
 			return new GenesisBlockImpl(gbd, context);
 		else
@@ -244,6 +262,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		description.into(context);
+		context.writeLengthAndBytes(stateId);
+		context.writeLengthAndBytes(signature);
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		description.intoWithoutConfigurationData(context);
 		context.writeLengthAndBytes(stateId);
 		context.writeLengthAndBytes(signature);
 	}

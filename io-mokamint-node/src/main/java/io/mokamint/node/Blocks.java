@@ -77,16 +77,29 @@ public abstract class Blocks {
 	}
 
 	/**
-	 * Unmarshals a block from the given context.
+	 * Unmarshals a block from the given context. It assumes that the block was marshalled
+	 * by using {@link Block#intoWithoutConfigurationData(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 
 	 * @param context the context
 	 * @param config the consensus configuration of the node storing the block description
 	 * @return the block
-	 * @throws NoSuchAlgorithmException if some hashing or signature algorithm in the block is unknown
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws NoSuchAlgorithmException, IOException {
+	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		return AbstractBlock.from(context, config);
+	}
+
+	/**
+	 * Unmarshals a block from the given context. It assumes that the block was marshalled
+	 * by using {@link Block#into(io.hotmoka.marshalling.api.MarshallingContext)}.
+	 * 
+	 * @param context the context
+	 * @return the block
+	 * @throws IOException if the block cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the block refers to an unknown cryptographic algorithm
+	 */
+	public static Block from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		return AbstractBlock.from(context);
 	}
 
 	/**
