@@ -131,7 +131,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	/**
 	 * Unmarshals a non-genesis block. The height of the block has been already read.
 	 * It assumes that the description was marshalled by using
-	 * {@link BlockDescription#intoWithoutConfigurationData(MarshallingContext)}.
+	 * {@link BlockDescription#into(MarshallingContext)}.
 	 * 
 	 * @param height the height of the block
 	 * @param context the unmarshalling context

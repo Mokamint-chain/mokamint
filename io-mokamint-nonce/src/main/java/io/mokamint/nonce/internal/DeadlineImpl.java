@@ -319,7 +319,6 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 		prolog.intoWithoutConfigurationData(context);
 		challenge.intoWithoutConfigurationData(context);
 		context.writeLong(progressive);
-		// we do not write value.length, since it coincides with hashing.length()
 		context.writeBytes(value);
 	}
 

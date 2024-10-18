@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
@@ -271,6 +272,19 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		description.intoWithoutConfigurationData(context);
 		context.writeLengthAndBytes(stateId);
 		context.writeLengthAndBytes(signature);
+	}
+
+	@Override
+	public final byte[] toByteArrayWithoutConfigurationData() {
+		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
+			intoWithoutConfigurationData(context);
+			context.flush();
+			return baos.toByteArray();
+		}
+		catch (IOException e) {
+			// impossible with a ByteArrayOutputStream
+			throw new RuntimeException("Unexpected exception", e);
+		}
 	}
 
 	/**

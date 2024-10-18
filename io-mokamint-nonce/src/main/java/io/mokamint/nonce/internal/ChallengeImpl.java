@@ -65,8 +65,13 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	 * @param hashingForGenerations the hashing algorithm for the generation signatures
 	 * @throws IOException if the challenge could not be unmarshalled
 	 */
+	@SuppressWarnings("unused")
 	public ChallengeImpl(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations) throws IOException {		
-		this.scoopNumber = context.readCompactInt();
+		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
+			this.scoopNumber = context.readShort();
+		else
+			this.scoopNumber = context.readCompactInt();
+
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
@@ -83,8 +88,13 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	 * @throws IOException if the challenge could not be unmarshalled
 	 * @throws NoSuchAlgorithmException if the challenge refers to an unknown cryptographic algorithm
 	 */
+	@SuppressWarnings("unused")
 	public ChallengeImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {		
-		this.scoopNumber = context.readCompactInt();
+		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
+			this.scoopNumber = context.readShort();
+		else
+			this.scoopNumber = context.readCompactInt();
+
 		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
 			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
 
@@ -150,17 +160,27 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 				+ ", hashing for generations: " + hashingForGenerations;
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		context.writeCompactInt(scoopNumber);
+		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
+			context.writeShort(scoopNumber);
+		else
+			context.writeCompactInt(scoopNumber);
+
 		context.writeStringShared(hashingForDeadlines.getName());
 		context.writeStringShared(hashingForGenerations.getName());
 		context.writeLengthAndBytes(generationSignature);
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
-		context.writeCompactInt(scoopNumber);
+		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
+			context.writeShort(scoopNumber);
+		else
+			context.writeCompactInt(scoopNumber);
+
 		context.writeLengthAndBytes(generationSignature);
 	}
 }

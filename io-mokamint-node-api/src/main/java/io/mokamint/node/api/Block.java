@@ -110,4 +110,6 @@ public interface Block extends Marshallable, Whisperable {
 	 * @throws IOException if this object cannot be marshalled
 	 */
 	void intoWithoutConfigurationData(MarshallingContext context) throws IOException;
+
+	byte[] toByteArrayWithoutConfigurationData(); // TODO: remove later
 }

@@ -184,6 +184,12 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		super.intoWithoutConfigurationData(context);
+		context.writeLengthAndArray(transactions);
+	}
+
+	@Override
 	public final String toString(Optional<ConsensusConfig<?, ?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder(super.toString(config, startDateTimeUTC));
 		builder.append("\n");

@@ -25,7 +25,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -933,7 +932,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					return false;
 				}
 				else {
-					putInStore(txn, hashOfBlock, block.toByteArray());
+					putBlockInStore(txn, hashOfBlock, block);
 					addToForwards(txn, ngb, hashOfBlock);
 					if (isBetterThanHead(txn, ngb, hashOfBlock))
 						setHead(block, hashOfBlock);
@@ -944,7 +943,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 			else {
 				if (isEmpty(txn)) {
-					putInStore(txn, hashOfBlock, block.toByteArray());
+					putBlockInStore(txn, hashOfBlock, block);
 					setGenesisHash(txn, hashOfBlock);
 					setHead(block, hashOfBlock);
 					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
@@ -2002,14 +2001,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return Optional.empty();
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return Optional.of(Blocks.from(context));
+				return Optional.of(Blocks.from(context, node.getConfig()));
 			}
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new NodeException(e);
 		}
 	}
 
@@ -2030,14 +2026,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				// the marshalling of a block starts with that of its description
-				return Optional.of(BlockDescriptions.from(context));
+				return Optional.of(BlockDescriptions.from(context, node.getConfig()));
 			}
 		}
 		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new NodeException(e);
 		}
 	}
 
@@ -2289,13 +2282,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Adds to the database a block with a given hash, running inside a transaction.
 	 * 
 	 * @param txn the transaction
-	 * @param hashOfBlock the hash of the block
-	 * @param bytesOfBlock the bytes of the block
+	 * @param hashOfBlock the hash of {@code block}
+	 * @param block the block
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void putInStore(Transaction txn, byte[] hashOfBlock, byte[] bytesOfBlock) throws NodeException {
+	private void putBlockInStore(Transaction txn, byte[] hashOfBlock, Block block) throws NodeException {
 		try {
-			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(bytesOfBlock));
+			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(block.toByteArrayWithoutConfigurationData()));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
