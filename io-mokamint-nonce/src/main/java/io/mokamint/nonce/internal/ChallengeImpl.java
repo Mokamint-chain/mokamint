@@ -77,7 +77,7 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
-		this.generationSignature = context.readLengthAndBytes("Mismatch in challenge's generation signature length");
+		this.generationSignature = context.readBytes(hashingForGenerations.length(), "Mismatch in challenge's generation signature length");
 	}
 
 	/**
@@ -100,7 +100,7 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 
 		this.hashingForDeadlines = HashingAlgorithms.of(context.readStringShared());
 		this.hashingForGenerations = HashingAlgorithms.of(context.readStringShared());
-		this.generationSignature = context.readLengthAndBytes("Mismatch in challenge's generation signature length");
+		this.generationSignature = context.readBytes(hashingForGenerations.length(), "Mismatch in challenge's generation signature length");
 	}
 
 	@Override
@@ -156,8 +156,7 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 
 	@Override
 	public String toString() {
-		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(generationSignature) + ", hashing for deadline: " + hashingForDeadlines
-				+ ", hashing for generations: " + hashingForGenerations;
+		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(generationSignature) + " (" + hashingForGenerations + "), hashing for deadline: " + hashingForDeadlines;
 	}
 
 	@SuppressWarnings("unused")
@@ -170,7 +169,7 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 
 		context.writeStringShared(hashingForDeadlines.getName());
 		context.writeStringShared(hashingForGenerations.getName());
-		context.writeLengthAndBytes(generationSignature);
+		context.writeBytes(generationSignature);
 	}
 
 	@SuppressWarnings("unused")
@@ -181,6 +180,6 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 		else
 			context.writeCompactInt(scoopNumber);
 
-		context.writeLengthAndBytes(generationSignature);
+		context.writeBytes(generationSignature);
 	}
 }
