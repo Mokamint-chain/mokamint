@@ -38,7 +38,7 @@ import io.mokamint.nonce.api.Prolog;
  * Implementation of the prolog of a plot file.
  */
 @Immutable
-public class PrologImpl extends AbstractMarshallable implements Prolog {
+public final class PrologImpl extends AbstractMarshallable implements Prolog {
 
 	/**
 	 * The chain identifier of the blockchain of the node using the plots
@@ -136,10 +136,10 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 		try {
 			this.chainId = context.readStringUnshared();
 			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared());
-			byte[] publicKeyForSigningBlocksEncoding = context.readLengthAndBytes("Mismatch in the length of the public key for signing blocks");
+			byte[] publicKeyForSigningBlocksEncoding = unmarshalPublicKeyForSigningBlocks(context);
 			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
 			this.signatureForDeadlines = SignatureAlgorithms.of(context.readStringShared());
-			byte[] plotPublicKeyEncoding = context.readLengthAndBytes("Mismatch in the plot's public key length");
+			byte[] plotPublicKeyEncoding = unmarshalPublicKeyForSigningDeadlines(context);
 			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
 			this.extra = context.readLengthAndBytes("Mismatch in prolog's extra length");
 
@@ -167,10 +167,10 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 		try {
 			this.chainId = chainId;
 			this.signatureForBlocks = signatureForBlocks;
-			byte[] publicKeyForSigningBlocksEncoding = context.readLengthAndBytes("Mismatch in the length of the public key for signing blocks");
+			byte[] publicKeyForSigningBlocksEncoding = unmarshalPublicKeyForSigningBlocks(context);
 			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
 			this.signatureForDeadlines = signatureForDeadlines;
-			byte[] plotPublicKeyEncoding = context.readLengthAndBytes("Mismatch in the plot's public key length");
+			byte[] plotPublicKeyEncoding = unmarshalPublicKeyForSigningDeadlines(context);
 			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
 			this.extra = context.readLengthAndBytes("Mismatch in prolog's extra length");
 
@@ -182,6 +182,22 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 		catch (RuntimeException | InvalidKeySpecException e) {
 			throw new IOException(e);
 		}
+	}
+
+	private byte[] unmarshalPublicKeyForSigningBlocks(UnmarshallingContext context) throws IOException, InvalidKeySpecException {
+		var maybeLength = signatureForBlocks.publicKeyLength();
+		if (maybeLength.isEmpty())
+			return context.readLengthAndBytes("Mismatch in the length of the public key for signing blocks");
+		else
+			return context.readBytes(maybeLength.getAsInt(), "Mismatch in the length of the public key for signing blocks");
+	}
+
+	private byte[] unmarshalPublicKeyForSigningDeadlines(UnmarshallingContext context) throws IOException, InvalidKeySpecException {
+		var maybeLength = signatureForDeadlines.publicKeyLength();
+		if (maybeLength.isEmpty())
+			return context.readLengthAndBytes("Mismatch in the plot's public key length");
+		else
+			return context.readBytes(maybeLength.getAsInt(), "Mismatch in the plot's public key length");
 	}
 
 	private void verify() {
@@ -231,70 +247,80 @@ public class PrologImpl extends AbstractMarshallable implements Prolog {
 
 	@Override
 	public String toString() {
-		return "chainId: " + chainId + ", nodeSignatureName: " + signatureForBlocks + ", nodePublicKey: " + publicKeyForSigningBlocksBase58 +
-			", plotSignatureName: " + signatureForDeadlines + ", plotPublicKey: " + publicKeyForSigningDeadlinesBase58 + ", extra: " + Hex.toHexString(extra);
-	}
-
-	@Override
-	public String toStringSanitized() {
+		// we avoid printing values whose length is potentially unbound, to avoid log injection problems
 		String chainIdTrimmed = chainId;
 		if (chainIdTrimmed.length() > 64)
-			chainIdTrimmed = chainIdTrimmed.substring(0, 64);
+			chainIdTrimmed = chainIdTrimmed.substring(0, 64) + "...";
 
-		String publicKeyForSigningBlocksBase58Trimmed = publicKeyForSigningBlocksBase58;
-		if (publicKeyForSigningBlocksBase58Trimmed.length() > 64)
-			publicKeyForSigningBlocksBase58Trimmed = publicKeyForSigningBlocksBase58Trimmed.substring(0, 64);
+		String trimmedExtra;
+		if (extra.length > 256) {
+			var trimmedExtraBytes = new byte[256];
+			System.arraycopy(extra, 0, trimmedExtraBytes, 0, trimmedExtraBytes.length);
+			trimmedExtra = Hex.toHexString(trimmedExtraBytes);
+		}
+		else
+			trimmedExtra = Hex.toHexString(extra);
 
-		String publicKeyForSigningDeadlinesBase58Trimmed = publicKeyForSigningDeadlinesBase58;
-		if (publicKeyForSigningDeadlinesBase58Trimmed.length() > 64)
-			publicKeyForSigningDeadlinesBase58Trimmed = publicKeyForSigningDeadlinesBase58Trimmed.substring(0, 64);
-
-		var trimmedExtra = new byte[Math.min(256, extra.length)];
-		System.arraycopy(extra, 0, trimmedExtra, 0, trimmedExtra.length);
-
-		return "chainId: " + chainIdTrimmed + ", nodeSignatureName: " + signatureForBlocks + ", nodePublicKey: " + publicKeyForSigningBlocksBase58Trimmed +
-			", plotSignatureName: " + signatureForDeadlines + ", plotPublicKey: " + publicKeyForSigningDeadlinesBase58Trimmed + ", extra: " + Hex.toHexString(trimmedExtra);
+		return "chainId: " + chainIdTrimmed + ", nodeSignatureName: " + signatureForBlocks + ", nodePublicKey: " + publicKeyForSigningBlocksBase58 +
+			", plotSignatureName: " + signatureForDeadlines + ", plotPublicKey: " + publicKeyForSigningDeadlinesBase58 + ", extra: " + trimmedExtra;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof Prolog p) {
-			return publicKeyForSigningDeadlines.equals(p.getPublicKeyForSigningDeadlines()) && publicKeyForSigningBlocks.equals(p.getPublicKeyForSigningBlocks())
-				&& chainId.equals(p.getChainId()) && Arrays.equals(extra, p.getExtra());
-		}
+		if (other instanceof Prolog otherAsProlog)
+			return publicKeyForSigningDeadlines.equals(otherAsProlog.getPublicKeyForSigningDeadlines())
+				&& publicKeyForSigningBlocks.equals(otherAsProlog.getPublicKeyForSigningBlocks())
+				&& chainId.equals(otherAsProlog.getChainId())
+				&& Arrays.equals(extra, otherAsProlog.getExtra());
 		else
 			return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return chainId.hashCode() ^ publicKeyForSigningBlocks.hashCode() ^ publicKeyForSigningDeadlines.hashCode() ^ Arrays.hashCode(extra);
+		return chainId.hashCode() ^ publicKeyForSigningBlocks.hashCode() ^ publicKeyForSigningDeadlines.hashCode();
 	}
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		try {
-			context.writeStringUnshared(chainId);
-			context.writeStringShared(signatureForBlocks.getName());
-			context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
-			context.writeStringShared(signatureForDeadlines.getName());
-			context.writeLengthAndBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
-			context.writeLengthAndBytes(extra);
-		}
-		catch (InvalidKeyException e) {
-			throw new IOException("Cannot marshal the prolog into bytes", e);
-		}
+		context.writeStringUnshared(chainId);
+		context.writeStringShared(signatureForBlocks.getName());
+		marshalPublicKeyForSigningBlocks(context);
+		context.writeStringShared(signatureForDeadlines.getName());
+		marshalPublicKeyForSigningDeadlines(context);
+		context.writeLengthAndBytes(extra);
 	}
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		marshalPublicKeyForSigningBlocks(context);
+		marshalPublicKeyForSigningDeadlines(context);
+		context.writeLengthAndBytes(extra);
+	}
+
+	private void marshalPublicKeyForSigningBlocks(MarshallingContext context) throws IOException {
 		try {
-			context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
-			context.writeLengthAndBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
-			context.writeLengthAndBytes(extra);
+			var maybeLength = signatureForBlocks.publicKeyLength();
+			if (maybeLength.isEmpty())
+				context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
+			else
+				context.writeBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
 		}
 		catch (InvalidKeyException e) {
-			throw new IOException("Cannot marshal the prolog into bytes", e);
+			throw new IOException("Cannot marshal into bytes the public key for signing blocks", e);
+		}
+	}
+
+	private void marshalPublicKeyForSigningDeadlines(MarshallingContext context) throws IOException {
+		try {
+			var maybeLength = signatureForDeadlines.publicKeyLength();
+			if (maybeLength.isEmpty())
+				context.writeLengthAndBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+			else
+				context.writeBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+		}
+		catch (InvalidKeyException e) {
+			throw new IOException("Cannot marshal into bytes the public key for signing deadlines", e);
 		}
 	}
 }

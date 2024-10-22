@@ -134,14 +134,4 @@ public interface Deadline extends Marshallable {
 	 */
 	@Override
 	String toString();
-
-	/**
-	 * A sanitized version of {@link #toString()}. It imposed a maximal length to the data reported
-	 * in the resulting string. This is important if the deadline comes from the network,
-	 * since it might contain arbitrarily long strings that might, for instance, pollute the logs.
-	 * For most deadlines, this coincides with {@link #toString()}.
-	 * 
-	 * @return the sanitized string
-	 */
-	String toStringSanitized();
 }

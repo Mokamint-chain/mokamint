@@ -100,16 +100,6 @@ public interface Prolog extends Marshallable {
 	String toString();
 
 	/**
-	 * A sanitized version of {@link #toString()}. It imposed a maximal length to the data reported
-	 * in the resulting string. This is important if the prolog comes from the network,
-	 * since it might contain arbitrarily long strings that might, for instance, pollute the logs.
-	 * For typical prologs, this usually coincides with {@link #toString()}.
-	 * 
-	 * @return the sanitized string
-	 */
-	String toStringSanitized();
-
-	/**
 	 * Marshals this object into a given stream. This method in general
 	 * performs better than standard Java serialization, wrt the size of the marshalled data.
 	 * It does not report information that can be recomputed from the configuration of the

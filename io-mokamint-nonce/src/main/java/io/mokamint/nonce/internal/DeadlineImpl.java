@@ -45,7 +45,7 @@ import io.mokamint.nonce.api.Prolog;
  * by the lexicographical ordering of their values.
  */
 @Immutable
-public class DeadlineImpl extends AbstractMarshallable implements Deadline {
+public final class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	private final Prolog prolog;
 	private final long progressive;
 	private final byte[] value;
@@ -166,7 +166,11 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 			throw new IllegalArgumentException("progressive cannot be negative");
 	
 		if (value.length != challenge.getHashingForDeadlines().length())
-			throw new IllegalArgumentException("Illegal deadline value: expected an array of length " + challenge.getHashingForDeadlines().length() + " rather than " + value.length);
+			throw new IllegalArgumentException("value length mismatch: expected " + challenge.getHashingForDeadlines().length() + " but found " + value.length);
+
+		var maybeLength = prolog.getSignatureForDeadlines().length();
+		if (maybeLength.isPresent() && signature.length != maybeLength.getAsInt())
+			throw new IllegalArgumentException("signature length mismatch: expected " + maybeLength.getAsInt() + " but found " + signature.length);
 
 		try {
 			if (!prolog.getSignatureForDeadlines().getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
@@ -182,12 +186,19 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof Deadline otherAsDeadline &&
-			progressive == otherAsDeadline.getProgressive() &&
-			challenge.equals(otherAsDeadline.getChallenge()) &&
-			Arrays.equals(value, otherAsDeadline.getValue()) &&
-			prolog.equals(otherAsDeadline.getProlog()) &&
-			Arrays.equals(signature, otherAsDeadline.getSignature());
+		if (other instanceof DeadlineImpl di)
+			return progressive == di.getProgressive() &&
+				challenge.equals(di.getChallenge()) &&
+				Arrays.equals(value, di.value) &&
+				prolog.equals(di.getProlog()) &&
+				Arrays.equals(signature, di.signature);
+		else
+			return other instanceof Deadline otherAsDeadline &&
+				progressive == otherAsDeadline.getProgressive() &&
+				challenge.equals(otherAsDeadline.getChallenge()) &&
+				Arrays.equals(value, otherAsDeadline.getValue()) &&
+				prolog.equals(otherAsDeadline.getProlog()) &&
+				Arrays.equals(signature, otherAsDeadline.getSignature());
 	}
 
 	@Override
@@ -202,10 +213,9 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 
 	@Override
 	public long getMillisecondsToWaitFor(BigInteger acceleration) {
-		byte[] valueAsBytes = getValue();
-		var newValueAsBytes = new BigInteger(1, valueAsBytes).divide(acceleration).toByteArray();
+		var newValueAsBytes = new BigInteger(1, value).divide(acceleration).toByteArray();
 		// we recreate an array of the same length as at the beginning
-		var dividedValueAsBytes = new byte[valueAsBytes.length];
+		var dividedValueAsBytes = new byte[value.length];
 		System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
 			dividedValueAsBytes.length - newValueAsBytes.length,
 			newValueAsBytes.length);
@@ -267,14 +277,6 @@ public class DeadlineImpl extends AbstractMarshallable implements Deadline {
 	@Override
 	public String toString() {
 		return "prolog: { " + prolog + " }, progressive: " + progressive + ", challenge : { " + challenge + " }, value: " + Hex.toHexString(value) + ", signature: " + Hex.toHexString(signature);
-	}
-
-	@Override
-	public String toStringSanitized() {
-		var trimmedSignature = new byte[Math.min(256, signature.length)];
-		System.arraycopy(signature, 0, trimmedSignature, 0, trimmedSignature.length);
-		// the length of the value is fixed, so no problem with it
-		return "prolog: { " + prolog.toStringSanitized() + " }, progressive: " + progressive + ", challenge : { " + challenge + " }, value: " + Hex.toHexString(value) + ", signature: " + Hex.toHexString(trimmedSignature);
 	}
 
 	/**
