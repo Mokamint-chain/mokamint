@@ -28,6 +28,14 @@ import io.hotmoka.annotations.Immutable;
 public interface Nonce {
 
 	/**
+	 * Yields the value of this nonce, for the given challenge.
+	 * 
+	 * @param challenge the challenge
+	 * @return the value
+	 */
+	byte[] getValueFor(Challenge challenge);
+
+	/**
 	 * Dumps this nonce into the give file, as the {@code offset}th nonce inside the file.
 	 * 
 	 * @param where the file channel where the nonce must be dumped

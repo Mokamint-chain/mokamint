@@ -66,14 +66,13 @@ public interface Plot extends AutoCloseable {
 	void close() throws IOException, InterruptedException;
 
 	/**
-	 * Yields the smallest deadline in this plot file, matching the given description.
-	 * This method selects the scoop in the description
+	 * Yields the smallest deadline in this plot file, matching the given challenge.
+	 * This method selects the scoop in the challenge
 	 * for all nonces contained in this plot file. For each scoop, it computes
-	 * its deadline value by hashing the scoop data and the provided description's {@code data}.
-	 * It returns the pair (progressive of the nonce, deadline value)
-	 * with the smallest value.
+	 * its deadline value by hashing the scoop data and the provided challenge's generation signature.
+	 * It returns the pair (progressive of the nonce, deadline value) with the smallest value.
 	 * 
-	 * @param description the description of the requested deadline
+	 * @param challenge the challenge of the requested deadline
 	 * @param privateKey the private key used to sign the deadline
 	 * @return the smallest deadline
 	 * @throws InterruptedException if the thread is interrupted while waiting for the computation
@@ -84,7 +83,7 @@ public interface Plot extends AutoCloseable {
 	 * @throws InvalidKeyException if {@code privateKey} is invalid
 	 * @throws SignatureException if the deadline could not be signed
 	 */
-	Deadline getSmallestDeadline(Challenge description, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException;
+	Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException;
 
 	/**
 	 * Determines if this plot is semantically equivalent to the {@code other}.

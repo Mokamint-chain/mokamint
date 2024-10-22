@@ -183,7 +183,7 @@ public class PlotImpl implements Plot {
 	 */
 	private class Dumper {
 		private final FileChannel channel;
-		private final int nonceSize = (Deadline.MAX_SCOOP_NUMBER + 1) * 2 * hashingForDeadlines.length();
+		private final int nonceSize = (Challenge.MAX_SCOOP_NUMBER + 1) * 2 * hashingForDeadlines.length();
 		private final int metadataSize = getMetadataSize();
 		private final long plotSize = metadataSize + length * nonceSize;
 		private final IntConsumer onNewPercent;

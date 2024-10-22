@@ -32,11 +32,6 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 public interface Deadline extends Marshallable {
 
 	/**
-	 * The maximal scoop number in a deadline (inclusive).
-	 */
-	final int MAX_SCOOP_NUMBER = 4095;
-
-	/**
 	 * Yields the prolog that was used to create the plot file from which
 	 * this deadline has been generated.
 	 * 

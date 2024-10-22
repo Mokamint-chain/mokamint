@@ -70,7 +70,7 @@ import io.mokamint.node.local.internal.VerificationException;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -351,7 +351,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			// we replace the expected deadline
 			var challenge = deadline.getChallenge();
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-				Challenges.of((challenge.getScoopNumber() + 1) % Deadline.MAX_SCOOP_NUMBER, challenge.getGenerationSignature(), challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
+				Challenges.of((challenge.getScoopNumber() + 1) % Challenge.MAX_SCOOP_NUMBER, challenge.getGenerationSignature(), challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);

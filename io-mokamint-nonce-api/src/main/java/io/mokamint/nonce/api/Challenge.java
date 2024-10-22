@@ -32,6 +32,11 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 public interface Challenge extends Marshallable {
 
 	/**
+	 * The maximal scoop number (inclusive).
+	 */
+	final int MAX_SCOOP_NUMBER = 4095;
+
+	/**
 	 * Yields the number of the scoop considered to compute the deadline.
 	 * 
 	 * @return the number of the scoop

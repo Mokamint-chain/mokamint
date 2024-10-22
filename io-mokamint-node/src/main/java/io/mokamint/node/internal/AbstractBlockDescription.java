@@ -35,7 +35,6 @@ import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.api.Challenge;
-import io.mokamint.nonce.api.Deadline;
 
 /**
  * Shared code for block descriptions.
@@ -43,7 +42,7 @@ import io.mokamint.nonce.api.Deadline;
 public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 
-	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Deadline.MAX_SCOOP_NUMBER + 1);
+	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Challenge.MAX_SCOOP_NUMBER + 1);
 
 	/**
 	 * Creates a block description.

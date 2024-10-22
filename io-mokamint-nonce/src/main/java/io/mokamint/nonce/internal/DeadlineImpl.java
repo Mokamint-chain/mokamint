@@ -34,6 +34,7 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.Challenges;
+import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
@@ -168,12 +169,13 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		if (value.length != challenge.getHashingForDeadlines().length())
 			throw new IllegalArgumentException("value length mismatch: expected " + challenge.getHashingForDeadlines().length() + " but found " + value.length);
 
-		var maybeLength = prolog.getSignatureForDeadlines().length();
+		var signatureForDeadlines = prolog.getSignatureForDeadlines();
+		var maybeLength = signatureForDeadlines.length();
 		if (maybeLength.isPresent() && signature.length != maybeLength.getAsInt())
 			throw new IllegalArgumentException("signature length mismatch: expected " + maybeLength.getAsInt() + " but found " + signature.length);
 
 		try {
-			if (!prolog.getSignatureForDeadlines().getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
+			if (!signatureForDeadlines.getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
 				throw new IllegalArgumentException("The deadline's signature is invalid");
 		}
 		catch (SignatureException e) {
@@ -266,7 +268,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 
 	@Override
 	public boolean isValid() {
-		return Arrays.equals(value, new NonceImpl(prolog, progressive, challenge.getHashingForDeadlines()).getValueFor(challenge));
+		return Arrays.equals(value, Nonces.of(prolog, progressive, challenge.getHashingForDeadlines()).getValueFor(challenge));
 	}
 
 	@Override

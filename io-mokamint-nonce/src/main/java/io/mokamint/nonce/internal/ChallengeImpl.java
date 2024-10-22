@@ -30,28 +30,27 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Challenge;
-import io.mokamint.nonce.api.Deadline;
 
 /**
  * Implementation of a challenge. It reports the information needed
  * to compute a deadline for this challenge.
  */
 @Immutable
-public class ChallengeImpl extends AbstractMarshallable implements Challenge {
+public final class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	private final int scoopNumber;
 	private final byte[] generationSignature;
 	private final HashingAlgorithm hashingForDeadlines;
 	private final HashingAlgorithm hashingForGenerations;
 
 	public ChallengeImpl(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations) {
-		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
-			throw new IllegalArgumentException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
-
 		this.scoopNumber = scoopNumber;
 		this.generationSignature = Objects.requireNonNull(generationSignature, "generation signature cannot be null").clone();
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 	
+		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
+			throw new IllegalArgumentException("scoopNumber must be between 0 and " + MAX_SCOOP_NUMBER);
+
 		if (generationSignature.length != hashingForGenerations.length())
 			throw new IllegalArgumentException("Mismatch in generation signature length: found " + generationSignature.length + " but expected " + hashingForGenerations.length());
 	}
@@ -65,19 +64,21 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	 * @param hashingForGenerations the hashing algorithm for the generation signatures
 	 * @throws IOException if the challenge could not be unmarshalled
 	 */
-	@SuppressWarnings("unused")
 	public ChallengeImpl(UnmarshallingContext context, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations) throws IOException {		
-		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
-			this.scoopNumber = context.readShort();
-		else
-			this.scoopNumber = context.readCompactInt();
-
-		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
-			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
-
+		this.scoopNumber = readScoopNumber(context);
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 		this.generationSignature = context.readBytes(hashingForGenerations.length(), "Mismatch in challenge's generation signature length");
+	}
+
+	@SuppressWarnings("unused")
+	private int readScoopNumber(UnmarshallingContext context) throws IOException {
+		int scoopNumber = MAX_SCOOP_NUMBER < Short.MAX_VALUE ? context.readShort() : context.readCompactInt();
+
+		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
+			throw new IOException("scoopNumber must be between 0 and " + MAX_SCOOP_NUMBER);
+
+		return scoopNumber;
 	}
 
 	/**
@@ -88,16 +89,8 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 	 * @throws IOException if the challenge could not be unmarshalled
 	 * @throws NoSuchAlgorithmException if the challenge refers to an unknown cryptographic algorithm
 	 */
-	@SuppressWarnings("unused")
 	public ChallengeImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {		
-		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
-			this.scoopNumber = context.readShort();
-		else
-			this.scoopNumber = context.readCompactInt();
-
-		if (scoopNumber < 0 || scoopNumber > Deadline.MAX_SCOOP_NUMBER)
-			throw new IOException("scoopNumber must be between 0 and " + Deadline.MAX_SCOOP_NUMBER);
-
+		this.scoopNumber = readScoopNumber(context);
 		this.hashingForDeadlines = HashingAlgorithms.of(context.readStringShared());
 		this.hashingForGenerations = HashingAlgorithms.of(context.readStringShared());
 		this.generationSignature = context.readBytes(hashingForGenerations.length(), "Mismatch in challenge's generation signature length");
@@ -159,27 +152,25 @@ public class ChallengeImpl extends AbstractMarshallable implements Challenge {
 		return "scoopNumber: " + scoopNumber + ", generation signature: " + Hex.toHexString(generationSignature) + " (" + hashingForGenerations + "), hashing for deadline: " + hashingForDeadlines;
 	}
 
-	@SuppressWarnings("unused")
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
-			context.writeShort(scoopNumber);
-		else
-			context.writeCompactInt(scoopNumber);
-
+		writeScoopNumber(context);
 		context.writeStringShared(hashingForDeadlines.getName());
 		context.writeStringShared(hashingForGenerations.getName());
 		context.writeBytes(generationSignature);
 	}
 
 	@SuppressWarnings("unused")
-	@Override
-	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
-		if (Deadline.MAX_SCOOP_NUMBER < Short.MAX_VALUE)
+	private void writeScoopNumber(MarshallingContext context) throws IOException {
+		if (MAX_SCOOP_NUMBER < Short.MAX_VALUE)
 			context.writeShort(scoopNumber);
 		else
 			context.writeCompactInt(scoopNumber);
+	}
 
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		writeScoopNumber(context);
 		context.writeBytes(generationSignature);
 	}
 }

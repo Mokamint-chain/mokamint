@@ -38,7 +38,7 @@ import io.mokamint.nonce.api.Prolog;
  * from {@url https://github.com/signum-network/signum-node/blob/main/src/brs/util/MiningPlot.java}.
  */
 @Immutable
-public class NonceImpl implements Nonce {
+public final class NonceImpl implements Nonce {
 
 	/**
 	 * Generic data that identifies, for instance, the creator of the nonce.
@@ -66,32 +66,44 @@ public class NonceImpl implements Nonce {
 	 * @param prolog generic data that identifies, for instance, the creator
 	 *               of the nonce. This can be really anything but cannot be {@code null}
 	 * @param progressive the progressive number of the nonce. This must be non-negative
-	 * @param hashing the hashing algorithm to use to create the nonce
+	 * @param hashingForDeadlines the hashing algorithm to use to create the nonce
 	 */
-	public NonceImpl(Prolog prolog, long progressive, HashingAlgorithm hashing) {
+	public NonceImpl(Prolog prolog, long progressive, HashingAlgorithm hashingForDeadlines) {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
-		Objects.requireNonNull(hashing, "hashing cannot be null");
+		Objects.requireNonNull(hashingForDeadlines, "the hashing cannot be null");
 
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
 
 		this.prolog = prolog;
-		this.hasher = hashing.getHasher(Function.identity());
-		this.hashSize = hashing.length();
+		this.hasher = hashingForDeadlines.getHasher(Function.identity());
+		this.hashSize = hashingForDeadlines.length();
 		this.progressive = progressive;
 		this.data = new Builder().data;
 	}
 
-	/**
-	 * Yields the value of the deadline of this nonce, with the given challenge.
-	 * 
-	 * @param challenge the description of requested deadline
-	 * @return the value
-	 */
-	byte[] getValueFor(Challenge challenge) {
+	@Override
+	public byte[] getValueFor(Challenge challenge) {
 		byte[] generationSignature = challenge.getGenerationSignature();
 		int scoopNumber = challenge.getScoopNumber();
 		return hasher.hash(extractScoopAndConcat(scoopNumber, generationSignature));
+	}
+
+	@Override
+	public void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException {
+		int scoopSize = 2 * hashSize;
+
+		// in order to get an optimized file, we put the scoops with the same number together,
+		// inside a "group" of nonces:
+		// the plot file contains groups of scoops: the group of first scoops in the nonces,
+		// the group of the second scoops in the nonces, etc
+		long groupSize = length * scoopSize;
+		for (int scoopNumber = 0; scoopNumber <= Challenge.MAX_SCOOP_NUMBER; scoopNumber++)
+			// scoopNumber * scoopSize is the position of scoopNumber inside the data of the nonce
+			try (var source = Channels.newChannel(new ByteArrayInputStream(data, scoopNumber * scoopSize, scoopSize))) {
+				// the scoop goes inside its group, sequentially wrt the offset of the nonce
+				where.transferFrom(source, metadataSize + scoopNumber * groupSize + offset * scoopSize, scoopSize);
+			}
 	}
 
 	/**
@@ -108,23 +120,6 @@ public class NonceImpl implements Nonce {
 		System.arraycopy(data, scoopNumber * scoopSize, result, 0, scoopSize);
 		System.arraycopy(generationSignature, 0, result, scoopSize, generationSignature.length);
 		return result;
-	}
-
-	@Override
-	public void dumpInto(FileChannel where, int metadataSize, long offset, long length) throws IOException {
-		int scoopSize = 2 * hashSize;
-
-		// in order to get an optimized file, we put the scoops with the same number together,
-		// inside a "group" of nonces:
-		// the plot file contains groups of scoops: the group of first scoops in the nonces,
-		// the group of the second scoops in the nonces, etc
-		long groupSize = length * scoopSize;
-		for (int scoopNumber = 0; scoopNumber <= Deadline.MAX_SCOOP_NUMBER; scoopNumber++)
-			// scoopNumber * scoopSize is the position of scoopNumber inside the data of the nonce
-			try (var source = Channels.newChannel(new ByteArrayInputStream(data, scoopNumber * scoopSize, scoopSize))) {
-				// the scoop goes inside its group, sequentially wrt the offset of the nonce
-				where.transferFrom(source, metadataSize + scoopNumber * groupSize + offset * scoopSize, scoopSize);
-			}
 	}
 
 	/**
@@ -155,7 +150,7 @@ public class NonceImpl implements Nonce {
 
 		private Builder() {
 			this.scoopSize = 2 * hashSize;
-			this.nonceSize = (Deadline.MAX_SCOOP_NUMBER + 1) * scoopSize;
+			this.nonceSize = (Challenge.MAX_SCOOP_NUMBER + 1) * scoopSize;
 			this.data = new byte[nonceSize];
 			this.buffer = initWithPrologAndProgressive();
 			fillWithScoops();
