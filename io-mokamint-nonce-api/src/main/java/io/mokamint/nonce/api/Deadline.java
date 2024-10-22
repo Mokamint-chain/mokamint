@@ -76,7 +76,7 @@ public interface Deadline extends Marshallable {
 	 * @param acceleration the acceleration
 	 * @return the milliseconds to wait
 	 */
-	long getMillisecondsToWaitFor(BigInteger acceleration);
+	long getMillisecondsToWait(BigInteger acceleration);
 
 	@Override
 	boolean equals(Object other);

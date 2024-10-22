@@ -26,7 +26,6 @@ import java.util.function.Function;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Nonce;
 import io.mokamint.nonce.api.Prolog;
@@ -49,16 +48,21 @@ public final class NonceImpl implements Nonce {
 	 * The hashing algorithm used for creating this nonce.
 	 */
 	private final Hasher<byte[]> hasher;
-	
+
+	/**
+	 * The size of the hashing algorithm used to build this nonce.
+	 */
 	private final int hashSize;
-	private final byte[] data;
+
+	/**
+	 * The data of the scoops inside the nonce.
+	 */
+	private final byte[] scoops;
 
 	/**
 	 * The progressive number of the nonce.
 	 */
 	private final long progressive;
-
-	private final static int HASH_CAP = 4096;
 
 	/**
 	 * Creates the nonce for the given data and with the given number.
@@ -69,17 +73,14 @@ public final class NonceImpl implements Nonce {
 	 * @param hashingForDeadlines the hashing algorithm to use to create the nonce
 	 */
 	public NonceImpl(Prolog prolog, long progressive, HashingAlgorithm hashingForDeadlines) {
-		Objects.requireNonNull(prolog, "prolog cannot be null");
-		Objects.requireNonNull(hashingForDeadlines, "the hashing cannot be null");
-
 		if (progressive < 0L)
 			throw new IllegalArgumentException("progressive cannot be negative");
 
-		this.prolog = prolog;
+		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null");
 		this.hasher = hashingForDeadlines.getHasher(Function.identity());
 		this.hashSize = hashingForDeadlines.length();
 		this.progressive = progressive;
-		this.data = new Builder().data;
+		this.scoops = new Builder().scoops;
 	}
 
 	@Override
@@ -100,7 +101,7 @@ public final class NonceImpl implements Nonce {
 		long groupSize = length * scoopSize;
 		for (int scoopNumber = 0; scoopNumber <= Challenge.MAX_SCOOP_NUMBER; scoopNumber++)
 			// scoopNumber * scoopSize is the position of scoopNumber inside the data of the nonce
-			try (var source = Channels.newChannel(new ByteArrayInputStream(data, scoopNumber * scoopSize, scoopSize))) {
+			try (var source = Channels.newChannel(new ByteArrayInputStream(scoops, scoopNumber * scoopSize, scoopSize))) {
 				// the scoop goes inside its group, sequentially wrt the offset of the nonce
 				where.transferFrom(source, metadataSize + scoopNumber * groupSize + offset * scoopSize, scoopSize);
 			}
@@ -110,14 +111,14 @@ public final class NonceImpl implements Nonce {
 	 * Selects the given scoop from this nonce and adds the given generation signature at its end.
 	 * 
 	 * @param scoopNumber the number of the scoop to select, between 0 (inclusive) and
-	 *                    {@link Deadline#MAX_SCOOP_NUMBER} (inclusive)
+	 *                    {@link Challenge#MAX_SCOOP_NUMBER} (inclusive)
 	 * @param generationSignature the generation signature to add after the scoop
 	 * @return the concatenation of the scoop and the data
 	 */
 	private byte[] extractScoopAndConcat(int scoopNumber, byte[] generationSignature) {
 		int scoopSize = hashSize * 2;
 		var result = new byte[scoopSize + generationSignature.length];
-		System.arraycopy(data, scoopNumber * scoopSize, result, 0, scoopSize);
+		System.arraycopy(scoops, scoopNumber * scoopSize, result, 0, scoopSize);
 		System.arraycopy(generationSignature, 0, result, scoopSize, generationSignature.length);
 		return result;
 	}
@@ -127,10 +128,12 @@ public final class NonceImpl implements Nonce {
 	 */
 	private class Builder {
 		
+		private final static int HASH_CAP = 4096;
+
 		/**
-		 * The data of the nonce.
+		 * The data of the scoops inside the nonce.
 		 */
-		private final byte[] data;
+		private final byte[] scoops;
 
 		/**
 		 * The size of the nonce. This is {@code data.length}.
@@ -151,7 +154,7 @@ public final class NonceImpl implements Nonce {
 		private Builder() {
 			this.scoopSize = 2 * hashSize;
 			this.nonceSize = (Challenge.MAX_SCOOP_NUMBER + 1) * scoopSize;
-			this.data = new byte[nonceSize];
+			this.scoops = new byte[nonceSize];
 			this.buffer = initWithPrologAndProgressive();
 			fillWithScoops();
 			applyFinalHash();
@@ -165,7 +168,7 @@ public final class NonceImpl implements Nonce {
 		 * @return the initial seed
 		 */
 		private byte[] initWithPrologAndProgressive() {
-			byte[] prolog = NonceImpl.this.prolog.toByteArray();
+			var prolog = NonceImpl.this.prolog.toByteArray();
 			var buffer = new byte[nonceSize + prolog.length + 8];
 			System.arraycopy(prolog, 0, buffer, nonceSize, prolog.length);
 			longToBytesBE(progressive, buffer, nonceSize + prolog.length);
@@ -206,9 +209,9 @@ public final class NonceImpl implements Nonce {
 				// we apply PoC2 reordering:
 				if (hashNumber % 2 == 0)
 					// even hash numbers remain at their place
-					data[i] = (byte) (buffer[i] ^ finalHash[i % hashSize]);
+					scoops[i] = (byte) (buffer[i] ^ finalHash[i % hashSize]);
 				else
-					data[i + shiftForOdds] = (byte) (buffer[i] ^ finalHash[i % hashSize]);
+					scoops[i + shiftForOdds] = (byte) (buffer[i] ^ finalHash[i % hashSize]);
 			}
 		}
 	}

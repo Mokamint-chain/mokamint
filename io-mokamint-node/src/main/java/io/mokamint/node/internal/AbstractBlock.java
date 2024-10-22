@@ -215,7 +215,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, ConsensusConfig<?,?> config) {
 		var heightForNewBlock = description.getHeight() + 1;
 		var powerForNewBlock = computePower(deadline);
-		var waitingTimeForNewBlock = deadline.getMillisecondsToWaitFor(description.getAcceleration());
+		var waitingTimeForNewBlock = deadline.getMillisecondsToWait(description.getAcceleration());
 		var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 		var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, config.getTargetBlockCreationTime());

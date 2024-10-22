@@ -33,10 +33,10 @@ public final class Nonces {
 	 * 
 	 * @param prolog generic data that identifies, for instance, the creator of the nonce
 	 * @param progressive the progressive number of the nonce. This must be non-negative
-	 * @param hashing the hashing algorithm to use to create the nonce
+	 * @param hashingForDeadlines the hashing algorithm to use to create the nonce
 	 * @return the nonce
 	 */
-	public static Nonce of(Prolog prolog, long progressive, HashingAlgorithm hashing) {
-		return new NonceImpl(prolog, progressive, hashing);
+	public static Nonce of(Prolog prolog, long progressive, HashingAlgorithm hashingForDeadlines) {
+		return new NonceImpl(prolog, progressive, hashingForDeadlines);
 	}
 }

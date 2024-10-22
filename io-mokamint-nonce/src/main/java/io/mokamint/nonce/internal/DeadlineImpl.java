@@ -113,7 +113,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		this.challenge = Challenges.from(context);
 		this.progressive = context.readLong();
 		this.value = context.readBytes(challenge.getHashingForDeadlines().length(), "Mismatch in deadline's value length");
-		this.signature = context.readLengthAndBytes("Mismatch in deadline's signature length");
+		this.signature = readSignature(context);
 
 		try {
 			verify();
@@ -141,7 +141,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		this.challenge = Challenges.from(context, hashingForDeadlines, hashingForGenerations);
 		this.progressive = context.readLong();
 		this.value = context.readBytes(hashingForDeadlines.length(), "Mismatch in deadline's value length");
-		this.signature = context.readLengthAndBytes("Mismatch in deadline's signature length");
+		this.signature = readSignature(context);
 
 		try {
 			verify();
@@ -149,6 +149,14 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		catch (NullPointerException | IllegalArgumentException e) {
 			throw new IOException(e);
 		}
+	}
+
+	private byte[] readSignature(UnmarshallingContext context) throws IOException {
+		var maybeLength = prolog.getSignatureForDeadlines().length();
+		if (maybeLength.isEmpty())
+			return context.readLengthAndBytes("Mismatch in deadline's signature length");
+		else
+			return context.readBytes(maybeLength.getAsInt(), "Mismatch in deadline's signature length");
 	}
 
 	/**
@@ -214,7 +222,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	}
 
 	@Override
-	public long getMillisecondsToWaitFor(BigInteger acceleration) {
+	public long getMillisecondsToWait(BigInteger acceleration) {
 		var newValueAsBytes = new BigInteger(1, value).divide(acceleration).toByteArray();
 		// we recreate an array of the same length as at the beginning
 		var dividedValueAsBytes = new byte[value.length];
@@ -278,7 +286,10 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 
 	@Override
 	public String toString() {
-		return "prolog: { " + prolog + " }, progressive: " + progressive + ", challenge : { " + challenge + " }, value: " + Hex.toHexString(value) + ", signature: " + Hex.toHexString(signature);
+		return "prolog: { " + prolog + " }, progressive: " + progressive
+			+ ", challenge : { " + challenge + " }, value: " + Hex.toHexString(value)
+			+ " (" + challenge.getHashingForDeadlines() + "), signature: "
+			+ Hex.toHexString(signature) + " (" + prolog.getSignatureForDeadlines() + ")";
 	}
 
 	/**
@@ -329,12 +340,20 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		intoWithoutSignature(context);
-		context.writeLengthAndBytes(signature);
+		marshalSignature(context);
 	}
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		intoWithoutSignatureWithoutConfigurationData(context);
-		context.writeLengthAndBytes(signature);
+		marshalSignature(context);
+	}
+
+	private void marshalSignature(MarshallingContext context) throws IOException {
+		var maybeLength = prolog.getSignatureForDeadlines().length();
+		if (maybeLength.isEmpty())
+			context.writeLengthAndBytes(signature);
+		else
+			context.writeBytes(signature);
 	}
 }

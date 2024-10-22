@@ -395,7 +395,7 @@ public class BlockMiner {
 	 * @param deadline the deadline
 	 */
 	private void setWaker(Deadline deadline) {
-		long millisecondsToWait = deadline.getMillisecondsToWaitFor(previous.getDescription().getAcceleration());
+		long millisecondsToWait = deadline.getMillisecondsToWait(previous.getDescription().getAcceleration());
 		long millisecondsAlreadyPassed = Duration.between(startTime, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
 		long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
 		if (waker.set(stillToWait))
