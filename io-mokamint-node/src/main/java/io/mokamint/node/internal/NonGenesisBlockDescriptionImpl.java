@@ -127,7 +127,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
 			this.hashingForBlocks = config.getHashingForBlocks();
-			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
+			this.hashOfPreviousBlock = context.readBytes(hashingForBlocks.length(), "Previous block hash length mismatch");
 
 			verify();
 		}
@@ -157,7 +157,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context);
 			this.hashingForBlocks = HashingAlgorithms.of(context.readStringUnshared());
-			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
+			this.hashOfPreviousBlock = context.readBytes(hashingForBlocks.length(), "Previous block hash length mismatch");
 
 			verify();
 		}
@@ -248,7 +248,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		context.writeBigInteger(acceleration);
 		deadline.into(context);
 		context.writeStringUnshared(hashingForBlocks.getName());
-		context.writeLengthAndBytes(hashOfPreviousBlock);
+		context.writeBytes(hashOfPreviousBlock);
 	}
 
 	@Override
@@ -259,15 +259,14 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		context.writeCompactLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
 		deadline.intoWithoutConfigurationData(context);
-		context.writeLengthAndBytes(hashOfPreviousBlock);
+		context.writeBytes(hashOfPreviousBlock);
 	}
 
 	@Override
 	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		startDateTimeUTC.ifPresent(sd -> builder.append("* creation date and time UTC: " + sd.plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n"));
 		super.populate(builder, config, startDateTimeUTC);
-		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock));
-		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append(" (" + hashingForBlocks + ")"));
+		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + " (" + hashingForBlocks + ")");
 		builder.append("\n");
 		builder.append("* deadline:\n");
 		builder.append("  * prolog:\n");
