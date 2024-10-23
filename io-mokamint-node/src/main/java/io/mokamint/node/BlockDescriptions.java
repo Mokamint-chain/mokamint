@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
@@ -59,10 +60,11 @@ public abstract class BlockDescriptions {
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @param deadline the deadline computed for the block
 	 * @param hashOfPreviousBlock the reference to the previous block
+	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @return the non-genesis block description
 	 */
-	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
-		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock);
+	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, HashingAlgorithm hashingForBlocks) {
+		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, hashingForBlocks);
 	}
 
 	/**

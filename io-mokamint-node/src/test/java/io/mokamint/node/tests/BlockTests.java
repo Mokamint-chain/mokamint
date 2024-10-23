@@ -57,6 +57,7 @@ public class BlockTests extends AbstractLoggedTests {
 	@DisplayName("non-genesis blocks are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForNonGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var hashingForGenerations = HashingAlgorithms.sha256();
+		var hashingForBlocks = HashingAlgorithms.sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -72,7 +73,7 @@ public class BlockTests extends AbstractLoggedTests {
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
-		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6}), Stream.of(transaction1, transaction2, transaction3), new byte[] { 1, 2, 3, 4 }, nodeKeyPair.getPrivate());
+		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[hashingForBlocks.length()], hashingForBlocks), Stream.of(transaction1, transaction2, transaction3), new byte[] { 1, 2, 3, 4 }, nodeKeyPair.getPrivate());
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);

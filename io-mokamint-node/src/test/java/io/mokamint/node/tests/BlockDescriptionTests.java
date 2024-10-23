@@ -53,6 +53,7 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 	@DisplayName("non-genesis block descriptions are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForNonGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var hashingForGenerations = HashingAlgorithms.sha256();
+		var hashingForBlocks = HashingAlgorithms.sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -65,7 +66,7 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
-		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[] { 1, 2, 3, 4, 5, 6});
+		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[hashingForBlocks.length()], hashingForBlocks);
 		String encoded = new BlockDescriptions.Encoder().encode(description1);
 		var description2 = new BlockDescriptions.Decoder().decode(encoded);
 		assertEquals(description1, description2);

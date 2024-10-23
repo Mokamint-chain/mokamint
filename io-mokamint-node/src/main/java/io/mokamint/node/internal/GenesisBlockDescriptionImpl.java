@@ -82,7 +82,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		this.acceleration = acceleration;
 		this.signatureForBlock = signatureForBlock;
 		this.publicKey = publicKey;
-		this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(publicKey));
+		byte[] publicKeyEncoding = signatureForBlock.encodingOf(publicKey);
+		this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 
 		verify();
 	}
@@ -100,7 +101,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.acceleration = context.readBigInteger();
 			this.signatureForBlock = SignatureAlgorithms.of(context.readStringShared());
-			byte[] publicKeyEncoding = context.readLengthAndBytes("Mismatch in the length of the public key");
+			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 	
@@ -124,7 +125,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.acceleration = context.readBigInteger();
 			this.signatureForBlock = config.getSignatureForBlocks();
-			byte[] publicKeyEncoding = context.readLengthAndBytes("Mismatch in the length of the public key");
+			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 	
@@ -133,6 +134,14 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		catch (RuntimeException | InvalidKeySpecException e) {
 			throw new IOException(e);
 		}
+	}
+
+	private byte[] readPublicKeyEncoding(UnmarshallingContext context) throws IOException {
+		var maybeLength = signatureForBlock.publicKeyLength();
+		if (maybeLength.isPresent())
+			return context.readBytes(maybeLength.getAsInt(), "Mismatch in the length of the public key");
+		else
+			return context.readLengthAndBytes("Mismatch in the length of the public key");
 	}
 
 	/**
@@ -148,7 +157,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		Objects.requireNonNull(publicKey, "publicKey cannot be null");
 
 		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("acceleration must be strictly positive");
+			throw new IllegalArgumentException("The acceleration must be strictly positive");
 	}
 
 	@Override
@@ -234,7 +243,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
 			context.writeStringShared(signatureForBlock.getName());
-			context.writeLengthAndBytes(signatureForBlock.encodingOf(publicKey));
+			writePublicKeyEncoding(context);
 		}
 		catch (DateTimeException | InvalidKeyException e) {
 			throw new IOException(e);
@@ -250,10 +259,18 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeLong(0L);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
-			context.writeLengthAndBytes(signatureForBlock.encodingOf(publicKey));
+			writePublicKeyEncoding(context);
 		}
 		catch (DateTimeException | InvalidKeyException e) {
 			throw new IOException(e);
 		}
+	}
+
+	private void writePublicKeyEncoding(MarshallingContext context) throws IOException, InvalidKeyException {
+		var maybeLength = signatureForBlock.publicKeyLength();
+		if (maybeLength.isEmpty())
+			context.writeLengthAndBytes(signatureForBlock.encodingOf(publicKey));
+		else
+			context.writeBytes(signatureForBlock.encodingOf(publicKey));
 	}
 }

@@ -168,6 +168,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var hashingForGenerations = config.getHashingForGenerations();
+			var hashingForBlocks = config.getHashingForBlocks();
 			var generationSignature = new byte[hashingForGenerations.length()];
 			for (int pos = 0; pos < generationSignature.length; pos++)
 				generationSignature[pos] = (byte) (42 + pos);
@@ -177,8 +178,10 @@ public class MempoolTests extends AbstractLoggedTests {
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
 			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotPrivateKey);
-			var unknownPrevious = new byte[] { 1, 2, 3, 4, 5, 6};
-			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious), Stream.empty(), stateHash, privateKey);
+			var unknownPrevious = new byte[hashingForBlocks.length()];
+			for (int pos = 0; pos < unknownPrevious.length; pos++)
+				unknownPrevious[pos] = (byte) (17 + pos);
+			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, hashingForBlocks), Stream.empty(), stateHash, privateKey);
 
 			assertTrue(blockchain.add(genesis));
 

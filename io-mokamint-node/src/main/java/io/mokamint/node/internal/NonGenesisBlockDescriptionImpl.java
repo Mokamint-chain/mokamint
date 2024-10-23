@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -86,9 +87,14 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	private final byte[] hashOfPreviousBlock;
 
 	/**
+	 * The hashing algorithm used for the blocks.
+	 */
+	private final HashingAlgorithm hashingForBlocks;
+
+	/**
 	 * Creates a new non-genesis block description.
 	 */
-	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock) {
+	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, HashingAlgorithm hashingForBlocks) {
 		this.height = height;
 		this.power = power;
 		this.totalWaitingTime = totalWaitingTime;
@@ -96,6 +102,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		this.acceleration = acceleration;
 		this.deadline = deadline;
 		this.hashOfPreviousBlock = hashOfPreviousBlock;
+		this.hashingForBlocks = hashingForBlocks;
 
 		verify();
 	}
@@ -116,9 +123,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		try {
 			this.power = context.readBigInteger();
 			this.totalWaitingTime = context.readLong();
-			this.weightedWaitingTime = context.readLong();
+			this.weightedWaitingTime = context.readCompactLong();
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
+			this.hashingForBlocks = config.getHashingForBlocks();
 			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
 
 			verify();
@@ -145,9 +153,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		try {
 			this.power = context.readBigInteger();
 			this.totalWaitingTime = context.readLong();
-			this.weightedWaitingTime = context.readLong();
+			this.weightedWaitingTime = context.readCompactLong();
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context);
+			this.hashingForBlocks = HashingAlgorithms.of(context.readStringUnshared());
 			this.hashOfPreviousBlock = context.readLengthAndBytes("Previous block hash length mismatch");
 
 			verify();
@@ -208,6 +217,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
+	public HashingAlgorithm getHashingForBlocks() {
+		return hashingForBlocks;
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof NonGenesisBlockDescription ngbd &&
 			height == ngbd.getHeight() &&
@@ -216,6 +230,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			weightedWaitingTime == ngbd.getWeightedWaitingTime() &&
 			acceleration.equals(ngbd.getAcceleration()) &&
 			deadline.equals(ngbd.getDeadline()) &&
+			hashingForBlocks.equals(ngbd.getHashingForBlocks()) &&
 			Arrays.equals(hashOfPreviousBlock, ngbd.getHashOfPreviousBlock());
 	}
 
@@ -229,9 +244,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		context.writeLong(height);
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
-		context.writeLong(weightedWaitingTime);
+		context.writeCompactLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
 		deadline.into(context);
+		context.writeStringUnshared(hashingForBlocks.getName());
 		context.writeLengthAndBytes(hashOfPreviousBlock);
 	}
 
@@ -240,7 +256,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		context.writeLong(height);
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
-		context.writeLong(weightedWaitingTime);
+		context.writeCompactLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
 		deadline.intoWithoutConfigurationData(context);
 		context.writeLengthAndBytes(hashOfPreviousBlock);
@@ -263,8 +279,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("  * challenge:\n");
 		var challenge = deadline.getChallenge();
 		builder.append("    * scoopNumber: " + challenge.getScoopNumber() + "\n");
-		builder.append("    * generation signature: " + Hex.toHexString(challenge.getGenerationSignature()));
-		config.map(ConsensusConfig::getHashingForGenerations).ifPresent(hashingForGenerations -> builder.append(" (" + hashingForGenerations + ")"));
+		builder.append("    * generation signature: " + Hex.toHexString(challenge.getGenerationSignature()) + " (" + challenge.getHashingForGenerations() + ")");
 		builder.append("\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + challenge.getHashingForDeadlines() + ")\n");
@@ -273,9 +288,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
-		byte[] previousGenerationSignature = deadline.getChallenge().getGenerationSignature();
+		var challenge = deadline.getChallenge();
+		byte[] previousGenerationSignature = challenge.getGenerationSignature();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
-		return hashingForGenerations.getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
+		return challenge.getHashingForGenerations().getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
 	}
 
 	/**
@@ -288,6 +304,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(deadline, "deadline cannot be null");
 		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
+		Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
 		Objects.requireNonNull(power, "power cannot be null");
 	
 		if (height < 1)
@@ -304,6 +321,9 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	
 		if (totalWaitingTime < weightedWaitingTime)
 			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
+
+		if (hashOfPreviousBlock.length != hashingForBlocks.length())
+			throw new IllegalArgumentException("Length mismatch in the hash of the previous block: expected " + hashingForBlocks.length() + " but found " + hashOfPreviousBlock.length);
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {

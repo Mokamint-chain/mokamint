@@ -257,6 +257,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
 		var semaphore = new Semaphore(0);
 		var hashingForGenerations = sha256();
+		var hashingForBlocks = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -264,6 +265,9 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
+		var hashingOfPreviousBlock = new byte[hashingForBlocks.length()];
+		for (int pos = 0; pos < hashingOfPreviousBlock.length; pos++)
+			hashingOfPreviousBlock[pos] = (byte) (17 + pos);
 		int scoopNumber = 42;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodeKeyPair = ed25519.getKeyPair();
@@ -273,7 +277,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
 		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
 		var transaction3 = Transactions.of(new byte[] {});
-		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 }),
+		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, hashingOfPreviousBlock, hashingForBlocks),
 			Stream.of(transaction1, transaction2, transaction3),
 			new byte[0], nodeKeyPair.getPrivate());
 
@@ -374,19 +378,23 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var hashingForGenerations = sha256();
+		var hashingForBlocks = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
 		var value = new byte[shabal256.length()];
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
+		var hashingOfPreviousBlock = new byte[hashingForBlocks.length()];
+		for (int pos = 0; pos < hashingOfPreviousBlock.length; pos++)
+			hashingOfPreviousBlock[pos] = (byte) (17 + pos);
 		int scoopNumber = 42;
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var nodeKeyPair = ed25519.getKeyPair();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, generationSignature, shabal256, hashingForGenerations), plotKeyPair.getPrivate());
-		var description = BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, new byte[] { 5, 6, 7, 8 });
+		var description = BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, hashingOfPreviousBlock, hashingForBlocks);
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

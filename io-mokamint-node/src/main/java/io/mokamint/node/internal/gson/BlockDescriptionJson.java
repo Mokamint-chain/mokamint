@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Base58ConversionException;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.SignatureAlgorithms;
@@ -48,6 +49,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private Long weightedWaitingTime;
 	private final BigInteger acceleration;
 	private Deadlines.Json deadline;
+	private String hashingForBlocks;
 	private String hashOfPreviousBlock;
 	private String signatureForBlocks;
 	private String publicKey;
@@ -68,6 +70,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 			this.weightedWaitingTime = ngbd.getWeightedWaitingTime();
 			this.acceleration = ngbd.getAcceleration();
 			this.deadline = new Deadlines.Json(ngbd.getDeadline());
+			this.hashingForBlocks = ngbd.getHashingForBlocks().getName();
 			this.hashOfPreviousBlock = Hex.toHexString(ngbd.getHashOfPreviousBlock());
 		}
 	}
@@ -76,7 +79,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
 			if (startDateTimeUTC == null)
-				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock));
+				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), HashingAlgorithms.of(hashingForBlocks));
 			else {
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 

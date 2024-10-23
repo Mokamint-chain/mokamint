@@ -183,7 +183,7 @@ public class VerificationTests extends AbstractLoggedTests {
 				value[pos] = (byte) pos;
 			var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotPrivateKey);
 			byte[] previous = genesis.getHash(hashingForBlocks);
-			var block = Blocks.of(BlockDescriptions.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous), Stream.empty(), stateId, nodePrivateKey);
+			var block = Blocks.of(BlockDescriptions.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous, hashingForBlocks), Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
@@ -228,7 +228,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected block hash
 			var actual = BlockDescriptions.of(expected.getHeight() + 1, expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				expected.getDeadline(), expected.getHashOfPreviousBlock());
+				expected.getDeadline(), expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -251,7 +251,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected acceleration
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration().add(BigInteger.ONE),
-					expected.getDeadline(), expected.getHashOfPreviousBlock());
+					expected.getDeadline(), expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -274,7 +274,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected power
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower().add(BigInteger.ONE), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				expected.getDeadline(), expected.getHashOfPreviousBlock());
+				expected.getDeadline(), expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -297,7 +297,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var expected = genesis.getNextBlockDescription(deadline, config);
 			// we replace the expected total waiting time
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime() + 1, expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				expected.getDeadline(), expected.getHashOfPreviousBlock());
+				expected.getDeadline(), expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -353,7 +353,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
 				Challenges.of((challenge.getScoopNumber() + 1) % Challenge.SCOOPS_PER_NONCE, challenge.getGenerationSignature(), challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock());
+				modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -518,7 +518,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			modifiedGenerationSignature[0]++;
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(challenge.getScoopNumber(), modifiedGenerationSignature, challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock());
+				modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -546,7 +546,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var otherAlgorithm = challenge.getHashingForDeadlines().equals(sha256) ? HashingAlgorithms.shabal256() : sha256;
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(), Challenges.of(challenge.getScoopNumber(), challenge.getGenerationSignature(), otherAlgorithm, challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-				modifiedDeadline, expected.getHashOfPreviousBlock());
+				modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -573,7 +573,7 @@ public class VerificationTests extends AbstractLoggedTests {
 					prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(), deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-					modifiedDeadline, expected.getHashOfPreviousBlock());
+					modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -605,7 +605,7 @@ public class VerificationTests extends AbstractLoggedTests {
 					prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra());
 			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(), deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-					modifiedDeadline, expected.getHashOfPreviousBlock());
+					modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, newKeyPair.getPrivate());
 
 			assertTrue(blockchain.add(genesis));
@@ -637,7 +637,7 @@ public class VerificationTests extends AbstractLoggedTests {
 					newSignature, newKeyPair.getPublic(), prolog.getExtra());
 			var modifiedDeadline = Deadlines.of(modifiedProlog, deadline.getProgressive(), deadline.getValue(), deadline.getChallenge(), newKeyPair.getPrivate());
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-					modifiedDeadline, expected.getHashOfPreviousBlock());
+					modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -662,7 +662,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			var deadline = plot.getSmallestDeadline(description.getNextChallenge(config.getHashingForGenerations(), hashingForDeadlines), plotPrivateKey);
 			var expectedDescription = genesis.getNextBlockDescription(deadline, config);
 			var expected = Blocks.of(BlockDescriptions.of(expectedDescription.getHeight(), expectedDescription.getPower(), expectedDescription.getTotalWaitingTime(),
-					expectedDescription.getWeightedWaitingTime(), expectedDescription.getAcceleration(), expectedDescription.getDeadline(), expectedDescription.getHashOfPreviousBlock()),
+					expectedDescription.getWeightedWaitingTime(), expectedDescription.getAcceleration(), expectedDescription.getDeadline(), expectedDescription.getHashOfPreviousBlock(), expectedDescription.getHashingForBlocks()),
 					Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -687,7 +687,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			// we make the deadline invalid by changing its progressive
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive() + 1, deadline.getValue(), deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-					modifiedDeadline, expected.getHashOfPreviousBlock());
+					modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -714,7 +714,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			value[0]++;
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), value, deadline.getChallenge(), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
-					modifiedDeadline, expected.getHashOfPreviousBlock());
+					modifiedDeadline, expected.getHashOfPreviousBlock(), expected.getHashingForBlocks());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));

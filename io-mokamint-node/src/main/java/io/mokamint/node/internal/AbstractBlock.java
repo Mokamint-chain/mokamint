@@ -221,8 +221,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, config.getTargetBlockCreationTime());
 		var hashOfPreviousBlock = getHash(config.getHashingForBlocks());
 
-		return new NonGenesisBlockDescriptionImpl(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
-			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock);
+		return new NonGenesisBlockDescriptionImpl(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock, // TODO: use pseudo-constructor
+			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, config.getHashingForBlocks());
 	}
 
 	@Override

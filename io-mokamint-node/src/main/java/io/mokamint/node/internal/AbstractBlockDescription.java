@@ -41,14 +41,10 @@ import io.mokamint.nonce.api.Challenge;
  */
 public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
-
-	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Challenge.SCOOPS_PER_NONCE);
-
 	/**
 	 * Creates a block description.
 	 */
-	protected AbstractBlockDescription() {
-	}
+	protected AbstractBlockDescription() {}
 
 	/**
 	 * Unmarshals a block description from the given context. It assumes that it was marshalled by using
@@ -95,7 +91,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 
 	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {
 		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
-		return new BigInteger(1, generationHash).remainder(SCOOPS_PER_NONCE).intValue();
+		return new BigInteger(1, generationHash).remainder(BigInteger.valueOf(Challenge.SCOOPS_PER_NONCE)).intValue();
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {
@@ -133,7 +129,6 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	/**
 	 * Yields the generation signature of any block that can legally follow this block.
 	 * 
-	 * @param hashingForGenerations the hashing used for the generation of deadlines.
 	 * @return the generation signature
 	 */
 	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
