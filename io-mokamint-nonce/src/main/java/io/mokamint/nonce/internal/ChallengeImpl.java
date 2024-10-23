@@ -48,8 +48,8 @@ public final class ChallengeImpl extends AbstractMarshallable implements Challen
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 	
-		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
-			throw new IllegalArgumentException("scoopNumber must be between 0 and " + MAX_SCOOP_NUMBER);
+		if (scoopNumber < 0 || scoopNumber >= SCOOPS_PER_NONCE)
+			throw new IllegalArgumentException("scoopNumber must be between 0 and " + (SCOOPS_PER_NONCE - 1));
 
 		if (generationSignature.length != hashingForGenerations.length())
 			throw new IllegalArgumentException("Mismatch in generation signature length: found " + generationSignature.length + " but expected " + hashingForGenerations.length());
@@ -73,10 +73,10 @@ public final class ChallengeImpl extends AbstractMarshallable implements Challen
 
 	@SuppressWarnings("unused")
 	private int readScoopNumber(UnmarshallingContext context) throws IOException {
-		int scoopNumber = MAX_SCOOP_NUMBER < Short.MAX_VALUE ? context.readShort() : context.readCompactInt();
+		int scoopNumber = SCOOPS_PER_NONCE <= Short.MAX_VALUE ? context.readShort() : context.readCompactInt();
 
-		if (scoopNumber < 0 || scoopNumber > MAX_SCOOP_NUMBER)
-			throw new IOException("scoopNumber must be between 0 and " + MAX_SCOOP_NUMBER);
+		if (scoopNumber < 0 || scoopNumber >= SCOOPS_PER_NONCE)
+			throw new IOException("scoopNumber must be between 0 and " + (SCOOPS_PER_NONCE - 1));
 
 		return scoopNumber;
 	}
@@ -162,7 +162,7 @@ public final class ChallengeImpl extends AbstractMarshallable implements Challen
 
 	@SuppressWarnings("unused")
 	private void writeScoopNumber(MarshallingContext context) throws IOException {
-		if (MAX_SCOOP_NUMBER < Short.MAX_VALUE)
+		if (SCOOPS_PER_NONCE <= Short.MAX_VALUE)
 			context.writeShort(scoopNumber);
 		else
 			context.writeCompactInt(scoopNumber);

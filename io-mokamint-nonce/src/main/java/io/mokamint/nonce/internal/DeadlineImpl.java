@@ -67,14 +67,12 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		Objects.requireNonNull(prolog, "prolog cannot be null");
-		Objects.requireNonNull(privateKey, "privateKey cannot be null");
-
 		this.prolog = prolog;
 		this.progressive = progressive;
 		this.value = value;
 		this.challenge = challenge;
-		this.signature = prolog.getSignatureForDeadlines().getSigner(privateKey, DeadlineImpl::toByteArrayWithoutSignature).sign(this);
+		this.signature = prolog.getSignatureForDeadlines().getSigner
+			(Objects.requireNonNull(privateKey, "privateKey cannot be null"), DeadlineImpl::toByteArrayWithoutSignature).sign(this);
 
 		verify();
 	}
@@ -319,7 +317,6 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		prolog.into(context);
 		challenge.into(context);
 		context.writeLong(progressive);
-		// we do not write value.length, since it coincides with hashing.length()
 		context.writeBytes(value);
 	}
 

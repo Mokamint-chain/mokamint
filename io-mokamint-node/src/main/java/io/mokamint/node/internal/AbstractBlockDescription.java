@@ -42,7 +42,7 @@ import io.mokamint.nonce.api.Challenge;
 public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 
-	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Challenge.MAX_SCOOP_NUMBER + 1);
+	private final static BigInteger SCOOPS_PER_NONCE = BigInteger.valueOf(Challenge.SCOOPS_PER_NONCE);
 
 	/**
 	 * Creates a block description.

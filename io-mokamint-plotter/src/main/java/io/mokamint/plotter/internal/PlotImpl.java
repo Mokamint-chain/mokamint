@@ -157,22 +157,18 @@ public class PlotImpl implements Plot {
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
 	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashingForDeadlines, IntConsumer onNewPercent) throws IOException {
-		Objects.requireNonNull(prolog, "prolog cannot be null");
-		Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
-		Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null");
-
 		if (start < 0)
 			throw new IllegalArgumentException("start cannot be negative");
 		
 		if (length < 1)
 			throw new IllegalArgumentException("length must be positive");
 
-		this.prolog = prolog;
+		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null");
 		this.start = start;
 		this.length = length;
-		this.hashingForDeadlines = hashingForDeadlines;
+		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 
-		new Dumper(path, onNewPercent);
+		new Dumper(path, Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null"));
 
 		this.reader = new RandomAccessFile(path.toFile(), "r");
 		this.channel = reader.getChannel();
@@ -183,7 +179,7 @@ public class PlotImpl implements Plot {
 	 */
 	private class Dumper {
 		private final FileChannel channel;
-		private final int nonceSize = (Challenge.MAX_SCOOP_NUMBER + 1) * 2 * hashingForDeadlines.length();
+		private final int nonceSize = Challenge.SCOOPS_PER_NONCE * 2 * hashingForDeadlines.length();
 		private final int metadataSize = getMetadataSize();
 		private final long plotSize = metadataSize + length * nonceSize;
 		private final IntConsumer onNewPercent;

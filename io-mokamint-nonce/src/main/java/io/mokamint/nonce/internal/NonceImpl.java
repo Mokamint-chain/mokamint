@@ -99,7 +99,7 @@ public final class NonceImpl implements Nonce {
 		// the plot file contains groups of scoops: the group of first scoops in the nonces,
 		// the group of the second scoops in the nonces, etc
 		long groupSize = length * scoopSize;
-		for (int scoopNumber = 0; scoopNumber <= Challenge.MAX_SCOOP_NUMBER; scoopNumber++)
+		for (int scoopNumber = 0; scoopNumber < Challenge.SCOOPS_PER_NONCE; scoopNumber++)
 			// scoopNumber * scoopSize is the position of scoopNumber inside the data of the nonce
 			try (var source = Channels.newChannel(new ByteArrayInputStream(scoops, scoopNumber * scoopSize, scoopSize))) {
 				// the scoop goes inside its group, sequentially wrt the offset of the nonce
@@ -110,8 +110,7 @@ public final class NonceImpl implements Nonce {
 	/**
 	 * Selects the given scoop from this nonce and adds the given generation signature at its end.
 	 * 
-	 * @param scoopNumber the number of the scoop to select, between 0 (inclusive) and
-	 *                    {@link Challenge#MAX_SCOOP_NUMBER} (inclusive)
+	 * @param scoopNumber the number of the scoop to select
 	 * @param generationSignature the generation signature to add after the scoop
 	 * @return the concatenation of the scoop and the data
 	 */
@@ -153,7 +152,7 @@ public final class NonceImpl implements Nonce {
 
 		private Builder() {
 			this.scoopSize = 2 * hashSize;
-			this.nonceSize = (Challenge.MAX_SCOOP_NUMBER + 1) * scoopSize;
+			this.nonceSize = Challenge.SCOOPS_PER_NONCE * scoopSize;
 			this.scoops = new byte[nonceSize];
 			this.buffer = initWithPrologAndProgressive();
 			fillWithScoops();

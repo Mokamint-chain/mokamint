@@ -32,9 +32,9 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 public interface Challenge extends Marshallable {
 
 	/**
-	 * The maximal scoop number (inclusive).
+	 * The number of scoops in a nonce.
 	 */
-	final int MAX_SCOOP_NUMBER = 4095;
+	final int SCOOPS_PER_NONCE = 4096;
 
 	/**
 	 * Yields the number of the scoop considered to compute the deadline.

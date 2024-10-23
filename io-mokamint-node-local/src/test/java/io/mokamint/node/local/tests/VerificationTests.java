@@ -351,7 +351,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			// we replace the expected deadline
 			var challenge = deadline.getChallenge();
 			var modifiedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
-				Challenges.of((challenge.getScoopNumber() + 1) % Challenge.MAX_SCOOP_NUMBER, challenge.getGenerationSignature(), challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
+				Challenges.of((challenge.getScoopNumber() + 1) % Challenge.SCOOPS_PER_NONCE, challenge.getGenerationSignature(), challenge.getHashingForDeadlines(), challenge.getHashingForGenerations()), plotPrivateKey);
 			var actual = BlockDescriptions.of(expected.getHeight(), expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(), expected.getAcceleration(),
 				modifiedDeadline, expected.getHashOfPreviousBlock());
 			var block = Blocks.of(actual, Stream.empty(), stateId, nodePrivateKey);
