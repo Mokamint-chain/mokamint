@@ -81,6 +81,13 @@ public interface BlockDescription extends Marshallable {
 	long getHeight();
 
 	/**
+	 * Yields the hashing algorithm used for the deadlines.
+	 * 
+	 * @return the hashing algorithm for the deadlines
+	 */
+	HashingAlgorithm getHashingForDeadlines();
+
+	/**
 	 * Yields the hashing algorithm used for the generation signatures.
 	 * 
 	 * @return the hashing algorithm for the generation signatures

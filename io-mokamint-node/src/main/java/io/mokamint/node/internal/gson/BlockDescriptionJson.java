@@ -50,6 +50,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private final BigInteger acceleration;
 	private Deadlines.Json deadline;
 	private String hashingForBlocks;
+	private String hashingForDeadlines;
 	private String hashingForGenerations;
 	private String hashOfPreviousBlock;
 	private String signatureForBlocks;
@@ -59,6 +60,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 		if (description instanceof GenesisBlockDescription gbd) {
 			this.startDateTimeUTC = ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
 			this.acceleration = gbd.getAcceleration();
+			this.hashingForDeadlines = gbd.getHashingForDeadlines().getName();
 			this.hashingForGenerations = gbd.getHashingForGenerations().getName();
 			this.signatureForBlocks = gbd.getSignatureForBlock().getName();
 			this.publicKey = gbd.getPublicKeyForSigningBlockBase58();
@@ -85,7 +87,8 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 
 				return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
-						acceleration, HashingAlgorithms.of(hashingForGenerations), signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
+						acceleration, HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations),
+						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
 			}
 		}
 		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException e) {

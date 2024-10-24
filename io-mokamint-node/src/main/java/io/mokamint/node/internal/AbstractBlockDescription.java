@@ -87,12 +87,9 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	public final Challenge getNextChallenge(HashingAlgorithm hashingForDeadlines) {
 		var nextGenerationSignature = getNextGenerationSignature();
 		var hashingForGenerations = getHashingForGenerations();
-		return Challenges.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines, hashingForGenerations);
-	}
-
-	private int getNextScoopNumber(byte[] nextGenerationSignature, HashingAlgorithm hashingForGenerations) {
 		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
-		return new BigInteger(1, generationHash).remainder(BigInteger.valueOf(Challenge.SCOOPS_PER_NONCE)).intValue();
+		int nextScoopNumber = new BigInteger(1, generationHash).remainder(BigInteger.valueOf(Challenge.SCOOPS_PER_NONCE)).intValue();
+		return Challenges.of(nextScoopNumber, nextGenerationSignature, hashingForDeadlines, hashingForGenerations);
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {

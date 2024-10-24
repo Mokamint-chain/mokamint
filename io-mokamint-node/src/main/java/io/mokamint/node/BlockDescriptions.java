@@ -75,14 +75,15 @@ public abstract class BlockDescriptions {
 	 *                     a value used to divide deadlines to derive the time needed to wait for it.
 	 *                     The higher, the shorter the time. This value will change dynamically to cope with
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
+	 * @param hashingForDeadlines the hashing algorithm used for the deadlines
 	 * @param hashingForGenerations the hashing algorithm used for the generation signatures
 	 * @param signatureForBlock the signature algorithm for the block
 	 * @param publicKey the public key of the signer of the block
 	 * @return the genesis block description
 	 * @throws InvalidKeyException if the public key is invalid
 	 */
-	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, hashingForGenerations, signatureForBlock, publicKey);
+	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey);
 	}
 
 	/**

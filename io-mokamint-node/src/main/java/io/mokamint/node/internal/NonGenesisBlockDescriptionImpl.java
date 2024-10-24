@@ -192,8 +192,18 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
+	public HashingAlgorithm getHashingForDeadlines() {
+		return deadline.getChallenge().getHashingForDeadlines();
+	}
+
+	@Override
 	public HashingAlgorithm getHashingForGenerations() {
 		return deadline.getChallenge().getHashingForGenerations();
+	}
+
+	@Override
+	public HashingAlgorithm getHashingForBlocks() {
+		return hashingForBlocks;
 	}
 
 	@Override
@@ -219,11 +229,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	@Override
 	public byte[] getHashOfPreviousBlock() {
 		return hashOfPreviousBlock.clone();
-	}
-
-	@Override
-	public HashingAlgorithm getHashingForBlocks() {
-		return hashingForBlocks;
 	}
 
 	@Override

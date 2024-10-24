@@ -618,7 +618,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		var acceleration = new BigInteger(1, generationSignature).divide(BigInteger.valueOf(config.getTargetBlockCreationTime()));
 		*/
 
-		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()),config.getHashingForGenerations(), config.getSignatureForBlocks(), keys.getPublic());
+		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), keys.getPublic());
 
 		try {
 			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate());
