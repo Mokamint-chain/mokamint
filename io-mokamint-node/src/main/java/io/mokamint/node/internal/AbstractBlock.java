@@ -69,18 +69,12 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private final Object lock = new Object();
 
 	/**
-	 * The hashing algorithm used for the last call to {@link #getHash(HashingAlgorithm)}, if any.
-	 */
-	@GuardedBy("lock")
-	private HashingAlgorithm lastHashing;
-
-	/**
 	 * The result of the last call to {@link #getHash(HashingAlgorithm)}.
 	 */
 	@GuardedBy("lock")
 	private byte[] lastHash;
 
-	private final static double oblivion = 0.05;
+	private final static double oblivion = 0.05; // TODO: add configuration parameter
 
 	private final static BigInteger _100000 = BigInteger.valueOf(100000L);
 
@@ -221,7 +215,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		var hashOfPreviousBlock = getHash();
 
 		return BlockDescriptions.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
-			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, config.getHashingForBlocks());
+			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, description.getHashingForBlocks());
 	}
 
 	@Override
