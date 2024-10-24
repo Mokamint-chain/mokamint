@@ -24,10 +24,12 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
@@ -41,9 +43,16 @@ import io.mokamint.nonce.api.Challenge;
 public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 	/**
+	 * The hashing algorithm used for the blocks.
+	 */
+	private final HashingAlgorithm hashingForBlocks;
+
+	/**
 	 * Creates a block description.
 	 */
-	protected AbstractBlockDescription() {}
+	protected AbstractBlockDescription(HashingAlgorithm hashingForBlocks) {
+		this.hashingForBlocks = Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
+	}
 
 	/**
 	 * Unmarshals a block description from the given context. It assumes that it was marshalled by using
@@ -80,6 +89,11 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 			return new GenesisBlockDescriptionImpl(context);
 		else
 			return new NonGenesisBlockDescriptionImpl(height, context);
+	}
+
+	@Override
+	public final HashingAlgorithm getHashingForBlocks() {
+		return hashingForBlocks;
 	}
 
 	@Override

@@ -43,7 +43,7 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 	@DisplayName("genesis block descriptions are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var description1 = BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, HashingAlgorithms.shabal256(), HashingAlgorithms.shabal256(), ed25519, ed25519.getKeyPair().getPublic());
+		var description1 = BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, HashingAlgorithms.sha256(), HashingAlgorithms.shabal256(), HashingAlgorithms.shabal256(), ed25519, ed25519.getKeyPair().getPublic());
 		String encoded = new BlockDescriptions.Encoder().encode(description1);
 		var description2 = new BlockDescriptions.Decoder().decode(encoded);
 		assertEquals(description1, description2);

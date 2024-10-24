@@ -87,14 +87,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	private final byte[] hashOfPreviousBlock;
 
 	/**
-	 * The hashing algorithm used for the blocks.
-	 */
-	private final HashingAlgorithm hashingForBlocks;
-
-	/**
 	 * Creates a new non-genesis block description.
 	 */
 	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, HashingAlgorithm hashingForBlocks) {
+		super(hashingForBlocks);
+
 		this.height = height;
 		this.power = power;
 		this.totalWaitingTime = totalWaitingTime;
@@ -102,7 +99,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		this.acceleration = acceleration;
 		this.deadline = deadline;
 		this.hashOfPreviousBlock = hashOfPreviousBlock;
-		this.hashingForBlocks = hashingForBlocks;
 
 		verify();
 	}
@@ -118,6 +114,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @throws IOException if unmarshalling failed
 	 */
 	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+		super(config.getHashingForBlocks());
+
 		this.height = height;
 
 		try {
@@ -126,8 +124,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.weightedWaitingTime = context.readCompactLong();
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
-			this.hashingForBlocks = config.getHashingForBlocks();
-			this.hashOfPreviousBlock = context.readBytes(hashingForBlocks.length(), "Previous block hash length mismatch");
+			this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
 
 			verify();
 		}
@@ -148,6 +145,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
 	 */
 	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		super(HashingAlgorithms.of(context.readStringUnshared()));
+
 		this.height = height;
 
 		try {
@@ -156,8 +155,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.weightedWaitingTime = context.readCompactLong();
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context);
-			this.hashingForBlocks = HashingAlgorithms.of(context.readStringUnshared());
-			this.hashOfPreviousBlock = context.readBytes(hashingForBlocks.length(), "Previous block hash length mismatch");
+			this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
 
 			verify();
 		}
@@ -202,11 +200,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public HashingAlgorithm getHashingForBlocks() {
-		return hashingForBlocks;
-	}
-
-	@Override
 	public SignatureAlgorithm getSignatureForBlock() {
 		return deadline.getProlog().getSignatureForBlocks();
 	}
@@ -240,7 +233,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			weightedWaitingTime == ngbd.getWeightedWaitingTime() &&
 			acceleration.equals(ngbd.getAcceleration()) &&
 			deadline.equals(ngbd.getDeadline()) &&
-			hashingForBlocks.equals(ngbd.getHashingForBlocks()) &&
+			getHashingForBlocks().equals(ngbd.getHashingForBlocks()) &&
 			Arrays.equals(hashOfPreviousBlock, other instanceof NonGenesisBlockDescriptionImpl ngbdi ? ngbdi.hashOfPreviousBlock : ngbd.getHashOfPreviousBlock());
 	}
 
@@ -252,12 +245,12 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		context.writeLong(height);
+		context.writeStringUnshared(getHashingForBlocks().getName());
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
 		context.writeCompactLong(weightedWaitingTime);
 		context.writeBigInteger(acceleration);
 		deadline.into(context);
-		context.writeStringUnshared(hashingForBlocks.getName());
 		context.writeBytes(hashOfPreviousBlock);
 	}
 
@@ -276,7 +269,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	protected void populate(StringBuilder builder, Optional<LocalDateTime> startDateTimeUTC) {
 		startDateTimeUTC.ifPresent(sd -> builder.append("* creation date and time UTC: " + sd.plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n"));
 		super.populate(builder, startDateTimeUTC);
-		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + " (" + hashingForBlocks + ")");
+		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + " (" + getHashingForBlocks() + ")");
 		builder.append("\n");
 		builder.append("* deadline:\n");
 		builder.append("  * prolog:\n");
@@ -313,7 +306,6 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(deadline, "deadline cannot be null");
 		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
-		Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
 		Objects.requireNonNull(power, "power cannot be null");
 	
 		if (height < 1)
@@ -331,8 +323,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		if (totalWaitingTime < weightedWaitingTime)
 			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
 
-		if (hashOfPreviousBlock.length != hashingForBlocks.length())
-			throw new IllegalArgumentException("Length mismatch in the hash of the previous block: expected " + hashingForBlocks.length() + " but found " + hashOfPreviousBlock.length);
+		if (hashOfPreviousBlock.length != getHashingForBlocks().length())
+			throw new IllegalArgumentException("Length mismatch in the hash of the previous block: expected " + getHashingForBlocks().length() + " but found " + hashOfPreviousBlock.length);
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {

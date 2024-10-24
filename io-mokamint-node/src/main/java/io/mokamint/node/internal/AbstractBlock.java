@@ -35,6 +35,7 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
@@ -221,7 +222,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, config.getTargetBlockCreationTime());
 		var hashOfPreviousBlock = getHash(config.getHashingForBlocks());
 
-		return new NonGenesisBlockDescriptionImpl(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock, // TODO: use pseudo-constructor
+		return BlockDescriptions.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
 			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, config.getHashingForBlocks());
 	}
 
