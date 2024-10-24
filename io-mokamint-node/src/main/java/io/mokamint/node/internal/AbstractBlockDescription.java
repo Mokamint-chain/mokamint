@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
@@ -84,12 +83,12 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	@Override
-	public final Challenge getNextChallenge(HashingAlgorithm hashingForDeadlines) {
+	public final Challenge getNextChallenge() {
 		var nextGenerationSignature = getNextGenerationSignature();
 		var hashingForGenerations = getHashingForGenerations();
 		var generationHash = hashingForGenerations.getHasher(Function.identity()).hash(concat(nextGenerationSignature, longToBytesBE(getHeight() + 1)));
 		int nextScoopNumber = new BigInteger(1, generationHash).remainder(BigInteger.valueOf(Challenge.SCOOPS_PER_NONCE)).intValue();
-		return Challenges.of(nextScoopNumber, nextGenerationSignature, hashingForDeadlines, hashingForGenerations);
+		return Challenges.of(nextScoopNumber, nextGenerationSignature, getHashingForDeadlines(), hashingForGenerations);
 	}
 
 	private static byte[] concat(byte[] array1, byte[] array2) {

@@ -199,7 +199,7 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineMatchesItsExpectedChallenge() throws VerificationException {
-		var challenge = previous.getDescription().getNextChallenge(config.getHashingForDeadlines());
+		var challenge = previous.getDescription().getNextChallenge();
 		deadline.getChallenge().matchesOrThrow(challenge, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
 	}
 

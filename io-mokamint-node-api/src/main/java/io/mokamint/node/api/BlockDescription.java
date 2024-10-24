@@ -118,10 +118,9 @@ public interface BlockDescription extends Marshallable {
 	/**
 	 * Yields the challenge for the deadline that must be computed for the next block.
 	 * 
-	 * @param hashingForDeadlines the hashing algorithm used for the deadlines and the plot files
 	 * @return the challenge
 	 */
-	Challenge getNextChallenge(HashingAlgorithm hashingForDeadlines);
+	Challenge getNextChallenge();
 
 	/**
 	 * Checks if this block description is equal to another object.
