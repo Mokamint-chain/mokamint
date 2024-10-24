@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.mokamint.nonce.api.Deadline;
@@ -58,23 +57,19 @@ public interface Block extends Marshallable, Whisperable {
 	byte[] getStateId();
 
 	/**
-	 * Yields the hash of this block, by using the given hashing algorithm.
-	 * This hash does not use the signature of the node (if any) which is, instead,
-	 * computed from this hash and the private key of the signer.
+	 * Yields the hash of this block. This hash does not use the signature of the node
+	 * (if any) which is, instead, computed from this hash and the private key of the signer.
 	 * 
-	 * @param hashing the hashing algorithm
 	 * @return the hash of this block
 	 */
-	byte[] getHash(HashingAlgorithm hashing);
+	byte[] getHash();
 
 	/**
-	 * Yields the hash of this block, by using the given hashing algorithm,
-	 * as an hexadecimal string.
+	 * Yields the hash of this block, as a hexadecimal string.
 	 * 
-	 * @param hashing the hashing algorithm
 	 * @return the hash of this block, as a hexadecimal string
 	 */
-	String getHexHash(HashingAlgorithm hashing);
+	String getHexHash();
 
 	/**
 	 * Yields the description of the next block, assuming that it has the given deadline.

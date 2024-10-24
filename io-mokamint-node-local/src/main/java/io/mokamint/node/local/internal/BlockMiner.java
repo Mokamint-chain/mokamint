@@ -181,7 +181,7 @@ public class BlockMiner {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public void mine() throws InvalidKeyException, NodeException, InterruptedException, TimeoutException, SignatureException, RejectedExecutionException {
-		LOGGER.info("mining: starting mining over block " + previous.getHexHash(config.getHashingForBlocks()));
+		LOGGER.info("mining: starting mining over block " + previous.getHexHash());
 		transactionExecutor.start();
 
 		try {
@@ -301,7 +301,7 @@ public class BlockMiner {
 			addToBlockchain(block);
 		}
 		else
-			LOGGER.info(heightMessage + "not adding any block on top of " + previous.getHexHash(config.getHashingForBlocks()) + " since it would not improve the head");
+			LOGGER.info(heightMessage + "not adding any block on top of " + previous.getHexHash() + " since it would not improve the head");
 	}
 
 	/**

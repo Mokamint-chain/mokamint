@@ -182,13 +182,13 @@ public class VerificationTests extends AbstractLoggedTests {
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
 			var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotPrivateKey);
-			byte[] previous = genesis.getHash(hashingForBlocks);
+			byte[] previous = genesis.getHash();
 			var block = Blocks.of(BlockDescriptions.of(1, BigInteger.TEN, config.getBlockMaxTimeInTheFuture() + 1000, 1100L, BigInteger.valueOf(13011973), deadline, previous, hashingForBlocks), Stream.empty(), stateId, nodePrivateKey);
 
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Too much in the future"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -211,7 +211,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis1));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(genesis2));
 			assertTrue(e.getMessage().startsWith("Too much in the future"));
-			assertBlockchainIsJustGenesis(blockchain, genesis1, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis1);
 		}
 	}
 
@@ -233,7 +233,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Height mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -255,7 +255,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Acceleration mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -277,7 +277,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Power mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -299,7 +299,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Total waiting time mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -354,7 +354,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Deadline mismatch: scoop number mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -381,7 +381,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(block1));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block2));
 			assertTrue(e.getMessage().startsWith("Repeated transaction"));
-			assertBlockchainIsJustTwoBlocks(blockchain, genesis, block1, config);
+			assertBlockchainIsJustTwoBlocks(blockchain, genesis, block1);
 		}
 	}
 
@@ -404,7 +404,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("The table of transactions is too big"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -433,7 +433,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(block1));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block2));
 			assertTrue(e.getMessage().startsWith("Failed check of transaction"));
-			assertBlockchainIsJustTwoBlocks(blockchain, genesis, block1, config);
+			assertBlockchainIsJustTwoBlocks(blockchain, genesis, block1);
 		}
 	}
 
@@ -462,7 +462,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(block1));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block2));
 			assertTrue(e.getMessage().startsWith("Failed delivery of transaction"));
-			assertBlockchainIsJustTwoBlocks(blockchain, genesis, block1, config);
+			assertBlockchainIsJustTwoBlocks(blockchain, genesis, block1);
 		}
 	}
 
@@ -485,7 +485,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Final state mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -513,7 +513,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Deadline mismatch: generation signature mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -540,7 +540,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Deadline mismatch: hashing algorithm for deadlines mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -566,7 +566,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Deadline prolog's chainId mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -597,7 +597,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Deadline prolog's signature algorithm for blocks mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -628,7 +628,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Deadline prolog's signature algorithm for deadlines mismatch"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -652,7 +652,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(expected));
 			assertTrue(e.getMessage().startsWith("Invalid deadline prolog's extra"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -676,7 +676,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Invalid deadline"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -702,7 +702,7 @@ public class VerificationTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
 			assertTrue(e.getMessage().startsWith("Invalid deadline"));
-			assertBlockchainIsJustGenesis(blockchain, genesis, config);
+			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}
 
@@ -715,20 +715,20 @@ public class VerificationTests extends AbstractLoggedTests {
 				.build();
 	}
 
-	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis, LocalNodeConfig config) throws NodeException {
+	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis) throws NodeException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(genesis, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(1, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
+		assertArrayEquals(chain[0], genesis.getHash());
 	}
 
-	private static void assertBlockchainIsJustTwoBlocks(Blockchain blockchain, GenesisBlock genesis, NonGenesisBlock block, LocalNodeConfig config) throws NodeException {
+	private static void assertBlockchainIsJustTwoBlocks(Blockchain blockchain, GenesisBlock genesis, NonGenesisBlock block) throws NodeException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(block, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 		assertEquals(2, chain.length);
-		assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
-		assertArrayEquals(chain[1], block.getHash(config.getHashingForBlocks()));
+		assertArrayEquals(chain[0], genesis.getHash());
+		assertArrayEquals(chain[1], block.getHash());
 	}
 }

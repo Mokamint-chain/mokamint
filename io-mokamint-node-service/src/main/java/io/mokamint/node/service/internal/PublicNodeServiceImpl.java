@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -325,7 +324,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		};
 	
 		for (var url: urls) {
-			try (var br = new BufferedReader(new InputStreamReader(new URL(url).openStream()))) {
+			try (var br = new BufferedReader(new InputStreamReader(new URI(url).toURL().openStream()))) {
 				String ip = br.readLine();
 				LOGGER.info(logPrefix + url + " provided " + ip + " as the IP of the local machine");
 				return Optional.of(new URI("ws://" + ip));
@@ -813,7 +812,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperBlockSessions.add(session);
-			addMessageHandler(session, (WhisperBlockMessage message) -> server.whisper(message, _whisperer -> false, session, "block " + message.getWhispered().getHexHash(server.config.getHashingForBlocks())));
+			addMessageHandler(session, (WhisperBlockMessage message) -> server.whisper(message, _whisperer -> false, session, "block " + message.getWhispered().getHexHash()));
 	    }
 
 		@SuppressWarnings("resource")

@@ -51,7 +51,6 @@ import org.junit.jupiter.api.Timeout;
 import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.ExceptionMessages;
@@ -1276,7 +1275,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		try (var service = new PublicTestServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			remote.bindWhisperer(whisperer);
-			service.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false, "block " + block.getHexHash(HashingAlgorithms.sha256()));
+			service.whisper(WhisperBlockMessages.of(block, UUID.randomUUID().toString()), _whisperer -> false, "block " + block.getHexHash());
 			semaphore.acquire();
 		}
 	}

@@ -189,18 +189,16 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final byte[] getHash(HashingAlgorithm hashing) {
+	public final byte[] getHash() {
 		// it uses a cache for optimization, since the computation might be expensive
-	
 		synchronized (lock) {
-			if (Objects.equals(lastHashing, hashing))
+			if (lastHash != null)
 				return lastHash.clone();
 		}
 	
-		byte[] result = hashing.getHasher(Block::toByteArray).hash(this);
+		byte[] result = description.getHashingForBlocks().getHasher(Block::toByteArray).hash(this);
 	
 		synchronized (lock) {
-			lastHashing = hashing;
 			lastHash = result.clone();
 		}
 	
@@ -208,8 +206,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final String getHexHash(HashingAlgorithm hashing) {
-		return Hex.toHexString(getHash(hashing));
+	public final String getHexHash() {
+		return Hex.toHexString(getHash());
 	}
 
 	@Override
@@ -220,7 +218,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 		var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
 		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, config.getTargetBlockCreationTime());
-		var hashOfPreviousBlock = getHash(config.getHashingForBlocks());
+		var hashOfPreviousBlock = getHash();
 
 		return BlockDescriptions.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
 			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, config.getHashingForBlocks());
@@ -252,7 +250,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	@Override
 	public String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
-		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
+		builder.append("* hash: " + getHexHash() + " (" + description.getHashingForBlocks() + ")\n");
 		builder.append(description.toString(startDateTimeUTC));
 		builder.append("\n");
 		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");

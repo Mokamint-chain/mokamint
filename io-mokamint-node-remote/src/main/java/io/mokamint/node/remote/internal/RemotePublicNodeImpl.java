@@ -51,7 +51,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
@@ -166,11 +165,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private final WhisperingMemory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
-	 * The hashing to use for the blocks.
-	 */
-	private final HashingAlgorithm hashingForBlocks;
-
-	/**
 	 * The hasher to use for the transactions.
 	 */
 	private final Hasher<Transaction> hasherForTransactions;
@@ -226,9 +220,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 
 		try {
-			var config = getConfig();
-			this.hashingForBlocks = config.getHashingForBlocks();
-			this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
+			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
 		catch (TimeoutException | InterruptedException | NodeException e) {
 			LOGGER.warning(logPrefix + "failed to deploy the remote: " + e.getMessage());
@@ -979,7 +971,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperBlockMessage message) -> whisper(message, _whisperer -> false, false, "block " + message.getWhispered().getHexHash(hashingForBlocks)));
+			addMessageHandler(session, (WhisperBlockMessage message) -> whisper(message, _whisperer -> false, false, "block " + message.getWhispered().getHexHash()));
 		}
 
 		@Override

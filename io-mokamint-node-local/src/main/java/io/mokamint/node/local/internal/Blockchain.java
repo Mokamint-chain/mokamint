@@ -56,7 +56,6 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
@@ -130,11 +129,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * and of the progressive number inside the table of transactions in that block.
 	 */
 	private final Store storeOfTransactions;
-
-	/**
-	 * The hashing used for the blocks in the node.
-	 */
-	private final HashingAlgorithm hashingForBlocks;
 
 	/**
 	 * A hasher for the transactions.
@@ -223,7 +217,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		this.node = node;
 		LocalNodeConfig config = node.getConfig();
-		this.hashingForBlocks = config.getHashingForBlocks();
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
 		this.synchronizationGroupSize = config.getSynchronizationGroupSize();
@@ -769,7 +762,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws TimeoutException if some operation timed out
 		 */
 		public BlockAdder add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
-			byte[] hashOfBlockToAdd = block.getHash(hashingForBlocks);
+			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
 			if (containsBlock(txn, hashOfBlockToAdd))
@@ -838,7 +831,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				Optional<Block> previous = Optional.empty();
 
 				if (cursor instanceof GenesisBlock || (previous = getBlock(txn, ((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
-					byte[] hashOfCursor = cursor.getHash(hashingForBlocks);
+					byte[] hashOfCursor = cursor.getHash();
 					if (add(cursor, hashOfCursor, previous, blockToAdd != cursor, verify)) {
 						blocksAdded.add(cursor);
 						forEachOrphanWithParent(hashOfCursor, ws::add);
@@ -1542,7 +1535,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 				if (maybeBlock.isPresent()) {
 					Block block = maybeBlock.get();
-					if (!Arrays.equals(chosenGroup[h], block.getHash(hashingForBlocks)))
+					if (!Arrays.equals(chosenGroup[h], block.getHash()))
 						// the peer answered with a block with the wrong hash!
 						markAsMisbehaving(peer);
 					else {
@@ -1578,7 +1571,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						blockAdder.add(block, true);
 					}
 					catch (VerificationException e) {
-						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash(hashingForBlocks) + " failed: " + e.getMessage());
+						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash() + " failed: " + e.getMessage());
 						markAsMisbehaving(downloaders.get(block));
 						return false;
 					}
@@ -1650,8 +1643,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (newBlock.equals(oldBlock))
 				return true;
 			else if (newBlock instanceof GenesisBlock || oldBlock instanceof GenesisBlock)
-				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks())
-					+ " and " + newBlock.getHexHash(node.getConfig().getHashingForBlocks()));
+				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash() + " and " + newBlock.getHexHash());
 			else
 				return false;
 		}
@@ -1662,7 +1654,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + newBlock.getDescription().getHeight());
+				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash() + " at height " + newBlock.getDescription().getHeight());
 		}
 
 		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws NodeException, InterruptedException, TimeoutException {
@@ -1671,7 +1663,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash(node.getConfig().getHashingForBlocks()) + " at height " + oldBlock.getDescription().getHeight());
+				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash() + " at height " + oldBlock.getDescription().getHeight());
 		}
 
 		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException, InterruptedException, TimeoutException {
@@ -1968,10 +1960,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		if (forwards == null)
 			return Stream.empty();
 		else {
-			int size = hashingForBlocks.length();
+			int size = node.getConfig().getHashingForBlocks().length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
-				throw new DatabaseException("the forward map has been corrupted");
+				throw new DatabaseException("The forward map has been corrupted");
 			else if (hashes.length == size) // frequent case, worth optimizing
 				return Stream.of(hashes);
 			else
@@ -2106,7 +2098,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) throws NodeException {
 		try {
-			byte[] hashOfBlock = block.getHash(hashingForBlocks);
+			byte[] hashOfBlock = block.getHash();
 			String initialHash = Hex.toHexString(hashOfBlock);
 
 			while (true) {

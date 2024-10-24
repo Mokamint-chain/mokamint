@@ -48,7 +48,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
@@ -179,7 +178,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(genesis, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(1, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
+			assertArrayEquals(chain[0], genesis.getHash());
 		}
 	}
 
@@ -200,7 +199,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(genesis1, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(1, chain.length);
-			assertArrayEquals(chain[0], genesis1.getHash(config.getHashingForBlocks()));
+			assertArrayEquals(chain[0], genesis1.getHash());
 		}
 	}
 
@@ -233,7 +232,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(genesis, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(1, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
+			assertArrayEquals(chain[0], genesis.getHash());
 		}
 	}
 
@@ -253,8 +252,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(block, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(config.getHashingForBlocks()));
-			assertArrayEquals(chain[1], block.getHash(config.getHashingForBlocks()));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], block.getHash());
 		}
 	}
 
@@ -287,11 +286,10 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(block3, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(4, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
-			assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
-			assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], block1.getHash());
+			assertArrayEquals(chain[2], block2.getHash());
+			assertArrayEquals(chain[3], block3.getHash());
 		}
 	}
 
@@ -323,9 +321,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(block0, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], block0.getHash());
 
 			// we add an orphan (no previous in database)
 			assertFalse(blockchain.add(block3));
@@ -335,8 +332,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(block0, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], block0.getHash());
 
 			// we add an orphan (no previous in database)
 			assertFalse(blockchain.add(block2));
@@ -346,8 +343,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(block0, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block0.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], block0.getHash());
 
 			// we add a block after the genesis, that creates a better chain of length 4
 			assertTrue(blockchain.add(block1));
@@ -357,10 +354,10 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(block3, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(4, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
-			assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
-			assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], block1.getHash());
+			assertArrayEquals(chain[2], block2.getHash());
+			assertArrayEquals(chain[3], block3.getHash());
 		}
 	}
 
@@ -393,9 +390,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(mediumPowerful, blockchain.getHead().get());
 			byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], mediumPowerful.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], mediumPowerful.getHash());
 
 			// we create a chain with more power as the current chain
 			assertTrue(blockchain.add(mostPowerful));
@@ -405,8 +401,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(mostPowerful, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], mostPowerful.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], mostPowerful.getHash());
 
 			// we create a chain with the same length as the current chain (2 blocks),
 			// but less power than the current head
@@ -417,8 +413,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(mostPowerful, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(2, chain.length);
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], mostPowerful.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], mostPowerful.getHash());
 		}
 	}
 
@@ -465,11 +461,10 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			assertEquals(block3, blockchain.getHead().get());
 			chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
 			assertEquals(4, chain.length);
-			HashingAlgorithm hashingForBlocks = config.getHashingForBlocks();
-			assertArrayEquals(chain[0], genesis.getHash(hashingForBlocks));
-			assertArrayEquals(chain[1], block1.getHash(hashingForBlocks));
-			assertArrayEquals(chain[2], block2.getHash(hashingForBlocks));
-			assertArrayEquals(chain[3], block3.getHash(hashingForBlocks));
+			assertArrayEquals(chain[0], genesis.getHash());
+			assertArrayEquals(chain[1], block1.getHash());
+			assertArrayEquals(chain[2], block2.getHash());
+			assertArrayEquals(chain[3], block3.getHash());
 		}
 	}
 

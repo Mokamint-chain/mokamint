@@ -712,7 +712,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	protected void whisperWithoutAddition(Block block) {
 		if (alreadyWhispered.add(block)) {
 			var whisperBlockMessage = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
-			String description = "block " + block.getHexHash(config.getHashingForBlocks());
+			String description = "block " + block.getHexHash();
 			whisperedBlocksQueue.offer(new WhisperedInfo(whisperBlockMessage, isThis, description, false));
 		}
 	}
@@ -738,7 +738,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws RejectedExecutionException if the task could not be started
 	 */
 	protected Future<?> scheduleTransactionExecutor(TransactionsExecutionTask task) throws RejectedExecutionException {
-		return submit(task, "transactions execution over block " + task.getPrevious().getHexHash(config.getHashingForBlocks()));
+		return submit(task, "transactions execution over block " + task.getPrevious().getHexHash());
 	}
 
 	/**
