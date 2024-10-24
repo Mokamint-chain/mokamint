@@ -192,6 +192,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
+	public HashingAlgorithm getHashingForGenerations() {
+		return deadline.getChallenge().getHashingForGenerations();
+	}
+
+	@Override
 	public SignatureAlgorithm getSignatureForBlock() {
 		return deadline.getProlog().getSignatureForBlocks();
 	}
@@ -231,7 +236,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			acceleration.equals(ngbd.getAcceleration()) &&
 			deadline.equals(ngbd.getDeadline()) &&
 			hashingForBlocks.equals(ngbd.getHashingForBlocks()) &&
-			Arrays.equals(hashOfPreviousBlock, ngbd.getHashOfPreviousBlock());
+			Arrays.equals(hashOfPreviousBlock, other instanceof NonGenesisBlockDescriptionImpl ngbdi ? ngbdi.hashOfPreviousBlock : ngbd.getHashOfPreviousBlock());
 	}
 
 	@Override
@@ -263,9 +268,9 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	protected void populate(StringBuilder builder, Optional<LocalDateTime> startDateTimeUTC) {
 		startDateTimeUTC.ifPresent(sd -> builder.append("* creation date and time UTC: " + sd.plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n"));
-		super.populate(builder, config, startDateTimeUTC);
+		super.populate(builder, startDateTimeUTC);
 		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + " (" + hashingForBlocks + ")");
 		builder.append("\n");
 		builder.append("* deadline:\n");
@@ -286,7 +291,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+	protected byte[] getNextGenerationSignature() {
 		var challenge = deadline.getChallenge();
 		byte[] previousGenerationSignature = challenge.getGenerationSignature();
 		byte[] previousProlog = deadline.getProlog().toByteArray();

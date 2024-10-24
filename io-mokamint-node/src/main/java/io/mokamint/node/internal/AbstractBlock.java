@@ -252,7 +252,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	public String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
 		config.map(ConsensusConfig::getHashingForBlocks).ifPresent(hashingForBlocks -> builder.append("* hash: " + getHexHash(hashingForBlocks) + " (" + hashingForBlocks + ")\n"));
-		builder.append(description.toString(config, startDateTimeUTC));
+		builder.append(description.toString(startDateTimeUTC));
 		builder.append("\n");
 		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
 		builder.append("* final state id: " + Hex.toHexString(stateId));

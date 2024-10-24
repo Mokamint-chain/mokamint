@@ -129,7 +129,7 @@ public class Show extends AbstractPublicRpcCommand {
 					if (content instanceof GenesisBlockDescription gbd) {
 						var config = remote.getConfig();
 						System.out.println("* hash: " + Hex.toHexString(hash) + " (" + config.getHashingForBlocks() + ")");
-						System.out.println(description.toString(Optional.of(config), Optional.of(gbd.getStartDateTimeUTC())));
+						System.out.println(description.toString(Optional.of(gbd.getStartDateTimeUTC())));
 					}
 					else
 						throw new DatabaseException("The initial block of the chain is not a genesis block!");

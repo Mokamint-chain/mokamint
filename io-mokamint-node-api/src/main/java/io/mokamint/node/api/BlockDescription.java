@@ -81,6 +81,13 @@ public interface BlockDescription extends Marshallable {
 	long getHeight();
 
 	/**
+	 * Yields the hashing algorithm used for the generation signatures.
+	 * 
+	 * @return the hashing algorithm for the generation signatures
+	 */
+	HashingAlgorithm getHashingForGenerations();
+
+	/**
 	 * Yields the signature algorithm used for signing the block.
 	 * 
 	 * @return the signature algorithm
@@ -104,11 +111,10 @@ public interface BlockDescription extends Marshallable {
 	/**
 	 * Yields the challenge for the deadline that must be computed for the next block.
 	 * 
-	 * @param hashingForGenerations the hashing algorithm to use to compute the next generation signature
 	 * @param hashingForDeadlines the hashing algorithm used for the deadlines and the plot files
 	 * @return the challenge
 	 */
-	Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines);
+	Challenge getNextChallenge(HashingAlgorithm hashingForDeadlines);
 
 	/**
 	 * Checks if this block description is equal to another object.
@@ -128,14 +134,12 @@ public interface BlockDescription extends Marshallable {
 	/**
 	 * Yields a string representation of this block description. This yields a more informative
 	 * representation of the block description than {@link #toString()}, with extra information
-	 * computed by using the given configuration for the node.
+	 * computed by using the given start time for the blockchain of the node.
 	 * 
-	 * @param config the configuration used to interpret and reconstruct the extra
-	 *               information about the block description, if any
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description, if any
 	 * @return the representation
 	 */
-	String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
+	String toString(Optional<LocalDateTime> startDateTimeUTC);
 
 	/**
 	 * Marshals this object into a given stream. This method in general

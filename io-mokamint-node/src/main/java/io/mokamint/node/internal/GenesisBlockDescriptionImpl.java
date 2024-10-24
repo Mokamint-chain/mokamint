@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -58,6 +59,11 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	private final BigInteger acceleration;
 
 	/**
+	 * The hashing algorithm used for the generation signatures.
+	 */
+	private final HashingAlgorithm hashingForGenerations;
+	
+	/**
 	 * The signature algorithm used to sign this block.
 	 */
 	private final SignatureAlgorithm signatureForBlock;
@@ -77,9 +83,10 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
+		this.hashingForGenerations = hashingForGenerations;
 		this.signatureForBlock = signatureForBlock;
 		this.publicKey = publicKey;
 		byte[] publicKeyEncoding = signatureForBlock.encodingOf(publicKey);
@@ -100,7 +107,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.acceleration = context.readBigInteger();
-			this.signatureForBlock = SignatureAlgorithms.of(context.readStringShared());
+			this.hashingForGenerations = HashingAlgorithms.of(context.readStringUnshared());
+			this.signatureForBlock = SignatureAlgorithms.of(context.readStringUnshared());
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
@@ -124,6 +132,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.acceleration = context.readBigInteger();
+			this.hashingForGenerations = config.getHashingForGenerations();
 			this.signatureForBlock = config.getSignatureForBlocks();
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
@@ -153,6 +162,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	private void verify() {
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
+		Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 		Objects.requireNonNull(signatureForBlock, "signatureForBlocks cannot be null");
 		Objects.requireNonNull(publicKey, "publicKey cannot be null");
 
@@ -183,6 +193,11 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	@Override
 	public long getHeight() {
 		return 0L;
+	}
+
+	@Override
+	public HashingAlgorithm getHashingForGenerations() {
+		return hashingForGenerations;
 	}
 
 	@Override
@@ -220,14 +235,14 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
-	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	protected void populate(StringBuilder builder, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
-		super.populate(builder, config, startDateTimeUTC);
+		super.populate(builder, startDateTimeUTC);
 		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlock + ", base58)");
 	}
 
 	@Override
-	protected byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations) {
+	protected byte[] getNextGenerationSignature() {
 		var generationSignature = new byte[hashingForGenerations.length()];
 		generationSignature[0] = (byte) 0x80;
 		return generationSignature;
@@ -242,7 +257,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeLong(0L);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
-			context.writeStringShared(signatureForBlock.getName());
+			context.writeStringUnshared(hashingForGenerations.getName());
+			context.writeStringUnshared(signatureForBlock.getName());
 			writePublicKeyEncoding(context);
 		}
 		catch (DateTimeException | InvalidKeyException e) {

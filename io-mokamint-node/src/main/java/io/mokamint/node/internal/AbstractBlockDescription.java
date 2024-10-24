@@ -84,8 +84,9 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	@Override
-	public final Challenge getNextChallenge(HashingAlgorithm hashingForGenerations, HashingAlgorithm hashingForDeadlines) {
-		var nextGenerationSignature = getNextGenerationSignature(hashingForGenerations);
+	public final Challenge getNextChallenge(HashingAlgorithm hashingForDeadlines) {
+		var nextGenerationSignature = getNextGenerationSignature();
+		var hashingForGenerations = getHashingForGenerations();
 		return Challenges.of(getNextScoopNumber(nextGenerationSignature, hashingForGenerations), nextGenerationSignature, hashingForDeadlines, hashingForGenerations);
 	}
 
@@ -113,16 +114,14 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * Fills the given builder with information inside this description.
 	 * 
 	 * @param builder the builder
-	 * @param config the configuration of the node, if available
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
 	 */
-	protected void populate(StringBuilder builder, Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	protected void populate(StringBuilder builder, Optional<LocalDateTime> startDateTimeUTC) {
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
 		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
-		config.map(ConsensusConfig::getHashingForGenerations).ifPresent(hashingForGenerations ->
-			builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature(hashingForGenerations)) + " (" + hashingForGenerations + ")\n"));
+		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature()) + " (" + getHashingForGenerations() + ")\n");
 		builder.append("* acceleration: " + getAcceleration());
 	}
 
@@ -131,19 +130,19 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * 
 	 * @return the generation signature
 	 */
-	protected abstract byte[] getNextGenerationSignature(HashingAlgorithm hashingForGenerations);
+	protected abstract byte[] getNextGenerationSignature();
 
 	@Override
 	public final String toString() {
 		var builder = new StringBuilder();
-		populate(builder, Optional.empty(), Optional.empty());
+		populate(builder, Optional.empty());
 		return builder.toString();
 	}
 
 	@Override
-	public final String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	public final String toString(Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
-		populate(builder, config, startDateTimeUTC);
+		populate(builder, startDateTimeUTC);
 		return builder.toString();
 	}
 }
