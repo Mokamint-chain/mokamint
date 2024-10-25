@@ -62,10 +62,11 @@ public abstract class BlockDescriptions {
 	 * @param hashOfPreviousBlock the reference to the previous block
 	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
+	 * @param hashingForTransactions the hashingAlgorithm used for the transactions in the block
 	 * @return the non-genesis block description
 	 */
-	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
-		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks);
+	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
+		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
 	}
 
 	/**

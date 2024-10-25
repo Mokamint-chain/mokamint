@@ -87,9 +87,14 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	private final byte[] hashOfPreviousBlock;
 
 	/**
+	 * The hashing algorithm used for the transactions in the block.
+	 */
+	private final HashingAlgorithm hashingForTransactions;
+
+	/**
 	 * Creates a new non-genesis block description.
 	 */
-	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
+	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
 		super(targetBlockCreationTime, hashingForBlocks);
 
 		this.height = height;
@@ -99,6 +104,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		this.acceleration = acceleration;
 		this.deadline = deadline;
 		this.hashOfPreviousBlock = hashOfPreviousBlock;
+		this.hashingForTransactions = hashingForTransactions;
 
 		verify();
 	}
@@ -125,6 +131,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
 			this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
+			this.hashingForTransactions = config.getHashingForTransactions();
 
 			verify();
 		}
@@ -156,6 +163,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 			this.acceleration = context.readBigInteger();
 			this.deadline = Deadlines.from(context);
 			this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
+			this.hashingForTransactions = HashingAlgorithms.of(context.readStringShared());
 
 			verify();
 		}
@@ -197,6 +205,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	@Override
 	public HashingAlgorithm getHashingForGenerations() {
 		return deadline.getChallenge().getHashingForGenerations();
+	}
+
+	public HashingAlgorithm getHashingForTransactions() {
+		return hashingForTransactions;
 	}
 
 	@Override
@@ -253,6 +265,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		context.writeBigInteger(acceleration);
 		deadline.into(context);
 		context.writeBytes(hashOfPreviousBlock);
+		context.writeStringShared(hashingForTransactions.getName());
 	}
 
 	@Override
@@ -308,6 +321,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		Objects.requireNonNull(deadline, "deadline cannot be null");
 		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
 		Objects.requireNonNull(power, "power cannot be null");
+		Objects.requireNonNull(hashingForTransactions, "hashingForTransactions cannot be null");
 	
 		if (height < 1)
 			throw new IllegalArgumentException("A non-genesis block must have positive height");

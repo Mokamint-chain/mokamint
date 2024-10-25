@@ -181,7 +181,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var unknownPrevious = new byte[hashingForBlocks.length()];
 			for (int pos = 0; pos < unknownPrevious.length; pos++)
 				unknownPrevious[pos] = (byte) (17 + pos);
-			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, config.getTargetBlockCreationTime(), hashingForBlocks), Stream.empty(), stateHash, privateKey);
+			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, config.getTargetBlockCreationTime(), hashingForBlocks, config.getHashingForTransactions()), Stream.empty(), stateHash, privateKey);
 
 			assertTrue(blockchain.add(genesis));
 

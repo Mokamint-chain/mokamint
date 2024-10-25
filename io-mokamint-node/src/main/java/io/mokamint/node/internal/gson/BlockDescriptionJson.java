@@ -53,6 +53,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private String hashingForBlocks;
 	private String hashingForDeadlines;
 	private String hashingForGenerations;
+	private String hashingForTransactions;
 	private String hashOfPreviousBlock;
 	private String signatureForBlocks;
 	private String publicKey;
@@ -78,6 +79,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 			this.acceleration = ngbd.getAcceleration();
 			this.deadline = new Deadlines.Json(ngbd.getDeadline());
 			this.hashOfPreviousBlock = Hex.toHexString(ngbd.getHashOfPreviousBlock());
+			this.hashingForTransactions = ngbd.getHashingForTransactions().getName();
 		}
 	}
 
@@ -85,7 +87,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
 			if (startDateTimeUTC == null)
-				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks));
+				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions));
 			else {
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 

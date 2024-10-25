@@ -43,9 +43,9 @@ public interface NonGenesisBlockDescription extends BlockDescription {
 	byte[] getHashOfPreviousBlock();
 
 	/**
-	 * Yields the hashing algorithm used for the blocks.
+	 * Yields the hashing algorithm used for the transactions in the blocks.
 	 * 
-	 * @return the hashing algorithm used for the blocks
+	 * @return the hashing algorithm used for the transactions in the blocks
 	 */
-	HashingAlgorithm getHashingForBlocks();
+	HashingAlgorithm getHashingForTransactions();
 }

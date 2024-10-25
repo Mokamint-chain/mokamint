@@ -224,7 +224,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
 			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotPrivateKey);
-			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, config.getTargetBlockCreationTime(), hashingForBlocks), Stream.empty(), stateHash, privateKey);
+			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, config.getTargetBlockCreationTime(), hashingForBlocks, config.getHashingForTransactions()), Stream.empty(), stateHash, privateKey);
 
 			assertTrue(blockchain.add(genesis));
 			assertFalse(blockchain.add(block));

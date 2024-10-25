@@ -150,15 +150,11 @@ public class Show extends AbstractPublicRpcCommand {
 			var genesisHash = info.getGenesisHash();
 			if (genesisHash.isPresent()) {
 				var genesis = remote.getBlockDescription(genesisHash.get());
-				if (genesis.isPresent()) {
-					var content = genesis.get();
-					if (content instanceof GenesisBlockDescription gbd) {
-						var config = remote.getConfig();
-						System.out.println(block.toString(Optional.of(config), Optional.of(gbd.getStartDateTimeUTC())));
-					}
+				if (genesis.isPresent())
+					if (genesis.get() instanceof GenesisBlockDescription gbd)
+						System.out.println(block.toString(Optional.of(remote.getConfig()), Optional.of(gbd.getStartDateTimeUTC())));
 					else
 						throw new DatabaseException("The initial block of the chain is not a genesis block!");
-				}
 				else
 					System.out.println(block);
 			}

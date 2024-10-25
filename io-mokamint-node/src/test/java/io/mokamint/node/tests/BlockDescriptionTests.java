@@ -66,7 +66,7 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
-		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[hashingForBlocks.length()], 4000, hashingForBlocks);
+		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[hashingForBlocks.length()], 4000, hashingForBlocks, HashingAlgorithms.sha256());
 		String encoded = new BlockDescriptions.Encoder().encode(description1);
 		var description2 = new BlockDescriptions.Decoder().decode(encoded);
 		assertEquals(description1, description2);
