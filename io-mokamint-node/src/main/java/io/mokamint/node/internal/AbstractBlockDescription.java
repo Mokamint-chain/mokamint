@@ -53,17 +53,24 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	private final HashingAlgorithm hashingForBlocks;
 
 	/**
+	 * The hashing algorithm used for the transactions in the block.
+	 */
+	private final HashingAlgorithm hashingForTransactions;
+
+	/**
 	 * Creates a block description.
 	 * 
 	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
+	 * @param hashingForTransactions the hashing algorithm used for the transactions
 	 */
-	protected AbstractBlockDescription(int targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
+	protected AbstractBlockDescription(int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
 		if (targetBlockCreationTime <= 0)
 			throw new IllegalArgumentException("The target block creatoin time must be positive");
 
 		this.targetBlockCreationTime = targetBlockCreationTime;
 		this.hashingForBlocks = Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
+		this.hashingForTransactions = Objects.requireNonNull(hashingForTransactions, "hashingForTransactions cannot be null");
 	}
 
 	/**
@@ -111,6 +118,11 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	@Override
 	public final HashingAlgorithm getHashingForBlocks() {
 		return hashingForBlocks;
+	}
+
+	@Override
+	public final HashingAlgorithm getHashingForTransactions() {
+		return hashingForTransactions;
 	}
 
 	@Override

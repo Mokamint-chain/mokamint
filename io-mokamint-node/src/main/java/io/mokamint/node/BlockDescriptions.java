@@ -79,6 +79,7 @@ public abstract class BlockDescriptions {
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
+	 * @param hashingForTransactions the hashing algorithm used for the transactions in the block
 	 * @param hashingForDeadlines the hashing algorithm used for the deadlines
 	 * @param hashingForGenerations the hashing algorithm used for the generation signatures
 	 * @param signatureForBlock the signature algorithm for the block
@@ -86,8 +87,8 @@ public abstract class BlockDescriptions {
 	 * @return the genesis block description
 	 * @throws InvalidKeyException if the public key is invalid
 	 */
-	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, targetBlockCreationTime, hashingForBlocks, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey);
+	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, targetBlockCreationTime, hashingForBlocks, hashingForTransactions, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey);
 	}
 
 	/**

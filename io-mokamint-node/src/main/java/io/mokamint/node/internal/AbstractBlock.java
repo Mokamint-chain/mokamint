@@ -215,7 +215,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		var hashOfPreviousBlock = getHash();
 
 		return BlockDescriptions.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
-			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, description.getTargetBlockCreationTime(), description.getHashingForBlocks(), description.getHashingForBlocks()); // TODO
+			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, description.getTargetBlockCreationTime(), description.getHashingForBlocks(), description.getHashingForTransactions());
 	}
 
 	@Override

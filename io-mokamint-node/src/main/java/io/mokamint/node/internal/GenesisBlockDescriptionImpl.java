@@ -88,8 +88,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
-		super(targetBlockCreationTime, hashingForBlocks);
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
 
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
@@ -112,7 +112,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 */
 	GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()));
+		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()), HashingAlgorithms.of(context.readStringShared()));
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -140,7 +140,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws IOException if unmarshalling failed
 	 */
 	GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		super(config.getTargetBlockCreationTime(), config.getHashingForBlocks());
+		super(config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions());
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -277,6 +277,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeLong(0L);
 			context.writeCompactInt(getTargetBlockCreationTime());
 			context.writeStringShared(getHashingForBlocks().getName());
+			context.writeStringShared(getHashingForTransactions().getName());
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);
 			context.writeStringShared(hashingForDeadlines.getName());
