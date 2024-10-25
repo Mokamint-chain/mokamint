@@ -132,11 +132,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		}
 	}
 
-	@Override
-	public final D getDescription() {
-		return description;
-	}
-
 	/**
 	 * Unmarshals a block from the given context. It assumes that the block was marshalled
 	 * by using {@link Block#into(MarshallingContext)}.
@@ -170,6 +165,11 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 			return new GenesisBlockImpl(gbd, context);
 		else
 			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context); // cast verified by sealedness
+	}
+
+	@Override
+	public final D getDescription() {
+		return description;
 	}
 
 	@Override
@@ -238,11 +238,11 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 	@Override
 	public final String toString() {
-		return toString(Optional.empty(), Optional.empty());
+		return toString(Optional.empty());
 	}
 
 	@Override
-	public String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC) {
+	public String toString(Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder();
 		builder.append("* hash: " + getHexHash() + " (" + description.getHashingForBlocks() + ")\n");
 		builder.append(description.toString(startDateTimeUTC));

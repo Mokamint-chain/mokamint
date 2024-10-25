@@ -84,15 +84,12 @@ public interface Block extends Marshallable, Whisperable {
 
 	/**
 	 * Yields a string representation of this block description. This yields a more informative
-	 * representation of the block description than {@link #toString()}, with extra information
-	 * computed by using the given configuration for the node.
+	 * representation of the block description than {@link #toString()}.
 	 * 
-	 * @param config the configuration used to interpret and reconstruct the extra
-	 *               information about the block description, if any
 	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description, if any
 	 * @return the representation
 	 */
-	String toString(Optional<ConsensusConfig<?,?>> config, Optional<LocalDateTime> startDateTimeUTC);
+	String toString(Optional<LocalDateTime> startDateTimeUTC);
 
 	/**
 	 * Marshals this object into a given stream. This method in general

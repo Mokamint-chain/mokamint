@@ -29,12 +29,10 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallingContext;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.Transactions;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.Transaction;
@@ -190,8 +188,8 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	public final String toString(Optional<ConsensusConfig<?, ?>> config, Optional<LocalDateTime> startDateTimeUTC) {
-		var builder = new StringBuilder(super.toString(config, startDateTimeUTC));
+	public final String toString(Optional<LocalDateTime> startDateTimeUTC) {
+		var builder = new StringBuilder(super.toString(startDateTimeUTC));
 		builder.append("\n");
 
 		if (transactions.length == 0)
@@ -202,14 +200,11 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 			builder.append("* " + transactions.length + " transactions:");
 
 		int n = 0;
-		Optional<HashingAlgorithm> hashing = config.map(ConsensusConfig::getHashingForTransactions);
-		Optional<Hasher<Transaction>> hasher = hashing.map(h -> h.getHasher(Transaction::toByteArray));
+		var hashingForTransactions = getDescription().getHashingForTransactions();
+		Hasher<Transaction> hasher = hashingForTransactions.getHasher(Transaction::toByteArray);
 
-		for (var transaction: transactions) {
-			builder.append("\n * #" + n++ + ": ");
-			builder.append(hasher.map(h -> h.hash(transaction)).map(Hex::toHexString).map(hex -> hex + " (" + hashing.get() + ")")
-				.orElse(limit(transaction) + " (base64)"));
-		}
+		for (var transaction: transactions)
+			builder.append("\n * #" + n++ + ": " + Hex.toHexString(hasher.hash(transaction)) + " (" + hashingForTransactions + ")");
 
 		return builder.toString();
 	}
@@ -222,13 +217,5 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		for (int pos = 0; pos < transactions.length - 1; pos++)
 			if (transactions[pos].equals(transactions[pos + 1]))
 				throw new IllegalArgumentException("Repeated transaction");
-	}
-
-	private static String limit(Transaction transaction) {
-		String s = transaction.toString();
-		if (s.length() < 50)
-			return s;
-		else
-			return s.substring(0, 50) + "...";
 	}
 }
