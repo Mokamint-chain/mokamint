@@ -89,8 +89,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	/**
 	 * Creates a new non-genesis block description.
 	 */
-	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, HashingAlgorithm hashingForBlocks) {
-		super(hashingForBlocks);
+	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
+		super(targetBlockCreationTime, hashingForBlocks);
 
 		this.height = height;
 		this.power = power;
@@ -114,7 +114,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @throws IOException if unmarshalling failed
 	 */
 	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		super(config.getHashingForBlocks());
+		super(config.getTargetBlockCreationTime(), config.getHashingForBlocks());
 
 		this.height = height;
 
@@ -145,7 +145,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
 	 */
 	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(HashingAlgorithms.of(context.readStringUnshared()));
+		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringUnshared()));
 
 		this.height = height;
 
@@ -245,6 +245,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		context.writeLong(height);
+		context.writeCompactInt(getTargetBlockCreationTime());
 		context.writeStringUnshared(getHashingForBlocks().getName());
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);

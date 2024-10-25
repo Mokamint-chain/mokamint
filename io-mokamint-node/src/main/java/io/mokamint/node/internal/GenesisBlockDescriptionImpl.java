@@ -88,8 +88,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
-		super(hashingForBlocks);
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+		super(targetBlockCreationTime, hashingForBlocks);
 
 		this.startDateTimeUTC = startDateTimeUTC;
 		this.acceleration = acceleration;
@@ -112,7 +112,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 */
 	GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(HashingAlgorithms.of(context.readStringShared()));
+		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()));
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -140,7 +140,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws IOException if unmarshalling failed
 	 */
 	GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		super(config.getHashingForBlocks());
+		super(config.getTargetBlockCreationTime(), config.getHashingForBlocks());
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -275,6 +275,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			// it is possible to distinguish between a genesis block (height == 0)
 			// and a non-genesis block (height > 0)
 			context.writeLong(0L);
+			context.writeCompactInt(getTargetBlockCreationTime());
 			context.writeStringShared(getHashingForBlocks().getName());
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeBigInteger(acceleration);

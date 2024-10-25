@@ -81,6 +81,13 @@ public interface BlockDescription extends Marshallable {
 	long getHeight();
 
 	/**
+	 * Yields the target creation time for the blocks.
+	 * 
+	 * @return the target creation time, in milliseconds
+	 */
+	int getTargetBlockCreationTime();
+
+	/**
 	 * Yields the hashing algorithm used for the blocks.
 	 * 
 	 * @return the hashing algorithm for the blocks

@@ -43,14 +43,26 @@ import io.mokamint.nonce.api.Challenge;
 public abstract sealed class AbstractBlockDescription extends AbstractMarshallable implements BlockDescription permits GenesisBlockDescriptionImpl, NonGenesisBlockDescriptionImpl {
 
 	/**
+	 * The target time for the creation of the blocks, in milliseconds.
+	 */
+	private final int targetBlockCreationTime;
+
+	/**
 	 * The hashing algorithm used for the blocks.
 	 */
 	private final HashingAlgorithm hashingForBlocks;
 
 	/**
 	 * Creates a block description.
+	 * 
+	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
+	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 */
-	protected AbstractBlockDescription(HashingAlgorithm hashingForBlocks) {
+	protected AbstractBlockDescription(int targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
+		if (targetBlockCreationTime <= 0)
+			throw new IllegalArgumentException("The target block creatoin time must be positive");
+
+		this.targetBlockCreationTime = targetBlockCreationTime;
 		this.hashingForBlocks = Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
 	}
 
@@ -92,6 +104,11 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	@Override
+	public final int getTargetBlockCreationTime() {
+		return targetBlockCreationTime;
+	}
+
+	@Override
 	public final HashingAlgorithm getHashingForBlocks() {
 		return hashingForBlocks;
 	}
@@ -130,7 +147,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
-		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms\n");
+		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms (target is " + targetBlockCreationTime + " ms\n");
 		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature()) + " (" + getHashingForGenerations() + ")\n");
 		builder.append("* acceleration: " + getAcceleration());
 	}

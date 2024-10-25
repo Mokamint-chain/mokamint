@@ -60,11 +60,12 @@ public abstract class BlockDescriptions {
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
 	 * @param deadline the deadline computed for the block
 	 * @param hashOfPreviousBlock the reference to the previous block
+	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @return the non-genesis block description
 	 */
-	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, HashingAlgorithm hashingForBlocks) {
-		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, hashingForBlocks);
+	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks) {
+		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks);
 	}
 
 	/**
@@ -75,6 +76,7 @@ public abstract class BlockDescriptions {
 	 *                     a value used to divide deadlines to derive the time needed to wait for it.
 	 *                     The higher, the shorter the time. This value will change dynamically to cope with
 	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
+	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @param hashingForDeadlines the hashing algorithm used for the deadlines
 	 * @param hashingForGenerations the hashing algorithm used for the generation signatures
@@ -83,8 +85,8 @@ public abstract class BlockDescriptions {
 	 * @return the genesis block description
 	 * @throws InvalidKeyException if the public key is invalid
 	 */
-	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, hashingForBlocks, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey);
+	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, BigInteger acceleration, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+		return new GenesisBlockDescriptionImpl(startDateTimeUTC, acceleration, targetBlockCreationTime, hashingForBlocks, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey);
 	}
 
 	/**

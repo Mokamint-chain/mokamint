@@ -172,7 +172,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var generationSignature = new byte[hashingForGenerations.length()];
 			for (int pos = 0; pos < generationSignature.length; pos++)
 				generationSignature[pos] = (byte) (42 + pos);
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
@@ -181,7 +181,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var unknownPrevious = new byte[hashingForBlocks.length()];
 			for (int pos = 0; pos < unknownPrevious.length; pos++)
 				unknownPrevious[pos] = (byte) (17 + pos);
-			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, hashingForBlocks), Stream.empty(), stateHash, privateKey);
+			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, config.getTargetBlockCreationTime(), hashingForBlocks), Stream.empty(), stateHash, privateKey);
 
 			assertTrue(blockchain.add(genesis));
 
@@ -205,7 +205,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
@@ -214,7 +214,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction3));
 			node.add(transaction2);
 
-			var block = computeNextBlock(genesis, Stream.of(transaction2), config);
+			var block = computeNextBlock(genesis, Stream.of(transaction2));
 
 			assertTrue(blockchain.add(genesis));
 			assertTrue(blockchain.add(block));
@@ -232,7 +232,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
@@ -240,17 +240,17 @@ public class MempoolTests extends AbstractLoggedTests {
 			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
 
-			var block1 = computeNextBlock(genesis, config, plot1);
-			var added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), config, plot2);
+			var block1 = computeNextBlock(genesis, plot1);
+			var added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), plot2);
 			if (block1.getDescription().getPower().compareTo(added.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of added
 				// note: the transactions in the block to not contribute to the deadline and hence to the power
-				block1 = computeNextBlock(genesis, config, plot2);
-				added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), config, plot1);
+				block1 = computeNextBlock(genesis, plot2);
+				added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), plot1);
 			}
 
-			var block2 = computeNextBlock(block1, config);
-			var block3 = computeNextBlock(block2, config);
+			var block2 = computeNextBlock(block1);
+			var block3 = computeNextBlock(block2);
 
 			assertTrue(blockchain.add(genesis));
 			assertTrue(blockchain.add(block1));
@@ -271,7 +271,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
 			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
@@ -283,18 +283,18 @@ public class MempoolTests extends AbstractLoggedTests {
 			var entry3 = node.add(transaction3);
 
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
-			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), config, plot1);
-			var block1 = computeNextBlock(blockBase, Stream.of(transaction2), config, plot1);
-			var block0 = computeNextBlock(blockBase, Stream.of(transaction1), config, plot2);
+			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), plot1);
+			var block1 = computeNextBlock(blockBase, Stream.of(transaction2), plot1);
+			var block0 = computeNextBlock(blockBase, Stream.of(transaction1), plot2);
 			if (block1.getDescription().getPower().compareTo(block0.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of added
 				// note: the transactions in the block to not contribute to the deadline and hence to the power
-				block1 = computeNextBlock(blockBase, Stream.of(transaction2), config, plot2);
-				block0 = computeNextBlock(blockBase, Stream.of(transaction1), config, plot1);
+				block1 = computeNextBlock(blockBase, Stream.of(transaction2), plot2);
+				block0 = computeNextBlock(blockBase, Stream.of(transaction1), plot1);
 			}
 
-			var block2 = computeNextBlock(block1, config);
-			var block3 = computeNextBlock(block2, Stream.of(transaction3), config);
+			var block2 = computeNextBlock(block1);
+			var block3 = computeNextBlock(block2, Stream.of(transaction3));
 
 			// at this stage, the mempool contains all four transactions
 			var expectedEntries = Set.of(entry0, entry1, entry2, entry3);
@@ -366,7 +366,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
 			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
@@ -378,10 +378,10 @@ public class MempoolTests extends AbstractLoggedTests {
 			var entry3 = node.add(transaction3);
 
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
-			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), config, plot1);
-			var block1 = computeNextBlock(blockBase, Stream.of(transaction1), config);
-			var block2 = computeNextBlock(block1, Stream.of(transaction2), config);
-			var block3 = computeNextBlock(block2, Stream.of(transaction3), config);
+			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), plot1);
+			var block1 = computeNextBlock(blockBase, Stream.of(transaction1));
+			var block2 = computeNextBlock(block1, Stream.of(transaction2));
+			var block3 = computeNextBlock(block2, Stream.of(transaction3));
 
 			// at this stage, the mempool contains all four transactions
 			var expectedEntries = Set.of(entry0, entry1, entry2, entry3);
@@ -431,22 +431,22 @@ public class MempoolTests extends AbstractLoggedTests {
 		}
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
-		return computeNextBlock(previous, config, plot1);
+	private NonGenesisBlock computeNextBlock(Block previous) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+		return computeNextBlock(previous, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions, LocalNodeConfig config) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
-		return computeNextBlock(previous, transactions, config, plot1);
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+		return computeNextBlock(previous, transactions, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
-		return computeNextBlock(previous, Stream.empty(), config, plot);
+	private NonGenesisBlock computeNextBlock(Block previous, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+		return computeNextBlock(previous, Stream.empty(), plot);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions, LocalNodeConfig config, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var challenge = previous.getDescription().getNextChallenge();
 		var deadline = plot.getSmallestDeadline(challenge, plotPrivateKey);
-		var description = previous.getNextBlockDescription(deadline, config);
+		var description = previous.getNextBlockDescription(deadline);
 		return Blocks.of(description, transactions, stateHash, privateKey);
 	}
 }

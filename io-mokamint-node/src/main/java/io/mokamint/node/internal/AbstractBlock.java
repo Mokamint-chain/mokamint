@@ -205,17 +205,17 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	@Override
-	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, ConsensusConfig<?,?> config) {
+	public final NonGenesisBlockDescription getNextBlockDescription(Deadline deadline) {
 		var heightForNewBlock = description.getHeight() + 1;
 		var powerForNewBlock = computePower(deadline);
 		var waitingTimeForNewBlock = deadline.getMillisecondsToWait(description.getAcceleration());
 		var weightedWaitingTimeForNewBlock = computeWeightedWaitingTime(waitingTimeForNewBlock);
 		var totalWaitingTimeForNewBlock = computeTotalWaitingTime(waitingTimeForNewBlock);
-		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock, config.getTargetBlockCreationTime());
+		var accelerationForNewBlock = computeAcceleration(weightedWaitingTimeForNewBlock);
 		var hashOfPreviousBlock = getHash();
 
 		return BlockDescriptions.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
-			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, description.getHashingForBlocks());
+			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, description.getTargetBlockCreationTime(), description.getHashingForBlocks());
 	}
 
 	@Override
@@ -324,14 +324,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * 
 	 * @param config the consensus configuration of the node storing this block
 	 * @param weightedWaitingTimeForNewBlock the weighted waiting time for the new block
-	 * @param targetBlockCreationTime 
 	 * @return the acceleration for the new block
 	 */
-	private BigInteger computeAcceleration(long weightedWaitingTimeForNewBlock, long targetBlockCreationTime) {
+	private BigInteger computeAcceleration(long weightedWaitingTimeForNewBlock) {
 		var oldAcceleration = description.getAcceleration();
 		var delta = oldAcceleration
 			.multiply(BigInteger.valueOf(weightedWaitingTimeForNewBlock))
-			.divide(BigInteger.valueOf(targetBlockCreationTime))
+			.divide(BigInteger.valueOf(description.getTargetBlockCreationTime()))
 			.subtract(oldAcceleration);	
 
 		var acceleration = oldAcceleration.add(delta.multiply(OBLIVION).divide(_100000));

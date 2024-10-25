@@ -43,7 +43,7 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 	@DisplayName("genesis block descriptions are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var description1 = BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, HashingAlgorithms.sha256(), HashingAlgorithms.shabal256(), HashingAlgorithms.shabal256(), ed25519, ed25519.getKeyPair().getPublic());
+		var description1 = BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, 4000, HashingAlgorithms.sha256(), HashingAlgorithms.shabal256(), HashingAlgorithms.shabal256(), ed25519, ed25519.getKeyPair().getPublic());
 		String encoded = new BlockDescriptions.Encoder().encode(description1);
 		var description2 = new BlockDescriptions.Decoder().decode(encoded);
 		assertEquals(description1, description2);
@@ -66,7 +66,7 @@ public class BlockDescriptionTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
-		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[hashingForBlocks.length()], hashingForBlocks);
+		var description1 = BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, new byte[hashingForBlocks.length()], 4000, hashingForBlocks);
 		String encoded = new BlockDescriptions.Encoder().encode(description1);
 		var description2 = new BlockDescriptions.Decoder().decode(encoded);
 		assertEquals(description1, description2);

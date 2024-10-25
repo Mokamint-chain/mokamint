@@ -49,6 +49,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private Long weightedWaitingTime;
 	private final BigInteger acceleration;
 	private Deadlines.Json deadline;
+	private int targetBlockCreationTime;
 	private String hashingForBlocks;
 	private String hashingForDeadlines;
 	private String hashingForGenerations;
@@ -57,10 +58,12 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private String publicKey;
 
 	protected BlockDescriptionJson(BlockDescription description) {
+		this.targetBlockCreationTime = description.getTargetBlockCreationTime();
+		this.hashingForBlocks = description.getHashingForBlocks().getName();
+
 		if (description instanceof GenesisBlockDescription gbd) {
 			this.startDateTimeUTC = ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
 			this.acceleration = gbd.getAcceleration();
-			this.hashingForBlocks = gbd.getHashingForBlocks().getName();
 			this.hashingForDeadlines = gbd.getHashingForDeadlines().getName();
 			this.hashingForGenerations = gbd.getHashingForGenerations().getName();
 			this.signatureForBlocks = gbd.getSignatureForBlock().getName();
@@ -74,7 +77,6 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 			this.weightedWaitingTime = ngbd.getWeightedWaitingTime();
 			this.acceleration = ngbd.getAcceleration();
 			this.deadline = new Deadlines.Json(ngbd.getDeadline());
-			this.hashingForBlocks = ngbd.getHashingForBlocks().getName();
 			this.hashOfPreviousBlock = Hex.toHexString(ngbd.getHashOfPreviousBlock());
 		}
 	}
@@ -83,12 +85,12 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
 			if (startDateTimeUTC == null)
-				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), HashingAlgorithms.of(hashingForBlocks));
+				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks));
 			else {
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 
 				return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
-						acceleration, HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations),
+						acceleration, targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations),
 						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
 			}
 		}

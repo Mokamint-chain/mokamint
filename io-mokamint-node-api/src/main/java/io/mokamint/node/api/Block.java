@@ -75,10 +75,9 @@ public interface Block extends Marshallable, Whisperable {
 	 * Yields the description of the next block, assuming that it has the given deadline.
 	 * 
 	 * @param deadline the deadline of the next block
-	 * @param config the consensus configuration of the node storing this block
 	 * @return the description
 	 */
-	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline, ConsensusConfig<?,?> config);
+	NonGenesisBlockDescription getNextBlockDescription(Deadline deadline);
 
 	@Override
 	String toString();
