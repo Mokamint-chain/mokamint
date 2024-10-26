@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
@@ -24,7 +23,6 @@ import java.security.SignatureException;
 import java.time.LocalDateTime;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.AbstractMarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
@@ -33,7 +31,7 @@ import io.mokamint.node.api.GenesisBlockDescription;
  * The implementation of a genesis block of a Mokamint blockchain.
  */
 @Immutable
-public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription> implements GenesisBlock {
+public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription, GenesisBlockImpl> implements GenesisBlock {
 
 	/**
 	 * Creates a genesis block with the given description and signs it with the given keys and signature algorithm.
@@ -45,8 +43,8 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, stateId, privateKey, toByteArrayWithoutSignature(description, stateId));
-		verify(toByteArrayWithoutSignature(description, stateId));
+		super(description, stateId, privateKey, AbstractBlock::toByteArrayWithoutSignature);
+		verify();
 	}
 
 	/**
@@ -60,7 +58,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature) throws InvalidKeyException, SignatureException {
 		super(description, stateId, signature);
-		verify(toByteArrayWithoutSignature(description, stateId));
+		verify();
 	}
 
 	/**
@@ -75,33 +73,20 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 		super(description, context);
 
 		try {
-			verify(toByteArrayWithoutSignature(description, getStateId()));
+			verify();
 		}
 		catch (RuntimeException | InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
 		}
 	}
 
-	/**
-	 * Yields a marshalling of this object into a byte array, without considering its signature.
-	 * 
-	 * @return the marshalled bytes
-	 */
-	private static byte[] toByteArrayWithoutSignature(GenesisBlockDescription description, byte[] stateId) {
-		try (var baos = new ByteArrayOutputStream(); var context = new AbstractMarshallingContext(baos) {}) {
-			description.into(context);
-			context.writeLengthAndBytes(stateId);
-			context.flush();
-			return baos.toByteArray();
-		}
-		catch (IOException e) {
-			// impossible with a ByteArrayOutputStream
-			throw new RuntimeException("Unexpected exception", e);
-		}
-	}
-
 	@Override
 	public LocalDateTime getStartDateTimeUTC() {
 		return getDescription().getStartDateTimeUTC();
+	}
+
+	@Override
+	protected GenesisBlockImpl getThis() {
+		return this;
 	}
 }

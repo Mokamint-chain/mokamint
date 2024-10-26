@@ -46,7 +46,7 @@ import io.mokamint.nonce.api.Deadline;
 /**
  * Shared code of all classes implementing blocks.
  */
-public abstract sealed class AbstractBlock<D extends BlockDescription> extends AbstractMarshallable implements Block permits GenesisBlockImpl, NonGenesisBlockImpl {
+public abstract sealed class AbstractBlock<D extends BlockDescription, B extends AbstractBlock<D, B>> extends AbstractMarshallable implements Block permits GenesisBlockImpl, NonGenesisBlockImpl {
 
 	/**
 	 * The description of this block.
@@ -83,7 +83,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	private final static BigInteger COMPLEMENT_OF_OBLIVION = BigInteger.valueOf(_100000.longValue() - OBLIVION.longValue());
 
 	/**
-	 * Creates an abstract block with the given description.
+	 * Creates an abstract block with the given description. The blocks does not get verified,
+	 * therefore the caller must explicitly call {@link #verify()} later.
 	 * 
 	 * @param description the description of the block
 	 * @param stateId the identifier of the state of the application at the end of this block
@@ -96,24 +97,26 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	/**
-	 * Creates an abstract block with the given description and signs it.
+	 * Creates an abstract block with the given description and signs it. The blocks does not get verified,
+	 * therefore the caller must explicitly call {@link #verify()} later.
 	 * 
 	 * @param description the description of the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
-	 * @param bytesToSign the bytes of the block to sign
+	 * @param marshaller the function that yields the bytes of the block to sign
 	 * @throws SignatureException if signing failed
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
-	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, byte[] bytesToSign) throws InvalidKeyException, SignatureException {
+	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, Function<B, byte[]> marshaller) throws InvalidKeyException, SignatureException {
 		this.description = description;
 		this.stateId = stateId.clone();
-		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(bytesToSign);
+		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis()));
 	}
 
 	/**
 	 * Unmarshals an abstract block from the given context.
-	 * The description of the block has been already unmarshalled.
+	 * The description of the block has been already unmarshalled. The blocks does not get verified,
+	 * therefore the caller must explicitly call {@link #verify()} later.
 	 * 
 	 * @param description the already unmarshalled description
 	 * @param context the context
@@ -227,7 +230,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		if (other instanceof Block block
 			// this guarantees that genesis is only equal to genesis, and that non-genesis is only equals to non-genesis
 			&& description.equals(block.getDescription()))
-			if (other instanceof AbstractBlock<?> oab)
+			if (other instanceof AbstractBlock<?, ?> oab)
 				return Arrays.equals(signature, oab.signature) && Arrays.equals(stateId, oab.stateId); // optimization
 			else
 				return Arrays.equals(signature, block.getSignature()) && Arrays.equals(stateId, block.getStateId());
@@ -285,6 +288,34 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	}
 
 	/**
+	 * Yields a marshalling of this object into a byte array, without considering its signature.
+	 * 
+	 * @return the marshalled bytes
+	 */
+	protected final byte[] toByteArrayWithoutSignature() {
+		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
+			intoWithoutSignature(context);
+			context.flush();
+			return baos.toByteArray();
+		}
+		catch (IOException e) {
+			// impossible with a ByteArrayOutputStream
+			throw new RuntimeException("Unexpected exception", e);
+		}
+	}
+
+	/**
+	 * Marshals this block into the given context, without its signature.
+	 * 
+	 * @param context the context
+	 * @throws IOException if marshalling fails
+	 */
+	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
+		description.into(context);
+		context.writeLengthAndBytes(stateId);
+	}
+
+	/**
 	 * Checks all constraints expected from this block. This also checks the validity of
 	 * the signature and that transactions are not repeated inside the block.
 	 * 
@@ -292,14 +323,21 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
 	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
-	protected void verify(byte[] bytesToSign) throws InvalidKeyException, SignatureException {
+	protected void verify() throws InvalidKeyException, SignatureException {
 		Objects.requireNonNull(description, "description cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
 		Objects.requireNonNull(stateId, "stateId cannot be null");
 	
-		if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(bytesToSign, signature))
+		if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(toByteArrayWithoutSignature(), signature))
 			throw new SignatureException("The block's signature is invalid");
 	}
+
+	/**
+	 * Yields this object, with its generic type.
+	 * 
+	 * @return this object
+	 */
+	protected abstract B getThis();
 
 	private void writeSignature(MarshallingContext context) throws IOException {
 		var maybeLength = description.getSignatureForBlock().length();
@@ -327,7 +365,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	/**
 	 * Computes the acceleration for the new block, in order to get closer to the target creation time.
 	 * 
-	 * @param config the consensus configuration of the node storing this block
 	 * @param weightedWaitingTimeForNewBlock the weighted waiting time for the new block
 	 * @return the acceleration for the new block
 	 */

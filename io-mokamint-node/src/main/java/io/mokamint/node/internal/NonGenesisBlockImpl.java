@@ -29,7 +29,6 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.marshalling.AbstractMarshallingContext;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.Transactions;
@@ -42,7 +41,7 @@ import io.mokamint.nonce.api.Deadline;
  * The implementation of a non-genesis block of the Mokamint blockchain.
  */
 @Immutable
-public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescription> implements NonGenesisBlock {
+public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescription, NonGenesisBlockImpl> implements NonGenesisBlock {
 
 	/**
 	 * The transactions inside this block.
@@ -78,7 +77,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		super(description, stateId, signature);
 
 		this.transactions = transactions.toArray(Transaction[]::new);
-		verify(toByteArrayWithoutSignature(description, stateId, this.transactions));	
+		verify();	
 	}
 
 	/**
@@ -94,7 +93,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 
 		try {
 			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
-			verify(toByteArrayWithoutSignature(description, getStateId(), transactions));
+			verify();
 		}
 		catch (RuntimeException | InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
@@ -113,29 +112,10 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Transaction[] transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, stateId, privateKey, toByteArrayWithoutSignature(description, stateId, transactions));
+		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(transactions));
 	
 		this.transactions = transactions;
-		verify(toByteArrayWithoutSignature(description, stateId, transactions));
-	}
-
-	/**
-	 * Yields a marshalling of this object into a byte array, without considering its signature.
-	 * 
-	 * @return the marshalled bytes
-	 */
-	private static byte[] toByteArrayWithoutSignature(NonGenesisBlockDescription description, byte[] stateId, Transaction[] transactions) {
-		try (var baos = new ByteArrayOutputStream(); var context = new AbstractMarshallingContext(baos) {}) {
-			description.into(context);
-			context.writeLengthAndBytes(stateId);
-			context.writeLengthAndArray(transactions);
-			context.flush();
-			return baos.toByteArray();
-		}
-		catch (IOException e) {
-			// impossible with a ByteArrayOutputStream
-			throw new RuntimeException("Unexpected exception", e);
-		}
+		verify();
 	}
 
 	@Override
@@ -178,18 +158,6 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	public void into(MarshallingContext context) throws IOException {
-		super.into(context);
-		context.writeLengthAndArray(transactions);
-	}
-
-	@Override
-	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
-		super.intoWithoutConfigurationData(context);
-		context.writeLengthAndArray(transactions);
-	}
-
-	@Override
 	public final String toString(Optional<LocalDateTime> startDateTimeUTC) {
 		var builder = new StringBuilder(super.toString(startDateTimeUTC));
 		builder.append("\n");
@@ -212,12 +180,53 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	protected void verify(byte[] bytesToSign) throws InvalidKeyException, SignatureException {
-		super.verify(bytesToSign);
+	public void into(MarshallingContext context) throws IOException {
+		super.into(context);
+		context.writeLengthAndArray(transactions);
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		super.intoWithoutConfigurationData(context);
+		context.writeLengthAndArray(transactions);
+	}
+
+	@Override
+	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
+		super.intoWithoutSignature(context);
+		context.writeLengthAndArray(transactions);
+	}
+
+	@Override
+	protected void verify() throws InvalidKeyException, SignatureException {
+		super.verify();
 	
 		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
 		for (int pos = 0; pos < transactions.length - 1; pos++)
 			if (transactions[pos].equals(transactions[pos + 1]))
 				throw new IllegalArgumentException("Repeated transaction");
+	}
+
+	@Override
+	protected NonGenesisBlockImpl getThis() {
+		return this;
+	}
+
+	/**
+	 * Yields a marshalling of this object into a byte array, without considering its signature.
+	 * 
+	 * @return the marshalled bytes
+	 */
+	private byte[] toByteArrayWithoutSignature(Transaction[] transactions) {
+		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
+			super.intoWithoutSignature(context);
+			context.writeLengthAndArray(transactions);
+			context.flush();
+			return baos.toByteArray();
+		}
+		catch (IOException e) {
+			// impossible with a ByteArrayOutputStream
+			throw new RuntimeException("Unexpected exception", e);
+		}
 	}
 }
