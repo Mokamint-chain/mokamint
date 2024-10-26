@@ -37,7 +37,7 @@ public abstract class GetMinerInfosResultMessageJson extends AbstractRpcMessageJ
 
 	@Override
 	public GetMinerInfosResultMessage unmap() {
-		return GetMinerInfosResultMessages.of(Stream.of(miners).map(miner -> miner.unmap()), getId());
+		return GetMinerInfosResultMessages.of(Stream.of(miners).map(MinerInfos.Json::unmap), getId());
 	}
 
 	@Override

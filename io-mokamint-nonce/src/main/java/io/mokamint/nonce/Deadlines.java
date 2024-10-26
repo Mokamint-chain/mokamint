@@ -67,8 +67,10 @@ public final class Deadlines {
 	 * @param signature the signature of the resulting deadline
 	 * @return the deadline
 	 * @throws IllegalArgumentException if some argument is illegal
+	 * @throws SignatureException if the signature of the deadline is invalid
+	 * @throws InvalidKeyException if the public key of the deadline is invalid
 	 */
-	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException {
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException, InvalidKeyException, SignatureException {
 		return new DeadlineImpl(prolog, progressive, value, challenge, signature);
 	}
 

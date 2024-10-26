@@ -63,7 +63,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @param privateKey the private key that will be used to sign the deadline; it must match the
 	 *                   public key contained in the prolog
 	 * @return the deadline
-	 * @throws SignatureException if the signature of the deadline failed
+	 * @throws SignatureException if the signature of the deadline is invalid
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
@@ -87,11 +87,13 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @param signature the signature of the deadline with the private key corresponding to the public key contained in the prolog
 	 * @return the deadline
 	 * @throws IllegalArgumentException if some argument is illegal
+	 * @throws SignatureException if the signature of the deadline is invalid
+	 * @throws InvalidKeyException if the public key of the deadline is invalid
 	 */
-	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException {
+	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException, InvalidKeyException, SignatureException {
 		this.prolog = prolog;
 		this.progressive = progressive;
-		this.value = value;
+		this.value = value.clone();
 		this.challenge = challenge;
 		this.signature = signature.clone();
 
@@ -116,7 +118,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		try {
 			verify();
 		}
-		catch (NullPointerException | IllegalArgumentException e) {
+		catch (NullPointerException | IllegalArgumentException | InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
 		}
 	}
@@ -144,7 +146,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		try {
 			verify();
 		}
-		catch (NullPointerException | IllegalArgumentException e) {
+		catch (NullPointerException | IllegalArgumentException | InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
 		}
 	}
@@ -162,8 +164,10 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * 
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
 	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid)
+	 * @throws SignatureException if the signature of the deadline is invalid
+	 * @throws InvalidKeyException if the public key of the deadline is invalid
 	 */
-	private void verify() throws IllegalArgumentException {
+	private void verify() throws IllegalArgumentException, InvalidKeyException, SignatureException {
 		Objects.requireNonNull(prolog, "prolog cannot be null");
 		Objects.requireNonNull(value, "value cannot be null");
 		Objects.requireNonNull(challenge, "challenge cannot be null");
@@ -175,21 +179,8 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		if (value.length != challenge.getHashingForDeadlines().length())
 			throw new IllegalArgumentException("value length mismatch: expected " + challenge.getHashingForDeadlines().length() + " but found " + value.length);
 
-		var signatureForDeadlines = prolog.getSignatureForDeadlines();
-		var maybeLength = signatureForDeadlines.length();
-		if (maybeLength.isPresent() && signature.length != maybeLength.getAsInt())
-			throw new IllegalArgumentException("signature length mismatch: expected " + maybeLength.getAsInt() + " but found " + signature.length);
-
-		try {
-			if (!signatureForDeadlines.getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
-				throw new IllegalArgumentException("The deadline's signature is invalid");
-		}
-		catch (SignatureException e) {
-			throw new IllegalArgumentException("The deadline's signature cannot be verified", e);
-		}
-		catch (InvalidKeyException e) {
-			throw new IllegalArgumentException("The public key in the prolog of the deadline is invalid", e);
-		}
+		if (!prolog.getSignatureForDeadlines().getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
+			throw new SignatureException("The deadline's signature is invalid");
 	}
 
 	@Override
@@ -337,16 +328,16 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		intoWithoutSignature(context);
-		marshalSignature(context);
+		writeSignature(context);
 	}
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		intoWithoutSignatureWithoutConfigurationData(context);
-		marshalSignature(context);
+		writeSignature(context);
 	}
 
-	private void marshalSignature(MarshallingContext context) throws IOException {
+	private void writeSignature(MarshallingContext context) throws IOException {
 		var maybeLength = prolog.getSignatureForDeadlines().length();
 		if (maybeLength.isEmpty())
 			context.writeLengthAndBytes(signature);

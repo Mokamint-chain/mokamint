@@ -16,13 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 
-import io.hotmoka.crypto.Base58ConversionException;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.BlockDescriptions;
@@ -42,7 +38,7 @@ public abstract class GetBlockDescriptionResultMessageJson extends AbstractRpcMe
 	}
 
 	@Override
-	public GetBlockDescriptionResultMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException, InvalidKeySpecException, HexConversionException, InvalidKeyException, Base58ConversionException {
+	public GetBlockDescriptionResultMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		return GetBlockDescriptionResultMessages.of(Optional.ofNullable(description == null ? null : description.unmap()), getId());
 	}
 

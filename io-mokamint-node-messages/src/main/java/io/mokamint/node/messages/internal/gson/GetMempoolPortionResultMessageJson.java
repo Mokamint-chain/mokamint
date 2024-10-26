@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
@@ -35,7 +35,7 @@ public abstract class GetMempoolPortionResultMessageJson extends AbstractRpcMess
 	}
 
 	@Override
-	public GetMempoolPortionResultMessage unmap() throws HexConversionException {
+	public GetMempoolPortionResultMessage unmap() throws InconsistentJsonException {
 		return GetMempoolPortionResultMessages.of(mempool.unmap(), getId());
 	}
 

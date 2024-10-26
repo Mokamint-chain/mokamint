@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.gson;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
@@ -55,7 +57,7 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 		try {
 			return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), challenge.unmap(), Hex.fromHexString(signature));
 		}
-		catch (NullPointerException | IllegalArgumentException | HexConversionException e) {
+		catch (NullPointerException | IllegalArgumentException | HexConversionException | InvalidKeyException | SignatureException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

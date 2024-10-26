@@ -124,10 +124,10 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @return the marshalled bytes
 	 */
-	private static byte[] toByteArrayWithoutSignature(NonGenesisBlockDescription description, byte[] stateHash, Transaction[] transactions) {
+	private static byte[] toByteArrayWithoutSignature(NonGenesisBlockDescription description, byte[] stateId, Transaction[] transactions) {
 		try (var baos = new ByteArrayOutputStream(); var context = new AbstractMarshallingContext(baos) {}) {
 			description.into(context);
-			context.writeLengthAndBytes(stateHash);
+			context.writeLengthAndBytes(stateId);
 			context.writeLengthAndArray(transactions);
 			context.flush();
 			return baos.toByteArray();

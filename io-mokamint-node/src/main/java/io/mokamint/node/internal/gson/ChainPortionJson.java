@@ -22,6 +22,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.api.ChainPortion;
@@ -37,9 +38,14 @@ public abstract class ChainPortionJson implements JsonRepresentation<ChainPortio
 	}
 
 	@Override
-	public ChainPortion unmap() throws HexConversionException {
-		return CheckSupplier.check(HexConversionException.class, () ->
-			ChainPortions.of(Stream.of(hashes).map(UncheckFunction.uncheck(Hex::fromHexString)))
-		);
+	public ChainPortion unmap() throws InconsistentJsonException {
+		try {
+			return CheckSupplier.check(HexConversionException.class, () ->
+				ChainPortions.of(Stream.of(hashes).map(UncheckFunction.uncheck(Hex::fromHexString)))
+			);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

@@ -52,7 +52,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	}
 
 	@Override
-	public Block unmap() throws NoSuchAlgorithmException, InconsistentJsonException, InvalidKeyException, SignatureException {
+	public Block unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
 			var description = this.description.unmap();
 
@@ -73,7 +73,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 				return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, Stream.of(unmappedTransactions), stateId, signature);
 			}
 		}
-		catch (HexConversionException e) {
+		catch (HexConversionException | InvalidKeyException | SignatureException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.api.ChainInfo;
@@ -44,10 +45,15 @@ public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
 	}
 
 	@Override
-	public ChainInfo unmap() throws HexConversionException {
-		return ChainInfos.of(height,
-			genesisHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(genesisHash)),
-			headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash)),
-			headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId)));
+	public ChainInfo unmap() throws InconsistentJsonException {
+		try {
+			return ChainInfos.of(height,
+				genesisHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(genesisHash)),
+				headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash)),
+				headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId)));
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }
