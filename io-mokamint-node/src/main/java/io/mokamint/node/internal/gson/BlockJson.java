@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
@@ -39,36 +41,36 @@ import io.mokamint.node.internal.NonGenesisBlockImpl;
 public abstract class BlockJson implements JsonRepresentation<Block> {
 	private final BlockDescriptions.Json description;
 	private final Transactions.Json[] transactions;
-	private final String stateHash;
+	private final String stateId;
 	private final String signature;
 
 	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Json(block.getDescription());
 		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new) : new Transactions.Json[0];
-		this.stateHash = Hex.toHexString(block.getStateId());
+		this.stateId = Hex.toHexString(block.getStateId());
 		this.signature = Hex.toHexString(block.getSignature());
 	}
 
 	@Override
-	public Block unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
+	public Block unmap() throws NoSuchAlgorithmException, InconsistentJsonException, InvalidKeyException, SignatureException {
 		try {
 			var description = this.description.unmap();
 
-			byte[] stateHash = Hex.fromHexString(this.stateHash);
+			byte[] stateId = Hex.fromHexString(this.stateId);
 			byte[] signature = Hex.fromHexString(this.signature);
 
 			if (description instanceof GenesisBlockDescription gbd) {
 				if (transactions.length != 0)
-					throw new InconsistentJsonException("A genesis block does not contain transactions");
+					throw new InconsistentJsonException("A genesis block cannot contain transactions");
 
-				return new GenesisBlockImpl(gbd, stateHash, signature);
+				return new GenesisBlockImpl(gbd, stateId, signature);
 			}
 			else {
 				var unmappedTransactions = new Transaction[transactions.length];
 				for (int pos = 0; pos < unmappedTransactions.length; pos++)
 					unmappedTransactions[pos] = transactions[pos].unmap();
 
-				return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, Stream.of(unmappedTransactions), stateHash, signature);
+				return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, Stream.of(unmappedTransactions), stateId, signature);
 			}
 		}
 		catch (HexConversionException e) {

@@ -55,8 +55,10 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @param description the description
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature
+	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
+	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature) {
+	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature) throws InvalidKeyException, SignatureException {
 		super(description, stateId, signature);
 		verify(toByteArrayWithoutSignature(description, stateId));
 	}
@@ -75,7 +77,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 		try {
 			verify(toByteArrayWithoutSignature(description, getStateId()));
 		}
-		catch (RuntimeException e) {
+		catch (RuntimeException | InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
 		}
 	}

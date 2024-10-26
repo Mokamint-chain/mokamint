@@ -305,7 +305,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a non-genesis block is signed with the wrong key, its creation fails")
-	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException {
+	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
@@ -313,7 +313,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var expected = genesis.getNextBlockDescription(deadline);
 		// we replace the correct signature with a fake one
 		var newKeys = config.getSignatureForBlocks().getKeyPair();
-		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Blocks.of(expected, Stream.empty(), stateId, newKeys.getPrivate()));
+		SignatureException e = assertThrows(SignatureException.class, () -> Blocks.of(expected, Stream.empty(), stateId, newKeys.getPrivate()));
 		assertTrue(e.getMessage().startsWith("The block's signature is invalid"));
 	}
 

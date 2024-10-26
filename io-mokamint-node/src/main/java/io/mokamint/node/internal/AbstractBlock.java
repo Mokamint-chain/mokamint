@@ -289,24 +289,16 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	 * the signature and that transactions are not repeated inside the block.
 	 * 
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid or
-	 *                                  if some transaction is repeated inside the block)
+	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
+	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
-	protected void verify(byte[] bytesToSign) {
+	protected void verify(byte[] bytesToSign) throws InvalidKeyException, SignatureException {
 		Objects.requireNonNull(description, "description cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
 		Objects.requireNonNull(stateId, "stateId cannot be null");
 	
-		try {
-			if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(bytesToSign, signature))
-				throw new IllegalArgumentException("The block's signature is invalid");
-		}
-		catch (SignatureException e) {
-			throw new IllegalArgumentException("The block's signature cannot be verified", e);
-		}
-		catch (InvalidKeyException e) {
-			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
-		}
+		if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(bytesToSign, signature))
+			throw new SignatureException("The block's signature is invalid");
 	}
 
 	private void writeSignature(MarshallingContext context) throws IOException {

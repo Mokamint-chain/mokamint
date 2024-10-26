@@ -55,13 +55,13 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @param description the description
 	 * @param transactions the transactions in the block
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		this(description, transactions.toArray(Transaction[]::new), stateHash, privateKey);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		this(description, transactions.toArray(Transaction[]::new), stateId, privateKey);
 	}
 
 	/**
@@ -71,8 +71,10 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @param transactions the transactions in the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature that will be put in the block
+	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
+	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature) {
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature) throws InvalidKeyException, SignatureException {
 		super(description, stateId, signature);
 
 		this.transactions = transactions.toArray(Transaction[]::new);
@@ -94,7 +96,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
 			verify(toByteArrayWithoutSignature(description, getStateId(), transactions));
 		}
-		catch (RuntimeException e) {
+		catch (RuntimeException | InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
 		}
 	}
@@ -210,7 +212,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	protected void verify(byte[] bytesToSign) {
+	protected void verify(byte[] bytesToSign) throws InvalidKeyException, SignatureException {
 		super.verify(bytesToSign);
 	
 		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
