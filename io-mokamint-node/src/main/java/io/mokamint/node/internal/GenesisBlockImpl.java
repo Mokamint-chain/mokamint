@@ -39,26 +39,26 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * Creates a genesis block with the given description and signs it with the given keys and signature algorithm.
 	 * 
 	 * @param description the description
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the key used for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, stateHash, privateKey, toByteArrayWithoutSignature(description, stateHash));
-		verify(toByteArrayWithoutSignature(description, stateHash));
+	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, stateId, privateKey, toByteArrayWithoutSignature(description, stateId));
+		verify(toByteArrayWithoutSignature(description, stateId));
 	}
 
 	/**
 	 * Creates a new genesis block with the given description and signature.
 	 *
 	 * @param description the description
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateHash, byte[] signature) {
-		super(description, stateHash, signature);
-		verify(toByteArrayWithoutSignature(description, stateHash));
+	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature) {
+		super(description, stateId, signature);
+		verify(toByteArrayWithoutSignature(description, stateId));
 	}
 
 	/**
@@ -85,10 +85,10 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * 
 	 * @return the marshalled bytes
 	 */
-	private static byte[] toByteArrayWithoutSignature(GenesisBlockDescription description, byte[] stateHash) {
+	private static byte[] toByteArrayWithoutSignature(GenesisBlockDescription description, byte[] stateId) {
 		try (var baos = new ByteArrayOutputStream(); var context = new AbstractMarshallingContext(baos) {}) {
 			description.into(context);
-			context.writeLengthAndBytes(stateHash);
+			context.writeLengthAndBytes(stateId);
 			context.flush();
 			return baos.toByteArray();
 		}

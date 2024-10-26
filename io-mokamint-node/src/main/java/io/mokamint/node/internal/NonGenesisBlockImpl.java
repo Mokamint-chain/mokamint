@@ -69,14 +69,14 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @param description the description
 	 * @param transactions the transactions in the block
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature that will be put in the block
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, byte[] signature) {
-		super(description, stateHash, signature);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature) {
+		super(description, stateId, signature);
 
 		this.transactions = transactions.toArray(Transaction[]::new);
-		verify(toByteArrayWithoutSignature(description, stateHash, this.transactions));	
+		verify(toByteArrayWithoutSignature(description, stateId, this.transactions));	
 	}
 
 	/**
@@ -105,16 +105,16 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @param description the description
 	 * @param transactions the transactions in the block
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Transaction[] transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, stateHash, privateKey, toByteArrayWithoutSignature(description, stateHash, transactions));
+	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Transaction[] transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, stateId, privateKey, toByteArrayWithoutSignature(description, stateId, transactions));
 	
 		this.transactions = transactions;
-		verify(toByteArrayWithoutSignature(description, stateHash, transactions));
+		verify(toByteArrayWithoutSignature(description, stateId, transactions));
 	}
 
 	/**

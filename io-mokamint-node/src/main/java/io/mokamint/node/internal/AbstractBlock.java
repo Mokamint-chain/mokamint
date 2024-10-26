@@ -125,7 +125,11 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 
 		try {
 			this.stateId = context.readLengthAndBytes("State id length mismatch");
-			this.signature = context.readLengthAndBytes("Signature length mismatch");
+			var maybeLength = description.getSignatureForBlock().length();
+			if (maybeLength.isPresent())
+				this.signature = context.readBytes(maybeLength.getAsInt(), "Signature length mismatch");
+			else
+				this.signature = context.readLengthAndBytes("Signature length mismatch");
 		}
 		catch (RuntimeException e) {
 			throw new IOException(e);
@@ -257,14 +261,14 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	public void into(MarshallingContext context) throws IOException {
 		description.into(context);
 		context.writeLengthAndBytes(stateId);
-		context.writeLengthAndBytes(signature);
+		writeSignature(context);
 	}
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		description.intoWithoutConfigurationData(context);
 		context.writeLengthAndBytes(stateId);
-		context.writeLengthAndBytes(signature);
+		writeSignature(context);
 	}
 
 	@Override
@@ -291,6 +295,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 	protected void verify(byte[] bytesToSign) {
 		Objects.requireNonNull(description, "description cannot be null");
 		Objects.requireNonNull(signature, "signature cannot be null");
+		Objects.requireNonNull(stateId, "stateId cannot be null");
 	
 		try {
 			if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(bytesToSign, signature))
@@ -302,6 +307,14 @@ public abstract sealed class AbstractBlock<D extends BlockDescription> extends A
 		catch (InvalidKeyException e) {
 			throw new IllegalArgumentException("The public key in the prolog of the deadline of the block is invalid", e);
 		}
+	}
+
+	private void writeSignature(MarshallingContext context) throws IOException {
+		var maybeLength = description.getSignatureForBlock().length();
+		if (maybeLength.isPresent())
+			context.writeBytes(signature);
+		else
+			context.writeLengthAndBytes(signature);
 	}
 
 	private BigInteger computePower(Deadline deadline) {

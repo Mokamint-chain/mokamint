@@ -51,14 +51,14 @@ public abstract class Blocks {
 	 * 
 	 * @param description the description
 	 * @param transactions the transactions inside the block
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @return the non-genesis block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new NonGenesisBlockImpl(description, transactions, stateHash, privateKey);
+	public static NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new NonGenesisBlockImpl(description, transactions, stateId, privateKey);
 	}
 
 	/**
@@ -66,14 +66,14 @@ public abstract class Blocks {
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description of the block
-	 * @param stateHash the hash of the state of the application at the end of this block
+	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the key used for signing the block
 	 * @return the genesis block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static GenesisBlock genesis(GenesisBlockDescription description, byte[] stateHash, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new GenesisBlockImpl(description, stateHash, privateKey);
+	public static GenesisBlock genesis(GenesisBlockDescription description, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new GenesisBlockImpl(description, stateId, privateKey);
 	}
 
 	/**
