@@ -2273,6 +2273,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	private void putBlockInStore(Transaction txn, byte[] hashOfBlock, Block block) throws NodeException {
 		try {
+			// to save space, we do not write the data of the block that can be recovered from the configuration of the node
 			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(block.toByteArrayWithoutConfigurationData()));
 		}
 		catch (ExodusException e) {

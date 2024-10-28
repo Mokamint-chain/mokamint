@@ -91,7 +91,9 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 
 				return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
-						targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions), HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations),
+						targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks),
+						HashingAlgorithms.of(hashingForTransactions), HashingAlgorithms.of(hashingForDeadlines),
+						HashingAlgorithms.of(hashingForGenerations),
 						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
 			}
 		}

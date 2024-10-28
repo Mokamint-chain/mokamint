@@ -146,13 +146,8 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof NonGenesisBlock ongb && super.equals(other))
-			if (other instanceof NonGenesisBlockImpl ongbi)
-				return Arrays.equals(transactions, ongbi.transactions); // optimization
-			else
-				return Arrays.equals(transactions, ongb.getTransactions().toArray(Transaction[]::new));
-		else
-			return false;
+		return other instanceof NonGenesisBlock ongb && super.equals(other)
+			&& Arrays.equals(transactions, other instanceof NonGenesisBlockImpl ongbi ? ongbi.transactions : ongb.getTransactions().toArray(Transaction[]::new)); // optimization
 	}
 
 	@Override

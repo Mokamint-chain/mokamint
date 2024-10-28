@@ -91,5 +91,11 @@ public interface Block extends Marshallable, Whisperable {
 	 */
 	void intoWithoutConfigurationData(MarshallingContext context) throws IOException;
 
-	byte[] toByteArrayWithoutConfigurationData(); // TODO: remove later
+	/**
+	 * Yields the serialization of this object into bytes. It does not report information that can be recomputed
+	 * from the configuration of the node storing this block.
+	 * 
+	 * @return the serialization into bytes of this object
+	 */
+	byte[] toByteArrayWithoutConfigurationData();
 }
